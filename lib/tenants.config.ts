@@ -9,7 +9,11 @@ export type Wahaala = {
 export type TenantConfig = {
   name: string;
   domain: string;
-  themeColor: string;
+  palette: {
+    primary: string;
+    secondary: string;
+    background: string;
+  };
   heroHeadline: string;
   heroSubheadline: string;
   wahaalasTitle: string;
@@ -20,7 +24,11 @@ export const TENANTS: Record<string, TenantConfig> = {
   food: {
     name: "Food Nerve",
     domain: "foodnerve.com",
-    themeColor: "#2E7D32", // Food Nerve Green
+    palette: {
+      primary: "#2E7D32", // Food Nerve Green
+      secondary: "#FFC107", // Harvest Gold
+      background: "#F2F5F3" // Earthy Off-white
+    },
     heroHeadline: "The Wakanda of Agriculture.",
     heroSubheadline: "We are engineering the future of African food systems. Choose your biggest Wahaala below to find solutions, capital, and the people solving it.",
     wahaalasTitle: "The 7 Wahaalas (Pain Points)",
@@ -37,7 +45,11 @@ export const TENANTS: Record<string, TenantConfig> = {
   energy: {
     name: "Energy Nerve",
     domain: "energynerve.com",
-    themeColor: "#0D47A1", // Energy Nerve Blue
+    palette: {
+      primary: "#0D47A1", // Energy Nerve Blue
+      secondary: "#00E676", // Electric Green
+      background: "#F0F4F8" // Sleek Cool White
+    },
     heroHeadline: "The Grid of Tomorrow.",
     heroSubheadline: "Powering African innovation through decentralized energy solutions. Choose your biggest Wahaala below to find capital, tech, and the builders.",
     wahaalasTitle: "The Core Wahaalas",
