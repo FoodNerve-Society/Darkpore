@@ -1,7 +1,8 @@
+"use client";
+
 import React from 'react';
 import { Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, AppBar, Toolbar, Typography, Avatar, Badge, IconButton } from '@mui/material';
-import { SocietyProvider, useSociety } from '@/context/SocietyContext';
-import OnboardingModal from '@/components/OnboardingModal';
+import { useSociety } from '@/context/SocietyContext';
 import Link from 'next/link';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import HandshakeIcon from '@mui/icons-material/Handshake';
@@ -11,7 +12,7 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 
 const drawerWidth = 260;
 
-function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { profile, loading } = useSociety();
 
   if (loading) return <Box p={4}>Loading Ecosystem Engine...</Box>;
@@ -85,15 +86,13 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
             </ListItemButton>
           </ListItem>
 
-          {/* Conditional Invest Tab (God Mode) */}
-          {profile?.role === 'investor' && (
-            <ListItem disablePadding sx={{ mt: 4 }}>
-              <ListItemButton component={Link} href="/invest" sx={{ borderRadius: 2, bgcolor: 'rgba(0,0,0,0.05)' }}>
-                <ListItemIcon><AttachMoneyIcon color="success" /></ListItemIcon>
-                <ListItemText primary="Invest (Deal Room)" primaryTypographyProps={{ fontWeight: 'bold', color: 'success.main' }} />
-              </ListItemButton>
-            </ListItem>
-          )}
+          {/* Support Tab */}
+          <ListItem disablePadding sx={{ mb: 1 }}>
+            <ListItemButton component={Link} href="/support" sx={{ borderRadius: 2 }}>
+              <ListItemIcon><AttachMoneyIcon color="primary" /></ListItemIcon>
+              <ListItemText primary="Support" primaryTypographyProps={{ fontWeight: 'bold' }} />
+            </ListItemButton>
+          </ListItem>
         </List>
       </Drawer>
 
@@ -103,16 +102,5 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
       </Box>
 
     </Box>
-  );
-}
-
-export default function SocietyRootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <SocietyProvider>
-      <OnboardingModal />
-      <DashboardLayout>
-        {children}
-      </DashboardLayout>
-    </SocietyProvider>
   );
 }

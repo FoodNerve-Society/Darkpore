@@ -46,6 +46,30 @@ export function SocietyProvider({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams();
 
   useEffect(() => {
+    // -------------------------------------------------------------
+    // DEV BYPASS: If no real Firebase API key is provided, we 
+    // inject a mock user so you can preview the Dashboard UI!
+    // -------------------------------------------------------------
+    if (
+      process.env.NEXT_PUBLIC_FIREBASE_API_KEY === "mock-key" || 
+      process.env.NEXT_PUBLIC_FIREBASE_API_KEY === "placeholder_api_key" || 
+      !process.env.NEXT_PUBLIC_FIREBASE_API_KEY
+    ) {
+      console.log("Using Mock Auth State for Development Preview");
+      setTimeout(() => {
+        setUser({ uid: "dev-mock-uid" } as User);
+        setProfile({
+          uid: "dev-mock-uid",
+          role: "industry",
+          wahaalas: ["Capital", "Post-Harvest Loss"],
+          nervePoints: 1250,
+          onboardingComplete: true
+        });
+        setLoading(false);
+      }, 1000);
+      return;
+    }
+
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
       if (firebaseUser) {
         setUser(firebaseUser);
@@ -74,14 +98,15 @@ export function SocietyProvider({ children }: { children: React.ReactNode }) {
       } else {
         setUser(null);
         setProfile(null);
-        // Kick them out if they are on a protected route
-        // Wait, middleware should theoretically handle this, but fallback here:
-        router.push('/?auth=required');
+        // We no longer aggressively redirect here! 
+        // We let the specific (authenticated) Route Group handle security.
       }
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, [router, searchParams]);
 
   const needsOnboarding = user !== null && (!profile || !profile.onboardingComplete);

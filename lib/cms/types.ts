@@ -1,0 +1,103 @@
+export type ElaboratePalette = {
+  primary: { main: string; };
+  secondary: { main: string; };
+  background: { default: string; paper: string; };
+  text: { primary: string; secondary: string; };
+  custom: {
+    watch: { main: string; contrastText: string; gradientStart: string; gradientEnd: string; };
+    meet: { main: string; contrastText: string; gradientStart: string; gradientEnd: string; };
+    manage: { main: string; contrastText: string; gradientStart: string; gradientEnd: string; };
+    default: { main: string; contrastText: string; gradientStart: string; gradientEnd: string; };
+  };
+};
+
+export type BottleneckUpdate = {
+  id: string;
+  title: string;
+  summary: string;
+  section: 'innovations' | 'community' | 'activities' | 'livestreams' | 'jobs' | 'learn';
+  importance: 'high' | 'normal';
+  date: string;
+  linkText: string;
+  externalLink?: string; // If it links out entirely
+};
+
+export type BottleneckSection = {
+  title: string;
+  content: string;
+  lockedContent?: {
+    title: string;
+    content: string;
+    ctaText: string;
+  };
+};
+
+export type LearningMaterial = {
+  slug: string;
+  title: string;
+  type: 'article' | 'video' | 'pdf';
+  thumbnailUrl: string;
+  previewText: string;
+  fullContent?: string; // HTML or Markdown for article, Video ID for video, URL for PDF
+  isPremium: boolean;
+  dateAdded: string; // ISO date string
+  author?: string;
+  readTime?: string; // e.g. "5 min read"
+};
+
+export type BottleneckData = {
+  id: string;
+  title: string;
+  desc: string; // Short description for the homepage grid
+  longDesc: string; // Long description for the Bottleneck page hero
+  imageUrl: string; // Cover image for the bottleneck
+  stats: { activeSolutions: number; capitalDeployed: string; communitySize: string; };
+  updates: BottleneckUpdate[];
+  learningMaterials: LearningMaterial[];
+  sections: {
+    innovations: BottleneckSection;
+    library: BottleneckSection;
+    community: BottleneckSection;
+    activities: BottleneckSection;
+    livestreams: BottleneckSection;
+    jobs: BottleneckSection;
+  };
+};
+
+export type TenantConfig = {
+  name: string;
+  domain: string;
+  palette: {
+    light: ElaboratePalette;
+    dark: ElaboratePalette;
+  };
+  com: {
+    homepage: {
+      heroHeadline: string;
+      heroSubheadline: string;
+      bottlenecksTitle: string;
+      bottlenecks: BottleneckData[];
+      showcaseProjects: {
+        title: string;
+        desc: string;
+        imageUrl: string;
+        link: string;
+      }[];
+    }
+  };
+  org: {
+    homepage: {
+      title: string;
+      heroHeadline: string;
+      heroSubheadline: string;
+      ctaText: string;
+      aboutLinkText: string;
+    };
+    about: {
+      title: string;
+      subtitle: string;
+      features: { title: string; desc: string; }[];
+      ctaText: string;
+    }
+  };
+};
