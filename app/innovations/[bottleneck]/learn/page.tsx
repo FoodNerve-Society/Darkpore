@@ -3,6 +3,7 @@ import { Box, Container, Typography, Grid, Card, CardContent, CardMedia, Chip } 
 import Link from 'next/link';
 import { headers } from 'next/headers';
 import { TENANTS, getTenantConfig } from '@/lib/cms';
+import { getKnowledgeMaterials } from '@/lib/db/knowledge';
 
 export function generateStaticParams() {
   const slugs: { bottleneck: string }[] = [];
@@ -15,7 +16,8 @@ export function generateStaticParams() {
 export default async function BottleneckLearnHub({ params }: { params: Promise<{ bottleneck: string }> }) {
   const { bottleneck } = await params;
   const headersList = await headers();
-  const tenantId = headersList.get('x-tenant-id') || 'food';
+  const rawTenantId = headersList.get('x-tenant-id') || 'food';
+  const tenantId = rawTenantId.includes('energy') ? 'energy' : 'food';
   const tenant = getTenantConfig(tenantId);
   
   const bottleneckData = tenant.com.homepage.bottlenecks.find(w => w.id === bottleneck);
@@ -24,7 +26,7 @@ export default async function BottleneckLearnHub({ params }: { params: Promise<{
     return <div style={{ padding: '4rem', textAlign: 'center' }}>Bottleneck not found.</div>;
   }
 
-  const materials = bottleneckData.learningMaterials || [];
+  const materials = await getKnowledgeMaterials({ tenantId, bottleneckId: bottleneckData.id });
   const featured = materials[0];
   const others = materials.slice(1);
 
@@ -89,7 +91,7 @@ export default async function BottleneckLearnHub({ params }: { params: Promise<{
         <Typography variant="h5" sx={{ fontWeight: 800, mb: 4 }}>More {bottleneckData.title} Intelligence</Typography>
         <Grid container spacing={4}>
           {others.map((material, idx) => (
-            <Grid item xs={12} md={4} key={idx}>
+            <Grid xs={12} md={4} key={idx} sx={{ p: 2 }}>
               <Link href={`/${bottleneck}/learn/${material.slug}`} passHref style={{ textDecoration: 'none' }}>
                 <Card sx={{ 
                   height: '100%', 

@@ -1,18 +1,15 @@
 import React from 'react';
-import { Box, Container, Typography, Chip, Button, Paper } from '@mui/material';
+import { Box, Container, Typography, Chip, Button, Paper, Divider } from '@mui/material';
 import Link from 'next/link';
 import { headers } from 'next/headers';
 import { TENANTS, getTenantConfig } from '@/lib/cms';
+import { getKnowledgeMaterials, mockKnowledgeData } from '@/lib/db/knowledge';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 
 export function generateStaticParams() {
   const slugs: { bottleneck: string, slug: string }[] = [];
-  Object.values(TENANTS).forEach((tenant) => {
-    tenant.com.homepage.bottlenecks.forEach((w) => {
-      (w.learningMaterials || []).forEach(m => {
-        slugs.push({ bottleneck: w.id, slug: m.slug });
-      });
-    });
+  mockKnowledgeData.forEach(m => {
+    slugs.push({ bottleneck: m.bottleneckId, slug: m.slug });
   });
   return slugs;
 }
@@ -20,11 +17,13 @@ export function generateStaticParams() {
 export default async function ContentPage({ params }: { params: Promise<{ bottleneck: string, slug: string }> }) {
   const { bottleneck, slug } = await params;
   const headersList = await headers();
-  const tenantId = headersList.get('x-tenant-id') || 'food';
+  const rawTenantId = headersList.get('x-tenant-id') || 'food';
+  const tenantId = rawTenantId.includes('energy') ? 'energy' : 'food';
   const tenant = getTenantConfig(tenantId);
   
   const bottleneckData = tenant.com.homepage.bottlenecks.find(w => w.id === bottleneck);
-  const material = bottleneckData?.learningMaterials?.find(m => m.slug === slug);
+  const materials = await getKnowledgeMaterials({ tenantId, bottleneckId: bottleneckData?.id });
+  const material = materials.find(m => m.slug === slug);
 
   if (!material) {
     return <div style={{ padding: '4rem', textAlign: 'center' }}>Intelligence not found.</div>;
@@ -36,7 +35,7 @@ export default async function ContentPage({ params }: { params: Promise<{ bottle
   const redirectUrl = `https://${orgDomain}/academy/${bottleneck}/${slug}`;
   const loginUrl = `https://${orgDomain}/login?redirect=${encodeURIComponent(redirectUrl)}`;
 
-  const relatedMaterials = (bottleneckData?.learningMaterials || [])
+  const relatedMaterials = materials
     .filter(m => m.slug !== slug)
     .sort((a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime())
     .slice(0, 6);

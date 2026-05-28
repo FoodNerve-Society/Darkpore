@@ -3,14 +3,17 @@ import { Box, Container, Typography, Grid, Card, CardContent, CardMedia, Button,
 import Link from 'next/link';
 import { headers } from 'next/headers';
 import { getTenantConfig } from '@/lib/cms';
+import { getKnowledgeMaterials } from '@/lib/db/knowledge';
 import KnowledgeTeaser from './components/KnowledgeTeaser';
+import ShowcaseCarousel from './components/ShowcaseCarousel';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 
 export default async function InnovationsHomepage() {
   const headersList = await headers();
-  const tenantId = headersList.get('x-tenant-id') || 'food';
+  const rawTenantId = headersList.get('x-tenant-id') || 'food';
+  const tenantId = rawTenantId.includes('energy') ? 'energy' : 'food'; // Normalized
   const tenant = getTenantConfig(tenantId);
   const homepageConfig = tenant.com.homepage;
 
@@ -20,10 +23,14 @@ export default async function InnovationsHomepage() {
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 12);
 
-  // Gather recent learning materials for the Knowledge Center teaser
-  const recentIntelligence = homepageConfig.bottlenecks
-    .flatMap(b => (b.learningMaterials || []).map(m => ({ ...m, bottleneckId: b.id })))
-    .sort((a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime());
+  // Fetch recent learning materials from the simulated database
+  const recentIntelligence = await getKnowledgeMaterials({
+    tenantId: tenantId,
+    limit: 20 // Fetch a good number so Client component can filter
+  });
+
+  console.log("SERVER LOG - Normalized Tenant ID:", tenantId);
+  console.log("SERVER LOG - Recent Intelligence count:", recentIntelligence.length);
 
   // Pick a few bottlenecks for the teaser (first 4)
   const teaserBottlenecks = homepageConfig.bottlenecks.slice(0, 4);
@@ -290,105 +297,9 @@ export default async function InnovationsHomepage() {
           </Box>
         </Container>
 
-        {/* Horizontal Scroll Container */}
-        <Box sx={{
-          display: 'flex',
-          overflowX: 'auto',
-          scrollSnapType: 'x mandatory',
-          gap: { xs: 2, md: 4 },
-          px: { xs: 2, md: 'max(24px, calc((100vw - 1200px) / 2))' }, // Align first item with container
-          pb: 8,
-          pt: 2,
-          '&::-webkit-scrollbar': { height: 10 },
-          '&::-webkit-scrollbar-track': { bgcolor: 'rgba(255,255,255,0.05)', borderRadius: 5, mx: 4 },
-          '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(255,255,255,0.2)', borderRadius: 5, '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' } },
-        }}>
-          {homepageConfig.showcaseProjects.map((project, idx) => (
-            <Box key={idx} sx={{
-              minWidth: { xs: '85vw', md: '75vw' },
-              scrollSnapAlign: 'start',
-              flexShrink: 0,
-            }}>
-              <Link href={project.link} passHref style={{ textDecoration: 'none', color: 'inherit' }}>
-                <Box sx={{
-                  position: 'relative',
-                  minHeight: { xs: 450, md: 550 },
-                  display: 'flex',
-                  alignItems: 'flex-end',
-                  overflow: 'hidden',
-                  borderRadius: 6,
-                  cursor: 'pointer',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  transition: 'all 0.4s',
-                  '&:hover': { borderColor: 'rgba(255,255,255,0.3)', boxShadow: '0 20px 40px rgba(0,0,0,0.4)' },
-                  '&:hover .project-image': { transform: 'scale(1.05)' },
-                  '&:hover .project-overlay': { background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.1) 100%)' },
-                }}>
-                  {/* Background Image */}
-                  <Box className="project-image" sx={{
-                    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-                    backgroundImage: `url(${project.imageUrl})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    transition: 'transform 0.6s ease',
-                  }} />
-                  {/* Gradient Overlay */}
-                  <Box className="project-overlay" sx={{
-                    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.2) 60%, transparent 100%)',
-                    transition: 'background 0.4s',
-                  }} />
-                  {/* Content */}
-                  <Box sx={{ position: 'relative', zIndex: 2, p: { xs: 4, md: 6 }, width: '100%' }}>
-                    <Grid container spacing={4} alignItems="flex-end">
-                      <Grid item xs={12} md={7}>
-                        <Chip label={idx === 0 ? 'FLAGSHIP' : 'ACTIVE'} size="small" sx={{ bgcolor: idx === 0 ? 'error.main' : 'primary.main', color: 'white', fontWeight: 'bold', mb: 2, letterSpacing: 1 }} />
-                        <Typography variant="h3" sx={{ fontWeight: 900, mb: 2, lineHeight: 1.1 }}>
-                          {project.title}
-                        </Typography>
-                        <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.75)', fontWeight: 400, lineHeight: 1.6, mb: 4, maxWidth: 500 }}>
-                          {project.desc}
-                        </Typography>
-                        <Button variant="contained" size="large" endIcon={<ArrowForwardIcon />} sx={{
-                          bgcolor: 'white', color: '#0a0a0a', borderRadius: 8, px: 4, py: 1.5, fontWeight: 'bold',
-                          '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' },
-                        }}>
-                          View Deployment
-                        </Button>
-                      </Grid>
-                      <Grid item xs={12} md={5}>
-                        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
-                          {[
-                            { label: 'Target Market', value: idx === 0 ? '$12.5B' : '$8.2B' },
-                            { label: 'Stage', value: idx === 0 ? 'Pilot' : 'Scaling' },
-                          ].map((stat, sidx) => (
-                            <Box key={sidx} sx={{
-                              bgcolor: 'rgba(255,255,255,0.08)',
-                              backdropFilter: 'blur(12px)',
-                              border: '1px solid rgba(255,255,255,0.15)',
-                              borderRadius: 4,
-                              px: 3, py: 2,
-                              minWidth: 120,
-                            }}>
-                              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', display: 'block', mb: 0.5 }}>
-                                {stat.label}
-                              </Typography>
-                              <Typography variant="h5" sx={{ fontWeight: 800 }}>
-                                {stat.value}
-                              </Typography>
-                            </Box>
-                          ))}
-                        </Box>
-                      </Grid>
-                    </Grid>
-                  </Box>
-                </Box>
-              </Link>
-            </Box>
-          ))}
-        </Box>
+        {/* Interactive Showcase Carousel */}
+        <ShowcaseCarousel projects={homepageConfig.showcaseProjects} />
       </Box>
-
 
       {/* ═══════════════════════════════════════════════════════════
           SECTION 5: THE KNOWLEDGE CENTER TEASER
