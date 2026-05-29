@@ -45,6 +45,30 @@ export type LearningMaterial = {
   readTime?: string; // e.g. "5 min read"
 };
 
+export type PersonTimelineEvent = {
+  year: string;
+  title: string;
+  description: string;
+};
+
+export type PersonHighlight = {
+  label: string;
+  value: string;
+};
+
+export type Person = {
+  slug: string;
+  name: string;
+  role: string;
+  bio: string;
+  imageUrl: string;
+  coverUrl?: string;
+  linkedin?: string;
+  twitter?: string;
+  timeline?: PersonTimelineEvent[];
+  highlights?: PersonHighlight[];
+};
+
 export type BottleneckData = {
   id: string;
   title: string;
@@ -67,6 +91,7 @@ export type BottleneckData = {
 export type TenantConfig = {
   name: string;
   domain: string;
+  people: Person[];
   palette: {
     light: ElaboratePalette;
     dark: ElaboratePalette;

@@ -4,6 +4,50 @@ import { foodBottlenecks } from './bottlenecks';
 export const foodTenantConfig: TenantConfig = {
   name: 'Food Nerve',
   domain: 'foodnerve.com',
+  people: [
+    {
+      slug: 'adefolami-agunbiade',
+      name: 'Dr. Adefolami Agunbiade',
+      role: 'Founder & Visionary',
+      bio: 'Dr. Adefolami is the visionary behind the Food Innovation Nervecenter at Darkpore Media Africa Ltd. Recognizing that the future of Africa relies on robust infrastructure, he leads initiatives aimed at cultivating thriving communities that nourish themselves with safe, healthy meals from regenerative sources by 2050.',
+      // To update this image: Replace the Unsplash link with a real URL or a file path like '/images/adefolami.jpg' (after putting the image in the 'public/images/' folder)
+      imageUrl: 'https://images.unsplash.com/photo-1556157382-97eda2d62296?q=80&w=600&auto=format&fit=crop',
+      coverUrl: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=1600&auto=format&fit=crop',
+      linkedin: 'https://linkedin.com/in/adefolami-agunbiade-12081a1a5',
+      highlights: [
+        { label: 'Global Ranking', value: 'Top 10 Finalist' },
+        { label: 'Award', value: 'Food System Vision' },
+        { label: 'Network', value: 'MIT Solve Leader' }
+      ],
+      timeline: [
+        { year: '2020', title: 'Rockefeller Foundation Top 10', description: 'Selected from over 1,300 applicants globally as a top 10 finalist for the $200,000 Food System Vision Prize.' },
+        { year: '2021', title: 'MIT Solve Leader', description: 'Led the Sustainable Food Systems team proposing structural improvements to regenerative agriculture.' },
+        { year: 'Present', title: 'Project Lead, Darkpore', description: 'Spearheading robust infrastructure deployments and the core vision of the Nervecenter framework.' }
+      ]
+    },
+    {
+      slug: 'raphael-inyang',
+      name: 'Raphael Inyang',
+      role: 'Acting CTO & Engineer',
+      bio: 'Raphael is a product-focused engineer with a passion for scalable systems. Currently serving as acting CTO here while also holding the founding CTO role at InnHubs, he bridges macro strategy and hands-on Next.js/AI execution. A teacher at heart, he spent 10 years shaping minds before turning his focus to system architecture.',
+      // To update this image: Replace the Unsplash link with a real URL or a file path like '/images/raphael.jpg' (after putting the image in the 'public/images/' folder)
+      imageUrl: 'https://images.unsplash.com/photo-1543269664-7eef42226a21?q=80&w=600&auto=format&fit=crop',
+      coverUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1600&auto=format&fit=crop',
+      linkedin: 'https://linkedin.com/in/raphael-inyang-367708187',
+      twitter: 'https://instagram.com/inyangraphael',
+      highlights: [
+        { label: 'Students Mentored', value: '1,000+' },
+        { label: 'Core Scope', value: 'Full-Stack / AI' },
+        { label: 'Fellowship', value: 'Millennium 2024' }
+      ],
+      timeline: [
+        { year: '2014 - 2024', title: 'Educator & Mentor', description: 'Dedicated over a decade to teaching, directly impacting the lives of over 1,000 students in Nigeria.' },
+        { year: '2023', title: 'Founding Engineer, InnHubs', description: 'Bootstrapped InnHubs from concept to MVP, shipping robust full-stack platforms across EdTech.' },
+        { year: '2024', title: 'Millennium Fellow', description: 'Awarded the Millennium Fellowship at Unilag for contributions to education and infrastructure.' },
+        { year: 'Present', title: 'Acting CTO', description: 'Architecting the Nervecenter\'s digital footprint and multi-tenant scaling frameworks.' }
+      ]
+    }
+  ],
   palette: {
     light: {
       primary: { main: '#2e7d32' },

@@ -3,8 +3,22 @@ import { energyBottlenecks } from './bottlenecks';
 
 export const energyTenantConfig: TenantConfig = {
   name: 'Energy Nerve',
-  domain: 'energynerve.com',
-  palette: {
+  domain: 'energynerve.com',  people: [
+    {
+      slug: 'michael-chen',
+      name: 'Michael Chen',
+      role: 'Director of Grid Infrastructure',
+      bio: 'Michael oversees our investments in decentralized grid systems. He previously led infrastructure projects across sub-Saharan Africa.',
+      imageUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=600&auto=format&fit=crop',
+    },
+    {
+      slug: 'amara-diop',
+      name: 'Amara Diop',
+      role: 'Renewables Lead',
+      bio: 'Amara drives innovation in solar and clean energy storage solutions, focusing on scalable community projects.',
+      imageUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=600&auto=format&fit=crop',
+    }
+  ],  palette: {
     light: {
       primary: { main: '#0277bd' },
       secondary: { main: '#ff9800' },

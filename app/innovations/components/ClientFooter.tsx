@@ -18,6 +18,7 @@ export default function ClientFooter({ tenantName, tenantDomain, orgDomain }: { 
     { label: 'The Bottlenecks', path: '/bottlenecks' },
     { label: 'Active Innovations', path: '/projects' },
     { label: 'Knowledge Center', path: '/learn' },
+    { label: 'Our People', path: '/people' },
   ];
 
   return (
