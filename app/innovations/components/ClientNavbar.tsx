@@ -55,7 +55,7 @@ export default function ClientNavbar({ tenantName, orgDomain }: { tenantName: st
         display: 'flex', 
         alignItems: 'center', 
         justifyContent: 'space-between',
-        bgcolor: scrolled ? 'rgba(10, 10, 10, 0.9)' : 'rgba(255, 255, 255, 0.06)',
+        bgcolor: scrolled ? 'rgba(10, 10, 10, 0.6)' : 'rgba(255, 255, 255, 0.06)',
         backdropFilter: 'blur(20px)',
         borderRadius: { xs: 3, md: 4 },
         px: { xs: 2, md: 3 },

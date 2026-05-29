@@ -32,8 +32,8 @@ export default async function InnovationsHomepage() {
   console.log("SERVER LOG - Normalized Tenant ID:", tenantId);
   console.log("SERVER LOG - Recent Intelligence count:", recentIntelligence.length);
 
-  // Pick a few bottlenecks for the teaser (first 4)
-  const teaserBottlenecks = homepageConfig.bottlenecks.slice(0, 4);
+  // Pick a few bottlenecks for the teaser (we will just use all of them)
+  const allBottlenecks = homepageConfig.bottlenecks;
 
   return (
     <Box sx={{ bgcolor: 'background.default' }}>
@@ -204,47 +204,71 @@ export default async function InnovationsHomepage() {
 
       {/* ═══════════════════════════════════════════════════════════
           SECTION 3: THE BOTTLENECKS TEASER
-          Dark manifesto excerpt + bottleneck cards
+          Dark manifesto excerpt + premium bottleneck cards
       ═══════════════════════════════════════════════════════════ */}
-      <Box sx={{ pt: { xs: 10, md: 15 }, pb: { xs: 10, md: 15 }, px: 2, bgcolor: '#050505', color: 'white' }}>
-        <Container maxWidth="lg">
-          <Box sx={{ maxWidth: '700px', mb: 8 }}>
-            <Typography variant="overline" sx={{ color: 'error.main', fontWeight: 900, letterSpacing: 3, mb: 2, display: 'block' }}>
+      <Box sx={{ 
+        pt: { xs: 12, md: 18 }, 
+        pb: { xs: 12, md: 18 }, 
+        px: 2, 
+        position: 'relative',
+        bgcolor: '#050505', 
+        color: 'white',
+        overflow: 'hidden',
+        '&::before': {
+          content: '""', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'radial-gradient(circle at 50% 50%, rgba(20, 20, 20, 0.8) 0%, #050505 100%)',
+          zIndex: 0
+        },
+        // Subtle grid texture
+        backgroundImage: 'linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)',
+        backgroundSize: '50px 50px'
+      }}>
+        <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
+          <Box sx={{ maxWidth: '800px', mb: 10 }}>
+            <Typography variant="overline" sx={{ color: 'error.main', fontWeight: 900, letterSpacing: 3, mb: 3, display: 'block' }}>
               THE BOTTLENECKS
             </Typography>
-            <Typography variant="h3" sx={{ fontWeight: 900, mb: 3, lineHeight: 1.2 }}>
-              We mapped the entire supply chain to isolate the exact points of failure.
+            <Typography variant="h2" sx={{ fontWeight: 900, mb: 4, lineHeight: 1.1, letterSpacing: '-0.02em' }}>
+              We mapped the supply chain to isolate exact points of failure.
             </Typography>
-            <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.5)', fontWeight: 400, lineHeight: 1.7 }}>
+            <Typography variant="h5" sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 400, lineHeight: 1.7 }}>
               These are not random problems. They are the systemic infrastructure deficits that prevent scale across the African {tenantId} sector. Each one has a dedicated dashboard with active solutions.
             </Typography>
           </Box>
 
-          <Grid container spacing={3}>
-            {teaserBottlenecks.map((b) => (
-              <Grid item xs={12} sm={6} md={3} key={b.id}>
+          <Grid container spacing={4}>
+            {allBottlenecks.map((b) => (
+              <Grid item xs={12} sm={6} md={4} key={b.id}>
                 <Link href={`/${b.id}`} passHref style={{ textDecoration: 'none' }}>
                   <Card sx={{ 
                     height: '100%',
-                    bgcolor: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    borderRadius: 4,
-                    transition: 'all 0.3s',
-                    '&:hover': { 
-                      bgcolor: 'rgba(255,255,255,0.08)', 
-                      borderColor: 'rgba(255,255,255,0.2)',
-                      transform: 'translateY(-6px)',
-                      boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+                    bgcolor: 'rgba(20, 20, 20, 0.6)',
+                    backdropFilter: 'blur(20px)',
+                    border: '1px solid rgba(255,255,255,0.05)',
+                    borderRadius: 5,
+                    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    '&::before': {
+                      content: '""', position: 'absolute', top: 0, left: 0, width: '100%', height: '4px',
+                      background: 'linear-gradient(90deg, #ff3366, #ff9933)', opacity: 0.5, transition: 'all 0.4s'
                     },
+                    '&:hover': { 
+                      bgcolor: 'rgba(30, 30, 30, 0.8)', 
+                      borderColor: 'rgba(255,255,255,0.15)',
+                      transform: 'translateY(-10px)',
+                      boxShadow: '0 30px 60px rgba(0,0,0,0.6)',
+                    },
+                    '&:hover::before': { opacity: 1, height: '6px' }
                   }}>
-                    <CardActionArea sx={{ p: 4, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                      <Typography variant="h5" sx={{ fontWeight: 800, color: 'white', mb: 2 }}>
+                    <CardActionArea sx={{ p: { xs: 4, md: 5 }, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                      <Typography variant="h4" sx={{ fontWeight: 800, color: 'white', mb: 3, letterSpacing: '-0.01em' }}>
                         {b.title}
                       </Typography>
-                      <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.5)', flexGrow: 1, lineHeight: 1.6 }}>
+                      <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.5)', flexGrow: 1, lineHeight: 1.7 }}>
                         {b.desc}
                       </Typography>
-                      <Box sx={{ mt: 3, display: 'flex', alignItems: 'center', color: 'primary.light', fontWeight: 'bold', fontSize: '0.85rem' }}>
+                      <Box sx={{ mt: 4, px: 2, py: 1, borderRadius: 8, bgcolor: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', color: 'primary.light', fontWeight: 'bold', fontSize: '0.85rem' }}>
                         View Dashboard <ArrowForwardIcon sx={{ ml: 1, fontSize: 16 }} />
                       </Box>
                     </CardActionArea>
@@ -254,7 +278,7 @@ export default async function InnovationsHomepage() {
             ))}
           </Grid>
 
-          <Box sx={{ mt: 6, textAlign: 'center' }}>
+          <Box sx={{ mt: 10, textAlign: 'center' }}>
             <Link href="/bottlenecks" passHref style={{ textDecoration: 'none' }}>
               <Button 
                 variant="outlined" 
@@ -262,11 +286,13 @@ export default async function InnovationsHomepage() {
                 endIcon={<ArrowForwardIcon />}
                 sx={{ 
                   color: 'white', 
-                  borderColor: 'rgba(255,255,255,0.2)', 
+                  borderColor: 'rgba(255,255,255,0.15)', 
                   borderRadius: 8, 
-                  px: 5, 
-                  py: 1.5,
-                  '&:hover': { borderColor: 'rgba(255,255,255,0.5)', bgcolor: 'rgba(255,255,255,0.05)' },
+                  px: 6, 
+                  py: 2,
+                  fontSize: '1rem',
+                  fontWeight: 'bold',
+                  '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.1)', boxShadow: '0 0 20px rgba(255,255,255,0.2)' },
                 }}
               >
                 See all {homepageConfig.bottlenecks.length} Bottlenecks
@@ -289,7 +315,7 @@ export default async function InnovationsHomepage() {
               ACTIVE DEPLOYMENTS
             </Typography>
             <Typography variant="h3" sx={{ fontWeight: 900, mb: 3, lineHeight: 1.2 }}>
-              We don't just fund startups. We build infrastructure.
+              We don&apos;t just fund startups. We build infrastructure.
             </Typography>
             <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.5)', fontWeight: 400, lineHeight: 1.7 }}>
               Scroll to explore the massive infrastructure projects currently gaining traction in our ecosystem.

@@ -13,20 +13,41 @@ export default function ShowcaseCarousel({ projects }: { projects: any[] }) {
   const handleScroll = () => {
     if (!scrollRef.current) return;
     const { scrollLeft, clientWidth } = scrollRef.current;
-    // Calculate which item is currently centered
-    const index = Math.round(scrollLeft / clientWidth);
-    if (index !== activeIndex) {
-      setActiveIndex(index);
+    
+    // Instead of raw scrollLeft, calculate center point to find active slide
+    const centerPoint = scrollLeft + clientWidth / 2;
+    const children = Array.from(scrollRef.current.children);
+    
+    let closestIndex = 0;
+    let closestDistance = Infinity;
+
+    children.forEach((child, index) => {
+      const el = child as HTMLElement;
+      // Skip pagination dots and arrows if they are in the children
+      if (!el.dataset.index) return;
+      const childCenter = el.offsetLeft + el.clientWidth / 2;
+      const distance = Math.abs(centerPoint - childCenter);
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestIndex = parseInt(el.dataset.index || '0');
+      }
+    });
+
+    if (closestIndex !== activeIndex) {
+      setActiveIndex(closestIndex);
     }
   };
 
   const scrollTo = (index: number) => {
     if (!scrollRef.current) return;
-    const { clientWidth } = scrollRef.current;
-    scrollRef.current.scrollTo({
-      left: index * clientWidth,
-      behavior: 'smooth'
-    });
+    const children = Array.from(scrollRef.current.children);
+    const target = children.find(c => (c as HTMLElement).dataset.index === String(index)) as HTMLElement;
+    if (target) {
+      scrollRef.current.scrollTo({
+        left: target.offsetLeft - (scrollRef.current.clientWidth - target.clientWidth) / 2,
+        behavior: 'smooth'
+      });
+    }
   };
 
   return (
@@ -41,19 +62,24 @@ export default function ShowcaseCarousel({ projects }: { projects: any[] }) {
           scrollSnapType: 'x mandatory',
           gap: { xs: 2, md: 4 },
           px: { xs: 2, md: 'max(24px, calc((100vw - 1200px) / 2))' }, // Align first item with container
-          pb: 2,
-          pt: 2,
+          pb: 8, // Added large padding bottom so box-shadow won't clip
+          pt: 4, // Added top padding so cards can scale without clipping
           // Hide standard scrollbar
           msOverflowStyle: 'none', 
           scrollbarWidth: 'none',
           '&::-webkit-scrollbar': { display: 'none' },
         }}
       >
-        {projects.map((project, idx) => (
-          <Box key={idx} sx={{
+        {projects.map((project, idx) => {
+          const isActive = idx === activeIndex;
+          return (
+          <Box key={idx} data-index={idx} sx={{
             minWidth: { xs: '85vw', md: '75vw' },
             scrollSnapAlign: 'center',
             flexShrink: 0,
+            transition: 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+            opacity: isActive ? 1 : 0.6,
+            transform: isActive ? 'scale(1)' : 'scale(0.95)',
           }}>
             <Link href={project.link} passHref style={{ textDecoration: 'none', color: 'inherit' }}>
               <Box sx={{
@@ -66,7 +92,9 @@ export default function ShowcaseCarousel({ projects }: { projects: any[] }) {
                 cursor: 'pointer',
                 border: '1px solid rgba(255,255,255,0.1)',
                 transition: 'all 0.4s',
-                '&:hover': { borderColor: 'rgba(255,255,255,0.3)', boxShadow: '0 20px 40px rgba(0,0,0,0.4)' },
+                // Updated box shadow logic: visible by default on active, deeper on hover
+                boxShadow: isActive ? '0 30px 60px rgba(0,0,0,0.5)' : 'none',
+                '&:hover': { borderColor: 'rgba(255,255,255,0.3)', boxShadow: '0 40px 80px rgba(0,0,0,0.7)' },
                 '&:hover .project-image': { transform: 'scale(1.05)' },
                 '&:hover .project-overlay': { background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.1) 100%)' },
               }}>
@@ -131,7 +159,7 @@ export default function ShowcaseCarousel({ projects }: { projects: any[] }) {
               </Box>
             </Link>
           </Box>
-        ))}
+        )})}
 
         {/* See All Projects Trailing Banner */}
         <Box sx={{

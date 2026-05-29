@@ -47,14 +47,10 @@ export function SocietyProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // -------------------------------------------------------------
-    // DEV BYPASS: If no real Firebase API key is provided, we 
+    // DEV BYPASS: In development mode, we automatically
     // inject a mock user so you can preview the Dashboard UI!
     // -------------------------------------------------------------
-    if (
-      process.env.NEXT_PUBLIC_FIREBASE_API_KEY === "mock-key" || 
-      process.env.NEXT_PUBLIC_FIREBASE_API_KEY === "placeholder_api_key" || 
-      !process.env.NEXT_PUBLIC_FIREBASE_API_KEY
-    ) {
+    if (process.env.NODE_ENV === 'development') {
       console.log("Using Mock Auth State for Development Preview");
       setTimeout(() => {
         setUser({ uid: "dev-mock-uid" } as User);

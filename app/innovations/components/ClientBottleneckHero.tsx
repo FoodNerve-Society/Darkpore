@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Box, Container, Typography, Button } from '@mui/material';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -8,6 +8,11 @@ import { BottleneckData } from '@/lib/cms/types';
 
 export default function ClientBottleneckHero({ bottleneckData }: { bottleneckData: BottleneckData }) {
   const pathname = usePathname();
+  
+  // Force scroll to top on mount because Next.js shared layout might preserve scroll position
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [pathname]);
   
   // If the pathname is exactly `/[bottleneck]`, show the massive hero.
   // Otherwise, we're in a sub-section (like `/innovations` or a detail page), so show the slim header.

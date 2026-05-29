@@ -45,128 +45,70 @@ export default async function BottleneckSectionPage({ params }: { params: Promis
   const sectionIcon = SECTION_ICONS[section] || '◇';
 
   return (
-    <Box sx={{ minHeight: '100vh', pb: 12 }}>
+    <Box sx={{ minHeight: '100vh', pb: 12, pt: { xs: 12, md: 16 } }}>
 
-      {/* ── Cinematic Section Hero ── */}
-      {/* ── Cinematic Section Hero ── */}
+      {/* ── Internal Section Header ── */}
       <Box sx={{
-        position: 'relative',
-        color: 'white',
-        pt: { xs: 16, md: 22 },
-        pb: { xs: 8, md: 12 },
         mb: 8,
-        mx: { xs: -2, md: 0 },
-        borderRadius: { xs: 0, md: '0 0 32px 32px' },
-        overflow: 'hidden',
+        mx: { xs: 2, md: 0 },
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        textAlign: 'center',
+        alignItems: 'flex-start',
         borderBottom: '1px solid rgba(255,255,255,0.05)',
+        pb: 4
       }}>
-        {/* Background Image */}
-        <Box sx={{
-          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundImage: `url(${bottleneckData.imageUrl || 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=2000&auto=format&fit=crop'})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          filter: 'brightness(0.35) saturate(1.2) contrast(1.1)',
-          zIndex: 0
-        }} />
-        
-        {/* Gradient Overlay */}
-        <Box sx={{
-          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'linear-gradient(to bottom, rgba(5,5,5,0.1) 0%, rgba(5,5,5,0.9) 80%, #050505 100%)',
-          zIndex: 1
-        }} />
-
-        <Box sx={{ position: 'relative', zIndex: 2, px: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5, mb: 3 }}>
-            <Link href={`/${bottleneck}`} passHref style={{ textDecoration: 'none' }}>
-              <Typography sx={{
-                color: 'rgba(255,255,255,0.5)',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                letterSpacing: 2,
-                textTransform: 'uppercase',
-                transition: 'color 0.2s',
-                '&:hover': { color: 'white' },
-              }}>
-                ← {bottleneck}
-              </Typography>
-            </Link>
-            <Typography sx={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem' }}>/</Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
+          <Link href={`/${bottleneck}`} passHref style={{ textDecoration: 'none' }}>
             <Typography sx={{
-              color: 'rgba(255,255,255,0.8)',
+              color: 'rgba(255,255,255,0.4)',
               fontSize: '0.75rem',
               fontWeight: 700,
               letterSpacing: 2,
               textTransform: 'uppercase',
+              transition: 'color 0.2s',
+              '&:hover': { color: 'white' },
             }}>
-              {section}
+              ← {bottleneck}
             </Typography>
-          </Box>
+          </Link>
+        </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, mb: 2 }}>
-            <Box sx={{
-              width: 56,
-              height: 56,
-              borderRadius: '16px',
-              bgcolor: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.12)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '1.5rem',
-              color: 'white',
-              backdropFilter: 'blur(10px)',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
-            }}>
-              {sectionIcon}
-            </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, mb: 1 }}>
+          <Box sx={{
+            width: 48,
+            height: 48,
+            borderRadius: '12px',
+            bgcolor: 'rgba(255,255,255,0.06)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '1.2rem',
+            color: 'white',
+          }}>
+            {sectionIcon}
           </Box>
-
-          <Typography variant="h1" sx={{
+          <Typography variant="h2" sx={{
             fontWeight: 900,
-            fontSize: { xs: '2.5rem', md: '4.5rem' },
+            fontSize: { xs: '2.5rem', md: '3.5rem' },
             color: 'white',
             textTransform: 'uppercase',
-            letterSpacing: 2,
+            letterSpacing: 1,
             lineHeight: 1.1,
-            mb: 3,
-            textShadow: '0 10px 30px rgba(0,0,0,0.5)',
           }}>
             {(sectionData?.title) || section}
           </Typography>
-
-          <Typography sx={{
-            color: 'rgba(255,255,255,0.6)',
-            fontSize: '1.1rem',
-            maxWidth: 600,
-            mx: 'auto',
-            lineHeight: 1.6,
-            mb: 4,
-          }}>
-            {sectionData?.content || `All updates, deep dives, and intelligence regarding ${section} in the ${bottleneck} bottleneck.`}
-          </Typography>
-          
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
-            <Chip
-              label={`${sectionUpdates.length} UPDATE${sectionUpdates.length !== 1 ? 'S' : ''}`}
-              sx={{
-                bgcolor: 'rgba(255,255,255,0.05)',
-                color: 'rgba(255,255,255,0.5)',
-                fontWeight: 700,
-                fontSize: '0.7rem',
-                letterSpacing: 1.5,
-                height: 28,
-                border: '1px solid rgba(255,255,255,0.08)',
-              }}
-            />
-          </Box>
         </Box>
+
+        <Typography sx={{
+          color: 'rgba(255,255,255,0.6)',
+          fontSize: '1.1rem',
+          maxWidth: 800,
+          lineHeight: 1.6,
+          mt: 2
+        }}>
+          {sectionData?.content || `All updates, deep dives, and intelligence regarding ${section} in the ${bottleneck} bottleneck.`}
+        </Typography>
       </Box>
 
       {/* ── Updates Feed ── */}

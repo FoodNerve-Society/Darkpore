@@ -1,16 +1,18 @@
 import React from 'react';
-import { Box, Typography, Container, Grid, Card, CardContent } from '@mui/material';
+import { Box, Typography, Container, Grid } from '@mui/material';
 import Link from 'next/link';
 import Button from '@mui/material/Button';
-import HandshakeIcon from '@mui/icons-material/Handshake';
-import ContactsIcon from '@mui/icons-material/Contacts';
-import SchoolIcon from '@mui/icons-material/School';
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import { headers } from 'next/headers';
 import { getTenantConfig } from '@/lib/cms';
+import SouthIcon from '@mui/icons-material/South';
+import ScrollReveal from './ScrollReveal';
 
-// Dynamic icon mapping based on feature index for visual flair
-const FeatureIcons = [HandshakeIcon, ContactsIcon, SchoolIcon, AttachMoneyIcon];
+const storyImages = [
+  "https://images.unsplash.com/photo-1592982537447-6f2a6a0c5c1b?q=80&w=800&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1558904541-efa843a96f0f?q=80&w=800&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1605000797499-95a51c5269ae?q=80&w=800&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1530587191325-3db32d826c18?q=80&w=800&auto=format&fit=crop"
+];
 
 export default async function AboutPage() {
   const headersList = await headers();
@@ -19,82 +21,138 @@ export default async function AboutPage() {
   const content = tenant.org.about;
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: '#f2f7f1', color: '#0f2414' }}>
       
       {/* Premium Header */}
       <Box sx={{ 
         p: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
-        background: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(10px)',
-        borderBottom: '1px solid rgba(0,0,0,0.05)', position: 'sticky', top: 0, zIndex: 100 
+        background: 'rgba(242, 247, 241, 0.8)', backdropFilter: 'blur(20px)',
+        borderBottom: '1px solid rgba(15, 36, 20, 0.05)', position: 'fixed', width: '100%', top: 0, zIndex: 1000 
       }}>
         <Link href="/" passHref style={{ textDecoration: 'none' }}>
-          <Typography variant="h5" color="primary" sx={{ fontWeight: 800, letterSpacing: '-0.5px', cursor: 'pointer' }}>{tenant.org.homepage.title}</Typography>
+          <Typography variant="h5" sx={{ fontWeight: 900, letterSpacing: '-1.5px', color: '#1b5e20', textTransform: 'uppercase', cursor: 'pointer' }}>
+            {tenant.org.homepage.title}
+          </Typography>
         </Link>
         <Box>
           <Link href="/login" passHref style={{ textDecoration: 'none' }}>
-            <Button variant="contained" sx={{ borderRadius: 8, px: 4, boxShadow: '0 4px 14px 0 rgba(0,0,0,0.1)' }}>Sign Up / Login</Button>
+            <Button variant="contained" sx={{ 
+              bgcolor: '#1b5e20', color: 'white', borderRadius: '24px', px: 4, fontWeight: 800, textTransform: 'none',
+              boxShadow: '0 4px 14px 0 rgba(27, 94, 32, 0.2)', '&:hover': { bgcolor: '#112918' }
+            }}>
+              Join Society
+            </Button>
           </Link>
         </Box>
       </Box>
 
-      {/* Main Content */}
-      <Box sx={{ position: 'relative', overflow: 'hidden' }}>
-        <Box sx={{
-          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0, opacity: 0.5,
-          background: `radial-gradient(circle at 100% 0%, ${tenant.palette.light.primary.main}1A 0%, transparent 60%), radial-gradient(circle at 0% 100%, ${tenant.palette.light.secondary.main}1A 0%, transparent 40%)`,
-        }} />
-        <Container maxWidth="lg" sx={{ py: 10, position: 'relative', zIndex: 1 }}>
-          <Typography variant="h2" sx={{ fontWeight: 900, textAlign: 'center', mb: 3, letterSpacing: '-1px' }}>
+      {/* Hero Section */}
+      <Box sx={{ position: 'relative', pt: { xs: 20, md: 30 }, pb: { xs: 10, md: 15 }, px: 3, textAlign: 'center' }}>
+        <Container maxWidth="md">
+          <Typography variant="overline" sx={{ fontWeight: 800, letterSpacing: 4, color: '#2e7d32', mb: 3, display: 'block' }}>
+            OUR MANIFESTO
+          </Typography>
+          <Typography variant="h1" sx={{ fontWeight: 900, mb: 4, letterSpacing: '-0.04em', fontSize: { xs: '3rem', md: '5rem' }, lineHeight: 1 }}>
             {content.title}
           </Typography>
-          <Typography variant="h5" color="text.secondary" textAlign="center" mb={10} maxWidth="800px" mx="auto" sx={{ lineHeight: 1.7 }}>
+          <Typography variant="h5" sx={{ color: 'rgba(15, 36, 20, 0.7)', mb: 8, lineHeight: 1.6, maxWidth: '700px', mx: 'auto', fontWeight: 400 }}>
             {content.subtitle}
           </Typography>
-
-          <Grid container spacing={4}>
-            {content.features.map((feature, index) => {
-              const IconComponent = FeatureIcons[index % FeatureIcons.length];
-              return (
-                <Grid item xs={12} md={6} key={index}>
-                  <Card sx={{ 
-                    height: '100%', 
-                    borderRadius: 6, 
-                    boxShadow: '0 10px 40px rgba(0,0,0,0.04)',
-                    background: 'rgba(255,255,255,0.7)',
-                    backdropFilter: 'blur(20px)',
-                    border: '1px solid rgba(255,255,255,0.8)',
-                    transition: 'all 0.3s',
-                    '&:hover': { transform: 'translateY(-5px)', boxShadow: `0 20px 40px rgba(0,0,0,0.08), 0 0 0 2px ${tenant.palette.light.primary.main}33` }
-                  }}>
-                    <CardContent sx={{ p: 5 }}>
-                      <Box sx={{ 
-                        display: 'inline-flex', p: 2, borderRadius: 4, mb: 3,
-                        bgcolor: index === 3 ? `${tenant.palette.light.secondary.main}1A` : `${tenant.palette.light.primary.main}1A`
-                      }}>
-                        <IconComponent color={index === 3 ? "success" : "primary"} sx={{ fontSize: 40 }} />
-                      </Box>
-                      <Typography variant="h4" fontWeight="800" gutterBottom>{feature.title}</Typography>
-                      <Typography variant="body1" color="text.secondary" sx={{ fontSize: '1.1rem', lineHeight: 1.6 }}>
-                        {feature.desc}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              );
-            })}
-          </Grid>
-
-          <Box textAlign="center" mt={12}>
-            <Link href="/login" passHref style={{ textDecoration: 'none' }}>
-              <Button variant="contained" size="large" sx={{ 
-                py: 2.5, px: 8, fontSize: '1.3rem', borderRadius: 12,
-                boxShadow: `0 10px 40px ${tenant.palette.light.primary.main}50`,
-                transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-3px)' }
-              }}>
-                {content.ctaText}
-              </Button>
-            </Link>
+          
+          <Box sx={{ display: 'flex', justifyContent: 'center', animation: 'bounce 2s infinite' }}>
+            <style suppressHydrationWarning>{`
+              @keyframes bounce {
+                0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+                40% { transform: translateY(10px); }
+                60% { transform: translateY(5px); }
+              }
+            `}</style>
+            <SouthIcon sx={{ fontSize: 40, color: '#1b5e20', opacity: 0.5 }} />
           </Box>
+        </Container>
+      </Box>
+
+      {/* Storytelling Content */}
+      <Box sx={{ position: 'relative', zIndex: 1, pb: 15 }}>
+        {content.features.map((feature, index) => {
+          const isEven = index % 2 === 0;
+          return (
+            <Box key={index} sx={{ 
+              py: { xs: 8, md: 12 }, 
+              bgcolor: isEven ? 'white' : 'transparent',
+              borderTop: isEven ? '1px solid rgba(15, 36, 20, 0.03)' : 'none',
+              borderBottom: isEven ? '1px solid rgba(15, 36, 20, 0.03)' : 'none',
+              overflow: 'hidden' // prevent horizontal scroll on reveal
+            }}>
+              <Container maxWidth="lg">
+                <Grid container spacing={{ xs: 6, md: 10 }} alignItems="center" direction={isEven ? 'row' : 'row-reverse'}>
+                  <Grid item xs={12} md={6}>
+                    <ScrollReveal direction={isEven ? 'right' : 'left'}>
+                      <Box sx={{ 
+                        position: 'relative', 
+                        borderRadius: '32px', 
+                        overflow: 'hidden',
+                        boxShadow: '0 20px 60px rgba(15, 36, 20, 0.1)',
+                        aspectRatio: '4/5',
+                        transform: isEven ? 'rotate(-2deg)' : 'rotate(2deg)',
+                        transition: 'transform 0.5s',
+                        '&:hover': { transform: 'rotate(0deg) scale(1.02)' }
+                      }}>
+                        <Box sx={{ 
+                          position: 'absolute', inset: 0, 
+                          backgroundImage: `url(${storyImages[index % storyImages.length]})`,
+                          backgroundSize: 'cover', backgroundPosition: 'center',
+                        }} />
+                      </Box>
+                    </ScrollReveal>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <ScrollReveal direction={isEven ? 'left' : 'right'} delay={150}>
+                      <Box sx={{ pr: isEven ? 0 : { md: 6 }, pl: isEven ? { md: 6 } : 0 }}>
+                        <Typography variant="h2" sx={{ fontWeight: 900, mb: 3, letterSpacing: '-2px', fontSize: { xs: '2.5rem', md: '3.5rem' }, color: '#0f2414' }}>
+                          {feature.title}
+                        </Typography>
+                        <Typography variant="body1" sx={{ color: 'rgba(15, 36, 20, 0.7)', fontSize: '1.25rem', lineHeight: 1.8 }}>
+                          {feature.desc}
+                        </Typography>
+                      </Box>
+                    </ScrollReveal>
+                  </Grid>
+                </Grid>
+              </Container>
+            </Box>
+          );
+        })}
+      </Box>
+
+      {/* CTA Section */}
+      <Box sx={{ 
+        bgcolor: '#0f2414', color: 'white', textAlign: 'center', py: { xs: 12, md: 16 }, px: 3,
+        position: 'relative', overflow: 'hidden'
+      }}>
+        <Box sx={{ 
+          position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
+          width: '800px', height: '800px', borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(46, 125, 50, 0.15) 0%, transparent 70%)',
+          pointerEvents: 'none'
+        }} />
+        <Container maxWidth="md" sx={{ position: 'relative', zIndex: 1 }}>
+          <Typography variant="h2" sx={{ fontWeight: 900, mb: 4, letterSpacing: '-1.5px' }}>
+            Ready to rewrite the future?
+          </Typography>
+          <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.6)', mb: 8, fontWeight: 400 }}>
+            Step into the arena. Connect, trade, and build alongside the best.
+          </Typography>
+          <Link href="/login" passHref style={{ textDecoration: 'none' }}>
+            <Button variant="contained" size="large" sx={{ 
+              py: 2.5, px: 8, fontSize: '1.2rem', borderRadius: '32px', fontWeight: 800,
+              bgcolor: '#2e7d32', color: 'white',
+              boxShadow: '0 12px 35px rgba(46, 125, 50, 0.3)', textTransform: 'none',
+              transition: 'all 0.3s', '&:hover': { transform: 'translateY(-3px)', bgcolor: '#1b5e20' }
+            }}>
+              {content.ctaText}
+            </Button>
+          </Link>
         </Container>
       </Box>
     </Box>
