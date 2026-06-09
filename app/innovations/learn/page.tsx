@@ -9,25 +9,25 @@ export default async function GlobalLearnHub() {
   const rawTenantId = headersList.get('x-tenant-id') || 'food';
   const tenantId = rawTenantId.includes('energy') ? 'energy' : 'food';
   const tenant = getTenantConfig(tenantId);
-  const bottlenecks = tenant.com.homepage.bottlenecks;
+  const challenges = tenant.com.homepage.challenges;
 
-  // Aggregate all materials from every bottleneck, sorted newest-first
+  // Aggregate all materials from every challenge, sorted newest-first
   const rawMaterials = await getKnowledgeMaterials({ tenantId });
   
   console.log("SERVER LOG (Learn Hub) - Normalized Tenant ID:", tenantId);
   console.log("SERVER LOG (Learn Hub) - RAW materials length:", rawMaterials.length);
 
   const allMaterials = rawMaterials.map(m => {
-    const b = bottlenecks.find(b => b.id === m.bottleneckId);
+    const b = challenges.find(b => b.id === m.challengeId);
     return {
       ...m,
-      bottleneckTitle: b?.title || 'General'
+      challengeTitle: b?.title || 'General'
     };
   });
 
   // Unique category names for the filter bar
   const categories = Array.from(
-    new Set(allMaterials.map((m) => m.bottleneckTitle)),
+    new Set(allMaterials.map((m) => m.challengeTitle)),
   );
 
   return (

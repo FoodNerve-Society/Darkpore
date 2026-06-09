@@ -20,7 +20,7 @@ export default function Navbar() {
         <Link href="/ventures" className={`${styles.navLink} ${isActive('/ventures')}`}>Ventures</Link>
         <Link href="/thesis" className={`${styles.navLink} ${isActive('/thesis')}`}>Manifesto</Link>
         <Link href="/partners" className={`${styles.navLink} ${isActive('/partners')}`}>Partners</Link>
-        <Link href="/login" className={styles.loginBtn}>Investor Login</Link>
+        <Link href="/join" className={styles.loginBtn}>Investor Login</Link>
       </div>
     </nav>
   );

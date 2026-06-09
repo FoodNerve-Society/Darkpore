@@ -25,8 +25,8 @@ interface LearningMaterial {
   dateAdded: string;
   author?: string;
   readTime?: string;
-  bottleneckId: string;
-  bottleneckTitle: string;
+  challengeId: string;
+  challengeTitle: string;
 }
 
 interface ClientLearnHubProps {
@@ -54,7 +54,7 @@ export default function ClientLearnHub({ initialMaterials, categories, tenantNam
         material.previewText.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (material.author && material.author.toLowerCase().includes(searchQuery.toLowerCase()));
 
-      const matchesCategory = !selectedCategory || material.bottleneckTitle === selectedCategory;
+      const matchesCategory = !selectedCategory || material.challengeTitle === selectedCategory;
       const matchesType = selectedType === 'all' || material.type === selectedType;
 
       return matchesSearch && matchesCategory && matchesType;
@@ -289,7 +289,7 @@ export default function ClientLearnHub({ initialMaterials, categories, tenantNam
               return (
                 <Link
                   key={`${material.slug}-${idx}`}
-                  href={`/${material.bottleneckId}/learn/${material.slug}`}
+                  href={`/${material.challengeId}/learn/${material.slug}`}
                   style={{ textDecoration: 'none', flexShrink: 0 }}
                 >
                   <Box
@@ -501,7 +501,7 @@ export default function ClientLearnHub({ initialMaterials, categories, tenantNam
               return (
                 <Link
                   key={idx}
-                  href={`/${material.bottleneckId}/learn/${material.slug}`}
+                  href={`/${material.challengeId}/learn/${material.slug}`}
                   style={{ textDecoration: 'none', display: 'block' }}
                 >
                   <Box
@@ -646,7 +646,7 @@ export default function ClientLearnHub({ initialMaterials, categories, tenantNam
                           </Typography>
                           <Box sx={{ width: 3, height: 3, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.2)' }} />
                           <Typography variant="caption" sx={{ color: '#10b981', fontSize: '0.72rem', fontWeight: 800 }}>
-                            {material.bottleneckTitle}
+                            {material.challengeTitle}
                           </Typography>
                         </Box>
                       </Box>

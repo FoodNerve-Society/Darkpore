@@ -275,12 +275,10 @@ export default async function ProjectsManifestoPage() {
                   py: { xs: 10, md: 16 },
                 }}
               >
-                <Grid container spacing={6} alignItems="center">
+                <Grid container spacing={6} sx={{ alignItems: 'center' }}>
                   {/* Text column — switches sides based on even/odd */}
                   <Grid
-                    item
-                    xs={12}
-                    md={7}
+                    size={{ xs: 12, md: 7 }}
                     sx={{
                       order: { xs: 1, md: isEven ? 1 : 2 },
                       textAlign: { xs: 'left', md: isEven ? 'left' : 'right' },
@@ -387,16 +385,14 @@ export default async function ProjectsManifestoPage() {
 
                   {/* Metrics column */}
                   <Grid
-                    item
-                    xs={12}
-                    md={5}
+                    size={{ xs: 12, md: 5 }}
                     sx={{
                       order: { xs: 2, md: isEven ? 2 : 1 },
                     }}
                   >
                     <Grid container spacing={2}>
                       {metrics.map((metric, mIdx) => (
-                        <Grid item xs={6} key={mIdx}>
+                        <Grid size={{ xs: 6 }} key={mIdx}>
                           <Card
                             sx={{
                               bgcolor: 'rgba(255,255,255,0.04)',

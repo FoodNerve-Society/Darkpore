@@ -1,5 +1,5 @@
 import { TenantConfig } from '../types';
-import { energyBottlenecks } from './bottlenecks';
+import { energyChallenges } from './challenges';
 
 export const energyTenantConfig: TenantConfig = {
   name: 'Energy Nerve',
@@ -47,9 +47,9 @@ export const energyTenantConfig: TenantConfig = {
   com: {
     homepage: {
       heroHeadline: "The Decentralized Grid of Tomorrow.",
-      heroSubheadline: "Powering African innovation through decentralized energy solutions. Choose your biggest Bottleneck below to find capital, tech, and the builders.",
-      bottlenecksTitle: "The Core Bottlenecks",
-      bottlenecks: energyBottlenecks,
+      heroSubheadline: "Powering African innovation through decentralized energy solutions. Choose your biggest Challenge below to find capital, tech, and the builders.",
+      challengesTitle: "The Core Challenges",
+      challenges: energyChallenges,
       showcaseProjects: [
         {
           title: "Operation 100MW Mini-Grid",
@@ -73,6 +73,7 @@ export const energyTenantConfig: TenantConfig = {
       heroSubheadline: 'Join the premier ecosystem of innovators solving Africa’s biggest energy challenges.',
       ctaText: 'Join the Society',
       aboutLinkText: 'Learn more about our mission',
+      featuredSlideshow: []
     },
     about: {
       title: 'About Energy Nerve',

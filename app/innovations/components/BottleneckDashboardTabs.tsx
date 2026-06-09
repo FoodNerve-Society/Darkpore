@@ -3,7 +3,22 @@
 import React, { useState, useMemo } from 'react';
 import { Box, Typography, Card, Chip, Button } from '@mui/material';
 import Link from 'next/link';
-import type { BottleneckUpdate, LearningMaterial } from '@/lib/cms/types';
+
+// Use local types since we don't have exactly these in the CMS types currently
+interface BottleneckUpdate {
+  id: string;
+  section: string;
+  title: string;
+  summary: string;
+  date: string;
+  importance?: 'high' | 'normal';
+}
+
+interface LearningMaterial {
+  slug: string;
+  type: string;
+  title: string;
+}
 
 interface Props {
   bottleneckId: string;
@@ -11,14 +26,13 @@ interface Props {
   learningMaterials: LearningMaterial[];
 }
 
-type TabKey = 'master' | 'innovations' | 'community' | 'activities' | 'livestreams' | 'jobs' | 'intelligence';
+type TabKey = 'master' | 'innovations' | 'community' | 'activities' | 'jobs' | 'intelligence';
 
 const TABS: { key: TabKey; label: string; section?: string }[] = [
   { key: 'master',       label: 'Master Feed' },
   { key: 'innovations',  label: 'Innovations',    section: 'innovations' },
   { key: 'community',    label: 'Community',       section: 'community' },
   { key: 'activities',   label: 'Activities',      section: 'activities' },
-  { key: 'livestreams',  label: 'Livestreams',     section: 'livestreams' },
   { key: 'jobs',         label: 'Jobs & Earn',     section: 'jobs' },
   { key: 'intelligence', label: 'Intelligence' },
 ];
@@ -46,7 +60,7 @@ function ContinueButton({ href, label }: { href: string; label: string }) {
 function UpdateCard({ update, bottleneckId }: { update: BottleneckUpdate; bottleneckId: string }) {
   return (
     <Card sx={{ bgcolor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden', transition: 'all 0.35s', '&:hover': { transform: 'translateX(6px)', borderColor: 'rgba(255,255,255,0.18)', bgcolor: 'rgba(255,255,255,0.055)' } }}>
-      <Link href={`/${bottleneckId}/${update.section}`} passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+      <Link href={`/${bottleneckId}/${update.section}/${update.id}`} passHref style={{ textDecoration: 'none', color: 'inherit' }}>
         <Box sx={{ p: { xs: 3, md: 4 } }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
             <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>

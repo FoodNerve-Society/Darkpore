@@ -1,0 +1,213 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ════════════════════════════════════════════════════════
+// USER MODEL
+// ════════════════════════════════════════════════════════
+model User {
+  id          String  @id @default(cuid())
+  firebaseUid String  @unique
+  email       String  @unique
+  name        String
+  avatarUrl   String?
+  role        String  @default("member")
+
+  // The 4-Tier Wallet
+  lifetimeNP     Int @default(0)
+  withdrawableNP Int @default(0)
+  spendableNP    Int @default(0)
+  promoNP        Int @default(0)
+
+  rank Int @default(1)
+
+  // Gatekeeper Flags
+  hasCompletedProfile     Boolean @default(false)
+  hasKYC                  Boolean @default(false)
+  hasBusinessVerification Boolean @default(false)
+  verified                Boolean @default(false)
+  verifiedAt              DateTime?
+
+  // Profile Data
+  location          String?
+  lga               String?
+  specialization    String?
+  subSector         String?
+  bio               String?
+  wahaalaCategories String? // Stored as JSON string or comma-separated
+  tabOrder          String? // JSON array of ['trade', 'meet', 'learn', 'support']
+  landingPage       String? // The default landing page role
+  joinedAt          DateTime @default(now())
+
+  // Relations
+  tradeListings       TradeListing[]
+  campaigns           Campaign[]
+  organizationMembers OrganizationMember[]
+}
+
+// ════════════════════════════════════════════════════════
+// ORGANIZATION MODELS
+// ════════════════════════════════════════════════════════
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  legalName String?
+  cacNumber String?
+  verified  Boolean  @default(false)
+  rank      Int      @default(3) // Businesses start at Rank 3
+  createdAt DateTime @default(now())
+
+  // Relations
+  members OrganizationMember[]
+}
+
+model OrganizationMember {
+  id             String   @id @default(cuid())
+  userId         String
+  organizationId String
+  role           String   @default("employee") // 'owner' | 'admin' | 'employee'
+  department     String?
+  joinedAt       DateTime @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+}
+
+// ════════════════════════════════════════════════════════
+// SOCIETY OS MODELS
+// ════════════════════════════════════════════════════════
+
+model TradeListing {
+  id              String    @id @default(cuid())
+  category        String // 'group-buy' | 'flash-sale' | 'swap' | 'need' | 'jobs'
+  title           String
+  description     String
+  commodity       String?
+  quantity        String?
+  priceOrAsk      String
+  location        String
+  lga             String
+  expiresAt       DateTime?
+  urgency         String    @default("normal") // 'normal' | 'urgent' | 'expiring'
+  status          String    @default("active") // 'active' | 'fulfilled' | 'expired'
+  slotsFilled     Int?
+  slotsTotal      Int?
+  swapOffer       String?
+  swapWant        String?
+  isBoosted       Boolean   @default(false)
+  imageUrl        String?
+  nervePointsCost Int?
+  postedAt        DateTime  @default(now())
+
+  // Relations
+  postedById String
+  postedBy   User   @relation(fields: [postedById], references: [id], onDelete: Cascade)
+}
+
+model Campaign {
+  id           String   @id @default(cuid())
+  tier         String // 'initiative' | 'innovation'
+  title        String
+  description  String
+  imageUrl     String?
+  goalAmount   Float
+  raisedAmount Float    @default(0)
+  backerCount  Int      @default(0)
+  deadline     DateTime
+  status       String   @default("active") // 'active' | 'funded' | 'expired'
+  createdAt    DateTime @default(now())
+
+  // Relations
+  organizerId String
+  organizer   User   @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+}
+
+model MarketPrice {
+  id            String   @id @default(cuid())
+  commodity     String
+  currentPrice  String
+  previousPrice String
+  unit          String
+  change        Float
+  region        String
+  updatedAt     DateTime @updatedAt
+}
+
+model MeetEvent {
+  id            String   @id @default(cuid())
+  title         String
+  type          String // 'webinar' | 'field-day' | 'workshop' | 'meetup'
+  date          DateTime
+  location      String
+  attendees     Int      @default(0)
+  maxAttendees  Int
+  hostName      String
+  hostAvatarUrl String?
+  description   String
+  imageUrl      String?
+  isVirtual     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+}
+
+model LearnContent {
+  id              String   @id @default(cuid())
+  swimlane        String // 'livestreams' | 'classes' | 'videos' | 'articles' | 'reports'
+  title           String
+  description     String
+  thumbnailUrl    String?
+  authorName      String
+  authorAvatarUrl String?
+  isVerified      Boolean  @default(false)
+  duration        String?
+  readTime        String?
+  isLive          Boolean  @default(false)
+  isPaid          Boolean  @default(false)
+  costNP          Int?
+  videoUrl        String?
+  createdAt       DateTime @default(now())
+}
+
+// ════════════════════════════════════════════════════════
+// INNOVATIONS (CHALLENGES / CMS) MODELS
+// ════════════════════════════════════════════════════════
+
+model ChallengeUpdate {
+  id               String   @id @default(cuid())
+  title            String
+  summary          String
+  section          String // 'innovations' | 'community' | 'activities' | 'livestreams' | 'jobs' | 'library'
+  importance       String   @default("normal") // 'high' | 'normal'
+  linkText         String
+  externalLink     String?
+  subcategoryId    String
+  subcategoryTitle String?
+  date             DateTime @default(now())
+}
+
+model LearningMaterial {
+  id               String   @id @default(cuid())
+  slug             String   @unique
+  title            String
+  type             String // 'article' | 'video' | 'pdf'
+  thumbnailUrl     String?
+  previewText      String
+  fullContent      String?
+  isPremium        Boolean  @default(false)
+  author           String?
+  readTime         String?
+  subcategoryId    String
+  subcategoryTitle String?
+  dateAdded        DateTime @default(now())
+}

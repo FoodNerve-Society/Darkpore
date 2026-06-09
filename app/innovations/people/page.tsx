@@ -26,7 +26,7 @@ export default async function PeopleDirectoryPage() {
 
         <Grid container spacing={4}>
           {people.map((person, idx) => (
-            <Grid item xs={12} sm={6} md={4} key={idx}>
+            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={idx}>
               <Link href={`/people/${person.slug}`} passHref style={{ textDecoration: 'none' }}>
                 <Card sx={{ 
                   bgcolor: 'rgba(255,255,255,0.03)', 
@@ -64,7 +64,7 @@ export default async function PeopleDirectoryPage() {
             </Grid>
           ))}
           {people.length === 0 && (
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Typography sx={{ color: 'rgba(255,255,255,0.5)' }}>No profiles found.</Typography>
             </Grid>
           )}

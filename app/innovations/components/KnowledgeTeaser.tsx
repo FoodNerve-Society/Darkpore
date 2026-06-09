@@ -67,7 +67,7 @@ export default function KnowledgeTeaser({ materials }: { materials: any[] }) {
           }}>
             {displayMaterials.map((material, idx) => (
               <Box key={idx}>
-                <Link href={`/${material.bottleneckId}/learn/${material.slug}`} passHref style={{ textDecoration: 'none' }}>
+                <Link href={`/${material.challengeId}/learn/${material.slug}`} passHref style={{ textDecoration: 'none' }}>
                   <Box sx={{ 
                     display: 'flex', 
                     flexDirection: 'column',

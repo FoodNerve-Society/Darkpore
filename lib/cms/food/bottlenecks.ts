@@ -1,6 +1,6 @@
-import { BottleneckData } from '../types';
+import { SubcategoryData } from '../types';
 
-export const foodBottlenecks: BottleneckData[] = [
+export const foodBottlenecks: SubcategoryData[] = [
   {
     id: 'land',
     title: '1. Land',
@@ -160,8 +160,8 @@ export const foodBottlenecks: BottleneckData[] = [
         id: `update-${id}`,
         title: `New developments in ${id}`,
         summary: `Breaking updates regarding the ${id} crisis.`,
-        section: 'innovations',
-        importance: 'high',
+        section: 'innovations' as const,
+        importance: 'high' as const,
         date: '2026-05-25T12:00:00Z',
         linkText: 'Read More'
       }

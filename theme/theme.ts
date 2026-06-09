@@ -146,6 +146,22 @@ export const getTheme = (mode: 'light' | 'dark', tenantId: string = 'food') => {
             paddingRight: 8,
           }
         }
+      },
+      MuiBackdrop: {
+        styleOverrides: {
+          root: {
+            backdropFilter: 'blur(8px)',
+            backgroundColor: 'rgba(0, 0, 0, 0.4)',
+          }
+        }
+      },
+      MuiDialog: {
+        styleOverrides: {
+          paper: {
+            borderRadius: 24,
+            backgroundImage: 'none',
+          }
+        }
       }
     },
   });

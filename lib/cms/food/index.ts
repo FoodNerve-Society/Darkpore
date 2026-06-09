@@ -1,5 +1,5 @@
 import { TenantConfig } from '../types';
-import { foodBottlenecks } from './bottlenecks';
+import { foodChallenges } from './challenges';
 
 export const foodTenantConfig: TenantConfig = {
   name: 'Food Nerve',
@@ -76,10 +76,10 @@ export const foodTenantConfig: TenantConfig = {
   },
   com: {
     homepage: {
-      heroHeadline: "Architecting the African Agritech Ecosystem.",
-      heroSubheadline: "We are engineering the future of African food systems. Choose your biggest Bottleneck below to find solutions, capital, and the people solving it.",
-      bottlenecksTitle: "The 7 Bottlenecks (Pain Points)",
-      bottlenecks: foodBottlenecks,
+      heroHeadline: "Showcasing Food Innovation.",
+      heroSubheadline: "Explore the latest breakthroughs, research, and infrastructure projects across the agricultural value chain. Equip yourself with the insights needed to make informed decisions and shape the future of our food space.",
+      challengesTitle: "Africa's Structural Bottlenecks",
+      challenges: foodChallenges,
       showcaseProjects: [
         {
           title: "Project Oasis: 10,000 Hectare Mapping",
@@ -99,10 +99,24 @@ export const foodTenantConfig: TenantConfig = {
   org: {
     homepage: {
       title: 'Food Nerve Society',
-      heroHeadline: 'Connect. Build. Scale.',
-      heroSubheadline: 'Join the premier ecosystem of agritech innovators solving Africa’s biggest food challenges.',
-      ctaText: 'Join the Society',
+      heroHeadline: 'Welcome to the Food Nerve Society',
+      heroSubheadline: 'We are the independent food systems community of the Global South, dedicated to advancing knowledge, collaboration, and innovation in food, energy, health and media for the benefit of Humankind.',
+      ctaText: 'Join the Community',
       aboutLinkText: 'Learn more about our mission',
+      featuredSlideshow: [
+        {
+          image: 'https://images.unsplash.com/photo-1556157382-97eda2d62296?q=80&w=800&auto=format&fit=crop',
+          tag: 'Global Network',
+          title: 'New Pioneers 2026',
+          description: 'Over 90 outstanding operators from across the world have this year joined the Society, strengthening the global architecture of our food systems.'
+        },
+        {
+          image: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=800&auto=format&fit=crop',
+          tag: 'Live Event',
+          title: 'The Agritech Summit',
+          description: 'Founders gather to discuss the deployment of robust infrastructure across the Global South.'
+        }
+      ],
     },
     about: {
       title: 'About Food Nerve',

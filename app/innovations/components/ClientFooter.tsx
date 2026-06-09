@@ -15,7 +15,7 @@ export default function ClientFooter({ tenantName, tenantDomain, orgDomain }: { 
   };
 
   const navLinks = [
-    { label: 'The Bottlenecks', path: '/bottlenecks' },
+    { label: 'The Challenges', path: '/challenges' },
     { label: 'Active Innovations', path: '/projects' },
     { label: 'Knowledge Center', path: '/learn' },
     { label: 'Our People', path: '/people' },
@@ -46,7 +46,7 @@ export default function ClientFooter({ tenantName, tenantDomain, orgDomain }: { 
         <Grid container spacing={{ xs: 6, md: 4 }} sx={{ mb: 8 }}>
           
           {/* Column 1: Brand & Mission */}
-          <Grid item xs={12} md={5}>
+          <Grid size={{ xs: 12, md: 5 }}>
             <Box sx={{ pr: { xs: 0, md: 6 } }}>
               <Typography variant="h5" sx={{ 
                 fontWeight: 900, 
@@ -62,7 +62,7 @@ export default function ClientFooter({ tenantName, tenantDomain, orgDomain }: { 
                 color: 'rgba(255,255,255,0.5)',
                 mb: 4
               }}>
-                The {tenantName} ecosystem is an open, decentralized initiative deploying capital and technology to solve Africa's most pressing infrastructure bottlenecks. We back builders, researchers, and innovators.
+                The {tenantName} ecosystem is an open, decentralized initiative deploying capital and technology to solve Africa's most pressing infrastructure challenges. We back builders, researchers, and innovators.
               </Typography>
               
               <Box sx={{ display: 'flex', gap: 2 }}>
@@ -89,7 +89,7 @@ export default function ClientFooter({ tenantName, tenantDomain, orgDomain }: { 
           </Grid>
 
           {/* Column 2: Platform Links */}
-          <Grid item xs={6} sm={4} md={2}>
+          <Grid size={{ xs: 6, sm: 4, md: 2 }}>
             <Typography variant="overline" sx={{ 
               color: 'rgba(255,255,255,0.3)', 
               fontWeight: 900, 
@@ -118,7 +118,7 @@ export default function ClientFooter({ tenantName, tenantDomain, orgDomain }: { 
           </Grid>
 
           {/* Column 3: Society Links */}
-          <Grid item xs={6} sm={4} md={2}>
+          <Grid size={{ xs: 6, sm: 4, md: 2 }}>
             <Typography variant="overline" sx={{ 
               color: 'rgba(255,255,255,0.3)', 
               fontWeight: 900, 
@@ -130,13 +130,13 @@ export default function ClientFooter({ tenantName, tenantDomain, orgDomain }: { 
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <a href={`https://${orgDomain}`} style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 500, transition: 'color 0.2s' }} onMouseEnter={(e) => (e.currentTarget.style.color = 'white')} onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.5)')}>About Society OS</a>
-              <a href={`https://${orgDomain}/login`} style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 500, transition: 'color 0.2s' }} onMouseEnter={(e) => (e.currentTarget.style.color = 'white')} onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.5)')}>Member Login</a>
+              <Link href="/join" style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 500, transition: 'color 0.2s' }} onMouseEnter={(e) => (e.currentTarget.style.color = 'white')} onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.5)')}>Member Login</Link>
               <a href={`https://${orgDomain}/register`} style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 500, transition: 'color 0.2s' }} onMouseEnter={(e) => (e.currentTarget.style.color = 'white')} onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.5)')}>Apply for Access</a>
             </Box>
           </Grid>
 
           {/* Column 4: Disclaimer */}
-          <Grid item xs={12} sm={4} md={3}>
+          <Grid size={{ xs: 12, sm: 4, md: 3 }}>
             <Box sx={{ 
               p: 3, 
               bgcolor: 'rgba(255,255,255,0.02)', 

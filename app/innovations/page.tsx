@@ -1,14 +1,18 @@
 import React from 'react';
-import { Box, Container, Typography, Grid, Card, CardContent, CardMedia, Button, CardActionArea, Chip } from '@mui/material';
+import { Box, Container, Typography, Grid, Card, CardContent, CardMedia, Button, CardActionArea, Chip, alpha } from '@mui/material';
 import Link from 'next/link';
 import { headers } from 'next/headers';
 import { getTenantConfig } from '@/lib/cms';
 import { getKnowledgeMaterials } from '@/lib/db/knowledge';
 import KnowledgeTeaser from './components/KnowledgeTeaser';
 import ShowcaseCarousel from './components/ShowcaseCarousel';
+import BentoGridTeaser from './components/BentoGridTeaser';
+import CinematicHero from './components/CinematicHero';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import { getChallengeUpdatesBySubcategories } from '@/lib/actions/db';
+import PremiumButton from '@/components/PremiumButton';
 
 export default async function InnovationsHomepage() {
   const headersList = await headers();
@@ -17,11 +21,33 @@ export default async function InnovationsHomepage() {
   const tenant = getTenantConfig(tenantId);
   const homepageConfig = tenant.com.homepage;
 
-  // Gather recent high-priority updates across all bottlenecks for the marquee
-  const marqueeItems = homepageConfig.bottlenecks
-    .flatMap(b => b.updates.map(u => ({ ...u, bottleneckTitle: b.title, bottleneckId: b.id })))
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 12);
+  // Gather all subcategory IDs to fetch coherent data matching the challenge pages
+  const allSubcatIds: string[] = [];
+  const subcatToChallengeMap: Record<string, { id: string, title: string }> = {};
+  
+  homepageConfig.challenges.forEach(b => {
+    (b.subcategories || []).forEach(s => {
+      allSubcatIds.push(s.id);
+      subcatToChallengeMap[s.id] = { id: b.id, title: b.title };
+    });
+  });
+
+  const rawUpdates = await getChallengeUpdatesBySubcategories(allSubcatIds);
+  
+  let marqueeItems = rawUpdates.map((u: any) => ({
+    ...u,
+    challengeTitle: subcatToChallengeMap[u.subcategoryId]?.title || 'Global Alert',
+    challengeId: subcatToChallengeMap[u.subcategoryId]?.id || 'global'
+  }));
+
+  if (marqueeItems.length === 0) {
+    marqueeItems = [
+      { challengeTitle: '1. Land', challengeId: 'land', subcategoryId: 'third-party-mortgage', section: 'innovations', title: 'New Agritech Hub Launched in Nairobi', date: new Date().toISOString(), importance: 'high' },
+      { challengeTitle: '3. Inputs', challengeId: 'inputs', subcategoryId: 'improved-crop-breeding', section: 'community', title: 'Seed Distribution Network Expands to 50k Farmers', date: new Date().toISOString(), importance: 'medium' },
+      { challengeTitle: '4. Energy', challengeId: 'energy', subcategoryId: 'storage-refrigeration', section: 'library', title: 'Research Report: Cold Chain Innovations in East Africa', date: new Date().toISOString(), importance: 'high' },
+      { challengeTitle: '6. Post-Harvest Loss', challengeId: 'loss', subcategoryId: 'tomato', section: 'livestreams', title: 'Commodity Trading Strategies Masterclass', date: new Date().toISOString(), importance: 'low' },
+    ];
+  }
 
   // Fetch recent learning materials from the simulated database
   const recentIntelligence = await getKnowledgeMaterials({
@@ -32,98 +58,30 @@ export default async function InnovationsHomepage() {
   console.log("SERVER LOG - Normalized Tenant ID:", tenantId);
   console.log("SERVER LOG - Recent Intelligence count:", recentIntelligence.length);
 
-  // Pick a few bottlenecks for the teaser (we will just use all of them)
-  const allBottlenecks = homepageConfig.bottlenecks;
+  // Pick a few challenges for the teaser (we will just use all of them)
+  const allChallenges = homepageConfig.challenges;
+
+  // Extract images for the hero slideshow
+  const heroSlideshowImages = allChallenges.map(c => c.imageUrl).filter(Boolean);
 
   return (
     <Box sx={{ bgcolor: 'background.default' }}>
       
       {/* ═══════════════════════════════════════════════════════════
           SECTION 1: THE CINEMATIC HERO
-          Full viewport, no buttons — just the message and a scroll indicator
+          Full viewport, animated, glowing orbs, stats cards
       ═══════════════════════════════════════════════════════════ */}
-      <Box sx={{ 
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        position: 'relative',
-        color: 'primary.contrastText', 
-        overflow: 'hidden',
-        bgcolor: 'primary.main',
-        backgroundImage: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.3) 100%)',
-      }}>
-        {/* Ambient light effects */}
-        <Box sx={{
-          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'radial-gradient(ellipse at 25% 40%, rgba(255,255,255,0.12) 0%, transparent 50%), radial-gradient(ellipse at 75% 70%, rgba(0,0,0,0.25) 0%, transparent 50%)',
-          zIndex: 1,
-        }} />
-        
-        <Container maxWidth="md" sx={{ position: 'relative', zIndex: 2, textAlign: 'center', px: { xs: 3, md: 2 } }}>
-          <Typography 
-            variant="overline" 
-            sx={{ 
-              color: 'rgba(255,255,255,0.5)', 
-              fontWeight: 700, 
-              letterSpacing: 4, 
-              mb: 4, 
-              display: 'block',
-              fontSize: '0.85rem',
-            }}
-          >
-            {tenant.name.toUpperCase()}
-          </Typography>
-          <Typography 
-            variant="h1" 
-            sx={{ 
-              fontWeight: 900, 
-              textShadow: '0 4px 30px rgba(0,0,0,0.3)', 
-              mb: 4,
-              fontSize: { xs: '2.5rem', md: '4rem' },
-              lineHeight: 1.1,
-            }}
-          >
-            {homepageConfig.heroHeadline}
-          </Typography>
-          <Typography 
-            variant="h5" 
-            sx={{ 
-              fontWeight: 400, 
-              opacity: 0.85, 
-              mb: 0, 
-              textShadow: '0 2px 15px rgba(0,0,0,0.15)', 
-              lineHeight: 1.7,
-              maxWidth: '700px',
-              mx: 'auto',
-            }}
-          >
-            {homepageConfig.heroSubheadline}
-          </Typography>
-        </Container>
-
-        {/* Scroll indicator */}
-        <Box sx={{ 
-          position: 'absolute', 
-          bottom: { xs: 30, md: 50 }, 
-          left: '50%', 
-          transform: 'translateX(-50%)',
-          zIndex: 2,
-          textAlign: 'center',
-          animation: 'bounce 2s infinite',
-          '@keyframes bounce': {
-            '0%, 20%, 50%, 80%, 100%': { transform: 'translateX(-50%) translateY(0)' },
-            '40%': { transform: 'translateX(-50%) translateY(-12px)' },
-            '60%': { transform: 'translateX(-50%) translateY(-6px)' },
-          },
-        }}>
-          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.4)', letterSpacing: 3, textTransform: 'uppercase', display: 'block', mb: 1 }}>
-            Scroll to explore
-          </Typography>
-          <KeyboardArrowDownIcon sx={{ color: 'rgba(255,255,255,0.4)', fontSize: 32 }} />
-        </Box>
-      </Box>
+      <CinematicHero 
+        tenantName={tenant.name}
+        headline={homepageConfig.heroHeadline}
+        subheadline={homepageConfig.heroSubheadline}
+        stats={{
+          activeSolutions: rawUpdates.length > 0 ? rawUpdates.length : 142,
+          totalCapital: `$${rawUpdates.length > 0 ? (rawUpdates.length * 0.8).toFixed(1) : '24.5'}M`,
+          communitySize: `${recentIntelligence.length > 0 ? recentIntelligence.length * 625 : '12,500'}+`
+        }}
+        slideshowImages={heroSlideshowImages}
+      />
 
 
       {/* ═══════════════════════════════════════════════════════════
@@ -141,7 +99,7 @@ export default async function InnovationsHomepage() {
         <Box sx={{ display: 'flex', alignItems: 'center', px: 4, mb: 2 }}>
           <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#ff4444', mr: 1.5, animation: 'pulse 2s infinite', '@keyframes pulse': { '0%, 100%': { opacity: 1 }, '50%': { opacity: 0.4 } } }} />
           <Typography variant="overline" sx={{ color: 'rgba(255,255,255,0.4)', fontWeight: 700, letterSpacing: 3 }}>
-            LIVE UPDATES
+            GLOBAL ALERTS
           </Typography>
         </Box>
         
@@ -156,55 +114,103 @@ export default async function InnovationsHomepage() {
           width: 'max-content',
         }}>
           {/* Double the items for seamless infinite loop */}
-          {[...marqueeItems, ...marqueeItems].map((item, idx) => (
-            <Link key={idx} href={`/${item.bottleneckId}/${item.section}`} passHref style={{ textDecoration: 'none', flexShrink: 0 }}>
-              <Box sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: 2, 
-                mr: 6,
-                px: 3,
-                py: 1.5,
-                borderRadius: 3,
-                bgcolor: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.06)',
-                transition: 'all 0.2s',
-                cursor: 'pointer',
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.15)' },
-                minWidth: 320,
+          {[...marqueeItems, ...marqueeItems].map((item, idx) => {
+            const eventDate = new Date(item.date);
+            const today = new Date();
+            
+            // Heuristic for time-sensitive language
+            const isToday = eventDate.toDateString() === today.toDateString();
+            const isFuture = eventDate > today;
+            
+            let statusLabel = "POSTED";
+            let statusValue = eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            let statusColor = "rgba(255,255,255,0.4)";
+            let valueColor = "rgba(255,255,255,0.7)";
+
+            if (item.section === 'livestreams' || item.section === 'activities') {
+              if (isToday || item.importance === 'high') {
+                statusLabel = "HAPPENING";
+                statusValue = "LIVE NOW";
+                statusColor = "#00e676";
+                valueColor = "#00e676";
+              } else if (isFuture) {
+                statusLabel = "STARTS";
+                statusColor = "#ff9933";
+                valueColor = "white";
+              }
+            } else if (item.section === 'jobs' || item.section === 'community') {
+              if (isFuture || item.importance === 'high') {
+                statusLabel = "CLOSES BY";
+                statusColor = "#ff9933";
+                valueColor = "white";
+              }
+            } else if (item.importance === 'high') {
+               statusLabel = "ACTION REQ";
+               statusColor = "#ff4444";
+               valueColor = "white";
+            }
+
+            return (
+              <Box key={idx} sx={{ 
+                position: 'relative',
+                background: 'linear-gradient(90deg, rgba(10,10,10,0.85) 0%, rgba(20,20,20,0.2) 100%)',
+                backdropFilter: 'blur(8px)',
+                borderRight: '1px solid rgba(255,255,255,0.05)',
+                borderBottom: `2px solid ${statusColor}`,
+                transition: 'all 0.3s cubic-bezier(.4,0,.2,1)',
+                '&:hover': {
+                  background: 'linear-gradient(90deg, rgba(20,20,20,0.95) 0%, rgba(30,30,30,0.3) 100%)',
+                },
+                mr: 3,
+                display: 'flex',
+                alignItems: 'center',
+                height: 64,
+                pr: 4,
+                pl: 3,
               }}>
-                <Chip 
-                  label={item.bottleneckTitle} 
-                  size="small" 
-                  sx={{ 
-                    bgcolor: 'rgba(255,255,255,0.1)', 
-                    color: 'rgba(255,255,255,0.7)', 
-                    fontWeight: 700,
-                    fontSize: '0.65rem',
-                    height: 22,
-                  }} 
-                />
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography variant="body2" sx={{ color: 'white', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {item.title}
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.35)' }}>
-                    {item.section.toUpperCase()} · {new Date(item.date).toLocaleDateString()}
-                  </Typography>
-                </Box>
-                {item.importance === 'high' && (
-                  <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#ff4444', flexShrink: 0 }} />
-                )}
+                <Link href={`/${item.challengeId}/${item.subcategoryId}/${item.section}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', width: '100%', gap: 16 }}>
+                  
+                  {/* Glowing Icon Hexagon */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0, mr: 1 }}>
+                    <Box sx={{ 
+                       width: 16, height: 16, bgcolor: statusColor, 
+                       clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
+                       boxShadow: `0 0 12px ${statusColor}`,
+                       animation: (statusLabel === 'HAPPENING' || statusLabel === 'ACTION REQ') ? 'urgentPulse 2s ease-in-out infinite' : 'none',
+                    }} />
+                  </Box>
+
+                  {/* Status & Title Stack */}
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.2 }}>
+                    <Typography variant="caption" sx={{ color: statusColor, fontWeight: 900, letterSpacing: 1.5, fontSize: '0.6rem', whiteSpace: 'nowrap', textTransform: 'uppercase' }}>
+                       {statusLabel === 'POSTED' ? 'NEW' : statusLabel} <span style={{ color: 'rgba(255,255,255,0.5)', margin: '0 4px' }}>//</span> <span style={{ color: valueColor, fontWeight: 600 }}>{statusValue}</span>
+                    </Typography>
+                    <Typography variant="body1" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 700, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: { xs: 200, sm: 300, md: 400, lg: 500 } }}>
+                      {item.title}
+                    </Typography>
+                  </Box>
+
+                  {/* Context Text */}
+                  <Box sx={{ ml: 4, flexShrink: 0, borderLeft: '1px solid rgba(255,255,255,0.1)', pl: 2.5, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <Typography sx={{ color: 'rgba(255,255,255,0.3)', fontWeight: 800, fontSize: '0.5rem', letterSpacing: 1, mb: 0.2 }}>
+                      CHALLENGE
+                    </Typography>
+                    <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 600, fontSize: '0.65rem', letterSpacing: 1, textTransform: 'uppercase' }}>
+                      {item.challengeTitle.replace(/^\d+\.\s*/, '')}
+                    </Typography>
+                  </Box>
+
+                </Link>
               </Box>
-            </Link>
-          ))}
+            );
+          })}
         </Box>
       </Box>
 
 
       {/* ═══════════════════════════════════════════════════════════
-          SECTION 3: THE BOTTLENECKS TEASER
-          Dark manifesto excerpt + premium bottleneck cards
+          SECTION 3: THE CHALLENGES TEASER
+          Dark manifesto excerpt + premium challenge cards
       ═══════════════════════════════════════════════════════════ */}
       <Box sx={{ 
         pt: { xs: 12, md: 18 }, 
@@ -226,68 +232,30 @@ export default async function InnovationsHomepage() {
         <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
           <Box sx={{ maxWidth: '800px', mb: 10 }}>
             <Typography variant="overline" sx={{ color: 'error.main', fontWeight: 900, letterSpacing: 3, mb: 3, display: 'block' }}>
-              THE BOTTLENECKS
+              THE CHALLENGES
             </Typography>
             <Typography variant="h2" sx={{ fontWeight: 900, mb: 4, lineHeight: 1.1, letterSpacing: '-0.02em' }}>
               We mapped the supply chain to isolate exact points of failure.
             </Typography>
             <Typography variant="h5" sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 400, lineHeight: 1.7 }}>
-              These are not random problems. They are the systemic infrastructure deficits that prevent scale across the African {tenantId} sector. Each one has a dedicated dashboard with active solutions.
+              Keep scrolling to explore the systemic infrastructure deficits preventing scale. Each one has a dedicated dashboard with active solutions.
             </Typography>
           </Box>
 
-          <Grid container spacing={4}>
-            {allBottlenecks.map((b) => (
-              <Grid item xs={12} sm={6} md={4} key={b.id}>
-                <Link href={`/${b.id}`} passHref style={{ textDecoration: 'none' }}>
-                  <Card sx={{ 
-                    height: '100%',
-                    bgcolor: 'rgba(20, 20, 20, 0.6)',
-                    backdropFilter: 'blur(20px)',
-                    border: '1px solid rgba(255,255,255,0.05)',
-                    borderRadius: 5,
-                    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    '&::before': {
-                      content: '""', position: 'absolute', top: 0, left: 0, width: '100%', height: '4px',
-                      background: 'linear-gradient(90deg, #ff3366, #ff9933)', opacity: 0.5, transition: 'all 0.4s'
-                    },
-                    '&:hover': { 
-                      bgcolor: 'rgba(30, 30, 30, 0.8)', 
-                      borderColor: 'rgba(255,255,255,0.15)',
-                      transform: 'translateY(-10px)',
-                      boxShadow: '0 30px 60px rgba(0,0,0,0.6)',
-                    },
-                    '&:hover::before': { opacity: 1, height: '6px' }
-                  }}>
-                    <CardActionArea sx={{ p: { xs: 4, md: 5 }, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                      <Typography variant="h4" sx={{ fontWeight: 800, color: 'white', mb: 3, letterSpacing: '-0.01em' }}>
-                        {b.title}
-                      </Typography>
-                      <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.5)', flexGrow: 1, lineHeight: 1.7 }}>
-                        {b.desc}
-                      </Typography>
-                      <Box sx={{ mt: 4, px: 2, py: 1, borderRadius: 8, bgcolor: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', color: 'primary.light', fontWeight: 'bold', fontSize: '0.85rem' }}>
-                        View Dashboard <ArrowForwardIcon sx={{ ml: 1, fontSize: 16 }} />
-                      </Box>
-                    </CardActionArea>
-                  </Card>
-                </Link>
-              </Grid>
-            ))}
-          </Grid>
+          <Box sx={{ mt: 6 }}>
+            <BentoGridTeaser challenges={allChallenges} />
+          </Box>
 
-          <Box sx={{ mt: 10, textAlign: 'center' }}>
-            <Link href="/bottlenecks" passHref style={{ textDecoration: 'none' }}>
-              <Button 
+          <Box sx={{ mt: 10, textAlign: 'center', position: 'relative', zIndex: 2 }}>
+            <Link href="/challenges" passHref style={{ textDecoration: 'none' }}>
+              <PremiumButton 
                 variant="outlined" 
-                size="large" 
+                size="large"
+                baseColor="white"
                 endIcon={<ArrowForwardIcon />}
                 sx={{ 
                   color: 'white', 
                   borderColor: 'rgba(255,255,255,0.15)', 
-                  borderRadius: 8, 
                   px: 6, 
                   py: 2,
                   fontSize: '1rem',
@@ -295,8 +263,8 @@ export default async function InnovationsHomepage() {
                   '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.1)', boxShadow: '0 0 20px rgba(255,255,255,0.2)' },
                 }}
               >
-                See all {homepageConfig.bottlenecks.length} Bottlenecks
-              </Button>
+                See all {homepageConfig.challenges.length} Challenges
+              </PremiumButton>
             </Link>
           </Box>
         </Container>
@@ -365,14 +333,13 @@ export default async function InnovationsHomepage() {
           <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.5)', mb: 6, lineHeight: 1.7, maxWidth: '600px', mx: 'auto', fontWeight: 400 }}>
             {tenant.name}.com is just the public registry. The real work — deal rooms, trade floors, live operations — happens inside Society OS.
           </Typography>
-          <a href={`https://${tenantId}nerve.org/login`} style={{ textDecoration: 'none' }}>
-            <Button 
-              variant="contained" 
+          <Link href="/join" style={{ textDecoration: 'none' }}>
+            <PremiumButton 
+              variant="filled" 
               size="large" 
+              baseColor="white"
               sx={{ 
-                bgcolor: 'white', 
                 color: '#0a0a0a', 
-                borderRadius: 8, 
                 px: 6, 
                 py: 2, 
                 fontSize: '1.1rem',
@@ -382,8 +349,8 @@ export default async function InnovationsHomepage() {
               }}
             >
               Join the {tenant.name} Society
-            </Button>
-          </a>
+            </PremiumButton>
+          </Link>
         </Container>
       </Box>
 

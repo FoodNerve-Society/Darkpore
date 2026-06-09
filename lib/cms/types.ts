@@ -1,3 +1,10 @@
+export type FeaturedSlide = {
+  image: string;
+  tag: string;
+  title: string;
+  description: string;
+};
+
 export type ElaboratePalette = {
   primary: { main: string; };
   secondary: { main: string; };
@@ -11,18 +18,18 @@ export type ElaboratePalette = {
   };
 };
 
-export type BottleneckUpdate = {
+export type ChallengeUpdate = {
   id: string;
   title: string;
   summary: string;
-  section: 'innovations' | 'community' | 'activities' | 'livestreams' | 'jobs' | 'learn';
+  section: 'innovations' | 'community' | 'activities' | 'livestreams' | 'jobs' | 'learn' | 'library';
   importance: 'high' | 'normal';
   date: string;
   linkText: string;
   externalLink?: string; // If it links out entirely
 };
 
-export type BottleneckSection = {
+export type ChallengeSection = {
   title: string;
   content: string;
   lockedContent?: {
@@ -69,23 +76,34 @@ export type Person = {
   highlights?: PersonHighlight[];
 };
 
-export type BottleneckData = {
+export type SubcategoryData = {
+  id: string;
+  title: string;
+  groupName?: string;
+  desc: string;
+  longDesc?: string;
+  imageUrl: string;
+  stats?: { activeSolutions: number; capitalDeployed: string; communitySize: string; };
+  updates: ChallengeUpdate[];
+  learningMaterials: LearningMaterial[];
+  sections: {
+    innovations: ChallengeSection;
+    library: ChallengeSection;
+    community: ChallengeSection;
+    activities: ChallengeSection;
+    livestreams: ChallengeSection;
+    jobs: ChallengeSection;
+  };
+};
+
+export type ChallengeData = {
   id: string;
   title: string;
   desc: string; // Short description for the homepage grid
-  longDesc: string; // Long description for the Bottleneck page hero
-  imageUrl: string; // Cover image for the bottleneck
+  longDesc: string; // Long description for the Challenge page hero
+  imageUrl: string; // Cover image for the challenge
   stats: { activeSolutions: number; capitalDeployed: string; communitySize: string; };
-  updates: BottleneckUpdate[];
-  learningMaterials: LearningMaterial[];
-  sections: {
-    innovations: BottleneckSection;
-    library: BottleneckSection;
-    community: BottleneckSection;
-    activities: BottleneckSection;
-    livestreams: BottleneckSection;
-    jobs: BottleneckSection;
-  };
+  subcategories: SubcategoryData[];
 };
 
 export type TenantConfig = {
@@ -100,8 +118,8 @@ export type TenantConfig = {
     homepage: {
       heroHeadline: string;
       heroSubheadline: string;
-      bottlenecksTitle: string;
-      bottlenecks: BottleneckData[];
+      challengesTitle: string;
+      challenges: ChallengeData[];
       showcaseProjects: {
         title: string;
         desc: string;
@@ -117,6 +135,7 @@ export type TenantConfig = {
       heroSubheadline: string;
       ctaText: string;
       aboutLinkText: string;
+      featuredSlideshow: FeaturedSlide[];
     };
     about: {
       title: string;

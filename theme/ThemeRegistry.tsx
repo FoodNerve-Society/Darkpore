@@ -46,8 +46,8 @@ const globalScrollbarStyles = (theme: Theme) => ({
 });
 
 // --- THE DEFINITIVE THEME REGISTRY COMPONENT ---
-export default function ThemeRegistry({ children, initialTenant = 'food' }: { children: React.ReactNode, initialTenant?: string }) {
-  const [mode, setMode] = useState<'light' | 'dark'>('light');
+export default function ThemeRegistry({ children, initialTenant = 'food', initialMode = 'light' }: { children: React.ReactNode, initialTenant?: string, initialMode?: 'light' | 'dark' }) {
+  const [mode, setMode] = useState<'light' | 'dark'>(initialMode);
 
   const toggleTheme = () => {
     setMode((prevMode) => (prevMode === 'light' ? 'dark' : 'light'));

@@ -12,14 +12,12 @@ export default async function InnovationsLayout({ children }: { children: React.
   const tenantId = headersList.get('x-tenant-id') || 'food';
 
   return (
-    <html lang="en" className={`${playfairDisplay.variable} ${eduNswActFoundation.variable} ${dosis.variable} ${quicksand.variable} ${ysabeauInfant.variable}`}>
-      <body>
+    <>
         <ThemeRegistry initialTenant={tenantId}>
           <Navbar />
           {children}
           <Footer />
         </ThemeRegistry>
-      </body>
-    </html>
+    </>
   );
 }

@@ -26,15 +26,13 @@ const ysabeau = Ysabeau_Infant({
 
 export default function DarkporeLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className={`${playfair.variable} ${dosis.variable} ${quicksand.variable} ${ysabeau.variable} ${styles.body}`}>
+    <div className={`${playfair.variable} ${dosis.variable} ${quicksand.variable} ${ysabeau.variable} ${styles.body}`}>
         <GravityCanvas />
         <Navbar />
         <main className={styles.mainContainer}>
           {children}
         </main>
         <Footer />
-      </body>
-    </html>
+    </div>
   );
 }

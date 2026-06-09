@@ -5,6 +5,8 @@ import { Box, Typography, Grid, Chip, Button, IconButton } from '@mui/material';
 import Link from 'next/link';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import PremiumButton from '@/components/PremiumButton';
+import PremiumChip from '@/components/PremiumChip';
 
 export default function ShowcaseCarousel({ projects }: { projects: any[] }) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -114,23 +116,30 @@ export default function ShowcaseCarousel({ projects }: { projects: any[] }) {
                 }} />
                 {/* Content */}
                 <Box sx={{ position: 'relative', zIndex: 2, p: { xs: 4, md: 6 }, width: '100%' }}>
-                  <Grid container spacing={4} alignItems="flex-end">
-                    <Grid item xs={12} md={7}>
-                      <Chip label={idx === 0 ? 'FLAGSHIP' : 'ACTIVE'} size="small" sx={{ bgcolor: idx === 0 ? 'error.main' : 'primary.main', color: 'white', fontWeight: 'bold', mb: 2, letterSpacing: 1 }} />
+                  <Grid container spacing={4} sx={{ alignItems: 'flex-end' }}>
+                    <Grid size={{ xs: 12, md: 7 }}>
+                      <PremiumChip 
+                        variant="filled" 
+                        glow={true}
+                        baseColor={idx === 0 ? '#ff4444' : '#1b5e20'}
+                        label={idx === 0 ? 'FLAGSHIP' : 'ACTIVE'} 
+                        size="small" 
+                        sx={{ mb: 2, letterSpacing: 1 }} 
+                      />
                       <Typography variant="h3" sx={{ fontWeight: 900, mb: 2, lineHeight: 1.1 }}>
                         {project.title}
                       </Typography>
                       <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.75)', fontWeight: 400, lineHeight: 1.6, mb: 4, maxWidth: 500 }}>
                         {project.desc}
                       </Typography>
-                      <Button variant="contained" size="large" endIcon={<ArrowForwardIcon />} sx={{
-                        bgcolor: 'white', color: '#0a0a0a', borderRadius: 8, px: 4, py: 1.5, fontWeight: 'bold',
+                      <PremiumButton variant="filled" size="large" baseColor="white" endIcon={<ArrowForwardIcon />} sx={{
+                        color: '#0a0a0a', px: 4, py: 1.5, fontWeight: 'bold',
                         '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' },
                       }}>
                         View Deployment
-                      </Button>
+                      </PremiumButton>
                     </Grid>
-                    <Grid item xs={12} md={5}>
+                    <Grid size={{ xs: 12, md: 5 }}>
                       <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
                         {[
                           { label: 'Minimum to invest', value: idx === 0 ? '$50K' : '$25K' },

@@ -1,23 +1,23 @@
 import { LearningMaterial } from '../cms/types';
 
-// We map materials to a 'bottleneckId' so we know which bottleneck they relate to.
+// We map materials to a 'challengeId' so we know which challenge they relate to.
 export interface DBLearningMaterial extends LearningMaterial {
   id: string; // Database document ID
-  bottleneckId: string;
+  challengeId: string;
   tenantId: string; // 'food', 'energy'
 }
 
 export const mockKnowledgeData: DBLearningMaterial[] = [
   {
     id: 'mat-1',
-    bottleneckId: 'land',
+    challengeId: 'land',
     tenantId: 'food',
     slug: 'how-to-secure-100-hectares',
     title: 'How to Secure a 100-Hectare Lease in 30 Days',
     type: 'article',
     thumbnailUrl: 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=1000&auto=format&fit=crop',
     previewText: 'Securing massive tracts of arable land in Nigeria is notoriously difficult due to fragmented ownership and political red tape. In this blueprint, we break down the exact legal and community frameworks you need...',
-    fullContent: 'Securing massive tracts of arable land in Nigeria is notoriously difficult due to fragmented ownership and political red tape. In this blueprint, we break down the exact legal and community frameworks you need. \n\nFirstly, you must bypass the local government and go straight to the paramount ruler of the community. Offering a 5% equity stake in the farm yield usually bypasses 90% of the bureaucratic bottlenecks. Secondly, you need to engage a specialized Agritech legal firm to draft a MoU that protects you against the Land Use Act revokation clauses. \n\n[This is where the premium content begins] \n\nHere are the 3 specific law firms we use, along with the exact MoU templates you can copy and paste...',
+    fullContent: 'Securing massive tracts of arable land in Nigeria is notoriously difficult due to fragmented ownership and political red tape. In this blueprint, we break down the exact legal and community frameworks you need. \n\nFirstly, you must bypass the local government and go straight to the paramount ruler of the community. Offering a 5% equity stake in the farm yield usually bypasses 90% of the bureaucratic challenges. Secondly, you need to engage a specialized Agritech legal firm to draft a MoU that protects you against the Land Use Act revokation clauses. \n\n[This is where the premium content begins] \n\nHere are the 3 specific law firms we use, along with the exact MoU templates you can copy and paste...',
     isPremium: true,
     dateAdded: '2026-05-20T10:00:00Z',
     author: 'Chief Agronomist',
@@ -25,7 +25,7 @@ export const mockKnowledgeData: DBLearningMaterial[] = [
   },
   {
     id: 'mat-2',
-    bottleneckId: 'land',
+    challengeId: 'land',
     tenantId: 'food',
     slug: 'soil-regeneration-101',
     title: 'Soil Regeneration 101: The Micro-Biome Crash Course',
@@ -39,7 +39,7 @@ export const mockKnowledgeData: DBLearningMaterial[] = [
   },
   {
     id: 'mat-3',
-    bottleneckId: 'land',
+    challengeId: 'land',
     tenantId: 'food',
     slug: 'land-use-act-teardown',
     title: 'The Land Use Act: A Complete Teardown',
@@ -53,7 +53,7 @@ export const mockKnowledgeData: DBLearningMaterial[] = [
   },
   {
     id: 'mat-4',
-    bottleneckId: 'loss',
+    challengeId: 'loss',
     tenantId: 'food',
     slug: 'cold-chain-logistics-report',
     title: 'Cold Chain Logistics in Sub-Saharan Africa',
@@ -67,7 +67,7 @@ export const mockKnowledgeData: DBLearningMaterial[] = [
   },
   {
     id: 'mat-5',
-    bottleneckId: 'capital',
+    challengeId: 'capital',
     tenantId: 'food',
     slug: 'agritech-funding-pitch-deck',
     title: 'How to Build an Agritech Pitch Deck',
@@ -81,7 +81,7 @@ export const mockKnowledgeData: DBLearningMaterial[] = [
   },
   {
     id: 'mat-6',
-    bottleneckId: 'inputs',
+    challengeId: 'inputs',
     tenantId: 'food',
     slug: 'tractor-maintenance-guide',
     title: 'Definitive Guide to Tractor Maintenance',
@@ -96,7 +96,7 @@ export const mockKnowledgeData: DBLearningMaterial[] = [
   },
   {
     id: 'mat-7',
-    bottleneckId: 'loss',
+    challengeId: 'loss',
     tenantId: 'food',
     slug: 'logistics-deep-dive',
     title: 'AI in Logistics: Routing Trucks Efficiently',
@@ -110,7 +110,7 @@ export const mockKnowledgeData: DBLearningMaterial[] = [
   },
   {
     id: 'mat-8',
-    bottleneckId: 'land',
+    challengeId: 'land',
     tenantId: 'food',
     slug: 'soil-nutrient-mapping-report',
     title: 'Soil Nutrient Mapping 2026',
@@ -125,7 +125,7 @@ export const mockKnowledgeData: DBLearningMaterial[] = [
 ];
 
 // Simulated DB queries
-export async function getKnowledgeMaterials(options?: { type?: string; tenantId?: string; bottleneckId?: string; limit?: number }) {
+export async function getKnowledgeMaterials(options?: { type?: string; tenantId?: string; challengeId?: string; limit?: number }) {
   // Simulate network delay
   await new Promise(resolve => setTimeout(resolve, 300));
   
@@ -135,8 +135,8 @@ export async function getKnowledgeMaterials(options?: { type?: string; tenantId?
     result = result.filter(m => m.tenantId === options.tenantId);
   }
   
-  if (options?.bottleneckId) {
-    result = result.filter(m => m.bottleneckId === options.bottleneckId);
+  if (options?.challengeId) {
+    result = result.filter(m => m.challengeId === options.challengeId);
   }
   
   if (options?.type && options.type.toLowerCase() !== 'all') {
