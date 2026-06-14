@@ -292,8 +292,20 @@ export default function SupportPage() {
   }
 
   return (
-    <Box
-      sx={{ p: { xs: 2, md: 4 }, maxWidth: 1200, mx: "auto", pb: 8 }}
+    <Paper
+      elevation={0}
+      sx={{
+        p: { xs: 2, md: 4 },
+        flex: 1,
+        m: { xs: 0, md: 2 },
+        minHeight: { xs: '100vh', md: 'calc(100vh - 32px)' },
+        bgcolor: '#ffffff',
+        borderRadius: { xs: 0, md: 4 },
+        boxShadow: { xs: 'none', md: '0 10px 40px rgba(0,0,0,0.04)' },
+        overflow: 'hidden',
+        boxSizing: 'border-box',
+        pb: 8
+      }}
     >
       {/* ═══════════════════════════════════════════════════
           1. HERO HEADER WITH ANIMATED IMPACT COUNTER
@@ -670,7 +682,7 @@ export default function SupportPage() {
 
       {/* Bottom spacer */}
       <Box sx={{ height: { xs: 24, md: 16 } }} />
-    </Box>
+    </Paper>
   );
 }
 

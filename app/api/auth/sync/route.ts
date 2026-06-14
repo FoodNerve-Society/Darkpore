@@ -37,10 +37,7 @@ export async function POST(request: Request) {
     // Upsert User in Prisma
     const user = await prisma.user.upsert({
       where: { email },
-      update: {
-        avatarUrl: picture || null,
-        name: name || email.split('@')[0], // Fallback name
-      },
+      update: {}, // Do not overwrite user-customized name and avatar on every auth sync
       create: {
         id: uid,
         firebaseUid: uid,

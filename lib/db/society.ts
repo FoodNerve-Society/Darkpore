@@ -123,12 +123,7 @@ export interface SupportCampaign {
   wahaalaCategories?: string[];
 }
 
-export const mockTradeListings: TradeListing[] = [];
-export const mockMarketPrices: MarketPrice[] = [];
-export const mockMembers: SocietyMember[] = [];
-export const mockEvents: MeetEvent[] = [];
-export const mockLearnContent: LearnContent[] = [];
-export const mockCampaigns: SupportCampaign[] = [];
+
 
 export async function getTradeListings(options?: { category?: TradeCategory; limit?: number }) {
   const result = await prisma.tradeListing.findMany({
@@ -210,26 +205,49 @@ export async function getEvents(options?: { limit?: number }) {
 }
 
 export async function getLearnContent(options?: { swimlane?: LearnSwimlane; limit?: number }) {
+  // Map plural swimlane keys to singular Prisma types
+  const typeMap: Record<LearnSwimlane, string> = {
+    livestreams: 'livestream',
+    classes: 'class',
+    videos: 'video',
+    articles: 'article',
+    reports: 'report'
+  };
+
   const result = await prisma.learnContent.findMany({
     where: {
-      ...(options?.swimlane ? { swimlane: options.swimlane } : {})
+      ...(options?.swimlane ? { type: typeMap[options.swimlane] } : {})
     },
     orderBy: { createdAt: 'desc' },
     take: options?.limit
   });
 
-  return JSON.parse(JSON.stringify(result.map((r: any) => ({
-    ...r,
-    author: {
-      name: r.authorName,
-      avatarUrl: r.authorAvatarUrl || '',
-      isVerified: r.isVerified
-    },
-    liveStatus: r.isLive ? 'live' : 'past',
-    tags: [],
-    wahaalaCategories: [],
-    thumbnailUrl: r.thumbnailUrl || ''
-  }))));
+  return JSON.parse(JSON.stringify(result.map((r: any) => {
+    // Reverse map Prisma type back to LearnSwimlane for the UI
+    const swimlaneMap: Record<string, LearnSwimlane> = {
+      livestream: 'livestreams',
+      class: 'classes',
+      video: 'videos',
+      article: 'articles',
+      report: 'reports'
+    };
+    
+    let tags = [];
+    try { tags = JSON.parse(r.bottleneckTags || '[]'); } catch (e) {}
+
+    return {
+      ...r,
+      swimlane: swimlaneMap[r.type] || 'articles',
+      author: {
+        name: r.authorName,
+        avatarUrl: r.authorAvatarUrl || '',
+        isVerified: r.isVerified
+      },
+      tags,
+      wahaalaCategories: [],
+      thumbnailUrl: r.thumbnailUrl || ''
+    };
+  })));
 }
 
 export async function getCampaigns(options?: { tier?: CampaignTier; status?: string; limit?: number }) {

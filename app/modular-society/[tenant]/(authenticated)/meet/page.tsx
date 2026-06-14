@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Box, Typography, Chip, Avatar, Card, CardContent, Stack, Button, TextField, InputAdornment, Badge, Skeleton } from '@mui/material';
+import { Box, Typography, Chip, Avatar, Card, CardContent, Stack, Button, TextField, InputAdornment, Badge, Skeleton, Paper } from '@mui/material';
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSociety, RANK_NAMES, RANK_COLORS, type Challenge, type RankLevel } from '@/context/SocietyContext';
@@ -272,7 +272,20 @@ export default function MeetPage() {
   }
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1200, mx: 'auto' }}>
+    <Paper
+      elevation={0}
+      sx={{
+        p: { xs: 2, md: 4 },
+        flex: 1,
+        m: { xs: 0, md: 2 },
+        minHeight: { xs: '100vh', md: 'calc(100vh - 32px)' },
+        bgcolor: '#ffffff',
+        borderRadius: { xs: 0, md: 4 },
+        boxShadow: { xs: 'none', md: '0 10px 40px rgba(0,0,0,0.04)' },
+        overflow: 'hidden',
+        boxSizing: 'border-box'
+      }}
+    >
       {/* Header */}
       <Box>
         <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.5 }}>
@@ -382,6 +395,6 @@ export default function MeetPage() {
             ))}
         </Box>
       </Box>
-    </Box>
+    </Paper>
   );
 }

@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { auth } from '@/lib/firebase/client';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { User } from 'firebase/auth';
 
 // ============================================================
@@ -59,9 +59,11 @@ export interface GatekeeperFlags {
 export interface Organization {
   id: string;
   name: string;
-  slug: string;
-  role: 'admin' | 'trader' | 'content-creator' | 'viewer';
-  verified: boolean;
+  slug?: string;
+  role: 'admin' | 'trader' | 'content-creator' | 'viewer' | 'editor';
+  verified?: boolean;
+  logoUrl?: string;
+  website?: string;
 }
 
 // ============================================================
@@ -184,6 +186,8 @@ interface SocietyContextType {
   activeOrg: Organization | null;
   switchOrg: (orgId: string | null) => void;
   updateLastActiveTab: (tab: string) => Promise<void>;
+  isUpdatesOpen: boolean;
+  setUpdatesOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const SocietyContext = createContext<SocietyContextType>({
@@ -194,6 +198,8 @@ const SocietyContext = createContext<SocietyContextType>({
   activeOrg: null,
   switchOrg: () => {},
   updateLastActiveTab: async () => {},
+  isUpdatesOpen: false,
+  setUpdatesOpen: () => {},
 });
 
 export const useSociety = () => useContext(SocietyContext);
@@ -206,9 +212,18 @@ export function SocietyProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<SocietyProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isUpdatesOpen, setUpdatesOpen] = useState(false);
   
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
+
+  // Auto-close updates drawer on navigation
+  useEffect(() => {
+    if (pathname !== '/updates' && isUpdatesOpen) {
+      setUpdatesOpen(false);
+    }
+  }, [pathname]);
 
   useEffect(() => {
     // DEV BYPASS REMOVED: We need real auth state and routing.
@@ -272,6 +287,22 @@ export function SocietyProvider({ children }: { children: React.ReactNode }) {
               lifetimeSpentNP: 0,
               onboardingComplete: !!prismaUser.landingPage && !!prismaUser.tabOrder,
               joinedAt: prismaUser.joinedAt,
+              organizations: [
+                {
+                  id: 'org_foodnerve_analytics',
+                  name: 'FoodNerve Analytics',
+                  role: 'admin',
+                  logoUrl: 'https://ui-avatars.com/api/?name=Food+Nerve&background=0f172a&color=fff',
+                  website: 'https://foodnerve.org'
+                },
+                {
+                  id: 'org_darkpore_media',
+                  name: 'Darkpore Media',
+                  role: 'editor',
+                  logoUrl: 'https://ui-avatars.com/api/?name=Dark+Pore&background=ef4444&color=fff',
+                  website: 'https://darkpore.com'
+                }
+              ]
             };
             
             setProfile(mappedProfile);
@@ -365,7 +396,7 @@ export function SocietyProvider({ children }: { children: React.ReactNode }) {
   }, [user, profile, router]);
 
   return (
-    <SocietyContext.Provider value={{ user, profile, loading, needsOnboarding, activeOrg, switchOrg, updateLastActiveTab }}>
+    <SocietyContext.Provider value={{ user, profile, loading, needsOnboarding, activeOrg, switchOrg, updateLastActiveTab, isUpdatesOpen, setUpdatesOpen }}>
       {children}
     </SocietyContext.Provider>
   );

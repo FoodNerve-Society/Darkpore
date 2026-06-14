@@ -55,9 +55,9 @@ export default function ClientNavbar({ tenantName, orgDomain }: { tenantName: st
         display: 'flex', 
         alignItems: 'center', 
         justifyContent: 'space-between',
-        bgcolor: scrolled ? 'rgba(49, 14, 58, 0.95)' : 'rgba(49, 14, 58, 0.4)', // Deep Plum (Complementary to Green)
+        bgcolor: scrolled ? 'rgba(10, 10, 12, 0.85)' : 'rgba(10, 10, 12, 0.4)', // Dark neutral glass
         backdropFilter: 'blur(24px)',
-        borderRadius: scrolled ? 100 : { xs: 3, md: 4 }, // M3 fully rounded floating pill on scroll
+        borderRadius: scrolled ? '16px' : 0, // Rounded only on scroll
         px: { xs: 2, md: 3 },
         py: 1.2,
         border: scrolled ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid rgba(255, 255, 255, 0.08)',
@@ -70,17 +70,17 @@ export default function ClientNavbar({ tenantName, orgDomain }: { tenantName: st
         <Box sx={{ position: 'relative', width: scrolled ? '60px' : '85px', height: '100%', display: 'flex', transition: 'width 0.3s ease' }}>
           <Link href="/" passHref style={{ textDecoration: 'none', position: 'absolute', top: scrolled ? -14 : -16, left: 0, transition: 'top 0.3s ease' }}>
             <Box sx={{
-                bgcolor: scrolled ? '#1b5e20' : '#f1f8e9', /* Shift to brand color when floating */
+                bgcolor: '#f1f8e9', /* Static brand color */
                 px: scrolled ? 1.5 : 1.8, 
                 pt: scrolled ? 2.5 : 3.5, 
                 pb: scrolled ? 0.8 : 1.2,
                 display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-end',
                 boxShadow: scrolled ? '0 6px 20px rgba(0, 0, 0, 0.4)' : '0 10px 30px rgba(0, 0, 0, 0.25)',
-                borderRadius: scrolled ? '0 0 8px 8px' : 0, 
+                borderRadius: 0, 
                 minHeight: scrolled ? '60px' : '85px',
                 transition: 'all 0.4s cubic-bezier(0.2, 0, 0, 1)'
             }}>
-                <Typography variant="h6" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, fontSize: scrolled ? '0.65rem' : '0.9rem', color: scrolled ? 'white' : '#1b5e20', lineHeight: 1, letterSpacing: '-0.02em', textAlign: 'left', transition: 'all 0.4s ease' }}>
+                <Typography variant="h6" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, fontSize: scrolled ? '0.65rem' : '0.9rem', color: '#1b5e20', lineHeight: 1, letterSpacing: '-0.02em', textAlign: 'left', transition: 'all 0.4s ease' }}>
                     {tenantName.split(' ')[0]?.toUpperCase()}<br />{tenantName.split(' ')[1]?.toUpperCase() || ''}
                 </Typography>
             </Box>
@@ -148,8 +148,8 @@ export default function ClientNavbar({ tenantName, orgDomain }: { tenantName: st
         {/* Society Login */}
         <Link href="/join" style={{ textDecoration: 'none', flexShrink: 0 }}>
            <Button variant="contained" size="small" sx={{ 
-              bgcolor: scrolled ? '#1b5e20' : 'white', 
-              color: scrolled ? 'white' : 'black', 
+              bgcolor: 'white', 
+              color: 'black', 
               borderRadius: 100, // M3 Expressive Pill
               px: 3.5, 
               py: 1,
@@ -159,7 +159,7 @@ export default function ClientNavbar({ tenantName, orgDomain }: { tenantName: st
               boxShadow: scrolled ? '0 4px 14px rgba(27, 94, 32, 0.3)' : '0 4px 14px rgba(255, 255, 255, 0.2)',
               transition: 'all 0.3s cubic-bezier(0.2, 0, 0, 1)',
               '&:hover': { 
-                  bgcolor: scrolled ? '#144317' : 'rgba(255,255,255,0.9)',
+                  bgcolor: 'rgba(255,255,255,0.9)',
                   transform: 'scale(1.02)' 
               }
            }}>

@@ -230,7 +230,20 @@ function TradePageContent() {
   const router = useRouter();
 
   return (
-    <Box sx={{ p: { xs: 0, md: 4 }, maxWidth: 1200, mx: "auto" }}>
+    <Paper 
+      elevation={0}
+      sx={{ 
+        p: { xs: 2, md: 4 }, 
+        flex: 1,
+        m: { xs: 0, md: 2 },
+        minHeight: { xs: '100vh', md: 'calc(100vh - 32px)' },
+        bgcolor: '#ffffff',
+        borderRadius: { xs: 0, md: 4 },
+        boxShadow: { xs: 'none', md: '0 10px 40px rgba(0,0,0,0.04)' },
+        overflow: 'hidden',
+        boxSizing: 'border-box'
+      }}
+    >
       {/* Header */}
       <Box sx={{ px: { xs: 2, md: 0 }, pt: { xs: 3, md: 0 }, mb: 4 }}>
         <Typography variant="h4" sx={{ fontWeight: 900, mb: 1, color: "#000" }}>
@@ -287,7 +300,7 @@ function TradePageContent() {
       </Box>
 
       <Box sx={{ height: { xs: 24, md: 16 } }} />
-    </Box>
+    </Paper>
   );
 }
 

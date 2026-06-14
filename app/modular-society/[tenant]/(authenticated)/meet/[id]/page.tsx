@@ -6,7 +6,8 @@ import { Box, Typography, Avatar, Chip, Button, Card, CardContent, Stack, Divide
 
 import { useParams, useRouter } from 'next/navigation';
 import { useSociety, RANK_NAMES, RANK_COLORS, checkGatekeeper, type RankLevel } from '@/context/SocietyContext';
-import { mockMembers, type SocietyMember } from '@/lib/db/society';
+import { type SocietyMember } from '@/lib/db/society';
+import { mockMembers } from '@/lib/db/mocks';
 import VerifiedIcon from '@mui/icons-material/Verified';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import StarIcon from '@mui/icons-material/Star';

@@ -30,11 +30,11 @@ export default function SocietyNavigation() {
                 width: scrolled ? 'calc(100% - 32px)' : '100%',
                 maxWidth: scrolled ? '1200px' : 'none',
                 mx: 'auto',
-                borderRadius: scrolled ? 100 : 0, // M3 fully rounded floating pill
-                background: scrolled ? 'rgba(49, 14, 58, 0.95)' : 'rgba(49, 14, 58, 0.4)', // Deep Plum
+                borderRadius: scrolled ? '16px' : 0,
+                background: scrolled ? 'rgba(255, 255, 255, 0.85)' : 'rgba(255, 255, 255, 0.4)', // Light premium glass
                 backdropFilter: 'blur(24px)',
-                boxShadow: scrolled ? '0 24px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1)' : '0 10px 30px rgba(0,0,0,0.2)',
-                border: scrolled ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid rgba(255, 255, 255, 0.08)',
+                boxShadow: scrolled ? '0 12px 40px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.05)' : '0 10px 30px rgba(0,0,0,0.03)',
+                border: scrolled ? '1px solid rgba(0, 0, 0, 0.05)' : '1px solid rgba(0, 0, 0, 0.02)',
                 transition: 'all 0.4s cubic-bezier(0.2, 0, 0, 1)',
                 zIndex: 1100,
                 px: scrolled ? 1 : 0,
@@ -62,13 +62,13 @@ export default function SocietyNavigation() {
                     <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', pr: scrolled ? 1 : 0, transition: 'padding 0.3s' }}>
                         <Link href="/explore" passHref style={{ textDecoration: 'none' }}>
                             <Button sx={{ 
-                                color: scrolled ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.7)', 
+                                color: 'rgba(0,0,0,0.7)', 
                                 fontWeight: 700, fontSize: '0.9rem', 
                                 textTransform: 'none', borderRadius: 100, px: 2, py: 0.8,
                                 transition: 'all 0.2s', display: { xs: 'none', sm: 'block' },
                                 '&:hover': { 
-                                    color: scrolled ? 'white' : '#1b5e20', 
-                                    bgcolor: scrolled ? 'rgba(255, 255, 255, 0.1)' : 'rgba(27, 94, 32, 0.08)' 
+                                    color: '#1b5e20', 
+                                    bgcolor: 'rgba(27, 94, 32, 0.08)' 
                                 } 
                             }}>
                                 Explore
@@ -76,13 +76,13 @@ export default function SocietyNavigation() {
                         </Link>
                         <Link href="/about" passHref style={{ textDecoration: 'none' }}>
                             <Button sx={{ 
-                                color: scrolled ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.7)', 
+                                color: 'rgba(0,0,0,0.7)', 
                                 fontWeight: 700, fontSize: '0.9rem', 
                                 textTransform: 'none', borderRadius: 100, px: 2, py: 0.8,
                                 transition: 'all 0.2s', display: { xs: 'none', sm: 'block' },
                                 '&:hover': { 
-                                    color: scrolled ? 'white' : '#1b5e20', 
-                                    bgcolor: scrolled ? 'rgba(255, 255, 255, 0.1)' : 'rgba(27, 94, 32, 0.08)' 
+                                    color: '#1b5e20', 
+                                    bgcolor: 'rgba(27, 94, 32, 0.08)' 
                                 } 
                             }}>
                                 Our Story

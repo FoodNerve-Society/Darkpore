@@ -21,11 +21,11 @@ import {
 import { useSociety } from "@/context/SocietyContext";
 import {
   getCampaigns,
-  mockCampaigns,
   type SupportCampaign,
   type CampaignTier,
   type ContributionType,
 } from "@/lib/db/society";
+import { mockCampaigns } from "@/lib/db/mocks";
 import { useParams, useRouter } from "next/navigation";
 
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";

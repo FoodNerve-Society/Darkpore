@@ -163,20 +163,84 @@ model MeetEvent {
 
 model LearnContent {
   id              String   @id @default(cuid())
-  swimlane        String // 'livestreams' | 'classes' | 'videos' | 'articles' | 'reports'
+  slug            String   @unique @default(cuid())
+  type            String   @default("article") // 'livestream' | 'class' | 'video' | 'article' | 'report'
+  bottleneckTags  String   @default("[]") // JSON array of challenge tags (e.g. '["post-harvest-loss", "cold-chain"]')
   title           String
   description     String
   thumbnailUrl    String?
-  authorName      String
+  authorId        String?
+  authorName      String?
   authorAvatarUrl String?
   isVerified      Boolean  @default(false)
-  duration        String?
-  readTime        String?
-  isLive          Boolean  @default(false)
   isPaid          Boolean  @default(false)
   costNP          Int?
-  videoUrl        String?
+  views           Int      @default(0)
+  likes           Int      @default(0)
   createdAt       DateTime @default(now())
+
+  // Relations
+  article    LearnArticle?
+  video      LearnVideo?
+  class      LearnClass?
+  livestream LearnLivestream?
+  report     LearnReport?
+}
+
+model LearnArticle {
+  id             String @id @default(cuid())
+  learnContentId String @unique
+  readTime       String?
+  
+  learnContent LearnContent        @relation(fields: [learnContentId], references: [id], onDelete: Cascade)
+  blocks       LearnArticleBlock[]
+}
+
+model LearnArticleBlock {
+  id         String @id @default(cuid())
+  articleId  String
+  orderIndex Int
+  blockType  String // e.g. 'subheading', 'myth_fact', 'live_poll', 'core_interactive'
+  content    String // JSON stringified payload specific to the blockType
+  
+  article    LearnArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+}
+
+model LearnVideo {
+  id             String @id @default(cuid())
+  learnContentId String @unique
+  videoUrl       String // Cloudinary / R2
+  duration       String?
+  
+  learnContent LearnContent @relation(fields: [learnContentId], references: [id], onDelete: Cascade)
+}
+
+model LearnClass {
+  id             String @id @default(cuid())
+  learnContentId String @unique
+  moduleCount    Int    @default(1)
+  totalDuration  String?
+  
+  learnContent LearnContent @relation(fields: [learnContentId], references: [id], onDelete: Cascade)
+}
+
+model LearnLivestream {
+  id             String @id @default(cuid())
+  learnContentId String @unique
+  streamUrl      String? // Cloudinary Live / Mux / R2
+  isLive         Boolean @default(false)
+  scheduledFor   DateTime?
+  
+  learnContent LearnContent @relation(fields: [learnContentId], references: [id], onDelete: Cascade)
+}
+
+model LearnReport {
+  id             String @id @default(cuid())
+  learnContentId String @unique
+  pdfUrl         String // Cloudflare R2 / Cloudinary
+  pageCount      Int?
+  
+  learnContent LearnContent @relation(fields: [learnContentId], references: [id], onDelete: Cascade)
 }
 
 // ════════════════════════════════════════════════════════

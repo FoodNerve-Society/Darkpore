@@ -25,6 +25,7 @@ import { submitAdminOnboarding } from '@/lib/actions/admin';
 import { motion, AnimatePresence } from 'framer-motion';
 import PremiumTextField from '@/components/PremiumTextField';
 import PremiumAutocomplete from '@/components/PremiumAutocomplete';
+import { useCloudinaryUpload } from '@/hooks/useCloudinaryUpload';
 
 const DEPARTMENTS = [
   'Executive', 'Operations', 'Engineering', 'Marketing', 
@@ -48,6 +49,8 @@ export default function AdminOnboardingModal() {
   const [displayName, setDisplayName] = useState(profile?.displayName || '');
   const [bio, setBio] = useState('');
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatarUrl || '');
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const { uploadToCloudinary, uploading } = useCloudinaryUpload();
   const [department, setDepartment] = useState('');
   const [role, setRole] = useState('');
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -55,9 +58,7 @@ export default function AdminOnboardingModal() {
   // Trigger Logic: 
   // 1. Must be an admin (logged in via password)
   // 2. Must not yet have Apex rank (currentRank < 5)
-  // 3. (Optional) We can ensure they have at least picked their wahaalas so the modals don't overlap.
-  const hasPickedWahaalas = profile?.wahaalas && profile.wahaalas.length > 0;
-  const isPendingAdmin = profile?.isAdmin && hasPickedWahaalas && profile?.currentRank < 5;
+  const isPendingAdmin = profile?.isAdmin && profile?.currentRank < 5;
 
   if (!isPendingAdmin || !user) return null;
 
@@ -76,12 +77,23 @@ export default function AdminOnboardingModal() {
     setLoading(true);
     setSubmitError('');
     try {
+      let finalAvatarUrl = avatarUrl;
+      
+      if (avatarFile) {
+        const uploadResult = await uploadToCloudinary(avatarFile);
+        if (uploadResult && uploadResult.secure_url) {
+          finalAvatarUrl = uploadResult.secure_url;
+        } else {
+          throw new Error("Failed to upload profile picture.");
+        }
+      }
+
       await submitAdminOnboarding(user.uid, {
         displayName,
         role,
         department,
         bio,
-        avatarUrl,
+        avatarUrl: finalAvatarUrl,
       });
       window.location.reload();
     } catch (error: any) {
@@ -217,7 +229,10 @@ export default function AdminOnboardingModal() {
                         <input 
                           hidden accept="image/*" type="file" 
                           onChange={(e) => {
-                            if (e.target.files?.[0]) setAvatarUrl(URL.createObjectURL(e.target.files[0]));
+                            if (e.target.files?.[0]) {
+                              setAvatarFile(e.target.files[0]);
+                              setAvatarUrl(URL.createObjectURL(e.target.files[0]));
+                            }
                           }}
                         />
                       </IconButton>
@@ -332,7 +347,7 @@ export default function AdminOnboardingModal() {
                       Back
                     </Button>
                     <Button
-                      type="submit" fullWidth variant="contained" disabled={loading || !department || !role}
+                      type="submit" fullWidth variant="contained" disabled={loading || uploading || !department || !role}
                       sx={{
                         py: 1.5, borderRadius: 3, fontWeight: 800, fontSize: '0.95rem',
                         letterSpacing: '0.5px', color: 'white',

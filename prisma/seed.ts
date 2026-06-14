@@ -1,9 +1,7 @@
-import { PrismaClient } from '@prisma/client';
-import { mockTradeListings, mockCampaigns, mockLearnContent } from '../lib/db/society';
+import { prisma } from '../lib/db/client';
+import { mockTradeListings, mockCampaigns, mockLearnContent } from '../lib/db/mocks';
 import { foodChallenges } from '../lib/cms/food/challenges';
 import { energyBottlenecks } from '../lib/cms/energy/bottlenecks';
-
-const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Starting database seed...');
@@ -71,13 +69,12 @@ async function main() {
       create: {
         id: item.id,
         title: item.title,
-        swimlane: (item as any).type === 'CLASS' ? 'classes' : (item as any).type === 'LIVESTREAM' ? 'livestreams' : 'videos',
+        type: (item as any).type === 'CLASS' ? 'class' : (item as any).type === 'LIVESTREAM' ? 'livestream' : 'video',
+        bottleneckTags: '[]',
         authorName: typeof item.author === 'string' ? item.author : item.author?.name || (item as any).instructor || (item as any).host || 'Unknown',
         authorAvatarUrl: typeof item.author === 'object' ? item.author.avatarUrl : null,
-        duration: item.duration || null,
         thumbnailUrl: (item as any).thumbnail || null,
         description: item.description || 'Mock description',
-        isLive: (item as any).status === 'live',
         costNP: (item as any).cost || null,
       },
     });

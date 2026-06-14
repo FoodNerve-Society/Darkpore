@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Box, Typography, Card, CardContent, Stack, Button, Avatar, Chip, Divider, LinearProgress, Switch, FormControlLabel, Select, MenuItem } from '@mui/material';
+import { Box, Typography, Card, CardContent, Stack, Button, Avatar, Chip, Divider, LinearProgress, Switch, FormControlLabel, Select, MenuItem, Paper } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import { useSociety, RANK_NAMES, RANK_COLORS, calculateRank, type RankLevel } from '@/context/SocietyContext';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
@@ -120,7 +120,20 @@ export default function ProfilePage() {
   const progress = rank >= 5 ? 100 : ((profile.wallet.lifetimeNP - currentThreshold) / (nextThreshold - currentThreshold)) * 100;
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 900, mx: 'auto' }}>
+    <Paper 
+      elevation={0}
+      sx={{ 
+        p: { xs: 2, md: 4 }, 
+        flex: 1,
+        m: { xs: 0, md: 2 },
+        minHeight: { xs: '100vh', md: 'calc(100vh - 32px)' },
+        bgcolor: '#ffffff',
+        borderRadius: { xs: 0, md: 4 },
+        boxShadow: { xs: 'none', md: '0 10px 40px rgba(0,0,0,0.04)' },
+        overflow: 'hidden',
+        boxSizing: 'border-box'
+      }}
+    >
       {/* Header */}
       <Box>
         <Typography variant="h4" sx={{ fontWeight: 800 }} sx={{ mb: 0.5 }}>Profile</Typography>
@@ -136,7 +149,7 @@ export default function ProfilePage() {
           background: `linear-gradient(135deg, ${RANK_COLORS[rank]}10, #ffffff)`,
         }}>
           <CardContent sx={{ p: 3 }}>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} alignItems={{ sm: 'center' }}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} sx={{ alignItems: { sm: 'center' } }}>
               <Avatar
                 src={profile.avatarUrl}
                 sx={{
@@ -158,7 +171,7 @@ export default function ProfilePage() {
 
                 {/* Rank + Progress */}
                 <Box sx={{ mt: 2 }}>
-                  <Stack direction="row" justifyContent="space-between" sx={{ alignItems: "center" }}>
+                  <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center" }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <EmojiEventsIcon sx={{ color: RANK_COLORS[rank], fontSize: 20 }} />
                       <Typography variant="subtitle2" sx={{ fontWeight: 700 }} sx={{ color: RANK_COLORS[rank] }}>
@@ -191,7 +204,7 @@ export default function ProfilePage() {
         <Box>
           <Card sx={{ ...glassCard, mb: 3 }}>
             <CardContent sx={{ p: 2.5 }}>
-              <Stack direction="row" sx={{ alignItems: "center" }} spacing={1} sx={{ mb: 1.5 }}>
+              <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 1.5 }}>
                 <SwapHorizIcon sx={{ color: 'primary.main' }} />
                 <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Context Switcher</Typography>
               </Stack>
@@ -241,7 +254,7 @@ export default function ProfilePage() {
 
       {/* 4-Tier Wallet */}
       <Box>
-        <Stack direction="row" sx={{ alignItems: "center" }} spacing={1} sx={{ mb: 1.5 }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 1.5 }}>
           <AccountBalanceWalletIcon sx={{ color: 'primary.main' }} />
           <Typography variant="h6" sx={{ fontWeight: 700 }}>Nerve Wallet</Typography>
         </Stack>
@@ -300,6 +313,6 @@ export default function ProfilePage() {
           />
         </Stack>
       </Box>
-    </Box>
+    </Paper>
   );
 }

@@ -1,5 +1,6 @@
 import React from 'react';
 import { playfairDisplay, eduNswActFoundation, dosis, quicksand, ysabeauInfant } from '@/theme/fonts';
+import './globals.css';
 
 export const metadata = {
   title: 'Society OS',

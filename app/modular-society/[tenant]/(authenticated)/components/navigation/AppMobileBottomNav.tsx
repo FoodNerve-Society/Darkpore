@@ -2,16 +2,14 @@
 'use client';
 
 import React, { FC, useState, useEffect } from 'react';
-import { Box, Paper, IconButton, Avatar, Button, Popover, Divider, Typography, Badge, alpha } from '@mui/material';
+import { Box, Paper, IconButton, Button, Typography, Badge, alpha } from '@mui/material';
 import HandshakeIcon from '@mui/icons-material/Handshake';
 import ContactsIcon from '@mui/icons-material/Contacts';
 import SchoolIcon from '@mui/icons-material/School';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
-import Settings from '@mui/icons-material/Settings';
-import Logout from '@mui/icons-material/Logout';
 import ChevronLeft from '@mui/icons-material/ChevronLeft';
 import ChevronRight from '@mui/icons-material/ChevronRight';
-import NotificationsIcon from '@mui/icons-material/Notifications';
+import Avatar from '@mui/material/Avatar';
 import { useRouter, usePathname } from 'next/navigation';
 import { SocietyProfile, useSociety } from '@/context/SocietyContext';
 import { getActiveTheme, PAGE_THEMES } from './NavThemes';
@@ -87,7 +85,6 @@ const AppMobileBottomNav: FC<AppMobileBottomNavProps> = ({ profile, onSignOut, b
   const { user } = useSociety();
   
   const [isExpanded, setIsExpanded] = useState(false);
-  const [profileAnchorEl, setProfileAnchorEl] = useState<HTMLElement | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
   const [pendingPathname, setPendingPathname] = useState<string | null>(null);
 
@@ -109,9 +106,6 @@ const AppMobileBottomNav: FC<AppMobileBottomNavProps> = ({ profile, onSignOut, b
     }
   }, [pathname, pendingPathname]);
 
-  const handleProfileOpen = (event: React.MouseEvent<HTMLElement>) => setProfileAnchorEl(event.currentTarget);
-  const handleProfileClose = () => setProfileAnchorEl(null);
-
   const handleNavClick = (href: string) => {
     if (pathname.includes(href)) { setIsExpanded(false); return; }
     setIsNavigating(true);
@@ -128,47 +122,34 @@ const AppMobileBottomNav: FC<AppMobileBottomNavProps> = ({ profile, onSignOut, b
 
   return (
     <>
-      <Paper
-        elevation={8}
+      <Box
         sx={{
           position: 'fixed', bottom: 16, left: '50%',
           transform: 'translateX(-50%)',
-          width: '90%',
+          width: '94%',
           zIndex: 1200,
-          borderRadius: '24px',
-          background: activeNavTheme.mobileBg,
-          opacity: 0.95,
-          backdropFilter: 'blur(12px)',
-          border: '1px solid rgba(255, 255, 255, 0.5)',
-          boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.1)',
+          display: 'flex',
+          gap: 1.5,
+          pointerEvents: 'none', // Let touches pass through the empty space
         }}
       >
-          <Box
+          {/* Left Bubble: Nav Items */}
+          <Paper
+            elevation={8}
             sx={{
-              display: 'flex', alignItems: 'center',
-              justifyContent: 'space-between', height: '64px', padding: '0 8px',
+              flex: 1,
+              borderRadius: '24px',
+              background: activeNavTheme.mobileBg,
+              backdropFilter: 'blur(12px)',
+              border: '1px solid rgba(255, 255, 255, 0.5)',
+              boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.1)',
+              display: 'flex', alignItems: 'center', height: '64px', px: 1,
+              pointerEvents: 'auto', // Re-enable touches for the bubble
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <IconButton onClick={() => handleNavClick('/trade')} sx={{ p: 1 }}>
-                <Box sx={{ bgcolor: '#1b5e20', width: 32, height: 32, borderRadius: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                   <Typography sx={{ color: 'white', fontWeight: 900, fontSize: '0.9rem' }}>FN</Typography>
-                </Box>
-              </IconButton>
-              
-              <IconButton onClick={() => handleNavClick('/updates')} sx={{ p: 0.5 }}>
-                <Badge badgeContent={3} color="error" sx={{ '& .MuiBadge-badge': { right: 2, top: 2, minWidth: 16, height: 16, fontSize: '0.65rem' } }}>
-                  <Box sx={{ bgcolor: 'rgba(27,94,32,0.1)', width: 32, height: 32, borderRadius: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <NotificationsIcon sx={{ fontSize: 18, color: '#1b5e20' }} />
-                  </Box>
-                </Badge>
-              </IconButton>
-            </Box>
-
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
                 {isExpanded ? (
                   <Box
-                    style={{ display: 'flex', gap: '8px', alignItems: 'center', overflowX: 'auto', padding: '0 4px' }}
+                    style={{ display: 'flex', gap: '8px', alignItems: 'center', overflowX: 'auto', padding: '0 4px', width: '100%', justifyContent: 'space-evenly' }}
                   >
                     {filteredNavItems.map(item => {
                       const isActive = displayPath.includes(item.href);
@@ -186,12 +167,16 @@ const AppMobileBottomNav: FC<AppMobileBottomNavProps> = ({ profile, onSignOut, b
                                 color: isActive ? navTheme.contrastText : 'rgba(0,0,0,0.6)',
                                 boxShadow: isActive ? `0 4px 12px ${alpha(navTheme.main, 0.4)}` : 'none',
                                 transition: 'all 0.3s cubic-bezier(0.2, 0, 0, 1)',
+                                p: isActive ? '8px 20px' : '8px',
                                 '&:hover': { bgcolor: isActive ? navTheme.main : alpha(navTheme.main, 0.1), transform: 'scale(1.05)' }
                               }}
                             >
                               <Box sx={{ display: 'flex', alignItems: 'center', fontSize: isActive ? 24 : 28, '& svg': { fontSize: 'inherit' } }}>
                                 {item.icon}
                               </Box>
+                              {isActive && (
+                                <Typography sx={{ ml: 1, fontWeight: 800 }}>{item.label}</Typography>
+                              )}
                             </Button>
                           </Badge>
                         </Box>
@@ -200,10 +185,12 @@ const AppMobileBottomNav: FC<AppMobileBottomNavProps> = ({ profile, onSignOut, b
                   </Box>
                 ) : (
                   <Box
-                    style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '4px', width: '100%', justifyContent: 'space-between', padding: '0 8px' }}
                   >
-                    {activeIndex > 0 && ( <IconButton onClick={handlePrevious} size="small"><ChevronLeft /></IconButton> )}
-                    <Box>
+                    <IconButton onClick={handlePrevious} size="small" disabled={activeIndex === 0} sx={{ opacity: activeIndex === 0 ? 0 : 1 }}>
+                      <ChevronLeft />
+                    </IconButton>
+                    <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
                       <Badge badgeContent={totalBadgeCount > 0 ? totalBadgeCount : undefined} color="error">
                         <Box>
                           <Button
@@ -216,7 +203,8 @@ const AppMobileBottomNav: FC<AppMobileBottomNavProps> = ({ profile, onSignOut, b
                               bgcolor: activeNavTheme.main, color: activeNavTheme.contrastText,
                               boxShadow: `0 4px 16px ${alpha(activeNavTheme.main, 0.4)}`, 
                               transition: 'all 0.3s cubic-bezier(0.2, 0, 0, 1)',
-                              p: '8px 20px',
+                              p: '8px 32px',
+                              fontSize: '1.1rem',
                               '&:hover': { bgcolor: activeNavTheme.main, transform: 'scale(1.02)' },
                             }}
                           >
@@ -225,57 +213,36 @@ const AppMobileBottomNav: FC<AppMobileBottomNavProps> = ({ profile, onSignOut, b
                         </Box>
                       </Badge>
                     </Box>
-                    {activeIndex < filteredNavItems.length - 1 && ( <IconButton onClick={handleNext} size="small"><ChevronRight /></IconButton> )}
+                    <IconButton onClick={handleNext} size="small" disabled={activeIndex === filteredNavItems.length - 1} sx={{ opacity: activeIndex === filteredNavItems.length - 1 ? 0 : 1 }}>
+                      <ChevronRight />
+                    </IconButton>
                   </Box>
                 )}
-            </Box>
-            
-            <IconButton onClick={handleProfileOpen} sx={{ p: 0 }}>
-              <Avatar src={user?.photoURL || ''} sx={{ width: 38, height: 38, border: '2px solid white', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }} />
-            </IconButton>
-          </Box>
-      </Paper>
+          </Paper>
 
-      <Popover
-        open={Boolean(profileAnchorEl)}
-        anchorEl={profileAnchorEl}
-        onClose={handleProfileClose}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-        transformOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        slotProps={{
-          paper: {
-            sx: { mt: 1, minWidth: 180, borderRadius: 2, boxShadow: 4 }
-          }
-        }}
-      >
-        <Box sx={{ p: 1, display: 'flex', flexDirection: 'column', minWidth: '180px' }}>
-          <Button
-            fullWidth
-            onClick={() => { setProfileAnchorEl(null); router.push('/profile'); }}
+          {/* Right Bubble: Profile Avatar */}
+          <Paper
+            elevation={8}
             sx={{
-              justifyContent: 'flex-start', textTransform: 'none', fontWeight: 600,
-              borderRadius: 1, py: 1, px: 2, color: 'text.primary',
-              '&:hover': { bgcolor: alpha('#6366f1', 0.08) },
+              borderRadius: '24px', // Keep consistent pill roundness
+              background: activeNavTheme.mobileBg,
+              backdropFilter: 'blur(12px)',
+              border: '1px solid rgba(255, 255, 255, 0.5)',
+              boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.1)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: '64px', height: '64px',
+              pointerEvents: 'auto',
             }}
-            startIcon={<Settings fontSize="small" />}
           >
-            Profile & Settings
-          </Button>
-          <Divider sx={{ my: 0.5 }} />
-          <Button
-            fullWidth
-            onClick={() => { setProfileAnchorEl(null); onSignOut(); }}
-            sx={{
-              justifyContent: 'flex-start', textTransform: 'none', fontWeight: 600,
-              borderRadius: 1, py: 1, px: 2, color: 'error.main',
-              '&:hover': { bgcolor: alpha('#ef4444', 0.08) },
-            }}
-            startIcon={<Logout fontSize="small" color="error" />}
-          >
-            Sign Out
-          </Button>
-        </Box>
-      </Popover>
+            <IconButton onClick={() => router.push('/profile')} sx={{ p: 0 }}>
+              <Avatar 
+                src={profile?.avatarUrl || user?.photoURL || undefined} 
+                sx={{ width: 44, height: 44, border: '2px solid white', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }} 
+              />
+            </IconButton>
+          </Paper>
+      </Box>
+
     </>
   );
 };

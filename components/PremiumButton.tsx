@@ -23,6 +23,7 @@ export default function PremiumButton({
   // If baseColor is explicitly passed (like '#1b5e20'), use it. 
   // Otherwise, fallback to the standard MUI color from theme.
   const activeColor = baseColor || (theme.palette[color as keyof typeof theme.palette] as any)?.main || theme.palette.primary.main;
+  const safeColor = activeColor === 'white' ? '#ffffff' : activeColor;
 
   const baseStyles = {
     borderRadius: 100, // fully rounded pill
@@ -43,38 +44,38 @@ export default function PremiumButton({
 
   if (variant === 'filled') {
     variantStyles = {
-      bgcolor: activeColor,
-      color: theme.palette.getContrastText(activeColor) || 'white',
-      boxShadow: `0 4px 14px ${alpha(activeColor, 0.3)}`,
+      bgcolor: safeColor,
+      color: safeColor === '#ffffff' ? 'text.primary' : (theme.palette.getContrastText(safeColor) || 'white'),
+      boxShadow: `0 4px 14px ${alpha(safeColor, 0.3)}`,
       '&:hover': {
-        bgcolor: activeColor,
-        boxShadow: `0 6px 20px ${alpha(activeColor, 0.4)}`,
+        bgcolor: safeColor,
+        boxShadow: `0 6px 20px ${alpha(safeColor, 0.4)}`,
         transform: 'translateY(-2px) scale(1.02)',
       },
       // Ripple effect adjustment for dark backgrounds
       '& .MuiTouchRipple-root': {
-        color: 'white',
+        color: safeColor === '#ffffff' ? 'rgba(0,0,0,0.3)' : 'white',
       }
     };
   } else if (variant === 'outlined') {
     variantStyles = {
       bgcolor: 'transparent',
-      color: activeColor,
-      border: `2px solid ${activeColor}`,
+      color: safeColor,
+      border: `2px solid ${safeColor}`,
       boxShadow: 'none',
       '&:hover': {
-        bgcolor: alpha(activeColor, 0.08),
-        border: `2px solid ${activeColor}`,
+        bgcolor: alpha(safeColor, 0.08),
+        border: `2px solid ${safeColor}`,
         transform: 'translateY(-2px) scale(1.02)',
       },
     };
   } else if (variant === 'text') {
     variantStyles = {
       bgcolor: 'transparent',
-      color: activeColor,
+      color: safeColor,
       boxShadow: 'none',
       '&:hover': {
-        bgcolor: alpha(activeColor, 0.08),
+        bgcolor: alpha(safeColor, 0.08),
         transform: 'scale(1.02)',
       },
     };

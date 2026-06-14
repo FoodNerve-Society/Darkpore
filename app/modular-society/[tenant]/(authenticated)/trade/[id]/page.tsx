@@ -17,6 +17,7 @@ import {
 } from "@mui/material";
 
 import { useRouter, useParams } from "next/navigation";
+import { mockTradeListings } from "@/lib/db/mocks";
 import {
   useSociety,
   checkGatekeeper,
@@ -24,7 +25,6 @@ import {
   RANK_COLORS,
 } from "@/context/SocietyContext";
 import {
-  mockTradeListings,
   type TradeListing,
   type TradeCategory,
 } from "@/lib/db/society";

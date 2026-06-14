@@ -13,6 +13,9 @@ import {
   IconButton,
   Button,
   LinearProgress,
+  Tooltip,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import {
   PlayCircle as PlayCircleIcon,
@@ -32,15 +35,21 @@ import {
   CalendarMonth as CalendarIcon,
   Replay as ReplayIcon,
   TuneRounded as TuneIcon,
+  AccountCircle as AccountCircleIcon,
+  Business as BusinessIcon,
+  SwapHoriz as SwapHorizIcon,
 } from "@mui/icons-material";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import {
   getLearnContent,
   type LearnContent,
   type LearnSwimlane,
 } from "@/lib/db/society";
-import { useSociety, type Challenge } from "@/context/SocietyContext";
+import { useSociety, type Challenge, RANK_NAMES, type RankLevel } from "@/context/SocietyContext";
+import { getTenantConfig } from "@/lib/cms";
+import FlipContainer from "../components/shared/FlipContainer";
+import CreateLearnContentForm from "../components/forms/CreateLearnContentForm";
 
 const ACCENT = "#f59e0b";
 const ACCENT_DARK = "#d97706";
@@ -61,15 +70,7 @@ interface ChallengeFilter {
   tagMatches: string[];
 }
 
-const BOTTLENECK_FILTERS: ChallengeFilter[] = [
-  { key: 'all', label: 'All Content', emoji: '✨', tagMatches: [] },
-  { key: 'post-harvest-loss', label: 'Post-Harvest Loss', emoji: '🥬', tagMatches: ['post-harvest', 'cold-chain', 'logistics'] },
-  { key: 'cold-chain', label: 'Cold Chain', emoji: '❄️', tagMatches: ['cold-chain', 'logistics', 'EV'] },
-  { key: 'soil-health', label: 'Soil Health', emoji: '🌱', tagMatches: ['soil', 'regeneration', 'nutrients', 'microbiome'] },
-  { key: 'market-access', label: 'Market Access', emoji: '📊', tagMatches: ['land', 'legal', 'policy', 'pitch', 'startup', 'machinery'] },
-  { key: 'capital', label: 'Capital', emoji: '💰', tagMatches: ['capital', 'investing', 'funding', 'pitch'] },
-  { key: 'energy', label: 'Energy', emoji: '⚡', tagMatches: ['solar', 'energy'] },
-];
+// Filters will be generated dynamically based on the active tenant
 
 // ═══════════════════════════════════════════════════════════
 // SWIMLANE CONFIG
@@ -1279,6 +1280,45 @@ function renderCard(
 export default function LearnPage() {
   const { profile } = useSociety();
   const router = useRouter();
+  const params = useParams();
+  const tenantId = (params?.tenant as string) || 'food';
+  const tenantConfig = getTenantConfig(tenantId);
+
+  // Dynamically generate Bottleneck Filters from CMS
+  const BOTTLENECK_FILTERS: ChallengeFilter[] = useMemo(() => {
+    const filters: ChallengeFilter[] = [{ key: 'all', label: 'All Content', emoji: '✨', tagMatches: [] }];
+    tenantConfig.com.homepage.challenges.forEach(chal => {
+      filters.push({
+        key: chal.id as Challenge,
+        label: chal.title,
+        emoji: '📌', // Can be customized later in CMS
+        tagMatches: [chal.id]
+      });
+    });
+    return filters;
+  }, [tenantConfig]);
+
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [postingAs, setPostingAs] = useState<'personal' | 'organization'>('personal');
+  const [selectedOrgId, setSelectedOrgId] = useState<string>('');
+  
+  useEffect(() => {
+    if (profile?.organizations && profile.organizations.length > 0 && !selectedOrgId) {
+      setSelectedOrgId(profile.organizations[0].id);
+    }
+  }, [profile?.organizations, selectedOrgId]);
+  
+  const [showSwitchState, setShowSwitchState] = useState(false);
+  const canCreate = profile && profile.currentRank >= 4;
+
+  const handleTogglePostingAs = () => {
+    setPostingAs(prev => prev === 'personal' ? 'organization' : 'personal');
+    setShowSwitchState(true);
+    setTimeout(() => {
+      setShowSwitchState(false);
+    }, 1500);
+  };
+
   const [contentMap, setContentMap] = useState<Record<LearnSwimlane, LearnContent[]>>({
     livestreams: [],
     classes: [],
@@ -1383,13 +1423,19 @@ export default function LearnPage() {
     };
   }, []);
 
-  return (
-    <Box
+  const frontContent = (
+    <Paper
+      elevation={0}
       sx={{
-        minHeight: "100vh",
-        pb: 12,
-        background:
-          "linear-gradient(180deg, rgba(245,158,11,0.04) 0%, transparent 35%)",
+        flex: 1,
+        m: { xs: 0, md: 2 },
+        minHeight: { xs: '100vh', md: 'calc(100vh - 32px)' },
+        bgcolor: '#ffffff',
+        borderRadius: { xs: 0, md: 4 },
+        boxShadow: { xs: 'none', md: '0 10px 40px rgba(0,0,0,0.04)' },
+        overflow: 'hidden',
+        boxSizing: 'border-box',
+        pb: 12
       }}
     >
       {/* ═══════════════════════ HERO HEADER ═══════════════════════ */}
@@ -1437,18 +1483,65 @@ export default function LearnPage() {
           Study open-source blueprints, take classes, and watch livestreams from
           the frontline.
         </Typography>
-        <Chip
-          label={`${activeChallenge === 'all' ? totalCount : filteredTotalCount} materials${activeChallenge !== 'all' ? ' (filtered)' : ''}`}
-          size="small"
-          sx={{
-            mt: 1.5,
-            fontWeight: 700,
-            fontSize: "0.75rem",
-            bgcolor: "rgba(255, 255, 255, 0.03)",
-            color: ACCENT_DARK,
-            border: `1px solid ${alpha(ACCENT, 0.2)}`,
-          }}
-        />
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2, mt: 1.5 }}>
+          <Chip
+            label={`${activeChallenge === 'all' ? totalCount : filteredTotalCount} materials${activeChallenge !== 'all' ? ' (filtered)' : ''}`}
+            size="small"
+            sx={{
+              fontWeight: 700,
+              fontSize: "0.75rem",
+              bgcolor: "rgba(255, 255, 255, 0.03)",
+              color: ACCENT_DARK,
+              border: `1px solid ${alpha(ACCENT, 0.2)}`,
+            }}
+          />
+          {canCreate ? (
+            <Button
+              variant="contained"
+              disableElevation
+              onClick={() => setIsFlipped(true)}
+              sx={{
+                borderRadius: '12px',
+                fontWeight: 800,
+                textTransform: "none",
+                background: `linear-gradient(135deg, ${ACCENT} 0%, ${ACCENT_DARK} 100%)`,
+                color: "#fff",
+                px: 3,
+                boxShadow: `0 4px 16px ${alpha(ACCENT, 0.3)}`,
+                transition: 'all 0.2s ease',
+                "&:hover": { 
+                  boxShadow: `0 6px 24px ${alpha(ACCENT, 0.45)}`,
+                  transform: 'translateY(-1px)',
+                },
+              }}
+            >
+              + Create Content
+            </Button>
+          ) : (
+            <Tooltip
+              title={`Content creation requires ${RANK_NAMES[4 as RankLevel]} rank (Rank 4). Your current rank: ${RANK_NAMES[profile?.currentRank as RankLevel] || 'Unknown'}.`}
+              arrow
+              placement="top"
+            >
+              <span>
+                <Button
+                  variant="outlined"
+                  disabled
+                  sx={{
+                    borderRadius: '12px',
+                    fontWeight: 700,
+                    textTransform: "none",
+                    borderColor: 'rgba(0,0,0,0.08)',
+                    color: 'text.disabled',
+                    px: 3,
+                  }}
+                >
+                  🔒 Rank 4 Required
+                </Button>
+              </span>
+            </Tooltip>
+          )}
+        </Box>
       </Box>
 
       {/* ═══════════════════════ WU WEI FILTER BAR ═══════════════════════ */}
@@ -1673,6 +1766,143 @@ export default function LearnPage() {
           </Button>
         </Box>
       )}
-    </Box>
+    </Paper>
+  );
+
+  const backContent = (
+    <Paper
+      elevation={0}
+      sx={{
+        flex: 1,
+        m: { xs: 0, md: 2 },
+        minHeight: { xs: '100vh', md: 'calc(100vh - 32px)' },
+        bgcolor: '#ffffff',
+        borderRadius: { xs: 0, md: 4 },
+        boxShadow: { xs: 'none', md: '0 10px 40px rgba(0,0,0,0.04)' },
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      {/* Premium Gradient Header Bar */}
+      <Box sx={{ height: 4, width: '100%', background: `linear-gradient(90deg, ${ACCENT} 0%, ${ACCENT_DARK} 50%, #7c3aed 100%)`, flexShrink: 0 }} />
+      <Box
+        sx={{
+          px: { xs: 2.5, md: 3.5 },
+          py: 2,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1.5,
+          borderBottom: '1px solid rgba(0,0,0,0.05)',
+          flexShrink: 0,
+        }}
+      >
+        <IconButton
+          onClick={() => setIsFlipped(false)}
+          sx={{
+            width: 36,
+            height: 36,
+            bgcolor: 'rgba(0,0,0,0.03)',
+            '&:hover': { bgcolor: 'rgba(0,0,0,0.06)' },
+          }}
+        >
+          <ArrowBackIcon sx={{ fontSize: 18 }} />
+        </IconButton>
+        <Box sx={{ flex: 1 }}>
+          <Typography sx={{ fontWeight: 900, fontSize: '1.1rem', letterSpacing: '-0.01em' }}>
+            Create Content
+          </Typography>
+          <Typography sx={{ fontSize: '0.72rem', color: 'text.disabled', fontWeight: 600, mt: 0.2 }}>
+            Publishing as {postingAs === 'personal' ? (profile?.displayName || 'Unknown') : (profile?.organizations?.find(o => o.id === selectedOrgId)?.name || 'Organization')}
+          </Typography>
+        </Box>
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Tooltip title="Post as Personal">
+            <IconButton 
+              onClick={() => setPostingAs('personal')}
+              sx={{ 
+                bgcolor: postingAs === 'personal' ? 'rgba(0,0,0,0.04)' : 'transparent', 
+                width: 36, height: 36,
+                border: postingAs === 'personal' ? '1px solid rgba(0,0,0,0.08)' : '1px solid transparent',
+                transition: 'all 0.2s',
+                '&:hover': { bgcolor: 'rgba(0,0,0,0.06)' }
+              }}
+            >
+              <Avatar src={profile?.avatarUrl} sx={{ width: 24, height: 24 }} />
+            </IconButton>
+          </Tooltip>
+
+          {profile?.organizations && profile.organizations.length > 0 && (
+            <Tooltip title="Post as Organization">
+              <IconButton 
+                onClick={() => setPostingAs('organization')}
+                sx={{ 
+                  bgcolor: postingAs === 'organization' ? 'rgba(0,0,0,0.04)' : 'transparent', 
+                  width: 36, height: 36,
+                  border: postingAs === 'organization' ? '1px solid rgba(0,0,0,0.08)' : '1px solid transparent',
+                  transition: 'all 0.2s',
+                  '&:hover': { bgcolor: 'rgba(0,0,0,0.06)' }
+                }}
+              >
+                <BusinessIcon sx={{ color: postingAs === 'organization' ? '#0f172a' : '#94a3b8', fontSize: 20 }} />
+              </IconButton>
+            </Tooltip>
+          )}
+
+          {postingAs === 'organization' && profile?.organizations && profile.organizations.length > 0 && (
+            <Select
+              size="small"
+              value={selectedOrgId}
+              onChange={(e) => setSelectedOrgId(e.target.value)}
+              renderValue={(selected) => {
+                const org = profile.organizations?.find((o: any) => o.id === selected);
+                if (!org) return null;
+                return (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Avatar src={org.logoUrl} sx={{ width: 20, height: 20 }} />
+                    <Typography sx={{ display: { xs: 'none', sm: 'block' }, fontWeight: 700, fontSize: '0.85rem' }}>
+                      {org.name}
+                    </Typography>
+                  </Box>
+                );
+              }}
+              sx={{
+                ml: 0.5,
+                height: 36,
+                minWidth: { xs: 60, sm: 140 },
+                borderRadius: '12px',
+                bgcolor: 'rgba(0,0,0,0.02)',
+                '& .MuiOutlinedInput-notchedOutline': { border: '1px solid rgba(0,0,0,0.08)' },
+                '&:hover .MuiOutlinedInput-notchedOutline': { border: '1px solid rgba(0,0,0,0.15)' },
+                '& .MuiSelect-select': { py: 0, display: 'flex', alignItems: 'center', gap: 1, fontWeight: 700, fontSize: '0.85rem' }
+              }}
+            >
+              {profile.organizations.map((org: any) => (
+                <MenuItem key={org.id} value={org.id} sx={{ fontWeight: 600, fontSize: '0.85rem', display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                  <Avatar src={org.logoUrl} sx={{ width: 20, height: 20 }} />
+                  {org.name}
+                </MenuItem>
+              ))}
+            </Select>
+          )}
+        </Box>
+      </Box>
+      {/* Form Body — takes remaining space */}
+      <CreateLearnContentForm 
+        onSuccess={() => setIsFlipped(false)} 
+        onCancel={() => setIsFlipped(false)} 
+        postingAs={postingAs}
+        selectedOrgId={selectedOrgId}
+      />
+    </Paper>
+  );
+
+  return (
+    <FlipContainer 
+      isFlipped={isFlipped}
+      frontContent={frontContent}
+      backContent={backContent}
+    />
   );
 }
