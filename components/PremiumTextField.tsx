@@ -28,28 +28,43 @@ const PremiumTextField: FC<PremiumTextFieldProps> = forwardRef<HTMLDivElement, P
                     {...props}
                     helperText={!errorHelperText ? props.helperText : undefined}
                     sx={{
+                        // 1) Unfocused label
+                        '& label': {
+                            color: alpha(colorTheme, 0.8),
+                            fontWeight: 400,
+                        },
+                        // 2) Focused label
+                        '& label.Mui-focused': {
+                            color: colorTheme,
+                            fontWeight: 600,
+                        },
+                        // 3) Color the actual typed text
+                        '& .MuiInputBase-input': {
+                            color: colorTheme,
+                            fontWeight: 500, // Reduced from 700
+                        },
                         '& .MuiFilledInput-root': {
                             borderRadius: 3,
                             transition: 'background-color 0.3s ease, box-shadow 0.3s ease',
-                            bgcolor: alpha('#000', 0.05),
-                            boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.08)',
+                            bgcolor: alpha('#000', 0.02), // toned down bg
+                            boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.03)',
                             '&::before, &::after': { display: 'none' },
-                            '&:hover': { bgcolor: alpha('#000', 0.08) },
+                            '&:hover': { bgcolor: alpha('#000', 0.04) },
                             '&:hover:not(.Mui-disabled, .Mui-error):before': { borderBottom: 'none' },
                             // The definitive "Lit" Focus State
                             '&.Mui-focused': {
-                                bgcolor: alpha(colorTheme, 0.1),
+                                bgcolor: alpha(colorTheme, 0.03), // heavily toned down focus bg
                                 boxShadow: `
-                                    inset 0 2px 4px rgba(0,0,0,0.08),
+                                    inset 0 2px 4px rgba(0,0,0,0.03),
                                     0 0 0 2px ${alpha(colorTheme, 0.5)}
                                 `,
                             },
 
                             // The definitive error state style
                             '&.Mui-error': {
-                                bgcolor: (theme) => alpha(theme.palette.error.main, 0.05),
+                                bgcolor: (theme) => alpha(theme.palette.error.main, 0.02),
                                 boxShadow: (theme) => `
-                                    inset 0 2px 4px rgba(0,0,0,0.08),
+                                    inset 0 2px 4px rgba(0,0,0,0.03),
                                     0 0 0 2px ${theme.palette.error.main}
                                 `,
                             }

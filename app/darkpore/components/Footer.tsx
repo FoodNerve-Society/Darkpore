@@ -25,6 +25,7 @@ export default function Footer() {
           <strong style={{ color: '#fff', fontSize: '0.9rem', marginBottom: '0.5rem', fontFamily: 'var(--font-dosis)' }}>Compliance</strong>
           <Link href="/legal" className={styles.navLink}>SEC Disclaimers</Link>
           <Link href="/legal" className={styles.navLink}>Privacy Policy</Link>
+          <Link href="/stress-test" className={styles.navLink}>Model Stress Test</Link>
         </div>
       </div>
     </footer>

@@ -31,7 +31,7 @@ export const MainAnalysisBlock: React.FC<MainAnalysisBlockProps> = ({ content, t
       let html = p
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
         .replace(/\*(.*?)\*/g, '<em>$1</em>')
-        .replace(/<u>(.*?)<\/u>/g, '<span style="text-decoration: underline;">$1</span>')
+        .replace(new RegExp('<u>(.*?)</u>', 'g'), '<span style="text-decoration: underline;">$1</span>')
         .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color: #8b5cf6; text-decoration: underline;">$1</a>');
       
       return (

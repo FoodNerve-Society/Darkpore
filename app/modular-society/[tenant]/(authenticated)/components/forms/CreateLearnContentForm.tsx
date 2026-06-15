@@ -65,6 +65,10 @@ import { useParams } from 'next/navigation';
 import { getTenantConfig } from '@/lib/cms';
 import { useCloudinaryUpload } from '@/hooks/useCloudinaryUpload';
 import { ArticleBlockRenderer } from '@/components/learn/ArticleBlockRenderer';
+import PremiumTextField from '@/components/PremiumTextField';
+import PremiumAutocomplete from '@/components/PremiumAutocomplete';
+import PremiumButton from '@/components/PremiumButton';
+import PremiumMarkdownEditor from '@/components/PremiumMarkdownEditor';
 
 // ----------------------------------------------------------------------
 // POLL OPTIONS EDITOR
@@ -110,19 +114,16 @@ function PollOptionsEditor({ initialOptions, onChange, color }: { initialOptions
         </Box>
       )}
 
-      <Box sx={{ display: 'flex', gap: 1 }}>
-        <TextField 
-          fullWidth 
-          placeholder="Type an option and press Enter..." 
-          value={newOption} 
-          onChange={(e) => setNewOption(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAdd(); } }}
-          size="small"
-          sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+      <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+        <PremiumTextField
+          fullWidth size="small" placeholder="Add an option..."
+          value={newOption} onChange={e => setNewOption(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && handleAdd()}
+          colorTheme={color}
         />
-        <Button variant="contained" onClick={handleAdd} disableElevation sx={{ whiteSpace: 'nowrap', fontWeight: 700, bgcolor: color, '&:hover': { bgcolor: alpha(color, 0.8) }, borderRadius: '12px' }}>
+        <PremiumButton baseColor={color} onClick={handleAdd}>
           Add
-        </Button>
+        </PremiumButton>
       </Box>
     </Box>
   );
@@ -164,26 +165,22 @@ function EvidenceGalleryEditor({ initialItems, onChange, color, blockId, uploadF
             </IconButton>
           )}
           <Box sx={{ flex: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <TextField
-              fullWidth variant="outlined" label={`Image ${i + 1} URL`} size="small"
+            <PremiumTextField
+              fullWidth label={`Image ${i + 1} URL`} size="small" colorTheme={color}
               placeholder="https://..." value={item.url || ''} onChange={e => updateItem(i, 'url', e.target.value)}
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', bgcolor: '#fff' } }}
             />
-            <TextField
-              fullWidth variant="outlined" label="Caption" size="small"
+            <PremiumTextField
+              fullWidth label="Caption" size="small" colorTheme={color}
               placeholder="Describe this visual..." value={item.caption || ''} onChange={e => updateItem(i, 'caption', e.target.value)}
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', bgcolor: '#fff' } }}
             />
             <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField
-                fullWidth variant="outlined" label="Source Name (Optional)" size="small"
+              <PremiumTextField
+                fullWidth label="Source Name (Optional)" size="small" colorTheme={color}
                 placeholder="e.g. World Bank" value={item.sourceName || ''} onChange={e => updateItem(i, 'sourceName', e.target.value)}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', bgcolor: '#fff' } }}
               />
-              <TextField
-                fullWidth variant="outlined" label="Source URL (Optional)" size="small"
+              <PremiumTextField
+                fullWidth label="Source URL (Optional)" size="small" colorTheme={color}
                 placeholder="https://..." value={item.sourceUrl || ''} onChange={e => updateItem(i, 'sourceUrl', e.target.value)}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', bgcolor: '#fff' } }}
               />
             </Box>
           </Box>
@@ -361,6 +358,7 @@ export default function CreateLearnContentForm({ onSuccess, onCancel }: { onSucc
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pendingFiles, setPendingFiles] = useState<Record<string, File>>({});
   
   const { uploadToCloudinary, uploading } = useCloudinaryUpload();
 
@@ -384,11 +382,10 @@ export default function CreateLearnContentForm({ onSuccess, onCancel }: { onSucc
     }
   };
 
-  const handleImageUpload = async (blockId: string, field: string, file: File) => {
-    const res = await uploadToCloudinary(file);
-    if (res?.secure_url) {
-      updateBlock(blockId, field, res.secure_url);
-    }
+  const handleImageUpload = (blockId: string, field: string, file: File) => {
+    setPendingFiles(prev => ({ ...prev, [blockId]: file }));
+    const objectUrl = URL.createObjectURL(file);
+    updateBlock(blockId, field, objectUrl);
   };
 
   useEffect(() => {
@@ -595,6 +592,29 @@ export default function CreateLearnContentForm({ onSuccess, onCancel }: { onSucc
     setError(null);
 
     try {
+      // 1. Upload pending files first
+      let finalBlocks = [...blocks];
+      const pendingBlockIds = Object.keys(pendingFiles);
+      
+      for (const blockId of pendingBlockIds) {
+        const file = pendingFiles[blockId];
+        const res = await uploadToCloudinary(file);
+        if (res?.secure_url) {
+          finalBlocks = finalBlocks.map(b => {
+            if (b.id === blockId) {
+              const newContent = { ...b.content };
+              Object.keys(newContent).forEach(k => {
+                if (typeof newContent[k] === 'string' && newContent[k].startsWith('blob:')) {
+                  newContent[k] = res.secure_url;
+                }
+              });
+              return { ...b, content: newContent };
+            }
+            return b;
+          });
+        }
+      }
+
       const payload: CreateLearnContentPayload = {
         title: title.trim() || 'Draft Content',
         slug: generateSlug(title.trim() || 'Draft Content'),
@@ -606,7 +626,7 @@ export default function CreateLearnContentForm({ onSuccess, onCancel }: { onSucc
         authorName: profile?.displayName,
         authorAvatarUrl: profile?.avatarUrl,
         
-        articleBlocks: type === 'article' ? blocks.map((b, idx) => ({
+        articleBlocks: type === 'article' ? finalBlocks.map((b, idx) => ({
           blockType: b.type,
           orderIndex: idx,
           content: JSON.stringify(b.content)
@@ -1364,29 +1384,40 @@ export default function CreateLearnContentForm({ onSuccess, onCancel }: { onSucc
                                         ))}
                                       </Box>
                                     )}
-                                    <TextField
-                                      fullWidth variant="outlined" label="Subheading Text" placeholder={b.sopHint || ''}
-                                      value={b.content.text || ''} onChange={e => updateBlock(b.id, 'text', e.target.value)}
-                                      sx={{ '& .MuiOutlinedInput-root': { borderRadius: '14px', color: '#0f172a', bgcolor: 'rgba(0,0,0,0.02)', '& fieldset': { borderColor: 'rgba(0,0,0,0.15)' }, '&:hover fieldset': { borderColor: alpha(color, 0.5) }, '&.Mui-focused fieldset': { borderColor: color, borderWidth: 2 } }, '& .MuiInputLabel-root': { color: '#475569', fontWeight: 600 } }}
-                                    />
+                                      <PremiumTextField colorTheme={color}
+                                        fullWidth  label="Spiky Header Text (Pattern: [Bold Part]: [Italic Part])" placeholder={b.sopHint || ''}
+                                        value={b.content.text || ''} 
+                                        onChange={e => {
+                                          if (e.target.value.length <= 100) {
+                                            updateBlock(b.id, 'text', e.target.value);
+                                          }
+                                        }}
+                                        inputProps={{ maxLength: 100 }}
+                                        helperText={`${(b.content.text || '').length} / 100 characters max`}
+                                        sx={{ 
+                                          '& .MuiOutlinedInput-root': { borderRadius: '14px', color: '#0f172a', bgcolor: 'rgba(0,0,0,0.02)', '& fieldset': { borderColor: 'rgba(0,0,0,0.15)' }, '&:hover fieldset': { borderColor: alpha(color, 0.5) }, '&.Mui-focused fieldset': { borderColor: color, borderWidth: 2 } }, 
+                                          '& .MuiInputLabel-root': { color: '#475569', fontWeight: 600 },
+                                          '& .MuiFormHelperText-root': { textAlign: 'right', fontWeight: 600, color: (b.content.text || '').length >= 100 ? '#ef4444' : 'text.secondary' }
+                                        }}
+                                      />
                                   </Box>
                                 )}
                                 {b.type === 'core_interactive' && (
                                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                    <TextField
-                                      fullWidth variant="outlined" label="Heading (Optional)"
+                                    <PremiumTextField colorTheme={color}
+                                      fullWidth  label="Heading (Optional)"
                                       placeholder="Section Heading" value={b.content.heading || ''} onChange={e => updateBlock(b.id, 'heading', e.target.value)}
-                                      sx={{ '& .MuiOutlinedInput-root': { borderRadius: '14px', color: '#0f172a', bgcolor: 'rgba(0,0,0,0.02)', '& fieldset': { borderColor: 'rgba(0,0,0,0.15)' }, '&:hover fieldset': { borderColor: alpha(color, 0.5) }, '&.Mui-focused fieldset': { borderColor: color, borderWidth: 2 } }, '& .MuiInputLabel-root': { color: '#475569', fontWeight: 600 } }}
+                                      
                                     />
-                                    <TextField
-                                      fullWidth multiline rows={8} variant="outlined" label="Deep Analysis (Multiple Paragraphs)"
-                                      placeholder={b.sopDesc || ''} value={b.content.bionicText || ''} onChange={e => updateBlock(b.id, 'bionicText', e.target.value)}
-                                      sx={{ '& .MuiOutlinedInput-root': { borderRadius: '14px', color: '#0f172a', bgcolor: 'rgba(0,0,0,0.02)', '& fieldset': { borderColor: 'rgba(0,0,0,0.15)' }, '&:hover fieldset': { borderColor: alpha(color, 0.5) }, '&.Mui-focused fieldset': { borderColor: color, borderWidth: 2 } }, '& .MuiInputLabel-root': { color: '#475569', fontWeight: 600 } }}
+                                    <PremiumMarkdownEditor colorTheme={color}
+                                      fullWidth multiline rows={8}  label="Deep Analysis (Multiple Paragraphs)"
+                                      placeholder={b.sopDesc || ''} value={b.content.bionicText || ''} onChange={(e: any) => updateBlock(b.id, 'bionicText', e.target.value)}
+                                      
                                     />
-                                    <TextField
-                                      fullWidth variant="outlined" label="Discussion Prompt (Optional)"
+                                    <PremiumTextField colorTheme={color}
+                                      fullWidth  label="Discussion Prompt (Optional)"
                                       placeholder={b.sopHint || 'What is your experience with this?'} value={b.content.discussionPrompt || ''} onChange={e => updateBlock(b.id, 'discussionPrompt', e.target.value)}
-                                      sx={{ '& .MuiOutlinedInput-root': { borderRadius: '14px', color: '#0f172a', bgcolor: 'rgba(0,0,0,0.02)', '& fieldset': { borderColor: 'rgba(0,0,0,0.15)' }, '&:hover fieldset': { borderColor: alpha(color, 0.5) }, '&.Mui-focused fieldset': { borderColor: color, borderWidth: 2 } }, '& .MuiInputLabel-root': { color: '#475569', fontWeight: 600 } }}
+                                      
                                     />
                                   </Box>
                                 )}
@@ -1394,8 +1425,8 @@ export default function CreateLearnContentForm({ onSuccess, onCancel }: { onSucc
                                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                                     {(b.content.pairs || [{ myth: '', fact: '' }]).map((pair: any, idx: number) => (
                                       <Box key={idx} sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3, alignItems: { xs: 'stretch', md: 'center' } }}>
-                                        <TextField
-                                          fullWidth variant="outlined" label={`Myth ${idx + 1}`}
+                                        <PremiumTextField colorTheme={color}
+                                          fullWidth  label={`Myth ${idx + 1}`}
                                           placeholder="What stakeholders believed..." value={pair.myth} onChange={e => {
                                             const newPairs = [...(b.content.pairs || [{ myth: '', fact: '' }])];
                                             newPairs[idx].myth = e.target.value;
@@ -1403,8 +1434,8 @@ export default function CreateLearnContentForm({ onSuccess, onCancel }: { onSucc
                                           }}
                                           sx={{ '& .MuiOutlinedInput-root': { borderRadius: '14px', color: '#0f172a', bgcolor: 'rgba(239,68,68,0.03)', '& fieldset': { borderColor: 'rgba(239,68,68,0.2)' }, '&:hover fieldset': { borderColor: 'rgba(239,68,68,0.5)' }, '&.Mui-focused fieldset': { borderColor: '#ef4444', borderWidth: 2 } }, '& .MuiInputLabel-root': { color: '#475569', fontWeight: 600 } }}
                                         />
-                                        <TextField
-                                          fullWidth variant="outlined" label={`Reality ${idx + 1}`}
+                                        <PremiumTextField colorTheme={color}
+                                          fullWidth  label={`Reality ${idx + 1}`}
                                           placeholder="What actually happened..." value={pair.fact} onChange={e => {
                                             const newPairs = [...(b.content.pairs || [{ myth: '', fact: '' }])];
                                             newPairs[idx].fact = e.target.value;
@@ -1423,7 +1454,7 @@ export default function CreateLearnContentForm({ onSuccess, onCancel }: { onSucc
                                       </Box>
                                     ))}
                                     <Button
-                                      variant="outlined"
+                                      
                                       onClick={() => {
                                         const newPairs = [...(b.content.pairs || [{ myth: '', fact: '' }]), { myth: '', fact: '' }];
                                         updateBlock(b.id, 'pairs', newPairs);
@@ -1432,55 +1463,55 @@ export default function CreateLearnContentForm({ onSuccess, onCancel }: { onSucc
                                     >
                                       + Add Another Myth/Fact Pair
                                     </Button>
-                                    <TextField
-                                      fullWidth variant="outlined" label="Discussion Prompt (Optional)"
+                                    <PremiumTextField colorTheme={color}
+                                      fullWidth  label="Discussion Prompt (Optional)"
                                       placeholder="Is this myth still prevalent in your sector?" value={b.content.discussionPrompt || ''} onChange={e => updateBlock(b.id, 'discussionPrompt', e.target.value)}
-                                      sx={{ mt: 1, '& .MuiOutlinedInput-root': { borderRadius: '14px', color: '#0f172a', bgcolor: 'rgba(0,0,0,0.02)', '& fieldset': { borderColor: 'rgba(0,0,0,0.15)' }, '&:hover fieldset': { borderColor: alpha(color, 0.5) }, '&.Mui-focused fieldset': { borderColor: color, borderWidth: 2 } }, '& .MuiInputLabel-root': { color: '#475569', fontWeight: 600 } }}
+                                      
                                     />
                                   </Box>
                                 )}
                                 {b.type === 'live_poll' && (
                                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                    <TextField
-                                      fullWidth variant="outlined" label="Poll Question"
+                                    <PremiumTextField colorTheme={color}
+                                      fullWidth  label="Poll Question"
                                       placeholder={b.sopHint || ''} value={b.content.question || ''} onChange={e => updateBlock(b.id, 'question', e.target.value)}
-                                      sx={{ '& .MuiOutlinedInput-root': { borderRadius: '14px', color: '#0f172a', bgcolor: 'rgba(0,0,0,0.02)', '& fieldset': { borderColor: 'rgba(0,0,0,0.15)' }, '&:hover fieldset': { borderColor: alpha(color, 0.5) }, '&.Mui-focused fieldset': { borderColor: color, borderWidth: 2 } }, '& .MuiInputLabel-root': { color: '#475569', fontWeight: 600 } }}
+                                      
                                     />
                                     <PollOptionsEditor 
                                       initialOptions={b.content.options || ''} 
                                       onChange={opts => updateBlock(b.id, 'options', opts)} 
                                       color={color} 
                                     />
-                                    <TextField
-                                      fullWidth variant="outlined" label="Discussion Prompt (Optional)"
+                                    <PremiumTextField colorTheme={color}
+                                      fullWidth  label="Discussion Prompt (Optional)"
                                       placeholder="Why did you vote this way?" value={b.content.discussionPrompt || ''} onChange={e => updateBlock(b.id, 'discussionPrompt', e.target.value)}
-                                      sx={{ '& .MuiOutlinedInput-root': { borderRadius: '14px', color: '#0f172a', bgcolor: 'rgba(0,0,0,0.02)', '& fieldset': { borderColor: 'rgba(0,0,0,0.15)' }, '&:hover fieldset': { borderColor: alpha(color, 0.5) }, '&.Mui-focused fieldset': { borderColor: color, borderWidth: 2 } }, '& .MuiInputLabel-root': { color: '#475569', fontWeight: 600 } }}
+                                      
                                     />
                                   </Box>
                                 )}
                                 {b.type === 'pull_quote' && (
                                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                    <TextField
-                                      fullWidth multiline rows={3} variant="outlined" label="Quote Text"
-                                      placeholder={b.sopHint || ''} value={b.content.quote || ''} onChange={e => updateBlock(b.id, 'quote', e.target.value)}
-                                      sx={{ '& .MuiOutlinedInput-root': { borderRadius: '14px', color: '#0f172a', bgcolor: 'rgba(0,0,0,0.02)', '& fieldset': { borderColor: 'rgba(0,0,0,0.15)' }, '&:hover fieldset': { borderColor: alpha(color, 0.5) }, '&.Mui-focused fieldset': { borderColor: color, borderWidth: 2 } }, '& .MuiInputLabel-root': { color: '#475569', fontWeight: 600 } }}
+                                    <PremiumMarkdownEditor colorTheme={color}
+                                      fullWidth multiline rows={3}  label="Quote Text"
+                                      placeholder={b.sopHint || ''} value={b.content.quote || ''} onChange={(e: any) => updateBlock(b.id, 'quote', e.target.value)}
+                                      
                                     />
                                     <Box sx={{ display: 'flex', gap: 2, flexDirection: 'column' }}>
-                                      <TextField
-                                        fullWidth variant="outlined" label="Attribution"
+                                      <PremiumTextField colorTheme={color}
+                                        fullWidth  label="Attribution"
                                         placeholder="Name, Title" value={b.content.attribution || ''} onChange={e => updateBlock(b.id, 'attribution', e.target.value)}
-                                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '14px', color: '#0f172a', bgcolor: 'rgba(0,0,0,0.02)', '& fieldset': { borderColor: 'rgba(0,0,0,0.15)' }, '&:hover fieldset': { borderColor: alpha(color, 0.5) }, '&.Mui-focused fieldset': { borderColor: color, borderWidth: 2 } }, '& .MuiInputLabel-root': { color: '#475569', fontWeight: 600 } }}
+                                        
                                       />
                                         <Box sx={{ flex: 1, display: 'flex', gap: 1, alignItems: 'center' }}>
                                           {mediaUrlMode[b.id] ? (
-                                            <TextField
-                                              fullWidth variant="outlined" label="Avatar/Logo URL (Optional)"
+                                            <PremiumTextField colorTheme={color}
+                                              fullWidth  label="Avatar/Logo URL (Optional)"
                                               placeholder="https://..." value={b.content.avatarUrl || ''} onChange={e => updateBlock(b.id, 'avatarUrl', e.target.value)}
-                                              sx={{ '& .MuiOutlinedInput-root': { borderRadius: '14px', color: '#0f172a', bgcolor: 'rgba(0,0,0,0.02)', '& fieldset': { borderColor: 'rgba(0,0,0,0.15)' }, '&:hover fieldset': { borderColor: alpha(color, 0.5) }, '&.Mui-focused fieldset': { borderColor: color, borderWidth: 2 } }, '& .MuiInputLabel-root': { color: '#475569', fontWeight: 600 } }}
+                                              
                                             />
                                           ) : (
                                             <Button
-                                              variant="outlined" component="label" fullWidth
+                                               component="label" fullWidth
                                               sx={{ height: 56, borderRadius: '14px', borderStyle: 'dashed', borderWidth: 2, color: color, borderColor: alpha(color, 0.4), '&:hover': { borderColor: color, bgcolor: alpha(color, 0.05) }, justifyContent: 'flex-start', px: 2 }}
                                             >
                                               <input type="file" hidden accept="image/*" onChange={(e) => { if (e.target.files?.[0]) handleImageUpload(b.id, 'avatarUrl', e.target.files[0]); }} />
@@ -1499,22 +1530,23 @@ export default function CreateLearnContentForm({ onSuccess, onCancel }: { onSucc
                                           </Tooltip>
                                         </Box>
                                     </Box>
-                                    <TextField
-                                      fullWidth variant="outlined" label="Discussion Prompt (Optional)"
+                                    <PremiumTextField colorTheme={color}
+                                      fullWidth  label="Discussion Prompt (Optional)"
                                       placeholder="What are your thoughts on this quote?" value={b.content.discussionPrompt || ''} onChange={e => updateBlock(b.id, 'discussionPrompt', e.target.value)}
-                                      sx={{ '& .MuiOutlinedInput-root': { borderRadius: '14px', color: '#0f172a', bgcolor: 'rgba(0,0,0,0.02)', '& fieldset': { borderColor: 'rgba(0,0,0,0.15)' }, '&:hover fieldset': { borderColor: alpha(color, 0.5) }, '&.Mui-focused fieldset': { borderColor: color, borderWidth: 2 } }, '& .MuiInputLabel-root': { color: '#475569', fontWeight: 600 } }}
+                                      
                                     />
                                   </Box>
                                 )}
                                 {b.type === 'exec_summary' && (
                                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                                     {[0, 1, 2].map(idx => (
-                                      <TextField
+                                      <PremiumMarkdownEditor colorTheme={color}
                                         key={idx}
-                                        fullWidth variant="outlined" 
+                                        fullWidth  
+                                        multiline minRows={2}
                                         label={selectedTimeframe ? EXEC_SUMMARY_LABELS[selectedTimeframe as keyof typeof EXEC_SUMMARY_LABELS][idx] : `Summary Point ${idx + 1}`}
-                                        value={b.content[`point${idx + 1}`] || ''} onChange={e => updateBlock(b.id, `point${idx + 1}`, e.target.value)}
-                                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '14px', color: '#0f172a', bgcolor: 'rgba(0,0,0,0.02)', '& fieldset': { borderColor: 'rgba(0,0,0,0.15)' }, '&:hover fieldset': { borderColor: alpha(color, 0.5) }, '&.Mui-focused fieldset': { borderColor: color, borderWidth: 2 } }, '& .MuiInputLabel-root': { color: '#475569', fontWeight: 600 } }}
+                                        value={b.content[`point${idx + 1}`] || ''} onChange={(e: any) => updateBlock(b.id, `point${idx + 1}`, e.target.value)}
+                                        
                                       />
                                     ))}
                                   </Box>
@@ -1522,21 +1554,35 @@ export default function CreateLearnContentForm({ onSuccess, onCancel }: { onSucc
                                 {b.type === 'highlight_card' && (
                                   <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
                                     <Box sx={{ flex: 2, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                                      <TextField
-                                        fullWidth variant="outlined" label="Caption / Statistic"
-                                        placeholder={b.sopHint || 'What collapsed and when?'} value={b.content.caption || ''} onChange={e => updateBlock(b.id, 'caption', e.target.value)}
-                                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '14px', color: '#0f172a', bgcolor: 'rgba(0,0,0,0.02)', '& fieldset': { borderColor: 'rgba(0,0,0,0.15)' }, '&:hover fieldset': { borderColor: alpha(color, 0.5) }, '&.Mui-focused fieldset': { borderColor: color, borderWidth: 2 } }, '& .MuiInputLabel-root': { color: '#475569', fontWeight: 600 } }}
+                                      <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+                                        <PremiumAutocomplete
+                                          options={['Success', 'Failure', 'Warning', 'Critical', 'Insight', 'Trend']}
+                                          freeSolo
+                                          colorTheme={color}
+                                          label="Status Tag"
+                                          value={b.content.label || ''}
+                                          onChange={(e, newValue) => updateBlock(b.id, 'label', newValue || '')}
+                                          onInputChange={(e, newInputValue) => updateBlock(b.id, 'label', newInputValue)}
+                                          fullWidth
+                                          sx={{ flex: 1 }}
+                                        />
+                                      </Box>
+                                      <PremiumMarkdownEditor colorTheme={color}
+                                        fullWidth  label="Caption / Statistic"
+                                        multiline minRows={3}
+                                        placeholder={b.sopHint || 'What collapsed and when?'} value={b.content.caption || ''} onChange={(e: any) => updateBlock(b.id, 'caption', e.target.value)}
+                                        
                                       />
                                       <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                                         {mediaUrlMode[b.id] ? (
-                                          <TextField
-                                            fullWidth variant="outlined" label="Background Image URL"
+                                          <PremiumTextField colorTheme={color}
+                                            fullWidth  label="Background Image URL"
                                             placeholder="https://..." value={b.content.imageUrl || ''} onChange={e => updateBlock(b.id, 'imageUrl', e.target.value)}
-                                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: '14px', color: '#0f172a', bgcolor: 'rgba(0,0,0,0.02)', '& fieldset': { borderColor: 'rgba(0,0,0,0.15)' }, '&:hover fieldset': { borderColor: alpha(color, 0.5) }, '&.Mui-focused fieldset': { borderColor: color, borderWidth: 2 } }, '& .MuiInputLabel-root': { color: '#475569', fontWeight: 600 } }}
+                                            
                                           />
                                         ) : (
                                           <Button
-                                            variant="outlined" component="label" fullWidth
+                                             component="label" fullWidth
                                             sx={{ height: 56, borderRadius: '14px', borderStyle: 'dashed', borderWidth: 2, color: color, borderColor: alpha(color, 0.4), '&:hover': { borderColor: color, bgcolor: alpha(color, 0.05) }, justifyContent: 'flex-start', px: 2 }}
                                           >
                                             <input type="file" hidden accept="image/*" onChange={(e) => { if (e.target.files?.[0]) handleImageUpload(b.id, 'imageUrl', e.target.files[0]); }} />
@@ -1566,8 +1612,8 @@ export default function CreateLearnContentForm({ onSuccess, onCancel }: { onSucc
                                 )}
                                 {b.type === 'data_embed' && (
                                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                    <TextField
-                                      fullWidth variant="outlined" label="Data Embed URL"
+                                    <PremiumTextField colorTheme={color}
+                                      fullWidth  label="Data Embed URL"
                                       placeholder="https://dune.com/embeds/..." value={b.content.iframeUrl || ''} onChange={e => updateBlock(b.id, 'iframeUrl', e.target.value)}
                                       helperText="Paste the URL of the chart or dashboard you want to embed. We will securely sandbox it."
                                       sx={{ '& .MuiOutlinedInput-root': { borderRadius: '14px', color: '#0f172a', bgcolor: 'rgba(0,0,0,0.02)', '& fieldset': { borderColor: 'rgba(0,0,0,0.15)' }, '&:hover fieldset': { borderColor: alpha(color, 0.5) }, '&.Mui-focused fieldset': { borderColor: color, borderWidth: 2 } }, '& .MuiInputLabel-root': { color: '#475569', fontWeight: 600 }, '& .MuiFormHelperText-root': { color: '#64748b' } }}
@@ -1584,8 +1630,8 @@ export default function CreateLearnContentForm({ onSuccess, onCancel }: { onSucc
                                       uploadFn={handleImageUpload}
                                       uploading={uploading}
                                     />
-                                    <TextField
-                                      fullWidth variant="outlined" label="Discussion Prompt (Optional)"
+                                    <PremiumTextField colorTheme={color}
+                                      fullWidth  label="Discussion Prompt (Optional)"
                                       placeholder="What stands out to you in this evidence?" value={b.content.discussionPrompt || ''} onChange={e => updateBlock(b.id, 'discussionPrompt', e.target.value)}
                                       sx={{ mt: 3, '& .MuiOutlinedInput-root': { borderRadius: '14px', color: '#0f172a', bgcolor: 'rgba(0,0,0,0.02)', '& fieldset': { borderColor: 'rgba(0,0,0,0.15)' }, '&:hover fieldset': { borderColor: alpha(color, 0.5) }, '&.Mui-focused fieldset': { borderColor: color, borderWidth: 2 } }, '& .MuiInputLabel-root': { color: '#475569', fontWeight: 600 } }}
                                     />
@@ -1594,15 +1640,15 @@ export default function CreateLearnContentForm({ onSuccess, onCancel }: { onSucc
                                 {b.type === 'data_embed' && (
                                   <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
                                     <Box sx={{ flex: 2, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                                      <TextField
-                                        fullWidth variant="outlined" label="Embed URL or Code"
+                                      <PremiumTextField colorTheme={color}
+                                        fullWidth  label="Embed URL or Code"
                                         placeholder="Paste embed code or URL..." value={b.content.embedUrl || ''} onChange={e => updateBlock(b.id, 'embedUrl', e.target.value)}
-                                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '14px', color: '#0f172a', bgcolor: 'rgba(0,0,0,0.02)', '& fieldset': { borderColor: 'rgba(0,0,0,0.15)' }, '&:hover fieldset': { borderColor: alpha(color, 0.5) }, '&.Mui-focused fieldset': { borderColor: color, borderWidth: 2 } }, '& .MuiInputLabel-root': { color: '#475569', fontWeight: 600 } }}
+                                        
                                       />
-                                      <TextField
-                                        fullWidth variant="outlined" label="Caption"
+                                      <PremiumTextField colorTheme={color}
+                                        fullWidth  label="Caption"
                                         placeholder="Describe this data..." value={b.content.caption || ''} onChange={e => updateBlock(b.id, 'caption', e.target.value)}
-                                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '14px', color: '#0f172a', bgcolor: 'rgba(0,0,0,0.02)', '& fieldset': { borderColor: 'rgba(0,0,0,0.15)' }, '&:hover fieldset': { borderColor: alpha(color, 0.5) }, '&.Mui-focused fieldset': { borderColor: color, borderWidth: 2 } }, '& .MuiInputLabel-root': { color: '#475569', fontWeight: 600 } }}
+                                        
                                       />
                                     </Box>
                                     <Box sx={{ flex: 1, borderRadius: '14px', overflow: 'hidden', bgcolor: 'rgba(0,0,0,0.03)', border: '1px dashed rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 120 }}>
@@ -1660,10 +1706,10 @@ export default function CreateLearnContentForm({ onSuccess, onCancel }: { onSucc
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 <Typography variant="h5" sx={{ fontWeight: 900 }}>Media Details</Typography>
                 {(type === 'video' || type === 'livestream') && (
-                  <TextField label="URL" value={videoUrl} onChange={e => setVideoUrl(e.target.value)} fullWidth />
+                  <PremiumTextField colorTheme={color} label="URL" value={videoUrl} onChange={e => setVideoUrl(e.target.value)} fullWidth />
                 )}
                 {type === 'report' && (
-                  <TextField label="PDF URL" value={reportPdfUrl} onChange={e => setReportPdfUrl(e.target.value)} fullWidth />
+                  <PremiumTextField colorTheme={color} label="PDF URL" value={reportPdfUrl} onChange={e => setReportPdfUrl(e.target.value)} fullWidth />
                 )}
               </Box>
             )}
@@ -1698,7 +1744,7 @@ export default function CreateLearnContentForm({ onSuccess, onCancel }: { onSucc
         ) : (
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Button
-              variant="outlined"
+              
               onClick={() => setPreviewOpen(true)}
               startIcon={<SparkleIcon sx={{ color: '#8b5cf6' }} />}
               sx={{
@@ -1777,66 +1823,18 @@ export default function CreateLearnContentForm({ onSuccess, onCancel }: { onSucc
           </IconButton>
         </Box>
 
-        <Box sx={{ flex: 1, overflowY: 'auto', bgcolor: '#fff' }}>
-          <Box sx={{ py: 8, px: { xs: 3, md: 6 }, display: 'flex', justifyContent: 'center' }}>
-            <Box sx={{ width: '100%', maxWidth: 'md' }}>
-              {/* Article Header */}
-              <Box sx={{ mb: 6 }}>
-                {/* Tags */}
-                <Box sx={{ display: 'flex', gap: 1, mb: 3, flexWrap: 'wrap' }}>
-                    <Box sx={{ 
-                      px: 2, py: 0.5, borderRadius: '12px', 
-                      bgcolor: 'rgba(0,0,0,0.04)', color: '#475569', 
-                      fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' 
-                    }}>
-                      {selectedTimeframe === 'past' ? 'Autopsy' : selectedTimeframe === 'present' ? 'Survival Guide' : 'Future Trends'}
-                    </Box>
-                </Box>
-
-                {/* Title */}
-                <Typography variant="h1" sx={{ color: '#0f172a', fontWeight: 900, fontSize: { xs: '2.5rem', md: '3.5rem' }, lineHeight: 1.1, letterSpacing: '-0.02em', mb: 3 }}>
-                  {title || blocks.find(b => b.type === 'subheading')?.content.text || 'Untitled Brief'}
-                </Typography>
-
-                {/* Subtitle / Description */}
-                <Typography sx={{ color: '#475569', fontSize: { xs: '1.2rem', md: '1.5rem' }, lineHeight: 1.5, mb: 4, fontWeight: 500 }}>
-                  {description || blocks.find(b => b.type === 'exec_summary')?.content.point1 || 'Add an Executive Summary block to populate the article description.'}
-                </Typography>
-
-                {/* Author Box */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Avatar src={profile?.avatarUrl || ''} sx={{ width: 48, height: 48 }}>
-                    {profile?.displayName?.charAt(0) || 'A'}
-                  </Avatar>
-                  <Box>
-                    <Typography sx={{ color: '#0f172a', fontWeight: 700 }}>{profile?.displayName || 'Anonymous'}</Typography>
-                    <Typography sx={{ color: '#64748b', fontSize: '0.85rem' }}>
-                      {new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric' }).format(new Date())}
-                    </Typography>
-                  </Box>
-                </Box>
+        <Box sx={{ flex: 1, overflowY: 'auto', p: { xs: 3, md: 6, lg: 8 }, display: 'flex', justifyContent: 'center', bgcolor: '#fff' }}>
+          <Box sx={{ width: '100%', maxWidth: 800 }}>
+            {/* Content Blocks */}
+            {blocks.map((b) => (
+              <Box key={b.id} sx={{ mb: 5, position: 'relative' }}>
+                <ArticleBlockRenderer 
+                  block={{ id: b.id, blockType: b.type, content: b.content }} 
+                  themeMode="light" 
+                  accentColor={selectedTimeframe === 'past' ? '#ef4444' : selectedTimeframe === 'present' ? '#10b981' : '#3b82f6'} 
+                />
               </Box>
-
-              {/* Thumbnail if present */}
-              {thumbnailUrl && (
-                <Box sx={{ mb: 6, borderRadius: '24px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}>
-                  <img src={thumbnailUrl} alt="Thumbnail preview" style={{ width: '100%', height: 'auto', display: 'block' }} />
-                </Box>
-              )}
-
-              {/* Content Blocks */}
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {blocks.map((b) => (
-                  <ArticleBlockRenderer key={b.id} block={{ id: b.id, blockType: b.type, content: b.content }} themeMode="light" />
-                ))}
-              </Box>
-
-              <Divider sx={{ my: 8 }} />
-              
-              <Box sx={{ textAlign: 'center' }}>
-                <Typography sx={{ color: '#64748b', fontWeight: 600 }}>End of Briefing.</Typography>
-              </Box>
-            </Box>
+            ))}
           </Box>
         </Box>
       </Dialog>

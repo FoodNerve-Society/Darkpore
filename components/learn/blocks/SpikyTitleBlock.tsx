@@ -22,7 +22,7 @@ export const SpikyTitleBlock: React.FC<SpikyTitleBlockProps> = ({ content, theme
   }
 
   return (
-    <Box sx={{ my: 4, pl: { xs: 2, md: 3 }, borderLeft: `4px solid ${isDark ? '#3b82f6' : '#2563eb'}` }}>
+    <Box sx={{ my: 4, pl: { xs: 2, md: 3 } }}>
       <Typography
         variant="h3"
         sx={{
@@ -32,11 +32,11 @@ export const SpikyTitleBlock: React.FC<SpikyTitleBlockProps> = ({ content, theme
           lineHeight: 1.2,
         }}
       >
-        <Box component="span" sx={{ display: 'block', fontWeight: 900 }}>
+        <Box component="span" sx={{ fontWeight: 900 }}>
           {beforeColon}
         </Box>
         {afterColon && (
-          <Box component="span" sx={{ display: 'block', fontWeight: 500, fontSize: '0.7em', color: isDark ? '#94a3b8' : '#475569', mt: 1 }}>
+          <Box component="span" sx={{ fontWeight: 400, fontStyle: 'italic', display: 'inline-block', ml: 1, color: isDark ? '#cbd5e1' : '#475569' }}>
             {afterColon}
           </Box>
         )}
