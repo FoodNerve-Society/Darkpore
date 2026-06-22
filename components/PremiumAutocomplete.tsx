@@ -11,17 +11,17 @@ interface CustomProps {
 
 type PremiumAutocompleteProps<
     T,
-    Multiple extends boolean | undefined,
-    DisableClearable extends boolean | undefined,
-    FreeSolo extends boolean | undefined
+    Multiple extends boolean | undefined = false,
+    DisableClearable extends boolean | undefined = false,
+    FreeSolo extends boolean | undefined = false
 > = Omit<AutocompleteProps<T, Multiple, DisableClearable, FreeSolo>, 'renderInput'> & CustomProps;
 
 // --- COMPONENT IMPLEMENTATION ---
 function PremiumAutocomplete<
     T,
-    Multiple extends boolean | undefined = undefined,
-    DisableClearable extends boolean | undefined = undefined,
-    FreeSolo extends boolean | undefined = undefined
+    Multiple extends boolean | undefined = false,
+    DisableClearable extends boolean | undefined = false,
+    FreeSolo extends boolean | undefined = false
 >(props: PremiumAutocompleteProps<T, Multiple, DisableClearable, FreeSolo>) {
 
     const { colorTheme, label, ...rest } = props;
