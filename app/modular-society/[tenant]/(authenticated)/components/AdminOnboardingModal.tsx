@@ -293,7 +293,7 @@ export default function AdminOnboardingModal() {
                     colorTheme="#10b981"
                     label="Department Base"
                     options={DEPARTMENTS}
-                    value={department}
+                    value={department as any}
                     onChange={(_, newValue) => setDepartment(newValue as string || '')}
                     onInputChange={(_, newInputValue) => setDepartment(newInputValue)}
                   />
@@ -303,7 +303,7 @@ export default function AdminOnboardingModal() {
                     colorTheme="#10b981"
                     label="Official Designation"
                     options={ROLES}
-                    value={role}
+                    value={role as any}
                     onChange={(_, newValue) => setRole(newValue as string || '')}
                     onInputChange={(_, newInputValue) => setRole(newInputValue)}
                   />
