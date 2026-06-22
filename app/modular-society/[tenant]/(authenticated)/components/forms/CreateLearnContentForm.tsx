@@ -1392,7 +1392,6 @@ export default function CreateLearnContentForm({ onSuccess, onCancel }: { onSucc
                                             updateBlock(b.id, 'text', e.target.value);
                                           }
                                         }}
-                                        inputProps={{ maxLength: 100 }}
                                         helperText={`${(b.content.text || '').length} / 100 characters max`}
                                         sx={{ 
                                           '& .MuiOutlinedInput-root': { borderRadius: '14px', color: '#0f172a', bgcolor: 'rgba(0,0,0,0.02)', '& fieldset': { borderColor: 'rgba(0,0,0,0.15)' }, '&:hover fieldset': { borderColor: alpha(color, 0.5) }, '&.Mui-focused fieldset': { borderColor: color, borderWidth: 2 } }, 
@@ -1706,10 +1705,10 @@ export default function CreateLearnContentForm({ onSuccess, onCancel }: { onSucc
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 <Typography variant="h5" sx={{ fontWeight: 900 }}>Media Details</Typography>
                 {(type === 'video' || type === 'livestream') && (
-                  <PremiumTextField colorTheme={color} label="URL" value={videoUrl} onChange={e => setVideoUrl(e.target.value)} fullWidth />
+                  <PremiumTextField colorTheme="#10b981" label="URL" value={videoUrl} onChange={e => setVideoUrl(e.target.value)} fullWidth />
                 )}
                 {type === 'report' && (
-                  <PremiumTextField colorTheme={color} label="PDF URL" value={reportPdfUrl} onChange={e => setReportPdfUrl(e.target.value)} fullWidth />
+                  <PremiumTextField colorTheme="#10b981" label="PDF URL" value={reportPdfUrl} onChange={e => setReportPdfUrl(e.target.value)} fullWidth />
                 )}
               </Box>
             )}

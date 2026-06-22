@@ -203,16 +203,16 @@ export default function PremiumMarkdownEditor({
                     onChange={onChange}
                     label={label}
                     placeholder={placeholder}
-                    inputProps={{
-                        ...(props.inputProps || {}),
-                        style: { padding: '16px 8px', lineHeight: 1.6 } // Clean reading padding
-                    }}
                     sx={{
                         '& .MuiFilledInput-root': {
                             bgcolor: 'transparent !important', 
                             boxShadow: 'none !important',
                             borderRadius: 0,
                             '&::before, &::after': { display: 'none' },
+                        },
+                        '& .MuiInputBase-inputMultiline': {
+                            padding: '16px 8px',
+                            lineHeight: 1.6
                         },
                         ...(props.sx || {})
                     }}

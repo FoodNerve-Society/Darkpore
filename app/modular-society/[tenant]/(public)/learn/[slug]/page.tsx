@@ -76,7 +76,7 @@ export default async function LearnContentPage({ params }: { params: { tenant: s
 
         {/* Article Blocks */}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {article.blocks.map(block => (
+          {article.blocks.map((block: any) => (
             <ArticleBlockRenderer 
               key={block.id} 
               block={{ id: block.id, blockType: block.blockType, content: block.content }} 

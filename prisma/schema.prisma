@@ -30,10 +30,10 @@ model User {
   rank Int @default(1)
 
   // Gatekeeper Flags
-  hasCompletedProfile     Boolean @default(false)
-  hasKYC                  Boolean @default(false)
-  hasBusinessVerification Boolean @default(false)
-  verified                Boolean @default(false)
+  hasCompletedProfile     Boolean   @default(false)
+  hasKYC                  Boolean   @default(false)
+  hasBusinessVerification Boolean   @default(false)
+  verified                Boolean   @default(false)
   verifiedAt              DateTime?
 
   // Profile Data
@@ -48,9 +48,17 @@ model User {
   joinedAt          DateTime @default(now())
 
   // Relations
-  tradeListings       TradeListing[]
-  campaigns           Campaign[]
-  organizationMembers OrganizationMember[]
+  tradeListings        TradeListing[]
+  campaigns            Campaign[]
+  organizationMembers  OrganizationMember[]
+  communityMemberships CommunityGroupMember[]
+  communityCards       CommunityCard[]
+  conversations        ConversationParticipant[]
+  sentMessages         Message[]
+  subgroupMemberships  SubgroupParticipant[]
+  followedInitiatives  SubgroupFollower[]
+  pitchReviews         PitchReview[]
+  communityPosts       CommunityPost[]
 }
 
 // ════════════════════════════════════════════════════════
@@ -68,7 +76,8 @@ model Organization {
   createdAt DateTime @default(now())
 
   // Relations
-  members OrganizationMember[]
+  members        OrganizationMember[]
+  communityGroup CommunityGroup?
 }
 
 model OrganizationMember {
@@ -132,6 +141,9 @@ model Campaign {
   // Relations
   organizerId String
   organizer   User   @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+
+  initiativeId String?          @unique
+  pitch        InitiativePitch? @relation(fields: [initiativeId], references: [id], onDelete: SetNull)
 }
 
 model MarketPrice {
@@ -188,10 +200,10 @@ model LearnContent {
 }
 
 model LearnArticle {
-  id             String @id @default(cuid())
-  learnContentId String @unique
+  id             String  @id @default(cuid())
+  learnContentId String  @unique
   readTime       String?
-  
+
   learnContent LearnContent        @relation(fields: [learnContentId], references: [id], onDelete: Cascade)
   blocks       LearnArticleBlock[]
 }
@@ -202,35 +214,35 @@ model LearnArticleBlock {
   orderIndex Int
   blockType  String // e.g. 'subheading', 'myth_fact', 'live_poll', 'core_interactive'
   content    String // JSON stringified payload specific to the blockType
-  
-  article    LearnArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  article LearnArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
 }
 
 model LearnVideo {
-  id             String @id @default(cuid())
-  learnContentId String @unique
+  id             String  @id @default(cuid())
+  learnContentId String  @unique
   videoUrl       String // Cloudinary / R2
   duration       String?
-  
+
   learnContent LearnContent @relation(fields: [learnContentId], references: [id], onDelete: Cascade)
 }
 
 model LearnClass {
-  id             String @id @default(cuid())
-  learnContentId String @unique
-  moduleCount    Int    @default(1)
+  id             String  @id @default(cuid())
+  learnContentId String  @unique
+  moduleCount    Int     @default(1)
   totalDuration  String?
-  
+
   learnContent LearnContent @relation(fields: [learnContentId], references: [id], onDelete: Cascade)
 }
 
 model LearnLivestream {
-  id             String @id @default(cuid())
-  learnContentId String @unique
+  id             String    @id @default(cuid())
+  learnContentId String    @unique
   streamUrl      String? // Cloudinary Live / Mux / R2
-  isLive         Boolean @default(false)
+  isLive         Boolean   @default(false)
   scheduledFor   DateTime?
-  
+
   learnContent LearnContent @relation(fields: [learnContentId], references: [id], onDelete: Cascade)
 }
 
@@ -239,7 +251,7 @@ model LearnReport {
   learnContentId String @unique
   pdfUrl         String // Cloudflare R2 / Cloudinary
   pageCount      Int?
-  
+
   learnContent LearnContent @relation(fields: [learnContentId], references: [id], onDelete: Cascade)
 }
 
@@ -274,4 +286,273 @@ model LearningMaterial {
   subcategoryId    String
   subcategoryTitle String?
   dateAdded        DateTime @default(now())
+}
+
+// ════════════════════════════════════════════════════════
+// MEET PILLAR MODELS
+// ════════════════════════════════════════════════════════
+
+model Community {
+  id          String   @id @default(cuid())
+  roleKey     String   @unique // 'Student', 'Entrepreneur', 'Employee'
+  displayName String
+  createdAt   DateTime @default(now())
+
+  groups CommunityGroup[]
+}
+
+model CommunityGroup {
+  id             String   @id @default(cuid())
+  communityId    String
+  organizationId String?  @unique // Link to Organization if applicable (e.g. Unilag)
+  name           String
+  memberCount    Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  community     Community              @relation(fields: [communityId], references: [id])
+  organization  Organization?          @relation(fields: [organizationId], references: [id])
+  members       CommunityGroupMember[]
+  cards         CommunityCard[]
+  communityPosts CommunityPost[]
+  conversations Conversation[]
+}
+
+model CommunityGroupMember {
+  id       String   @id @default(cuid())
+  groupId  String
+  userId   String
+  joinedAt DateTime @default(now())
+
+  group CommunityGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+}
+
+model DailySparkQuestion {
+  id              String  @id @default(cuid())
+  questionText    String
+  sourceArticleId String? // Link to the original LearnContent if applicable
+
+  // Category Tagging for the dynamic knowledge base filter
+  category    String
+  subcategory String
+  era         String?
+
+  scheduledDate DateTime @unique // The day this question goes live globally
+  isProcessed   Boolean  @default(false) // Set to true at midnight when subgroups are spawned
+  createdAt     DateTime @default(now())
+
+  // Relations
+  cards CommunityCard[]
+}
+
+model CommunityCard {
+  id           String @id @default(cuid())
+  groupId      String // The CommunityGroup this belongs to
+  authorId     String
+  dailySparkId String // Links back to the question of the day
+
+  // Engagement Metrics for threshold triggering
+  likes    Int @default(0)
+  dislikes Int @default(0)
+  views    Int @default(0)
+
+  hasSpawnedSubgroup Boolean  @default(false)
+  createdAt          DateTime @default(now())
+
+  // Relations
+  group      CommunityGroup       @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  author     User                 @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  dailySpark DailySparkQuestion   @relation(fields: [dailySparkId], references: [id], onDelete: Cascade)
+  blocks     CommunityCardBlock[] // The 9 Intelligence Blocks that make up the card content
+  initiative SubgroupInitiative? // 1-to-1 link if this card spawns a subgroup
+}
+
+model CommunityCardBlock {
+  id         String @id @default(cuid())
+  cardId     String
+  orderIndex Int
+  blockType  String // e.g. 'deep_analysis', 'myth_fact', 'live_poll'
+  content    String // JSON stringified payload
+
+  card CommunityCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+}
+
+model CommunityPost {
+  id          String   @id @default(cuid())
+  groupId     String
+  authorId    String
+  category    String
+  subcategory String
+  likes       Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  group  CommunityGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  author User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  blocks CommunityPostBlock[]
+}
+
+model CommunityPostBlock {
+  id         String @id @default(cuid())
+  postId     String
+  orderIndex Int
+  blockType  String
+  content    String
+
+  post CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+}
+
+model SubgroupInitiative {
+  id           String @id @default(cuid())
+  sourceCardId String @unique // The viral card that spawned this
+  groupId      String // Inherited community
+
+  // 'ideation' -> 'consensus' -> 'review' -> 'graduated' | 'failed'
+  status    String   @default("ideation")
+  createdAt DateTime @default(now())
+
+  // Relations
+  sourceCard   CommunityCard         @relation(fields: [sourceCardId], references: [id], onDelete: Cascade)
+  participants SubgroupParticipant[]
+  followers    SubgroupFollower[]
+  questions    ConsensusQuestion[]
+  pitch        InitiativePitch?
+}
+
+model SubgroupParticipant {
+  id           String @id @default(cuid())
+  initiativeId String
+  userId       String
+
+  // 'active', 'kicked', 'left'
+  status   String    @default("active")
+  joinedAt DateTime  @default(now())
+  leftAt   DateTime?
+
+  initiative SubgroupInitiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  votes ConsensusVote[]
+
+  @@unique([initiativeId, userId])
+}
+
+model SubgroupFollower {
+  id           String   @id @default(cuid())
+  initiativeId String
+  userId       String
+  followedAt   DateTime @default(now())
+
+  initiative SubgroupInitiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([initiativeId, userId])
+}
+
+model ConsensusQuestion {
+  id           String @id @default(cuid())
+  initiativeId String
+  orderIndex   Int // 1 to 25
+  questionText String
+
+  proposedAnswer String? // The draft answer they are working on
+  status         String  @default("active") // 'active' | 'passed'
+
+  startedAt DateTime  @default(now())
+  passedAt  DateTime?
+
+  initiative SubgroupInitiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  votes      ConsensusVote[]
+}
+
+model ConsensusVote {
+  id            String @id @default(cuid())
+  questionId    String
+  participantId String
+  voteStatus    String // 'agree' | 'disagree'
+
+  question    ConsensusQuestion   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  participant SubgroupParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@unique([questionId, participantId])
+}
+
+model InitiativePitch {
+  id           String @id @default(cuid())
+  initiativeId String @unique
+  title        String
+  summary      String
+
+  // 'pending', 'approved', 'rejected'
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
+
+  initiative SubgroupInitiative @relation(fields: [initiativeId], references: [id], onDelete: Cascade)
+  reviews    PitchReview[]
+
+  // Once graduated, it links to a final Campaign on the Support Tab
+  campaign Campaign?
+}
+
+model PitchReview {
+  id         String @id @default(cuid())
+  pitchId    String
+  reviewerId String // Must be a Rank 4 or 5 User
+
+  vote     String // 'approve' | 'reject'
+  feedback String // Their actionable advice
+
+  // The accountability loop:
+  isHelpful Boolean? // Null until rated by the founders
+  ratedAt   DateTime?
+
+  pitch    InitiativePitch @relation(fields: [pitchId], references: [id], onDelete: Cascade)
+  reviewer User            @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
+
+  @@unique([pitchId, reviewerId])
+}
+
+// ════════════════════════════════════════════════════════
+// MESSAGING MODELS (Phase 3)
+// ════════════════════════════════════════════════════════
+
+model Conversation {
+  id        String   @id @default(cuid())
+  // DMs will have no groupId. Group chats will have a groupId.
+  groupId   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  group        CommunityGroup?           @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  participants ConversationParticipant[]
+  messages     Message[]
+}
+
+model ConversationParticipant {
+  id             String   @id @default(cuid())
+  conversationId String
+  userId         String
+  hasUnread      Boolean  @default(false)
+  lastReadAt     DateTime @default(now())
+  joinedAt       DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  senderId       String
+  text           String?
+  images         String? // JSON stringified array of URLs
+  status         String   @default("sent") // 'sent' | 'delivered' | 'read'
+  type           String? // 'system' | 'application_request' etc.
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
 }

@@ -14,6 +14,8 @@ import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import BusinessIcon from '@mui/icons-material/Business';
 import PersonIcon from '@mui/icons-material/Person';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import { auth } from '@/lib/firebase/client';
+import { signOut } from 'firebase/auth';
 
 // ============================================================
 // FLAT LIGHT THEME
@@ -106,6 +108,16 @@ function QuestItem({ rank, title, description, completed, route, locked }: {
 export default function ProfilePage() {
   const { profile, activeOrg, switchOrg } = useSociety();
   const router = useRouter();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      // Let the global auth listener handle redirects, or force a redirect here:
+      window.location.href = '/join'; 
+    } catch (e) {
+      console.error('Sign out failed:', e);
+    }
+  };
 
   if (!profile) return null;
 
@@ -312,6 +324,39 @@ export default function ProfilePage() {
             locked={!profile.gatekeepers.hasBusinessVerification}
           />
         </Stack>
+      </Box>
+
+      {/* Account Settings / Sign Out */}
+      <Box sx={{ mt: 4, mb: 4 }}>
+        <Typography variant="h6" sx={{ fontWeight: 700 }} sx={{ mb: 2 }}>
+          Account Settings
+        </Typography>
+        <Card sx={{ ...glassCard }}>
+          <CardContent sx={{ p: 0 }}>
+            <Box sx={{ p: 2.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' } }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Edit Profile Details</Typography>
+              <ArrowForwardIcon fontSize="small" color="action" />
+            </Box>
+            <Divider />
+            <Box sx={{ p: 2.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' } }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Notification Preferences</Typography>
+              <ArrowForwardIcon fontSize="small" color="action" />
+            </Box>
+            <Divider />
+            <Box sx={{ p: 2.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' } }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Security & Privacy</Typography>
+              <ArrowForwardIcon fontSize="small" color="action" />
+            </Box>
+            <Divider />
+            <Box 
+              onClick={handleSignOut}
+              sx={{ p: 2.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', '&:hover': { bgcolor: 'rgba(211,47,47,0.04)' } }}
+            >
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'error.main' }}>Sign Out</Typography>
+              <ArrowForwardIcon fontSize="small" color="error" />
+            </Box>
+          </CardContent>
+        </Card>
       </Box>
     </Paper>
   );

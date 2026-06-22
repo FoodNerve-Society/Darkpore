@@ -124,6 +124,94 @@ async function main() {
     }
   }
 
+  // 7. Seed Daily Spark & Community Crucible
+  const spark = await prisma.dailySparkQuestion.upsert({
+    where: { id: 'spark-1' },
+    update: {},
+    create: {
+      id: 'spark-1',
+      questionText: 'Should our co-op invest 30% of profits into a communal cold-storage facility, or divide it as dividends?',
+      category: 'Infrastructure',
+      subcategory: 'Storage',
+      scheduledDate: new Date('2026-06-16T00:00:00.000Z'), // Yesterday
+      isProcessed: true,
+    },
+  });
+
+  const communityMaster = await prisma.community.upsert({
+    where: { roleKey: 'Innovator' },
+    update: {},
+    create: {
+      roleKey: 'Innovator',
+      displayName: 'Innovator Network'
+    }
+  });
+
+  const communityGrp = await prisma.communityGroup.upsert({
+    where: { id: 'grp-1' },
+    update: {},
+    create: {
+      id: 'grp-1',
+      name: 'Lagos Agritech Innovators',
+      communityId: communityMaster.id
+    }
+  });
+
+  const card = await prisma.communityCard.upsert({
+    where: { id: 'card-1' },
+    update: {},
+    create: {
+      id: 'card-1',
+      authorId: dummyUser.id,
+      groupId: communityGrp.id,
+      dailySparkId: spark.id,
+      likes: 1420,
+      views: 5000,
+      hasSpawnedSubgroup: true,
+      blocks: {
+        create: [
+          {
+            orderIndex: 0,
+            blockType: 'deep_analysis',
+            content: JSON.stringify({ text: 'Cold storage prevents 40% post-harvest loss. Dividends are short-term.' })
+          }
+        ]
+      }
+    }
+  });
+
+  await prisma.subgroupInitiative.upsert({
+    where: { sourceCardId: card.id },
+    update: {},
+    create: {
+      sourceCardId: card.id,
+      groupId: communityGrp.id,
+      status: 'consensus',
+      participants: {
+        create: [
+          { userId: dummyUser.id, status: 'active' }
+        ]
+      },
+      questions: {
+        create: [
+          {
+            orderIndex: 1,
+            questionText: 'Do we agree the facility will be located in Ikeja?',
+            status: 'passed',
+            proposedAnswer: 'Yes, Ikeja provides central access.',
+            passedAt: new Date()
+          },
+          {
+            orderIndex: 2,
+            questionText: 'How will maintenance fees be split?',
+            status: 'active',
+            proposedAnswer: 'Still debating between flat fee and usage-based.'
+          }
+        ]
+      }
+    }
+  });
+
   console.log('✅ Database seeded successfully!');
 }
 
