@@ -10,7 +10,13 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase only once
-export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+// Initialize Firebase safely (prevents crashing during Vercel build if env vars are missing)
+export const app = getApps().length === 0 
+  ? initializeApp(
+      firebaseConfig.apiKey 
+        ? firebaseConfig 
+        : { ...firebaseConfig, apiKey: 'dummy-key-to-prevent-build-crash' }
+    ) 
+  : getApps()[0];
 
 export const auth = getAuth(app);
