@@ -28,11 +28,6 @@ export default function FinishSignUpPage() {
             // Clear email from storage.
             window.localStorage.removeItem('emailForSignIn');
             setStatus('success');
-            
-            // Redirect after a short delay so they can see the success message
-            setTimeout(() => {
-              router.push('/society'); // Route them to the premium Society OS
-            }, 2000);
           })
           .catch((error) => {
             console.error('Error signing in with email link', error);

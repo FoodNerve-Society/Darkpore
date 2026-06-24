@@ -253,7 +253,7 @@ const SOP_FRAMEWORKS: Record<'past'|'present'|'future', SopBlock[]> = {
     { type: 'pull_quote',        role: 'The Ground Truth',      desc: 'Add human credibility with raw feedback from operators on the ground.',   hint: 'Who said it and why it matters' },
     { type: 'core_interactive',  role: 'The Collateral Damage', desc: 'Highlight the financial impact to make the failure tangible to investors.', hint: 'Who absorbed the financial hit in your sector?' },
     { type: 'live_poll',         role: 'The Pulse Check',       desc: 'Force the audience to reflect on their own operations and engage.',       hint: 'Are we at risk of repeating this exact mistake today?' },
-    { type: 'exec_summary',      role: 'The Hard Lesson',       desc: 'Deliver the final actionable takeaway so the mistake isn\'t repeated.',   hint: 'What investors/policymakers must avoid' },
+    { type: 'exec_summary',      role: 'The Strategic Directive', desc: 'Deliver role-based commands answering the title\'s action statement.',   hint: 'e.g. Directive for VCs: Fund X. Directive for Policy: Do Y.' },
   ],
   present: [
     { type: 'subheading',        role: 'The Spiky Title',             desc: 'Hook the reader by naming the crisis and who it hits right now.', hint: 'How Lagos Operators Are Surviving $2/L Diesel' },
@@ -264,7 +264,7 @@ const SOP_FRAMEWORKS: Record<'past'|'present'|'future', SopBlock[]> = {
     { type: 'media',             role: 'The Data Proof',              desc: 'Provide undeniable proof via chart or data visualization.',       hint: 'Upload supporting data visualization' },
     { type: 'core_interactive',  role: 'Winners vs. Crushed',         desc: 'Clearly distinguish who is profiting versus who is dying.',       hint: 'Are you seeing a different winner in your sector?' },
     { type: 'live_poll',         role: 'The Pulse Check',             desc: 'Force the audience to reflect on their own operations and engage.', hint: 'Are you deploying capital to bypass this bottleneck?' },
-    { type: 'exec_summary',      role: 'The Actionable Verdict',      desc: 'Deliver the final actionable takeaway on where to deploy capital.', hint: 'Where to survive and thrive' },
+    { type: 'exec_summary',      role: 'The Strategic Directive', desc: 'Deliver role-based commands answering the title\'s action statement.',   hint: 'e.g. Directive for VCs: Fund X. Directive for Policy: Do Y.' },
   ],
   future: [
     { type: 'subheading',        role: 'The Spiky Title',              desc: 'Hook the reader by naming the paradigm shift and timeline.',    hint: 'Why Drone Logistics Will Replace 40% of Last-Mile by 2030' },
@@ -275,7 +275,7 @@ const SOP_FRAMEWORKS: Record<'past'|'present'|'future', SopBlock[]> = {
     { type: 'media',             role: 'The Data Proof',               desc: 'Provide undeniable proof via schematic or adoption curve.',     hint: 'Upload forward-looking visualization' },
     { type: 'core_interactive',  role: 'The Global South Roadblocks',  desc: 'Detail the real-world friction (bad roads, politics) to add realism.', hint: 'How would you solve the last-mile infrastructure gap?' },
     { type: 'live_poll',         role: 'The Pulse Check',              desc: 'Force the audience to reflect on timeline feasibility and engage.', hint: 'Will this reach commercial scale in Africa by 2030?' },
-    { type: 'exec_summary',      role: 'Strategic Positioning',        desc: 'Deliver the final actionable takeaway on what to fund today.',  hint: 'Startups to fund, policies to draft' },
+    { type: 'exec_summary',      role: 'The Strategic Directive', desc: 'Deliver role-based commands answering the title\'s action statement.',   hint: 'e.g. Directive for VCs: Fund X. Directive for Policy: Do Y.' },
   ],
 };
 
@@ -284,22 +284,22 @@ const SOP_FRAMEWORKS: Record<'past'|'present'|'future', SopBlock[]> = {
 // ═══════════════════════════════════════════════════════════
 const SPIKY_TITLE_TEMPLATES: Record<string, string[]> = {
   past: [
-    "The [Failed Buzzword] Illusion: Why [Old Tech/Policy] Actually Destroyed [Value Chain Actor] in [Location]",
-    "The Death of [Old System]: How [Macro Shock] Killed [Location]’s [Sector] in the Early 2020s",
-    "The [Metric/Dollar Amount] Mistake: Why [Location]’s [Value Chain Actors] Completely Abandoned [Failed Project]",
-    "From [Good Intention] to [Bad Outcome]: The Tragic Legacy of [Old Method] for [Location]’s [Value Chain Actor]"
+    "The [Failed Buzzword] Illusion: Why [Old Tech/Policy] Actually Destroyed [Value Chain Actor] in [Location], and Why [Target Persona] Must [Action]",
+    "The Death of [Old System]: How [Macro Shock] Killed [Location]’s [Sector] in the Early 2020s, and Why [Target Persona] Must [Action]",
+    "The [Metric/Dollar Amount] Mistake: Why [Location]’s [Value Chain Actors] Completely Abandoned [Failed Project], and Why [Target Persona] Must [Action]",
+    "From [Good Intention] to [Bad Outcome]: The Tragic Legacy of [Old Method] for [Location]’s [Value Chain Actor], and Why [Target Persona] Must [Action]"
   ],
   present: [
-    "The [Metric/Percentage] Paradox: Why [Location]’s [Value Chain Actor] is Surviving by [Unexpected Hack]",
-    "Bypassing the [Broken Gatekeeper]: How [Value Chain Actor] in [Location] Are Using [New Method] Right Now",
-    "The Unspoken Truth About [Trend]: Why [Location]'s [Sector] Now Relies on [Controversial/Messy Fix]",
-    "[Factor A] vs. [Factor B]: Why Only [Specific Winner] Can Afford to [Action] in 2026 [Location]"
+    "The [Metric/Percentage] Paradox: Why [Location]’s [Value Chain Actor] is Surviving by [Unexpected Hack], and Why [Target Persona] Must [Action]",
+    "Bypassing the [Broken Gatekeeper]: How [Value Chain Actor] in [Location] Are Using [New Method] Right Now, and Why [Target Persona] Must [Action]",
+    "The Unspoken Truth About [Trend]: Why [Location]'s [Sector] Now Relies on [Controversial/Messy Fix], and Why [Target Persona] Must [Action]",
+    "[Factor A] vs. [Factor B]: Why Only [Specific Winner] Can Afford to [Action] in 2026 [Location], and Why [Target Persona] Must [Action]"
   ],
   future: [
-    "The End of [Current Bottleneck]: How [Emerging Tech] Will Permanently Disrupt [Location]’s [Sector] by [Year]",
-    "[Action Verb] the [Old Way]: Why [Value Chain Actor] Will Use [New Tech] to Bypass [Gatekeeper]",
-    "From [Old Concept] to [New Concept]: The 2030 Roadmap for [Location]’s [Value Chain Actor]",
-    "The [Metric/Market Size] Takeover: Why [Emerging Tech/Policy] is the Ultimate Bet for [Location] by 2030"
+    "The End of [Current Bottleneck]: How [Emerging Tech] Will Permanently Disrupt [Location]’s [Sector] by [Year], and Why [Target Persona] Must [Action]",
+    "[Action Verb] the [Old Way]: Why [Value Chain Actor] Will Use [New Tech] to Bypass [Gatekeeper], and Why [Target Persona] Must [Action]",
+    "From [Old Concept] to [New Concept]: The 2030 Roadmap for [Location]’s [Value Chain Actor], and Why [Target Persona] Must [Action]",
+    "The [Metric/Market Size] Takeover: Why [Emerging Tech/Policy] is the Ultimate Bet for [Location] by 2030, and Why [Target Persona] Must [Action]"
   ]
 };
 
@@ -349,7 +349,19 @@ const slideUpFade = keyframes`
 // COMPONENT
 // ═══════════════════════════════════════════════════════════
 
-export default function CreateLearnContentForm({ onSuccess, onCancel }: { onSuccess?: () => void, onCancel?: () => void }) {
+export default function CreateLearnContentForm({ 
+  onSuccess, 
+  onCancel,
+  postingAs = 'personal',
+  selectedOrgId = null,
+  onTypeChange
+}: { 
+  onSuccess?: () => void, 
+  onCancel?: () => void,
+  postingAs?: 'personal' | 'organization',
+  selectedOrgId?: string | null,
+  onTypeChange?: (type: string) => void
+}) {
   const { profile } = useSociety();
   const params = useParams();
   const tenantId = (params?.tenant as string) || 'food';
@@ -364,7 +376,6 @@ export default function CreateLearnContentForm({ onSuccess, onCancel }: { onSucc
 
   // Wizard State
   const [step, setStep] = useState(1);
-  const [postingAs, setPostingAs] = useState<'personal'|'organization'>('personal');
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const isBlockComplete = (b: any) => {
@@ -447,7 +458,14 @@ export default function CreateLearnContentForm({ onSuccess, onCancel }: { onSucc
   // Core fields
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [type, setType] = useState<CreateLearnContentPayload['type']>('article');
+  const [type, setType] = useState<CreateLearnContentPayload['type'] | ''>('');
+  
+  const activeThemeColor = CONTENT_TYPES.find(c => c.value === type)?.color || ACCENT;
+  
+  const handleTypeSelect = (newType: CreateLearnContentPayload['type']) => {
+    setType(newType);
+    if (onTypeChange) onTypeChange(newType);
+  };
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>('');
   const [thumbnailUrl, setThumbnailUrl] = useState('');
@@ -615,16 +633,29 @@ export default function CreateLearnContentForm({ onSuccess, onCancel }: { onSucc
         }
       }
 
+      let finalAuthorId = profile?.uid;
+      let finalAuthorName = profile?.displayName;
+      let finalAuthorAvatarUrl = profile?.avatarUrl;
+
+      if (postingAs === 'organization' && selectedOrgId) {
+        const org = profile?.organizations?.find(o => o.id === selectedOrgId);
+        if (org) {
+          finalAuthorId = org.id;
+          finalAuthorName = org.name;
+          finalAuthorAvatarUrl = org.logoUrl;
+        }
+      }
+
       const payload: CreateLearnContentPayload = {
         title: title.trim() || 'Draft Content',
         slug: generateSlug(title.trim() || 'Draft Content'),
         description: description.trim() || 'No description provided.',
-        type,
+        type: type as "article" | "video" | "class" | "livestream" | "report",
         bottleneckTags: selectedSubcategory ? [selectedSubcategory, selectedCategory] : [selectedCategory],
         thumbnailUrl,
-        authorId: profile?.uid,
-        authorName: profile?.displayName,
-        authorAvatarUrl: profile?.avatarUrl,
+        authorId: finalAuthorId,
+        authorName: finalAuthorName,
+        authorAvatarUrl: finalAuthorAvatarUrl,
         
         articleBlocks: type === 'article' ? finalBlocks.map((b, idx) => ({
           blockType: b.type,
@@ -707,7 +738,7 @@ export default function CreateLearnContentForm({ onSuccess, onCancel }: { onSucc
                   <Box key={ct.value}>
                     <PremiumCard
                       variant="interactive"
-                      onClick={() => setType(ct.value as any)}
+                      onClick={() => handleTypeSelect(ct.value as any)}
                       sx={{ 
                         cursor: 'pointer',
                         p: 2.5,
@@ -1431,7 +1462,7 @@ export default function CreateLearnContentForm({ onSuccess, onCancel }: { onSucc
                                             newPairs[idx].myth = e.target.value;
                                             updateBlock(b.id, 'pairs', newPairs);
                                           }}
-                                          sx={{ '& .MuiOutlinedInput-root': { borderRadius: '14px', color: '#0f172a', bgcolor: 'rgba(239,68,68,0.03)', '& fieldset': { borderColor: 'rgba(239,68,68,0.2)' }, '&:hover fieldset': { borderColor: 'rgba(239,68,68,0.5)' }, '&.Mui-focused fieldset': { borderColor: '#ef4444', borderWidth: 2 } }, '& .MuiInputLabel-root': { color: '#475569', fontWeight: 600 } }}
+                                          sx={{ '& .MuiOutlinedInput-root': { borderRadius: '14px', color: '#0f172a', bgcolor: alpha(color, 0.03), '& fieldset': { borderColor: alpha(color, 0.2) }, '&:hover fieldset': { borderColor: alpha(color, 0.5) }, '&.Mui-focused fieldset': { borderColor: color, borderWidth: 2 } }, '& .MuiInputLabel-root': { color: '#475569', fontWeight: 600 } }}
                                         />
                                         <PremiumTextField colorTheme={color}
                                           fullWidth  label={`Reality ${idx + 1}`}
@@ -1440,7 +1471,7 @@ export default function CreateLearnContentForm({ onSuccess, onCancel }: { onSucc
                                             newPairs[idx].fact = e.target.value;
                                             updateBlock(b.id, 'pairs', newPairs);
                                           }}
-                                          sx={{ '& .MuiOutlinedInput-root': { borderRadius: '14px', color: '#0f172a', bgcolor: 'rgba(16,185,129,0.03)', '& fieldset': { borderColor: 'rgba(16,185,129,0.2)' }, '&:hover fieldset': { borderColor: 'rgba(16,185,129,0.5)' }, '&.Mui-focused fieldset': { borderColor: '#10b981', borderWidth: 2 } }, '& .MuiInputLabel-root': { color: '#475569', fontWeight: 600 } }}
+                                          sx={{ '& .MuiOutlinedInput-root': { borderRadius: '14px', color: '#0f172a', bgcolor: alpha(color, 0.03), '& fieldset': { borderColor: alpha(color, 0.2) }, '&:hover fieldset': { borderColor: alpha(color, 0.5) }, '&.Mui-focused fieldset': { borderColor: color, borderWidth: 2 } }, '& .MuiInputLabel-root': { color: '#475569', fontWeight: 600 } }}
                                         />
                                         {idx > 0 && (
                                           <IconButton onClick={() => {
@@ -1705,10 +1736,10 @@ export default function CreateLearnContentForm({ onSuccess, onCancel }: { onSucc
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 <Typography variant="h5" sx={{ fontWeight: 900 }}>Media Details</Typography>
                 {(type === 'video' || type === 'livestream') && (
-                  <PremiumTextField colorTheme="#10b981" label="URL" value={videoUrl} onChange={e => setVideoUrl(e.target.value)} fullWidth />
+                  <PremiumTextField colorTheme={activeThemeColor} label="URL" value={videoUrl} onChange={e => setVideoUrl(e.target.value)} fullWidth />
                 )}
                 {type === 'report' && (
-                  <PremiumTextField colorTheme="#10b981" label="PDF URL" value={reportPdfUrl} onChange={e => setReportPdfUrl(e.target.value)} fullWidth />
+                  <PremiumTextField colorTheme={activeThemeColor} label="PDF URL" value={reportPdfUrl} onChange={e => setReportPdfUrl(e.target.value)} fullWidth />
                 )}
               </Box>
             )}
@@ -1726,9 +1757,9 @@ export default function CreateLearnContentForm({ onSuccess, onCancel }: { onSucc
           <Button 
             variant="contained" 
             onClick={() => setStep(step + 1)} 
-            disabled={step === 2 && !selectedTimeframe}
+            disabled={(step === 1 && !type) || (step === 2 && !selectedTimeframe)}
             sx={{ 
-              bgcolor: ACCENT, 
+              bgcolor: activeThemeColor, 
               fontWeight: 700, 
               px: 3, 
               borderRadius: 2,
@@ -1769,7 +1800,7 @@ export default function CreateLearnContentForm({ onSuccess, onCancel }: { onSucc
               onClick={handleSubmit} 
               disabled={loading || (blocks.length > 0 && !blocks.every(b => isBlockFilled(b)))} 
               sx={{ 
-                bgcolor: '#10b981', 
+                bgcolor: activeThemeColor, 
                 fontWeight: 800, 
                 px: 4, 
                 borderRadius: '12px',

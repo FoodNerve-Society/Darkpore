@@ -39,8 +39,10 @@ export const MainAnalysisBlock: React.FC<MainAnalysisBlockProps> = ({ content, t
           key={i}
           sx={{ 
             color: isDark ? 'rgba(255,255,255,0.85)' : '#334155', 
-            fontSize: { xs: '1.1rem', md: '1.2rem' }, 
-            lineHeight: 1.8,
+            fontFamily: '"Playfair Display", serif',
+            fontSize: { xs: '1.1rem', md: '1.25rem' }, 
+            lineHeight: 1.9,
+            letterSpacing: '0.01em',
             mb: 2.5, // Creates the one-line paragraph spacing
             '& strong': { fontWeight: 800, color: isDark ? '#fff' : '#0f172a' },
             '& em': { fontStyle: 'italic', color: isDark ? 'rgba(255,255,255,0.7)' : '#475569' },
@@ -87,11 +89,12 @@ export const MainAnalysisBlock: React.FC<MainAnalysisBlockProps> = ({ content, t
       {isComplete && (
         <Box sx={{ mt: 8, position: 'relative' }}>
           <Box sx={{ 
-            p: 3, 
+            p: { xs: 3, md: 4 }, 
             borderRadius: '24px', 
-            bgcolor: isDark ? 'rgba(139, 92, 246, 0.1)' : 'rgba(139, 92, 246, 0.08)', 
-            backdropFilter: 'blur(10px)',
+            bgcolor: isDark ? 'rgba(139, 92, 246, 0.05)' : 'rgba(139, 92, 246, 0.08)', 
+            backdropFilter: 'blur(24px)',
             border: `1px solid ${isDark ? 'rgba(139, 92, 246, 0.2)' : 'rgba(139, 92, 246, 0.15)'}`,
+            boxShadow: isDark ? 'inset 0 0 0 1px rgba(255,255,255,0.05), 0 8px 32px rgba(0,0,0,0.2)' : 'none',
             display: 'flex', 
             alignItems: 'center',
             gap: 3,

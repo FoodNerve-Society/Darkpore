@@ -287,25 +287,15 @@ export function SocietyProvider({ children }: { children: React.ReactNode }) {
               lifetimeSpentNP: 0,
               onboardingComplete: !!prismaUser.landingPage && !!prismaUser.tabOrder,
               joinedAt: prismaUser.joinedAt,
-              organizations: [
-                {
-                  id: 'org_foodnerve_analytics',
-                  name: 'FoodNerve Analytics',
-                  role: 'admin',
-                  logoUrl: 'https://ui-avatars.com/api/?name=Food+Nerve&background=0f172a&color=fff',
-                  website: 'https://foodnerve.org'
-                },
-                {
-                  id: 'org_darkpore_media',
-                  name: 'Darkpore Media',
-                  role: 'editor',
-                  logoUrl: 'https://ui-avatars.com/api/?name=Dark+Pore&background=ef4444&color=fff',
-                  website: 'https://darkpore.com'
-                }
-              ]
-            };
-            
-            setProfile(mappedProfile);
+              organizations: prismaUser.organizationMembers?.map((m: any) => ({
+                id: m.organization.id,
+                name: m.organization.name,
+                role: m.role,
+                logoUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(m.organization.name)}&background=0f172a&color=fff`,
+                website: ''
+              })) || [],
+              activeOrgId: null,
+            };setProfile(mappedProfile);
 
             // Redirect handling if needed
             const redirectUrl = searchParams.get('redirect') || searchParams.get('returnUrl');
@@ -321,7 +311,12 @@ export function SocietyProvider({ children }: { children: React.ReactNode }) {
 
             if (redirectUrl) {
               targetPath = redirectUrl;
-            } else if (window.location.pathname === '/join' || window.location.pathname === '/') {
+            } else if (
+              window.location.pathname === '/join' || 
+              window.location.pathname === '/' || 
+              window.location.pathname === '/login' || 
+              window.location.pathname === '/finishSignUp'
+            ) {
               if (mappedProfile.landingPage) {
                 targetPath = `/${mappedProfile.landingPage}`;
               } else if (mappedProfile.lastActiveTab) {

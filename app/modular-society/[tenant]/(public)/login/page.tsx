@@ -60,7 +60,6 @@ function LoginEngine() {
 
   const handleProfileSeed = async (user: any) => {
     if (isDevBypass) {
-      router.push(redirectUrl);
       return;
     }
     try {
@@ -74,16 +73,14 @@ function LoginEngine() {
           nervePoints: 0,
         });
       }
-      router.push(redirectUrl);
     } catch (err: any) {
       console.error("Profile seed error:", err);
-      router.push(redirectUrl); // Still push if RTDB fails (they are auth'd)
     }
   };
 
   const handleGoogleLogin = async () => {
     setLoading(true); setError(''); setSuccessMsg('');
-    if (isDevBypass) { setTimeout(() => router.push(redirectUrl), 1000); return; }
+    if (isDevBypass) { return; }
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
@@ -97,7 +94,7 @@ function LoginEngine() {
   const handleEmailPasswordLogin = async () => {
     if (!email || !password) { setError('Please enter both email and password.'); return; }
     setLoading(true); setError(''); setSuccessMsg('');
-    if (isDevBypass) { setTimeout(() => router.push(redirectUrl), 1000); return; }
+    if (isDevBypass) { return; }
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
       await handleProfileSeed(result.user);

@@ -40,7 +40,7 @@ import {
   SwapHoriz as SwapHorizIcon,
 } from "@mui/icons-material";
 
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, usePathname } from "next/navigation";
 import {
   getLearnContent,
   type LearnContent,
@@ -50,6 +50,7 @@ import { useSociety, type Challenge, RANK_NAMES, type RankLevel } from "@/contex
 import { getTenantConfig } from "@/lib/cms";
 import FlipContainer from "../components/shared/FlipContainer";
 import CreateLearnContentForm from "../components/forms/CreateLearnContentForm";
+import { ArticleReader } from "@/components/learn/ArticleReader";
 
 const ACCENT = "#f59e0b";
 const ACCENT_DARK = "#d97706";
@@ -926,6 +927,7 @@ function ArticleCard({ item, index, onClick }: { item: LearnContent; index: numb
   return (
     <Paper
       elevation={0}
+      onClick={onClick}
       sx={{
         minWidth: { xs: 260, sm: 280 },
         maxWidth: 300,
@@ -1280,6 +1282,7 @@ function renderCard(
 export default function LearnPage() {
   const { profile } = useSociety();
   const router = useRouter();
+  const pathname = usePathname();
   const params = useParams();
   const tenantId = (params?.tenant as string) || 'food';
   const tenantConfig = getTenantConfig(tenantId);
@@ -1299,8 +1302,21 @@ export default function LearnPage() {
   }, [tenantConfig]);
 
   const [isFlipped, setIsFlipped] = useState(false);
+  const [sessionKey, setSessionKey] = useState(0);
   const [postingAs, setPostingAs] = useState<'personal' | 'organization'>('personal');
   const [selectedOrgId, setSelectedOrgId] = useState<string>('');
+  const [createContentType, setCreateContentType] = useState<string>('');
+
+  // Color mapping based on content type
+  const typeConfig: Record<string, { label: string, color: string }> = {
+    article: { label: 'Article', color: '#3b82f6' },
+    video: { label: 'Video', color: '#ef4444' },
+    class: { label: 'Masterclass', color: '#8b5cf6' },
+    livestream: { label: 'Livestream', color: '#10b981' },
+    report: { label: 'Report', color: '#f59e0b' },
+  };
+
+  const currentConfig = typeConfig[createContentType] || { label: 'Content', color: ACCENT };
   
   useEffect(() => {
     if (profile?.organizations && profile.organizations.length > 0 && !selectedOrgId) {
@@ -1329,6 +1345,17 @@ export default function LearnPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [activeChallenge, setActiveChallenge] = useState<Challenge | 'all'>('all');
+  const [activeArticle, setActiveArticle] = useState<LearnContent | null>(null);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (!window.location.pathname.includes('/article/')) {
+        setActiveArticle(null);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // ═══════════════════════ NAVIGATION HANDLER ═══════════════════════
   const handleNavigate = useCallback((item: LearnContent) => {
@@ -1340,10 +1367,9 @@ export default function LearnPage() {
         router.push(`/learn/class/${item.id}`);
         break;
       case 'articles':
-        router.push(`/learn/article/${item.id}`);
-        break;
       case 'reports':
-        router.push(`/learn/article/${item.id}`);
+        window.history.pushState(null, '', `${pathname}/article/${item.id}`);
+        setActiveArticle(item);
         break;
       case 'videos':
         // Videos stay in-page for now
@@ -1438,27 +1464,38 @@ export default function LearnPage() {
         pb: 12
       }}
     >
-      {/* ═══════════════════════ HERO HEADER ═══════════════════════ */}
-      <Box
-        sx={{ px: { xs: 2, sm: 3, md: 4 }, pt: { xs: 3, md: 4 }, pb: 2 }}
-      >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1 }}>
-          <Avatar
-            sx={{
-              width: 48,
-              height: 48,
-              background: `linear-gradient(135deg, ${ACCENT} 0%, ${ACCENT_DARK} 100%)`,
-              boxShadow: `0 4px 20px ${alpha(ACCENT, 0.35)}`,
-            }}
+      {activeArticle ? (
+        <ArticleReader 
+          slug={activeArticle.id} 
+          articleData={activeArticle} 
+          onBack={() => {
+            window.history.pushState(null, '', pathname);
+            setActiveArticle(null);
+          }} 
+        />
+      ) : (
+        <>
+          {/* ═══════════════════════ HERO HEADER ═══════════════════════ */}
+          <Box
+            sx={{ px: { xs: 2, sm: 3, md: 4 }, pt: { xs: 3, md: 4 }, pb: 2 }}
           >
-            <SchoolIcon sx={{ fontSize: 26 }} />
-          </Avatar>
-          <Box>
-            <Typography
-              variant="h4"
-              sx={{
-                fontWeight: 900,
-                background: `linear-gradient(135deg, ${ACCENT} 0%, ${ACCENT_DARK} 100%)`,
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1 }}>
+              <Avatar
+                sx={{
+                  width: 48,
+                  height: 48,
+                  background: `linear-gradient(135deg, ${ACCENT} 0%, ${ACCENT_DARK} 100%)`,
+                  boxShadow: `0 4px 20px ${alpha(ACCENT, 0.35)}`,
+                }}
+              >
+                <SchoolIcon sx={{ fontSize: 26 }} />
+              </Avatar>
+              <Box>
+                <Typography
+                  variant="h4"
+                  sx={{
+                    fontWeight: 900,
+                    background: `linear-gradient(135deg, ${ACCENT} 0%, ${ACCENT_DARK} 100%)`,
                 backgroundClip: "text",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
@@ -1496,11 +1533,11 @@ export default function LearnPage() {
             }}
           />
           {canCreate ? (
-            <Button
-              variant="contained"
-              disableElevation
-              onClick={() => setIsFlipped(true)}
-              sx={{
+              <Button
+                variant="contained"
+                disableElevation
+                onClick={() => setIsFlipped(true)}
+                sx={{
                 borderRadius: '12px',
                 fontWeight: 800,
                 textTransform: "none",
@@ -1766,6 +1803,9 @@ export default function LearnPage() {
           </Button>
         </Box>
       )}
+        </>
+      )}
+
     </Paper>
   );
 
@@ -1784,8 +1824,8 @@ export default function LearnPage() {
         flexDirection: 'column',
       }}
     >
-      {/* Premium Gradient Header Bar */}
-      <Box sx={{ height: 4, width: '100%', background: `linear-gradient(90deg, ${ACCENT} 0%, ${ACCENT_DARK} 50%, #7c3aed 100%)`, flexShrink: 0 }} />
+      {/* Premium Gradient Header Bar - Adapts to Content Type */}
+      <Box sx={{ height: 4, width: '100%', background: `linear-gradient(90deg, ${currentConfig.color} 0%, ${currentConfig.color}88 50%, #7c3aed 100%)`, flexShrink: 0, transition: 'background 0.5s ease' }} />
       <Box
         sx={{
           px: { xs: 2.5, md: 3.5 },
@@ -1809,8 +1849,8 @@ export default function LearnPage() {
           <ArrowBackIcon sx={{ fontSize: 18 }} />
         </IconButton>
         <Box sx={{ flex: 1 }}>
-          <Typography sx={{ fontWeight: 900, fontSize: '1.1rem', letterSpacing: '-0.01em' }}>
-            Create Content
+          <Typography sx={{ fontWeight: 900, fontSize: '1.1rem', letterSpacing: '-0.01em', transition: 'color 0.3s ease' }}>
+            Create {currentConfig.label}
           </Typography>
           <Typography sx={{ fontSize: '0.72rem', color: 'text.disabled', fontWeight: 600, mt: 0.2 }}>
             Publishing as {postingAs === 'personal' ? (profile?.displayName || 'Unknown') : (profile?.organizations?.find(o => o.id === selectedOrgId)?.name || 'Organization')}
@@ -1890,10 +1930,19 @@ export default function LearnPage() {
       </Box>
       {/* Form Body — takes remaining space */}
       <CreateLearnContentForm 
-        onSuccess={() => setIsFlipped(false)} 
+        key={sessionKey}
+        onSuccess={() => {
+          setIsFlipped(false);
+          // Small delay to let the flip animation finish before wiping the form
+          setTimeout(() => {
+            setCreateContentType('');
+            setSessionKey(k => k + 1);
+          }, 600);
+        }} 
         onCancel={() => setIsFlipped(false)} 
         postingAs={postingAs}
         selectedOrgId={selectedOrgId}
+        onTypeChange={(t) => setCreateContentType(t)}
       />
     </Paper>
   );

@@ -15,14 +15,51 @@ export const SpikyTitleBlock: React.FC<SpikyTitleBlockProps> = ({ content, theme
 
   let beforeColon = content.text;
   let afterColon = '';
+  let kicker = '';
 
   if (colonIndex !== -1) {
     beforeColon = content.text.substring(0, colonIndex + 1);
-    afterColon = content.text.substring(colonIndex + 1).trim();
+    const remainder = content.text.substring(colonIndex + 1).trim();
+    
+    // Look for the action command at the end of the string
+    const actionMatch = remainder.match(/(,\s*and\s+(why\s+.*))/i);
+    if (actionMatch) {
+      kicker = actionMatch[2]; // Captures "why ..." without the comma and 'and'
+      afterColon = remainder.substring(0, actionMatch.index).trim();
+    } else {
+      afterColon = remainder;
+    }
   }
 
   return (
-    <Box sx={{ my: 4, pl: { xs: 2, md: 3 } }}>
+    <Box sx={{ 
+      my: 5, 
+      pl: { xs: 2.5, md: 3.5 },
+      position: 'relative',
+      '&::before': {
+        content: '""',
+        position: 'absolute',
+        left: 0,
+        top: '4px',
+        bottom: '4px',
+        width: '4px',
+        background: 'linear-gradient(to bottom, #f59e0b, #ec4899)',
+        borderRadius: '4px',
+      }
+    }}>
+      {kicker && (
+        <Typography sx={{ 
+          color: '#f59e0b', 
+          fontWeight: 800, 
+          fontSize: '0.8rem', 
+          textTransform: 'uppercase', 
+          letterSpacing: '0.1em',
+          mb: 1.5,
+          display: 'block'
+        }}>
+          {kicker}
+        </Typography>
+      )}
       <Typography
         variant="h3"
         sx={{

@@ -49,6 +49,13 @@ export async function POST(request: Request) {
         lifetimeNP: 100, // Initial bonus
         spendableNP: 100, // Initial bonus
       },
+      include: {
+        organizationMembers: {
+          include: {
+            organization: true
+          }
+        }
+      }
     });
 
     return NextResponse.json({ user });

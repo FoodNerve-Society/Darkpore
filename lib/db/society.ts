@@ -96,6 +96,7 @@ export interface LearnContent {
   completionRate?: number;
   tags: string[];
   wahaalaCategories?: string[];
+  articleBlocks?: any[];
 }
 
 export type CampaignTier = 'initiative' | 'innovation' | 'industry';
@@ -218,6 +219,15 @@ export async function getLearnContent(options?: { swimlane?: LearnSwimlane; limi
     where: {
       ...(options?.swimlane ? { type: typeMap[options.swimlane] } : {})
     },
+    include: {
+      article: {
+        include: {
+          blocks: {
+            orderBy: { orderIndex: 'asc' }
+          }
+        }
+      }
+    },
     orderBy: { createdAt: 'desc' },
     take: options?.limit
   });
@@ -245,7 +255,8 @@ export async function getLearnContent(options?: { swimlane?: LearnSwimlane; limi
       },
       tags,
       wahaalaCategories: [],
-      thumbnailUrl: r.thumbnailUrl || ''
+      thumbnailUrl: r.thumbnailUrl || '',
+      articleBlocks: r.article?.blocks || []
     };
   })));
 }
