@@ -32,7 +32,12 @@ export default async function InnovationsHomepage() {
     });
   });
 
-  const rawUpdates = await getChallengeUpdatesBySubcategories(allSubcatIds);
+  let rawUpdates: any[] = [];
+  try {
+    rawUpdates = await getChallengeUpdatesBySubcategories(allSubcatIds);
+  } catch (e) {
+    console.warn("SERVER LOG - Database connection failed, falling back to mock data.");
+  }
   
   let marqueeItems = rawUpdates.map((u: any) => ({
     ...u,
@@ -50,10 +55,15 @@ export default async function InnovationsHomepage() {
   }
 
   // Fetch recent learning materials from the simulated database
-  const recentIntelligence = await getKnowledgeMaterials({
-    tenantId: tenantId,
-    limit: 20 // Fetch a good number so Client component can filter
-  });
+  let recentIntelligence: any[] = [];
+  try {
+    recentIntelligence = await getKnowledgeMaterials({
+      tenantId: tenantId,
+      limit: 20 // Fetch a good number so Client component can filter
+    });
+  } catch (e) {
+    console.warn("SERVER LOG - Database connection failed, falling back to empty intelligence.");
+  }
 
   console.log("SERVER LOG - Normalized Tenant ID:", tenantId);
   console.log("SERVER LOG - Recent Intelligence count:", recentIntelligence.length);
