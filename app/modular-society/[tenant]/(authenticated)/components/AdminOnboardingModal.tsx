@@ -25,7 +25,7 @@ import { submitAdminOnboarding } from '@/lib/actions/admin';
 import { motion, AnimatePresence } from 'framer-motion';
 import PremiumTextField from '@/components/PremiumTextField';
 import PremiumAutocomplete from '@/components/PremiumAutocomplete';
-import { useCloudinaryUpload } from '@/hooks/useCloudinaryUpload';
+import { useStorageUpload } from '@/hooks/useStorageUpload';
 
 const DEPARTMENTS = [
   'Executive', 'Operations', 'Engineering', 'Marketing', 
@@ -50,7 +50,7 @@ export default function AdminOnboardingModal() {
   const [bio, setBio] = useState('');
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatarUrl || '');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const { uploadToCloudinary, uploading } = useCloudinaryUpload();
+  const { uploadFile, uploading } = useStorageUpload();
   const [department, setDepartment] = useState('');
   const [role, setRole] = useState('');
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -80,7 +80,7 @@ export default function AdminOnboardingModal() {
       let finalAvatarUrl = avatarUrl;
       
       if (avatarFile) {
-        const uploadResult = await uploadToCloudinary(avatarFile);
+        const uploadResult = await uploadFile(avatarFile);
         if (uploadResult && uploadResult.secure_url) {
           finalAvatarUrl = uploadResult.secure_url;
         } else {

@@ -63,7 +63,7 @@ import { useSociety } from '@/context/SocietyContext';
 import PremiumCard from '@/components/PremiumCard';
 import { useParams } from 'next/navigation';
 import { getTenantConfig } from '@/lib/cms';
-import { useCloudinaryUpload } from '@/hooks/useCloudinaryUpload';
+import { useStorageUpload } from '@/hooks/useStorageUpload';
 import { ArticleBlockRenderer } from '@/components/learn/ArticleBlockRenderer';
 import PremiumTextField from '@/components/PremiumTextField';
 import PremiumAutocomplete from '@/components/PremiumAutocomplete';
@@ -372,7 +372,7 @@ export default function CreateLearnContentForm({
   const [error, setError] = useState<string | null>(null);
   const [pendingFiles, setPendingFiles] = useState<Record<string, File>>({});
   
-  const { uploadToCloudinary, uploading } = useCloudinaryUpload();
+  const { uploadFile, uploading } = useStorageUpload();
 
   // Wizard State
   const [step, setStep] = useState(1);
@@ -616,7 +616,7 @@ export default function CreateLearnContentForm({
       
       for (const blockId of pendingBlockIds) {
         const file = pendingFiles[blockId];
-        const res = await uploadToCloudinary(file);
+        const res = await uploadFile(file);
         if (res?.secure_url) {
           finalBlocks = finalBlocks.map(b => {
             if (b.id === blockId) {

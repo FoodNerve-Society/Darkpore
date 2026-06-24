@@ -3,14 +3,15 @@ import { useState } from 'react';
 interface UploadResult {
     secure_url: string;
     public_id: string;
+    provider?: string;
     [key: string]: any;
 }
 
-export const useCloudinaryUpload = () => {
+export const useStorageUpload = () => {
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const uploadToCloudinary = async (file: File): Promise<UploadResult | null> => {
+    const uploadFile = async (file: File): Promise<UploadResult | null> => {
         setUploading(true);
         setError(null);
 
@@ -32,13 +33,13 @@ export const useCloudinaryUpload = () => {
             const data = await response.json();
             return data as UploadResult;
         } catch (err: any) {
-            console.error("Cloudinary upload error:", err);
-            setError(err.message || "Failed to upload image.");
+            console.error("Storage upload error:", err);
+            setError(err.message || "Failed to upload file.");
             return null;
         } finally {
             setUploading(false);
         }
     };
 
-    return { uploadToCloudinary, uploading, error };
+    return { uploadFile, uploading, error };
 };
