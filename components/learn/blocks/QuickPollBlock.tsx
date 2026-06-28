@@ -8,9 +8,10 @@ type QuickPollBlockProps = {
     discussionPrompt?: string;
   };
   themeMode?: 'light' | 'dark';
+  accentColor?: string;
 };
 
-export const QuickPollBlock: React.FC<QuickPollBlockProps> = ({ content, themeMode = 'light' }) => {
+export const QuickPollBlock: React.FC<QuickPollBlockProps> = ({ content, themeMode = 'light', accentColor }) => {
   const isDark = themeMode === 'dark';
   const optionsList = content.options ? content.options.split(',').map(o => o.trim()).filter(Boolean) : [];
   const isComplete = !!content.question && content.question.trim().length > 0;

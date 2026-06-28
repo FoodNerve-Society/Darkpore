@@ -10,9 +10,10 @@ type MythRealityBlockProps = {
     discussionPrompt?: string;
   };
   themeMode?: 'light' | 'dark';
+  accentColor?: string;
 };
 
-export const MythRealityBlock: React.FC<MythRealityBlockProps> = ({ content, themeMode = 'light' }) => {
+export const MythRealityBlock: React.FC<MythRealityBlockProps> = ({ content, themeMode = 'light', accentColor }) => {
   const isDark = themeMode === 'dark';
 
   const pairs = content.pairs || (content.myth || content.fact ? [{ myth: content.myth, fact: content.fact }] : []);

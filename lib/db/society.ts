@@ -217,6 +217,7 @@ export async function getLearnContent(options?: { swimlane?: LearnSwimlane; limi
 
   const result = await prisma.learnContent.findMany({
     where: {
+      status: 'published',
       ...(options?.swimlane ? { type: typeMap[options.swimlane] } : {})
     },
     include: {

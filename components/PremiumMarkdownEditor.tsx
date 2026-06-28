@@ -3,6 +3,7 @@
 import React, { useRef } from 'react';
 import { Box, IconButton, Tooltip, alpha } from '@mui/material';
 import PremiumTextField from './PremiumTextField';
+import DebouncedPremiumTextField from './DebouncedPremiumTextField';
 import FormatBoldIcon from '@mui/icons-material/FormatBold';
 import FormatItalicIcon from '@mui/icons-material/FormatItalic';
 import FormatUnderlinedIcon from '@mui/icons-material/FormatUnderlined';
@@ -191,7 +192,7 @@ export default function PremiumMarkdownEditor({
                     bgcolor: alpha(colorTheme, 0.02)
                 }
             }}>
-                <PremiumTextField
+                <DebouncedPremiumTextField
                     {...props}
                     inputRef={inputRef}
                     fullWidth

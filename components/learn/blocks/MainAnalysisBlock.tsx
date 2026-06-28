@@ -10,9 +10,10 @@ type MainAnalysisBlockProps = {
     imageUrl?: string;
   };
   themeMode?: 'light' | 'dark';
+  accentColor?: string;
 };
 
-export const MainAnalysisBlock: React.FC<MainAnalysisBlockProps> = ({ content, themeMode = 'light' }) => {
+export const MainAnalysisBlock: React.FC<MainAnalysisBlockProps> = ({ content, themeMode = 'light', accentColor }) => {
   const isDark = themeMode === 'dark';
 
   const MOCK_REPLIES = [

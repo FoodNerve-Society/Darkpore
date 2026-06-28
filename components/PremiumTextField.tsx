@@ -9,6 +9,7 @@ interface CustomProps {
     colorTheme: string;
     // --- NEW: A prop specifically for displaying a premium alert ---
     errorHelperText?: string | null;
+    InputProps?: any;
 }
 
 // Combine our custom props with all standard TextFieldProps
@@ -16,7 +17,7 @@ type PremiumTextFieldProps = TextFieldProps & CustomProps;
 
 // Use forwardRef to ensure the component can be used by libraries like MUI's Autocomplete
 const PremiumTextField: FC<PremiumTextFieldProps> = forwardRef<HTMLDivElement, PremiumTextFieldProps>(
-    ({ colorTheme, errorHelperText, ...props }, ref) => {
+    ({ colorTheme, errorHelperText, InputProps, ...props }, ref) => {
         const hasError = !!errorHelperText;
 
         return (
@@ -76,11 +77,11 @@ const PremiumTextField: FC<PremiumTextFieldProps> = forwardRef<HTMLDivElement, P
                     }}
                     // @ts-expect-error InputProps typing conflict with TextField in newer MUI
                     InputProps={{
-                        ...(props as any).InputProps,
+                        ...(InputProps as any),
                         inputRef: ref,
                         disableUnderline: true,
                         sx: {
-                            ...(props as any).InputProps?.sx,
+                            ...(InputProps as any)?.sx,
                         }
                     }}
                 />

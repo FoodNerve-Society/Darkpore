@@ -177,6 +177,7 @@ model LearnContent {
   id              String   @id @default(cuid())
   slug            String   @unique @default(cuid())
   type            String   @default("article") // 'livestream' | 'class' | 'video' | 'article' | 'report'
+  status          String   @default("published") // 'draft' | 'published' | 'archived'
   bottleneckTags  String   @default("[]") // JSON array of challenge tags (e.g. '["post-harvest-loss", "cold-chain"]')
   title           String
   description     String

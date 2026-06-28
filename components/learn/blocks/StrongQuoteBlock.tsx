@@ -11,9 +11,10 @@ type StrongQuoteBlockProps = {
     discussionPrompt?: string;
   };
   themeMode?: 'light' | 'dark';
+  accentColor?: string;
 };
 
-export const StrongQuoteBlock: React.FC<StrongQuoteBlockProps> = ({ content, themeMode = 'light' }) => {
+export const StrongQuoteBlock: React.FC<StrongQuoteBlockProps> = ({ content, themeMode = 'light', accentColor }) => {
   const isDark = themeMode === 'dark';
   const isComplete = !!content.quote && content.quote.trim().length > 0;
 

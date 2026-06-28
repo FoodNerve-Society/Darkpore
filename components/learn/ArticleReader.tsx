@@ -16,6 +16,7 @@ import {
   alpha,
   Breadcrumbs,
   Link as MuiLink,
+  useTheme,
 } from "@mui/material";
 import {
   ArrowBack as ArrowBackIcon,
@@ -219,6 +220,7 @@ function CommentItem({ comment }: { comment: MockComment }) {
 
 export function ArticleReader({ slug, articleData, onBack }: { slug?: string; articleData?: LearnContent | null; onBack?: () => void }) {
   const router = useRouter();
+  const theme = useTheme();
   const { profile } = useSociety();
 
   const [article, setArticle] = useState<LearnContent | null>(articleData || null);
@@ -226,6 +228,8 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
   const [bookmarked, setBookmarked] = useState(false);
   const [hearted, setHearted] = useState(false);
   const [commentText, setCommentText] = useState("");
+  const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
     if (articleData) {
@@ -257,6 +261,42 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
       cancelled = true;
     };
   }, [slug, articleData]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const container = document.getElementById('main-scroll-container');
+      if (container) {
+        setIsScrolled(container.scrollTop > 20);
+      } else {
+        setIsScrolled(window.scrollY > 20);
+      }
+    };
+
+    const scrollContainer = document.getElementById('main-scroll-container') || window;
+    scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Initial check
+
+    if (!article || !article.articleBlocks) return;
+    
+    // Setup intersection observer for blocks
+    const blockObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          setActiveBlockId(entry.target.id);
+        }
+      });
+    }, { rootMargin: '-20% 0px -60% 0px' }); // Trigger when block is in top half of screen
+
+    article.articleBlocks.forEach((block: any, idx: number) => {
+      const el = document.getElementById(`article-block-${block.id || idx}`);
+      if (el) blockObserver.observe(el);
+    });
+
+    return () => {
+      scrollContainer.removeEventListener('scroll', handleScroll);
+      blockObserver.disconnect();
+    };
+  }, [article]);
 
   if (loading) {
     return (
@@ -306,116 +346,242 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
     year: "numeric",
   });
 
+  const isBlockComplete = (b: any) => {
+    const type = b.type || b.blockType;
+    const c = b.content || {};
+    switch (type) {
+      case 'subheading': return !!c.text;
+      case 'exec_summary': return !!c.point1 || !!c.point2 || !!c.point3;
+      case 'myth_fact': return (!!c.myth && !!c.fact) || (c.pairs && c.pairs.length > 0);
+      case 'core_interactive': return !!c.bionicText;
+      case 'pull_quote': return !!c.quote;
+      case 'media': return !!c.mediaUrl;
+      case 'highlight_card': return !!c.caption || !!c.label || !!c.imageUrl;
+      case 'data_embed': return !!c.iframeUrl;
+      case 'live_poll': return !!c.question;
+      default: return Object.values(c).some(v => !!v);
+    }
+  };
+
+  let hasSkippedFirstSubheading = false;
+  const displayBlocks = article.articleBlocks?.filter((block: any) => {
+    if ((block.type === 'subheading' || block.blockType === 'subheading') && !hasSkippedFirstSubheading) {
+      hasSkippedFirstSubheading = true;
+      return false; // Skip the first subheading as it is used for the main header
+    }
+    return isBlockComplete(block);
+  }) || [];
+
   return (
     <Box
       sx={{
         pb: 12,
       }}
     >
-      {/* ═══════════════════════ BACK NAVIGATION ═══════════════════════ */}
-      <Box
-        sx={{ px: { xs: 2, md: 4 }, pt: { xs: 2, md: 3 }, display: "flex", alignItems: "center", gap: 1 }}
-      >
-        <Breadcrumbs 
-          separator={<NavigateNextIcon fontSize="small" sx={{ color: "text.disabled" }} />} 
-          aria-label="breadcrumb"
-        >
-          <MuiLink 
-            underline="hover" 
-            onClick={() => onBack ? onBack() : router.push("/learn")}
-            sx={{ 
-              cursor: "pointer", 
-              display: "flex", 
-              alignItems: "center", 
-              fontSize: "0.85rem", 
-              fontWeight: 600, 
-              color: "text.secondary",
-              "&:hover": { color: ACCENT } 
-            }}
-          >
-            Learn
-          </MuiLink>
-          <Typography sx={{ fontSize: "0.85rem", fontWeight: 700, color: "text.primary", textTransform: "capitalize" }}>
-            {article.swimlane || "Article"}
-          </Typography>
-        </Breadcrumbs>
-      </Box>
-
       {/* ═══════════════════════ ARTICLE HEADER ═══════════════════════ */}
       <Box
-        sx={{ maxWidth: 800, mx: "auto", px: { xs: 2.5, md: 4 }, pt: 2 }}
+        sx={{ maxWidth: { xs: '100%', md: '90%', lg: '85%' }, mx: "auto", px: { xs: 2.5, md: 4, lg: 8 }, pt: 2, position: 'relative' }}
       >
-        {/* Tags */}
-        <Box sx={{ display: "flex", gap: 0.75, flexWrap: "wrap", mb: 2 }}>
-          {article.tags.map((tag) => (
-            <Chip
-              key={tag}
-              label={tag}
-              size="small"
-              sx={{
-                height: 24,
-                fontWeight: 600,
-                fontSize: "0.7rem",
-                bgcolor: "rgba(255, 255, 255, 0.03)",
-                color: ACCENT_DARK,
-                border: `1px solid ${alpha(ACCENT, 0.15)}`,
-              }}
-            />
-          ))}
-          {article.isPaid && <NpBadge cost={article.nervePointsCost} />}
+        <Box id="article-top-sentinel" sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, pointerEvents: 'none' }} />
+
+        {/* Breadcrumbs (Category / Subcategory / Era) */}
+        {(() => {
+          const eraTag = article.tags.find(t => ['past', 'present', 'future'].includes(t.toLowerCase()));
+          const otherTags = article.tags.filter(t => !['past', 'present', 'future'].includes(t.toLowerCase()));
+          
+          return (
+            <Box sx={{
+              position: 'sticky',
+              top: 16,
+              zIndex: 50,
+              display: 'inline-flex',
+              alignItems: 'center',
+              bgcolor: theme.palette.mode === 'dark' ? 'rgba(15,23,42,0.85)' : 'rgba(255,255,255,0.85)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              px: 2,
+              py: 1,
+              borderRadius: '100px',
+              boxShadow: `0 4px 20px ${alpha(theme.palette.mode === 'dark' ? '#000' : '#000', 0.05)}`,
+              border: `1px solid ${alpha(ACCENT, 0.1)}`,
+              mb: 3,
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+            }}>
+              <Breadcrumbs 
+                separator={<NavigateNextIcon fontSize="small" sx={{ color: "text.disabled", fontSize: 14 }} />} 
+                aria-label="breadcrumb"
+              >
+                {otherTags.map((tag, idx) => (
+                  <Typography key={idx} sx={{ fontSize: "0.8rem", fontWeight: 700, color: "text.secondary", textTransform: "capitalize" }}>
+                    {tag}
+                  </Typography>
+                ))}
+                {eraTag && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: ACCENT }} />
+                    <Typography sx={{ fontSize: "0.8rem", fontWeight: 800, color: theme.palette.text.primary, textTransform: "uppercase", letterSpacing: '0.05em' }}>
+                      {eraTag} ERA
+                    </Typography>
+                  </Box>
+                )}
+              </Breadcrumbs>
+            </Box>
+          );
+        })()}
+
+        {/* ── Vertical Beaded Progress Bar (Custom Scrollbar) ── */}
+        <Box sx={{
+          position: 'absolute',
+          top: 0,
+          bottom: 0,
+          right: { xs: 0, sm: -8, md: -24 },
+          width: 24,
+          pointerEvents: 'none',
+          zIndex: 40,
+        }}>
+          <Box sx={{
+            position: 'sticky',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 0.5,
+            pointerEvents: 'auto',
+            py: 2,
+          }}>
+          {displayBlocks.length > 0 && displayBlocks.map((block: any, idx: number) => {
+            const isActive = activeBlockId === `article-block-${block.id || idx}`;
+            return (
+              <Box 
+                key={block.id || idx} 
+                onClick={() => {
+                  document.getElementById(`article-block-${block.id || idx}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }}
+                sx={{
+                  flex: 1,
+                  width: isActive ? 6 : 4,
+                  minHeight: 12,
+                  borderRadius: '4px',
+                  bgcolor: isActive ? ACCENT : (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(15,23,42,0.1)'),
+                  boxShadow: isActive ? `0 0 12px ${alpha(ACCENT, 0.6)}` : 'none',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  cursor: 'pointer',
+                  '&:hover': {
+                    bgcolor: isActive ? ACCENT : alpha(ACCENT, 0.4),
+                    width: 6,
+                  }
+                }} 
+              />
+            );
+          })}
+          </Box>
         </Box>
 
-        {/* Title */}
-        <Typography
-          variant="h3"
-          sx={{
-            fontWeight: 900,
-            lineHeight: 1.15,
-            mb: 2,
-            fontSize: { xs: "1.7rem", sm: "2.1rem", md: "2.4rem" },
-            letterSpacing: "-0.02em",
-          }}
-        >
-          {article.title}
-        </Typography>
+        {/* Title (Spiky Style) */}
+        {(() => {
+          const text = article.title || '';
+          const colonIndex = text.indexOf(':');
+          let beforeColon = text;
+          let afterColon = '';
+          let kicker = '';
+
+          if (colonIndex !== -1) {
+            beforeColon = text.substring(0, colonIndex + 1);
+            const remainder = text.substring(colonIndex + 1).trim();
+            
+            const actionMatch = remainder.match(/(,\s*(and|so)?\s+(why\s+.*))/i);
+            if (actionMatch) {
+              kicker = actionMatch[3];
+              afterColon = remainder.substring(0, actionMatch.index).trim();
+            } else {
+              afterColon = remainder;
+            }
+          }
+
+          return (
+            <Box sx={{ mb: 2, position: 'relative' }}>
+              {kicker && (
+                <Box sx={{ mb: 2 }}>
+                  <Typography 
+                    component="span"
+                    sx={{ 
+                      color: ACCENT,
+                      bgcolor: `${ACCENT}1A`,
+                      border: `1px solid ${ACCENT}33`,
+                      borderRadius: '24px',
+                      padding: '4px 12px',
+                      fontWeight: 700, 
+                      fontSize: '0.85rem', 
+                      letterSpacing: '0.02em',
+                      fontFamily: 'var(--font-quicksand)',
+                      display: 'inline-block',
+                      boxShadow: `0 4px 12px ${ACCENT}1A`
+                    }}>
+                    {kicker}
+                  </Typography>
+                </Box>
+              )}
+              <Typography
+                variant="h1"
+                sx={{
+                  color: theme.palette.text.primary,
+                  fontSize: { xs: '2.2rem', sm: '2.8rem', md: '3.4rem' },
+                  lineHeight: 1.15,
+                  letterSpacing: '-0.02em',
+                }}
+              >
+                <Box component="span" sx={{ fontWeight: 900 }}>
+                  {beforeColon}
+                </Box>
+                {afterColon && (
+                  <Box 
+                    component="span" 
+                    sx={{ 
+                      fontWeight: 400, 
+                      fontStyle: 'italic', 
+                      display: 'inline-block', 
+                      ml: 1.5, 
+                      color: theme.palette.text.secondary,
+                      fontFamily: 'var(--font-ysabeau-infant)'
+                    }}
+                  >
+                    {afterColon}
+                  </Box>
+                )}
+              </Typography>
+            </Box>
+          );
+        })()}
 
         {/* Description / Subtitle */}
         <Typography
           variant="body1"
           sx={{
-            color: "rgba(255, 255, 255, 0.7)",
+            color: theme.palette.text.secondary,
             fontSize: { xs: "1rem", sm: "1.1rem" },
             lineHeight: 1.65,
             mb: 3,
-            maxWidth: 700,
+            maxWidth: '100%',
           }}
         >
           {article.description}
         </Typography>
 
         {/* Author + Meta */}
-        <Paper
-          elevation={0}
+        <Box
           sx={{
             display: "flex",
             alignItems: { xs: "flex-start", sm: "center" },
             flexDirection: { xs: "column", sm: "row" },
             justifyContent: "space-between",
             gap: 2,
-            p: 2.5,
-            borderRadius: 3,
-            bgcolor: "transparent",
-            border: (t) =>
-              `1px solid ${
-                t.palette.mode === "dark"
-                  ? alpha("#fff", 0.08)
-                  : alpha("#000", 0.06)
-              }`,
             mb: 4,
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
             <Avatar
+              src={article.author.avatarUrl}
               sx={{
                 width: 44,
                 height: 44,
@@ -423,9 +589,10 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
                 fontWeight: 700,
                 bgcolor: "rgba(255, 255, 255, 0.03)",
                 color: ACCENT_DARK,
+                boxShadow: `0 4px 12px ${alpha(ACCENT_DARK, 0.1)}`,
               }}
             >
-              {article.author.name.charAt(0)}
+              {!article.author.avatarUrl && article.author.name.charAt(0)}
             </Avatar>
             <Box>
               <Box
@@ -433,19 +600,19 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
               >
                 <Typography
                   variant="subtitle2"
-                  sx={{ fontWeight: 700, fontSize: "0.9rem" }}
+                  sx={{ fontWeight: 700, fontSize: "0.95rem", color: theme.palette.text.primary }}
                 >
                   {article.author.name}
                 </Typography>
                 {article.author.isVerified && (
-                  <VerifiedIcon sx={{ fontSize: 15, color: ACCENT }} />
+                  <VerifiedIcon sx={{ fontSize: 16, color: ACCENT }} />
                 )}
               </Box>
               <Box
                 sx={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 1.5,
+                  gap: 2,
                   mt: 0.3,
                 }}
               >
@@ -454,12 +621,15 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
                   sx={{
                     display: "flex",
                     alignItems: "center",
-                    gap: 0.4,
+                    gap: 0.5,
                     color: "text.disabled",
-                    fontSize: "0.75rem",
+                    fontSize: "0.8rem",
+                    fontWeight: 600,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
                   }}
                 >
-                  <CalendarIcon sx={{ fontSize: 13 }} />
+                  <CalendarIcon sx={{ fontSize: 14 }} />
                   {publishDate}
                 </Typography>
                 {article.readTime && (
@@ -468,180 +638,30 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
                     sx={{
                       display: "flex",
                       alignItems: "center",
-                      gap: 0.4,
+                      gap: 0.5,
                       color: "text.disabled",
-                      fontSize: "0.75rem",
+                      fontSize: "0.8rem",
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
                     }}
                   >
-                    <AccessTimeIcon sx={{ fontSize: 13 }} />
+                    <AccessTimeIcon sx={{ fontSize: 14 }} />
                     {article.readTime}
                   </Typography>
                 )}
               </Box>
             </Box>
           </Box>
-
-          {/* Action buttons */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-            <IconButton
-              onClick={() => setHearted((h) => !h)}
-              sx={{
-                color: hearted ? "#ef4444" : "text.disabled",
-                transition: "color 0.2s, transform 0.2s",
-                "&:hover": { transform: "scale(1.1)" },
-              }}
-            >
-              {hearted ? (
-                <FavoriteIcon sx={{ fontSize: 20 }} />
-              ) : (
-                <FavoriteBorderIcon sx={{ fontSize: 20 }} />
-              )}
-            </IconButton>
-            <IconButton
-              onClick={() => setBookmarked((b) => !b)}
-              sx={{
-                color: bookmarked ? ACCENT : "text.disabled",
-                transition: "color 0.2s, transform 0.2s",
-                "&:hover": { transform: "scale(1.1)" },
-              }}
-            >
-              {bookmarked ? (
-                <BookmarkIcon sx={{ fontSize: 20 }} />
-              ) : (
-                <BookmarkBorderIcon sx={{ fontSize: 20 }} />
-              )}
-            </IconButton>
-            <IconButton sx={{ color: "text.disabled" }}>
-              <ShareIcon sx={{ fontSize: 20 }} />
-            </IconButton>
-          </Box>
-        </Paper>
-
-        {/* ═══════════════════════ HERO IMAGE ═══════════════════════ */}
-        <Box
-          sx={{
-            position: "relative",
-            height: { xs: 200, sm: 280, md: 360 },
-            borderRadius: 4,
-            overflow: "hidden",
-            mb: 5,
-            boxShadow: "0 12px 40px rgba(0,0,0,0.1)",
-          }}
-        >
-          <Box
-            sx={{
-              position: "absolute",
-              inset: 0,
-              backgroundImage: `url(${article.thumbnailUrl})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-            }}
-          />
-          <Box
-            sx={{
-              position: "absolute",
-              inset: 0,
-              background:
-                "linear-gradient(180deg, transparent 60%, rgba(0,0,0,0.3) 100%)",
-            }}
-          />
         </Box>
 
         {/* ═══════════════════════ ARTICLE BODY ═══════════════════════ */}
-        {article.articleBlocks && article.articleBlocks.map((block, idx) => (
-          <Box key={block.id || idx} sx={{ mb: 4 }}>
-            <ArticleBlockRenderer block={block} themeMode="dark" accentColor={ACCENT} />
+        {displayBlocks.length > 0 && displayBlocks.map((block: any, idx: number) => (
+          <Box id={`article-block-${block.id || idx}`} key={block.id || idx} sx={{ mb: 4 }}>
+            <ArticleBlockRenderer block={block} themeMode={theme.palette.mode} accentColor={ACCENT} />
           </Box>
         ))}
 
-        {/* ═══════════════════════ DISCUSSION SECTION ═══════════════════════ */}
-        <Divider sx={{ my: 5 }} />
-
-        <Box
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 3 }}>
-            <ChatIcon sx={{ fontSize: 22, color: ACCENT_DARK }} />
-            <Typography variant="h5" sx={{ fontWeight: 800, fontSize: "1.25rem" }}>
-              Community Discussion
-            </Typography>
-            <Chip
-              label={MOCK_COMMENTS.length}
-              size="small"
-              sx={{
-                height: 22,
-                fontWeight: 700,
-                fontSize: "0.7rem",
-                bgcolor: "rgba(255, 255, 255, 0.03)",
-                color: ACCENT_DARK,
-              }}
-            />
-          </Box>
-
-          {/* Comment Input */}
-          <Paper
-            elevation={0}
-            sx={{
-              display: "flex",
-              gap: 1.5,
-              p: 2,
-              mb: 3,
-              borderRadius: 3,
-              bgcolor: "rgba(0,0,0,)",
-              border: (t) =>
-                `1px solid ${
-                  t.palette.mode === "dark"
-                    ? alpha("#fff", 0.08)
-                    : alpha("#000", 0.06)
-                }`,
-            }}
-          >
-            <Avatar
-              sx={{
-                width: 36,
-                height: 36,
-                fontSize: "0.8rem",
-                fontWeight: 700,
-                bgcolor: "rgba(255, 255, 255, 0.03)",
-                color: ACCENT_DARK,
-                flexShrink: 0,
-              }}
-            >
-              {profile?.displayName?.charAt(0) ?? "U"}
-            </Avatar>
-            <TextField
-              fullWidth
-              multiline
-              maxRows={4}
-              size="small"
-              placeholder="Share your thoughts..."
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: 2,
-                  fontSize: "0.88rem",
-                  bgcolor: "transparent",
-                },
-              }}
-            />
-            <IconButton
-              disabled={!commentText.trim()}
-              sx={{
-                alignSelf: "flex-end",
-                color: commentText.trim() ? ACCENT : "text.disabled",
-              }}
-            >
-              <SendIcon sx={{ fontSize: 20 }} />
-            </IconButton>
-          </Paper>
-
-          {/* Comments List */}
-          <Box>
-            {MOCK_COMMENTS.map((comment) => (
-              <CommentItem key={comment.id} comment={comment} />
-            ))}
-          </Box>
-        </Box>
       </Box>
     </Box>
   );

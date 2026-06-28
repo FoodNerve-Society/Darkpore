@@ -14,9 +14,10 @@ type EvidenceGalleryBlockProps = {
     items?: EvidenceItem[];
   };
   themeMode?: 'light' | 'dark';
+  accentColor?: string;
 };
 
-export const EvidenceGalleryBlock: React.FC<EvidenceGalleryBlockProps> = ({ content, themeMode = 'light' }) => {
+export const EvidenceGalleryBlock: React.FC<EvidenceGalleryBlockProps> = ({ content, themeMode = 'light', accentColor }) => {
   const isDark = themeMode === 'dark';
   
   // 1. FILTER EMPTY ITEMS immediately

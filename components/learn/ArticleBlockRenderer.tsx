@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Box, IconButton, Tooltip } from '@mui/material';
 import { IosShare as ShareIcon } from '@mui/icons-material';
+import { motion } from 'framer-motion';
 import { SpikyTitleBlock } from './blocks/SpikyTitleBlock';
 import { KeyTakeawaysBlock } from './blocks/KeyTakeawaysBlock';
 import { BigStatCardBlock } from './blocks/BigStatCardBlock';
@@ -12,6 +13,8 @@ import { MythRealityBlock } from './blocks/MythRealityBlock';
 import { StrongQuoteBlock } from './blocks/StrongQuoteBlock';
 import { QuickPollBlock } from './blocks/QuickPollBlock';
 import { EmbeddedDataBlock } from './blocks/EmbeddedDataBlock';
+import { StrategicDirectiveBlock } from './blocks/StrategicDirectiveBlock';
+import { CallToActionBlock } from './blocks/CallToActionBlock';
 import { QuoteCardGeneratorModal } from './social/QuoteCardGeneratorModal';
 
 type ArticleBlockRendererProps = {
@@ -39,15 +42,17 @@ export const ArticleBlockRenderer: React.FC<ArticleBlockRendererProps> = ({ bloc
 
   const renderBlock = () => {
     switch (block.blockType) {
-      case 'subheading': return <SpikyTitleBlock content={parsedContent} themeMode={themeMode} />;
-      case 'exec_summary': return <KeyTakeawaysBlock content={parsedContent} themeMode={themeMode} />;
+      case 'subheading': return <SpikyTitleBlock content={parsedContent} themeMode={themeMode} accentColor={accentColor} />;
+      case 'exec_summary': return <KeyTakeawaysBlock content={parsedContent} themeMode={themeMode} accentColor={accentColor} />;
       case 'highlight_card': return <BigStatCardBlock content={parsedContent} themeMode={themeMode} accentColor={accentColor} />;
-      case 'core_interactive': return <MainAnalysisBlock content={parsedContent} themeMode={themeMode} />;
-      case 'media': return <EvidenceGalleryBlock content={parsedContent} themeMode={themeMode} />;
-      case 'myth_fact': return <MythRealityBlock content={parsedContent} themeMode={themeMode} />;
-      case 'pull_quote': return <StrongQuoteBlock content={parsedContent} themeMode={themeMode} />;
-      case 'live_poll': return <QuickPollBlock content={parsedContent} themeMode={themeMode} />;
-      case 'data_embed': return <EmbeddedDataBlock content={parsedContent} themeMode={themeMode} />;
+      case 'core_interactive': return <MainAnalysisBlock content={parsedContent} themeMode={themeMode} accentColor={accentColor} />;
+      case 'media': return <EvidenceGalleryBlock content={parsedContent} themeMode={themeMode} accentColor={accentColor} />;
+      case 'myth_fact': return <MythRealityBlock content={parsedContent} themeMode={themeMode} accentColor={accentColor} />;
+      case 'pull_quote': return <StrongQuoteBlock content={parsedContent} themeMode={themeMode} accentColor={accentColor} />;
+      case 'live_poll': return <QuickPollBlock content={parsedContent} themeMode={themeMode} accentColor={accentColor} />;
+      case 'strategic_directive': return <StrategicDirectiveBlock content={parsedContent} themeMode={themeMode} accentColor={accentColor} />;
+      case 'data_embed': return <EmbeddedDataBlock content={parsedContent} themeMode={themeMode} accentColor={accentColor} />;
+      case 'call_to_action': return <CallToActionBlock content={parsedContent} themeMode={themeMode} accentColor={accentColor} />;
       default: return null;
     }
   };
@@ -59,7 +64,14 @@ export const ArticleBlockRenderer: React.FC<ArticleBlockRendererProps> = ({ bloc
 
   return (
     <Box sx={{ position: 'relative', '&:hover .export-btn': { opacity: 1 } }}>
-      {blockContent}
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-10% 0px -10% 0px" }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+      >
+        {blockContent}
+      </motion.div>
       
       {/* Export Button (visible on hover) */}
       <Box 

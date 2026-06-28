@@ -29,6 +29,36 @@ export const BigStatCardBlock: React.FC<BigStatCardBlockProps> = ({ content, the
     
     if (!body && !label) return null;
       
+    const renderMarkdown = (text: string) => {
+      if (!text) return null;
+      const paragraphs = text.split(/\n+/).filter(p => p.trim() !== '');
+      
+      return paragraphs.map((p, i) => {
+        let html = p
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\*(.*?)\*/g, '<em>$1</em>')
+          .replace(new RegExp('<u>(.*?)</u>', 'g'), '<span style="text-decoration: underline;">$1</span>')
+          .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline;">$1</a>');
+        
+        return (
+          <Typography 
+            key={i}
+            sx={{ 
+              color: isDark ? '#fff' : '#0f172a', 
+              fontSize: { xs: '1.1rem', md: '1.3rem' }, 
+              fontWeight: 500, 
+              lineHeight: 1.5,
+              mb: i === paragraphs.length - 1 ? 0 : 2,
+              '& strong': { fontWeight: 900, color: accentColor || (isDark ? '#fff' : '#0f172a') },
+              '& em': { fontStyle: 'italic', opacity: 0.9 },
+              '& a': { opacity: 0.9, transition: 'opacity 0.2s', '&:hover': { opacity: 1 } }
+            }}
+            dangerouslySetInnerHTML={{ __html: html }}
+          />
+        );
+      });
+    };
+
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
         {label && (
@@ -38,11 +68,7 @@ export const BigStatCardBlock: React.FC<BigStatCardBlockProps> = ({ content, the
             </Typography>
           </Box>
         )}
-        {body && (
-          <Typography sx={{ color: isDark ? '#fff' : '#0f172a', fontSize: { xs: '1.1rem', md: '1.3rem' }, fontWeight: 500, lineHeight: 1.5 }}>
-            {body}
-          </Typography>
-        )}
+        {body && renderMarkdown(body)}
       </Box>
     );
   };

@@ -6,9 +6,10 @@ type EmbeddedDataBlockProps = {
     iframeUrl?: string;
   };
   themeMode?: 'light' | 'dark';
+  accentColor?: string;
 };
 
-export const EmbeddedDataBlock: React.FC<EmbeddedDataBlockProps> = ({ content, themeMode = 'light' }) => {
+export const EmbeddedDataBlock: React.FC<EmbeddedDataBlockProps> = ({ content, themeMode = 'light', accentColor }) => {
   const isDark = themeMode === 'dark';
 
   if (!content.iframeUrl) return null;

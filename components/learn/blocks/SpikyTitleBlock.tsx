@@ -6,25 +6,32 @@ type SpikyTitleBlockProps = {
     text: string;
   };
   themeMode?: 'light' | 'dark';
+  accentColor?: string;
 };
 
-export const SpikyTitleBlock: React.FC<SpikyTitleBlockProps> = ({ content, themeMode = 'light' }) => {
+export const SpikyTitleBlock: React.FC<SpikyTitleBlockProps> = ({ 
+  content, 
+  themeMode = 'light',
+  accentColor = '#f59e0b'
+}) => {
   const isDark = themeMode === 'dark';
 
-  const colonIndex = content.text?.indexOf(':') ?? -1;
+  const text = content?.text || '';
+  const colonIndex = text.indexOf(':');
 
-  let beforeColon = content.text;
+  let beforeColon = text;
   let afterColon = '';
   let kicker = '';
 
   if (colonIndex !== -1) {
-    beforeColon = content.text.substring(0, colonIndex + 1);
-    const remainder = content.text.substring(colonIndex + 1).trim();
+    beforeColon = text.substring(0, colonIndex + 1);
+    const remainder = text.substring(colonIndex + 1).trim();
     
     // Look for the action command at the end of the string
-    const actionMatch = remainder.match(/(,\s*and\s+(why\s+.*))/i);
+    // Making it more flexible: comma followed by anything that looks like "and why" or "so why"
+    const actionMatch = remainder.match(/(,\s*(and|so)?\s+(why\s+.*))/i);
     if (actionMatch) {
-      kicker = actionMatch[2]; // Captures "why ..." without the comma and 'and'
+      kicker = actionMatch[3]; // Captures "why ..." 
       afterColon = remainder.substring(0, actionMatch.index).trim();
     } else {
       afterColon = remainder;
@@ -33,47 +40,57 @@ export const SpikyTitleBlock: React.FC<SpikyTitleBlockProps> = ({ content, theme
 
   return (
     <Box sx={{ 
-      my: 5, 
-      pl: { xs: 2.5, md: 3.5 },
+      my: 6, 
       position: 'relative',
-      '&::before': {
-        content: '""',
-        position: 'absolute',
-        left: 0,
-        top: '4px',
-        bottom: '4px',
-        width: '4px',
-        background: 'linear-gradient(to bottom, #f59e0b, #ec4899)',
-        borderRadius: '4px',
-      }
+      // We removed the left border as requested.
     }}>
       {kicker && (
-        <Typography sx={{ 
-          color: '#f59e0b', 
-          fontWeight: 800, 
-          fontSize: '0.8rem', 
-          textTransform: 'uppercase', 
-          letterSpacing: '0.1em',
-          mb: 1.5,
-          display: 'block'
-        }}>
-          {kicker}
-        </Typography>
+        <Box sx={{ mb: 2 }}>
+          <Typography 
+            component="span"
+            sx={{ 
+              color: accentColor,
+              bgcolor: `${accentColor}1A`, // 10% opacity background for pill
+              border: `1px solid ${accentColor}33`,
+              borderRadius: '24px',
+              padding: '4px 12px',
+              fontWeight: 700, 
+              fontSize: '0.75rem', 
+              textTransform: 'uppercase', 
+              letterSpacing: '0.1em',
+              fontFamily: 'var(--font-quicksand)',
+              display: 'inline-block',
+              boxShadow: `0 4px 12px ${accentColor}1A`
+            }}>
+            {kicker}
+          </Typography>
+        </Box>
       )}
+      
       <Typography
         variant="h3"
         sx={{
-          color: isDark ? '#fff' : '#0f172a',
-          fontSize: { xs: '1.5rem', md: '2rem' },
+          color: accentColor,
+          fontSize: { xs: '1.6rem', md: '2.2rem' },
           letterSpacing: '-0.02em',
-          lineHeight: 1.2,
+          lineHeight: 1.3,
         }}
       >
         <Box component="span" sx={{ fontWeight: 900 }}>
           {beforeColon}
         </Box>
         {afterColon && (
-          <Box component="span" sx={{ fontWeight: 400, fontStyle: 'italic', display: 'inline-block', ml: 1, color: isDark ? '#cbd5e1' : '#475569' }}>
+          <Box 
+            component="span" 
+            sx={{ 
+              fontWeight: 400, 
+              fontStyle: 'italic', 
+              display: 'inline-block', 
+              ml: 1, 
+              color: isDark ? '#cbd5e1' : '#475569',
+              fontFamily: 'var(--font-ysabeau-infant)'
+            }}
+          >
             {afterColon}
           </Box>
         )}
