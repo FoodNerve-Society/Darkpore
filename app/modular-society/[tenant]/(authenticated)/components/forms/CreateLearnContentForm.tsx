@@ -476,6 +476,16 @@ export default function CreateLearnContentForm({
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>('');
   const [thumbnailUrl, setThumbnailUrl] = useState('');
 
+  useEffect(() => {
+    if (initialTaxonomy) {
+      setType(initialType as any);
+      setSelectedCategory(initialTaxonomy.category);
+      setSelectedSubcategory(initialTaxonomy.subcategory);
+      setSelectedTimeframe(initialTaxonomy.timeframe as any);
+      setStep(3); // Jump directly to builder
+    }
+  }, [initialTaxonomy, initialType]);
+
   // Media fields
   const [videoUrl, setVideoUrl] = useState('');
   const [duration, setDuration] = useState('');
