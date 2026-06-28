@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { ThemeProvider, createTheme, useTheme } from "@mui/material/styles";
 import {
   Box,
   Typography,
@@ -1285,6 +1286,20 @@ function renderCard(
 // ═══════════════════════════════════════════════════════════
 
 export default function LearnPage() {
+  const baseTheme = useTheme();
+  const learnTheme = useMemo(() => createTheme({
+    ...baseTheme,
+    palette: {
+      ...baseTheme.palette,
+      primary: { main: ACCENT, dark: ACCENT_DARK, light: ACCENT_LIGHT },
+      text: {
+        primary: '#1e293b',
+        secondary: '#475569',
+        disabled: '#94a3b8',
+      }
+    }
+  }), [baseTheme]);
+
   const { profile } = useSociety();
   const router = useRouter();
   const pathname = usePathname();
@@ -1494,11 +1509,12 @@ export default function LearnPage() {
       sx={{
         flex: 1,
         m: { xs: 0, md: 2 },
-        minHeight: { xs: '100vh', md: 'calc(100vh - 32px)' },
+        height: { xs: '100vh', md: 'calc(100vh - 32px)' },
         bgcolor: '#ffffff',
         borderRadius: { xs: 0, md: 4 },
         boxShadow: { xs: 'none', md: '0 10px 40px rgba(0,0,0,0.04)' },
-        overflow: 'hidden',
+        overflowX: 'hidden',
+        overflowY: 'auto',
         boxSizing: 'border-box',
         pb: 12
       }}
@@ -1514,265 +1530,174 @@ export default function LearnPage() {
         />
       ) : (
         <>
-          {/* ═══════════════════════ DASHBOARD UI ═══════════════════════ */}
-          <Box sx={{ 
-            p: { xs: 2, sm: 4, md: 6, lg: 8 }, mx: 'auto', width: '100%', flex: 1, overflowY: 'auto',
-            background: 'radial-gradient(circle at 10% 20%, rgba(245, 158, 11, 0.05) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(124, 58, 237, 0.05) 0%, transparent 40%)',
-          }}>
-            <Box sx={{ mb: 6, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-              <Typography variant="h3" sx={{ fontFamily: 'Caveat, cursive', color: ACCENT, mb: 1 }}>
-                Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 18 ? 'Afternoon' : 'Evening'}, {profile?.displayName?.split(' ')[0] || 'Creative'}.
-              </Typography>
-              <Typography variant="h4" sx={{ fontWeight: 900, letterSpacing: '-0.02em', mb: 1.5, color: '#1e293b' }}>
-                Welcome to the Studio
-              </Typography>
-              <Chip 
-                label={`0 active draft in your workspace`}
-                size="small"
-                sx={{ bgcolor: 'rgba(0,0,0,0.04)', color: 'text.secondary', fontWeight: 600, borderRadius: '8px' }}
-              />
-            </Box>
-
-            <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', mb: 2, letterSpacing: '0.05em' }}>Start Fresh</Typography>
-            
-            <Box sx={{ display: 'flex', gap: 4, overflowX: 'auto', pt: 2, pb: 5, mb: 2, '&::-webkit-scrollbar': { height: 0 }, px: 1, mx: -1 }}>
-              {[{
-                type: 'article', title: "Intelligence Brief", desc: "Write an in-depth article or report using the 11-block builder.",
-                icon: <ArticleIcon sx={{ fontSize: 32 }} />, color: "#3b82f6", grad: "linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)"
-              },
-              {
-                type: 'video', title: "Video Insights", desc: "Share short-form video analysis or field reports.",
-                icon: <VideoLibraryIcon sx={{ fontSize: 32 }} />, color: "#ef4444", grad: "linear-gradient(135deg, #991b1b 0%, #ef4444 100%)"
-              },
-              {
-                type: 'livestream', title: "Schedule Livestream", desc: "Host a live session or webinar with the community.",
-                icon: <LiveTvIcon sx={{ fontSize: 32 }} />, color: "#10b981", grad: "linear-gradient(135deg, #065f46 0%, #10b981 100%)"
-              },
-              {
-                type: 'class', title: "Masterclass", desc: "Create a structured, multi-module learning experience.",
-                icon: <SchoolIcon sx={{ fontSize: 32 }} />, color: "#8b5cf6", grad: "linear-gradient(135deg, #5b21b6 0%, #8b5cf6 100%)"
-              }].map((opt) => {
-                const isExpanded = expandedStartType === opt.type;
-                const isHidden = expandedStartType !== null && expandedStartType !== opt.type;
-                return (
-                <Paper key={opt.title} onClick={() => { 
-                  if (!expandedStartType) setExpandedStartType(opt.type); 
-                }} sx={{ 
-                  flex: isHidden ? '0 0 0%' : (isExpanded ? '0 0 100%' : '0 0 auto'),
-                  minWidth: isHidden ? 0 : (isExpanded ? '100%' : 260), 
-                  maxWidth: isHidden ? 0 : (isExpanded ? '100%' : 300), 
-                  height: isExpanded ? {xs: 700, md: 600} : 'auto',
-                  opacity: isHidden ? 0 : 1, overflow: 'hidden', p: isExpanded ? 0 : 3.5, 
-                  display: 'flex', flexDirection: 'column', gap: 2, 
-                  borderRadius: '28px', cursor: isExpanded ? 'default' : 'pointer',
-                  background: opt.grad, border: '1px solid rgba(255,255,255,0.1)',
-                  boxShadow: `inset 0 2px 10px rgba(255,255,255,0.2), 0 10px 30px ${alpha(opt.color, 0.4)}`,
-                  position: 'relative', transition: 'all 0.6s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                  '&:hover': !isExpanded ? { transform: 'translateY(-4px)', boxShadow: `inset 0 2px 10px rgba(255,255,255,0.3), 0 16px 40px ${alpha(opt.color, 0.5)}` } : {}
-                }}>
-                  {isExpanded ? (
-                    <Box sx={{ p: 4, width: '100%', height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-                      <IconButton onClick={(e) => { e.stopPropagation(); setExpandedStartType(null); setSelectedChallenge(null); setSelectedSubcategory(null); }} sx={{ position: 'absolute', top: 16, right: 16, color: 'rgba(255,255,255,0.8)', bgcolor: 'rgba(0,0,0,0.2)', zIndex: 50, '&:hover': { bgcolor: 'rgba(0,0,0,0.4)', color: '#fff' } }}>
-                        <CloseIcon />
-                      </IconButton>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-                        {opt.icon}
-                        <Typography variant="h5" sx={{ color: '#fff', fontWeight: 900 }}>{opt.title}</Typography>
-                      </Box>
-                      
-                      {/* TAXONOMY ACCORDION INSIDE CARD */}
-                      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1, overflowY: 'auto', pr: 1, '&::-webkit-scrollbar': { width: 4 }, '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(255,255,255,0.2)', borderRadius: 4 } }}>
-                        {tenantConfig.com.homepage.challenges.map((chal, idx) => {
-                          const isCatActive = selectedChallenge === chal.id;
-                          return (
-                            <Box key={chal.id} sx={{ 
-                              display: 'flex', flexDirection: 'column',
-                              borderRadius: '20px',
-                              bgcolor: isCatActive ? 'rgba(0,0,0,0.15)' : 'transparent',
-                              border: '1px solid',
-                              borderColor: isCatActive ? 'rgba(255,255,255,0.2)' : 'transparent',
-                              transition: 'all 0.4s ease',
-                              overflow: 'hidden'
-                            }}>
-                              {/* Category Header */}
-                              <Box 
-                                onClick={(e) => { e.stopPropagation(); handleCategorySelect(chal.id); }}
-                                sx={{ 
-                                  display: 'flex', alignItems: 'center', gap: 2, p: 2, 
-                                  cursor: 'pointer',
-                                  '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' }
-                                }}
-                              >
-                                <Typography sx={{ fontSize: 24 }}>📌</Typography>
-                                <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: '1.1rem' }}>{chal.title}</Typography>
-                              </Box>
-
-                              {/* Accordion Content */}
-                              <Collapse in={isCatActive}>
-                                <Box sx={{ p: 2, pt: 0, position: 'relative', overflow: 'hidden', height: { xs: 450, md: 350 } }}>
-                                  <Box sx={{ 
-                                    display: 'flex', position: 'absolute', top: 0, left: 0, 
-                                    width: '200%', height: '100%',
-                                    transform: selectedSubcategory ? 'translateX(-50%)' : 'translateX(0)',
-                                    transition: 'transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                                  }}>
-                                    
-                                    {/* Subcategories View */}
-                                    <Box sx={{ width: '50%', height: '100%', overflowY: 'auto', p: 1 }}>
-                                      <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', mb: 2 }}>Select Subcategory</Typography>
-                                      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
-                                        {chal.subcategories?.map(sub => {
-                                          const isSubActive = selectedSubcategory === sub.id;
-                                          return (
-                                            <Box key={sub.id} onClick={(e) => { e.stopPropagation(); handleSubcategorySelect(sub.id); }}
-                                              sx={{
-                                                display: 'flex', alignItems: 'center', gap: 2, p: 1.5, borderRadius: '16px', cursor: 'pointer',
-                                                border: '1px solid', borderColor: isSubActive ? opt.color : 'rgba(255,255,255,0.15)',
-                                                bgcolor: isSubActive ? alpha(opt.color, 0.25) : 'rgba(255,255,255,0.08)',
-                                                '&:hover': { bgcolor: isSubActive ? alpha(opt.color, 0.35) : 'rgba(255,255,255,0.12)' }
-                                              }}
-                                            >
-                                              <Box sx={{ width: 40, height: 40, borderRadius: '10px', backgroundImage: `url(${sub.imageUrl})`, backgroundSize: 'cover' }} />
-                                              <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '0.9rem' }}>{sub.title}</Typography>
-                                            </Box>
-                                          );
-                                        })}
-                                      </Box>
-                                    </Box>
-
-                                    {/* Timeframe View */}
-                                    <Box sx={{ width: '50%', height: '100%', p: 1 }}>
-                                      <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', mb: 2 }}>What era of intelligence is this?</Typography>
-                                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                                        {[
-                                          { key: 'past', emoji: '🔪', label: 'The Autopsy', desc: 'Break down something that no longer works.' },
-                                          { key: 'present', emoji: '🟢', label: 'The Playbook', desc: 'Share strategies that are working right now.' },
-                                          { key: 'future', emoji: '🔮', label: 'The Thesis', desc: 'Predict what will work tomorrow.' },
-                                        ].map(tf => (
-                                          <Box key={tf.key} onClick={(e) => { e.stopPropagation(); handleTimeframeSelect(tf.key); }}
-                                            sx={{
-                                              display: 'flex', alignItems: 'center', p: 2, borderRadius: '16px', cursor: 'pointer',
-                                              bgcolor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)',
-                                              '&:hover': { bgcolor: 'rgba(255,255,255,0.15)' }
-                                            }}
-                                          >
-                                            <Box sx={{ fontSize: 24, mr: 2 }}>{tf.emoji}</Box>
-                                            <Box>
-                                              <Typography sx={{ color: '#fff', fontWeight: 800 }}>{tf.label}</Typography>
-                                              <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem' }}>{tf.desc}</Typography>
-                                            </Box>
-                                          </Box>
-                                        ))}
-                                      </Box>
-                                    </Box>
-
-                                  </Box>
-                                </Box>
-                              </Collapse>
-                            </Box>
-                          );
-                        })}
-                      </Box>
-                    </Box>
-                  ) : (
-                    <>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, color: '#fff' }}>{opt.icon}</Box>
-                      <Box>
-                        <Typography variant="h6" sx={{ color: '#fff', fontWeight: 800, mb: 0.5 }}>{opt.title}</Typography>
-                        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)', fontWeight: 500, lineHeight: 1.4 }}>{opt.desc}</Typography>
-                      </Box>
-                    </>
-                  )}
-                </Paper>
-                )})}
-            </Box>
-
-            <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', mb: 2, letterSpacing: '0.05em' }}>Your Drafts</Typography>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pb: 8 }}>
             <style>
               {`
-                @keyframes pulseGlow {
-                  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
-                  70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-                  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+                @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap');
+                @keyframes glideLeftEdge {
+                  0% { transform: translate(-10%, -20%) scale(1); }
+                  100% { transform: translate(50%, 120%) scale(1.5); }
+                }
+                @keyframes glideBottomEdge {
+                  0% { transform: translate(20%, 20%) scale(1); }
+                  100% { transform: translate(-120%, -60%) scale(1.4); }
+                }
+                @keyframes glideTopEdge {
+                  0% { transform: translate(10%, -10%) scale(1); }
+                  100% { transform: translate(-100%, 80%) scale(1.3); }
                 }
               `}
             </style>
-            {drafts.length === 0 ? (
-              <Paper sx={{ p: 4, borderRadius: '20px', textAlign: 'center', background: 'rgba(255,255,255,0.4)', border: '1px dashed rgba(0,0,0,0.1)' }}>
-                <Typography sx={{ color: '#94a3b8', fontWeight: 600 }}>You have no active drafts. Select a format above to start creating.</Typography>
-              </Paper>
-            ) : (
-              drafts.map((draft) => (
-                <Paper key={draft.id} sx={{ 
-                  p: { xs: 2.5, md: 3 }, borderRadius: '24px', 
-                  background: 'linear-gradient(145deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.6) 100%)',
-                  backdropFilter: 'blur(30px)',
-                  border: '1px solid rgba(255,255,255,0.8)',
-                  boxShadow: 'inset 0 2px 10px rgba(255,255,255,0.6), 0 10px 30px rgba(0,0,0,0.03)',
-                  display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden',
-                  transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                  '&:hover': {
-                    borderColor: alpha(ACCENT, 0.4),
-                    boxShadow: 'inset 0 2px 10px rgba(255,255,255,0.8), 0 20px 40px rgba(0,0,0,0.06)',
-                    transform: 'translateY(-2px)',
-                    '& .delete-btn': { opacity: 1, transform: 'translateX(0)' }
-                  }
-                }}>
+            
+            <Box sx={{ 
+              position: 'relative', px: { xs: 3, sm: 5, md: 8 }, pt: { xs: 6, md: 8 }, pb: 8, 
+              overflow: 'hidden', borderRadius: '24px', m: { xs: 1, md: 2 }, mb: 4, mt: { xs: 1, md: 2 },
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+              bgcolor: 'rgba(15, 23, 42, 0.85)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              zIndex: 1,
+            }}>
+              {/* Fiery Edge Gradients (Moving along edges) */}
+              <Box sx={{ 
+                position: 'absolute', top: '-10%', left: '-5%', width: '35%', height: '65%', 
+                bgcolor: '#FF416C', opacity: 0.55, filter: 'blur(50px)', borderRadius: '50%', zIndex: 0, 
+                animation: 'glideLeftEdge 8s ease-in-out infinite alternate',
+              }} />
+              <Box sx={{ 
+                position: 'absolute', bottom: '-10%', right: '-5%', width: '45%', height: '75%', 
+                bgcolor: '#FCA048', opacity: 0.50, filter: 'blur(60px)', borderRadius: '50%', zIndex: 0, 
+                animation: 'glideBottomEdge 10s ease-in-out infinite alternate-reverse',
+              }} />
+              <Box sx={{ 
+                position: 'absolute', top: '-10%', right: '-10%', width: '35%', height: '55%', 
+                bgcolor: '#FF4B2B', opacity: 0.45, filter: 'blur(50px)', borderRadius: '50%', zIndex: 0, 
+                animation: 'glideTopEdge 9s ease-in-out infinite alternate',
+              }} />
+
+              <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { xs: 'flex-start', md: 'center' }, justifyContent: 'space-between', width: '100%', gap: 4 }}>
+                <Box sx={{ flex: 1, pr: { md: 4 } }}>
+                  <Typography variant="h2" sx={{ 
+                    color: '#ffffff', 
+                    fontFamily: '"Caveat", cursive',
+                    fontWeight: 700, 
+                    fontSize: { xs: '4rem', md: '5.5rem' }, 
+                    lineHeight: 1,
+                    mb: 1.5,
+                    textShadow: '0 4px 20px rgba(0,0,0,0.3)'
+                  }}>
+                    Master Your Craft
+                  </Typography>
                   
-                  
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pl: 1 }}>
-                    <Box sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
-                      <Box sx={{ width: 52, height: 52, borderRadius: '14px', bgcolor: alpha(ACCENT, 0.08), display: 'flex', alignItems: 'center', justifyContent: 'center', color: ACCENT }}>
-                        <ArticleIcon />
-                      </Box>
-                      <Box>
-                        <Typography sx={{ fontWeight: 800, fontSize: '1.05rem', mb: 0.5, color: '#1e293b' }}>{draft.title || 'Untitled Draft'}</Typography>
-                        <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
-                            <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#10b981', animation: 'pulseGlow 2s infinite' }} />
-                            <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: '#10b981' }}>IN PROGRESS</Typography>
-                          </Box>
-                          <Typography sx={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 600 }}>
-                            • Last edited {new Date(draft.createdAt).toLocaleDateString()}
+                  <Typography sx={{ 
+                    color: 'rgba(255,255,255,0.9)', 
+                    fontFamily: '"Plus Jakarta Sans", sans-serif',
+                    fontSize: { xs: '1rem', md: '1.15rem' }, 
+                    lineHeight: 1.7, 
+                    fontWeight: 500, 
+                    mb: { xs: 2, md: 0 }, 
+                    maxWidth: 550 
+                  }}>
+                    Read simple guides, take classes, and watch live videos to learn everything you need to grow.
+                  </Typography>
+                </Box>
+
+                {/* ═══════════════════════ CREATOR STUDIO WIDGET ═══════════════════════ */}
+                {!isFlipped && canCreate && (
+                  <Paper sx={{
+                    p: { xs: 2.5, md: 3 }, borderRadius: '18px', 
+                    bgcolor: 'rgba(255, 255, 255, 0.5)',
+                    backdropFilter: 'blur(30px) saturate(150%)', 
+                    WebkitBackdropFilter: 'blur(30px) saturate(150%)',
+                    border: '1px solid rgba(255, 255, 255, 0.6)',
+                    boxShadow: 'inset 0 0 20px rgba(255,255,255,0.3), 0 15px 40px rgba(0,0,0,0.2)',
+                    display: 'flex', 
+                    flexDirection: 'column',
+                    gap: 3,
+                    width: { xs: '100%', md: '280px' }, 
+                    flexShrink: 0
+                  }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Box sx={{ p: 1.2, borderRadius: '12px', bgcolor: 'rgba(255, 65, 108, 0.15)', color: '#FF416C' }}>
+                          <ArticleIcon fontSize="small" />
+                        </Box>
+                        <Box>
+                          <Typography sx={{ fontWeight: 800, color: '#1e293b', fontSize: '0.95rem', mb: 0.2 }}>
+                            Creator Studio
+                          </Typography>
+                          <Typography sx={{ fontSize: '0.75rem', color: drafts.length > 0 ? '#FCA048' : '#64748b', fontWeight: 600 }}>
+                            {drafts.length > 0 
+                              ? `${drafts.length} Active Draft${drafts.length === 1 ? '' : 's'}`
+                              : "No active drafts"
+                            }
                           </Typography>
                         </Box>
                       </Box>
+
+                      {drafts.length > 0 && (
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                          {drafts.slice(0, 3).map((draft: any) => (
+                            <Box 
+                              key={draft.id}
+                              onClick={() => { setIsFlipped(true); setSelectedDraftId(draft.id); }}
+                              sx={{ 
+                                display: 'flex', alignItems: 'center', gap: 1.5, p: 1.2, borderRadius: '10px', 
+                                cursor: 'pointer', bgcolor: 'rgba(0,0,0,0.03)',
+                                border: '1px solid rgba(0,0,0,0.05)',
+                                '&:hover': { bgcolor: 'rgba(0,0,0,0.05)', borderColor: 'rgba(0,0,0,0.1)', transform: 'translateX(4px)' },
+                                transition: 'all 0.2s'
+                              }}
+                            >
+                              <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#FF416C', boxShadow: '0 0 8px #FF416C' }} />
+                              <Typography sx={{ 
+                                fontSize: '0.8rem', fontWeight: 700, color: '#334155', 
+                                noWrap: true, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' 
+                              }}>
+                                {draft.title || "Untitled Draft"}
+                              </Typography>
+                            </Box>
+                          ))}
+                        </Box>
+                      )}
                     </Box>
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                      <Button 
-                        className="delete-btn"
-                        variant="text" 
-                        color="error" 
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          if (confirm('Delete this draft?')) {
-                            await deleteLearnContent(draft.id);
-                            setDrafts(drafts.filter(d => d.id !== draft.id));
-                          }
-                        }}
-                        sx={{ opacity: { xs: 1, md: 0 }, transform: { xs: 'none', md: 'translateX(10px)' }, transition: 'all 0.3s ease', fontWeight: 700, borderRadius: '12px', minWidth: 0, px: 2 }}
-                      >
-                        Delete
-                      </Button>
-                      <Button 
-                        variant="contained" 
-                        onClick={() => { setSelectedDraftId(draft.id); setCreateContentType(draft.type); setIsFlipped(true); }}
-                        sx={{ 
-                          bgcolor: '#1e293b', color: '#fff', borderRadius: '14px', textTransform: 'none', fontWeight: 700, px: 3, py: 1,
-                          '&:hover': { bgcolor: ACCENT, '& .arrow': { transform: 'translateX(4px)' } },
-                          transition: 'all 0.3s'
-                        }}
-                      >
-                        Resume <span className="arrow" style={{ transition: 'transform 0.3s', display: 'inline-block', marginLeft: '6px' }}>➔</span>
-                      </Button>
-                    </Box>
-                  </Box>
-                </Paper>
-              ))
-            )}
+                    
+                    <Button 
+                      onClick={() => { setIsFlipped(true); setSelectedDraftId(null); }}
+                      variant="contained"
+                      sx={{ 
+                        width: '100%',
+                        background: 'linear-gradient(135deg, #1e293b, #0f172a)',
+                        color: '#fff', borderRadius: '12px', fontWeight: 700, px: 3, py: 1.5, textTransform: 'none',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: '0.85rem',
+                        '&:hover': { opacity: 0.9, transform: 'translateY(-1px)', boxShadow: '0 6px 16px rgba(0,0,0,0.15)' },
+                        transition: 'all 0.2s ease'
+                      }}>
+                        Create New Content
+                    </Button>
+                  </Paper>
+                )}
+              </Box>
+            </Box>
+
+          {/* ═══════════════════════ TOP PICKS SECTION ═══════════════════════ */}
+          <Box sx={{ px: { xs: 2, sm: 3, md: 4 }, mt: 4, mb: 4 }}>
+            <Typography variant="h5" sx={{ fontWeight: 800, mb: 2, color: 'text.primary' }}>Top Picks</Typography>
+            {/* Placeholder for Top Picks */}
+            <Box sx={{ p: 4, borderRadius: '16px', border: '2px dashed rgba(0,0,0,0.1)', textAlign: 'center', color: 'text.disabled', fontWeight: 600 }}>
+              Top Picks Content Placeholder
+            </Box>
           </Box>
+
+          {/* ═══════════════════════ CONTINUE SECTION ═══════════════════════ */}
+          <Box sx={{ px: { xs: 2, sm: 3, md: 4 }, mb: 6 }}>
+            <Typography variant="h5" sx={{ fontWeight: 800, mb: 2, color: 'text.primary' }}>Continue</Typography>
+            {/* Placeholder for Continue */}
+            <Box sx={{ p: 4, borderRadius: '16px', border: '2px dashed rgba(0,0,0,0.1)', textAlign: 'center', color: 'text.disabled', fontWeight: 600 }}>
+              Continue Content Placeholder
+            </Box>
           </Box>
+          
       {/* ═══════════════════════ WU WEI FILTER BAR ═══════════════════════ */}
       <Box
         sx={{ px: { xs: 2, sm: 3, md: 4 }, pb: 1, pt: 0.5 }}
@@ -2147,10 +2072,12 @@ export default function LearnPage() {
   );
 
   return (
-    <FlipContainer 
-      isFlipped={isFlipped}
-      frontContent={frontContent}
-      backContent={backContent}
-    />
+    <ThemeProvider theme={learnTheme}>
+      <FlipContainer 
+        isFlipped={isFlipped}
+        frontContent={frontContent}
+        backContent={backContent}
+      />
+    </ThemeProvider>
   );
 }
