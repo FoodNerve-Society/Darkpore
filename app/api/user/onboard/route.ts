@@ -22,16 +22,17 @@ export async function POST(request: Request) {
     const uid = decodedToken.uid;
 
     const body = await request.json();
-    const { landingPage, tabOrder } = body;
+    const { landingPage, tabOrder, name } = body;
 
-    if (!landingPage || !tabOrder) {
-       return NextResponse.json({ error: 'Landing page and Tab Order are required' }, { status: 400 });
+    if (!landingPage || !tabOrder || !name) {
+       return NextResponse.json({ error: 'Name, Landing page, and Tab Order are required' }, { status: 400 });
     }
 
     // Update the User in Prisma
     const updatedUser = await prisma.user.update({
       where: { firebaseUid: uid },
       data: {
+        name: name,
         landingPage: landingPage,
         tabOrder: JSON.stringify(tabOrder),
       }

@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import PremiumCard from '@/components/PremiumCard';
 import PremiumButton from '@/components/PremiumButton';
 import PremiumChip from '@/components/PremiumChip';
+import PremiumTextField from '@/components/PremiumTextField';
 import { UserRole, Challenge } from '@/context/SocietyContext';
 import { auth } from '@/lib/firebase/client';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
@@ -17,6 +18,7 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 interface OnboardingWizardProps {
   open: boolean;
   onComplete: () => void;
+  profile?: any;
 }
 
 const FEATURE_OPTIONS: { id: string; title: string; desc: string; icon: string; color: string }[] = [
@@ -28,7 +30,7 @@ const FEATURE_OPTIONS: { id: string; title: string; desc: string; icon: string; 
   { id: 'profile', title: 'Profile', desc: 'Personal brand and settings.', icon: '⚙️', color: '#64748b' },
 ];
 
-export default function OnboardingWizard({ open, onComplete }: OnboardingWizardProps) {
+export default function OnboardingWizard({ open, onComplete, profile }: OnboardingWizardProps) {
   const [step, setStep] = useState(1);
   const [selectedPrimaryFeature, setSelectedPrimaryFeature] = useState<string | null>(null);
   const [rankedFeatures, setRankedFeatures] = useState<string[]>([]);
@@ -59,8 +61,17 @@ export default function OnboardingWizard({ open, onComplete }: OnboardingWizardP
     }
   };
 
+  const [displayName, setDisplayName] = useState('');
+
+  // Sync displayName when profile is provided
+  React.useEffect(() => {
+    if (profile?.name && !displayName) {
+      setDisplayName(profile.name);
+    }
+  }, [profile, displayName]);
+
   const handleSubmit = async () => {
-    if (!selectedPrimaryFeature || rankedFeatures.length < 4) return;
+    if (!selectedPrimaryFeature || rankedFeatures.length < 4 || !displayName.trim()) return;
     
     const user = auth.currentUser;
     if (!user) return;
@@ -77,6 +88,7 @@ export default function OnboardingWizard({ open, onComplete }: OnboardingWizardP
         body: JSON.stringify({
           landingPage: selectedPrimaryFeature,
           tabOrder: rankedFeatures,
+          name: displayName.trim(),
         }),
       });
 
@@ -327,7 +339,57 @@ export default function OnboardingWizard({ open, onComplete }: OnboardingWizardP
                 variant="filled" 
                 baseColor="#10b981" 
                 size="large"
-                disabled={rankedFeatures.length < 4 || isSubmitting}
+                disabled={rankedFeatures.length < 4}
+                onClick={() => setStep(3)}
+                sx={{ px: 6, py: 1.5, fontSize: '1.1rem', fontWeight: 800, borderRadius: 100 }}
+              >
+                Next Step
+              </PremiumButton>
+            </Box>
+          </Box>
+        )}
+
+        {step === 3 && (
+          <Box component={motion.div} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+            <Box sx={{ textAlign: 'center', mb: 5 }}>
+              <Typography variant="h4" sx={{ fontWeight: 900, color: 'text.primary', mb: 2 }}>
+                Just one more thing...
+              </Typography>
+              <Typography variant="body1" sx={{ color: 'text.secondary', maxWidth: 400, mx: 'auto', lineHeight: 1.6 }}>
+                What should we call you? Your name helps us personalize your experience.
+              </Typography>
+            </Box>
+
+            <Box sx={{ maxWidth: 400, mx: 'auto', mb: 6 }}>
+              <PremiumTextField
+                label="Your Full Name"
+                value={displayName}
+                onChange={(e: any) => setDisplayName(e.target.value)}
+                placeholder="e.g. John Doe"
+                colorTheme="#10b981"
+                required
+              />
+            </Box>
+
+            {submitError && (
+              <Alert severity="error" sx={{ mb: 4, borderRadius: 3, maxWidth: 500, mx: 'auto' }}>
+                {submitError}
+              </Alert>
+            )}
+
+            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
+              <PremiumButton 
+                variant="outlined" 
+                onClick={() => setStep(2)}
+                sx={{ px: 4, py: 1.5, fontWeight: 700, borderRadius: 100 }}
+              >
+                Back
+              </PremiumButton>
+              <PremiumButton 
+                variant="filled" 
+                baseColor="#10b981" 
+                size="large"
+                disabled={!displayName.trim() || isSubmitting}
                 onClick={handleSubmit}
                 sx={{ px: 6, py: 1.5, fontSize: '1.1rem', fontWeight: 800, borderRadius: 100 }}
               >

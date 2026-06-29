@@ -246,6 +246,7 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
             <OnboardingWizard 
               open={!!(profile && needsOnboarding && !(profile.isAdmin && profile.currentRank < 5))} 
               onComplete={() => window.location.reload()} 
+              profile={profile}
             />
             {children}
             <AdminOnboardingModal />

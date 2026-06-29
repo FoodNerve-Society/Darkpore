@@ -1,0 +1,1 @@
+import { prisma } from './lib/db/client'; async function main() { await prisma.user.deleteMany({}); console.log('All users deleted.'); } main().catch(console.error).finally(() => prisma.$disconnect());

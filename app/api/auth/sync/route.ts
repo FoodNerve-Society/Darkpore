@@ -42,7 +42,7 @@ export async function POST(request: Request) {
         id: uid,
         firebaseUid: uid,
         email,
-        name: name || email.split('@')[0],
+        name: name || '',
         avatarUrl: picture || null,
         role: 'member',
         rank: 1,
