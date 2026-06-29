@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
     "society.foodnerve.com.localhost",
     "society.foodnerve.org.localhost",
     "society.localhost",
+    "society.192.168.1.105.nip.io",
   ],
   experimental: {
     serverActions: {
