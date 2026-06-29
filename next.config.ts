@@ -6,6 +6,9 @@ const nextConfig: NextConfig = {
     "foodnerve.org.localhost",
     "foodnerve.com.localhost",
     "darkpore.localhost",
+    "society.foodnerve.com.localhost",
+    "society.foodnerve.org.localhost",
+    "society.localhost",
   ],
   experimental: {
     serverActions: {

@@ -46,7 +46,10 @@ export default function AdminOnboardingModal() {
   const [step, setStep] = useState(1);
 
   // Form State
-  const [displayName, setDisplayName] = useState(profile?.displayName || '');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [prefixes, setPrefixes] = useState<string[]>([]);
+  const [suffixes, setSuffixes] = useState<string[]>([]);
   const [bio, setBio] = useState('');
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatarUrl || '');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -54,6 +57,22 @@ export default function AdminOnboardingModal() {
   const [department, setDepartment] = useState('');
   const [role, setRole] = useState('');
   const [showConfirmation, setShowConfirmation] = useState(false);
+
+  const PREFIX_OPTIONS = ['Dr.', 'Prof.', 'Engr.', 'Arch.', 'Pharm.', 'Rev.', 'Chief', 'Mr.', 'Mrs.', 'Ms.'];
+  const SUFFIX_OPTIONS = ['PhD', 'MSc', 'BSc', 'MBA', 'CFA', 'Esq.', 'MD', 'DO', 'CPA'];
+
+  // Sync initial name if available
+  React.useEffect(() => {
+    if (profile?.name && !firstName && !lastName) {
+      const parts = profile.name.trim().split(' ');
+      if (parts.length === 1) {
+        setFirstName(parts[0]);
+      } else if (parts.length >= 2) {
+        setFirstName(parts[0]);
+        setLastName(parts.slice(1).join(' '));
+      }
+    }
+  }, [profile, firstName, lastName]);
 
   // Trigger Logic: 
   // 1. Must be an admin (logged in via password)
@@ -63,7 +82,7 @@ export default function AdminOnboardingModal() {
   if (!isPendingAdmin || !user) return null;
 
   const handleNextStep = () => {
-    if (!displayName || !bio) return;
+    if (!firstName || !lastName || !bio) return;
     setStep(2);
   };
 
@@ -89,7 +108,10 @@ export default function AdminOnboardingModal() {
       }
 
       await submitAdminOnboarding(user.uid, {
-        displayName,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        prefixes,
+        suffixes,
         role,
         department,
         bio,
@@ -214,7 +236,7 @@ export default function AdminOnboardingModal() {
                           boxShadow: '0 8px 24px rgba(0,0,0,0.06)'
                         }}
                       >
-                        {displayName ? displayName.charAt(0).toUpperCase() : 'A'}
+                        {firstName ? firstName.charAt(0).toUpperCase() : 'A'}
                       </Avatar>
                       <IconButton 
                         component="label" 
@@ -239,14 +261,48 @@ export default function AdminOnboardingModal() {
                     </Box>
                   </Box>
 
-                  <PremiumTextField
-                    fullWidth required
-                    colorTheme="#10b981"
-                    label="Public Display Name"
-                    placeholder="e.g. John Doe"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                  />
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    <PremiumAutocomplete
+                      label="Prefixes (Optional)"
+                      options={PREFIX_OPTIONS}
+                      value={prefixes}
+                      onChange={(e: any, newValue: any) => setPrefixes(newValue)}
+                      multiple
+                      freeSolo
+                      colorTheme="#10b981"
+                      placeholder="e.g. Dr., Prof."
+                    />
+                    <Box sx={{ display: 'flex', gap: 2 }}>
+                      <PremiumTextField
+                        label="First Name"
+                        value={firstName}
+                        onChange={(e: any) => setFirstName(e.target.value)}
+                        placeholder="e.g. John"
+                        colorTheme="#10b981"
+                        required
+                        fullWidth
+                      />
+                      <PremiumTextField
+                        label="Last Name"
+                        value={lastName}
+                        onChange={(e: any) => setLastName(e.target.value)}
+                        placeholder="e.g. Doe"
+                        colorTheme="#10b981"
+                        required
+                        fullWidth
+                      />
+                    </Box>
+                    <PremiumAutocomplete
+                      label="Suffixes (Optional)"
+                      options={SUFFIX_OPTIONS}
+                      value={suffixes}
+                      onChange={(e: any, newValue: any) => setSuffixes(newValue)}
+                      multiple
+                      freeSolo
+                      colorTheme="#10b981"
+                      placeholder="e.g. PhD, MBA"
+                    />
+                  </Box>
 
                   <PremiumTextField
                     fullWidth required multiline rows={3}
@@ -254,25 +310,24 @@ export default function AdminOnboardingModal() {
                     label="Executive Briefing (Bio)"
                     placeholder="A short blurb establishing your authority..."
                     value={bio}
-                    onChange={(e) => setBio(e.target.value)}
+                    onChange={(e: any) => setBio(e.target.value)}
                   />
 
-                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
-                    <Button
-                      onClick={handleNextStep} variant="contained"
-                      disabled={!displayName || !bio || !avatarUrl}
+                  <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <Button 
+                      variant="contained"
+                      onClick={handleNextStep}
+                      disabled={!firstName.trim() || !lastName.trim() || !bio.trim()}
                       endIcon={<ArrowForwardIcon />}
-                      sx={{
-                        py: 1, px: 4, borderRadius: 3, fontWeight: 800, fontSize: '0.9rem',
-                        color: 'white',
-                        background: '#10b981',
-                        boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)',
-                        textTransform: 'none', transition: 'all 0.3s ease',
-                        '&:hover': { transform: 'translateY(-1px)', background: '#059669', boxShadow: '0 6px 20px rgba(16, 185, 129, 0.4)' },
-                        '&.Mui-disabled': { background: 'rgba(0,0,0,0.04)', color: 'rgba(0,0,0,0.25)', boxShadow: 'none' }
+                      sx={{ 
+                        bgcolor: '#3b82f6', 
+                        '&:hover': { bgcolor: '#2563eb' },
+                        borderRadius: 100,
+                        px: 4, py: 1.5,
+                        fontWeight: 700
                       }}
                     >
-                      Next Phase
+                      Continue
                     </Button>
                   </Box>
                 </Box>
@@ -317,7 +372,7 @@ export default function AdminOnboardingModal() {
                       <Typography variant="subtitle2" sx={{ color: '#059669', fontWeight: 800, textTransform: 'uppercase', mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
                         <CheckCircleOutlinedIcon fontSize="small" /> Please Confirm Details
                       </Typography>
-                      <Typography variant="body2" sx={{ color: '#334155' }}><strong>Name:</strong> {displayName}</Typography>
+                      <Typography variant="body2" sx={{ color: '#334155' }}><strong>Name:</strong> {firstName} {lastName}</Typography>
                       <Typography variant="body2" sx={{ color: '#334155' }}><strong>Department:</strong> {department}</Typography>
                       <Typography variant="body2" sx={{ color: '#334155' }}><strong>Role:</strong> {role}</Typography>
                     </Box>

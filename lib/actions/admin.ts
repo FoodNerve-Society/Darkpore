@@ -4,15 +4,36 @@ import { prisma } from "@/lib/db/client";
 
 export async function submitAdminOnboarding(
   uid: string, 
-  data: { displayName: string; role: string; department?: string; bio: string; avatarUrl: string }
+  data: { 
+    firstName: string; 
+    lastName: string;
+    prefixes?: string[];
+    suffixes?: string[];
+    role: string; 
+    department?: string; 
+    bio: string; 
+    avatarUrl: string;
+  }
 ) {
   if (!uid) throw new Error("Missing user ID");
+
+  const nameParts = [
+    ...(data.prefixes || []),
+    data.firstName,
+    data.lastName,
+    ...(data.suffixes || [])
+  ];
+  const fullName = nameParts.filter(Boolean).join(' ');
 
   // 1. Update the user's profile
   await prisma.user.update({
     where: { firebaseUid: uid },
     data: {
-      name: data.displayName,
+      name: fullName,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      prefixes: data.prefixes && data.prefixes.length > 0 ? JSON.stringify(data.prefixes) : null,
+      suffixes: data.suffixes && data.suffixes.length > 0 ? JSON.stringify(data.suffixes) : null,
       bio: data.bio,
       avatarUrl: data.avatarUrl,
       hasCompletedProfile: true,
