@@ -1,0 +1,430 @@
+﻿commit 874972b1a6d652e433e313a51458231b8bc1edbc
+Author: Raphael Inyang <inyangraphael@gmail.com>
+Date:   Sun Jun 28 22:21:59 2026 +0100
+
+    chore(auto-backup): state saved at 2026-06-28T21:21:58.464Z
+
+diff --git a/app/modular-society/[tenant]/(authenticated)/components/forms/CreateLearnContentForm.tsx b/app/modular-society/[tenant]/(authenticated)/components/forms/CreateLearnContentForm.tsx
+index dfdb011..f8c74f6 100644
+--- a/app/modular-society/[tenant]/(authenticated)/components/forms/CreateLearnContentForm.tsx
++++ b/app/modular-society/[tenant]/(authenticated)/components/forms/CreateLearnContentForm.tsx
+@@ -354,13 +354,19 @@ export default function CreateLearnContentForm({
+   onCancel,
+   postingAs = 'personal',
+   selectedOrgId = null,
+-  onTypeChange
++  onTypeChange,
++  draftId = null,
++  initialTaxonomy = null,
++  initialType = 'article'
+ }: { 
+   onSuccess?: () => void, 
+   onCancel?: () => void,
+   postingAs?: 'personal' | 'organization',
+   selectedOrgId?: string | null,
+-  onTypeChange?: (type: string) => void
++  onTypeChange?: (type: string) => void,
++  draftId?: string | null,
++  initialTaxonomy?: { category: string, subcategory: string, timeframe: string } | null,
++  initialType?: string
+ }) {
+   const { profile } = useSociety();
+   const params = useParams();
+@@ -685,397 +691,6 @@ export default function CreateLearnContentForm({
+     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', position: 'relative' }}>
+       <Box sx={{ flex: 1, overflowY: 'auto', px: { xs: 2.5, sm: 3.5 }, py: 3, display: 'flex', flexDirection: 'column', gap: 3.5 }}>
+         
+-        {/* STEP 1: TYPE */}
+-        {step === 1 && (
+-          <Box sx={{ animation: 'fadeIn 0.3s', display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 4, height: { md: 540 } }}>
+-            
+-            {/* Left Side: Slideshow (Top on Mobile) */}
+-            <Box 
+-              sx={{ 
+-                flex: { md: 1 },
+-                position: 'relative', 
+-                width: '100%', 
+-                height: { xs: 220, md: '100%' }, 
+-                borderRadius: 4, 
+-                overflow: 'hidden',
+-                boxShadow: '0 12px 30px rgba(0,0,0,0.1)'
+-              }}
+-            >
+-              {/* Slides */}
+-              {SLIDESHOW_IMAGES.map((img, idx) => (
+-                <Box
+-                  key={img}
+-                  sx={{
+-                    position: 'absolute',
+-                    top: 0, left: 0, right: 0, bottom: 0,
+-                    backgroundImage: `url(${img})`,
+-                    backgroundSize: 'cover',
+-                    backgroundPosition: 'center',
+-                    transform: `translateX(${(idx - currentSlide) * 100}%)`,
+-                    transition: 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+-                  }}
+-                />
+-              ))}
+-              
+-              {/* Gradient Overlay */}
+-              <Box sx={{
+-                position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+-                background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.5) 100%)',
+-              }} />
+-
+-              {/* Bottom Left Text */}
+-              <Box sx={{ position: 'absolute', bottom: 32, left: 32, zIndex: 10, pr: 4 }}>
+-                <Typography variant="h4" sx={{ fontWeight: 900, color: '#fff', mb: 1, letterSpacing: '-0.02em', lineHeight: 1.1 }}>What are you creating?</Typography>
+-                <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.8)', fontWeight: 500, lineHeight: 1.4 }}>Select the format that best delivers your intelligence.</Typography>
+-              </Box>
+-            </Box>
+-
+-            {/* Right Side: Options Grid */}
+-            <Box sx={{ flex: { md: 1 }, overflowY: 'auto', p: 1, display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2, alignContent: 'start' }}>
+-              {CONTENT_TYPES.map(ct => {
+-                const isActive = type === ct.value;
+-                return (
+-                  <Box key={ct.value}>
+-                    <PremiumCard
+-                      variant="interactive"
+-                      onClick={() => handleTypeSelect(ct.value as any)}
+-                      sx={{ 
+-                        cursor: 'pointer',
+-                        p: 2.5,
+-                        borderRadius: '24px', // Squircle effect
+-                        display: 'flex',
+-                        flexDirection: 'column',
+-                        alignItems: 'flex-start',
+-                        height: '100%',
+-                        border: isActive ? `2px solid ${ct.color}` : '1px solid rgba(0,0,0,0.06)',
+-                        background: isActive 
+-                          ? `linear-gradient(145deg, ${alpha(ct.color, 0.18)} 0%, ${alpha(ct.color, 0.05)} 100%)` 
+-                          : 'background.paper',
+-                        boxShadow: isActive ? `0 12px 32px ${alpha(ct.color, 0.3)}` : 'none',
+-                        transform: isActive ? 'scale(1.03)' : 'scale(1)',
+-                        transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)',
+-                        '&:hover': {
+-                          transform: isActive ? 'scale(1.03)' : 'translateY(-3px)',
+-                          boxShadow: isActive ? `0 16px 40px ${alpha(ct.color, 0.35)}` : '0 12px 28px rgba(0,0,0,0.08)',
+-                          borderColor: isActive ? ct.color : 'rgba(0,0,0,0.15)',
+-                        }
+-                      }}
+-                    >
+-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2, width: '100%' }}>
+-                        <Box sx={{ 
+-                          transform: isActive ? 'scale(1.1)' : 'scale(1)', 
+-                          transformOrigin: 'top left',
+-                          transition: 'transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)'
+-                        }}>
+-                          {ct.icon}
+-                        </Box>
+-                        {isActive ? (
+-                          <RadioButtonCheckedIcon sx={{ color: ct.color, fontSize: 28 }} />
+-                        ) : (
+-                          <RadioButtonUncheckedIcon sx={{ color: 'rgba(0,0,0,0.15)', fontSize: 28 }} />
+-                        )}
+-                      </Box>
+-                      <Typography variant="h6" sx={{ fontWeight: 800, color: 'text.primary', mb: 0.5, letterSpacing: '-0.01em' }}>{ct.label}</Typography>
+-                      <Typography variant="body2" sx={{ color: isActive ? 'text.primary' : 'text.secondary', fontWeight: 500 }}>{ct.desc}</Typography>
+-                    </PremiumCard>
+-                  </Box>
+-                )
+-              })}
+-            </Box>
+-          </Box>
+-        )}
+-
+-        {/* STEP 2: CINEMATIC CATEGORY & CLASSIFICATION */}
+-        {step === 2 && (
+-          <Box sx={{ animation: 'fadeIn 0.3s', display: 'flex', flexDirection: 'column', gap: 0 }}>
+-
+-            {/* ΓöÇΓöÇ SECTION A: THE SLANTED ACCORDION ΓöÇΓöÇ */}
+-            <Box sx={{ mb: 3 }}>
+-              <Typography variant="h5" sx={{ fontWeight: 900, mb: 0.5, letterSpacing: '-0.02em' }}>Where does this belong?</Typography>
+-              <Typography color="text.secondary" sx={{ mb: 3, fontSize: '0.9rem' }}>Select the category your intelligence falls under.</Typography>
+-
+-              {/* Accordion Container */}
+-              <Box sx={{ 
+-                display: 'flex',
+-                flexDirection: { xs: 'column', md: 'row' },
+-                height: { xs: categoryLocked ? 'auto' : 400, md: categoryLocked ? '65vh' : 200 }, 
+-                minHeight: { xs: categoryLocked ? 600 : 'auto', md: categoryLocked ? 500 : 'auto' },
+-                borderRadius: '24px', 
+-                overflow: 'hidden',
+-                boxShadow: '0 12px 40px rgba(0,0,0,0.12)',
+-                transition: 'all 0.6s cubic-bezier(0.2, 0.8, 0.2, 1)',
+-                position: 'relative',
+-              }}>
+-                {challenges.map((chal, idx) => {
+-                  const isActive = activeAccordionIdx === idx;
+-                  const isLocked = categoryLocked && isActive;
+-                  const isHidden = categoryLocked && !isActive;
+-                  return (
+-                    <Box
+-                      key={chal.id}
+-                      onClick={() => {
+-                        if (!categoryLocked) {
+-                          handleCategorySelect(idx, chal.id);
+-                        } else {
+-                          handleResetCategory();
+-                        }
+-                      }}
+-                      sx={{
+-                        display: 'flex', flexDirection: 'column',
+-                        position: 'relative',
+-                        flex: isHidden ? '0 0 0%' : isActive ? (categoryLocked ? '0 0 100%' : '0 0 45%') : '1 1 0%',
+-                        minWidth: isHidden ? 0 : (isActive ? undefined : 0),
+-                        overflow: 'hidden',
+-                        cursor: 'pointer',
+-                        transition: 'all 0.6s cubic-bezier(0.2, 0.8, 0.2, 1)',
+-                        opacity: isHidden ? 0 : 1,
+-                        '&:not(:last-child)': {
+-                          borderRight: { xs: 'none', md: isHidden ? 'none' : '1px solid rgba(255,255,255,0.15)' },
+-                          borderBottom: { xs: isHidden ? 'none' : '1px solid rgba(255,255,255,0.15)', md: 'none' },
+-                        },
+-                        '&:hover': !categoryLocked ? {
+-                          flex: '0 0 50%',
+-                        } : {},
+-                      }}
+-                    >
+-                      {/* Background Image */}
+-                      <Box sx={{
+-                        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+-                        backgroundImage: `url(${chal.imageUrl})`,
+-                        backgroundSize: 'cover',
+-                        backgroundPosition: 'center',
+-                        transition: 'transform 0.6s ease',
+-                        transform: isActive ? 'scale(1.05)' : 'scale(1.15)',
+-                      }} />
+-
+-                      {/* Dark Overlay */}
+-                      <Box sx={{
+-                        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+-                        background: isActive
+-                          ? 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0.5) 100%)'
+-                          : 'rgba(0,0,0,0.55)',
+-                        transition: 'background 0.4s',
+-                      }} />
+-
+-                      {/* Category Label / Breadcrumb */}
+-                      <Box sx={{
+-                        position: 'absolute',
+-                        bottom: categoryLocked && isLocked ? 'auto' : 20,
+-                        top: categoryLocked && isLocked ? 16 : 'auto',
+-                        left: 20, right: 20,
+-                        zIndex: 5,
+-                        transition: 'all 0.4s',
+-                      }}>
+-                        {categoryLocked && isLocked ? (
+-                          <Box 
+-                            sx={{ 
+-                              display: 'inline-flex', alignItems: 'center', p: 1, ml: -1, borderRadius: 3, 
+-                              bgcolor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)',
+-                              maxWidth: '100%', overflowX: 'auto', whiteSpace: 'nowrap',
+-                              '&::-webkit-scrollbar': { display: 'none' }
+-                            }}
+-                          >
+-                            <Box 
+-                              onClick={(e) => { e.stopPropagation(); handleResetCategory(); }}
+-                              sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer', '&:hover': { opacity: 0.7 }, transition: 'opacity 0.2s' }}
+-                            >
+-                              <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+-                                Categories
+-                              </Typography>
+-                            </Box>
+-
+-                            <Typography sx={{ color: 'rgba(255,255,255,0.3)', mx: 1, fontSize: '0.8rem' }}>/</Typography>
+-                            <Typography 
+-                              onClick={(e) => { e.stopPropagation(); setSelectedSubcategory(''); setShowTitleSection(false); }}
+-                              sx={{ color: selectedSubcategory ? 'rgba(255,255,255,0.7)' : '#fff', fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.05em', textTransform: 'uppercase', cursor: selectedSubcategory ? 'pointer' : 'default', '&:hover': selectedSubcategory ? { opacity: 0.7 } : {}, transition: 'opacity 0.2s' }}
+-                            >
+-                              {chal.title}
+-                            </Typography>
+-
+-                            {selectedSubcategory && (
+-                              <>
+-                                <Typography sx={{ color: 'rgba(255,255,255,0.3)', mx: 1, fontSize: '0.8rem' }}>/</Typography>
+-                                <Typography 
+-                                  onClick={(e) => { e.stopPropagation(); setShowTitleSection(false); }}
+-                                  sx={{ color: showTitleSection ? 'rgba(255,255,255,0.7)' : '#fff', fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.05em', textTransform: 'uppercase', cursor: showTitleSection ? 'pointer' : 'default', '&:hover': showTitleSection ? { opacity: 0.7 } : {}, transition: 'opacity 0.2s' }}
+-                                >
+-                                  {chal.subcategories.find(s => s.id === selectedSubcategory)?.title || 'Subcategory'}
+-                                </Typography>
+-                              </>
+-                            )}
+-
+-                            {showTitleSection && selectedTimeframe && (
+-                              <>
+-                                <Typography sx={{ color: 'rgba(255,255,255,0.3)', mx: 1, fontSize: '0.8rem' }}>/</Typography>
+-                                <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+-                                  {selectedTimeframe}
+-                                </Typography>
+-                              </>
+-                            )}
+-                          </Box>
+-                        ) : (
+-                          <Box>
+-                            <Typography sx={{
+-                              color: '#fff',
+-                              fontWeight: 900,
+-                              fontSize: isActive ? '1.3rem' : '0.85rem',
+-                              letterSpacing: '-0.01em',
+-                              lineHeight: 1.2,
+-                              transition: 'font-size 0.4s',
+-                              textShadow: '0 2px 8px rgba(0,0,0,0.5)',
+-                              whiteSpace: isActive ? 'normal' : 'nowrap',
+-                              overflow: 'hidden',
+-                              textOverflow: 'ellipsis',
+-                            }}>
+-                              {chal.title}
+-                            </Typography>
+-                            {isActive && !categoryLocked && (
+-                              <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem', mt: 0.5, fontWeight: 500 }}>
+-                                Tap to select
+-                              </Typography>
+-                            )}
+-                          </Box>
+-                        )}
+-                      </Box>
+-
+-                      {/* ΓöÇΓöÇ GLASSMORPHIC REVEAL (inside the locked card) ΓöÇΓöÇ */}
+-                      {isLocked && showSubcategories && (
+-                        <Box 
+-                          onClick={(e) => e.stopPropagation()}
+-                          sx={{
+-                            position: { xs: 'relative', md: 'absolute' },
+-                            bottom: { xs: 'auto', md: 0 }, 
+-                            left: 0, right: 0,
+-                            top: { xs: 'auto', md: 64 },
+-                            marginTop: { xs: '64px', md: 0 },
+-                            flex: { xs: 1, md: 'none' },
+-                            background: 'rgba(0,0,0,0.4)',
+-                            backdropFilter: 'blur(32px)',
+-                            WebkitBackdropFilter: 'blur(32px)',
+-                            zIndex: 10,
+-                            animation: `${slideUpFade} 0.6s cubic-bezier(0.16, 1, 0.3, 1)`,
+-                            overflow: 'hidden',
+-                            borderBottomLeftRadius: '24px',
+-                            borderBottomRightRadius: '24px',
+-                          }}>
+-                          {/* Sliding Track - Now 200% wide for 2 views */}
+-                          <Box sx={{
+-                            display: 'flex',
+-                            width: '200%',
+-                            height: { xs: 'auto', md: '100%' },
+-                            transform: selectedSubcategory ? 'translateX(-50%)' : 'translateX(0)',
+-                            transition: 'transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1)',
+-                          }}>
+-                            {/* VIEW 1: SUBCATEGORIES */}
+-                            <Box sx={{ width: '50%', height: { xs: 'auto', md: '100%' }, overflowY: { xs: 'visible', md: 'auto' }, p: 3, pb: 8 }}>
+-                              <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', mb: 3 }}>
+-                                Select Subcategory
+-                              </Typography>
+-                              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5, pb: 2 }}>
+-                                {chal.subcategories.map(sub => {
+-                                  const isSubActive = selectedSubcategory === sub.id;
+-                                  return (
+-                                    <Box
+-                                      key={sub.id}
+-                                      onClick={(e) => { e.stopPropagation(); handleSubcategorySelect(sub.id); }}
+-                                      sx={{
+-                                        display: 'flex', alignItems: 'center', gap: 2,
+-                                        p: 1.5, borderRadius: '16px',
+-                                        cursor: 'pointer', transition: 'all 0.3s',
+-                                        border: '1px solid',
+-                                        borderColor: isSubActive ? ACCENT : 'rgba(255,255,255,0.15)',
+-                                        bgcolor: isSubActive ? alpha(ACCENT, 0.25) : 'rgba(255,255,255,0.08)',
+-                                        boxShadow: isSubActive ? `0 4px 20px ${alpha(ACCENT, 0.3)}` : 'none',
+-                                        backdropFilter: 'blur(8px)',
+-                                        '&:hover': { bgcolor: isSubActive ? alpha(ACCENT, 0.35) : 'rgba(255,255,255,0.12)' }
+-                                      }}
+-                                    >
+-                                      <Box sx={{ 
+-                                        width: 48, height: 48, borderRadius: '12px', overflow: 'hidden', flexShrink: 0,
+-                                        backgroundImage: `url(${sub.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center',
+-                                        border: '1px solid rgba(255,255,255,0.1)'
+-                                      }} />
+-                                      <Box>
+-                                        <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: '0.95rem', letterSpacing: '-0.01em' }}>{sub.title}</Typography>
+-                                        {sub.desc && (
+-                                          <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem', fontWeight: 500, display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+-                                            {sub.desc}
+-                                          </Typography>
+-                                        )}
+-                                      </Box>
+-                                    </Box>
+-                                  );
+-                                })}
+-                              </Box>
+-                            </Box>
+-
+-                            {/* VIEW 2: TIMELINE (ERA OF INTELLIGENCE) */}
+-                            <Box sx={{ width: '50%', height: { xs: 'auto', md: '100%' }, overflowY: { xs: 'visible', md: 'auto' }, p: 3, pb: 8, display: 'flex', flexDirection: 'column' }}>
+-                              <Box sx={{ display: 'flex', flexDirection: 'column', mb: 4 }}>
+-                                <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: '1.2rem', letterSpacing: '-0.01em' }}>
+-                                  What era of intelligence is this?
+-                                </Typography>
+-                                <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem', mt: 0.5 }}>
+-                                  Choose the strategic lens for your briefing to apply the correct editorial framework.
+-                                </Typography>
+-                              </Box>
+-
+-                              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%', maxWidth: 500, mx: 'auto' }}>
+-                                {[
+-                                  { key: 'past' as const, emoji: '≡ƒö┤', label: 'The Autopsy', desc: 'Break down something that no longer works.', color: '#ef4444' },
+-                                  { key: 'present' as const, emoji: '≡ƒƒó', label: 'The Playbook', desc: 'Share strategies that are working right now.', color: '#10b981' },
+-                                  { key: 'future' as const, emoji: '≡ƒö╡', label: 'The Thesis', desc: 'Predict what will work tomorrow.', color: '#3b82f6' },
+-                                ].map(tf => {
+-                                  const isActive = selectedTimeframe === tf.key;
+-                                  return (
+-                                    <Box
+-                                      key={tf.key}
+-                                      onClick={(e) => { 
+-                                        e.stopPropagation(); 
+-                                        handleTimeframeSelect(tf.key); 
+-                                        // Skip Title section and jump straight to Step 3
+-                                        setTimeout(() => setStep(3), 400); 
+-                                      }}
+-                                      sx={{
+-                                        display: 'flex', alignItems: 'center', p: 2.5, borderRadius: '20px',
+-                                        cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+-                                        background: isActive ? `linear-gradient(135deg, ${alpha(tf.color, 0.2)} 0%, ${alpha(tf.color, 0.05)} 100%)` : 'rgba(255,255,255,0.03)',
+-                                        border: '1px solid',
+-                                        borderColor: isActive ? tf.color : 'rgba(255,255,255,0.08)',
+-                                        boxShadow: isActive ? `0 12px 40px ${alpha(tf.color, 0.25)}` : 'none',
+-                                        transform: isActive ? 'translateX(12px)' : 'none',
+-                                        '&:hover': {
+-                                          background: isActive ? undefined : 'rgba(255,255,255,0.08)',
+-                                          borderColor: isActive ? undefined : 'rgba(255,255,255,0.2)',
+-                                        }
+-                                      }}
+-                                    >
+-                                      <Box sx={{ fontSize: 32, mr: 2.5 }}>{tf.emoji}</Box>
+-                                      <Box sx={{ flex: 1 }}>
+-                                        <Typography sx={{ color: '#fff', fontWeight: 900, fontSize: '1.1rem', letterSpacing: '-0.01em', mb: 0.5 }}>{tf.label}</Typography>
+-                                        <Typography sx={{ color: isActive ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.5)', fontSize: '0.85rem', fontWeight: 500 }}>{tf.desc}</Typography>
+-                                      </Box>
+-                                      {isActive && <ArrowForwardIcon sx={{ color: tf.color }} />}
+-                                    </Box>
+-                                  );
+-                                })}
+-                              </Box>
+-                            </Box>
+-                          </Box>
+-                        </Box>
+-                      )}
+-                    </Box>
+-                  );
+-                })}
+-              </Box>
+-            </Box>
+-
+-            {/* SECTION B removed (moved into glassmorphic subcategory area) */}
+-
+-            {/* SECTION B & C moved inside the glassmorphic overlay */}
+-          </Box>
+-        )}
+-
+         {/* STEP 3: CONTENT / BLOCKS */}
+         {step === 3 && (
+           <Box sx={{ animation: 'fadeIn 0.3s', display: 'flex', flexDirection: 'column', gap: 0 }}>
