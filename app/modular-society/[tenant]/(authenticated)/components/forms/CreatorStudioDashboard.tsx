@@ -174,9 +174,9 @@ export default function CreatorStudioDashboard({
               elevation={0}
               sx={{
                 flex: isHidden ? '0 0 0%' : (isExpanded ? '0 0 100%' : '0 0 auto'),
-                minWidth: isHidden ? 0 : (isExpanded ? '100%' : 260),
-                maxWidth: isHidden ? 0 : (isExpanded ? '100%' : 300),
-                height: isExpanded ? { xs: 700, md: 540 } : 'auto',
+                minWidth: isHidden ? 0 : (isExpanded ? '100%' : 280),
+                maxWidth: isHidden ? 0 : (isExpanded ? '100%' : 280),
+                height: isExpanded ? 'auto' : (isHidden ? 0 : 320),
                 opacity: isHidden ? 0 : 1,
                 p: isExpanded ? 0 : (isHidden ? 0 : 3.5),
                 display: 'flex', flexDirection: 'column', gap: 2,
@@ -220,7 +220,7 @@ export default function CreatorStudioDashboard({
                 /* ============================================================== */
                 /* CREATOR WIZARD (Cinematic Accordion INSIDE the card)           */
                 /* ============================================================== */
-                <Box sx={{ p: 4, width: '100%', height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                <Box sx={{ p: 4, width: '100%', height: 'auto', display: 'flex', flexDirection: 'column', position: 'relative' }}>
                   
                   {/* Container Header & Minimize Button */}
                   <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
@@ -248,8 +248,9 @@ export default function CreatorStudioDashboard({
                   <Box sx={{ 
                     display: 'flex',
                     flexDirection: { xs: 'column', md: 'row' },
-                    flex: 1,
-                    minHeight: 0,
+                    width: '100%',
+                    minHeight: { xs: 400, md: 450 },
+                    height: categoryLocked ? 'auto' : { xs: 400, md: 450 }, 
                     borderRadius: '24px', 
                     overflow: 'hidden',
                     boxShadow: '0 12px 40px rgba(0,0,0,0.4)',
@@ -382,12 +383,9 @@ export default function CreatorStudioDashboard({
                             <Box 
                               onClick={(e) => e.stopPropagation()}
                               sx={{
-                                position: { xs: 'relative', md: 'absolute' },
-                                bottom: { xs: 'auto', md: 0 }, 
-                                left: 0, right: 0,
-                                top: { xs: 'auto', md: 72 },
-                                marginTop: { xs: '64px', md: 0 },
-                                flex: { xs: 1, md: 'none' },
+                                position: 'relative',
+                                mt: { xs: 8, md: 9 }, // push down past the "Categories / Subcategory" header
+                                flex: 'none',
                                 background: 'rgba(0,0,0,0.4)',
                                 backdropFilter: 'blur(32px)',
                                 WebkitBackdropFilter: 'blur(32px)',
@@ -396,17 +394,22 @@ export default function CreatorStudioDashboard({
                                 overflow: 'hidden',
                                 borderBottomLeftRadius: '24px',
                                 borderBottomRightRadius: '24px',
+                                borderTopLeftRadius: { xs: 0, md: '24px' },
+                                borderTopRightRadius: { xs: 0, md: '24px' },
+                                mx: { xs: 0, md: 2 },
+                                mb: { xs: 0, md: 2 },
+                                boxShadow: '0 -4px 24px rgba(0,0,0,0.2)'
                               }}>
                               {/* Sliding Track - Now 200% wide for 2 views */}
                               <Box sx={{
                                 display: 'flex',
                                 width: '200%',
-                                height: { xs: 'auto', md: '100%' },
+                                height: 'auto',
                                 transform: selectedSubcategory ? 'translateX(-50%)' : 'translateX(0)',
                                 transition: 'transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1)',
                               }}>
                                 {/* VIEW 1: SUBCATEGORIES */}
-                                <Box sx={{ width: '50%', height: { xs: 'auto', md: '100%' }, overflowY: { xs: 'visible', md: 'auto' }, p: 4, pb: 8 }}>
+                                <Box sx={{ width: '50%', height: 'auto', p: 4, pb: 4 }}>
                                   <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', mb: 3 }}>
                                     Select Subcategory
                                   </Typography>
@@ -449,7 +452,7 @@ export default function CreatorStudioDashboard({
                                 </Box>
 
                                 {/* VIEW 2: TIMELINE (ERA OF INTELLIGENCE) */}
-                                <Box sx={{ width: '50%', height: { xs: 'auto', md: '100%' }, overflowY: { xs: 'visible', md: 'auto' }, p: 4, pb: 8, display: 'flex', flexDirection: 'column' }}>
+                                <Box sx={{ width: '50%', height: 'auto', p: 4, pb: 4, display: 'flex', flexDirection: 'column' }}>
                                   <Box sx={{ display: 'flex', flexDirection: 'column', mb: 4 }}>
                                     <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: '1.4rem', letterSpacing: '-0.01em' }}>
                                       What era of intelligence is this?
