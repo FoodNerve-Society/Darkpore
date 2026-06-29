@@ -1,98 +1,23 @@
-import React, { useState } from 'react';
-import { Box, Typography, Paper, Chip, IconButton, alpha, Tooltip } from '@mui/material';
-import {
-  Article as ArticleIcon,
-  VideoLibrary as VideoLibraryIcon,
-  LiveTv as LiveTvIcon,
-  School as SchoolIcon,
-  DeleteOutlined as DeleteOutlineIcon,
-  Close as CloseIcon,
-  ArrowForwardIos as ArrowForwardIcon
-} from '@mui/icons-material';
+const fs = require('fs');
+const path = 'app/modular-society/[tenant]/(authenticated)/components/forms/CreatorStudioDashboard.tsx';
 
-const ACCENT = "#f59e0b";
+let content = fs.readFileSync(path, 'utf8');
 
-export default function CreatorStudioDashboard({
-  drafts = [],
-  onStartFresh,
-  onEditDraft,
-  onDeleteDraft,
-  challengesData = [],
-  userName
-}: {
-  drafts: any[];
-  onStartFresh: (type: string, taxonomy: any) => void;
-  onEditDraft: (draftId: string) => void;
-  onDeleteDraft: (draftId: string) => void;
-  challengesData: any[];
-  userName?: string;
-}) {
-  const [expandedStartType, setExpandedStartType] = useState<string | null>(null);
-  const [activeAccordionIdx, setActiveAccordionIdx] = useState<number>(0);
-  const [categoryLocked, setCategoryLocked] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [selectedSubcategory, setSelectedSubcategory] = useState('');
-  const [showSubcategories, setShowSubcategories] = useState(false);
+// We are going to replace everything from "      <Box sx={{ display: 'flex', gap: expandedStartType ? 0 : 4"
+// Down to "      {/* Hide the drafts section completely if we are expanded in Focus Mode */}"
 
-  const handleCategorySelect = (idx: number, id: string) => {
-    setActiveAccordionIdx(idx);
-    setCategoryLocked(true);
-    setSelectedCategory(id);
-    setTimeout(() => setShowSubcategories(true), 400);
-  };
+const startMarker = `      <Box sx={{ display: 'flex', gap: expandedStartType ? 0 : 4`;
+const endMarker = `      {/* Hide the drafts section completely if we are expanded in Focus Mode */}`;
 
-  const handleResetCategory = () => {
-    setShowSubcategories(false);
-    setTimeout(() => {
-      setCategoryLocked(false);
-      setSelectedCategory('');
-      setSelectedSubcategory('');
-    }, 300);
-  };
+const startIndex = content.indexOf(startMarker);
+const endIndex = content.indexOf(endMarker);
 
-  const handleStartFreshClose = (e: any) => {
-    e.stopPropagation();
-    setExpandedStartType(null);
-    handleResetCategory();
-  };
+if (startIndex === -1 || endIndex === -1) {
+  console.error("Markers not found");
+  process.exit(1);
+}
 
-  const finalizeTaxonomy = (timeframe: string) => {
-    setTimeout(() => {
-      onStartFresh(expandedStartType as string, {
-        category: selectedCategory,
-        subcategory: selectedSubcategory,
-        timeframe: timeframe
-      });
-    }, 500);
-  };
-
-  const currentHour = new Date().getHours();
-  const greeting = currentHour < 12 ? 'Morning' : currentHour < 18 ? 'Afternoon' : 'Evening';
-
-  return (
-    <Box sx={{ 
-      p: { xs: 2, sm: 4, md: 6, lg: 8 }, mx: 'auto', width: '100%', flex: 1, overflowY: 'auto',
-      background: 'radial-gradient(circle at 10% 20%, rgba(245, 158, 11, 0.05) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(124, 58, 237, 0.05) 0%, transparent 40%)',
-    }}>
-      <Box sx={{ mb: 6, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-        <Typography variant="h3" sx={{ fontFamily: 'Caveat, cursive', color: ACCENT, mb: 1 }}>
-          Good {greeting}, {userName || 'Creative'}.
-        </Typography>
-        <Typography variant="h4" sx={{ fontWeight: 900, letterSpacing: '-0.02em', mb: 1.5, color: '#1e293b' }}>
-          Welcome to the Studio
-        </Typography>
-        <Chip 
-          label={`${drafts.length} active draft${drafts.length !== 1 ? 's' : ''} in your workspace`}
-          size="small"
-          sx={{ bgcolor: 'rgba(0,0,0,0.04)', color: 'text.secondary', fontWeight: 600, borderRadius: '8px' }}
-        />
-      </Box>
-
-      {expandedStartType === null && (
-        <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', mb: 2, letterSpacing: '0.05em', transition: 'opacity 0.3s' }}>Start Fresh</Typography>
-      )}
-      
-
+const replacement = `
       {/* Outer Start Fresh Row */}
       <Box 
         id="start-fresh-scroll-container"
@@ -124,13 +49,13 @@ export default function CreatorStudioDashboard({
           return (
             <Paper 
               key={opt.title} 
-              id={`start-fresh-card-${opt.type}`}
+              id={\`start-fresh-card-\${opt.type}\`}
               onClick={() => { 
                 if (!expandedStartType) {
                   setExpandedStartType(opt.type);
                   // Scroll into view
                   setTimeout(() => {
-                    const el = document.getElementById(`start-fresh-card-${opt.type}`);
+                    const el = document.getElementById(\`start-fresh-card-\${opt.type}\`);
                     if (el) el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
                   }, 100);
                 } 
@@ -145,15 +70,15 @@ export default function CreatorStudioDashboard({
               background: isExpanded ? 'rgba(15, 23, 42, 0.85)' : opt.grad, 
               backdropFilter: isExpanded ? 'blur(40px)' : 'none',
               border: '1px solid rgba(255,255,255,0.1)',
-              boxShadow: isExpanded ? `0 24px 60px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1)` : `inset 0 2px 10px rgba(255,255,255,0.2), 0 10px 30px ${alpha(opt.color, 0.4)}`,
+              boxShadow: isExpanded ? \`0 24px 60px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1)\` : \`inset 0 2px 10px rgba(255,255,255,0.2), 0 10px 30px \${alpha(opt.color, 0.4)}\`,
               position: 'relative', transition: 'all 0.6s cubic-bezier(0.2, 0.8, 0.2, 1)',
               transform: isHidden ? 'scale(0.9)' : 'scale(1)',
-              '&:hover': !isExpanded ? { transform: 'translateY(-4px) scale(1)', boxShadow: `inset 0 2px 10px rgba(255,255,255,0.3), 0 16px 40px ${alpha(opt.color, 0.5)}` } : {}
+              '&:hover': !isExpanded ? { transform: 'translateY(-4px) scale(1)', boxShadow: \`inset 0 2px 10px rgba(255,255,255,0.3), 0 16px 40px \${alpha(opt.color, 0.5)}\` } : {}
             }}>
               
               {/* Radial glow for expanded state */}
               {isExpanded && (
-                <Box sx={{ position: 'absolute', top: '50%', left: '20%', width: '600px', height: '600px', background: `radial-gradient(circle, ${alpha(opt.color, 0.15)} 0%, transparent 70%)`, transform: 'translate(-50%, -50%)', zIndex: 0, pointerEvents: 'none' }} />
+                <Box sx={{ position: 'absolute', top: '50%', left: '20%', width: '600px', height: '600px', background: \`radial-gradient(circle, \${alpha(opt.color, 0.15)} 0%, transparent 70%)\`, transform: 'translate(-50%, -50%)', zIndex: 0, pointerEvents: 'none' }} />
               )}
 
               {isExpanded ? (
@@ -177,7 +102,7 @@ export default function CreatorStudioDashboard({
                         <>
                           <ArrowForwardIcon sx={{ color: 'rgba(255,255,255,0.3)', fontSize: 20 }} />
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2, py: 1, borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <Box sx={{ width: 24, height: 24, borderRadius: '6px', backgroundImage: `url(${challengesData.find((c: any) => c.id === selectedCategory)?.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+                            <Box sx={{ width: 24, height: 24, borderRadius: '6px', backgroundImage: \`url(\${challengesData.find((c: any) => c.id === selectedCategory)?.imageUrl})\`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
                             <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: '0.9rem' }}>{challengesData.find((c: any) => c.id === selectedCategory)?.title}</Typography>
                             <IconButton 
                               size="small" 
@@ -218,7 +143,7 @@ export default function CreatorStudioDashboard({
                                 borderColor: 'rgba(255,255,255,0.2)',
                               }
                             }}>
-                            <Box sx={{ position: 'absolute', inset: 0, backgroundImage: `url(${chal.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', transition: 'transform 0.8s', transform: isActive ? 'scale(1.03)' : 'scale(1)', '&::after': { content: '""', position: 'absolute', inset: 0, background: isActive ? 'linear-gradient(180deg, rgba(15,23,42,0.1) 0%, rgba(15,23,42,0.8) 100%)' : 'rgba(15,23,42,0.7)', transition: 'background 0.5s' } }} />
+                            <Box sx={{ position: 'absolute', inset: 0, backgroundImage: \`url(\${chal.imageUrl})\`, backgroundSize: 'cover', backgroundPosition: 'center', transition: 'transform 0.8s', transform: isActive ? 'scale(1.03)' : 'scale(1)', '&::after': { content: '""', position: 'absolute', inset: 0, background: isActive ? 'linear-gradient(180deg, rgba(15,23,42,0.1) 0%, rgba(15,23,42,0.8) 100%)' : 'rgba(15,23,42,0.7)', transition: 'background 0.5s' } }} />
                             <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, p: 2.5, zIndex: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                               <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: isActive ? '1.2rem' : '1rem', letterSpacing: '-0.01em', lineHeight: 1.2, transition: 'all 0.4s' }}>{chal.title}</Typography>
                               {isActive && chal.desc && (
@@ -243,7 +168,7 @@ export default function CreatorStudioDashboard({
                                 const isSubActive = selectedSubcategory === sub.id;
                                 return (
                                   <Box key={sub.id} onClick={(e) => { e.stopPropagation(); setSelectedSubcategory(sub.id); }} sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, borderRadius: '24px', cursor: 'pointer', border: '1px solid', borderColor: isSubActive ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.05)', bgcolor: isSubActive ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.02)', backdropFilter: 'blur(12px)', transition: 'all 0.3s', '&:hover': { bgcolor: isSubActive ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.05)', transform: 'translateY(-2px)' } }}>
-                                    <Box sx={{ width: 56, height: 56, borderRadius: '16px', overflow: 'hidden', flexShrink: 0, backgroundImage: `url(${sub.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', border: '1px solid rgba(255,255,255,0.1)' }} />
+                                    <Box sx={{ width: 56, height: 56, borderRadius: '16px', overflow: 'hidden', flexShrink: 0, backgroundImage: \`url(\${sub.imageUrl})\`, backgroundSize: 'cover', backgroundPosition: 'center', border: '1px solid rgba(255,255,255,0.1)' }} />
                                     <Box>
                                       <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: '1rem', letterSpacing: '-0.01em' }}>{sub.title}</Typography>
                                     </Box>
@@ -294,139 +219,9 @@ export default function CreatorStudioDashboard({
         })}
       </Box>
 
-      {/* Hide the drafts section completely if we are expanded in Focus Mode */}
-      {!expandedStartType && (
-        <Box sx={{ mt: 6 }}>
-        <style>{`
-          @keyframes pulseDot {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-          }
-        `}</style>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-          <Typography variant="h5" sx={{ fontWeight: 900, color: '#1e293b', letterSpacing: '-0.02em' }}>
-            Active Drafts
-          </Typography>
-          <Chip label={`${drafts.length} In Progress`} size="small" sx={{ fontWeight: 800, bgcolor: 'rgba(16, 185, 129, 0.1)', color: '#059669', borderRadius: '8px', px: 0.5 }} />
-        </Box>
+`;
 
-        {drafts.length === 0 ? (
-          <Paper sx={{ p: 5, borderRadius: '24px', border: '2px dashed rgba(0,0,0,0.08)', bgcolor: 'transparent', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-            <Typography sx={{ color: '#94a3b8', fontWeight: 600 }}>No active drafts found.</Typography>
-          </Paper>
-        ) : (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-            {drafts.map((draft: any) => {
-              const typeColor = draft.type === 'article' ? '#3b82f6' : draft.type === 'video' ? '#ef4444' : draft.type === 'livestream' ? '#10b981' : draft.type === 'class' ? '#8b5cf6' : '#64748b';
-              
-              return (
-                <Paper 
-                  key={draft.id} 
-                  onClick={() => onEditDraft(draft.id)} 
-                  sx={{ 
-                    p: { xs: 2.5, md: 3 }, 
-                    borderRadius: '24px', 
-                    background: 'rgba(255,255,255,0.5)', 
-                    backdropFilter: 'blur(30px)', 
-                    border: '1px solid rgba(255,255,255,0.9)', 
-                    boxShadow: '0 8px 32px rgba(0,0,0,0.04), inset 0 2px 10px rgba(255,255,255,0.6)', 
-                    display: 'flex', 
-                    flexDirection: { xs: 'column', sm: 'row' }, 
-                    alignItems: { xs: 'flex-start', sm: 'center' },
-                    justifyContent: 'space-between',
-                    position: 'relative', 
-                    overflow: 'hidden', 
-                    cursor: 'pointer', 
-                    transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)', 
-                    '&:hover': { 
-                      background: 'rgba(255,255,255,0.7)',
-                      borderColor: alpha(typeColor, 0.4), 
-                      boxShadow: `0 16px 48px rgba(0,0,0,0.06), inset 0 2px 10px rgba(255,255,255,1), 0 0 0 1px ${alpha(typeColor, 0.2)}`, 
-                      transform: 'translateY(-3px) scale(1.01)', 
-                      '& .delete-btn': { opacity: 1, transform: 'translateX(0)' },
-                      '& .resume-btn': { bgcolor: '#0f172a', color: '#fff' },
-                      '& .resume-arrow': { transform: 'translateX(4px)' }
-                    } 
-                  }}
-                >
-                  {/* Left side: Type, Title, Metadata */}
-                  <Box sx={{ display: 'flex', gap: 2.5, alignItems: 'center', width: { xs: '100%', sm: 'auto' } }}>
-                    <Box sx={{ width: 48, height: 48, borderRadius: '14px', bgcolor: alpha(typeColor, 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center', color: typeColor, flexShrink: 0 }}>
-                      {draft.type === 'article' ? <ArticleIcon /> : draft.type === 'video' ? <VideoLibraryIcon /> : draft.type === 'livestream' ? <LiveTvIcon /> : <SchoolIcon />}
-                    </Box>
-                    
-                    <Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
-                        <Typography sx={{ fontSize: '0.7rem', fontWeight: 800, color: typeColor, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                          {draft.type}
-                        </Typography>
-                        <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: 'rgba(0,0,0,0.2)' }} />
-                        <Typography sx={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>
-                          Updated {new Date(draft.updatedAt).toLocaleDateString()}
-                        </Typography>
-                      </Box>
-                      <Typography variant="h6" sx={{ fontWeight: 900, fontSize: '1.2rem', color: '#0f172a', letterSpacing: '-0.01em', lineHeight: 1.2 }}>
-                        {draft.title || 'Untitled Draft'}
-                      </Typography>
-                      
-                      {/* Content Snapshot / Taxonomy Info if available */}
-                      {(draft.category || draft.timeframe) && (
-                        <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-                          {draft.category && <Chip label={draft.category} size="small" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 600, bgcolor: 'rgba(0,0,0,0.04)' }} />}
-                          {draft.timeframe && <Chip label={draft.timeframe} size="small" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 600, bgcolor: 'rgba(0,0,0,0.04)' }} />}
-                        </Box>
-                      )}
-                    </Box>
-                  </Box>
+content = content.substring(0, startIndex) + replacement + content.substring(endIndex);
 
-                  {/* Right side: Actions */}
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: { xs: 2, sm: 0 }, width: { xs: '100%', sm: 'auto' }, justifyContent: { xs: 'flex-end', sm: 'auto' } }}>
-                    
-                    {/* Pulsing "In Progress" */}
-                    <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 1.5, mr: 2 }}>
-                      <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#10b981', animation: 'pulseDot 2s infinite' }} />
-                      <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: '#10b981', letterSpacing: '0.05em' }}>IN PROGRESS</Typography>
-                    </Box>
-
-                    <Tooltip title="Delete Draft">
-                      <IconButton 
-                        className="delete-btn" 
-                        onClick={(e) => { e.stopPropagation(); onDeleteDraft(draft.id); }} 
-                        sx={{ 
-                          opacity: { xs: 1, sm: 0 }, 
-                          transform: { xs: 'none', sm: 'translateX(10px)' }, 
-                          transition: 'all 0.3s', 
-                          color: '#ef4444', 
-                          bgcolor: 'rgba(239, 68, 68, 0.05)',
-                          '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.15)' } 
-                        }}
-                      >
-                        <DeleteOutlineIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    
-                    <Box 
-                      className="resume-btn"
-                      sx={{ 
-                        display: 'flex', alignItems: 'center', gap: 1, 
-                        px: 2.5, py: 1.2, borderRadius: '12px', 
-                        bgcolor: 'rgba(0,0,0,0.03)', color: '#334155', 
-                        fontWeight: 800, fontSize: '0.85rem',
-                        transition: 'all 0.3s'
-                      }}
-                    >
-                      Resume
-                      <ArrowForwardIcon className="resume-arrow" sx={{ fontSize: 16, transition: 'transform 0.3s' }} />
-                    </Box>
-                  </Box>
-                </Paper>
-              );
-            })}
-          </Box>
-        )}
-      </Box>
-      )}
-    </Box>
-  );
-}
+fs.writeFileSync(path, content, 'utf8');
+console.log("Successfully redesigned horizontal flow!");
