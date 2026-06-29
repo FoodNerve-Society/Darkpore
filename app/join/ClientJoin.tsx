@@ -202,11 +202,11 @@ export default function ClientJoin({ initialTenant }: ClientJoinProps) {
   };
 
   const handleGoogleSignIn = async () => {
+    setStatus('loading');
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
-      // If we use NextRouter, we could redirect to returnUrl right here upon success.
-      // But for Google popup, we might need an onAuthStateChanged listener to handle redirection.
+      // The SocietyContext onAuthStateChanged listener handles routing and profile sync.
     } catch (error: any) {
       setStatus('error');
       setErrorMessage(error.message);
@@ -372,6 +372,9 @@ export default function ClientJoin({ initialTenant }: ClientJoinProps) {
                   <Alert severity="success" sx={{ mb: 3 }}>Check your email for the magic link!</Alert>
                 ) : (
                   <form onSubmit={handleEmailSignIn}>
+                    {status === 'error' && !isFlipped && (
+                      <Alert severity="error" sx={{ mb: 3 }}>{errorMessage}</Alert>
+                    )}
                     <TextField
                       fullWidth
                       variant="outlined"
@@ -409,13 +412,14 @@ export default function ClientJoin({ initialTenant }: ClientJoinProps) {
 
                 <Button
                   fullWidth variant="outlined" onClick={handleGoogleSignIn} startIcon={<GoogleIcon />}
+                  disabled={status === 'loading'}
                   sx={{
                     py: 1.5, color: textColor, borderColor: 'rgba(0,0,0,0.15)', borderRadius: 2, textTransform: 'none', fontWeight: 700, mb: 3,
                     background: inputBg,
                     '&:hover': { borderColor: 'rgba(0,0,0,0.4)', background: 'rgba(255,255,255,0.9)' },
                   }}
                 >
-                  Continue with Google
+                  {status === 'loading' ? 'Signing in...' : 'Continue with Google'}
                 </Button>
 
                 <Box sx={{ textAlign: 'center' }}>

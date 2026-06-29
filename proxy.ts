@@ -3,7 +3,8 @@ import type { NextRequest } from 'next/server';
 
 export function proxy(request: NextRequest) {
   const url = request.nextUrl;
-  const hostname = request.headers.get('host') || '';
+  const hostHeader = request.headers.get('host') || '';
+  const hostname = hostHeader.split(':')[0]; // Strip port for cleaner logic
 
   // Extract the tenant ID from the hostname (basic implementation)
   const tenant_id = hostname.split('.')[0];
@@ -15,7 +16,7 @@ export function proxy(request: NextRequest) {
   let theme_id = 'innovations';
   if (hostname.includes('.org') || hostname.startsWith('society.')) {
     theme_id = 'society';
-  } else if (hostname.includes('darkpore') || hostname === 'localhost:3000') {
+  } else if (hostname.includes('darkpore') || hostname === 'localhost') {
     theme_id = 'darkpore';
   }
   
@@ -64,7 +65,7 @@ export function proxy(request: NextRequest) {
     rewriteUrl.pathname = `/modular-society/${tenant}${url.pathname}`;
   } else if (
     hostname.includes('darkpore.com') || 
-    hostname === 'localhost:3000' || 
+    hostname === 'localhost' || 
     hostname.includes('darkpore.localhost')
   ) {
     rewriteUrl.pathname = `/darkpore${url.pathname}`;
