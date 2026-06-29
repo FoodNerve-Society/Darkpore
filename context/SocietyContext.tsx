@@ -305,7 +305,8 @@ export function SocietyProvider({ children }: { children: React.ReactNode }) {
             
             // If the user logs in from a public site (.com or darkpore.com), 
             // they MUST be physically redirected to the authenticated society subdomain.
-            const isPublicSite = !hostname.includes('.org') && !hostname.startsWith('society.');
+            const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
+            const isPublicSite = !isLocal && !hostname.includes('.org') && !hostname.startsWith('society.');
             
             let targetPath = '';
 

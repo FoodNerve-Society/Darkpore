@@ -500,11 +500,14 @@ export default function CreateLearnContentForm({
       if (initialDraftData.article && initialDraftData.article.blocks) {
         // Sort blocks by orderIndex just in case
         const sorted = [...initialDraftData.article.blocks].sort((a, b) => a.orderIndex - b.orderIndex);
-        setBlocks(sorted.map((b: any) => ({
-          id: b.id,
-          type: b.blockType as BlockType,
-          content: typeof b.content === 'string' ? JSON.parse(b.content) : b.content
-        })));
+        const validBlocks = sorted
+          .filter((b: any) => BLOCK_DEFINITIONS[b.blockType])
+          .map((b: any) => ({
+            id: b.id,
+            type: b.blockType as BlockType,
+            content: typeof b.content === 'string' ? JSON.parse(b.content) : b.content
+          }));
+        setBlocks(validBlocks);
       }
       
       setStep(3); // Jump directly to builder
@@ -904,7 +907,7 @@ export default function CreateLearnContentForm({
                         {blocks.map((b, i) => {
                           const isFlipped = flippedBlockId === b.id;
                           const filled = isBlockFilled(b);
-                          const bDef = BLOCK_DEFINITIONS[b.type];
+                          const bDef = BLOCK_DEFINITIONS[b.type] || { color: '#ccc', label: 'Unknown Block' };
                           const color = bDef.color;
                           
                           const hasImageField = ['highlight_card', 'media', 'data_embed'].includes(b.type);
