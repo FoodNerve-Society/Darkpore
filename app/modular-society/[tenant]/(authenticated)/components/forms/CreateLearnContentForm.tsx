@@ -357,7 +357,8 @@ export default function CreateLearnContentForm({
   onTypeChange,
   draftId = null,
   initialTaxonomy = null,
-  initialType = 'article'
+  initialType = 'article',
+  initialDraftData = null
 }: { 
   onSuccess?: () => void, 
   onCancel?: () => void,
@@ -366,7 +367,8 @@ export default function CreateLearnContentForm({
   onTypeChange?: (type: string) => void,
   draftId?: string | null,
   initialTaxonomy?: { category: string, subcategory: string, timeframe: string } | null,
-  initialType?: string
+  initialType?: string,
+  initialDraftData?: any
 }) {
   const { profile } = useSociety();
   const params = useParams();
@@ -485,6 +487,29 @@ export default function CreateLearnContentForm({
       setStep(3); // Jump directly to builder
     }
   }, [initialTaxonomy, initialType]);
+
+  useEffect(() => {
+    if (initialDraftData) {
+      setType(initialDraftData.type as any);
+      setTitle(initialDraftData.title || '');
+      setDescription(initialDraftData.description || '');
+      setSelectedCategory(initialDraftData.category || '');
+      setSelectedSubcategory(initialDraftData.subcategory || '');
+      setSelectedTimeframe(initialDraftData.timeframe as any || '');
+      
+      if (initialDraftData.article && initialDraftData.article.blocks) {
+        // Sort blocks by orderIndex just in case
+        const sorted = [...initialDraftData.article.blocks].sort((a, b) => a.orderIndex - b.orderIndex);
+        setBlocks(sorted.map((b: any) => ({
+          id: b.id,
+          type: b.blockType as BlockType,
+          content: typeof b.content === 'string' ? JSON.parse(b.content) : b.content
+        })));
+      }
+      
+      setStep(3); // Jump directly to builder
+    }
+  }, [initialDraftData]);
 
   // Media fields
   const [videoUrl, setVideoUrl] = useState('');

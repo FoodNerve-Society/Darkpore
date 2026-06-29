@@ -1974,8 +1974,10 @@ export default function LearnPage() {
           <ArrowBackIcon sx={{ fontSize: 18 }} />
         </IconButton>
         <Box sx={{ flex: 1 }}>
-          <Typography sx={{ fontWeight: 900, fontSize: '1.1rem', letterSpacing: '-0.01em', transition: 'color 0.3s ease' }}>
-            {(!selectedDraftId || selectedDraftId === null) && selectedDraftId !== 'new' ? 'Creator Studio' : `Create ${currentConfig.label}`}
+          <Typography sx={{ fontWeight: 900, fontSize: '1.1rem', letterSpacing: '-0.01em', transition: 'color 0.3s ease', display: 'flex', alignItems: 'center', gap: 1 }}>
+            <span style={{ opacity: 0.5 }}>Studio</span>
+            <span style={{ opacity: 0.5 }}>/</span>
+            {(!selectedDraftId || selectedDraftId === null) && selectedDraftId !== 'new' ? 'Overview' : (selectedDraftId === 'new' ? `Create ${currentConfig.label}` : `Edit ${currentConfig.label}`)}
           </Typography>
           <Typography sx={{ fontSize: '0.72rem', color: 'text.disabled', fontWeight: 600, mt: 0.2 }}>
             Publishing as {postingAs === 'personal' ? (profile?.displayName || 'Unknown') : (profile?.organizations?.find(o => o.id === selectedOrgId)?.name || 'Organization')}
@@ -2094,6 +2096,7 @@ export default function LearnPage() {
           draftId={selectedDraftId}
           initialTaxonomy={draftTaxonomy}
           initialType={createContentType}
+          initialDraftData={drafts.find((d: any) => d.id === selectedDraftId)}
         />
       )}
     </Paper>
