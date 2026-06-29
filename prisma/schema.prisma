@@ -18,6 +18,10 @@ model User {
   firebaseUid String  @unique
   email       String  @unique
   name        String
+  firstName   String?
+  lastName    String?
+  prefixes    String? // JSON string array
+  suffixes    String? // JSON string array
   avatarUrl   String?
   role        String  @default("member")
 

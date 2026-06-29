@@ -22,17 +22,30 @@ export async function POST(request: Request) {
     const uid = decodedToken.uid;
 
     const body = await request.json();
-    const { landingPage, tabOrder, name } = body;
+    const { landingPage, tabOrder, firstName, lastName, prefixes, suffixes } = body;
 
-    if (!landingPage || !tabOrder || !name) {
-       return NextResponse.json({ error: 'Name, Landing page, and Tab Order are required' }, { status: 400 });
+    if (!landingPage || !tabOrder || !firstName || !lastName) {
+       return NextResponse.json({ error: 'First Name, Last Name, Landing page, and Tab Order are required' }, { status: 400 });
     }
+
+    const nameParts = [
+      ...(prefixes || []),
+      firstName,
+      lastName,
+      ...(suffixes || [])
+    ];
+    
+    const fullName = nameParts.filter(Boolean).join(' ');
 
     // Update the User in Prisma
     const updatedUser = await prisma.user.update({
       where: { firebaseUid: uid },
       data: {
-        name: name,
+        name: fullName,
+        firstName: firstName,
+        lastName: lastName,
+        prefixes: prefixes && prefixes.length > 0 ? JSON.stringify(prefixes) : null,
+        suffixes: suffixes && suffixes.length > 0 ? JSON.stringify(suffixes) : null,
         landingPage: landingPage,
         tabOrder: JSON.stringify(tabOrder),
       }

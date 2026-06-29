@@ -7,6 +7,7 @@ import PremiumCard from '@/components/PremiumCard';
 import PremiumButton from '@/components/PremiumButton';
 import PremiumChip from '@/components/PremiumChip';
 import PremiumTextField from '@/components/PremiumTextField';
+import PremiumAutocomplete from '@/components/PremiumAutocomplete';
 import { UserRole, Challenge } from '@/context/SocietyContext';
 import { auth } from '@/lib/firebase/client';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
@@ -61,17 +62,32 @@ export default function OnboardingWizard({ open, onComplete, profile }: Onboardi
     }
   };
 
-  const [displayName, setDisplayName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [prefixes, setPrefixes] = useState<string[]>([]);
+  const [suffixes, setSuffixes] = useState<string[]>([]);
+
+  const PREFIX_OPTIONS = ['Dr.', 'Prof.', 'Engr.', 'Arch.', 'Pharm.', 'Rev.', 'Chief', 'Mr.', 'Mrs.', 'Ms.'];
+  const SUFFIX_OPTIONS = ['PhD', 'MSc', 'BSc', 'MBA', 'CFA', 'Esq.', 'MD', 'DO', 'CPA'];
+  const TITLES_REQUIRING_VERIFICATION = ['Dr.', 'Prof.', 'Engr.', 'Arch.', 'Pharm.', 'PhD', 'MSc', 'BSc', 'MBA', 'CFA', 'Esq.', 'MD', 'DO', 'CPA'];
+
+  const requiresVerification = prefixes.some(p => TITLES_REQUIRING_VERIFICATION.includes(p)) || suffixes.some(s => TITLES_REQUIRING_VERIFICATION.includes(s));
 
   // Sync displayName when profile is provided
   React.useEffect(() => {
-    if (profile?.name && !displayName) {
-      setDisplayName(profile.name);
+    if (profile?.name && !firstName && !lastName) {
+      const parts = profile.name.trim().split(' ');
+      if (parts.length === 1) {
+        setFirstName(parts[0]);
+      } else if (parts.length >= 2) {
+        setFirstName(parts[0]);
+        setLastName(parts.slice(1).join(' '));
+      }
     }
-  }, [profile, displayName]);
+  }, [profile, firstName, lastName]);
 
   const handleSubmit = async () => {
-    if (!selectedPrimaryFeature || rankedFeatures.length < 4 || !displayName.trim()) return;
+    if (!selectedPrimaryFeature || rankedFeatures.length < 4 || !firstName.trim() || !lastName.trim()) return;
     
     const user = auth.currentUser;
     if (!user) return;
@@ -88,7 +104,10 @@ export default function OnboardingWizard({ open, onComplete, profile }: Onboardi
         body: JSON.stringify({
           landingPage: selectedPrimaryFeature,
           tabOrder: rankedFeatures,
-          name: displayName.trim(),
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          prefixes,
+          suffixes,
         }),
       });
 
@@ -356,20 +375,78 @@ export default function OnboardingWizard({ open, onComplete, profile }: Onboardi
                 Just one more thing...
               </Typography>
               <Typography variant="body1" sx={{ color: 'text.secondary', maxWidth: 400, mx: 'auto', lineHeight: 1.6 }}>
-                What should we call you? Your name helps us personalize your experience.
+                What should we call you? Structure your professional name below.
               </Typography>
             </Box>
 
-            <Box sx={{ maxWidth: 400, mx: 'auto', mb: 6 }}>
-              <PremiumTextField
-                label="Your Full Name"
-                value={displayName}
-                onChange={(e: any) => setDisplayName(e.target.value)}
-                placeholder="e.g. John Doe"
+            <Box sx={{ maxWidth: 500, mx: 'auto', mb: 4 }}>
+              <PremiumCard variant="glass" sx={{ py: 3, px: 4, textAlign: 'center', borderRadius: 4, bgcolor: alpha('#10b981', 0.05), border: `1px solid ${alpha('#10b981', 0.2)}` }}>
+                <Typography variant="overline" sx={{ color: '#10b981', fontWeight: 800, letterSpacing: 2 }}>
+                  Your Professional Identity
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5, mt: 1 }}>
+                  <Typography variant="h5" sx={{ fontWeight: 800, color: 'text.primary' }}>
+                    {[...prefixes, firstName, lastName, ...suffixes].filter(Boolean).join(' ') || '...'}
+                  </Typography>
+                  {requiresVerification && (
+                    <Chip label="Unverified" size="small" sx={{ fontWeight: 800, bgcolor: alpha('#f59e0b', 0.1), color: '#f59e0b', borderRadius: 2 }} />
+                  )}
+                </Box>
+              </PremiumCard>
+            </Box>
+
+            <Box sx={{ maxWidth: 500, mx: 'auto', mb: 6, display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <PremiumAutocomplete
+                label="Prefixes (Optional)"
+                options={PREFIX_OPTIONS}
+                value={prefixes}
+                onChange={(e: any, newValue: any) => setPrefixes(newValue)}
+                multiple
+                freeSolo
                 colorTheme="#10b981"
-                required
+                placeholder="e.g. Dr., Prof."
+              />
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <PremiumTextField
+                  label="First Name"
+                  value={firstName}
+                  onChange={(e: any) => setFirstName(e.target.value)}
+                  placeholder="e.g. John"
+                  colorTheme="#10b981"
+                  required
+                  fullWidth
+                />
+                <PremiumTextField
+                  label="Last Name"
+                  value={lastName}
+                  onChange={(e: any) => setLastName(e.target.value)}
+                  placeholder="e.g. Doe"
+                  colorTheme="#10b981"
+                  required
+                  fullWidth
+                />
+              </Box>
+              <PremiumAutocomplete
+                label="Suffixes (Optional)"
+                options={SUFFIX_OPTIONS}
+                value={suffixes}
+                onChange={(e: any, newValue: any) => setSuffixes(newValue)}
+                multiple
+                freeSolo
+                colorTheme="#10b981"
+                placeholder="e.g. PhD, MBA"
               />
             </Box>
+
+            <AnimatePresence>
+              {requiresVerification && (
+                <Box component={motion.div} initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} sx={{ overflow: 'hidden' }}>
+                  <Alert severity="warning" sx={{ mb: 4, borderRadius: 3, maxWidth: 500, mx: 'auto', textAlign: 'left' }}>
+                    <strong>Verification Required:</strong> You have selected professional titles that require verification. Your identity will display an <strong>Unverified</strong> badge to others until you complete KYC and Professional Verification in Rank 2.
+                  </Alert>
+                </Box>
+              )}
+            </AnimatePresence>
 
             {submitError && (
               <Alert severity="error" sx={{ mb: 4, borderRadius: 3, maxWidth: 500, mx: 'auto' }}>
@@ -389,7 +466,7 @@ export default function OnboardingWizard({ open, onComplete, profile }: Onboardi
                 variant="filled" 
                 baseColor="#10b981" 
                 size="large"
-                disabled={!displayName.trim() || isSubmitting}
+                disabled={!firstName.trim() || !lastName.trim() || isSubmitting}
                 onClick={handleSubmit}
                 sx={{ px: 6, py: 1.5, fontSize: '1.1rem', fontWeight: 800, borderRadius: 100 }}
               >
