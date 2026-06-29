@@ -52,6 +52,7 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
     }
 
     // From this point on, we know `user` exists.
+    setShowUnauthModal(false);
 
     // State D (The Race Condition): The user is confirmed, but their DB profile is still loading.
     // We wait patiently for the profile to exist before making any logic decisions.
