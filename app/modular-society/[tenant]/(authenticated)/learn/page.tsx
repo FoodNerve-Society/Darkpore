@@ -2057,6 +2057,7 @@ export default function LearnPage() {
       {/* Dashboard vs Form Body */}
       {(!selectedDraftId || selectedDraftId === null) && selectedDraftId !== 'new' ? (
         <CreatorStudioDashboard
+          userName={profile?.firstName || profile?.displayName}
           drafts={drafts}
           challengesData={tenantConfig.com.homepage.challenges}
           onStartFresh={(type, taxonomy) => {
