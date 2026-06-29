@@ -7,10 +7,30 @@ import {
   School as SchoolIcon,
   DeleteOutlined as DeleteOutlineIcon,
   Close as CloseIcon,
-  ArrowForwardIos as ArrowForwardIcon
+  ArrowForwardIos as ArrowForwardIcon,
+  ArrowBackIosNew as ArrowBackIcon
 } from '@mui/icons-material';
 
 const ACCENT = "#f59e0b";
+
+const START_FRESH_OPTIONS = [
+  {
+    type: 'article', title: "Intelligence Brief", desc: "Write an in-depth article or report.",
+    icon: <ArticleIcon sx={{ fontSize: 32 }} />, color: "#3b82f6", grad: "linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)"
+  },
+  {
+    type: 'video', title: "Video Insights", desc: "Share short-form video analysis.",
+    icon: <VideoLibraryIcon sx={{ fontSize: 32 }} />, color: "#ef4444", grad: "linear-gradient(135deg, #991b1b 0%, #ef4444 100%)"
+  },
+  {
+    type: 'livestream', title: "Schedule Livestream", desc: "Host a live session.",
+    icon: <LiveTvIcon sx={{ fontSize: 32 }} />, color: "#10b981", grad: "linear-gradient(135deg, #065f46 0%, #10b981 100%)"
+  },
+  {
+    type: 'class', title: "Masterclass", desc: "Create a multi-module learning experience.",
+    icon: <SchoolIcon sx={{ fontSize: 32 }} />, color: "#8b5cf6", grad: "linear-gradient(135deg, #5b21b6 0%, #8b5cf6 100%)"
+  }
+];
 
 export default function CreatorStudioDashboard({
   drafts = [],
@@ -28,52 +48,66 @@ export default function CreatorStudioDashboard({
   userName?: string;
 }) {
   const [expandedStartType, setExpandedStartType] = useState<string | null>(null);
-  const [activeAccordionIdx, setActiveAccordionIdx] = useState<number>(0);
-  const [categoryLocked, setCategoryLocked] = useState(false);
+  const [creationStep, setCreationStep] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedSubcategory, setSelectedSubcategory] = useState('');
-  const [showSubcategories, setShowSubcategories] = useState(false);
 
-  const handleCategorySelect = (idx: number, id: string) => {
-    setActiveAccordionIdx(idx);
-    setCategoryLocked(true);
-    setSelectedCategory(id);
-    setTimeout(() => setShowSubcategories(true), 400);
+  const activeOption = START_FRESH_OPTIONS.find(o => o.type === expandedStartType);
+  const activeCategory = challengesData.find((c: any) => c.id === selectedCategory);
+
+  const handleOpenCreator = (type: string) => {
+    setExpandedStartType(type);
+    setCreationStep(0);
+    setSelectedCategory('');
+    setSelectedSubcategory('');
   };
 
-  const handleResetCategory = () => {
-    setShowSubcategories(false);
-    setTimeout(() => {
-      setCategoryLocked(false);
-      setSelectedCategory('');
-      setSelectedSubcategory('');
-    }, 300);
-  };
-
-  const handleStartFreshClose = (e: any) => {
-    e.stopPropagation();
+  const handleClose = () => {
     setExpandedStartType(null);
-    handleResetCategory();
+    setCreationStep(0);
+    setSelectedCategory('');
+    setSelectedSubcategory('');
+  };
+
+  const handleSelectCategory = (id: string) => {
+    setSelectedCategory(id);
+    setCreationStep(1);
+  };
+
+  const handleSelectSubcategory = (id: string) => {
+    setSelectedSubcategory(id);
+    setCreationStep(2);
+  };
+
+  const handleBack = () => {
+    if (creationStep === 2) {
+      setSelectedSubcategory('');
+      setCreationStep(1);
+    } else if (creationStep === 1) {
+      setSelectedCategory('');
+      setCreationStep(0);
+    } else {
+      handleClose();
+    }
   };
 
   const finalizeTaxonomy = (timeframe: string) => {
-    setTimeout(() => {
-      onStartFresh(expandedStartType as string, {
-        category: selectedCategory,
-        subcategory: selectedSubcategory,
-        timeframe: timeframe
-      });
-    }, 500);
+    onStartFresh(expandedStartType as string, {
+      category: selectedCategory,
+      subcategory: selectedSubcategory,
+      timeframe: timeframe
+    });
   };
 
   const currentHour = new Date().getHours();
   const greeting = currentHour < 12 ? 'Morning' : currentHour < 18 ? 'Afternoon' : 'Evening';
 
   return (
-    <Box sx={{ 
+    <Box sx={{
       p: { xs: 2, sm: 4, md: 6, lg: 8 }, mx: 'auto', width: '100%', flex: 1, overflowY: 'auto',
       background: 'radial-gradient(circle at 10% 20%, rgba(245, 158, 11, 0.05) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(124, 58, 237, 0.05) 0%, transparent 40%)',
     }}>
+      {/* Greeting */}
       <Box sx={{ mb: 6, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
         <Typography variant="h3" sx={{ fontFamily: 'Caveat, cursive', color: ACCENT, mb: 1 }}>
           Good {greeting}, {userName || 'Creative'}.
@@ -81,351 +115,426 @@ export default function CreatorStudioDashboard({
         <Typography variant="h4" sx={{ fontWeight: 900, letterSpacing: '-0.02em', mb: 1.5, color: '#1e293b' }}>
           Welcome to the Studio
         </Typography>
-        <Chip 
+        <Chip
           label={`${drafts.length} active draft${drafts.length !== 1 ? 's' : ''} in your workspace`}
           size="small"
           sx={{ bgcolor: 'rgba(0,0,0,0.04)', color: 'text.secondary', fontWeight: 600, borderRadius: '8px' }}
         />
       </Box>
 
-      {expandedStartType === null && (
-        <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', mb: 2, letterSpacing: '0.05em', transition: 'opacity 0.3s' }}>Start Fresh</Typography>
-      )}
-      
+      {/* ================================================================ */}
+      {/* START FRESH SECTION                                              */}
+      {/* ================================================================ */}
 
-      {/* Outer Start Fresh Row */}
-      <Box 
-        id="start-fresh-scroll-container"
-        sx={{ 
-          display: 'flex', gap: 4, overflowX: 'auto', pt: 2, pb: 5, mb: 2, 
-          '&::-webkit-scrollbar': { height: 0 }, transition: 'all 0.5s ease', flex: expandedStartType ? 1 : '0 0 auto',
-          scrollBehavior: 'smooth'
-        }}
-      >
-        {[{
-          type: 'article', title: "Intelligence Brief", desc: "Write an in-depth article or report.",
-          icon: <ArticleIcon sx={{ fontSize: 32 }} />, color: "#3b82f6", grad: "linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)"
-        },
-        {
-          type: 'video', title: "Video Insights", desc: "Share short-form video analysis.",
-          icon: <VideoLibraryIcon sx={{ fontSize: 32 }} />, color: "#ef4444", grad: "linear-gradient(135deg, #991b1b 0%, #ef4444 100%)"
-        },
-        {
-          type: 'livestream', title: "Schedule Livestream", desc: "Host a live session.",
-          icon: <LiveTvIcon sx={{ fontSize: 32 }} />, color: "#10b981", grad: "linear-gradient(135deg, #065f46 0%, #10b981 100%)"
-        },
-        {
-          type: 'class', title: "Masterclass", desc: "Create a multi-module learning experience.",
-          icon: <SchoolIcon sx={{ fontSize: 32 }} />, color: "#8b5cf6", grad: "linear-gradient(135deg, #5b21b6 0%, #8b5cf6 100%)"
-        }].map((opt) => {
-          const isExpanded = expandedStartType === opt.type;
-          const isHidden = expandedStartType !== null && expandedStartType !== opt.type;
+      {!expandedStartType ? (
+        <>
+          {/* Section header */}
+          <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', mb: 2, letterSpacing: '0.05em' }}>
+            Start Fresh
+          </Typography>
 
-          return (
-            <Paper 
-              key={opt.title} 
-              id={`start-fresh-card-${opt.type}`}
-              onClick={() => { 
-                if (!expandedStartType) {
-                  setExpandedStartType(opt.type);
-                  // Scroll into view
-                  setTimeout(() => {
-                    const el = document.getElementById(`start-fresh-card-${opt.type}`);
-                    if (el) el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-                  }, 100);
-                } 
-              }} 
-              sx={{ 
-              flex: isExpanded ? '0 0 85vw' : '0 0 260px',
-              maxWidth: isExpanded ? '1200px' : '260px',
-              height: isExpanded ? '100%' : 'auto',
-              minHeight: isExpanded ? 650 : 'auto',
-              opacity: isHidden ? 0.3 : 1, overflow: 'hidden', p: isExpanded ? 0 : 3.5, 
-              display: 'flex', flexDirection: 'column', gap: 2, borderRadius: isExpanded ? '32px' : '28px', cursor: isExpanded ? 'default' : 'pointer',
-              background: isExpanded ? 'rgba(15, 23, 42, 0.85)' : opt.grad, 
-              backdropFilter: isExpanded ? 'blur(40px)' : 'none',
-              border: '1px solid rgba(255,255,255,0.1)',
-              boxShadow: isExpanded ? `0 24px 60px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1)` : `inset 0 2px 10px rgba(255,255,255,0.2), 0 10px 30px ${alpha(opt.color, 0.4)}`,
-              position: 'relative', transition: 'all 0.6s cubic-bezier(0.2, 0.8, 0.2, 1)',
-              transform: isHidden ? 'scale(0.9)' : 'scale(1)',
-              '&:hover': !isExpanded ? { transform: 'translateY(-4px) scale(1)', boxShadow: `inset 0 2px 10px rgba(255,255,255,0.3), 0 16px 40px ${alpha(opt.color, 0.5)}` } : {}
-            }}>
-              
-              {/* Radial glow for expanded state */}
-              {isExpanded && (
-                <Box sx={{ position: 'absolute', top: '50%', left: '20%', width: '600px', height: '600px', background: `radial-gradient(circle, ${alpha(opt.color, 0.15)} 0%, transparent 70%)`, transform: 'translate(-50%, -50%)', zIndex: 0, pointerEvents: 'none' }} />
-              )}
-
-              {isExpanded ? (
-                <Box sx={{ p: {xs: 3, md: 4}, width: '100%', height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 1 }}>
-                  <IconButton onClick={handleStartFreshClose} sx={{ position: 'absolute', top: 24, right: 24, color: 'rgba(255,255,255,0.6)', bgcolor: 'rgba(255,255,255,0.05)', zIndex: 50, transition: 'all 0.3s', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)', color: '#fff', transform: 'rotate(90deg)' } }}>
-                    <CloseIcon />
-                  </IconButton>
-                  
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
-                    <Box sx={{ width: 48, height: 48, borderRadius: '14px', bgcolor: alpha(opt.color, 0.15), display: 'flex', alignItems: 'center', justifyContent: 'center', color: opt.color }}>
-                      {opt.icon}
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: {xs: 1.5, md: 3}, flexWrap: 'wrap' }}>
-                      <Box>
-                        <Typography sx={{ color: opt.color, fontWeight: 800, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Start Fresh</Typography>
-                        <Typography variant="h5" sx={{ color: '#fff', fontWeight: 900, letterSpacing: '-0.02em', mt: 0.5 }}>{opt.title}</Typography>
-                      </Box>
-                      
-                      {/* BREADCRUMB */}
-                      {categoryLocked && selectedCategory && (
-                        <>
-                          <ArrowForwardIcon sx={{ color: 'rgba(255,255,255,0.3)', fontSize: 20 }} />
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2, py: 1, borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <Box sx={{ width: 24, height: 24, borderRadius: '6px', backgroundImage: `url(${challengesData.find((c: any) => c.id === selectedCategory)?.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
-                            <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: '0.9rem' }}>{challengesData.find((c: any) => c.id === selectedCategory)?.title}</Typography>
-                            <IconButton 
-                              size="small" 
-                              onClick={(e) => { e.stopPropagation(); handleResetCategory(); }}
-                              sx={{ ml: 1, color: 'rgba(255,255,255,0.5)', '&:hover': { color: '#fff', bgcolor: 'rgba(255,255,255,0.1)' } }}
-                            >
-                              <CloseIcon fontSize="small" />
-                            </IconButton>
-                          </Box>
-                        </>
-                      )}
-                    </Box>
-                  </Box>
-
-                  {/* Horizontal Flow layout */}
-                  <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    
-                    {/* Top: Categories (Horizontal Accordion) */}
-                    <Box sx={{ 
-                      display: categoryLocked ? 'none' : 'flex', 
-                      gap: 2, overflowX: 'auto', flexShrink: 0, pb: 2,
-                      '&::-webkit-scrollbar': { height: 0 }
-                    }}>
-                      {challengesData.map((chal, idx) => {
-                        const isActive = activeAccordionIdx === idx;
-                        return (
-                          <Box key={chal.id} onClick={(e) => { e.stopPropagation(); handleCategorySelect(idx, chal.id); }}
-                            sx={{
-                              flex: isActive ? '0 0 320px' : '0 0 160px',
-                              height: '140px',
-                              overflow: 'hidden', position: 'relative', borderRadius: '24px',
-                              cursor: 'pointer',
-                              border: '1px solid', borderColor: isActive ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.05)',
-                              transition: 'all 0.6s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                              transformOrigin: 'center center',
-                              '&:hover': {
-                                flex: isActive ? '0 0 320px' : '0 0 180px',
-                                borderColor: 'rgba(255,255,255,0.2)',
-                              }
-                            }}>
-                            <Box sx={{ position: 'absolute', inset: 0, backgroundImage: `url(${chal.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', transition: 'transform 0.8s', transform: isActive ? 'scale(1.03)' : 'scale(1)', '&::after': { content: '""', position: 'absolute', inset: 0, background: isActive ? 'linear-gradient(180deg, rgba(15,23,42,0.1) 0%, rgba(15,23,42,0.8) 100%)' : 'rgba(15,23,42,0.7)', transition: 'background 0.5s' } }} />
-                            <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, p: 2.5, zIndex: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                              <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: isActive ? '1.2rem' : '1rem', letterSpacing: '-0.01em', lineHeight: 1.2, transition: 'all 0.4s' }}>{chal.title}</Typography>
-                              {isActive && chal.desc && (
-                                <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem', fontWeight: 500, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{chal.desc}</Typography>
-                              )}
-                            </Box>
-                          </Box>
-                        );
-                      })}
-                    </Box>
-
-                    {/* Bottom: Subcategories & Timeframe */}
-                    {categoryLocked && (
-                      <Box sx={{ flex: 1, position: 'relative', overflow: 'hidden', opacity: showSubcategories ? 1 : 0, transform: showSubcategories ? 'translateY(0)' : 'translateY(20px)', transition: 'all 0.6s cubic-bezier(0.2, 0.8, 0.2, 1)' }}>
-                        <Box sx={{ display: 'flex', width: '200%', height: '100%', transform: selectedSubcategory ? 'translateX(-50%)' : 'translateX(0)', transition: 'transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1)' }}>
-                          
-                          {/* View 1: Subcategories */}
-                          <Box sx={{ width: '50%', height: '100%', overflowY: 'auto', p: {xs:0, md:1}, pr: {md: 3}, pb: 8 }}>
-                            <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontWeight: 800, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.15em', mb: 3 }}>Select Topic</Typography>
-                            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(3, 1fr)' }, gap: 2, pb: 2 }}>
-                              {challengesData.find((c: any) => c.id === selectedCategory)?.subcategories?.map((sub: any) => {
-                                const isSubActive = selectedSubcategory === sub.id;
-                                return (
-                                  <Box key={sub.id} onClick={(e) => { e.stopPropagation(); setSelectedSubcategory(sub.id); }} sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, borderRadius: '24px', cursor: 'pointer', border: '1px solid', borderColor: isSubActive ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.05)', bgcolor: isSubActive ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.02)', backdropFilter: 'blur(12px)', transition: 'all 0.3s', '&:hover': { bgcolor: isSubActive ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.05)', transform: 'translateY(-2px)' } }}>
-                                    <Box sx={{ width: 56, height: 56, borderRadius: '16px', overflow: 'hidden', flexShrink: 0, backgroundImage: `url(${sub.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', border: '1px solid rgba(255,255,255,0.1)' }} />
-                                    <Box>
-                                      <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: '1rem', letterSpacing: '-0.01em' }}>{sub.title}</Typography>
-                                    </Box>
-                                  </Box>
-                                );
-                              })}
-                            </Box>
-                          </Box>
-
-                          {/* View 2: Timeframe */}
-                          <Box sx={{ width: '50%', height: '100%', overflowY: 'auto', p: {xs:0, md:1}, pr: {md: 3}, pb: 8, display: 'flex', flexDirection: 'column' }}>
-                            <Box sx={{ display: 'flex', flexDirection: 'column', mb: 5 }}>
-                              <Typography sx={{ color: '#fff', fontWeight: 900, fontSize: '1.5rem', letterSpacing: '-0.02em' }}>What era of intelligence is this?</Typography>
-                              <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.95rem', mt: 1 }}>Choose the strategic lens for your briefing.</Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, width: '100%', maxWidth: 500 }}>
-                              {[
-                                { key: 'past', emoji: '🕰️', label: 'The Autopsy', desc: 'Break down something that no longer works.', color: '#ef4444' },
-                                { key: 'present', emoji: '🔥', label: 'The Playbook', desc: 'Share strategies that are working right now.', color: '#10b981' },
-                                { key: 'future', emoji: '🔮', label: 'The Thesis', desc: 'Predict what will work tomorrow.', color: '#3b82f6' },
-                              ].map(tf => (
-                                <Box key={tf.key} onClick={(e) => { e.stopPropagation(); finalizeTaxonomy(tf.key); }} sx={{ display: 'flex', alignItems: 'center', p: 3, borderRadius: '24px', cursor: 'pointer', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', transition: 'all 0.3s', '&:hover': { background: 'rgba(255,255,255,0.06)', borderColor: alpha(tf.color, 0.4), transform: 'translateY(-2px)' } }}>
-                                  <Box sx={{ fontSize: 40, mr: 3 }}>{tf.emoji}</Box>
-                                  <Box sx={{ flex: 1 }}>
-                                    <Typography sx={{ color: '#fff', fontWeight: 900, fontSize: '1.15rem', letterSpacing: '-0.01em', mb: 0.5 }}>{tf.label}</Typography>
-                                    <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem', fontWeight: 500 }}>{tf.desc}</Typography>
-                                  </Box>
-                                  <ArrowForwardIcon sx={{ color: tf.color, opacity: 0.5 }} />
-                                </Box>
-                              ))}
-                            </Box>
-                          </Box>
-                        </Box>
-                      </Box>
-                    )}
-                  </Box>
+          {/* Cards row */}
+          <Box sx={{
+            display: 'flex', gap: 3, overflowX: 'auto', pt: 1, pb: 5, mb: 2,
+            '&::-webkit-scrollbar': { height: 0 }, px: 0.5, mx: -0.5,
+          }}>
+            {START_FRESH_OPTIONS.map((opt) => (
+              <Paper
+                key={opt.type}
+                onClick={() => handleOpenCreator(opt.type)}
+                elevation={0}
+                sx={{
+                  flex: '0 0 260px', maxWidth: 300, p: 3.5,
+                  display: 'flex', flexDirection: 'column', gap: 2,
+                  borderRadius: '28px', cursor: 'pointer',
+                  background: opt.grad,
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  boxShadow: `inset 0 2px 10px rgba(255,255,255,0.2), 0 10px 30px ${alpha(opt.color, 0.25)}`,
+                  position: 'relative', overflow: 'hidden',
+                  transition: 'all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                  '&:hover': {
+                    transform: 'translateY(-8px) scale(1.02)',
+                    boxShadow: `inset 0 2px 10px rgba(255,255,255,0.3), 0 24px 48px ${alpha(opt.color, 0.4)}`,
+                    borderColor: 'rgba(255,255,255,0.3)',
+                    '& .sf-icon': { transform: 'scale(1.1) rotate(-5deg)', bgcolor: 'rgba(255,255,255,0.3)' }
+                  }
+                }}
+              >
+                <Box sx={{ position: 'absolute', right: -20, bottom: -20, opacity: 0.12, transform: 'scale(4)', pointerEvents: 'none', color: '#fff' }}>
+                  {opt.icon}
                 </Box>
-              ) : (
+                <Box className="sf-icon" sx={{
+                  p: 1.5, borderRadius: '18px', bgcolor: 'rgba(255,255,255,0.18)',
+                  color: '#fff', width: 'fit-content',
+                  backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.25)',
+                  transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                }}>
+                  {opt.icon}
+                </Box>
+                <Box sx={{ position: 'relative', zIndex: 1, mt: 1 }}>
+                  <Typography sx={{ fontWeight: 900, fontSize: '1.2rem', mb: 0.5, color: '#fff', letterSpacing: '-0.02em' }}>
+                    {opt.title}
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)', lineHeight: 1.5, fontWeight: 500 }}>
+                    {opt.desc}
+                  </Typography>
+                </Box>
+              </Paper>
+            ))}
+          </Box>
+        </>
+      ) : activeOption && (
+        /* ============================================================== */
+        /* CREATOR WIZARD (inline, light, centered)                       */
+        /* ============================================================== */
+        <Box sx={{ mb: 4 }}>
+
+          {/* Wizard header — minimal bar */}
+          <Box sx={{
+            display: 'flex', alignItems: 'center', gap: 1.5, mb: 5,
+          }}>
+            <IconButton
+              onClick={handleBack}
+              size="small"
+              sx={{ color: '#64748b', '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' } }}
+            >
+              <ArrowBackIcon sx={{ fontSize: 18 }} />
+            </IconButton>
+
+            {/* Breadcrumb trail */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+              <Chip
+                label={activeOption.title}
+                size="small"
+                onClick={creationStep > 0 ? () => { setCreationStep(0); setSelectedCategory(''); setSelectedSubcategory(''); } : undefined}
+                sx={{
+                  fontWeight: 700, fontSize: '0.8rem', borderRadius: '8px',
+                  bgcolor: alpha(activeOption.color, 0.08), color: activeOption.color,
+                  cursor: creationStep > 0 ? 'pointer' : 'default',
+                }}
+              />
+              {selectedCategory && activeCategory && (
                 <>
-                  <Box sx={{ position: 'absolute', bottom: -20, right: -20, opacity: 0.15, transform: 'scale(3)', color: '#fff' }}>{opt.icon}</Box>
-                  <Box sx={{ width: 48, height: 48, borderRadius: '14px', bgcolor: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', mb: 2, backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.3)', position: 'relative', zIndex: 2 }}>{opt.icon}</Box>
-                  <Typography variant="h6" sx={{ fontWeight: 900, color: '#fff', lineHeight: 1.2, letterSpacing: '-0.01em', position: 'relative', zIndex: 2 }}>{opt.title}</Typography>
-                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)', fontWeight: 500, lineHeight: 1.5, position: 'relative', zIndex: 2 }}>{opt.desc}</Typography>
+                  <ArrowForwardIcon sx={{ color: '#cbd5e1', fontSize: 12 }} />
+                  <Chip
+                    label={activeCategory.title}
+                    size="small"
+                    onClick={creationStep > 1 ? () => { setCreationStep(1); setSelectedSubcategory(''); } : undefined}
+                    sx={{
+                      fontWeight: 700, fontSize: '0.8rem', borderRadius: '8px',
+                      bgcolor: 'rgba(0,0,0,0.04)', color: '#475569',
+                      cursor: creationStep > 1 ? 'pointer' : 'default',
+                    }}
+                  />
                 </>
               )}
-            </Paper>
-          );
-        })}
-      </Box>
+              {selectedSubcategory && (
+                <>
+                  <ArrowForwardIcon sx={{ color: '#cbd5e1', fontSize: 12 }} />
+                  <Chip
+                    label={activeCategory?.subcategories?.find((s: any) => s.id === selectedSubcategory)?.title || ''}
+                    size="small"
+                    sx={{
+                      fontWeight: 700, fontSize: '0.8rem', borderRadius: '8px',
+                      bgcolor: 'rgba(0,0,0,0.04)', color: '#475569',
+                    }}
+                  />
+                </>
+              )}
+            </Box>
 
-      {/* Hide the drafts section completely if we are expanded in Focus Mode */}
-      {!expandedStartType && (
-        <Box sx={{ mt: 6 }}>
-        <style>{`
-          @keyframes pulseDot {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-          }
-        `}</style>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-          <Typography variant="h5" sx={{ fontWeight: 900, color: '#1e293b', letterSpacing: '-0.02em' }}>
-            Active Drafts
-          </Typography>
-          <Chip label={`${drafts.length} In Progress`} size="small" sx={{ fontWeight: 800, bgcolor: 'rgba(16, 185, 129, 0.1)', color: '#059669', borderRadius: '8px', px: 0.5 }} />
-        </Box>
+            <Box sx={{ flex: 1 }} />
+            <IconButton
+              onClick={handleClose}
+              size="small"
+              sx={{ color: '#94a3b8', '&:hover': { color: '#475569', bgcolor: 'rgba(0,0,0,0.04)' } }}
+            >
+              <CloseIcon sx={{ fontSize: 20 }} />
+            </IconButton>
+          </Box>
 
-        {drafts.length === 0 ? (
-          <Paper sx={{ p: 5, borderRadius: '24px', border: '2px dashed rgba(0,0,0,0.08)', bgcolor: 'transparent', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-            <Typography sx={{ color: '#94a3b8', fontWeight: 600 }}>No active drafts found.</Typography>
-          </Paper>
-        ) : (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-            {drafts.map((draft: any) => {
-              const typeColor = draft.type === 'article' ? '#3b82f6' : draft.type === 'video' ? '#ef4444' : draft.type === 'livestream' ? '#10b981' : draft.type === 'class' ? '#8b5cf6' : '#64748b';
-              
-              return (
-                <Paper 
-                  key={draft.id} 
-                  onClick={() => onEditDraft(draft.id)} 
-                  sx={{ 
-                    p: { xs: 2.5, md: 3 }, 
-                    borderRadius: '24px', 
-                    background: 'rgba(255,255,255,0.5)', 
-                    backdropFilter: 'blur(30px)', 
-                    border: '1px solid rgba(255,255,255,0.9)', 
-                    boxShadow: '0 8px 32px rgba(0,0,0,0.04), inset 0 2px 10px rgba(255,255,255,0.6)', 
-                    display: 'flex', 
-                    flexDirection: { xs: 'column', sm: 'row' }, 
-                    alignItems: { xs: 'flex-start', sm: 'center' },
-                    justifyContent: 'space-between',
-                    position: 'relative', 
-                    overflow: 'hidden', 
-                    cursor: 'pointer', 
-                    transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)', 
-                    '&:hover': { 
-                      background: 'rgba(255,255,255,0.7)',
-                      borderColor: alpha(typeColor, 0.4), 
-                      boxShadow: `0 16px 48px rgba(0,0,0,0.06), inset 0 2px 10px rgba(255,255,255,1), 0 0 0 1px ${alpha(typeColor, 0.2)}`, 
-                      transform: 'translateY(-3px) scale(1.01)', 
-                      '& .delete-btn': { opacity: 1, transform: 'translateX(0)' },
-                      '& .resume-btn': { bgcolor: '#0f172a', color: '#fff' },
-                      '& .resume-arrow': { transform: 'translateX(4px)' }
-                    } 
-                  }}
-                >
-                  {/* Left side: Type, Title, Metadata */}
-                  <Box sx={{ display: 'flex', gap: 2.5, alignItems: 'center', width: { xs: '100%', sm: 'auto' } }}>
-                    <Box sx={{ width: 48, height: 48, borderRadius: '14px', bgcolor: alpha(typeColor, 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center', color: typeColor, flexShrink: 0 }}>
-                      {draft.type === 'article' ? <ArticleIcon /> : draft.type === 'video' ? <VideoLibraryIcon /> : draft.type === 'livestream' ? <LiveTvIcon /> : <SchoolIcon />}
-                    </Box>
-                    
-                    <Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
-                        <Typography sx={{ fontSize: '0.7rem', fontWeight: 800, color: typeColor, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                          {draft.type}
-                        </Typography>
-                        <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: 'rgba(0,0,0,0.2)' }} />
-                        <Typography sx={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>
-                          Updated {new Date(draft.updatedAt).toLocaleDateString()}
-                        </Typography>
-                      </Box>
-                      <Typography variant="h6" sx={{ fontWeight: 900, fontSize: '1.2rem', color: '#0f172a', letterSpacing: '-0.01em', lineHeight: 1.2 }}>
-                        {draft.title || 'Untitled Draft'}
-                      </Typography>
-                      
-                      {/* Content Snapshot / Taxonomy Info if available */}
-                      {(draft.category || draft.timeframe) && (
-                        <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-                          {draft.category && <Chip label={draft.category} size="small" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 600, bgcolor: 'rgba(0,0,0,0.04)' }} />}
-                          {draft.timeframe && <Chip label={draft.timeframe} size="small" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 600, bgcolor: 'rgba(0,0,0,0.04)' }} />}
-                        </Box>
-                      )}
-                    </Box>
-                  </Box>
+          {/* Step content — centered */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
 
-                  {/* Right side: Actions */}
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: { xs: 2, sm: 0 }, width: { xs: '100%', sm: 'auto' }, justifyContent: { xs: 'flex-end', sm: 'auto' } }}>
-                    
-                    {/* Pulsing "In Progress" */}
-                    <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 1.5, mr: 2 }}>
-                      <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#10b981', animation: 'pulseDot 2s infinite' }} />
-                      <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: '#10b981', letterSpacing: '0.05em' }}>IN PROGRESS</Typography>
-                    </Box>
+            {/* ======== STEP 0: Categories ======== */}
+            {creationStep === 0 && (
+              <Box sx={{ width: '100%', textAlign: 'center' }}>
+                <Typography sx={{ color: '#1e293b', fontWeight: 900, fontSize: { xs: '1.3rem', md: '1.6rem' }, letterSpacing: '-0.03em', mb: 0.5 }}>
+                  What's this about?
+                </Typography>
+                <Typography sx={{ color: '#94a3b8', fontSize: '0.95rem', fontWeight: 500, mb: 5 }}>
+                  Pick a category for your {activeOption.title.toLowerCase()}.
+                </Typography>
 
-                    <Tooltip title="Delete Draft">
-                      <IconButton 
-                        className="delete-btn" 
-                        onClick={(e) => { e.stopPropagation(); onDeleteDraft(draft.id); }} 
-                        sx={{ 
-                          opacity: { xs: 1, sm: 0 }, 
-                          transform: { xs: 'none', sm: 'translateX(10px)' }, 
-                          transition: 'all 0.3s', 
-                          color: '#ef4444', 
-                          bgcolor: 'rgba(239, 68, 68, 0.05)',
-                          '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.15)' } 
-                        }}
-                      >
-                        <DeleteOutlineIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    
-                    <Box 
-                      className="resume-btn"
-                      sx={{ 
-                        display: 'flex', alignItems: 'center', gap: 1, 
-                        px: 2.5, py: 1.2, borderRadius: '12px', 
-                        bgcolor: 'rgba(0,0,0,0.03)', color: '#334155', 
-                        fontWeight: 800, fontSize: '0.85rem',
-                        transition: 'all 0.3s'
+                <Box sx={{
+                  display: 'flex', gap: 2.5, overflowX: 'auto', pb: 3, justifyContent: { md: 'center' },
+                  '&::-webkit-scrollbar': { height: 0 },
+                }}>
+                  {challengesData.map((chal: any) => (
+                    <Box
+                      key={chal.id}
+                      onClick={() => handleSelectCategory(chal.id)}
+                      sx={{
+                        flex: '0 0 170px', height: 220,
+                        position: 'relative', overflow: 'hidden', borderRadius: '20px',
+                        cursor: 'pointer',
+                        border: '1px solid rgba(0,0,0,0.06)',
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
+                        transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                        '&:hover': {
+                          transform: 'translateY(-5px)',
+                          boxShadow: '0 16px 40px rgba(0,0,0,0.12)',
+                          borderColor: 'rgba(0,0,0,0.1)',
+                          '& .cat-img': { transform: 'scale(1.06)' },
+                        }
                       }}
                     >
-                      Resume
-                      <ArrowForwardIcon className="resume-arrow" sx={{ fontSize: 16, transition: 'transform 0.3s' }} />
+                      <Box className="cat-img" sx={{
+                        position: 'absolute', inset: 0,
+                        backgroundImage: `url(${chal.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center',
+                        transition: 'transform 0.6s ease',
+                      }} />
+                      <Box sx={{
+                        position: 'absolute', inset: 0,
+                        background: 'linear-gradient(180deg, transparent 45%, rgba(0,0,0,0.7) 100%)',
+                      }} />
+                      <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, p: 2, zIndex: 1 }}>
+                        <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: '0.95rem', lineHeight: 1.2 }}>
+                          {chal.title}
+                        </Typography>
+                      </Box>
                     </Box>
-                  </Box>
-                </Paper>
-              );
-            })}
+                  ))}
+                </Box>
+              </Box>
+            )}
+
+            {/* ======== STEP 1: Subcategories ======== */}
+            {creationStep === 1 && activeCategory && (
+              <Box sx={{ width: '100%', maxWidth: 800, textAlign: 'center' }}>
+                <Typography sx={{ color: '#1e293b', fontWeight: 900, fontSize: { xs: '1.3rem', md: '1.6rem' }, letterSpacing: '-0.03em', mb: 0.5 }}>
+                  Narrow it down
+                </Typography>
+                <Typography sx={{ color: '#94a3b8', fontSize: '0.95rem', fontWeight: 500, mb: 5 }}>
+                  Pick a topic within <strong style={{ color: '#475569' }}>{activeCategory.title}</strong>.
+                </Typography>
+
+                <Box sx={{
+                  display: 'grid',
+                  gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(3, 1fr)' },
+                  gap: 2, textAlign: 'left',
+                }}>
+                  {activeCategory.subcategories?.map((sub: any) => (
+                    <Paper
+                      key={sub.id}
+                      elevation={0}
+                      onClick={() => handleSelectSubcategory(sub.id)}
+                      sx={{
+                        display: 'flex', alignItems: 'center', gap: 2, p: 2,
+                        borderRadius: '16px', cursor: 'pointer',
+                        bgcolor: 'rgba(255,255,255,0.6)',
+                        border: '1px solid rgba(0,0,0,0.06)',
+                        backdropFilter: 'blur(20px)',
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
+                          bgcolor: 'rgba(255,255,255,0.9)',
+                          borderColor: alpha(activeOption.color, 0.25),
+                          transform: 'translateY(-2px)',
+                          boxShadow: `0 8px 24px ${alpha(activeOption.color, 0.08)}`,
+                        }
+                      }}
+                    >
+                      <Box sx={{
+                        width: 48, height: 48, borderRadius: '12px', overflow: 'hidden', flexShrink: 0,
+                        backgroundImage: `url(${sub.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center',
+                      }} />
+                      <Typography sx={{ color: '#1e293b', fontWeight: 700, fontSize: '0.9rem', lineHeight: 1.3 }}>
+                        {sub.title}
+                      </Typography>
+                    </Paper>
+                  ))}
+                </Box>
+              </Box>
+            )}
+
+            {/* ======== STEP 2: Timeframe ======== */}
+            {creationStep === 2 && (
+              <Box sx={{ width: '100%', maxWidth: 520, textAlign: 'center' }}>
+                <Typography sx={{ color: '#1e293b', fontWeight: 900, fontSize: { xs: '1.3rem', md: '1.6rem' }, letterSpacing: '-0.03em', mb: 0.5 }}>
+                  What era of intelligence?
+                </Typography>
+                <Typography sx={{ color: '#94a3b8', fontSize: '0.95rem', fontWeight: 500, mb: 5 }}>
+                  Choose the strategic lens for your briefing.
+                </Typography>
+
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {[
+                    { key: 'past', emoji: '🕰️', label: 'The Autopsy', desc: 'Break down what no longer works.', color: '#ef4444' },
+                    { key: 'present', emoji: '🔥', label: 'The Playbook', desc: 'Strategies working right now.', color: '#10b981' },
+                    { key: 'future', emoji: '🔮', label: 'The Thesis', desc: 'Predict what works tomorrow.', color: '#3b82f6' },
+                  ].map(tf => (
+                    <Paper
+                      key={tf.key}
+                      elevation={0}
+                      onClick={() => finalizeTaxonomy(tf.key)}
+                      sx={{
+                        display: 'flex', alignItems: 'center', gap: 2.5, p: 3, textAlign: 'left',
+                        borderRadius: '18px', cursor: 'pointer',
+                        bgcolor: 'rgba(255,255,255,0.5)',
+                        border: '1px solid rgba(0,0,0,0.06)',
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
+                          bgcolor: 'rgba(255,255,255,0.9)',
+                          borderColor: alpha(tf.color, 0.3),
+                          transform: 'translateY(-2px)',
+                          boxShadow: `0 8px 24px ${alpha(tf.color, 0.1)}`,
+                          '& .tf-arrow': { transform: 'translateX(4px)', color: tf.color }
+                        }
+                      }}
+                    >
+                      <Box sx={{ fontSize: 36, lineHeight: 1, flexShrink: 0 }}>{tf.emoji}</Box>
+                      <Box sx={{ flex: 1 }}>
+                        <Typography sx={{ color: '#1e293b', fontWeight: 800, fontSize: '1.05rem', mb: 0.25 }}>
+                          {tf.label}
+                        </Typography>
+                        <Typography sx={{ color: '#94a3b8', fontSize: '0.85rem', fontWeight: 500 }}>
+                          {tf.desc}
+                        </Typography>
+                      </Box>
+                      <ArrowForwardIcon className="tf-arrow" sx={{ color: '#cbd5e1', fontSize: 18, transition: 'all 0.3s' }} />
+                    </Paper>
+                  ))}
+                </Box>
+              </Box>
+            )}
+
           </Box>
-        )}
-      </Box>
+
+          {/* Step dots */}
+          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mt: 5 }}>
+            {[0, 1, 2].map(i => (
+              <Box key={i} sx={{
+                width: i === creationStep ? 24 : 6, height: 6, borderRadius: 3,
+                bgcolor: i <= creationStep ? alpha(activeOption.color, i === creationStep ? 0.6 : 0.2) : 'rgba(0,0,0,0.06)',
+                transition: 'all 0.4s ease',
+              }} />
+            ))}
+          </Box>
+        </Box>
+      )}
+
+      {/* ================================================================ */}
+      {/* DRAFTS SECTION                                                   */}
+      {/* ================================================================ */}
+      {!expandedStartType && (
+        <Box sx={{ mt: 6 }}>
+          <style>{`
+            @keyframes pulseDot {
+              0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+              70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+              100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+            }
+          `}</style>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+            <Typography variant="h5" sx={{ fontWeight: 900, color: '#1e293b', letterSpacing: '-0.02em' }}>
+              Active Drafts
+            </Typography>
+            <Chip label={`${drafts.length} In Progress`} size="small" sx={{ fontWeight: 800, bgcolor: 'rgba(16, 185, 129, 0.1)', color: '#059669', borderRadius: '8px', px: 0.5 }} />
+          </Box>
+
+          {drafts.length === 0 ? (
+            <Paper sx={{ p: 5, borderRadius: '24px', border: '2px dashed rgba(0,0,0,0.08)', bgcolor: 'transparent', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+              <Typography sx={{ color: '#94a3b8', fontWeight: 600 }}>No active drafts found.</Typography>
+            </Paper>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+              {drafts.map((draft: any) => {
+                const typeColor = draft.type === 'article' ? '#3b82f6' : draft.type === 'video' ? '#ef4444' : draft.type === 'livestream' ? '#10b981' : draft.type === 'class' ? '#8b5cf6' : '#64748b';
+
+                return (
+                  <Paper
+                    key={draft.id}
+                    onClick={() => onEditDraft(draft.id)}
+                    sx={{
+                      p: { xs: 2.5, md: 3 },
+                      borderRadius: '24px',
+                      background: 'rgba(255,255,255,0.5)',
+                      backdropFilter: 'blur(30px)',
+                      border: '1px solid rgba(255,255,255,0.9)',
+                      boxShadow: '0 8px 32px rgba(0,0,0,0.04), inset 0 2px 10px rgba(255,255,255,0.6)',
+                      display: 'flex',
+                      flexDirection: { xs: 'column', sm: 'row' },
+                      alignItems: { xs: 'flex-start', sm: 'center' },
+                      justifyContent: 'space-between',
+                      position: 'relative', overflow: 'hidden', cursor: 'pointer',
+                      transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                      '&:hover': {
+                        background: 'rgba(255,255,255,0.7)',
+                        borderColor: alpha(typeColor, 0.4),
+                        boxShadow: `0 16px 48px rgba(0,0,0,0.06), inset 0 2px 10px rgba(255,255,255,1), 0 0 0 1px ${alpha(typeColor, 0.2)}`,
+                        transform: 'translateY(-3px) scale(1.01)',
+                        '& .delete-btn': { opacity: 1, transform: 'translateX(0)' },
+                        '& .resume-btn': { bgcolor: '#0f172a', color: '#fff' },
+                        '& .resume-arrow': { transform: 'translateX(4px)' }
+                      }
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', gap: 2.5, alignItems: 'center', width: { xs: '100%', sm: 'auto' } }}>
+                      <Box sx={{ width: 48, height: 48, borderRadius: '14px', bgcolor: alpha(typeColor, 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center', color: typeColor, flexShrink: 0 }}>
+                        {draft.type === 'article' ? <ArticleIcon /> : draft.type === 'video' ? <VideoLibraryIcon /> : draft.type === 'livestream' ? <LiveTvIcon /> : <SchoolIcon />}
+                      </Box>
+                      <Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
+                          <Typography sx={{ fontSize: '0.7rem', fontWeight: 800, color: typeColor, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{draft.type}</Typography>
+                          <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: 'rgba(0,0,0,0.2)' }} />
+                          <Typography sx={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Updated {new Date(draft.updatedAt).toLocaleDateString()}</Typography>
+                        </Box>
+                        <Typography variant="h6" sx={{ fontWeight: 900, fontSize: '1.2rem', color: '#0f172a', letterSpacing: '-0.01em', lineHeight: 1.2 }}>
+                          {draft.title || 'Untitled Draft'}
+                        </Typography>
+                        {(draft.category || draft.timeframe) && (
+                          <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                            {draft.category && <Chip label={draft.category} size="small" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 600, bgcolor: 'rgba(0,0,0,0.04)' }} />}
+                            {draft.timeframe && <Chip label={draft.timeframe} size="small" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 600, bgcolor: 'rgba(0,0,0,0.04)' }} />}
+                          </Box>
+                        )}
+                      </Box>
+                    </Box>
+
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: { xs: 2, sm: 0 }, width: { xs: '100%', sm: 'auto' }, justifyContent: { xs: 'flex-end', sm: 'auto' } }}>
+                      <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 1.5, mr: 2 }}>
+                        <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#10b981', animation: 'pulseDot 2s infinite' }} />
+                        <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: '#10b981', letterSpacing: '0.05em' }}>IN PROGRESS</Typography>
+                      </Box>
+                      <Tooltip title="Delete Draft">
+                        <IconButton
+                          className="delete-btn"
+                          onClick={(e) => { e.stopPropagation(); onDeleteDraft(draft.id); }}
+                          sx={{
+                            opacity: { xs: 1, sm: 0 }, transform: { xs: 'none', sm: 'translateX(10px)' },
+                            transition: 'all 0.3s', color: '#ef4444', bgcolor: 'rgba(239, 68, 68, 0.05)',
+                            '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.15)' }
+                          }}
+                        >
+                          <DeleteOutlineIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Box className="resume-btn" sx={{
+                        display: 'flex', alignItems: 'center', gap: 1,
+                        px: 2.5, py: 1.2, borderRadius: '12px',
+                        bgcolor: 'rgba(0,0,0,0.03)', color: '#334155',
+                        fontWeight: 800, fontSize: '0.85rem', transition: 'all 0.3s'
+                      }}>
+                        Resume
+                        <ArrowForwardIcon className="resume-arrow" sx={{ fontSize: 16, transition: 'transform 0.3s' }} />
+                      </Box>
+                    </Box>
+                  </Paper>
+                );
+              })}
+            </Box>
+          )}
+        </Box>
       )}
     </Box>
   );
