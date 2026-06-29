@@ -211,8 +211,9 @@ export default function AdminOnboardingModal() {
         <Box sx={{
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'center',
           width: { xs: '100%', md: '55%' },
+          maxHeight: { xs: 'auto', md: '80vh' },
+          overflowY: 'auto',
           bgcolor: '#ffffff',
           p: { xs: 3, md: 6 },
         }}>
