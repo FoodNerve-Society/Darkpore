@@ -742,23 +742,64 @@ export default function CreateLearnContentForm({
                   return (
                     <Box sx={{
                       display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { md: 'center' }, gap: 2,
-                      mb: 4, p: 2.5, borderRadius: '20px',
-                      background: 'linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.7) 100%)',
-                      border: '1px solid rgba(0,0,0,0.08)',
-                      backdropFilter: 'blur(16px)',
-                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.05)',
+                      mb: 4, p: 2, borderRadius: '16px',
+                      background: 'rgba(255,255,255,0.7)',
+                      border: '1px solid rgba(255,255,255,0.5)',
+                      backdropFilter: 'blur(20px)',
+                      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)',
                     }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                        <Chip label={catName} size="small" onClick={() => setStep(2)} sx={{ bgcolor: 'rgba(0,0,0,0.05)', color: '#0f172a', fontWeight: 700, cursor: 'pointer', '&:hover': { bgcolor: 'rgba(0,0,0,0.1)' } }} />
-                        <ArrowForwardIcon sx={{ fontSize: 16, color: 'rgba(0,0,0,0.3)' }} />
-                        <Chip label={subName} size="small" onClick={() => setStep(2)} sx={{ bgcolor: 'rgba(0,0,0,0.05)', color: '#0f172a', fontWeight: 700, cursor: 'pointer', '&:hover': { bgcolor: 'rgba(0,0,0,0.1)' } }} />
-                        <ArrowForwardIcon sx={{ fontSize: 16, color: 'rgba(0,0,0,0.3)' }} />
-                        <Chip label={`${era.emoji} ${selectedTimeframe?.toUpperCase()}`} size="small" sx={{ bgcolor: alpha(era.color, 0.1), color: era.color, fontWeight: 800, border: `1px solid ${alpha(era.color, 0.3)}` }} />
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, md: 1 }, flexWrap: 'wrap' }}>
+                        
+                        {/* Studio Root */}
+                        <Box 
+                          onClick={() => onCancel?.()} 
+                          sx={{ 
+                            display: 'flex', alignItems: 'center', gap: 0.5, px: 1.5, py: 0.75, borderRadius: '10px',
+                            cursor: 'pointer', transition: 'all 0.2s ease', color: '#64748b',
+                            '&:hover': { bgcolor: 'rgba(0,0,0,0.04)', color: '#0f172a' }
+                          }}
+                        >
+                          <ArticleIcon sx={{ fontSize: 18 }} />
+                          <Typography sx={{ fontWeight: 700, fontSize: '0.85rem' }}>Studio</Typography>
+                        </Box>
+
+                        <Typography sx={{ color: 'rgba(0,0,0,0.2)', fontWeight: 300 }}>/</Typography>
+
+                        {/* Category */}
+                        <Box 
+                          sx={{ 
+                            display: 'flex', alignItems: 'center', px: 1.5, py: 0.75, borderRadius: '10px',
+                            color: '#475569'
+                          }}
+                        >
+                          <Typography sx={{ fontWeight: 700, fontSize: '0.85rem' }}>{catName}</Typography>
+                        </Box>
+
+                        <Typography sx={{ color: 'rgba(0,0,0,0.2)', fontWeight: 300 }}>/</Typography>
+
+                        {/* Subcategory */}
+                        <Box 
+                          sx={{ 
+                            display: 'flex', alignItems: 'center', px: 1.5, py: 0.75, borderRadius: '10px',
+                            color: '#475569'
+                          }}
+                        >
+                          <Typography sx={{ fontWeight: 700, fontSize: '0.85rem' }}>{subName}</Typography>
+                        </Box>
+
+                        <Typography sx={{ color: 'rgba(0,0,0,0.2)', fontWeight: 300 }}>/</Typography>
+
+                        {/* Era/Timeframe */}
+                        <Chip 
+                          label={`${era.emoji} ${selectedTimeframe?.toUpperCase()}`} 
+                          size="small" 
+                          sx={{ 
+                            bgcolor: alpha(era.color, 0.1), color: era.color, 
+                            fontWeight: 800, border: `1px solid ${alpha(era.color, 0.3)}`,
+                            ml: 0.5
+                          }} 
+                        />
                       </Box>
-                      <Box sx={{ flex: 1 }} />
-                      <Typography sx={{ fontWeight: 800, fontSize: '1rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        Builder
-                      </Typography>
                     </Box>
                   );
                 })()}

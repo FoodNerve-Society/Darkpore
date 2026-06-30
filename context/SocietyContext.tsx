@@ -73,6 +73,9 @@ export interface Organization {
 export interface SocietyProfile {
   uid: string;
   displayName?: string;
+  firstName?: string;
+  lastName?: string;
+  prefixes?: string[];
   avatarUrl?: string;
   bio?: string;
   isAdmin: boolean; // The God-Mode Flag
@@ -262,6 +265,9 @@ export function SocietyProvider({ children }: { children: React.ReactNode }) {
             const mappedProfile: SocietyProfile = {
               uid: prismaUser.id,
               displayName: prismaUser.name,
+              firstName: prismaUser.firstName || undefined,
+              lastName: prismaUser.lastName || undefined,
+              prefixes: prismaUser.prefixes ? JSON.parse(prismaUser.prefixes) : [],
               avatarUrl: prismaUser.avatarUrl,
               bio: prismaUser.bio,
               isAdmin: isSuperAdmin,

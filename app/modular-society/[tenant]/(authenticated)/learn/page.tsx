@@ -2059,7 +2059,11 @@ export default function LearnPage() {
       {/* Dashboard vs Form Body */}
       {(!selectedDraftId || selectedDraftId === null) && selectedDraftId !== 'new' ? (
         <CreatorStudioDashboard
-          userName={profile?.firstName || (profile?.displayName ? profile.displayName.split(' ')[0] : 'Creative')}
+          userName={
+            profile?.firstName 
+              ? `${profile.prefixes && profile.prefixes.length > 0 ? profile.prefixes.join(' ') + ' ' : ''}${profile.firstName}`
+              : (profile?.displayName ? profile.displayName.split(' ')[0] : 'Creative')
+          }
           drafts={drafts}
           challengesData={tenantConfig.com.homepage.challenges}
           onStartFresh={(type, taxonomy) => {

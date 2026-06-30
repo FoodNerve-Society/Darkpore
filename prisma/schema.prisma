@@ -202,6 +202,9 @@ model LearnContent {
   class      LearnClass?
   livestream LearnLivestream?
   report     LearnReport?
+
+  @@index([authorId, status])
+  @@index([type, status])
 }
 
 model LearnArticle {
