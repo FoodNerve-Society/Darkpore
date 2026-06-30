@@ -183,6 +183,9 @@ model LearnContent {
   type            String   @default("article") // 'livestream' | 'class' | 'video' | 'article' | 'report'
   status          String   @default("published") // 'draft' | 'published' | 'archived'
   bottleneckTags  String   @default("[]") // JSON array of challenge tags (e.g. '["post-harvest-loss", "cold-chain"]')
+  category        String?
+  subcategory     String?
+  timeframe       String?
   title           String
   description     String
   thumbnailUrl    String?
