@@ -15,6 +15,9 @@ export type CreateLearnContentPayload = {
   slug: string;
   type: 'article' | 'video' | 'class' | 'livestream' | 'report';
   bottleneckTags: string[]; // We will JSON.stringify this before DB insert
+  category?: string;
+  subcategory?: string;
+  timeframe?: string;
   authorId?: string;
   authorName?: string;
   authorAvatarUrl?: string;
@@ -65,6 +68,9 @@ export async function createLearnContent(data: CreateLearnContentPayload, isDraf
           type: data.type,
           status: isDraft ? 'draft' : 'published',
           bottleneckTags: JSON.stringify(data.bottleneckTags),
+          category: data.category || null,
+          subcategory: data.subcategory || null,
+          timeframe: data.timeframe || null,
           thumbnailUrl: data.thumbnailUrl,
           authorId: data.authorId,
           authorName: data.authorName,
@@ -80,6 +86,9 @@ export async function createLearnContent(data: CreateLearnContentPayload, isDraf
           type: data.type,
           status: isDraft ? 'draft' : 'published',
           bottleneckTags: JSON.stringify(data.bottleneckTags),
+          category: data.category || null,
+          subcategory: data.subcategory || null,
+          timeframe: data.timeframe || null,
           thumbnailUrl: data.thumbnailUrl,
           authorId: data.authorId,
           authorName: data.authorName,

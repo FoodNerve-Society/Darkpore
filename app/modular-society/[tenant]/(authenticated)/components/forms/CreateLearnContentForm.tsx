@@ -691,11 +691,15 @@ export default function CreateLearnContentForm({
       }
 
       const payload: CreateLearnContentPayload = {
+        id: draftId && draftId !== 'new' ? draftId : undefined,
         title: title.trim() || 'Draft Content',
         slug: generateSlug(title.trim() || 'Draft Content'),
         description: description.trim() || 'No description provided.',
         type: type as "article" | "video" | "class" | "livestream" | "report",
         bottleneckTags: selectedSubcategory ? [selectedSubcategory, selectedCategory] : [selectedCategory],
+        category: selectedCategory,
+        subcategory: selectedSubcategory,
+        timeframe: selectedTimeframe,
         thumbnailUrl,
         authorId: finalAuthorId,
         authorName: finalAuthorName,
@@ -716,7 +720,7 @@ export default function CreateLearnContentForm({
         reportPages: type === 'report' ? reportPages : undefined,
       };
 
-      const result = await createLearnContent(payload);
+      const result = await createLearnContent(payload, true); // true for isDraft flag if needed? Wait, the form doesn't expose it here yet, let's just leave it as is or add it if needed. The API defaults to draft on update if we don't pass isDraft to publish.
       if (result.success) onSuccess?.();
     } catch (err: any) {
       setError(err.message || 'Something went wrong.');
@@ -741,12 +745,13 @@ export default function CreateLearnContentForm({
                   const subName = challenges.find(c => c.id === selectedCategory)?.subcategories?.find(s => s.id === selectedSubcategory)?.title || 'Subcategory';
                   return (
                     <Box sx={{
-                      display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { md: 'center' }, gap: 2,
-                      mb: 4, p: 2, borderRadius: '16px',
-                      background: 'rgba(255,255,255,0.7)',
-                      border: '1px solid rgba(255,255,255,0.5)',
-                      backdropFilter: 'blur(20px)',
-                      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)',
+                      display: 'inline-flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { md: 'center' }, gap: 2,
+                      mb: 4, p: '12px 16px', borderRadius: '16px',
+                      background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.03) 0%, rgba(15, 23, 42, 0.08) 100%)',
+                      border: '1px solid rgba(15, 23, 42, 0.05)',
+                      backdropFilter: 'blur(16px)',
+                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,1), 0 4px 12px rgba(0,0,0,0.02)',
+                      width: 'fit-content'
                     }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, md: 1 }, flexWrap: 'wrap' }}>
                         
@@ -755,50 +760,65 @@ export default function CreateLearnContentForm({
                           onClick={() => onCancel?.()} 
                           sx={{ 
                             display: 'flex', alignItems: 'center', gap: 0.5, px: 1.5, py: 0.75, borderRadius: '10px',
-                            cursor: 'pointer', transition: 'all 0.2s ease', color: '#64748b',
-                            '&:hover': { bgcolor: 'rgba(0,0,0,0.04)', color: '#0f172a' }
+                            cursor: 'pointer', transition: 'all 0.2s ease', color: '#0f172a', bgcolor: 'rgba(255,255,255,0.7)',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                            '&:hover': { bgcolor: 'rgba(255,255,255,1)', transform: 'translateY(-1px)' }
                           }}
                         >
                           <ArticleIcon sx={{ fontSize: 18 }} />
-                          <Typography sx={{ fontWeight: 700, fontSize: '0.85rem' }}>Studio</Typography>
+                          <Typography sx={{ fontWeight: 800, fontSize: '0.85rem' }}>Studio</Typography>
                         </Box>
 
-                        <Typography sx={{ color: 'rgba(0,0,0,0.2)', fontWeight: 300 }}>/</Typography>
+                        <Typography sx={{ color: 'rgba(15, 23, 42, 0.3)', fontWeight: 400 }}>/</Typography>
 
                         {/* Category */}
                         <Box 
                           sx={{ 
-                            display: 'flex', alignItems: 'center', px: 1.5, py: 0.75, borderRadius: '10px',
+                            display: 'flex', alignItems: 'center', px: 1, py: 0.5,
                             color: '#475569'
                           }}
                         >
-                          <Typography sx={{ fontWeight: 700, fontSize: '0.85rem' }}>{catName}</Typography>
+                          <Typography sx={{ fontWeight: 600, fontSize: '0.85rem', opacity: 0.9 }}>{catName}</Typography>
                         </Box>
 
-                        <Typography sx={{ color: 'rgba(0,0,0,0.2)', fontWeight: 300 }}>/</Typography>
+                        <Typography sx={{ color: 'rgba(15, 23, 42, 0.3)', fontWeight: 400 }}>/</Typography>
 
                         {/* Subcategory */}
                         <Box 
                           sx={{ 
-                            display: 'flex', alignItems: 'center', px: 1.5, py: 0.75, borderRadius: '10px',
+                            display: 'flex', alignItems: 'center', px: 1, py: 0.5,
                             color: '#475569'
                           }}
                         >
-                          <Typography sx={{ fontWeight: 700, fontSize: '0.85rem' }}>{subName}</Typography>
+                          <Typography sx={{ fontWeight: 600, fontSize: '0.85rem', opacity: 0.9 }}>{subName}</Typography>
                         </Box>
 
-                        <Typography sx={{ color: 'rgba(0,0,0,0.2)', fontWeight: 300 }}>/</Typography>
+                        <Typography sx={{ color: 'rgba(15, 23, 42, 0.3)', fontWeight: 400 }}>/</Typography>
 
                         {/* Era/Timeframe */}
                         <Chip 
                           label={`${era.emoji} ${selectedTimeframe?.toUpperCase()}`} 
                           size="small" 
                           sx={{ 
-                            bgcolor: alpha(era.color, 0.1), color: era.color, 
+                            bgcolor: '#fff', color: era.color, 
                             fontWeight: 800, border: `1px solid ${alpha(era.color, 0.3)}`,
-                            ml: 0.5
+                            ml: 0.5, boxShadow: '0 2px 4px rgba(0,0,0,0.03)'
                           }} 
                         />
+
+                        {/* Status Badge */}
+                        <Chip 
+                          icon={draftId && draftId !== 'new' ? <AccessTimeIcon sx={{ fontSize: 14 }} /> : <AddIcon sx={{ fontSize: 14 }} />}
+                          label={draftId && draftId !== 'new' ? 'EDITING DRAFT' : 'NEW ARTICLE'} 
+                          size="small" 
+                          sx={{ 
+                            bgcolor: draftId && draftId !== 'new' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(16, 185, 129, 0.1)', 
+                            color: draftId && draftId !== 'new' ? '#d97706' : '#059669', 
+                            fontWeight: 800, border: `1px solid ${draftId && draftId !== 'new' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)'}`,
+                            ml: 2, px: 1, height: 26, '& .MuiChip-icon': { color: 'inherit' }
+                          }} 
+                        />
+
                       </Box>
                     </Box>
                   );
