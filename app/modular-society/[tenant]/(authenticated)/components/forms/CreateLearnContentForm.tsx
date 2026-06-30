@@ -1317,24 +1317,31 @@ export default function CreateLearnContentForm({
                                 )}
                                 {b.type === 'strategic_directive' && (
                                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                    <PremiumTextField colorTheme={color}
-                                      fullWidth label="Badge Label (e.g., EXECUTE NOW, PREPARE)"
-                                      placeholder="EXECUTE NOW" value={b.content.urgencyLevel || ''} onChange={e => updateBlock(b.id, 'urgencyLevel', e.target.value)}
+                                    <PremiumAutocomplete
+                                      label="Urgency Level"
+                                      value={b.content.urgencyLevel || ''}
+                                      options={[
+                                        { label: '🟡 MONITOR', value: 'MONITOR' },
+                                        { label: '🟠 PREPARE', value: 'PREPARE' },
+                                        { label: '🔴 EXECUTE NOW', value: 'EXECUTE NOW' }
+                                      ]}
+                                      onChange={(event, val: any) => updateBlock(b.id, 'urgencyLevel', val?.value || val)}
+                                      colorTheme={color}
                                     />
                                     <PremiumTextField colorTheme={color}
                                       fullWidth label="Target Persona (e.g., Policymakers, VCs)"
                                       placeholder="Agri-Tech VCs" value={b.content.targetPersona || ''} onChange={e => updateBlock(b.id, 'targetPersona', e.target.value)}
                                     />
-                                    <PremiumTextField colorTheme={color}
-                                      fullWidth label="🎯 The Threat"
+                                    <PremiumMarkdownEditor colorTheme={color}
+                                      fullWidth multiline rows={2} label="🎯 Point 1: The Threat/Reality"
                                       placeholder="What happens if they ignore this?" value={b.content.point1 || ''} onChange={e => updateBlock(b.id, 'point1', e.target.value)}
                                     />
-                                    <PremiumTextField colorTheme={color}
-                                      fullWidth label="➔ Immediate Action"
+                                    <PremiumMarkdownEditor colorTheme={color}
+                                      fullWidth multiline rows={2} label="➔ Point 2: The Immediate Action"
                                       placeholder="Halt, Dismantle, Deploy..." value={b.content.point2 || ''} onChange={e => updateBlock(b.id, 'point2', e.target.value)}
                                     />
-                                    <PremiumTextField colorTheme={color}
-                                      fullWidth label="📡 The Long-Term Pivot"
+                                    <PremiumMarkdownEditor colorTheme={color}
+                                      fullWidth multiline rows={2} label="📡 Point 3: The Long-Term Pivot"
                                       placeholder="How to convert this into a monopoly" value={b.content.point3 || ''} onChange={e => updateBlock(b.id, 'point3', e.target.value)}
                                     />
                                     <PremiumAutocomplete
