@@ -24,31 +24,33 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { landingPage, tabOrder, firstName, lastName, prefixes, suffixes } = body;
 
-    if (!landingPage || !tabOrder || !firstName || !lastName) {
-       return NextResponse.json({ error: 'First Name, Last Name, Landing page, and Tab Order are required' }, { status: 400 });
+    if (!landingPage || !tabOrder) {
+       return NextResponse.json({ error: 'Landing page and Tab Order are required' }, { status: 400 });
     }
 
-    const nameParts = [
-      ...(prefixes || []),
-      firstName,
-      lastName,
-      ...(suffixes || [])
-    ];
-    
-    const fullName = nameParts.filter(Boolean).join(' ');
+    const updateData: any = {
+      landingPage: landingPage,
+      tabOrder: JSON.stringify(tabOrder),
+    };
+
+    if (firstName && lastName) {
+      const nameParts = [
+        ...(prefixes || []),
+        firstName,
+        lastName,
+        ...(suffixes || [])
+      ];
+      updateData.name = nameParts.filter(Boolean).join(' ');
+      updateData.firstName = firstName;
+      updateData.lastName = lastName;
+      updateData.prefixes = prefixes && prefixes.length > 0 ? JSON.stringify(prefixes) : null;
+      updateData.suffixes = suffixes && suffixes.length > 0 ? JSON.stringify(suffixes) : null;
+    }
 
     // Update the User in Prisma
     const updatedUser = await prisma.user.update({
       where: { firebaseUid: uid },
-      data: {
-        name: fullName,
-        firstName: firstName,
-        lastName: lastName,
-        prefixes: prefixes && prefixes.length > 0 ? JSON.stringify(prefixes) : null,
-        suffixes: suffixes && suffixes.length > 0 ? JSON.stringify(suffixes) : null,
-        landingPage: landingPage,
-        tabOrder: JSON.stringify(tabOrder),
-      }
+      data: updateData
     });
 
     return NextResponse.json({ success: true, user: updatedUser });

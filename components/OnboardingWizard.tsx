@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Box, Typography, Button, Dialog, DialogContent, Grid, alpha, IconButton, Alert, Chip } from '@mui/material';
+import { Box, Typography, Button, Dialog, DialogContent, Grid, alpha, IconButton, Alert, Chip, CircularProgress } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import PremiumCard from '@/components/PremiumCard';
 import PremiumButton from '@/components/PremiumButton';
@@ -87,7 +87,9 @@ export default function OnboardingWizard({ open, onComplete, profile }: Onboardi
   }, [profile, firstName, lastName]);
 
   const handleSubmit = async () => {
-    if (!selectedPrimaryFeature || rankedFeatures.length < 4 || !firstName.trim() || !lastName.trim()) return;
+    const hasCompletedProfile = profile?.gatekeepers?.hasCompletedProfile;
+    if (!selectedPrimaryFeature || rankedFeatures.length < 4) return;
+    if (!hasCompletedProfile && (!firstName.trim() || !lastName.trim())) return;
     
     const user = auth.currentUser;
     if (!user) return;
@@ -358,11 +360,17 @@ export default function OnboardingWizard({ open, onComplete, profile }: Onboardi
                 variant="filled" 
                 baseColor="#10b981" 
                 size="large"
-                disabled={rankedFeatures.length < 4}
-                onClick={() => setStep(3)}
+                disabled={rankedFeatures.length < 4 || isSubmitting}
+                onClick={() => {
+                  if (profile?.gatekeepers?.hasCompletedProfile) {
+                    handleSubmit();
+                  } else {
+                    setStep(3);
+                  }
+                }}
                 sx={{ px: 6, py: 1.5, fontSize: '1.1rem', fontWeight: 800, borderRadius: 100 }}
               >
-                Next Step
+                {isSubmitting ? <CircularProgress size={24} color="inherit" /> : (profile?.gatekeepers?.hasCompletedProfile ? 'Finalize Dashboard' : 'Next Step')}
               </PremiumButton>
             </Box>
           </Box>
