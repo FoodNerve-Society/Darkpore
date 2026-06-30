@@ -241,9 +241,9 @@ const BLOCK_DEFINITIONS: Record<BlockType, { label: string, color: string }> = {
 type SopBlock = { type: BlockType; role: string; desc: string; hint: string };
 
 const ERA_CONFIG: Record<string, { label: string; emoji: string; color: string }> = {
-  past:    { label: 'The Autopsy',           emoji: '≡ƒö┤', color: '#ef4444' },
-  present: { label: 'The Battlefield Report', emoji: '≡ƒƒó', color: '#10b981' },
-  future:  { label: 'The Foresight Brief',   emoji: '≡ƒö╡', color: '#3b82f6' },
+  past:    { label: 'The Autopsy',           emoji: '🔴', color: '#ef4444' },
+  present: { label: 'The Battlefield Report', emoji: '🟢', color: '#10b981' },
+  future:  { label: 'The Foresight Brief',   emoji: '🔵', color: '#3b82f6' },
 };
 
 const SOP_FRAMEWORKS: Record<'past'|'present'|'future', SopBlock[]> = {
@@ -1121,7 +1121,7 @@ export default function CreateLearnContentForm({
                                       <Chip label={bDef.label} size="small" sx={{ height: 24, fontSize: '0.7rem', bgcolor: alpha(color, 0.15), color, fontWeight: 700, border: `1px solid ${alpha(color, 0.2)}` }} />
                                     </Box>
                                     <Typography sx={{ color: filled ? '#334155' : '#64748b', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }}>
-                                      {filled ? 'Content added ΓÇö tap to edit' : (b.sopDesc || 'Tap to fill this block')}
+                                      {filled ? 'Content added — tap to edit' : (b.sopDesc || 'Tap to fill this block')}
                                     </Typography>
                                   </Box>
                                   {/* Image Thumbnail */}
@@ -1317,38 +1317,31 @@ export default function CreateLearnContentForm({
                                 )}
                                 {b.type === 'strategic_directive' && (
                                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                    <PremiumAutocomplete
-                                      label="Urgency Level"
-                                      value={b.content.urgencyLevel || ''}
-                                      options={[
-                                        { label: '🟡 MONITOR', value: 'MONITOR' },
-                                        { label: '🟠 PREPARE', value: 'PREPARE' },
-                                        { label: '🔴 EXECUTE NOW', value: 'EXECUTE NOW' }
-                                      ]}
-                                      onChange={(val) => updateBlock(b.id, 'urgencyLevel', val)}
-                                      colorTheme={color}
+                                    <PremiumTextField colorTheme={color}
+                                      fullWidth label="Badge Label (e.g., EXECUTE NOW, PREPARE)"
+                                      placeholder="EXECUTE NOW" value={b.content.urgencyLevel || ''} onChange={e => updateBlock(b.id, 'urgencyLevel', e.target.value)}
                                     />
                                     <PremiumTextField colorTheme={color}
                                       fullWidth label="Target Persona (e.g., Policymakers, VCs)"
                                       placeholder="Agri-Tech VCs" value={b.content.targetPersona || ''} onChange={e => updateBlock(b.id, 'targetPersona', e.target.value)}
                                     />
                                     <PremiumTextField colorTheme={color}
-                                      fullWidth label="🎯 Point 1: The Threat/Reality"
+                                      fullWidth label="🎯 The Threat"
                                       placeholder="What happens if they ignore this?" value={b.content.point1 || ''} onChange={e => updateBlock(b.id, 'point1', e.target.value)}
                                     />
                                     <PremiumTextField colorTheme={color}
-                                      fullWidth label="➔ Point 2: The Immediate Action"
+                                      fullWidth label="➔ Immediate Action"
                                       placeholder="Halt, Dismantle, Deploy..." value={b.content.point2 || ''} onChange={e => updateBlock(b.id, 'point2', e.target.value)}
                                     />
                                     <PremiumTextField colorTheme={color}
-                                      fullWidth label="📡 Point 3: The Long-Term Pivot"
+                                      fullWidth label="📡 The Long-Term Pivot"
                                       placeholder="How to convert this into a monopoly" value={b.content.point3 || ''} onChange={e => updateBlock(b.id, 'point3', e.target.value)}
                                     />
                                     <PremiumAutocomplete
                                       label="Micro CTA (Tactical Link)"
                                       value={b.content.microCtaId || ''}
                                       options={MICRO_CTAS.map(cta => ({ label: cta.text, value: cta.id }))}
-                                      onChange={(val) => updateBlock(b.id, 'microCtaId', val)}
+                                      onChange={(event, val: any) => updateBlock(b.id, 'microCtaId', val?.value || val)}
                                       colorTheme={color}
                                     />
                                   </Box>
@@ -1359,7 +1352,7 @@ export default function CreateLearnContentForm({
                                       label="Macro CTA (Platform Growth Banner)"
                                       value={b.content.macroCtaId || ''}
                                       options={MACRO_CTAS.map(cta => ({ label: cta.hook, value: cta.id }))}
-                                      onChange={(val) => updateBlock(b.id, 'macroCtaId', val)}
+                                      onChange={(event, val: any) => updateBlock(b.id, 'macroCtaId', val?.value || val)}
                                       colorTheme={color}
                                     />
                                   </Box>
