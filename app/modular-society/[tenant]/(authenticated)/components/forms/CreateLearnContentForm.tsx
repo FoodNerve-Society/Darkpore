@@ -677,10 +677,22 @@ export default function CreateLearnContentForm({
       scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
       return; 
     }
-    if (isPublish && blocks.length > 0 && !blocks.every(b => isBlockFilled(b))) {
-      setError('All blocks must be fully completed before publishing. Please fill in any missing fields.');
-      scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
+    
+    if (isPublish && blocks.length > 0) {
+      const incompleteBlocks = blocks.filter(b => !isBlockFilled(b));
+      if (incompleteBlocks.length > 0) {
+        // Collect friendly names for the incomplete blocks
+        const blockNames = incompleteBlocks.map(b => {
+          const def = BLOCK_DEFINITIONS[b.type as keyof typeof BLOCK_DEFINITIONS];
+          return def ? def.label : 'Unknown Block';
+        });
+        
+        // Remove duplicates and join
+        const uniqueNames = Array.from(new Set(blockNames)).join(', ');
+        setError(`Cannot publish yet. The following blocks are missing information: ${uniqueNames}`);
+        scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
     }
     
     setLoading(true);
@@ -708,6 +720,14 @@ export default function CreateLearnContentForm({
             }
             return b;
           });
+        }
+      }
+
+      let finalThumbnailUrl = thumbnailUrl;
+      if (type === 'article') {
+        const imageBlock = finalBlocks.find(b => b.content.imageUrl || b.content.mediaUrl);
+        if (imageBlock) {
+          finalThumbnailUrl = imageBlock.content.imageUrl || imageBlock.content.mediaUrl;
         }
       }
 
