@@ -23,10 +23,10 @@ const PremiumTextField: FC<PremiumTextFieldProps> = forwardRef<HTMLDivElement, P
         return (
             <Stack spacing={1} sx={{ width: props.fullWidth ? '100%' : 'auto' }}>
                 <TextField
+                    inputRef={ref}
                     variant="filled" // We use 'filled' as a base to easily override styles
                     fullWidth={props.fullWidth}
                     error={hasError}
-                    InputProps={InputProps}
                     {...props}
                     helperText={!errorHelperText ? props.helperText : undefined}
                     sx={{

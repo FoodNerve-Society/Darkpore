@@ -63,6 +63,7 @@ import { useSociety } from '@/context/SocietyContext';
 import PremiumCard from '@/components/PremiumCard';
 import { useParams } from 'next/navigation';
 import { getTenantConfig } from '@/lib/cms';
+import { MICRO_CTAS, MACRO_CTAS } from '@/lib/cms/ctas';
 import { useStorageUpload } from '@/hooks/useStorageUpload';
 import { ArticleBlockRenderer } from '@/components/learn/ArticleBlockRenderer';
 import PremiumTextField from '@/components/PremiumTextField';
@@ -200,9 +201,9 @@ function EvidenceGalleryEditor({ initialItems, onChange, color, blockId, uploadF
   );
 }
 
-// ═══════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 // CONSTANTS & TYPES
-// ═══════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 
 const ACCENT = '#f59e0b';
 const ACCENT_DARK = '#d97706';
@@ -221,7 +222,7 @@ const SLIDESHOW_IMAGES = [
   'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=1200',
 ];
 
-type BlockType = 'subheading' | 'exec_summary' | 'highlight_card' | 'core_interactive' | 'media' | 'myth_fact' | 'pull_quote' | 'live_poll' | 'data_embed';
+type BlockType = 'subheading' | 'exec_summary' | 'highlight_card' | 'core_interactive' | 'media' | 'myth_fact' | 'pull_quote' | 'live_poll' | 'data_embed' | 'strategic_directive' | 'call_to_action';
 
 const BLOCK_DEFINITIONS: Record<BlockType, { label: string, color: string }> = {
   subheading: { label: 'Spiky Title', color: '#64748b' },
@@ -233,14 +234,16 @@ const BLOCK_DEFINITIONS: Record<BlockType, { label: string, color: string }> = {
   pull_quote: { label: 'Strong Quote', color: '#f59e0b' },
   live_poll: { label: 'Quick Poll', color: '#d946ef' },
   data_embed: { label: 'Embedded Data', color: '#14b8a6' },
+  strategic_directive: { label: 'Strategic Directive', color: '#111827' },
+  call_to_action: { label: 'Call to Action', color: '#f59e0b' },
 };
 
 type SopBlock = { type: BlockType; role: string; desc: string; hint: string };
 
 const ERA_CONFIG: Record<string, { label: string; emoji: string; color: string }> = {
-  past:    { label: 'The Autopsy',           emoji: '🔴', color: '#ef4444' },
-  present: { label: 'The Battlefield Report', emoji: '🟢', color: '#10b981' },
-  future:  { label: 'The Foresight Brief',   emoji: '🔵', color: '#3b82f6' },
+  past:    { label: 'The Autopsy',           emoji: '≡ƒö┤', color: '#ef4444' },
+  present: { label: 'The Battlefield Report', emoji: '≡ƒƒó', color: '#10b981' },
+  future:  { label: 'The Foresight Brief',   emoji: '≡ƒö╡', color: '#3b82f6' },
 };
 
 const SOP_FRAMEWORKS: Record<'past'|'present'|'future', SopBlock[]> = {
@@ -252,8 +255,10 @@ const SOP_FRAMEWORKS: Record<'past'|'present'|'future', SopBlock[]> = {
     { type: 'core_interactive',  role: 'The Breakdown',         desc: 'Nuanced breakdown of the mechanics so the reader learns the root cause.', hint: 'Did this initiative fail in your region? Why?' },
     { type: 'pull_quote',        role: 'The Ground Truth',      desc: 'Add human credibility with raw feedback from operators on the ground.',   hint: 'Who said it and why it matters' },
     { type: 'core_interactive',  role: 'The Collateral Damage', desc: 'Highlight the financial impact to make the failure tangible to investors.', hint: 'Who absorbed the financial hit in your sector?' },
+    { type: 'media',             role: 'The Proof of Death',    desc: 'Visual evidence proving the failure.',                            hint: 'Chart showing the collapse' },
+    { type: 'strategic_directive', role: 'The Commander\'s Intent', desc: 'Strict military-style commands on what to dismantle or never repeat.', hint: 'e.g. Directive for VCs: Fund X.' },
     { type: 'live_poll',         role: 'The Pulse Check',       desc: 'Force the audience to reflect on their own operations and engage.',       hint: 'Are we at risk of repeating this exact mistake today?' },
-    { type: 'exec_summary',      role: 'The Strategic Directive', desc: 'Deliver role-based commands answering the title\'s action statement.',   hint: 'e.g. Directive for VCs: Fund X. Directive for Policy: Do Y.' },
+    { type: 'call_to_action',    role: 'Platform Growth CTA',   desc: 'Massive full-width highlight banner to pull readers into the ecosystem.', hint: 'Select a Macro CTA' }
   ],
   present: [
     { type: 'subheading',        role: 'The Spiky Title',             desc: 'Hook the reader by naming the crisis and who it hits right now.', hint: 'How Lagos Operators Are Surviving $2/L Diesel' },
@@ -263,8 +268,9 @@ const SOP_FRAMEWORKS: Record<'past'|'present'|'future', SopBlock[]> = {
     { type: 'core_interactive',  role: 'The Hacker\'s Survival Guide', desc: 'Detail the exact workaround being used to survive the crisis.',  hint: 'What undocumented hack are operators using?' },
     { type: 'media',             role: 'The Data Proof',              desc: 'Provide undeniable proof via chart or data visualization.',       hint: 'Upload supporting data visualization' },
     { type: 'core_interactive',  role: 'Winners vs. Crushed',         desc: 'Clearly distinguish who is profiting versus who is dying.',       hint: 'Are you seeing a different winner in your sector?' },
+    { type: 'strategic_directive', role: 'The Commander\'s Intent', desc: 'Strict, aggressive commands on exactly where to deploy capital today.', hint: 'e.g. Directive for VCs: Deploy $X here.' },
     { type: 'live_poll',         role: 'The Pulse Check',             desc: 'Force the audience to reflect on their own operations and engage.', hint: 'Are you deploying capital to bypass this bottleneck?' },
-    { type: 'exec_summary',      role: 'The Strategic Directive', desc: 'Deliver role-based commands answering the title\'s action statement.',   hint: 'e.g. Directive for VCs: Fund X. Directive for Policy: Do Y.' },
+    { type: 'call_to_action',    role: 'Platform Growth CTA',   desc: 'Massive full-width highlight banner to pull readers into the ecosystem.', hint: 'Select a Macro CTA' }
   ],
   future: [
     { type: 'subheading',        role: 'The Spiky Title',              desc: 'Hook the reader by naming the paradigm shift and timeline.',    hint: 'Why Drone Logistics Will Replace 40% of Last-Mile by 2030' },
@@ -274,31 +280,32 @@ const SOP_FRAMEWORKS: Record<'past'|'present'|'future', SopBlock[]> = {
     { type: 'core_interactive',  role: 'The Mechanism of Disruption',  desc: 'Nuanced breakdown of how the tech/policy actually works.',      hint: 'What is the biggest technical barrier to adopting this?' },
     { type: 'media',             role: 'The Data Proof',               desc: 'Provide undeniable proof via schematic or adoption curve.',     hint: 'Upload forward-looking visualization' },
     { type: 'core_interactive',  role: 'The Global South Roadblocks',  desc: 'Detail the real-world friction (bad roads, politics) to add realism.', hint: 'How would you solve the last-mile infrastructure gap?' },
+    { type: 'strategic_directive', role: 'The Commander\'s Intent', desc: 'Strict commands detailing exactly what startups to fund or policies to draft.', hint: 'e.g. Fund this R&D, establish sandbox today.' },
     { type: 'live_poll',         role: 'The Pulse Check',              desc: 'Force the audience to reflect on timeline feasibility and engage.', hint: 'Will this reach commercial scale in Africa by 2030?' },
-    { type: 'exec_summary',      role: 'The Strategic Directive', desc: 'Deliver role-based commands answering the title\'s action statement.',   hint: 'e.g. Directive for VCs: Fund X. Directive for Policy: Do Y.' },
+    { type: 'call_to_action',    role: 'Platform Growth CTA',   desc: 'Massive full-width highlight banner to pull readers into the ecosystem.', hint: 'Select a Macro CTA' }
   ],
 };
 
-// ═══════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 // SPIKY TITLE TEMPLATES
-// ═══════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 const SPIKY_TITLE_TEMPLATES: Record<string, string[]> = {
   past: [
     "The [Failed Buzzword] Illusion: Why [Old Tech/Policy] Actually Destroyed [Value Chain Actor] in [Location], and Why [Target Persona] Must [Action]",
-    "The Death of [Old System]: How [Macro Shock] Killed [Location]’s [Sector] in the Early 2020s, and Why [Target Persona] Must [Action]",
-    "The [Metric/Dollar Amount] Mistake: Why [Location]’s [Value Chain Actors] Completely Abandoned [Failed Project], and Why [Target Persona] Must [Action]",
-    "From [Good Intention] to [Bad Outcome]: The Tragic Legacy of [Old Method] for [Location]’s [Value Chain Actor], and Why [Target Persona] Must [Action]"
+    "The Death of [Old System]: How [Macro Shock] Killed [Location]ΓÇÖs [Sector] in the Early 2020s, and Why [Target Persona] Must [Action]",
+    "The [Metric/Dollar Amount] Mistake: Why [Location]ΓÇÖs [Value Chain Actors] Completely Abandoned [Failed Project], and Why [Target Persona] Must [Action]",
+    "From [Good Intention] to [Bad Outcome]: The Tragic Legacy of [Old Method] for [Location]ΓÇÖs [Value Chain Actor], and Why [Target Persona] Must [Action]"
   ],
   present: [
-    "The [Metric/Percentage] Paradox: Why [Location]’s [Value Chain Actor] is Surviving by [Unexpected Hack], and Why [Target Persona] Must [Action]",
+    "The [Metric/Percentage] Paradox: Why [Location]ΓÇÖs [Value Chain Actor] is Surviving by [Unexpected Hack], and Why [Target Persona] Must [Action]",
     "Bypassing the [Broken Gatekeeper]: How [Value Chain Actor] in [Location] Are Using [New Method] Right Now, and Why [Target Persona] Must [Action]",
     "The Unspoken Truth About [Trend]: Why [Location]'s [Sector] Now Relies on [Controversial/Messy Fix], and Why [Target Persona] Must [Action]",
     "[Factor A] vs. [Factor B]: Why Only [Specific Winner] Can Afford to [Action] in 2026 [Location], and Why [Target Persona] Must [Action]"
   ],
   future: [
-    "The End of [Current Bottleneck]: How [Emerging Tech] Will Permanently Disrupt [Location]’s [Sector] by [Year], and Why [Target Persona] Must [Action]",
+    "The End of [Current Bottleneck]: How [Emerging Tech] Will Permanently Disrupt [Location]ΓÇÖs [Sector] by [Year], and Why [Target Persona] Must [Action]",
     "[Action Verb] the [Old Way]: Why [Value Chain Actor] Will Use [New Tech] to Bypass [Gatekeeper], and Why [Target Persona] Must [Action]",
-    "From [Old Concept] to [New Concept]: The 2030 Roadmap for [Location]’s [Value Chain Actor], and Why [Target Persona] Must [Action]",
+    "From [Old Concept] to [New Concept]: The 2030 Roadmap for [Location]ΓÇÖs [Value Chain Actor], and Why [Target Persona] Must [Action]",
     "The [Metric/Market Size] Takeover: Why [Emerging Tech/Policy] is the Ultimate Bet for [Location] by 2030, and Why [Target Persona] Must [Action]"
   ]
 };
@@ -309,9 +316,9 @@ const EXEC_SUMMARY_LABELS: Record<string, [string, string, string]> = {
   future: ["The Dying Paradigm", "The Disruption", "The Year"]
 };
 
-// ═══════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 // SORTABLE WRAPPER
-// ═══════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 function SortableBlockWrapper({ id, reorderUnlocked, children }: { id: string, reorderUnlocked: boolean, children: (attributes: any, listeners: any, setNodeRef: any, style: any, isDragging: boolean) => React.ReactNode }) {
   const {
     attributes,
@@ -336,18 +343,18 @@ function SortableBlockWrapper({ id, reorderUnlocked, children }: { id: string, r
   );
 }
 
-// ═══════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 // ANIMATIONS
-// ═══════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 
 const slideUpFade = keyframes`
   from { opacity: 0; transform: translateY(40px); }
   to { opacity: 1; transform: translateY(0); }
 `;
 
-// ═══════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 // COMPONENT
-// ═══════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 
 export default function CreateLearnContentForm({ 
   onSuccess, 
@@ -647,6 +654,8 @@ export default function CreateLearnContentForm({
       case 'exec_summary': return !!c.points;
       case 'highlight_card': return !!c.caption;
       case 'media': return !!c.mediaUrl;
+      case 'strategic_directive': return !!c.urgencyLevel && !!c.targetPersona && !!c.point1 && !!c.point2 && !!c.point3 && !!c.microCtaId;
+      case 'call_to_action': return !!c.macroCtaId;
       default: return Object.values(c).some(v => !!v);
     }
   };
@@ -813,7 +822,7 @@ export default function CreateLearnContentForm({
           <Box sx={{ animation: 'fadeIn 0.3s', display: 'flex', flexDirection: 'column', gap: 0 }}>
             {type === 'article' ? (
               <Box sx={{ width: '100%' }}>
-                  {/* ─── CONTEXT HEADER ─── */}
+                  {/* ΓöÇΓöÇΓöÇ CONTEXT HEADER ΓöÇΓöÇΓöÇ */}
                 {(() => {
                   const era = ERA_CONFIG[selectedTimeframe || ''] || ERA_CONFIG.present;
                   const catName = challenges.find(c => c.id === selectedCategory)?.title || 'Category';
@@ -899,7 +908,7 @@ export default function CreateLearnContentForm({
                   );
                 })()}
 
-                {/* ─── EMPTY STATE: SOP FRAMEWORK PREVIEW ─── */}
+                {/* ΓöÇΓöÇΓöÇ EMPTY STATE: SOP FRAMEWORK PREVIEW ΓöÇΓöÇΓöÇ */}
                 {blocks.length === 0 && selectedTimeframe && (() => {
                   const era = ERA_CONFIG[selectedTimeframe] || ERA_CONFIG.present;
                   const framework = SOP_FRAMEWORKS[selectedTimeframe as keyof typeof SOP_FRAMEWORKS];
@@ -985,7 +994,7 @@ export default function CreateLearnContentForm({
                   );
                 })()}
 
-                {/* ─── ACTIVE BLOCK CANVAS ─── */}
+                {/* ΓöÇΓöÇΓöÇ ACTIVE BLOCK CANVAS ΓöÇΓöÇΓöÇ */}
                 {blocks.length > 0 && (
                   <Box>
                     {/* Canvas header + Reorder toggle */}
@@ -1060,7 +1069,7 @@ export default function CreateLearnContentForm({
                                     transformOrigin: 'center center',
                                     transform: isFlipped ? 'rotateX(-180deg)' : 'none',
                                   }}>
-                            {/* ════ FRONT FACE ════ */}
+                            {/* ΓòÉΓòÉΓòÉΓòÉ FRONT FACE ΓòÉΓòÉΓòÉΓòÉ */}
                             <Box
                               onClick={() => !isFlipped && setFlippedBlockId(b.id)}
                               sx={{
@@ -1112,7 +1121,7 @@ export default function CreateLearnContentForm({
                                       <Chip label={bDef.label} size="small" sx={{ height: 24, fontSize: '0.7rem', bgcolor: alpha(color, 0.15), color, fontWeight: 700, border: `1px solid ${alpha(color, 0.2)}` }} />
                                     </Box>
                                     <Typography sx={{ color: filled ? '#334155' : '#64748b', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }}>
-                                      {filled ? 'Content added — tap to edit' : (b.sopDesc || 'Tap to fill this block')}
+                                      {filled ? 'Content added ΓÇö tap to edit' : (b.sopDesc || 'Tap to fill this block')}
                                     </Typography>
                                   </Box>
                                   {/* Image Thumbnail */}
@@ -1136,7 +1145,7 @@ export default function CreateLearnContentForm({
                               </Box>
                             </Box>
 
-                            {/* ════ BACK FACE (FORM) ════ */}
+                            {/* ΓòÉΓòÉΓòÉΓòÉ BACK FACE (FORM) ΓòÉΓòÉΓòÉΓòÉ */}
                             <Box sx={{
                               backfaceVisibility: 'hidden',
                               transform: 'rotateX(180deg)',
@@ -1303,6 +1312,55 @@ export default function CreateLearnContentForm({
                                       fullWidth  label="Discussion Prompt (Optional)"
                                       placeholder="Why did you vote this way?" value={b.content.discussionPrompt || ''} onChange={e => updateBlock(b.id, 'discussionPrompt', e.target.value)}
                                       
+                                    />
+                                  </Box>
+                                )}
+                                {b.type === 'strategic_directive' && (
+                                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                    <PremiumAutocomplete
+                                      label="Urgency Level"
+                                      value={b.content.urgencyLevel || ''}
+                                      options={[
+                                        { label: '🟡 MONITOR', value: 'MONITOR' },
+                                        { label: '🟠 PREPARE', value: 'PREPARE' },
+                                        { label: '🔴 EXECUTE NOW', value: 'EXECUTE NOW' }
+                                      ]}
+                                      onChange={(val) => updateBlock(b.id, 'urgencyLevel', val)}
+                                      colorTheme={color}
+                                    />
+                                    <PremiumTextField colorTheme={color}
+                                      fullWidth label="Target Persona (e.g., Policymakers, VCs)"
+                                      placeholder="Agri-Tech VCs" value={b.content.targetPersona || ''} onChange={e => updateBlock(b.id, 'targetPersona', e.target.value)}
+                                    />
+                                    <PremiumTextField colorTheme={color}
+                                      fullWidth label="🎯 Point 1: The Threat/Reality"
+                                      placeholder="What happens if they ignore this?" value={b.content.point1 || ''} onChange={e => updateBlock(b.id, 'point1', e.target.value)}
+                                    />
+                                    <PremiumTextField colorTheme={color}
+                                      fullWidth label="➔ Point 2: The Immediate Action"
+                                      placeholder="Halt, Dismantle, Deploy..." value={b.content.point2 || ''} onChange={e => updateBlock(b.id, 'point2', e.target.value)}
+                                    />
+                                    <PremiumTextField colorTheme={color}
+                                      fullWidth label="📡 Point 3: The Long-Term Pivot"
+                                      placeholder="How to convert this into a monopoly" value={b.content.point3 || ''} onChange={e => updateBlock(b.id, 'point3', e.target.value)}
+                                    />
+                                    <PremiumAutocomplete
+                                      label="Micro CTA (Tactical Link)"
+                                      value={b.content.microCtaId || ''}
+                                      options={MICRO_CTAS.map(cta => ({ label: cta.text, value: cta.id }))}
+                                      onChange={(val) => updateBlock(b.id, 'microCtaId', val)}
+                                      colorTheme={color}
+                                    />
+                                  </Box>
+                                )}
+                                {b.type === 'call_to_action' && (
+                                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                    <PremiumAutocomplete
+                                      label="Macro CTA (Platform Growth Banner)"
+                                      value={b.content.macroCtaId || ''}
+                                      options={MACRO_CTAS.map(cta => ({ label: cta.hook, value: cta.id }))}
+                                      onChange={(val) => updateBlock(b.id, 'macroCtaId', val)}
+                                      colorTheme={color}
                                     />
                                   </Box>
                                 )}
@@ -1484,7 +1542,7 @@ export default function CreateLearnContentForm({
                       </SortableContext>
                     </DndContext>
 
-                    {/* ─── ADD BLOCK BAR ─── */}
+                    {/* ΓöÇΓöÇΓöÇ ADD BLOCK BAR ΓöÇΓöÇΓöÇ */}
                     <Box sx={{
                       mt: 4, p: 3, borderRadius: '24px',
                       background: 'rgba(255,255,255,0.8)',
@@ -1673,7 +1731,7 @@ export default function CreateLearnContentForm({
         </Box>
       </Dialog>
 
-      {/* ─── MODALS ─── */}
+      {/* ΓöÇΓöÇΓöÇ MODALS ΓöÇΓöÇΓöÇ */}
       <Dialog open={showReorderModal} onClose={() => setShowReorderModal(false)} sx={{ '& .MuiDialog-paper': { borderRadius: '24px', p: 1 } }}>
         <DialogTitle sx={{ fontWeight: 900, fontSize: '1.4rem', color: '#0f172a' }}>
           Unlock Reordering?
