@@ -421,6 +421,7 @@ export default function CreateLearnContentForm({
   const [selectedTimeframe, setSelectedTimeframe] = useState<'past'|'present'|'future'|''>('');
   const [showTitleSection, setShowTitleSection] = useState(false);
   const accordionTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Auto-cycle accordion when not locked
   useEffect(() => {
@@ -647,8 +648,17 @@ export default function CreateLearnContentForm({
     }
   };
 
-  const handleSubmit = async () => {
-    if (!title.trim() || !description.trim()) { setError('Please fill out all core details.'); return; }
+  const handleSubmit = async (isPublish = true) => {
+    if (!title.trim()) { 
+      setError('Saving drafts requires an article title.'); 
+      scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      return; 
+    }
+    if (isPublish && !description.trim()) { 
+      setError('Please fill out the core description before publishing.'); 
+      scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      return; 
+    }
     
     setLoading(true);
     setError(null);
@@ -720,7 +730,7 @@ export default function CreateLearnContentForm({
         reportPages: type === 'report' ? reportPages : undefined,
       };
 
-      const result = await createLearnContent(payload, true); // true for isDraft flag if needed? Wait, the form doesn't expose it here yet, let's just leave it as is or add it if needed. The API defaults to draft on update if we don't pass isDraft to publish.
+      const result = await createLearnContent(payload, !isPublish);
       if (result.success) onSuccess?.();
     } catch (err: any) {
       setError(err.message || 'Something went wrong.');
@@ -731,8 +741,14 @@ export default function CreateLearnContentForm({
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', position: 'relative' }}>
-      <Box sx={{ flex: 1, overflowY: 'auto', px: { xs: 2.5, sm: 3.5 }, py: 3, display: 'flex', flexDirection: 'column', gap: 3.5 }}>
+      <Box ref={scrollContainerRef} sx={{ flex: 1, overflowY: 'auto', px: { xs: 2.5, sm: 3.5 }, py: 3, display: 'flex', flexDirection: 'column', gap: 3.5 }}>
         
+        {error && (
+          <Alert severity="error" sx={{ mb: 2, borderRadius: '12px', '& .MuiAlert-message': { fontWeight: 600 } }}>
+            {error}
+          </Alert>
+        )}
+
         {/* STEP 3: CONTENT / BLOCKS */}
         {step === 3 && (
           <Box sx={{ animation: 'fadeIn 0.3s', display: 'flex', flexDirection: 'column', gap: 0 }}>
@@ -1133,15 +1149,13 @@ export default function CreateLearnContentForm({
                                         fullWidth  label="Spiky Header Text (Pattern: [Bold Part]: [Italic Part])" placeholder={b.sopHint || ''}
                                         value={b.content.text || ''} 
                                         onChange={e => {
-                                          if (e.target.value.length <= 100) {
-                                            updateBlock(b.id, 'text', e.target.value);
-                                          }
+                                          updateBlock(b.id, 'text', e.target.value.slice(0, 150));
                                         }}
-                                        helperText={`${(b.content.text || '').length} / 100 characters max`}
+                                        helperText={`${(b.content.text || '').length} / 150 characters max`}
                                         sx={{ 
                                           '& .MuiOutlinedInput-root': { borderRadius: '14px', color: '#0f172a', bgcolor: 'rgba(0,0,0,0.02)', '& fieldset': { borderColor: 'rgba(0,0,0,0.15)' }, '&:hover fieldset': { borderColor: alpha(color, 0.5) }, '&.Mui-focused fieldset': { borderColor: color, borderWidth: 2 } }, 
                                           '& .MuiInputLabel-root': { color: '#475569', fontWeight: 600 },
-                                          '& .MuiFormHelperText-root': { textAlign: 'right', fontWeight: 600, color: (b.content.text || '').length >= 100 ? '#ef4444' : 'text.secondary' }
+                                          '& .MuiFormHelperText-root': { textAlign: 'right', fontWeight: 600, color: (b.content.text || '').length >= 150 ? '#ef4444' : 'text.secondary' }
                                         }}
                                       />
                                   </Box>
@@ -1509,9 +1523,26 @@ export default function CreateLearnContentForm({
             >
               Preview
             </Button>
+            <Button
+              onClick={() => handleSubmit(false)}
+              disabled={loading}
+              sx={{
+                bgcolor: 'rgba(245, 158, 11, 0.1)',
+                color: '#d97706',
+                fontWeight: 800,
+                borderRadius: '12px',
+                px: 3,
+                '&:hover': {
+                  bgcolor: 'rgba(245, 158, 11, 0.2)',
+                  color: '#b45309'
+                }
+              }}
+            >
+              {loading ? 'Saving...' : 'Save Draft'}
+            </Button>
             <Button 
               variant="contained" 
-              onClick={handleSubmit} 
+              onClick={() => handleSubmit(true)} 
               disabled={loading || (blocks.length > 0 && !blocks.every(b => isBlockFilled(b)))} 
               sx={{ 
                 bgcolor: activeThemeColor, 
