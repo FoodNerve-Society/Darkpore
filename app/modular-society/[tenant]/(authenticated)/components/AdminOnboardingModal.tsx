@@ -63,8 +63,8 @@ export default function AdminOnboardingModal() {
 
   // Sync initial name if available
   React.useEffect(() => {
-    if (profile?.name && !firstName && !lastName) {
-      const parts = profile.name.trim().split(' ');
+    if (profile?.displayName && !firstName && !lastName) {
+      const parts = profile.displayName.trim().split(' ');
       if (parts.length === 1) {
         setFirstName(parts[0]);
       } else if (parts.length >= 2) {

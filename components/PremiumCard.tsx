@@ -4,7 +4,7 @@ import React from 'react';
 import { Paper, PaperProps, alpha, Box, useTheme } from '@mui/material';
 
 export interface PremiumCardProps extends Omit<PaperProps, 'variant'> {
-  variant?: 'standard' | 'interactive' | 'media';
+  variant?: 'standard' | 'interactive' | 'media' | 'glass';
   baseColor?: string; // Optional overlay color
 }
 
@@ -56,6 +56,13 @@ export default function PremiumCard({
       boxShadow: '0 16px 40px rgba(0,0,0,0.2)',
       border: '1px solid rgba(255,255,255,0.1)',
       color: 'white', // Assume media cards are dark mode internally
+    };
+  } else if (variant === 'glass') {
+    variantStyles = {
+      background: 'rgba(255, 255, 255, 0.7)',
+      backdropFilter: 'blur(20px)',
+      boxShadow: '0 8px 32px rgba(0,0,0,0.05)',
+      border: '1px solid rgba(255, 255, 255, 0.4)',
     };
   }
 

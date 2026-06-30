@@ -7,6 +7,7 @@ import { Autocomplete, AutocompleteProps, TextField, alpha } from '@mui/material
 interface CustomProps {
     colorTheme: string;
     label?: string;
+    placeholder?: string;
 }
 
 type PremiumAutocompleteProps<
@@ -24,7 +25,7 @@ function PremiumAutocomplete<
     FreeSolo extends boolean | undefined = false
 >(props: PremiumAutocompleteProps<T, Multiple, DisableClearable, FreeSolo>) {
 
-    const { colorTheme, label, ...rest } = props;
+    const { colorTheme, label, placeholder, ...rest } = props;
 
     return (
         <Autocomplete
@@ -33,6 +34,7 @@ function PremiumAutocomplete<
                 <TextField
                     {...params}
                     label={label}
+                    placeholder={placeholder}
                     variant="filled"
                     sx={{
                         // 1) Unfocused label
