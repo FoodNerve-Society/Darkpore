@@ -26,6 +26,7 @@ const PremiumTextField: FC<PremiumTextFieldProps> = forwardRef<HTMLDivElement, P
                     variant="filled" // We use 'filled' as a base to easily override styles
                     fullWidth={props.fullWidth}
                     error={hasError}
+                    InputProps={InputProps}
                     {...props}
                     helperText={!errorHelperText ? props.helperText : undefined}
                     sx={{

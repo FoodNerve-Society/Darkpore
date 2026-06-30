@@ -422,6 +422,9 @@ export default function CreateLearnContentForm({
   const [showTitleSection, setShowTitleSection] = useState(false);
   const accordionTimerRef = useRef<NodeJS.Timeout | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  
+  const [currentDraftId, setCurrentDraftId] = useState<string | null>(draftId && draftId !== 'new' ? draftId : null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // Auto-cycle accordion when not locked
   useEffect(() => {
@@ -649,19 +652,40 @@ export default function CreateLearnContentForm({
   };
 
   const handleSubmit = async (isPublish = true) => {
-    if (!title.trim()) { 
-      setError('Saving drafts requires an article title.'); 
+    let finalTitle = title;
+    let finalDesc = description;
+
+    if (type === 'article') {
+      const spikyBlock = blocks.find(b => b.type === 'subheading');
+      if (spikyBlock && spikyBlock.content.text) {
+        finalTitle = spikyBlock.content.text;
+      }
+      // Description is optional for articles, but we can derive it from exec_summary if needed
+      const summaryBlock = blocks.find(b => b.type === 'exec_summary');
+      if (summaryBlock && summaryBlock.content.point1) {
+        finalDesc = summaryBlock.content.point1;
+      }
+    }
+
+    if (!finalTitle.trim()) { 
+      setError(isPublish ? 'Publishing requires a Spiky Title block.' : 'Saving drafts requires a Spiky Title block.'); 
       scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
       return; 
     }
-    if (isPublish && !description.trim()) { 
+    if (isPublish && type !== 'article' && !finalDesc.trim()) { 
       setError('Please fill out the core description before publishing.'); 
       scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
       return; 
     }
+    if (isPublish && blocks.length > 0 && !blocks.every(b => isBlockFilled(b))) {
+      setError('All blocks must be fully completed before publishing. Please fill in any missing fields.');
+      scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     
     setLoading(true);
     setError(null);
+    setSuccessMsg(null);
 
     try {
       // 1. Upload pending files first
@@ -701,16 +725,16 @@ export default function CreateLearnContentForm({
       }
 
       const payload: CreateLearnContentPayload = {
-        id: draftId && draftId !== 'new' ? draftId : undefined,
-        title: title.trim() || 'Draft Content',
-        slug: generateSlug(title.trim() || 'Draft Content'),
-        description: description.trim() || 'No description provided.',
+        id: currentDraftId || undefined,
+        title: finalTitle.trim() || 'Draft Content',
+        slug: generateSlug(finalTitle.trim() || 'Draft Content'),
+        description: finalDesc.trim() || 'No description provided.',
         type: type as "article" | "video" | "class" | "livestream" | "report",
         bottleneckTags: selectedSubcategory ? [selectedSubcategory, selectedCategory] : [selectedCategory],
         category: selectedCategory,
         subcategory: selectedSubcategory,
         timeframe: selectedTimeframe,
-        thumbnailUrl,
+        thumbnailUrl: finalThumbnailUrl,
         authorId: finalAuthorId,
         authorName: finalAuthorName,
         authorAvatarUrl: finalAuthorAvatarUrl,
@@ -731,9 +755,18 @@ export default function CreateLearnContentForm({
       };
 
       const result = await createLearnContent(payload, !isPublish);
-      if (result.success) onSuccess?.();
+      if (result.success) {
+        if (isPublish) {
+          onSuccess?.();
+        } else {
+          setCurrentDraftId(result.id);
+          setSuccessMsg(`Draft saved successfully at ${new Date().toLocaleTimeString()}`);
+          scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }
     } catch (err: any) {
       setError(err.message || 'Something went wrong.');
+      scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setLoading(false);
     }
@@ -744,8 +777,14 @@ export default function CreateLearnContentForm({
       <Box ref={scrollContainerRef} sx={{ flex: 1, overflowY: 'auto', px: { xs: 2.5, sm: 3.5 }, py: 3, display: 'flex', flexDirection: 'column', gap: 3.5 }}>
         
         {error && (
-          <Alert severity="error" sx={{ mb: 2, borderRadius: '12px', '& .MuiAlert-message': { fontWeight: 600 } }}>
+          <Alert severity="error" sx={{ mb: 2, borderRadius: '12px', '& .MuiAlert-message': { fontWeight: 600 } }} onClose={() => setError(null)}>
             {error}
+          </Alert>
+        )}
+        
+        {successMsg && (
+          <Alert severity="success" sx={{ mb: 2, borderRadius: '12px', '& .MuiAlert-message': { fontWeight: 600 } }} onClose={() => setSuccessMsg(null)}>
+            {successMsg}
           </Alert>
         )}
 
@@ -1314,7 +1353,7 @@ export default function CreateLearnContentForm({
                                     <Box sx={{ flex: 2, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                                       <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
                                         <PremiumAutocomplete
-                                          options={['Success', 'Failure', 'Warning', 'Critical', 'Insight', 'Trend']}
+                                          options={['Autopsy', 'Critical', 'Current Reality', 'Failure', 'Forecast', 'Insight', 'Post-Mortem', 'Prediction', 'Root Cause', 'Solution', 'Status Quo', 'Strategy', 'Success', 'Trend', 'Vision', 'Warning']}
                                           freeSolo
                                           colorTheme={color}
                                           label="Status Tag"
@@ -1543,7 +1582,7 @@ export default function CreateLearnContentForm({
             <Button 
               variant="contained" 
               onClick={() => handleSubmit(true)} 
-              disabled={loading || (blocks.length > 0 && !blocks.every(b => isBlockFilled(b)))} 
+              disabled={loading} 
               sx={{ 
                 bgcolor: activeThemeColor, 
                 fontWeight: 800, 
