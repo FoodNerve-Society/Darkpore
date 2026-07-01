@@ -710,7 +710,7 @@ export default function CreateLearnContentForm({
       case 'core_interactive': case 'deep_dive':
         total = 1; if (c.bionicText || c.text || c.heading) filled = 1; break;
       case 'myth_fact': 
-        const mfItems = c.items || [];
+        const mfItems = c.pairs || [];
         total = Math.max(1, mfItems.length) * 2;
         mfItems.forEach((i: any) => { if (i.myth) filled++; if (i.fact) filled++; });
         break;
@@ -737,7 +737,11 @@ export default function CreateLearnContentForm({
         if (c.author) filled++;
         break;
       case 'exec_summary': 
-        total = 1; if (c.points) filled = 1; break;
+        total = 3; 
+        if (c.point1) filled++; 
+        if (c.point2) filled++; 
+        if (c.point3) filled++; 
+        break;
       case 'highlight_card': 
         total = 1; if (c.caption || c.text || c.imageUrl) filled = 1; break;
       case 'media': 
