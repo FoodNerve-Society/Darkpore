@@ -96,6 +96,7 @@ export interface LearnContent {
   completionRate?: number;
   tags: string[];
   wahaalaCategories?: string[];
+  collaborators?: any[];
   articleBlocks?: any[];
 }
 
@@ -224,7 +225,12 @@ export async function getLearnContent(options?: { swimlane?: LearnSwimlane; limi
       article: {
         include: {
           blocks: {
-            orderBy: { orderIndex: 'asc' }
+            orderBy: { orderIndex: 'asc' },
+            include: {
+              _count: {
+                select: { revisions: true }
+              }
+            }
           }
         }
       }
@@ -246,6 +252,9 @@ export async function getLearnContent(options?: { swimlane?: LearnSwimlane; limi
     let tags = [];
     try { tags = JSON.parse(r.bottleneckTags || '[]'); } catch (e) {}
 
+    let collaborators = [];
+    try { collaborators = JSON.parse(r.collaborators || '[]'); } catch (e) {}
+
     return {
       ...r,
       swimlane: swimlaneMap[r.type] || 'articles',
@@ -256,11 +265,16 @@ export async function getLearnContent(options?: { swimlane?: LearnSwimlane; limi
       },
       tags,
       wahaalaCategories: [],
+      collaborators,
       thumbnailUrl: r.thumbnailUrl || '',
       articleBlocks: (r.article?.blocks || []).map((b: any) => {
         let parsedContent = {};
         try { parsedContent = typeof b.content === 'string' ? JSON.parse(b.content) : b.content; } catch(e) {}
-        return { ...b, content: parsedContent };
+        return { 
+          ...b, 
+          content: parsedContent,
+          revisionCount: b._count?.revisions || 0
+        };
       })
     };
   })));

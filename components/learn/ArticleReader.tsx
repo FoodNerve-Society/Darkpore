@@ -44,6 +44,7 @@ import {
 } from "@/lib/db/society";
 import { useSociety } from "@/context/SocietyContext";
 import { ArticleBlockRenderer } from "@/components/learn/ArticleBlockRenderer";
+import { BlockInsightsDrawer } from "@/components/learn/BlockInsightsDrawer";
 
 // ═══════════════════════════════════════════════════════════
 // CONSTANTS
@@ -228,8 +229,8 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
   const [loading, setLoading] = useState(!articleData);
   const [bookmarked, setBookmarked] = useState(false);
   const [hearted, setHearted] = useState(false);
-  const [commentText, setCommentText] = useState("");
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
+  const [activeInsightBlockId, setActiveInsightBlockId] = useState<string | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
@@ -455,14 +456,74 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
           </Box>
         </Box>
 
+        {/* ═══════════════════════ AUTHOR & COLLABORATORS ═══════════════════════ */}
+        {article.author && (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap", mt: { xs: 2, md: 3 }, mb: 4 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1, cursor: "pointer", "&:hover p": { color: accentColor } }}>
+              <Avatar src={article.author.avatarUrl} sx={{ width: 32, height: 32, border: `2px solid ${alpha(accentColor, 0.3)}` }} />
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, color: theme.palette.mode === 'dark' ? '#fff' : '#0f172a', transition: "color 0.2s" }}>
+                {article.author.name}
+              </Typography>
+              {article.author.isVerified && <VerifiedIcon sx={{ fontSize: 16, color: accentColor }} />}
+            </Box>
+            
+            {article.collaborators && article.collaborators.length > 0 && (
+              <>
+                <Typography sx={{ color: "text.disabled", mx: 0.5 }}>•</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Typography variant="caption" sx={{ color: "text.secondary", mr: 1, fontWeight: 600 }}>with</Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'row' }}>
+                    {article.collaborators.map((collab: any, i: number) => (
+                      <Tooltip key={i} title={`${collab.name} - ${collab.role}`}>
+                        <Avatar 
+                          src={collab.avatarUrl} 
+                          sx={{ 
+                            width: 28, height: 28, 
+                            border: `2px solid ${theme.palette.background.paper}`,
+                            ml: i > 0 ? -1 : 0,
+                            zIndex: 10 - i,
+                            transition: 'transform 0.2s',
+                            '&:hover': { transform: 'translateY(-2px)', zIndex: 20 }
+                          }} 
+                        >
+                          {collab.name?.charAt(0)}
+                        </Avatar>
+                      </Tooltip>
+                    ))}
+                  </Box>
+                </Box>
+              </>
+            )}
+            <Typography sx={{ color: "text.disabled", mx: 0.5 }}>•</Typography>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, color: "text.secondary" }}>
+              <CalendarIcon sx={{ fontSize: 14 }} />
+              <Typography variant="caption">
+                {new Date(article.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
+              </Typography>
+            </Box>
+          </Box>
+        )}
+
         {/* ═══════════════════════ ARTICLE BODY ═══════════════════════ */}
         {displayBlocks.length > 0 && displayBlocks.map((block: any, idx: number) => (
           <Box id={`article-block-${block.id || idx}`} key={block.id || idx} sx={{ mb: 5 }}>
-            <ArticleBlockRenderer block={block} themeMode={theme.palette.mode} accentColor={accentColor} />
+            <ArticleBlockRenderer 
+              block={block} 
+              themeMode={theme.palette.mode} 
+              accentColor={accentColor} 
+              onOpenInsights={(id) => setActiveInsightBlockId(id)}
+            />
           </Box>
         ))}
 
       </Box>
+
+      {/* ═══════════════════════ INSIGHTS DRAWER ═══════════════════════ */}
+      <BlockInsightsDrawer 
+        open={!!activeInsightBlockId} 
+        onClose={() => setActiveInsightBlockId(null)} 
+        blockId={activeInsightBlockId} 
+      />
     </Box>
   );
 }

@@ -228,6 +228,19 @@ model LearnArticleBlock {
   content    String // JSON stringified payload specific to the blockType
 
   article LearnArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  revisions LearnArticleBlockRevision[]
+}
+
+model LearnArticleBlockRevision {
+  id         String   @id @default(cuid())
+  blockId    String
+  editedBy   String   // The uid or ID of the user who made the edit
+  oldContent String   // The state before the edit (JSON)
+  newContent String   // The state after the edit (JSON)
+  reason     String?
+  createdAt  DateTime @default(now())
+
+  block LearnArticleBlock @relation(fields: [blockId], references: [id], onDelete: Cascade)
 }
 
 model LearnVideo {
