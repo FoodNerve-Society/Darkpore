@@ -1618,7 +1618,7 @@ export default function CreateLearnContentForm({
       {/* FOOTER */}
       <Box sx={{ px: 3, py: 2, borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Button onClick={step === 1 ? onCancel : () => setStep(step - 1)} sx={{ color: 'text.secondary', fontWeight: 700 }} startIcon={step > 1 && <ArrowBackIcon />}>
-          {step === 1 ? 'Cancel' : 'Back'}
+          {step === 1 ? 'Cancel' : 'Previous Step'}
         </Button>
         {step < 3 ? (
           <Button 

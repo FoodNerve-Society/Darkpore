@@ -534,8 +534,22 @@ export default function CreatorStudioDashboard({
           </Box>
 
           {drafts.length === 0 ? (
-            <Paper sx={{ p: 5, borderRadius: '24px', border: '2px dashed rgba(0,0,0,0.08)', bgcolor: 'transparent', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-              <Typography sx={{ color: '#94a3b8', fontWeight: 600 }}>No active drafts found.</Typography>
+            <Paper elevation={0} sx={{ 
+              p: 6, 
+              borderRadius: '24px', 
+              border: '2px dashed rgba(139, 92, 246, 0.25)', 
+              bgcolor: 'rgba(139, 92, 246, 0.02)', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              boxShadow: 'none'
+            }}>
+              <Box sx={{ p: 2, borderRadius: '50%', bgcolor: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6', mb: 2 }}>
+                <ArticleIcon />
+              </Box>
+              <Typography sx={{ color: '#1e293b', fontWeight: 800, fontSize: '1.15rem', mb: 1 }}>No Active Drafts</Typography>
+              <Typography sx={{ color: '#64748b', fontWeight: 600, fontSize: '0.9rem' }}>Select a format above to start creating content.</Typography>
             </Paper>
           ) : (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>

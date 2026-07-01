@@ -1606,12 +1606,12 @@ export default function LearnPage() {
                 {/* ═══════════════════════ CREATOR STUDIO WIDGET ═══════════════════════ */}
                 {!isFlipped && canCreate && (
                   <Paper sx={{
-                    p: { xs: 2.5, md: 3 }, borderRadius: '18px', 
-                    bgcolor: 'rgba(255, 255, 255, 0.5)',
-                    backdropFilter: 'blur(30px) saturate(150%)', 
-                    WebkitBackdropFilter: 'blur(30px) saturate(150%)',
-                    border: '1px solid rgba(255, 255, 255, 0.6)',
-                    boxShadow: 'inset 0 0 20px rgba(255,255,255,0.3), 0 15px 40px rgba(0,0,0,0.2)',
+                    p: { xs: 2.5, md: 3 }, borderRadius: '24px', 
+                    bgcolor: 'rgba(255, 255, 255, 0.85)',
+                    backdropFilter: 'blur(40px) saturate(200%)', 
+                    WebkitBackdropFilter: 'blur(40px) saturate(200%)',
+                    border: '1px solid rgba(255, 255, 255, 0.9)',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.06), inset 0 0 0 1px rgba(255,255,255,0.5)',
                     display: 'flex', 
                     flexDirection: 'column',
                     gap: 3,
@@ -1955,24 +1955,26 @@ export default function LearnPage() {
           flexShrink: 0,
         }}
       >
-        <IconButton
-          onClick={() => {
-            if ((!selectedDraftId || selectedDraftId === null) && selectedDraftId !== 'new') {
-              setIsFlipped(false);
-            } else {
-              setCreateContentType('');
-              setSelectedDraftId(null);
-            }
-          }}
-          sx={{
-            width: 36,
-            height: 36,
-            bgcolor: 'rgba(0,0,0,0.03)',
-            '&:hover': { bgcolor: 'rgba(0,0,0,0.06)' },
-          }}
-        >
-          <ArrowBackIcon sx={{ fontSize: 18 }} />
-        </IconButton>
+        <Tooltip title="Close Editor">
+          <IconButton
+            onClick={() => {
+              if ((!selectedDraftId || selectedDraftId === null) && selectedDraftId !== 'new') {
+                setIsFlipped(false);
+              } else {
+                setCreateContentType('');
+                setSelectedDraftId(null);
+              }
+            }}
+            sx={{
+              width: 36,
+              height: 36,
+              bgcolor: 'rgba(0,0,0,0.03)',
+              '&:hover': { bgcolor: 'rgba(0,0,0,0.06)' },
+            }}
+          >
+            <ArrowBackIcon sx={{ fontSize: 18 }} />
+          </IconButton>
+        </Tooltip>
         <Box sx={{ flex: 1 }}>
           <Typography sx={{ fontWeight: 900, fontSize: '1.1rem', letterSpacing: '-0.01em', transition: 'color 0.3s ease', display: 'flex', alignItems: 'center', gap: 1 }}>
             <span style={{ opacity: 0.5 }}>Studio</span>
