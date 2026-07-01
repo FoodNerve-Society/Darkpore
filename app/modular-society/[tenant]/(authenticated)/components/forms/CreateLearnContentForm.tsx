@@ -719,10 +719,10 @@ export default function CreateLearnContentForm({
         total = Math.max(1, ktItems.length);
         ktItems.forEach((i: any) => { if (i.text) filled++; });
         break;
-      case 'evidence_gallery':
+      case 'media': case 'evidence_gallery':
         const egItems = c.items || [];
         total = Math.max(1, egItems.length);
-        egItems.forEach((i: any) => { if (i.url) filled++; });
+        egItems.forEach((i: any) => { if (i.url || i.mediaUrl) filled++; });
         break;
       case 'live_poll': case 'quick_poll':
         const rawOpts = c.options || [];
@@ -734,7 +734,7 @@ export default function CreateLearnContentForm({
       case 'pull_quote': case 'expert_quote':
         total = 2; // Usually quote and author are required, role is optional
         if (c.quote || c.text) filled++;
-        if (c.author) filled++;
+        if (c.author || c.attribution) filled++;
         break;
       case 'exec_summary': 
         total = 3; 
@@ -744,8 +744,6 @@ export default function CreateLearnContentForm({
         break;
       case 'highlight_card': 
         total = 1; if (c.caption || c.text || c.imageUrl) filled = 1; break;
-      case 'media': 
-        total = 1; if (c.mediaUrl) filled = 1; break;
       case 'strategic_directive': 
         total = 6;
         if (c.urgencyLevel) filled++; if (c.targetPersona) filled++;
