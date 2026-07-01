@@ -17,6 +17,7 @@ import {
   Breadcrumbs,
   Link as MuiLink,
   useTheme,
+  Tooltip,
 } from "@mui/material";
 import {
   ArrowBack as ArrowBackIcon,
@@ -373,6 +374,25 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
   const eraTag = article.tags?.find(t => ['past', 'present', 'future'].includes(t.toLowerCase()))?.toLowerCase();
   const accentColor = eraTag === 'past' ? '#ef4444' : eraTag === 'present' ? '#10b981' : eraTag === 'future' ? '#3b82f6' : ACCENT;
 
+  // Find the index of the currently active block
+  const activeIndex = displayBlocks.findIndex((b: any, i: number) => activeBlockId === `article-block-${b.id || i}`);
+
+  // Helper to estimate proportional height of a block
+  const getBlockWeight = (block: any) => {
+    if (!block || !block.type) return 1;
+    switch (block.type) {
+      case 'paragraph':
+      case 'markdown':
+      case 'heading':
+        return Math.max(1, Math.min(10, (JSON.stringify(block.content || {}).length / 300)));
+      case 'media': return 8;
+      case 'fact_myth': return 5;
+      case 'interactive_poll': return 4;
+      case 'quote': return 3;
+      default: return 2;
+    }
+  };
+
   return (
     <Box sx={{ pb: 12 }}>
       <Box sx={{ maxWidth: { xs: '100%', md: '90%', lg: '85%' }, mx: "auto", px: { xs: 2.5, md: 4, lg: 8 }, pt: { xs: 4, md: 8 }, position: 'relative' }}>
@@ -395,33 +415,41 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: 0.5,
+            gap: 0.4, // Reduced gap so more space can be given to beads
             pointerEvents: 'auto',
             py: 2,
+            height: '70vh', // Slightly taller
+            maxHeight: 650,
           }}>
           {displayBlocks.length > 0 && displayBlocks.map((block: any, idx: number) => {
             const isActive = activeBlockId === `article-block-${block.id || idx}`;
+            const isPast = activeIndex !== -1 && idx < activeIndex;
+            const weight = getBlockWeight(block);
+            
             return (
-              <Box 
-                key={block.id || idx} 
-                onClick={() => {
-                  document.getElementById(`article-block-${block.id || idx}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }}
-                sx={{
-                  flex: 1,
-                  width: isActive ? 6 : 4,
-                  minHeight: 12,
-                  borderRadius: '4px',
-                  bgcolor: isActive ? accentColor : (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(15,23,42,0.1)'),
-                  boxShadow: isActive ? `0 0 12px ${alpha(accentColor, 0.6)}` : 'none',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  cursor: 'pointer',
-                  '&:hover': {
-                    bgcolor: isActive ? accentColor : alpha(accentColor, 0.4),
-                    width: 6,
-                  }
-                }} 
-              />
+              <Tooltip key={block.id || idx} title={String(block.blockType || 'Block').replace('_', ' ').toUpperCase()} placement="left" arrow>
+                <Box 
+                  onClick={() => {
+                    document.getElementById(`article-block-${block.id || idx}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
+                  sx={{
+                    flex: weight, // Distribute proportional space
+                    width: isActive ? 8 : 4,
+                    minHeight: 4, // Crucial: lowered minHeight so flex can work its magic!
+                    borderRadius: 10,
+                    bgcolor: (isActive || isPast) ? accentColor : (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(15,23,42,0.1)'),
+                    boxShadow: isActive ? `0 0 16px ${alpha(accentColor, 0.8)}` : 'none',
+                    opacity: isActive ? 1 : (isPast ? 0.7 : 0.4),
+                    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                    cursor: 'pointer',
+                    '&:hover': {
+                      bgcolor: isActive ? accentColor : alpha(accentColor, 0.6),
+                      width: 8,
+                      opacity: 1
+                    }
+                  }} 
+                />
+              </Tooltip>
             );
           })}
           </Box>

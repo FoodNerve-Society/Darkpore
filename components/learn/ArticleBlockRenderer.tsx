@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react';
 import { Box, IconButton, Tooltip } from '@mui/material';
-import { IosShare as ShareIcon } from '@mui/icons-material';
+import { IosShare as ShareIcon, EditOutlined as EditIcon, HistoryOutlined as HistoryIcon } from '@mui/icons-material';
 import { motion } from 'framer-motion';
+import { useSociety } from '@/context/SocietyContext';
 import { SpikyTitleBlock } from './blocks/SpikyTitleBlock';
 import { KeyTakeawaysBlock } from './blocks/KeyTakeawaysBlock';
 import { BigStatCardBlock } from './blocks/BigStatCardBlock';
@@ -28,6 +29,9 @@ type ArticleBlockRendererProps = {
 };
 
 export const ArticleBlockRenderer: React.FC<ArticleBlockRendererProps> = ({ block, themeMode = 'light', accentColor }) => {
+  const { profile } = useSociety();
+  const canEdit = profile && profile.currentRank >= 4;
+
   let parsedContent: any = {};
   if (typeof block.content === 'string') {
     try {
@@ -73,14 +77,41 @@ export const ArticleBlockRenderer: React.FC<ArticleBlockRendererProps> = ({ bloc
         {blockContent}
       </motion.div>
       
-      {/* Export Button (visible on hover) */}
+      {/* Block Actions (visible on hover) */}
       <Box 
         className="export-btn"
         sx={{ 
           position: 'absolute', top: 16, right: 16, 
-          opacity: 0, transition: 'opacity 0.2s', zIndex: 10 
+          opacity: 0, transition: 'opacity 0.2s', zIndex: 10,
+          display: 'flex', gap: 1
         }}
       >
+        <Tooltip title="View Edit History">
+          <IconButton 
+            sx={{ 
+              bgcolor: themeMode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+              backdropFilter: 'blur(8px)',
+              color: themeMode === 'dark' ? '#fff' : '#0f172a',
+              '&:hover': { bgcolor: themeMode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)' }
+            }}
+          >
+            <HistoryIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+        {canEdit && (
+          <Tooltip title="Edit this Block">
+            <IconButton 
+              sx={{ 
+                bgcolor: themeMode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+                backdropFilter: 'blur(8px)',
+                color: themeMode === 'dark' ? '#fff' : '#0f172a',
+                '&:hover': { bgcolor: themeMode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)' }
+              }}
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
         <Tooltip title="Export Social Card">
           <IconButton 
             onClick={() => setModalOpen(true)}

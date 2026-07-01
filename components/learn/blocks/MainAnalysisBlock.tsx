@@ -1,5 +1,5 @@
-import React from 'react';
-import { Box, Typography } from '@mui/material';
+import React, { useState } from 'react';
+import { Box, Typography, Collapse } from '@mui/material';
 
 type MainAnalysisBlockProps = {
   content: {
@@ -15,6 +15,7 @@ type MainAnalysisBlockProps = {
 
 export const MainAnalysisBlock: React.FC<MainAnalysisBlockProps> = ({ content, themeMode = 'light', accentColor }) => {
   const isDark = themeMode === 'dark';
+  const [showReplies, setShowReplies] = useState(false);
 
   const MOCK_REPLIES = [
     { id: 1, user: "Dr. Sarah Jenkins", avatar: "https://i.pravatar.cc/150?u=sarah", text: "I've seen this happen in our engineering team. It's usually a communication breakdown." },
@@ -88,29 +89,32 @@ export const MainAnalysisBlock: React.FC<MainAnalysisBlockProps> = ({ content, t
 
       {/* Threaded Discussion Prompt */}
       {isComplete && (
-        <Box sx={{ mt: 8, position: 'relative' }}>
-          <Box sx={{ 
-            p: { xs: 3, md: 4 }, 
-            borderRadius: '24px', 
-            bgcolor: isDark ? 'rgba(139, 92, 246, 0.05)' : 'rgba(139, 92, 246, 0.08)', 
-            backdropFilter: 'blur(24px)',
-            border: `1px solid ${isDark ? 'rgba(139, 92, 246, 0.2)' : 'rgba(139, 92, 246, 0.15)'}`,
-            boxShadow: isDark ? 'inset 0 0 0 1px rgba(255,255,255,0.05), 0 8px 32px rgba(0,0,0,0.2)' : 'none',
-            display: 'flex', 
-            alignItems: 'center',
-            gap: 3,
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            cursor: 'pointer',
-            position: 'relative',
-            zIndex: 2,
-            '&:hover': {
-              transform: 'translateY(-2px)',
-              bgcolor: isDark ? 'rgba(139, 92, 246, 0.15)' : 'rgba(139, 92, 246, 0.1)',
-              boxShadow: isDark ? '0 12px 30px rgba(139, 92, 246, 0.15)' : '0 12px 30px rgba(139, 92, 246, 0.12)',
-              borderColor: isDark ? 'rgba(139, 92, 246, 0.4)' : 'rgba(139, 92, 246, 0.3)',
-              '& .discuss-icon': { transform: 'scale(1.1) rotate(5deg)' }
-            }
-          }}>
+        <Box sx={{ mt: 4, position: 'relative' }}>
+          <Box 
+            onClick={() => setShowReplies(!showReplies)}
+            sx={{ 
+              p: { xs: 2.5, md: 3 }, 
+              borderRadius: '20px', 
+              bgcolor: isDark ? 'rgba(139, 92, 246, 0.05)' : 'rgba(139, 92, 246, 0.08)', 
+              backdropFilter: 'blur(24px)',
+              border: `1px solid ${isDark ? 'rgba(139, 92, 246, 0.2)' : 'rgba(139, 92, 246, 0.15)'}`,
+              boxShadow: isDark ? 'inset 0 0 0 1px rgba(255,255,255,0.05), 0 4px 20px rgba(0,0,0,0.1)' : 'none',
+              display: 'flex', 
+              alignItems: 'center',
+              gap: 2,
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              cursor: 'pointer',
+              position: 'relative',
+              zIndex: 2,
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                bgcolor: isDark ? 'rgba(139, 92, 246, 0.15)' : 'rgba(139, 92, 246, 0.1)',
+                boxShadow: isDark ? '0 12px 30px rgba(139, 92, 246, 0.15)' : '0 12px 30px rgba(139, 92, 246, 0.12)',
+                borderColor: isDark ? 'rgba(139, 92, 246, 0.4)' : 'rgba(139, 92, 246, 0.3)',
+                '& .discuss-icon': { transform: 'scale(1.1) rotate(5deg)' }
+              }
+            }}
+          >
             <Box sx={{ flex: 1 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
                 <Typography sx={{ fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', color: '#8b5cf6', letterSpacing: '0.05em' }}>
@@ -120,12 +124,12 @@ export const MainAnalysisBlock: React.FC<MainAnalysisBlockProps> = ({ content, t
                   24 Replies
                 </Box>
               </Box>
-              <Typography sx={{ color: isDark ? '#f8fafc' : '#0f172a', fontWeight: 600, fontSize: '1.15rem' }}>
+              <Typography sx={{ color: isDark ? '#f8fafc' : '#0f172a', fontWeight: 600, fontSize: '1rem' }}>
                 {content.discussionPrompt || "What are your main takeaways from this analysis?"}
               </Typography>
             </Box>
             <Box className="discuss-icon" sx={{ 
-              width: 44, height: 44, borderRadius: '50%', 
+              width: 40, height: 40, borderRadius: '50%', 
               bgcolor: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: '#fff', flexShrink: 0,
               boxShadow: '0 4px 12px rgba(139,92,246,0.3)',
@@ -137,34 +141,36 @@ export const MainAnalysisBlock: React.FC<MainAnalysisBlockProps> = ({ content, t
           </Box>
 
           {/* Thread Preview */}
-          <Box sx={{ pl: 4, pt: 2, display: 'flex', flexDirection: 'column', gap: 2, position: 'relative' }}>
-            <Box sx={{ position: 'absolute', top: -20, bottom: 24, left: 32, width: 2, bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }} />
-            
-            {MOCK_REPLIES.map(reply => (
-              <Box key={reply.id} sx={{ 
-                p: 2, pl: 2.5, borderRadius: '16px', 
-                bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
-                border: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)'}`,
-                display: 'flex', gap: 2, alignItems: 'flex-start',
-                position: 'relative',
-                width: '90%', ml: 'auto'
-              }}>
-                <img src={reply.avatar} alt={reply.user} style={{ width: 28, height: 28, borderRadius: '50%', border: '2px solid rgba(139,92,246,0.3)' }} />
-                <Box>
-                  <Typography sx={{ fontWeight: 800, fontSize: '0.8rem', color: isDark ? '#e2e8f0' : '#475569' }}>{reply.user}</Typography>
-                  <Typography sx={{ fontSize: '0.9rem', color: isDark ? 'rgba(255,255,255,0.6)' : '#64748b', mt: 0.25, lineHeight: 1.4 }}>{reply.text}</Typography>
+          <Collapse in={showReplies}>
+            <Box sx={{ pl: 4, pt: 3, display: 'flex', flexDirection: 'column', gap: 2, position: 'relative' }}>
+              <Box sx={{ position: 'absolute', top: -10, bottom: 24, left: 32, width: 2, bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }} />
+              
+              {MOCK_REPLIES.map(reply => (
+                <Box key={reply.id} sx={{ 
+                  p: 2, pl: 2.5, borderRadius: '16px', 
+                  bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
+                  border: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)'}`,
+                  display: 'flex', gap: 2, alignItems: 'flex-start',
+                  position: 'relative',
+                  width: '90%', ml: 'auto'
+                }}>
+                  <img src={reply.avatar} alt={reply.user} style={{ width: 28, height: 28, borderRadius: '50%', border: '2px solid rgba(139,92,246,0.3)' }} />
+                  <Box>
+                    <Typography sx={{ fontWeight: 800, fontSize: '0.8rem', color: isDark ? '#e2e8f0' : '#475569' }}>{reply.user}</Typography>
+                    <Typography sx={{ fontSize: '0.9rem', color: isDark ? 'rgba(255,255,255,0.6)' : '#64748b', mt: 0.25, lineHeight: 1.4 }}>{reply.text}</Typography>
+                  </Box>
                 </Box>
-              </Box>
-            ))}
+              ))}
 
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: '10%', pl: 1, cursor: 'pointer', '&:hover p': { color: '#8b5cf6', textDecoration: 'underline' } }}>
-              <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#8b5cf6' }} />
-              <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: 'rgba(139,92,246,0.5)' }} />
-              <Typography sx={{ fontSize: '0.85rem', fontWeight: 800, color: isDark ? 'rgba(255,255,255,0.5)' : '#94a3b8', transition: 'color 0.2s' }}>
-                View all 24 replies
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: '10%', pl: 1, cursor: 'pointer', '&:hover p': { color: '#8b5cf6', textDecoration: 'underline' } }}>
+                <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#8b5cf6' }} />
+                <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: 'rgba(139,92,246,0.5)' }} />
+                <Typography sx={{ fontSize: '0.85rem', fontWeight: 800, color: isDark ? 'rgba(255,255,255,0.5)' : '#94a3b8', transition: 'color 0.2s' }}>
+                  View all 24 replies
+                </Typography>
+              </Box>
             </Box>
-          </Box>
+          </Collapse>
         </Box>
       )}
     </Box>

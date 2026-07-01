@@ -18,8 +18,7 @@ export default function ArticleReaderPageWrapper() {
           p: { xs: 0, md: 3 }, 
           borderRadius: { xs: 0, md: 4 }, 
           minHeight: "100vh", 
-          bgcolor: 'background.paper',
-          overflow: 'hidden'
+          bgcolor: 'background.paper'
         }}
       >
         <ArticleReader slug={slug} />
