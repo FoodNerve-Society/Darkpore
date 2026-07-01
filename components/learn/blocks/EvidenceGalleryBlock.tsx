@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Box, Typography, Modal, IconButton, Backdrop, Fade, Link } from '@mui/material';
-import { Close as CloseIcon, Fullscreen as FullscreenIcon, ChevronLeft, ChevronRight } from '@mui/icons-material';
+import { Close as CloseIcon, Fullscreen as FullscreenIcon, ChevronLeft, ChevronRight, PlayArrow } from '@mui/icons-material';
 import { Tweet } from 'react-tweet';
+import PremiumVideoPlayer from './PremiumVideoPlayer';
 
 const getTweetId = (url: string) => {
   if (!url) return null;
@@ -11,6 +12,7 @@ const getTweetId = (url: string) => {
 
 export type EvidenceItem = {
   url: string;
+  mediaType?: 'image' | 'video';
   caption?: string;
   sourceName?: string;
   sourceUrl?: string;
@@ -191,12 +193,24 @@ export const EvidenceGalleryBlock: React.FC<EvidenceGalleryBlockProps> = ({ cont
                   </Box>
                 ) : (
                   <>
-                    <img 
-                      src={item.url} 
-                      alt={item.caption || 'Evidence'} 
-                      style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                    />
+                    {item.mediaType === 'video' || (item.url.match(/\.(mp4|webm|ogg)$/i) !== null) ? (
+                      <Box sx={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <video 
+                          src={item.url} 
+                          style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                        />
+                        <Box sx={{ position: 'absolute', width: 60, height: 60, borderRadius: '50%', bgcolor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <PlayArrow sx={{ color: '#fff', fontSize: 36 }} />
+                        </Box>
+                      </Box>
+                    ) : (
+                      <img 
+                        src={item.url} 
+                        alt={item.caption || 'Evidence'} 
+                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                      />
+                    )}
                     <Box 
                       className="overlay"
                       sx={{
@@ -226,7 +240,17 @@ export const EvidenceGalleryBlock: React.FC<EvidenceGalleryBlockProps> = ({ cont
                 }}
               >
                 {item.caption && (
-                  <Typography sx={{ color: isDark ? '#f8fafc' : '#0f172a', fontWeight: 600, fontSize: '0.9rem', lineHeight: 1.4 }}>
+                  <Typography sx={{ 
+                    color: isDark ? '#f8fafc' : '#0f172a', 
+                    fontWeight: 600, 
+                    fontSize: '0.9rem', 
+                    lineHeight: 1.4,
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                  }}>
                     {item.caption}
                   </Typography>
                 )}
@@ -251,7 +275,7 @@ export const EvidenceGalleryBlock: React.FC<EvidenceGalleryBlockProps> = ({ cont
       {/* Pagination Numbers */}
       {!isSingle && (
         <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mt: 2 }}>
-          {validItems.map((_, idx) => (
+          {validItems.map((item, idx) => (
             <Box
               key={idx}
               onClick={() => scrollToItem(idx)}
@@ -268,7 +292,7 @@ export const EvidenceGalleryBlock: React.FC<EvidenceGalleryBlockProps> = ({ cont
                 }
               }}
             >
-              {idx + 1}
+              {item.mediaType === 'video' || (item.url.match(/\.(mp4|webm|ogg)$/i) !== null) ? <PlayArrow sx={{ fontSize: 16 }} /> : idx + 1}
             </Box>
           ))}
         </Box>
@@ -302,12 +326,18 @@ export const EvidenceGalleryBlock: React.FC<EvidenceGalleryBlockProps> = ({ cont
             )}
 
             {selectedImageIndex !== null && validItems[selectedImageIndex] && (
-              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', px: { xs: 6, md: 10 } }}>
-                <img 
-                  src={validItems[selectedImageIndex].url} 
-                  alt={validItems[selectedImageIndex].caption || 'Fullscreen Evidence'}
-                  style={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain', borderRadius: '8px' }} 
-                />
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', px: { xs: 6, md: 10 }, width: '100%' }}>
+                {validItems[selectedImageIndex].mediaType === 'video' || (validItems[selectedImageIndex].url.match(/\.(mp4|webm|ogg)$/i) !== null) ? (
+                  <Box sx={{ width: '100%', maxWidth: '1000px', height: '70vh' }}>
+                    <PremiumVideoPlayer src={validItems[selectedImageIndex].url} />
+                  </Box>
+                ) : (
+                  <img 
+                    src={validItems[selectedImageIndex].url} 
+                    alt={validItems[selectedImageIndex].caption || 'Fullscreen Evidence'}
+                    style={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain', borderRadius: '8px' }} 
+                  />
+                )}
                 <Box sx={{ mt: 2, textAlign: 'center', maxWidth: '800px' }}>
                   {validItems[selectedImageIndex].caption && (
                     <Typography sx={{ color: '#fff', fontWeight: 600, fontSize: '1.1rem' }}>

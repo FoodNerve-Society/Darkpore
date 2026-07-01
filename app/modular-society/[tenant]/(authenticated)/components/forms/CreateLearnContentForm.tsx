@@ -71,6 +71,7 @@ import PremiumTextField from '@/components/PremiumTextField';
 import PremiumAutocomplete from '@/components/PremiumAutocomplete';
 import PremiumButton from '@/components/PremiumButton';
 import PremiumMarkdownEditor from '@/components/PremiumMarkdownEditor';
+import PremiumVideoPlayer from '@/components/learn/blocks/PremiumVideoPlayer';
 
 // ----------------------------------------------------------------------
 // POLL OPTIONS EDITOR
@@ -152,6 +153,13 @@ function EvidenceGalleryEditor({ initialItems, onChange, color, blockId, uploadF
     onChange(newItems);
   };
 
+  const updateItemFields = (index: number, fields: Record<string, string>) => {
+    const newItems = [...items];
+    newItems[index] = { ...newItems[index], ...fields };
+    setItems(newItems);
+    onChange(newItems);
+  };
+
   const addItem = () => {
     const newItems = [...items, { url: '', caption: '', sourceName: '', sourceUrl: '' }];
     setItems(newItems);
@@ -199,12 +207,20 @@ function EvidenceGalleryEditor({ initialItems, onChange, color, blockId, uploadF
           <Box component="label" sx={{ flex: 1, borderRadius: '16px', overflow: 'hidden', bgcolor: 'rgba(0,0,0,0.02)', border: '2px dashed', borderColor: item.url ? 'transparent' : 'rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 180, cursor: 'pointer', position: 'relative', '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' } }}>
             <input type="file" hidden accept="image/*,video/*" onChange={(e) => {
               if (e.target.files?.[0]) {
-                const objUrl = uploadFn(blockId, e.target.files[0]);
-                updateItem(i, 'url', objUrl);
+                const file = e.target.files[0];
+                const objUrl = uploadFn(blockId, file);
+                const isVideo = file.type.startsWith('video/');
+                updateItemFields(i, { url: objUrl, mediaType: isVideo ? 'video' : 'image' });
               }
             }} />
             {item.url ? (
-              <img src={item.url} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+              item.mediaType === 'video' || (item.url.match(/\.(mp4|webm|ogg)$/i) !== null) ? (
+                <Box sx={{ width: '100%', height: '100%' }}>
+                  <PremiumVideoPlayer src={item.url} autoPlay={false} />
+                </Box>
+              ) : (
+                <img src={item.url} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+              )
             ) : (
               <>
                 <ImageIcon sx={{ fontSize: 40, color: 'rgba(0,0,0,0.2)', mb: 1 }} />
