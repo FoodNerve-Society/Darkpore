@@ -257,7 +257,11 @@ export async function getLearnContent(options?: { swimlane?: LearnSwimlane; limi
       tags,
       wahaalaCategories: [],
       thumbnailUrl: r.thumbnailUrl || '',
-      articleBlocks: r.article?.blocks || []
+      articleBlocks: (r.article?.blocks || []).map((b: any) => {
+        let parsedContent = {};
+        try { parsedContent = typeof b.content === 'string' ? JSON.parse(b.content) : b.content; } catch(e) {}
+        return { ...b, content: parsedContent };
+      })
     };
   })));
 }
