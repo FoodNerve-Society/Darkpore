@@ -39,6 +39,7 @@ import {
   FavoriteBorder as FavoriteBorderIcon,
   BookmarkBorder as BookmarkBorderIcon,
   Share as ShareIcon,
+  Image as ImageIcon,
 } from '@mui/icons-material';
 import { keyframes } from '@mui/system';
 import {
@@ -174,10 +175,12 @@ function EvidenceGalleryEditor({ initialItems, onChange, color, blockId, uploadF
             </IconButton>
           )}
           <Box sx={{ flex: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <PremiumTextField
-              fullWidth label={`Image ${i + 1} URL`} size="small" colorTheme={color}
-              placeholder="https://..." value={item.url || ''} onChange={e => updateItem(i, 'url', e.target.value)}
-            />
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+              <PremiumTextField
+                fullWidth label={`Media/Embed URL`} size="small" colorTheme={color}
+                placeholder="https://... or paste Twitter URL" value={item.url || ''} onChange={e => updateItem(i, 'url', e.target.value)}
+              />
+            </Box>
             <PremiumTextField
               fullWidth label="Caption" size="small" colorTheme={color}
               placeholder="Describe this visual..." value={item.caption || ''} onChange={e => updateItem(i, 'caption', e.target.value)}
@@ -193,11 +196,21 @@ function EvidenceGalleryEditor({ initialItems, onChange, color, blockId, uploadF
               />
             </Box>
           </Box>
-          <Box sx={{ flex: 1, borderRadius: '12px', overflow: 'hidden', bgcolor: 'rgba(0,0,0,0.03)', border: '1px dashed rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 120 }}>
+          <Box component="label" sx={{ flex: 1, borderRadius: '16px', overflow: 'hidden', bgcolor: 'rgba(0,0,0,0.02)', border: '2px dashed', borderColor: item.url ? 'transparent' : 'rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 180, cursor: 'pointer', position: 'relative', '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' } }}>
+            <input type="file" hidden accept="image/*,video/*" onChange={(e) => {
+              if (e.target.files?.[0]) {
+                const objUrl = uploadFn(blockId, e.target.files[0]);
+                updateItem(i, 'url', objUrl);
+              }
+            }} />
             {item.url ? (
-              <img src={item.url} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+              <img src={item.url} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
             ) : (
-              <Typography sx={{ color: '#94a3b8', fontSize: '0.8rem', fontWeight: 600 }}>Media Preview</Typography>
+              <>
+                <ImageIcon sx={{ fontSize: 40, color: 'rgba(0,0,0,0.2)', mb: 1 }} />
+                <Typography sx={{ color: '#64748b', fontSize: '0.85rem', fontWeight: 600 }}>Click to upload media</Typography>
+                <Typography sx={{ color: '#94a3b8', fontSize: '0.75rem', mt: 0.5 }}>or paste an Embed URL</Typography>
+              </>
             )}
           </Box>
         </Box>
@@ -422,6 +435,13 @@ export default function CreateLearnContentForm({
     updateBlock(blockId, field, objectUrl);
   };
 
+  const registerNestedUpload = (blockId: string, file: File) => {
+    const objectUrl = URL.createObjectURL(file);
+    // Use a composite key including the unique blob URL so we can store multiple files per block
+    setPendingFiles(prev => ({ ...prev, [`${blockId}::${objectUrl}`]: file }));
+    return objectUrl;
+  };
+
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % SLIDESHOW_IMAGES.length);
@@ -628,7 +648,9 @@ export default function CreateLearnContentForm({
     if (flippedBlockId === id) setFlippedBlockId(null);
     setPendingFiles(prev => {
       const newFiles = { ...prev };
-      delete newFiles[id];
+      Object.keys(newFiles).forEach(k => {
+        if (k === id || k.startsWith(`${id}::`)) delete newFiles[k];
+      });
       return newFiles;
     });
   };
@@ -724,18 +746,33 @@ export default function CreateLearnContentForm({
       let finalBlocks = [...blocks];
       const pendingBlockIds = Object.keys(pendingFiles);
       
-      for (const blockId of pendingBlockIds) {
-        const file = pendingFiles[blockId];
+      for (const pendingKey of pendingBlockIds) {
+        const file = pendingFiles[pendingKey];
         const res = await uploadFile(file);
         if (res?.secure_url) {
+          // If the key is composite (e.g. blockId::blobUrl), extract the blockId. Otherwise it's the raw blockId.
+          const blockId = pendingKey.includes('::') ? pendingKey.split('::')[0] : pendingKey;
+          const targetBlobUrl = pendingKey.includes('::') ? pendingKey.split('::').slice(1).join('::') : null;
+
           finalBlocks = finalBlocks.map(b => {
             if (b.id === blockId) {
-              const newContent = { ...b.content };
-              Object.keys(newContent).forEach(k => {
-                if (typeof newContent[k] === 'string' && newContent[k].startsWith('blob:')) {
-                  newContent[k] = res.secure_url;
-                }
-              });
+              const newContent = JSON.parse(JSON.stringify(b.content)); // deep clone
+              
+              const replaceBlobDeep = (obj: any) => {
+                if (!obj) return;
+                Object.keys(obj).forEach(k => {
+                  if (typeof obj[k] === 'string' && obj[k].startsWith('blob:')) {
+                    // If targetBlobUrl is specified, only replace exact matches. Otherwise replace any blob (legacy behavior)
+                    if (!targetBlobUrl || obj[k] === targetBlobUrl) {
+                      obj[k] = res.secure_url;
+                    }
+                  } else if (typeof obj[k] === 'object' && obj[k] !== null) {
+                    replaceBlobDeep(obj[k]);
+                  }
+                });
+              };
+              
+              replaceBlobDeep(newContent);
               return { ...b, content: newContent };
             }
             return b;
@@ -1524,7 +1561,7 @@ export default function CreateLearnContentForm({
                                       onChange={(newItems) => updateBlock(b.id, 'items', newItems)}
                                       color={color}
                                       blockId={b.id}
-                                      uploadFn={handleImageUpload}
+                                      uploadFn={registerNestedUpload}
                                       uploading={uploading}
                                     />
                                     <PremiumTextField colorTheme={color}

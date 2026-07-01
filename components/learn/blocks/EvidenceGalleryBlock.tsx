@@ -1,6 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Box, Typography, Modal, IconButton, Backdrop, Fade, Link } from '@mui/material';
 import { Close as CloseIcon, Fullscreen as FullscreenIcon, ChevronLeft, ChevronRight } from '@mui/icons-material';
+import { Tweet } from 'react-tweet';
+
+const getTweetId = (url: string) => {
+  if (!url) return null;
+  const match = url.match(/(?:twitter\.com|x\.com)\/(?:#!\/)?(\w+)\/status(es)?\/(\d+)/);
+  return match ? match[3] : null;
+};
 
 export type EvidenceItem = {
   url: string;
@@ -148,7 +155,12 @@ export const EvidenceGalleryBlock: React.FC<EvidenceGalleryBlockProps> = ({ cont
                 }
               }}
             >
-              {/* Image Card */}
+              {/* Media Card */}
+              {(() => {
+                const tweetId = getTweetId(item.url);
+                const isTweet = !!tweetId;
+
+                return (
               <Box 
                 sx={{ 
                   position: 'relative',
@@ -156,40 +168,52 @@ export const EvidenceGalleryBlock: React.FC<EvidenceGalleryBlockProps> = ({ cont
                   overflow: 'hidden',
                   bgcolor: isDark ? '#000' : '#f8fafc',
                   border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'}`,
-                  height: isSingle ? { xs: 260, md: 320 } : 'auto',
-                  aspectRatio: isSingle ? 'auto' : '1/1',
-                  cursor: isActive ? 'zoom-in' : 'pointer',
+                  height: isSingle ? (isTweet ? 'auto' : { xs: 260, md: 320 }) : (isTweet ? 'auto' : 'auto'),
+                  aspectRatio: isSingle || isTweet ? 'auto' : '1/1',
+                  cursor: isActive && !isTweet ? 'zoom-in' : 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  '&:hover .overlay': { opacity: isActive ? 1 : 0 },
+                  '&:hover .overlay': { opacity: isActive && !isTweet ? 1 : 0 },
                   boxShadow: isActive && !isSingle ? (isDark ? '0 20px 40px -10px rgba(0,0,0,0.6)' : '0 20px 40px -10px rgba(0,0,0,0.15)') : 'none',
                   transition: 'box-shadow 0.5s cubic-bezier(0.25, 0.8, 0.25, 1)',
+                  // Tweaking styles so react-tweet fits perfectly without expanding width
+                  '& .react-tweet-theme': { m: 0, width: '100%', maxWidth: '100%', pointerEvents: isActive ? 'auto' : 'none' }
                 }}
                 onClick={(e) => {
-                  if (isActive) {
+                  if (isActive && !isTweet) {
                     e.stopPropagation();
                     setSelectedImageIndex(index);
                   }
                 }}
               >
-                <img 
-                  src={item.url} 
-                  alt={item.caption || 'Evidence'} 
-                  style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                />
-                <Box 
-                  className="overlay"
-                  sx={{
-                    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-                    bgcolor: 'rgba(0,0,0,0.3)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    opacity: 0, transition: 'opacity 0.2s',
-                    backdropFilter: 'blur(2px)'
-                  }}
-                >
-                  <FullscreenIcon sx={{ color: '#fff', fontSize: '3rem' }} />
-                </Box>
+                {isTweet ? (
+                  <Box sx={{ width: '100%', p: 0, '& > div': { margin: 0, maxWidth: '100%' } }}>
+                    <Tweet id={tweetId} />
+                  </Box>
+                ) : (
+                  <>
+                    <img 
+                      src={item.url} 
+                      alt={item.caption || 'Evidence'} 
+                      style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    />
+                    <Box 
+                      className="overlay"
+                      sx={{
+                        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                        bgcolor: 'rgba(0,0,0,0.3)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        opacity: 0, transition: 'opacity 0.2s',
+                        backdropFilter: 'blur(2px)'
+                      }}
+                    >
+                      <FullscreenIcon sx={{ color: '#fff', fontSize: '3rem' }} />
+                    </Box>
+                  </>
+                )}
               </Box>
+              );
+              })()}
 
               {/* Caption & Source Attribution */}
               <Box 
