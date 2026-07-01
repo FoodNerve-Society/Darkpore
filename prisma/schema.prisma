@@ -192,6 +192,7 @@ model LearnContent {
   authorId        String?
   authorName      String?
   authorAvatarUrl String?
+  collaborators   String   @default("[]") // JSON array of collaborator objects { name, uid, role, timestamp }
   isVerified      Boolean  @default(false)
   isPaid          Boolean  @default(false)
   costNP          Int?

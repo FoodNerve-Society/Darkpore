@@ -1371,48 +1371,69 @@ export default function CreateLearnContentForm({
                                     />
                                   </Box>
                                 )}
-                                {b.type === 'myth_fact' && (
-                                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                                    {(b.content.pairs || [{ myth: '', fact: '' }]).map((pair: any, idx: number) => (
-                                      <Box key={idx} sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3, alignItems: { xs: 'stretch', md: 'center' } }}>
-                                        <PremiumTextField colorTheme={color}
-                                          fullWidth  label={`Myth ${idx + 1}`}
-                                          placeholder="What stakeholders believed..." value={pair.myth} onChange={e => {
-                                            const newPairs = [...(b.content.pairs || [{ myth: '', fact: '' }])];
-                                            newPairs[idx].myth = e.target.value;
-                                            updateBlock(b.id, 'pairs', newPairs);
-                                          }}
-                                          sx={{ '& .MuiOutlinedInput-root': { borderRadius: '14px', color: '#0f172a', bgcolor: alpha(color, 0.03), '& fieldset': { borderColor: alpha(color, 0.2) }, '&:hover fieldset': { borderColor: alpha(color, 0.5) }, '&.Mui-focused fieldset': { borderColor: color, borderWidth: 2 } }, '& .MuiInputLabel-root': { color: '#475569', fontWeight: 600 } }}
-                                        />
-                                        <PremiumTextField colorTheme={color}
-                                          fullWidth  label={`Reality ${idx + 1}`}
-                                          placeholder="What actually happened..." value={pair.fact} onChange={e => {
-                                            const newPairs = [...(b.content.pairs || [{ myth: '', fact: '' }])];
-                                            newPairs[idx].fact = e.target.value;
-                                            updateBlock(b.id, 'pairs', newPairs);
-                                          }}
-                                          sx={{ '& .MuiOutlinedInput-root': { borderRadius: '14px', color: '#0f172a', bgcolor: alpha(color, 0.03), '& fieldset': { borderColor: alpha(color, 0.2) }, '&:hover fieldset': { borderColor: alpha(color, 0.5) }, '&.Mui-focused fieldset': { borderColor: color, borderWidth: 2 } }, '& .MuiInputLabel-root': { color: '#475569', fontWeight: 600 } }}
-                                        />
-                                        {idx > 0 && (
-                                          <IconButton onClick={() => {
-                                            const newPairs = (b.content.pairs || [{ myth: '', fact: '' }]).filter((_: any, i: number) => i !== idx);
-                                            updateBlock(b.id, 'pairs', newPairs);
-                                          }} sx={{ flexShrink: 0, alignSelf: { xs: 'flex-end', md: 'center' }, color: '#ef4444' }}>
-                                            <DeleteIcon />
-                                          </IconButton>
-                                        )}
-                                      </Box>
-                                    ))}
-                                    <Button
-                                      
-                                      onClick={() => {
-                                        const newPairs = [...(b.content.pairs || [{ myth: '', fact: '' }]), { myth: '', fact: '' }];
-                                        updateBlock(b.id, 'pairs', newPairs);
-                                      }}
-                                      sx={{ alignSelf: 'flex-start', borderRadius: '10px', textTransform: 'none', fontWeight: 700, borderColor: alpha(color, 0.4), color, '&:hover': { borderColor: color, bgcolor: alpha(color, 0.05) } }}
-                                    >
-                                      + Add Another Myth/Fact Pair
-                                    </Button>
+                                  {b.type === 'myth_fact' && (
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                      {(b.content.pairs || [{ myth: '', fact: '' }]).map((pair: any, idx: number) => (
+                                        <Box key={idx} sx={{ 
+                                          display: 'flex', flexDirection: 'column', gap: 2, 
+                                          p: 3, borderRadius: '16px', 
+                                          bgcolor: alpha(color, 0.02),
+                                          border: `1px solid ${alpha(color, 0.1)}`,
+                                          position: 'relative'
+                                        }}>
+                                          {idx > 0 && (
+                                            <IconButton onClick={() => {
+                                              const newPairs = (b.content.pairs || [{ myth: '', fact: '' }]).filter((_: any, i: number) => i !== idx);
+                                              updateBlock(b.id, 'pairs', newPairs);
+                                            }} sx={{ position: 'absolute', top: 8, right: 8, color: '#ef4444' }}>
+                                              <DeleteIcon fontSize="small" />
+                                            </IconButton>
+                                          )}
+                                          
+                                          <PremiumMarkdownEditor colorTheme={color}
+                                            fullWidth multiline rows={4} label={`Myth ${idx + 1}`}
+                                            placeholder="What stakeholders believed..." value={pair.myth} onChange={(e: any) => {
+                                              const newPairs = [...(b.content.pairs || [{ myth: '', fact: '' }])];
+                                              newPairs[idx].myth = e.target.value;
+                                              updateBlock(b.id, 'pairs', newPairs);
+                                            }}
+                                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: '14px', color: '#0f172a', bgcolor: alpha(color, 0.03), '& fieldset': { borderColor: alpha(color, 0.2) }, '&:hover fieldset': { borderColor: alpha(color, 0.5) }, '&.Mui-focused fieldset': { borderColor: color, borderWidth: 2 } }, '& .MuiInputLabel-root': { color: '#475569', fontWeight: 600 } }}
+                                          />
+                                          <PremiumMarkdownEditor colorTheme={color}
+                                            fullWidth multiline rows={4} label={`Reality ${idx + 1}`}
+                                            placeholder="What actually happened..." value={pair.fact} onChange={(e: any) => {
+                                              const newPairs = [...(b.content.pairs || [{ myth: '', fact: '' }])];
+                                              newPairs[idx].fact = e.target.value;
+                                              updateBlock(b.id, 'pairs', newPairs);
+                                            }}
+                                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: '14px', color: '#0f172a', bgcolor: alpha(color, 0.03), '& fieldset': { borderColor: alpha(color, 0.2) }, '&:hover fieldset': { borderColor: alpha(color, 0.5) }, '&.Mui-focused fieldset': { borderColor: color, borderWidth: 2 } }, '& .MuiInputLabel-root': { color: '#475569', fontWeight: 600 } }}
+                                          />
+                                        </Box>
+                                      ))}
+                                      <Button
+                                        
+                                        onClick={() => {
+                                          const newPairs = [...(b.content.pairs || [{ myth: '', fact: '' }]), { myth: '', fact: '' }];
+                                          updateBlock(b.id, 'pairs', newPairs);
+                                        }}
+                                        sx={{ 
+                                          alignSelf: 'flex-start', borderRadius: '12px', textTransform: 'none', fontWeight: 700, 
+                                          px: 3, py: 1.5,
+                                          background: `linear-gradient(135deg, ${alpha(color, 0.1)}, ${alpha(color, 0.2)})`,
+                                          color: color, 
+                                          border: `1px solid ${alpha(color, 0.3)}`,
+                                          backdropFilter: 'blur(8px)',
+                                          boxShadow: `0 4px 12px ${alpha(color, 0.1)}`,
+                                          transition: 'all 0.3s ease',
+                                          '&:hover': { 
+                                            background: `linear-gradient(135deg, ${alpha(color, 0.15)}, ${alpha(color, 0.3)})`,
+                                            boxShadow: `0 6px 16px ${alpha(color, 0.2)}`,
+                                            transform: 'translateY(-1px)'
+                                          } 
+                                        }}
+                                      >
+                                        + Add Another Myth/Fact Pair
+                                      </Button>
                                     <PremiumTextField colorTheme={color}
                                       fullWidth  label="Discussion Prompt (Optional)"
                                       placeholder="Is this myth still prevalent in your sector?" value={b.content.discussionPrompt || ''} onChange={e => updateBlock(b.id, 'discussionPrompt', e.target.value)}
