@@ -232,6 +232,7 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
   const [hearted, setHearted] = useState(false);
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
   const [activeInsightBlockId, setActiveInsightBlockId] = useState<string | null>(null);
+  const activeBlock = article?.blocks?.find((b: any) => b.id === activeInsightBlockId) || null;
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
@@ -509,11 +510,24 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
             )}
           </Box>
 
-          {/* Title - rendered from article.title if available, otherwise it falls back to the spiky title block */}
-          {article.title && (
+          {/* Title - only show if there is no SpikyTitleBlock (subheading) at the top */}
+          {!displayBlocks.some((b: any) => b.blockType === 'subheading') && article.title && (
             <Typography variant="h2" sx={{ fontWeight: 900, mb: 4, fontSize: { xs: '2rem', md: '3rem' }, lineHeight: 1.1, color: theme.palette.mode === 'dark' ? '#fff' : '#0f172a' }}>
               {article.title}
             </Typography>
+          )}
+
+          {/* Render the first block if it's a subheading, so metadata appears below it */}
+          {displayBlocks[0]?.blockType === 'subheading' && (
+            <Box id={`article-block-${displayBlocks[0].id}`} sx={{ mb: 4 }}>
+              <ArticleBlockRenderer 
+                block={displayBlocks[0]} 
+                themeMode={theme.palette.mode} 
+                accentColor={accentColor} 
+                onOpenInsights={(id) => setActiveInsightBlockId(id)}
+                author={article.author}
+              />
+            </Box>
           )}
 
           {/* Metadata & Actions Row */}
@@ -628,7 +642,7 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
         </Box>
 
         {/* ═══════════════════════ ARTICLE BODY ═══════════════════════ */}
-        {displayBlocks.length > 0 && displayBlocks.map((block: any, idx: number) => (
+        {displayBlocks.length > 0 && displayBlocks.slice(displayBlocks[0]?.blockType === 'subheading' ? 1 : 0).map((block: any, idx: number) => (
           <Box id={`article-block-${block.id || idx}`} key={block.id || idx} sx={{ mb: 5 }}>
             <ArticleBlockRenderer 
               block={block} 
@@ -646,7 +660,8 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
       <BlockInsightsDrawer 
         open={!!activeInsightBlockId} 
         onClose={() => setActiveInsightBlockId(null)} 
-        blockId={activeInsightBlockId} 
+        blockId={activeInsightBlockId}
+        activeBlock={activeBlock}
       />
     </Box>
   );

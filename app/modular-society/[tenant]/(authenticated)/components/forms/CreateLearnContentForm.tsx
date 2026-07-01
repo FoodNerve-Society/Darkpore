@@ -764,6 +764,8 @@ export default function CreateLearnContentForm({
   };
 
   const handleSubmit = async (isPublish = true) => {
+    if (loading) return;
+    
     let finalTitle = title;
     let finalDesc = description;
 

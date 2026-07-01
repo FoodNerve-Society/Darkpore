@@ -17,13 +17,22 @@ export interface BlockInsightsDrawerProps {
   open: boolean;
   onClose: () => void;
   blockId: string | null;
+  activeBlock?: any;
 }
 
-export const BlockInsightsDrawer: React.FC<BlockInsightsDrawerProps> = ({ open, onClose, blockId }) => {
+export const BlockInsightsDrawer: React.FC<BlockInsightsDrawerProps> = ({ open, onClose, blockId, activeBlock }) => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const { profile } = useSociety();
   const [commentText, setCommentText] = useState('');
+
+  // Parse activeBlock content if it's a string
+  let parsedContent = activeBlock?.content || {};
+  if (typeof parsedContent === 'string') {
+    try {
+      parsedContent = JSON.parse(parsedContent);
+    } catch (e) {}
+  }
 
   // Mock comments for demonstration
   const comments = [
@@ -88,6 +97,23 @@ export const BlockInsightsDrawer: React.FC<BlockInsightsDrawerProps> = ({ open, 
           <CloseIcon />
         </IconButton>
       </Box>
+
+      {/* Block Context Snippet */}
+      {activeBlock && (
+        <Box sx={{ 
+          p: 2, mx: 3, mt: 3, mb: 1, 
+          bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', 
+          borderRadius: '12px',
+          borderLeft: `4px solid #8b5cf6`
+        }}>
+          <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: '#8b5cf6', textTransform: 'uppercase', mb: 0.5 }}>
+            Commenting on:
+          </Typography>
+          <Typography sx={{ fontSize: '0.85rem', color: isDark ? '#cbd5e1' : '#475569', fontStyle: 'italic', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+            {parsedContent?.text || parsedContent?.discussionPrompt || parsedContent?.bionicText?.replace(/<[^>]+>/g, '') || 'Selected Block'}
+          </Typography>
+        </Box>
+      )}
 
       {/* Comments List */}
       <Box sx={{ p: 3, flex: 1, overflowY: 'auto' }}>
