@@ -626,6 +626,11 @@ export default function CreateLearnContentForm({
   const removeBlock = (id: string) => {
     setBlocks(blocks.filter(b => b.id !== id));
     if (flippedBlockId === id) setFlippedBlockId(null);
+    setPendingFiles(prev => {
+      const newFiles = { ...prev };
+      delete newFiles[id];
+      return newFiles;
+    });
   };
 
   const moveBlock = useCallback((index: number, direction: 'up' | 'down') => {
@@ -690,16 +695,8 @@ export default function CreateLearnContentForm({
       }
     }
 
-    if (!finalTitle.trim()) { 
-      setError(isPublish ? 'Publishing requires a Spiky Title block.' : 'Saving drafts requires a Spiky Title block.'); 
-      scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-      return; 
-    }
-    if (isPublish && type !== 'article' && !finalDesc.trim()) { 
-      setError('Please fill out the core description before publishing.'); 
-      scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-      return; 
-    }
+    // Removed strict Title and Description validation as requested.
+    // The backend payload mapping natively falls back to "Draft Content" and "No description provided."
     
     if (isPublish && blocks.length > 0) {
       const incompleteBlocks = blocks.filter(b => !isBlockFilled(b));
