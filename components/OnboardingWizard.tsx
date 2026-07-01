@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Box, Typography, Button, Dialog, DialogContent, Grid, alpha, IconButton, Alert, Chip, CircularProgress } from '@mui/material';
+import { Box, Typography, Button, Dialog, DialogContent, Grid, alpha, IconButton, Alert, Chip, CircularProgress, Avatar, Tooltip } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import PremiumCard from '@/components/PremiumCard';
 import PremiumButton from '@/components/PremiumButton';
@@ -73,10 +73,13 @@ export default function OnboardingWizard({ open, onComplete, profile }: Onboardi
 
   const requiresVerification = prefixes.some(p => TITLES_REQUIRING_VERIFICATION.includes(p)) || suffixes.some(s => TITLES_REQUIRING_VERIFICATION.includes(s));
 
-  // Sync displayName when profile is provided
+  // Sync displayName when profile is provided or Google Auth is present
   React.useEffect(() => {
-    if (profile?.name && !firstName && !lastName) {
-      const parts = profile.name.trim().split(' ');
+    const googleName = auth.currentUser?.displayName;
+    const initialName = googleName || profile?.name;
+    
+    if (initialName && !firstName && !lastName) {
+      const parts = initialName.trim().split(' ');
       if (parts.length === 1) {
         setFirstName(parts[0]);
       } else if (parts.length >= 2) {
@@ -84,7 +87,10 @@ export default function OnboardingWizard({ open, onComplete, profile }: Onboardi
         setLastName(parts.slice(1).join(' '));
       }
     }
-  }, [profile, firstName, lastName]);
+  }, [profile, firstName, lastName, auth.currentUser]);
+
+  const isNameLocked = !!auth.currentUser?.displayName;
+  const photoUrl = auth.currentUser?.photoURL;
 
   const handleSubmit = async () => {
     const hasCompletedProfile = profile?.gatekeepers?.hasCompletedProfile;
@@ -392,6 +398,13 @@ export default function OnboardingWizard({ open, onComplete, profile }: Onboardi
                 <Typography variant="overline" sx={{ color: '#10b981', fontWeight: 800, letterSpacing: 2 }}>
                   Your Professional Identity
                 </Typography>
+                {photoUrl && (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2, mb: 1 }}>
+                    <Tooltip title="To maintain platform security, your profile photo is synced directly with your Google Account and can be changed there." placement="top">
+                      <Avatar src={photoUrl} sx={{ width: 64, height: 64, border: `2px solid ${alpha('#10b981', 0.5)}` }} />
+                    </Tooltip>
+                  </Box>
+                )}
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5, mt: 1 }}>
                   <Typography variant="h5" sx={{ fontWeight: 800, color: 'text.primary' }}>
                     {[...prefixes, firstName, lastName, ...suffixes].filter(Boolean).join(' ') || '...'}
@@ -402,6 +415,12 @@ export default function OnboardingWizard({ open, onComplete, profile }: Onboardi
                 </Box>
               </PremiumCard>
             </Box>
+
+            {isNameLocked && (
+              <Alert severity="info" sx={{ mb: 4, borderRadius: 3, maxWidth: 500, mx: 'auto', textAlign: 'left', '& .MuiAlert-message': { width: '100%' } }}>
+                <strong>Identity Locked:</strong> Your First and Last Name are synced with your Google Account for security purposes.
+              </Alert>
+            )}
 
             <Box sx={{ maxWidth: 500, mx: 'auto', mb: 6, display: 'flex', flexDirection: 'column', gap: 3 }}>
               <PremiumAutocomplete
@@ -423,6 +442,7 @@ export default function OnboardingWizard({ open, onComplete, profile }: Onboardi
                   colorTheme="#10b981"
                   required
                   fullWidth
+                  disabled={isNameLocked}
                 />
                 <PremiumTextField
                   label="Last Name"
@@ -432,6 +452,7 @@ export default function OnboardingWizard({ open, onComplete, profile }: Onboardi
                   colorTheme="#10b981"
                   required
                   fullWidth
+                  disabled={isNameLocked}
                 />
               </Box>
               <PremiumAutocomplete

@@ -33,16 +33,27 @@ export async function POST(request: Request) {
       tabOrder: JSON.stringify(tabOrder),
     };
 
-    if (firstName && lastName) {
+    // Security Check: If they signed in with Google, enforce their Google identity.
+    let finalFirstName = firstName;
+    let finalLastName = lastName;
+    
+    if (decodedToken.name) {
+      const parts = decodedToken.name.trim().split(' ');
+      finalFirstName = parts[0];
+      finalLastName = parts.length > 1 ? parts.slice(1).join(' ') : '';
+      updateData.avatarUrl = decodedToken.picture || null;
+    }
+
+    if (finalFirstName || finalLastName) {
       const nameParts = [
         ...(prefixes || []),
-        firstName,
-        lastName,
+        finalFirstName,
+        finalLastName,
         ...(suffixes || [])
       ];
       updateData.name = nameParts.filter(Boolean).join(' ');
-      updateData.firstName = firstName;
-      updateData.lastName = lastName;
+      updateData.firstName = finalFirstName;
+      updateData.lastName = finalLastName;
       updateData.prefixes = prefixes && prefixes.length > 0 ? JSON.stringify(prefixes) : null;
       updateData.suffixes = suffixes && suffixes.length > 0 ? JSON.stringify(suffixes) : null;
     }
