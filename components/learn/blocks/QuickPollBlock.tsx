@@ -13,7 +13,15 @@ type QuickPollBlockProps = {
 
 export const QuickPollBlock: React.FC<QuickPollBlockProps> = ({ content, themeMode = 'light', accentColor }) => {
   const isDark = themeMode === 'dark';
-  const optionsList = content.options ? content.options.split(',').map(o => o.trim()).filter(Boolean) : [];
+  const optionsList = React.useMemo(() => {
+    if (!content.options) return [];
+    try {
+      const parsed = JSON.parse(content.options);
+      if (Array.isArray(parsed)) return parsed.map(o => String(o).trim()).filter(Boolean);
+    } catch(e) {}
+    if (content.options.includes('|||')) return content.options.split('|||').map(o => o.trim()).filter(Boolean);
+    return content.options.split(',').map(o => o.trim()).filter(Boolean);
+  }, [content.options]);
   const isComplete = !!content.question && content.question.trim().length > 0;
 
   if (!content.question) return null;

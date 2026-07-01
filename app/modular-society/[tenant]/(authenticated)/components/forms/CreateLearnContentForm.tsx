@@ -75,14 +75,22 @@ import PremiumMarkdownEditor from '@/components/PremiumMarkdownEditor';
 // POLL OPTIONS EDITOR
 // ----------------------------------------------------------------------
 function PollOptionsEditor({ initialOptions, onChange, color }: { initialOptions: string, onChange: (opts: string) => void, color: string }) {
-  const [options, setOptions] = useState<string[]>(initialOptions ? initialOptions.split(',').map(o => o.trim()).filter(Boolean) : []);
+  const [options, setOptions] = useState<string[]>(() => {
+    if (!initialOptions) return [];
+    try {
+      const parsed = JSON.parse(initialOptions);
+      if (Array.isArray(parsed)) return parsed.map(o => String(o).trim()).filter(Boolean);
+    } catch(e) {}
+    if (initialOptions.includes('|||')) return initialOptions.split('|||').map(o => o.trim()).filter(Boolean);
+    return initialOptions.split(',').map(o => o.trim()).filter(Boolean);
+  });
   const [newOption, setNewOption] = useState('');
 
   const handleAdd = () => {
     if (newOption.trim() && !options.includes(newOption.trim())) {
       const newOpts = [...options, newOption.trim()];
       setOptions(newOpts);
-      onChange(newOpts.join(','));
+      onChange(JSON.stringify(newOpts));
       setNewOption('');
     }
   };
@@ -90,7 +98,7 @@ function PollOptionsEditor({ initialOptions, onChange, color }: { initialOptions
   const handleRemove = (idx: number) => {
     const newOpts = options.filter((_, i) => i !== idx);
     setOptions(newOpts);
-    onChange(newOpts.join(','));
+    onChange(JSON.stringify(newOpts));
   };
 
   return (
@@ -576,14 +584,20 @@ export default function CreateLearnContentForm({
     const framework = SOP_FRAMEWORKS[selectedTimeframe as keyof typeof SOP_FRAMEWORKS];
     if (!framework) return;
     
-    // Sort blocks to match framework order by type
-    const newBlocks = [...blocks].sort((a, b) => {
-      const aIdx = framework.findIndex(f => f.type === a.type);
-      const bIdx = framework.findIndex(f => f.type === b.type);
-      const aVal = aIdx === -1 ? 999 : aIdx;
-      const bVal = bIdx === -1 ? 999 : bIdx;
-      return aVal - bVal;
-    });
+    const availableBlocks = [...blocks];
+    const newBlocks: any[] = [];
+    
+    // Match blocks in exact framework order
+    for (const fDef of framework) {
+      const matchIdx = availableBlocks.findIndex(b => b.type === fDef.type);
+      if (matchIdx !== -1) {
+        newBlocks.push(availableBlocks[matchIdx]);
+        availableBlocks.splice(matchIdx, 1);
+      }
+    }
+    
+    // Add any leftovers
+    newBlocks.push(...availableBlocks);
     
     setBlocks(newBlocks);
     setReorderUnlocked(false);
@@ -1077,67 +1091,78 @@ export default function CreateLearnContentForm({
                                 position: isFlipped ? 'absolute' : 'relative',
                                 width: '100%', top: 0,
                                 borderRadius: '20px',
-                                border: `1px solid ${alpha(color, filled ? 0.4 : 0.15)}`,
-                                background: `linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.9) 100%)`,
+                                border: `1px solid ${filled ? alpha(color, 0.8) : alpha(color, 0.15)}`,
+                                background: filled 
+                                  ? `linear-gradient(135deg, ${color} 0%, ${alpha(color, 0.8)} 100%)`
+                                  : `linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.9) 100%)`,
                                 backdropFilter: 'blur(16px)',
-                                boxShadow: `0 8px 32px rgba(0,0,0,0.04)`,
+                                boxShadow: filled ? `0 12px 32px ${alpha(color, 0.3)}` : `0 8px 32px rgba(0,0,0,0.04)`,
                                 overflow: 'hidden',
                                 cursor: 'pointer',
                                 transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
                                 '&:hover': {
-                                  borderColor: alpha(color, 0.6),
-                                  boxShadow: `0 12px 48px rgba(0,0,0,0.08)`,
+                                  borderColor: filled ? color : alpha(color, 0.6),
+                                  boxShadow: filled ? `0 16px 48px ${alpha(color, 0.4)}` : `0 12px 48px rgba(0,0,0,0.08)`,
                                   transform: 'translateY(-2px)'
                                 },
                               }}
                             >
-                              <Box sx={{ display: 'flex', alignItems: 'stretch' }}>
+                              {filled && (
+                                <Typography sx={{ 
+                                  position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', 
+                                  fontWeight: 900, fontSize: { xs: '2.5rem', md: '4rem' }, 
+                                  color: 'rgba(255,255,255,0.15)', pointerEvents: 'none', letterSpacing: '0.15em',
+                                  textTransform: 'uppercase', whiteSpace: 'nowrap', zIndex: 0
+                                }}>
+                                  COMPLETED
+                                </Typography>
+                              )}
+                              <Box sx={{ display: 'flex', alignItems: 'stretch', position: 'relative', zIndex: 1 }}>
                                 {/* Left accent bar */}
                                 <Box sx={{
-                                  width: 6, flexShrink: 0,
+                                  width: filled ? 0 : 6, flexShrink: 0,
                                   background: filled
-                                    ? `linear-gradient(180deg, ${color} 0%, ${alpha(color, 0.6)} 100%)`
+                                    ? `transparent`
                                     : `linear-gradient(180deg, ${alpha(color, 0.4)} 0%, ${alpha(color, 0.1)} 100%)`,
                                 }} />
                                 <Box sx={{ p: { xs: 2, md: 3 }, flex: 1, display: 'flex', alignItems: 'center', gap: 2.5 }}>
                                   {/* Number badge */}
                                   <Box sx={{
                                     width: 44, height: 44, borderRadius: '14px', flexShrink: 0,
-                                    bgcolor: alpha(color, 0.1), border: `1px solid ${alpha(color, 0.2)}`,
+                                    bgcolor: filled ? 'rgba(255,255,255,0.2)' : alpha(color, 0.1), 
+                                    border: filled ? '1px solid rgba(255,255,255,0.3)' : `1px solid ${alpha(color, 0.2)}`,
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    boxShadow: filled ? '0 4px 12px rgba(0,0,0,0.1)' : 'none',
+                                    transition: 'all 0.3s ease'
                                   }}>
-                                    {filled ? (
-                                      <CheckIcon sx={{ fontSize: 24, color }} />
-                                    ) : (
-                                      <Typography sx={{ fontWeight: 800, fontSize: '1.1rem', color }}>{i + 1}</Typography>
-                                    )}
+                                    <Typography sx={{ fontWeight: 800, fontSize: '1.1rem', color: filled ? '#fff' : color }}>{i + 1}</Typography>
                                   </Box>
                                   {/* Info */}
                                   <Box sx={{ flex: 1, minWidth: 0 }}>
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5, flexWrap: 'wrap' }}>
-                                      <Typography sx={{ fontWeight: 800, color: '#0f172a', fontSize: { xs: '1.05rem', md: '1.15rem' }, letterSpacing: '-0.01em' }}>
+                                      <Typography sx={{ fontWeight: 800, color: filled ? '#fff' : '#0f172a', fontSize: { xs: '1.05rem', md: '1.15rem' }, letterSpacing: '-0.01em' }}>
                                         {b.role || bDef.label}
                                       </Typography>
-                                      <Chip label={bDef.label} size="small" sx={{ height: 24, fontSize: '0.7rem', bgcolor: alpha(color, 0.15), color, fontWeight: 700, border: `1px solid ${alpha(color, 0.2)}` }} />
+                                      <Chip label={bDef.label} size="small" sx={{ height: 24, fontSize: '0.7rem', bgcolor: filled ? 'rgba(255,255,255,0.2)' : alpha(color, 0.15), color: filled ? '#fff' : color, fontWeight: 700, border: `1px solid ${filled ? 'rgba(255,255,255,0.3)' : alpha(color, 0.2)}` }} />
                                     </Box>
-                                    <Typography sx={{ color: filled ? '#334155' : '#64748b', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }}>
+                                    <Typography sx={{ color: filled ? 'rgba(255,255,255,0.8)' : '#64748b', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }}>
                                       {filled ? 'Content added — tap to edit' : (b.sopDesc || 'Tap to fill this block')}
                                     </Typography>
                                   </Box>
                                   {/* Image Thumbnail */}
                                   {hasImageField && imageUrl && (
-                                    <Box sx={{ width: 60, height: 44, borderRadius: 2, flexShrink: 0, overflow: 'hidden', border: '1px solid rgba(0,0,0,0.1)', display: { xs: 'none', md: 'block' } }}>
+                                    <Box sx={{ width: 60, height: 44, borderRadius: 2, flexShrink: 0, overflow: 'hidden', border: filled ? '1px solid rgba(255,255,255,0.3)' : '1px solid rgba(0,0,0,0.1)', display: { xs: 'none', md: 'block' } }}>
                                       <img src={imageUrl} alt="Thumbnail" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => (e.currentTarget.style.display = 'none')} />
                                     </Box>
                                   )}
                                   {/* Reorder / Delete controls */}
                                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
                                     {reorderUnlocked && (
-                                      <Box {...attributes} {...listeners} sx={{ cursor: 'grab', '&:active': { cursor: 'grabbing' }, display: 'flex', alignItems: 'center', justifyContent: 'center', p: 1, color: '#94a3b8', '&:hover': { color: '#0f172a' } }}>
+                                      <Box {...attributes} {...listeners} sx={{ cursor: 'grab', '&:active': { cursor: 'grabbing' }, display: 'flex', alignItems: 'center', justifyContent: 'center', p: 1, color: filled ? 'rgba(255,255,255,0.7)' : '#94a3b8', '&:hover': { color: filled ? '#fff' : '#0f172a' } }}>
                                         <DragIndicatorIcon />
                                       </Box>
                                     )}
-                                    <IconButton size="small" onClick={() => removeBlock(b.id)} sx={{ bgcolor: 'rgba(239,68,68,0.05)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.1)', '&:hover': { bgcolor: '#ef4444', color: '#fff' } }}>
+                                    <IconButton size="small" onClick={() => removeBlock(b.id)} sx={{ bgcolor: filled ? 'rgba(255,255,255,0.15)' : 'rgba(239,68,68,0.05)', color: filled ? '#fff' : '#ef4444', border: filled ? '1px solid rgba(255,255,255,0.3)' : '1px solid rgba(239,68,68,0.1)', '&:hover': { bgcolor: '#ef4444', color: '#fff', borderColor: '#ef4444' } }}>
                                       <DeleteIcon sx={{ fontSize: 18 }} />
                                     </IconButton>
                                   </Box>
