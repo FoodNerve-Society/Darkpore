@@ -350,84 +350,33 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
     const type = b.type || b.blockType;
     const c = b.content || {};
     switch (type) {
-      case 'subheading': return !!c.text;
+      case 'subheading': case 'title': case 'text': return !!c.text;
       case 'exec_summary': return !!c.point1 || !!c.point2 || !!c.point3;
-      case 'myth_fact': return (!!c.myth && !!c.fact) || (c.pairs && c.pairs.length > 0);
-      case 'core_interactive': return !!c.bionicText;
-      case 'pull_quote': return !!c.quote;
-      case 'media': return !!c.mediaUrl;
-      case 'highlight_card': return !!c.caption || !!c.label || !!c.imageUrl;
+      case 'myth_fact': 
+        return (!!c.myth && !!c.fact) || (c.pairs && c.pairs.some((p: any) => p.myth || p.fact));
+      case 'core_interactive': return !!c.bionicText || !!c.text;
+      case 'pull_quote': case 'expert_quote': return !!c.quote || !!c.text;
+      case 'media': case 'evidence_gallery':
+        return !!c.mediaUrl || !!c.url || (c.items && c.items.some((i: any) => i.url || i.mediaUrl));
+      case 'key_takeaways': case 'action_plan':
+        return !!c.text || !!c.point1 || (c.items && c.items.some((i: any) => i.text));
+      case 'highlight_card': return !!c.caption || !!c.label || !!c.imageUrl || !!c.text;
       case 'data_embed': return !!c.iframeUrl;
-      case 'live_poll': return !!c.question;
+      case 'live_poll': case 'quick_poll': return !!c.question;
       default: return Object.values(c).some(v => !!v);
     }
   };
 
-  let hasSkippedFirstSubheading = false;
-  const displayBlocks = article.articleBlocks?.filter((block: any) => {
-    if ((block.type === 'subheading' || block.blockType === 'subheading') && !hasSkippedFirstSubheading) {
-      hasSkippedFirstSubheading = true;
-      return false; // Skip the first subheading as it is used for the main header
-    }
-    return isBlockComplete(block);
-  }) || [];
+  const displayBlocks = article.articleBlocks?.filter((block: any) => isBlockComplete(block)) || [];
+
+  // Determine accent color based on era tags
+  const eraTag = article.tags?.find(t => ['past', 'present', 'future'].includes(t.toLowerCase()))?.toLowerCase();
+  const accentColor = eraTag === 'past' ? '#ef4444' : eraTag === 'present' ? '#10b981' : eraTag === 'future' ? '#3b82f6' : ACCENT;
 
   return (
-    <Box
-      sx={{
-        pb: 12,
-      }}
-    >
-      {/* ═══════════════════════ ARTICLE HEADER ═══════════════════════ */}
-      <Box
-        sx={{ maxWidth: { xs: '100%', md: '90%', lg: '85%' }, mx: "auto", px: { xs: 2.5, md: 4, lg: 8 }, pt: 2, position: 'relative' }}
-      >
+    <Box sx={{ pb: 12 }}>
+      <Box sx={{ maxWidth: { xs: '100%', md: '90%', lg: '85%' }, mx: "auto", px: { xs: 2.5, md: 4, lg: 8 }, pt: { xs: 4, md: 8 }, position: 'relative' }}>
         <Box id="article-top-sentinel" sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, pointerEvents: 'none' }} />
-
-        {/* Breadcrumbs (Category / Subcategory / Era) */}
-        {(() => {
-          const eraTag = article.tags.find(t => ['past', 'present', 'future'].includes(t.toLowerCase()));
-          const otherTags = article.tags.filter(t => !['past', 'present', 'future'].includes(t.toLowerCase()));
-          
-          return (
-            <Box sx={{
-              position: 'sticky',
-              top: 16,
-              zIndex: 50,
-              display: 'inline-flex',
-              alignItems: 'center',
-              bgcolor: theme.palette.mode === 'dark' ? 'rgba(15,23,42,0.85)' : 'rgba(255,255,255,0.85)',
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)',
-              px: 2,
-              py: 1,
-              borderRadius: '100px',
-              boxShadow: `0 4px 20px ${alpha(theme.palette.mode === 'dark' ? '#000' : '#000', 0.05)}`,
-              border: `1px solid ${alpha(ACCENT, 0.1)}`,
-              mb: 3,
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-            }}>
-              <Breadcrumbs 
-                separator={<NavigateNextIcon fontSize="small" sx={{ color: "text.disabled", fontSize: 14 }} />} 
-                aria-label="breadcrumb"
-              >
-                {otherTags.map((tag, idx) => (
-                  <Typography key={idx} sx={{ fontSize: "0.8rem", fontWeight: 700, color: "text.secondary", textTransform: "capitalize" }}>
-                    {tag}
-                  </Typography>
-                ))}
-                {eraTag && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: ACCENT }} />
-                    <Typography sx={{ fontSize: "0.8rem", fontWeight: 800, color: theme.palette.text.primary, textTransform: "uppercase", letterSpacing: '0.05em' }}>
-                      {eraTag} ERA
-                    </Typography>
-                  </Box>
-                )}
-              </Breadcrumbs>
-            </Box>
-          );
-        })()}
 
         {/* ── Vertical Beaded Progress Bar (Custom Scrollbar) ── */}
         <Box sx={{
@@ -463,12 +412,12 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
                   width: isActive ? 6 : 4,
                   minHeight: 12,
                   borderRadius: '4px',
-                  bgcolor: isActive ? ACCENT : (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(15,23,42,0.1)'),
-                  boxShadow: isActive ? `0 0 12px ${alpha(ACCENT, 0.6)}` : 'none',
+                  bgcolor: isActive ? accentColor : (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(15,23,42,0.1)'),
+                  boxShadow: isActive ? `0 0 12px ${alpha(accentColor, 0.6)}` : 'none',
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   cursor: 'pointer',
                   '&:hover': {
-                    bgcolor: isActive ? ACCENT : alpha(ACCENT, 0.4),
+                    bgcolor: isActive ? accentColor : alpha(accentColor, 0.4),
                     width: 6,
                   }
                 }} 
@@ -478,187 +427,10 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
           </Box>
         </Box>
 
-        {/* Title (Spiky Style) */}
-        {(() => {
-          const text = article.title || '';
-          const colonIndex = text.indexOf(':');
-          let beforeColon = text;
-          let afterColon = '';
-          let kicker = '';
-
-          if (colonIndex !== -1) {
-            beforeColon = text.substring(0, colonIndex + 1);
-            const remainder = text.substring(colonIndex + 1).trim();
-            
-            const actionMatch = remainder.match(/(,\s*(and|so)?\s+(why\s+.*))/i);
-            if (actionMatch) {
-              kicker = actionMatch[3];
-              afterColon = remainder.substring(0, actionMatch.index).trim();
-            } else {
-              afterColon = remainder;
-            }
-          }
-
-          return (
-            <Box sx={{ mb: 2, position: 'relative' }}>
-              {kicker && (
-                <Box sx={{ mb: 2 }}>
-                  <Typography 
-                    component="span"
-                    sx={{ 
-                      color: ACCENT,
-                      bgcolor: `${ACCENT}1A`,
-                      border: `1px solid ${ACCENT}33`,
-                      borderRadius: '24px',
-                      padding: '4px 12px',
-                      fontWeight: 700, 
-                      fontSize: '0.85rem', 
-                      letterSpacing: '0.02em',
-                      fontFamily: 'var(--font-quicksand)',
-                      display: 'inline-block',
-                      boxShadow: `0 4px 12px ${ACCENT}1A`
-                    }}>
-                    {kicker}
-                  </Typography>
-                </Box>
-              )}
-              <Typography
-                variant="h1"
-                sx={{
-                  color: theme.palette.text.primary,
-                  fontSize: { xs: '2.2rem', sm: '2.8rem', md: '3.4rem' },
-                  lineHeight: 1.15,
-                  letterSpacing: '-0.02em',
-                }}
-              >
-                <Box component="span" sx={{ fontWeight: 900 }}>
-                  {beforeColon}
-                </Box>
-                {afterColon && (
-                  <Box 
-                    component="span" 
-                    sx={{ 
-                      fontWeight: 400, 
-                      fontStyle: 'italic', 
-                      display: 'inline-block', 
-                      ml: 1.5, 
-                      color: theme.palette.text.secondary,
-                      fontFamily: 'var(--font-ysabeau-infant)'
-                    }}
-                  >
-                    {afterColon}
-                  </Box>
-                )}
-              </Typography>
-            </Box>
-          );
-        })()}
-
-        {/* Description / Subtitle */}
-        <Typography
-          variant="body1"
-          sx={{
-            color: theme.palette.text.secondary,
-            fontSize: { xs: "1rem", sm: "1.1rem" },
-            lineHeight: 1.65,
-            mb: 3,
-            maxWidth: '100%',
-          }}
-        >
-          {article.description}
-        </Typography>
-
-        {/* Author + Meta */}
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: { xs: "flex-start", sm: "center" },
-            flexDirection: { xs: "column", sm: "row" },
-            justifyContent: "space-between",
-            gap: 2,
-            mb: 4,
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            <Avatar
-              src={article.author.avatarUrl}
-              sx={{
-                width: 44,
-                height: 44,
-                fontSize: "1rem",
-                fontWeight: 700,
-                bgcolor: "rgba(255, 255, 255, 0.03)",
-                color: ACCENT_DARK,
-                boxShadow: `0 4px 12px ${alpha(ACCENT_DARK, 0.1)}`,
-              }}
-            >
-              {!article.author.avatarUrl && article.author.name.charAt(0)}
-            </Avatar>
-            <Box>
-              <Box
-                sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
-              >
-                <Typography
-                  variant="subtitle2"
-                  sx={{ fontWeight: 700, fontSize: "0.95rem", color: theme.palette.text.primary }}
-                >
-                  {article.author.name}
-                </Typography>
-                {article.author.isVerified && (
-                  <VerifiedIcon sx={{ fontSize: 16, color: ACCENT }} />
-                )}
-              </Box>
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 2,
-                  mt: 0.3,
-                }}
-              >
-                <Typography
-                  variant="caption"
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 0.5,
-                    color: "text.disabled",
-                    fontSize: "0.8rem",
-                    fontWeight: 600,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                  }}
-                >
-                  <CalendarIcon sx={{ fontSize: 14 }} />
-                  {publishDate}
-                </Typography>
-                {article.readTime && (
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 0.5,
-                      color: "text.disabled",
-                      fontSize: "0.8rem",
-                      fontWeight: 600,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05em",
-                    }}
-                  >
-                    <AccessTimeIcon sx={{ fontSize: 14 }} />
-                    {article.readTime}
-                  </Typography>
-                )}
-              </Box>
-            </Box>
-          </Box>
-        </Box>
-
         {/* ═══════════════════════ ARTICLE BODY ═══════════════════════ */}
         {displayBlocks.length > 0 && displayBlocks.map((block: any, idx: number) => (
-          <Box id={`article-block-${block.id || idx}`} key={block.id || idx} sx={{ mb: 4 }}>
-            <ArticleBlockRenderer block={block} themeMode={theme.palette.mode} accentColor={ACCENT} />
+          <Box id={`article-block-${block.id || idx}`} key={block.id || idx} sx={{ mb: 5 }}>
+            <ArticleBlockRenderer block={block} themeMode={theme.palette.mode} accentColor={accentColor} />
           </Box>
         ))}
 
