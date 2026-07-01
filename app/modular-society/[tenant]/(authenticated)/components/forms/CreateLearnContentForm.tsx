@@ -725,10 +725,11 @@ export default function CreateLearnContentForm({
         egItems.forEach((i: any) => { if (i.url) filled++; });
         break;
       case 'live_poll': case 'quick_poll':
-        const opts = c.options || [];
-        total = 1 + Math.max(2, opts.length);
+        const rawOpts = c.options || [];
+        const optsArray = Array.isArray(rawOpts) ? rawOpts : (typeof rawOpts === 'string' ? rawOpts.split(',').filter(Boolean).map(s => ({text: s.trim()})) : []);
+        total = 1 + Math.max(2, optsArray.length);
         if (c.question) filled++;
-        opts.forEach((o: any) => { if (o.text || o.label) filled++; });
+        optsArray.forEach((o: any) => { if (o.text || o.label) filled++; });
         break;
       case 'pull_quote': case 'expert_quote':
         total = 2; // Usually quote and author are required, role is optional
