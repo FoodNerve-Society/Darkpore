@@ -700,21 +700,64 @@ export default function CreateLearnContentForm({
     setFlippedBlockId(newBlocks[0]?.id || null);
   }, [selectedTimeframe]);
 
-  const isBlockFilled = (block: typeof blocks[0]) => {
+  const getBlockFillStats = (block: typeof blocks[0]) => {
     const c = block.content;
+    let filled = 0;
+    let total = 1;
     switch (block.type) {
-      case 'subheading': return !!c.text;
-      case 'core_interactive': return !!c.bionicText;
-      case 'myth_fact': return !!c.myth || !!c.fact;
-      case 'live_poll': return !!c.question;
-      case 'pull_quote': return !!c.quote;
-      case 'exec_summary': return !!c.points;
-      case 'highlight_card': return !!c.caption;
-      case 'media': return !!c.mediaUrl;
-      case 'strategic_directive': return !!c.urgencyLevel && !!c.targetPersona && !!c.point1 && !!c.point2 && !!c.point3 && !!c.microCtaId;
-      case 'call_to_action': return !!c.macroCtaId;
-      default: return Object.values(c).some(v => !!v);
+      case 'subheading': case 'spiky_title':
+        total = 1; if (c.text) filled = 1; break;
+      case 'core_interactive': case 'deep_dive':
+        total = 1; if (c.bionicText || c.text || c.heading) filled = 1; break;
+      case 'myth_fact': 
+        const mfItems = c.items || [];
+        total = Math.max(1, mfItems.length) * 2;
+        mfItems.forEach((i: any) => { if (i.myth) filled++; if (i.fact) filled++; });
+        break;
+      case 'key_takeaways': case 'action_plan':
+        const ktItems = c.items || [];
+        total = Math.max(1, ktItems.length);
+        ktItems.forEach((i: any) => { if (i.text) filled++; });
+        break;
+      case 'evidence_gallery':
+        const egItems = c.items || [];
+        total = Math.max(1, egItems.length);
+        egItems.forEach((i: any) => { if (i.url) filled++; });
+        break;
+      case 'live_poll': case 'quick_poll':
+        const opts = c.options || [];
+        total = 1 + Math.max(2, opts.length);
+        if (c.question) filled++;
+        opts.forEach((o: any) => { if (o.text || o.label) filled++; });
+        break;
+      case 'pull_quote': case 'expert_quote':
+        total = 2; // Usually quote and author are required, role is optional
+        if (c.quote || c.text) filled++;
+        if (c.author) filled++;
+        break;
+      case 'exec_summary': 
+        total = 1; if (c.points) filled = 1; break;
+      case 'highlight_card': 
+        total = 1; if (c.caption || c.text || c.imageUrl) filled = 1; break;
+      case 'media': 
+        total = 1; if (c.mediaUrl) filled = 1; break;
+      case 'strategic_directive': 
+        total = 6;
+        if (c.urgencyLevel) filled++; if (c.targetPersona) filled++;
+        if (c.point1) filled++; if (c.point2) filled++; if (c.point3) filled++;
+        if (c.microCtaId) filled++;
+        break;
+      case 'call_to_action': 
+        total = 1; if (c.macroCtaId || c.text) filled = 1; break;
+      default: 
+        total = 1; if (Object.values(c).some(v => !!v)) filled = 1; break;
     }
+    return { filled, total };
+  };
+
+  const isBlockFilled = (block: typeof blocks[0]) => {
+    const stats = getBlockFillStats(block);
+    return stats.filled >= stats.total;
   };
 
   const handleSubmit = async (isPublish = true) => {
@@ -1115,7 +1158,9 @@ export default function CreateLearnContentForm({
                       <SortableContext items={blocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
                         {blocks.map((b, i) => {
                           const isFlipped = flippedBlockId === b.id;
-                          const filled = isBlockFilled(b);
+                          const fillStats = getBlockFillStats(b);
+                          const filled = fillStats.filled >= fillStats.total;
+                          const fillPercent = Math.min(100, Math.round((fillStats.filled / fillStats.total) * 100));
                           const bDef = BLOCK_DEFINITIONS[b.type] || { color: '#ccc', label: 'Unknown Block' };
                           const color = bDef.color;
                           
@@ -1144,7 +1189,7 @@ export default function CreateLearnContentForm({
                                 border: `1px solid ${filled ? alpha(color, 0.8) : alpha(color, 0.15)}`,
                                 background: filled 
                                   ? `linear-gradient(135deg, ${color} 0%, ${alpha(color, 0.8)} 100%)`
-                                  : `linear-gradient(135deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.9) 100%)`,
+                                  : `linear-gradient(to right, ${alpha(color, 0.2)} ${fillPercent}%, rgba(255,255,255,0.95) ${fillPercent}%, rgba(248,250,252,0.9) 100%)`,
                                 backdropFilter: 'blur(16px)',
                                 boxShadow: filled ? `0 12px 32px ${alpha(color, 0.3)}` : `0 8px 32px rgba(0,0,0,0.04)`,
                                 overflow: 'hidden',
@@ -1157,14 +1202,14 @@ export default function CreateLearnContentForm({
                                 },
                               }}
                             >
-                              {filled && (
+                              {fillPercent > 0 && (
                                 <Typography sx={{ 
                                   position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', 
-                                  fontWeight: 900, fontSize: { xs: '2.5rem', md: '4rem' }, 
-                                  color: 'rgba(255,255,255,0.15)', pointerEvents: 'none', letterSpacing: '0.15em',
+                                  fontWeight: 900, fontSize: { xs: '2rem', md: '3.5rem' }, 
+                                  color: filled ? 'rgba(255,255,255,0.15)' : alpha(color, 0.1), pointerEvents: 'none', letterSpacing: '0.05em',
                                   textTransform: 'uppercase', whiteSpace: 'nowrap', zIndex: 0
                                 }}>
-                                  COMPLETED
+                                  {filled ? 'COMPLETED' : `${fillStats.filled} / ${fillStats.total} FILLED`}
                                 </Typography>
                               )}
                               <Box sx={{ display: 'flex', alignItems: 'stretch', position: 'relative', zIndex: 1 }}>
@@ -1291,14 +1336,15 @@ export default function CreateLearnContentForm({
                                       <PremiumTextField colorTheme={color}
                                         fullWidth  label="Spiky Header Text (Pattern: [Bold Part]: [Italic Part])" placeholder={b.sopHint || ''}
                                         value={b.content.text || ''} 
+                                        multiline minRows={2}
                                         onChange={e => {
-                                          updateBlock(b.id, 'text', e.target.value.slice(0, 150));
+                                          updateBlock(b.id, 'text', e.target.value);
                                         }}
                                         helperText={`${(b.content.text || '').length} / 150 characters max`}
                                         sx={{ 
                                           '& .MuiOutlinedInput-root': { borderRadius: '14px', color: '#0f172a', bgcolor: 'rgba(0,0,0,0.02)', '& fieldset': { borderColor: 'rgba(0,0,0,0.15)' }, '&:hover fieldset': { borderColor: alpha(color, 0.5) }, '&.Mui-focused fieldset': { borderColor: color, borderWidth: 2 } }, 
                                           '& .MuiInputLabel-root': { color: '#475569', fontWeight: 600 },
-                                          '& .MuiFormHelperText-root': { textAlign: 'right', fontWeight: 600, color: (b.content.text || '').length >= 150 ? '#ef4444' : 'text.secondary' }
+                                          '& .MuiFormHelperText-root': { textAlign: 'right', fontWeight: 600, color: (b.content.text || '').length > 150 ? '#ef4444' : 'text.secondary' }
                                         }}
                                       />
                                   </Box>

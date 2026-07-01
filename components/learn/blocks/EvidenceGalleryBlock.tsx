@@ -241,10 +241,13 @@ export const EvidenceGalleryBlock: React.FC<EvidenceGalleryBlockProps> = ({ cont
               >
                 {item.caption && (
                   <Typography sx={{ 
-                    color: isDark ? '#f8fafc' : '#0f172a', 
-                    fontWeight: 600, 
-                    fontSize: '0.9rem', 
-                    lineHeight: 1.4,
+                    color: isDark ? 'rgba(255,255,255,0.85)' : '#334155', 
+                    fontWeight: 400, 
+                    fontSize: '0.95rem', 
+                    fontStyle: 'italic',
+                    lineHeight: 1.5,
+                    borderLeft: `3px solid ${isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'}`,
+                    pl: 1.5,
                     display: '-webkit-box',
                     WebkitLineClamp: 2,
                     WebkitBoxOrient: 'vertical',
