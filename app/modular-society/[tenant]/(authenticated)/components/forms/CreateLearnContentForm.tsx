@@ -596,7 +596,7 @@ export default function CreateLearnContentForm({
         if (el) {
           el.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-      }, 150);
+      }, 250); // slight delay to allow flip animation to settle
     }
   }, [flippedBlockId]);
 
@@ -1125,7 +1125,7 @@ export default function CreateLearnContentForm({
                           return (
                             <SortableBlockWrapper key={b.id} id={b.id} reorderUnlocked={reorderUnlocked}>
                               {(attributes, listeners, setNodeRef, style, isDragging) => (
-                                <Box ref={setNodeRef} style={style} sx={{ perspective: '1600px', mb: 2.5, ...(isDragging ? { opacity: 0.8, filter: 'brightness(1.05)', zIndex: 50 } : {}) }}>
+                                <Box id={`block-${b.id}`} ref={setNodeRef} style={style} sx={{ perspective: '1600px', mb: 2.5, scrollMarginTop: '120px', ...(isDragging ? { opacity: 0.8, filter: 'brightness(1.05)', zIndex: 50 } : {}) }}>
                                   <Box sx={{
                                     position: 'relative',
                                     transition: 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
