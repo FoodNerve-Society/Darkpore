@@ -11,9 +11,11 @@ type MythRealityBlockProps = {
   };
   themeMode?: 'light' | 'dark';
   accentColor?: string;
+  author?: any;
+  triggerInsights?: () => void;
 };
 
-export const MythRealityBlock: React.FC<MythRealityBlockProps> = ({ content, themeMode = 'light', accentColor }) => {
+export const MythRealityBlock: React.FC<MythRealityBlockProps> = ({ content, themeMode = 'light', accentColor, author, triggerInsights }) => {
   const isDark = themeMode === 'dark';
 
   const pairs = content.pairs || (content.myth || content.fact ? [{ myth: content.myth, fact: content.fact }] : []);
@@ -84,7 +86,9 @@ export const MythRealityBlock: React.FC<MythRealityBlockProps> = ({ content, the
       {/* Discussion Prompt */}
       {isComplete && (
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: -1 }}>
-          <Box sx={{ 
+          <Box 
+            onClick={triggerInsights}
+            sx={{ 
             px: 2, py: 1, 
             borderRadius: '20px', 
             bgcolor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',

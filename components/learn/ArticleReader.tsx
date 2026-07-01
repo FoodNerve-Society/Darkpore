@@ -635,6 +635,7 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
               themeMode={theme.palette.mode} 
               accentColor={accentColor} 
               onOpenInsights={(id) => setActiveInsightBlockId(id)}
+              author={article.author}
             />
           </Box>
         ))}

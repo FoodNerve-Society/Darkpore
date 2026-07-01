@@ -12,9 +12,11 @@ type StrongQuoteBlockProps = {
   };
   themeMode?: 'light' | 'dark';
   accentColor?: string;
+  author?: any;
+  triggerInsights?: () => void;
 };
 
-export const StrongQuoteBlock: React.FC<StrongQuoteBlockProps> = ({ content, themeMode = 'light', accentColor }) => {
+export const StrongQuoteBlock: React.FC<StrongQuoteBlockProps> = ({ content, themeMode = 'light', accentColor, author, triggerInsights }) => {
   const isDark = themeMode === 'dark';
   const isComplete = !!content.quote && content.quote.trim().length > 0;
 
@@ -83,10 +85,12 @@ export const StrongQuoteBlock: React.FC<StrongQuoteBlockProps> = ({ content, the
         </Box>
       )}
 
-      {/* Discussion Prompt - to be wired later */}
+      {/* Discussion Prompt - wired to insights */}
       {isComplete && (
         <Box sx={{ display: 'flex', mt: 3 }}>
-          <Box sx={{ 
+          <Box 
+            onClick={triggerInsights}
+            sx={{ 
             px: 2, py: 1, 
             borderRadius: '20px', 
             bgcolor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
