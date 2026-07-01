@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, Typography, Button } from '@mui/material';
+import { Verified as VerifiedIcon } from '@mui/icons-material';
 
 type QuickPollBlockProps = {
   content: {
@@ -9,9 +10,11 @@ type QuickPollBlockProps = {
   };
   themeMode?: 'light' | 'dark';
   accentColor?: string;
+  author?: any;
+  triggerInsights?: () => void;
 };
 
-export const QuickPollBlock: React.FC<QuickPollBlockProps> = ({ content, themeMode = 'light', accentColor }) => {
+export const QuickPollBlock: React.FC<QuickPollBlockProps> = ({ content, themeMode = 'light', accentColor, author, triggerInsights }) => {
   const isDark = themeMode === 'dark';
   const optionsList = React.useMemo(() => {
     if (!content.options) return [];
@@ -78,24 +81,40 @@ export const QuickPollBlock: React.FC<QuickPollBlockProps> = ({ content, themeMo
         ))}
       </Box>
 
-      {/* Discussion Prompt - to be wired later */}
-      {isComplete && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-          <Box sx={{ 
-            px: 2, py: 1, 
-            borderRadius: '20px', 
-            bgcolor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-            color: isDark ? '#fff' : '#0f172a',
-            fontSize: '0.85rem',
-            fontWeight: 600,
-            cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: 1,
-            '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)' }
-          }}>
-            💬 Discuss: {content.discussionPrompt || "Why did you vote the way you did?"}
-            <Typography sx={{ ml: 1, color: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)', fontSize: '0.75rem', fontWeight: 500 }}>
-              • 24 Replies
-            </Typography>
+      {/* Discussion Prompt - wired to insights */}
+      {isComplete && author && (
+        <Box sx={{ display: 'flex', justifyContent: 'flex-start', mt: 4 }}>
+          <Box 
+            onClick={triggerInsights}
+            sx={{ 
+              display: 'flex', alignItems: 'flex-start', gap: 1.5,
+              maxWidth: '85%',
+              cursor: 'pointer',
+              '&:hover .reply-btn': { bgcolor: accentColor || '#8b5cf6', color: '#fff' }
+            }}
+          >
+            <img src={author.avatarUrl} alt={author.name} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }} />
+            <Box sx={{ 
+              bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+              borderRadius: '18px', borderTopLeftRadius: '0px',
+              px: 2, py: 1.5,
+              position: 'relative',
+            }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 0.5, color: isDark ? '#fff' : '#0f172a', display: 'flex', alignItems: 'center' }}>
+                {author.name}
+                {author.isVerified && <VerifiedIcon sx={{ fontSize: 14, color: accentColor || '#10b981', ml: 0.5 }} />}
+              </Typography>
+              <Typography sx={{ fontSize: '0.95rem', color: isDark ? '#f8fafc' : '#334155', fontStyle: 'italic', mb: 1 }}>
+                "{content.discussionPrompt || "Why did you vote the way you did?"}"
+              </Typography>
+              <Typography className="reply-btn" sx={{ 
+                display: 'inline-block', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', 
+                color: accentColor || '#8b5cf6', transition: 'all 0.2s', borderRadius: '12px', px: 1, py: 0.2, ml: -1
+              }}>
+                {/* @ts-ignore */}
+                {content.repliesCount ? `${content.repliesCount} Replies` : 'Reply'}
+              </Typography>
+            </Box>
           </Box>
         </Box>
       )}

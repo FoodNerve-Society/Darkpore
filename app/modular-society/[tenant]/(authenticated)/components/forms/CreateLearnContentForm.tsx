@@ -329,20 +329,20 @@ const SOP_FRAMEWORKS: Record<'past'|'present'|'future', SopBlock[]> = {
 const SPIKY_TITLE_TEMPLATES: Record<string, string[]> = {
   past: [
     "The [Failed Buzzword] Illusion: Why [Old Tech/Policy] Actually Destroyed [Value Chain Actor] in [Location], and Why [Target Persona] Must [Action]",
-    "The Death of [Old System]: How [Macro Shock] Killed [Location]ΓÇÖs [Sector] in the Early 2020s, and Why [Target Persona] Must [Action]",
-    "The [Metric/Dollar Amount] Mistake: Why [Location]ΓÇÖs [Value Chain Actors] Completely Abandoned [Failed Project], and Why [Target Persona] Must [Action]",
-    "From [Good Intention] to [Bad Outcome]: The Tragic Legacy of [Old Method] for [Location]ΓÇÖs [Value Chain Actor], and Why [Target Persona] Must [Action]"
+    "The Death of [Old System]: How [Macro Shock] Killed [Location]'s [Sector] in the Early 2020s, and Why [Target Persona] Must [Action]",
+    "The [Metric/Dollar Amount] Mistake: Why [Location]'s [Value Chain Actors] Completely Abandoned [Failed Project], and Why [Target Persona] Must [Action]",
+    "From [Good Intention] to [Bad Outcome]: The Tragic Legacy of [Old Method] for [Location]'s [Value Chain Actor], and Why [Target Persona] Must [Action]"
   ],
   present: [
-    "The [Metric/Percentage] Paradox: Why [Location]ΓÇÖs [Value Chain Actor] is Surviving by [Unexpected Hack], and Why [Target Persona] Must [Action]",
+    "The [Metric/Percentage] Paradox: Why [Location]'s [Value Chain Actor] is Surviving by [Unexpected Hack], and Why [Target Persona] Must [Action]",
     "Bypassing the [Broken Gatekeeper]: How [Value Chain Actor] in [Location] Are Using [New Method] Right Now, and Why [Target Persona] Must [Action]",
     "The Unspoken Truth About [Trend]: Why [Location]'s [Sector] Now Relies on [Controversial/Messy Fix], and Why [Target Persona] Must [Action]",
     "[Factor A] vs. [Factor B]: Why Only [Specific Winner] Can Afford to [Action] in 2026 [Location], and Why [Target Persona] Must [Action]"
   ],
   future: [
-    "The End of [Current Bottleneck]: How [Emerging Tech] Will Permanently Disrupt [Location]ΓÇÖs [Sector] by [Year], and Why [Target Persona] Must [Action]",
+    "The End of [Current Bottleneck]: How [Emerging Tech] Will Permanently Disrupt [Location]'s [Sector] by [Year], and Why [Target Persona] Must [Action]",
     "[Action Verb] the [Old Way]: Why [Value Chain Actor] Will Use [New Tech] to Bypass [Gatekeeper], and Why [Target Persona] Must [Action]",
-    "From [Old Concept] to [New Concept]: The 2030 Roadmap for [Location]ΓÇÖs [Value Chain Actor], and Why [Target Persona] Must [Action]",
+    "From [Old Concept] to [New Concept]: The 2030 Roadmap for [Location]'s [Value Chain Actor], and Why [Target Persona] Must [Action]",
     "The [Metric/Market Size] Takeover: Why [Emerging Tech/Policy] is the Ultimate Bet for [Location] by 2030, and Why [Target Persona] Must [Action]"
   ]
 };
@@ -1866,6 +1866,12 @@ export default function CreateLearnContentForm({
                   block={{ id: b.id, blockType: b.type, content: b.content }} 
                   themeMode="light" 
                   accentColor={selectedTimeframe === 'past' ? '#ef4444' : selectedTimeframe === 'present' ? '#10b981' : '#3b82f6'} 
+                  author={{ 
+                    name: [profile?.prefixes?.[0], profile?.firstName || profile?.username || "You", profile?.lastName, profile?.suffixes?.[0]].filter(Boolean).join(' '), 
+                    avatarUrl: profile?.avatarUrl || "https://i.pravatar.cc/150?u=preview",
+                    isVerified: true
+                  }}
+                  onOpenInsights={() => console.log('Insights clicked in preview')}
                 />
               </Box>
             ))}

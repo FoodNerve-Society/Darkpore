@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, Typography } from '@mui/material';
+import { Verified as VerifiedIcon } from '@mui/icons-material';
 
 type MainAnalysisBlockProps = {
   content: {
@@ -8,6 +9,7 @@ type MainAnalysisBlockProps = {
     anchorQuestion?: string; // legacy support
     discussionPrompt?: string;
     imageUrl?: string;
+    repliesCount?: number;
   };
   themeMode?: 'light' | 'dark';
   accentColor?: string;
@@ -84,27 +86,16 @@ export const MainAnalysisBlock: React.FC<MainAnalysisBlockProps> = ({ content, t
       )}
 
       {/* Author Chat Prompt Container */}
-      {author && (
+      {isComplete && author && (
         <Box 
           onClick={triggerInsights}
           sx={{
             display: 'flex',
             alignItems: 'flex-start',
-            gap: 2,
-            mt: 2,
-            p: 3,
-            borderRadius: '24px',
-            borderTopLeftRadius: '4px',
-            bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-            border: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`,
+            gap: 1.5,
+            mt: 4,
             cursor: 'pointer',
-            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-            position: 'relative',
-            '&:hover': {
-              bgcolor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
-              borderColor: accentColor,
-              transform: 'translateY(-2px)'
-            }
+            '&:hover .reply-btn': { bgcolor: accentColor, color: '#fff' }
           }}
         >
           {/* Author Avatar */}
@@ -122,9 +113,20 @@ export const MainAnalysisBlock: React.FC<MainAnalysisBlockProps> = ({ content, t
           </Box>
           
           {/* Chat Bubble Content */}
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 0.5, color: isDark ? '#fff' : '#0f172a' }}>
+          <Box sx={{ 
+            flex: 1, 
+            maxWidth: '85%',
+            p: 2.5, 
+            pt: 2,
+            borderRadius: '24px', 
+            borderTopLeftRadius: '0px',
+            bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+            border: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`,
+            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 0.5, color: isDark ? '#fff' : '#0f172a', display: 'flex', alignItems: 'center' }}>
               {author.name}
+              {author.isVerified && <VerifiedIcon sx={{ fontSize: 14, color: accentColor || '#10b981', ml: 0.5 }} />}
             </Typography>
             <Typography sx={{ 
               color: isDark ? 'rgba(255,255,255,0.8)' : '#334155',
@@ -137,21 +139,19 @@ export const MainAnalysisBlock: React.FC<MainAnalysisBlockProps> = ({ content, t
             </Typography>
             
             {/* Reply Action */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Box sx={{ 
-                px: 2, py: 0.75, 
+            <Box sx={{ display: 'inline-block' }}>
+              <Typography className="reply-btn" sx={{ 
+                px: 2, py: 0.5, 
                 borderRadius: '16px',
-                bgcolor: accentColor,
-                color: '#fff',
+                color: accentColor,
                 fontSize: '0.75rem',
-                fontWeight: 700,
+                fontWeight: 800,
                 textTransform: 'uppercase',
-                letterSpacing: '0.05em'
+                letterSpacing: '0.05em',
+                transition: 'all 0.2s'
               }}>
-                Reply
-              </Box>
-              <Typography sx={{ fontSize: '0.75rem', color: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.4)', fontWeight: 600 }}>
-                Join the discussion
+                {/* @ts-ignore */}
+                {content.repliesCount ? `${content.repliesCount} Replies` : 'Reply'}
               </Typography>
             </Box>
           </Box>

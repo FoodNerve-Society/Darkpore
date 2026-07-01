@@ -52,6 +52,7 @@ export const BlockInsightsDrawer: React.FC<BlockInsightsDrawerProps> = ({ open, 
       anchor="right"
       open={open}
       onClose={onClose}
+      // @ts-ignore
       PaperProps={{
         style: { width: 450, maxWidth: '100%' },
         sx: {

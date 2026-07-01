@@ -76,6 +76,7 @@ export interface SocietyProfile {
   firstName?: string;
   lastName?: string;
   prefixes?: string[];
+  suffixes?: string[];
   avatarUrl?: string;
   bio?: string;
   isAdmin: boolean; // The God-Mode Flag

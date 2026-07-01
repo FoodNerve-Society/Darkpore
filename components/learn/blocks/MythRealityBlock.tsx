@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Typography } from '@mui/material';
-import { Close as CloseIcon, Check as CheckIcon } from '@mui/icons-material';
+import { Close as CloseIcon, Check as CheckIcon, Verified as VerifiedIcon } from '@mui/icons-material';
 
 type MythRealityBlockProps = {
   content: {
@@ -84,25 +84,41 @@ export const MythRealityBlock: React.FC<MythRealityBlockProps> = ({ content, the
       ))}
 
       {/* Discussion Prompt */}
-      {isComplete && (
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: -1 }}>
+      {isComplete && author && (
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 4 }}>
           <Box 
             onClick={triggerInsights}
             sx={{ 
-            px: 2, py: 1, 
-            borderRadius: '20px', 
-            bgcolor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-            color: isDark ? '#fff' : '#0f172a',
-            fontSize: '0.85rem',
-            fontWeight: 600,
-            cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: 1,
-            '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)' }
-          }}>
-            💬 Discuss: {content.discussionPrompt || "Have you encountered this myth in your own experience?"}
-            <Typography sx={{ ml: 1, color: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)', fontSize: '0.75rem', fontWeight: 500 }}>
-              • 24 Replies
-            </Typography>
+              display: 'flex', alignItems: 'flex-start', gap: 1.5,
+              maxWidth: '85%',
+              cursor: 'pointer',
+              '&:hover .reply-btn': { bgcolor: accentColor || '#8b5cf6', color: '#fff' }
+            }}
+          >
+            <Box sx={{ 
+              bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+              borderRadius: '18px', borderTopRightRadius: '0px',
+              px: 2, py: 1.5,
+              position: 'relative',
+            }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 0.5, color: isDark ? '#fff' : '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                {author.name}
+                {author.isVerified && <VerifiedIcon sx={{ fontSize: 14, color: accentColor || '#10b981', ml: 0.5 }} />}
+              </Typography>
+              <Typography sx={{ fontSize: '0.95rem', color: isDark ? '#f8fafc' : '#334155', fontStyle: 'italic', mb: 1, textAlign: 'right' }}>
+                "{content.discussionPrompt || "Have you encountered this myth in your own experience?"}"
+              </Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <Typography className="reply-btn" sx={{ 
+                  display: 'inline-block', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', 
+                  color: accentColor || '#8b5cf6', transition: 'all 0.2s', borderRadius: '12px', px: 1.5, py: 0.2, mr: -1
+                }}>
+                  {/* @ts-ignore */}
+                  {content.repliesCount ? `${content.repliesCount} Replies` : 'Reply'}
+                </Typography>
+              </Box>
+            </Box>
+            <img src={author.avatarUrl} alt={author.name} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }} />
           </Box>
         </Box>
       )}
