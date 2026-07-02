@@ -348,11 +348,10 @@ export const BlockInsightsDrawer: React.FC<BlockInsightsDrawerProps> = ({
               value={commentText}
               onChange={(e: any) => setCommentText(e.target.value)}
               size="small"
-              label=""
+              hiddenLabel
               sx={{
                 '& .MuiFilledInput-root': {
-                  pt: '10px !important',
-                  pb: '10px !important',
+                  py: 1.5,
                 }
               }}
             />

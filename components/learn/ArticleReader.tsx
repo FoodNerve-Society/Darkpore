@@ -18,6 +18,12 @@ import {
   Link as MuiLink,
   useTheme,
   Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import {
   ArrowBack as ArrowBackIcon,
@@ -37,6 +43,7 @@ import {
   NavigateNext as NavigateNextIcon,
   Print as PrintIcon,
   ShortcutOutlined as ForwardIcon,
+  ContentCopy as ContentCopyIcon,
 } from "@mui/icons-material";
 
 import { useParams, useRouter } from "next/navigation";
@@ -235,6 +242,7 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
   const [activeInsightBlockId, setActiveInsightBlockId] = useState<string | null>(null);
   const activeBlock = article?.articleBlocks?.find((b: any) => b.id === activeInsightBlockId) || null;
   const [isScrolled, setIsScrolled] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
 
   useEffect(() => {
     if (articleData) {
@@ -551,7 +559,7 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
           </Box>
           
           <Tooltip title="Share Article">
-            <IconButton size="small" sx={{ color: 'text.secondary', '&:hover': { color: accentColor, bgcolor: alpha(accentColor, 0.1) } }}>
+            <IconButton onClick={() => setShareModalOpen(true)} size="small" sx={{ color: 'text.secondary', '&:hover': { color: accentColor, bgcolor: alpha(accentColor, 0.1) } }}>
               <ForwardIcon fontSize="small" />
             </IconButton>
           </Tooltip>
@@ -581,37 +589,36 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
             </Box>
           )}
 
-          {/* Metadata Area */}
-          <Box sx={{ 
-            display: 'flex', 
-            flexDirection: { xs: 'column', sm: 'row' }, 
-            alignItems: { xs: 'flex-start', sm: 'center' }, 
-            justifyContent: 'space-between',
-            gap: 3,
-            pb: 3,
-            mb: 4,
-            borderBottom: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`
-          }}>
-            
-            {/* Contributors Stack */}
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75, width: '100%' }}>
+          {/* Metadata Area - Glassy Centered Container */}
+          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 5 }}>
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              width: { xs: '100%', sm: '80%', md: '70%' },
+              p: 2.5,
+              borderRadius: '16px',
+              bgcolor: theme.palette.mode === 'dark' ? alpha('#ffffff', 0.03) : alpha('#000000', 0.02),
+              backdropFilter: 'blur(12px)',
+              border: `1px solid ${theme.palette.mode === 'dark' ? alpha('#ffffff', 0.05) : alpha('#000000', 0.05)}`,
+              gap: 1.5
+            }}>
               
               {/* Primary Author */}
               {article.author && (
                 <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: '100%' }}>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Avatar src={article.author.avatarUrl} sx={{ width: 28, height: 28, fontSize: '0.7rem' }} />
+                    <Avatar src={article.author.avatarUrl} sx={{ width: 32, height: 32, fontSize: '0.8rem' }} />
                     <Box>
-                      <Typography sx={{ fontWeight: 700, fontSize: '0.78rem', color: theme.palette.mode === 'dark' ? '#e2e8f0' : '#1e293b', display: 'flex', alignItems: 'center', lineHeight: 1.2 }}>
+                      <Typography sx={{ fontWeight: 700, fontSize: '0.82rem', color: theme.palette.mode === 'dark' ? '#e2e8f0' : '#1e293b', display: 'flex', alignItems: 'center', lineHeight: 1.2 }}>
                         {article.author.name}
-                        {article.author.isVerified && <VerifiedIcon sx={{ fontSize: 12, color: accentColor, ml: 0.5 }} />}
+                        {article.author.isVerified && <VerifiedIcon sx={{ fontSize: 14, color: accentColor, ml: 0.5 }} />}
                       </Typography>
-                      <Typography sx={{ fontSize: '0.68rem', color: theme.palette.mode === 'dark' ? '#64748b' : '#94a3b8', fontWeight: 500, lineHeight: 1.2 }}>
+                      <Typography sx={{ fontSize: '0.7rem', color: theme.palette.mode === 'dark' ? '#64748b' : '#94a3b8', fontWeight: 500, lineHeight: 1.2 }}>
                         {new Date(article.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                       </Typography>
                     </Box>
                   </Box>
-                  <Typography sx={{ fontSize: '0.62rem', color: accentColor, fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                  <Typography sx={{ fontSize: '0.65rem', color: accentColor, fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                     {article.author.role || article.author.title || 'Author'}
                   </Typography>
                 </Box>
@@ -621,18 +628,17 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
               {article.collaborators && article.collaborators.length > 0 && article.collaborators.map((collab: any, i: number) => (
                 <Box key={i} sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: '100%' }}>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Avatar src={collab.avatarUrl} sx={{ width: 24, height: 24, fontSize: '0.65rem' }}>{collab.name?.charAt(0)}</Avatar>
-                    <Typography sx={{ fontWeight: 600, fontSize: '0.72rem', color: theme.palette.mode === 'dark' ? '#94a3b8' : '#64748b' }}>
+                    <Avatar src={collab.avatarUrl} sx={{ width: 28, height: 28, fontSize: '0.7rem' }}>{collab.name?.charAt(0)}</Avatar>
+                    <Typography sx={{ fontWeight: 600, fontSize: '0.78rem', color: theme.palette.mode === 'dark' ? '#94a3b8' : '#64748b' }}>
                       {collab.name}
                     </Typography>
                   </Box>
-                  <Typography sx={{ fontSize: '0.58rem', color: theme.palette.mode === 'dark' ? '#475569' : '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Typography sx={{ fontSize: '0.6rem', color: theme.palette.mode === 'dark' ? '#475569' : '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     {collab.role || collab.title || 'Editor'}
                   </Typography>
                 </Box>
               ))}
             </Box>
-
           </Box>
         </Box>
 
@@ -659,6 +665,69 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
         activeBlock={activeBlock}
         accentColor={accentColor}
       />
+
+      {/* Share Modal */}
+      <Dialog 
+        open={shareModalOpen} 
+        onClose={() => setShareModalOpen(false)}
+        PaperProps={{
+          sx: {
+            bgcolor: theme.palette.mode === 'dark' ? '#0f172a' : '#ffffff',
+            backgroundImage: 'none',
+            borderRadius: '16px',
+            width: '100%',
+            maxWidth: 400,
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          }
+        }}
+      >
+        <Box sx={{ p: 3 }}>
+          <Typography sx={{ fontWeight: 800, fontSize: '1.25rem', mb: 2, color: theme.palette.mode === 'dark' ? '#f1f5f9' : '#0f172a' }}>
+            Share this Insight
+          </Typography>
+          
+          <Box sx={{ 
+            p: 2, 
+            borderRadius: '12px', 
+            bgcolor: theme.palette.mode === 'dark' ? alpha(accentColor, 0.1) : alpha(accentColor, 0.05),
+            border: `1px solid ${alpha(accentColor, 0.2)}`,
+            mb: 3
+          }}>
+            <Typography sx={{ fontWeight: 700, fontSize: '1rem', mb: 1, color: theme.palette.mode === 'dark' ? '#f8fafc' : '#0f172a', lineHeight: 1.3 }}>
+              {article.title}
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Avatar src={article.author?.avatarUrl} sx={{ width: 20, height: 20 }} />
+              <Typography sx={{ fontSize: '0.8rem', color: theme.palette.mode === 'dark' ? '#94a3b8' : '#64748b' }}>
+                By {article.author?.name || 'Society'}
+              </Typography>
+            </Box>
+          </Box>
+
+          <Button 
+            fullWidth 
+            variant="contained" 
+            disableElevation
+            startIcon={<ContentCopyIcon />}
+            onClick={() => {
+              navigator.clipboard.writeText(window.location.href);
+              setShareModalOpen(false);
+              // In a real app, you'd show a snackbar here, but this is fine for now
+            }}
+            sx={{ 
+              bgcolor: accentColor, 
+              color: '#fff',
+              py: 1.5,
+              borderRadius: '8px',
+              textTransform: 'none',
+              fontWeight: 700,
+              '&:hover': { bgcolor: alpha(accentColor, 0.8) }
+            }}
+          >
+            Copy Link
+          </Button>
+        </Box>
+      </Dialog>
     </Box>
   );
 }
