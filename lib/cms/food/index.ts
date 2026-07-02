@@ -84,13 +84,13 @@ export const foodTenantConfig: TenantConfig = {
         {
           title: "Project Oasis: 10,000 Hectare Mapping",
           desc: "Deploying hyperspectral drone analysis across Northern Nigeria to identify viable soil for wheat production.",
-          imageUrl: "https://images.unsplash.com/photo-1592982537447-6f2a6a0a3824?q=80&w=1000&auto=format&fit=crop",
+          imageUrl: "/images/showcase/oasis.webp",
           link: "/land/innovations"
         },
         {
           title: "The Solar Cold-Chain Initiative",
           desc: "Funding the deployment of 50 decentralized solar cold rooms across major perishable goods markets in Lagos.",
-          imageUrl: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?q=80&w=1000&auto=format&fit=crop",
+          imageUrl: "/images/showcase/solar-cold.webp",
           link: "/loss/innovations"
         }
       ]

@@ -228,69 +228,65 @@ export default function CinematicHero({ tenantName, headline, subheadline, stats
                             spacing={{ xs: 2, sm: 2 }}
                             sx={{ flex: { xs: '1 1 auto', lg: 'none' } }}
                         >
-                            {/* Total Contents Card */}
+                            {/* Total Contents Card - Neo-Minimal */}
                             <Card 
                                 component={Link}
                                 href="/learn"
                                 elevation={0} 
                                 sx={{ 
                                     textDecoration: 'none',
-                                    background: 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.03) 100%)',
-                                    backdropFilter: 'blur(12px)',
+                                    bgcolor: '#080808',
                                     borderRadius: 3,
-                                    p: { xs: 1.5, sm: 2 },
+                                    p: { xs: 1.5, sm: 2.5 },
                                     flex: 1,
                                     minWidth: { xs: 0, sm: 140 },
-                                    border: '1px solid rgba(255,255,255,0.15)',
-                                    borderTop: '1px solid rgba(255,255,255,0.3)',
-                                    boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+                                    border: '3px solid rgba(255,255,255,0.08)',
+                                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05), 0 4px 20px rgba(0,0,0,0.5)',
                                     textAlign: 'center',
                                     position: 'relative',
                                     overflow: 'hidden',
-                                    transition: 'all 0.3s ease',
+                                    transition: 'all 0.3s cubic-bezier(.4,0,.2,1)',
                                     '&:hover': {
                                         transform: 'translateY(-4px)',
-                                        background: 'linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.05) 100%)',
                                         borderColor: alpha(theme.palette.primary.main, 0.4),
+                                        boxShadow: `inset 0 0 20px ${alpha(theme.palette.primary.main, 0.05)}, 0 12px 30px rgba(0,0,0,0.8)`,
                                     }
                                 }}
                             >
-                                <Typography variant="h3" color="white" sx={{ fontWeight: 800, mb: 0.5, fontSize: { xs: '1.5rem', sm: '1.75rem' } }}>
+                                <Typography variant="h3" color="#ffffff" sx={{ fontWeight: 900, mb: 0.5, fontSize: { xs: '1.5rem', sm: '1.75rem' }, fontFamily: 'var(--font-dosis)' }}>
                                     {stats.activeSolutions}+
                                 </Typography>
-                                <Typography variant="body1" color="rgba(255,255,255,0.8)" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.65rem' }}>
+                                <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', fontSize: '0.6rem' }}>
                                     Total Contents
                                 </Typography>
                             </Card>
 
-                            {/* Community Card */}
+                            {/* Community Card - Neo-Minimal */}
                             <Card 
                                 elevation={0} 
                                 sx={{ 
-                                    background: 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.03) 100%)',
-                                    backdropFilter: 'blur(12px)',
+                                    bgcolor: '#080808',
                                     borderRadius: 3,
-                                    p: { xs: 1.5, sm: 2 },
+                                    p: { xs: 1.5, sm: 2.5 },
                                     flex: 1,
                                     minWidth: { xs: 0, sm: 140 },
-                                    border: '1px solid rgba(255,255,255,0.15)',
-                                    borderTop: '1px solid rgba(255,255,255,0.3)',
-                                    boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+                                    border: '3px solid rgba(255,255,255,0.08)',
+                                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05), 0 4px 20px rgba(0,0,0,0.5)',
                                     textAlign: 'center',
                                     position: 'relative',
                                     overflow: 'hidden',
-                                    transition: 'all 0.3s ease',
+                                    transition: 'all 0.3s cubic-bezier(.4,0,.2,1)',
                                     '&:hover': {
                                         transform: 'translateY(-4px)',
-                                        background: 'linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.05) 100%)',
                                         borderColor: alpha(theme.palette.secondary.main, 0.4),
+                                        boxShadow: `inset 0 0 20px ${alpha(theme.palette.secondary.main, 0.05)}, 0 12px 30px rgba(0,0,0,0.8)`,
                                     }
                                 }}
                             >
-                                <Typography variant="h3" color="white" sx={{ fontWeight: 800, mb: 0.5, fontSize: { xs: '1.5rem', sm: '1.75rem' } }}>
+                                <Typography variant="h3" color="#ffffff" sx={{ fontWeight: 900, mb: 0.5, fontSize: { xs: '1.5rem', sm: '1.75rem' }, fontFamily: 'var(--font-dosis)' }}>
                                     {stats.communitySize.toLocaleString()}
                                 </Typography>
-                                <Typography variant="body1" color="rgba(255,255,255,0.8)" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.65rem' }}>
+                                <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', fontSize: '0.6rem' }}>
                                     Members
                                 </Typography>
                             </Card>
@@ -394,59 +390,71 @@ export default function CinematicHero({ tenantName, headline, subheadline, stats
                             )}
                         </Box>
 
-                        {/* Join CTA Card - Premium Minimal Dark */}
+                        {/* Join CTA Card - Solid Premium Dark */}
                         <Card 
                             component={Link}
                             href="/join"
                             elevation={0} 
                             sx={{ 
-                                background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.15)} 0%, ${alpha('#000', 0.4)} 100%)`,
-                                backdropFilter: 'blur(20px)',
+                                bgcolor: '#080808',
                                 textDecoration: 'none',
-                                borderRadius: 3,
-                                p: { xs: 2.5, sm: 3 },
+                                borderRadius: 4,
+                                p: { xs: 3, sm: 4 },
                                 flex: 2,
-                                minWidth: { xs: '100%', sm: 220 },
-                                border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                                minWidth: { xs: '100%', sm: 280 },
+                                border: '3px solid rgba(255,255,255,0.08)',
+                                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05), 0 10px 40px rgba(0,0,0,0.6)',
                                 textAlign: 'left',
                                 position: 'relative',
                                 overflow: 'hidden',
-                                transition: 'all 0.3s ease',
+                                transition: 'all 0.4s cubic-bezier(.4,0,.2,1)',
+                                '&::before': {
+                                    content: '""', position: 'absolute', top: 0, left: 0, right: 0, height: '2px',
+                                    background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                                    opacity: 0.3, transition: 'opacity 0.4s'
+                                },
                                 '&:hover': { 
-                                    transform: 'translateY(-4px)',
-                                    borderColor: alpha(theme.palette.primary.main, 0.5),
-                                    boxShadow: `0 12px 40px ${alpha(theme.palette.primary.main, 0.2)}`,
-                                    background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.2)} 0%, ${alpha('#000', 0.5)} 100%)`,
+                                    transform: 'translateY(-6px)',
+                                    borderColor: alpha(theme.palette.primary.main, 0.3),
+                                    boxShadow: `0 20px 60px ${alpha(theme.palette.primary.main, 0.15)}`,
+                                    '&::before': { opacity: 1 }
                                 }
                             }}
                         >
-                            <Stack spacing={1.5} sx={{ position: 'relative', zIndex: 1, height: '100%', justifyContent: 'center' }}>
+                            <Stack spacing={2} sx={{ position: 'relative', zIndex: 1, height: '100%', justifyContent: 'center' }}>
                                 <Box>
-                                    <Typography variant="h3" color="white" sx={{ fontWeight: 800, mb: 0.5, letterSpacing: '-0.5px', fontSize: { xs: '1.5rem', sm: '1.7rem' } }}>
+                                    <Typography variant="overline" sx={{ color: theme.palette.primary.main, fontWeight: 900, letterSpacing: 3, mb: 1, display: 'block' }}>
+                                        EXCLUSIVE ACCESS
+                                    </Typography>
+                                    <Typography variant="h3" color="#ffffff" sx={{ fontWeight: 900, mb: 1, letterSpacing: '-0.5px', fontSize: { xs: '1.6rem', sm: '1.9rem' } }}>
                                         Join the Society
                                     </Typography>
-                                    <Typography variant="body1" color="rgba(255,255,255,0.75)" sx={{ mb: 2.5, lineHeight: 1.5, fontWeight: 500, fontSize: '0.95rem' }}>
+                                    <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.5)', mb: 3.5, lineHeight: 1.6, fontWeight: 400, fontSize: '0.95rem' }}>
                                         Want a say in shaping our food systems? The real work happens inside the Society. Join us to execute workflows, deploy capital, and collaborate with top innovators.
                                     </Typography>
-                                    <Box sx={{ 
-                                        display: 'inline-flex', 
-                                        alignItems: 'center', 
-                                        gap: 1,
-                                        bgcolor: theme.palette.primary.main,
-                                        px: 2.5,
-                                        py: 1.2,
-                                        borderRadius: 2,
-                                        fontWeight: 800,
-                                        fontSize: '0.85rem',
-                                        color: '#fff',
-                                        boxShadow: `0 4px 14px ${alpha(theme.palette.primary.main, 0.4)}`,
-                                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                                        '&:hover': { 
-                                            bgcolor: theme.palette.primary.light,
-                                        }
-                                    }}>
-                                        Authenticate Now
-                                        <Typography component="span" sx={{ fontSize: '1.1rem', transition: 'transform 0.2s', '.MuiBox-root:hover &': { transform: 'translateX(4px)' } }}>→</Typography>
+                                    
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                        <Box sx={{ 
+                                            display: 'inline-flex', 
+                                            alignItems: 'center', 
+                                            gap: 1.5,
+                                            bgcolor: 'white',
+                                            px: 3,
+                                            py: 1.5,
+                                            borderRadius: '100px', // Premium pill button
+                                            fontWeight: 800,
+                                            fontSize: '0.85rem',
+                                            color: '#000',
+                                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                            '&:hover': { 
+                                                bgcolor: theme.palette.primary.main,
+                                                color: '#fff',
+                                                transform: 'scale(1.05)'
+                                            }
+                                        }}>
+                                            Authenticate Now
+                                            <Typography component="span" sx={{ fontSize: '1.2rem', transition: 'transform 0.3s', '.MuiBox-root:hover &': { transform: 'translateX(4px)' } }}>→</Typography>
+                                        </Box>
                                     </Box>
                                 </Box>
                             </Stack>

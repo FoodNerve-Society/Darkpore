@@ -230,31 +230,42 @@ export default async function InnovationsHomepage() {
             return (
               <Box key={idx} sx={{ 
                 position: 'relative',
-                background: 'linear-gradient(90deg, rgba(10,10,10,0.85) 0%, rgba(20,20,20,0.2) 100%)',
-                backdropFilter: 'blur(8px)',
-                borderRight: '1px solid rgba(255,255,255,0.05)',
-                borderBottom: `2px solid ${statusColor}`,
-                transition: 'all 0.3s cubic-bezier(.4,0,.2,1)',
+                background: 'rgba(15, 15, 15, 0.6)',
+                backdropFilter: 'blur(16px)',
+                borderRadius: '100px', // Premium pill shape
+                border: '1px solid rgba(255,255,255,0.08)',
+                boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
+                transition: 'all 0.4s cubic-bezier(.4,0,.2,1)',
                 '&:hover': {
-                  background: 'linear-gradient(90deg, rgba(20,20,20,0.95) 0%, rgba(30,30,30,0.3) 100%)',
+                  background: 'rgba(25, 25, 25, 0.9)',
+                  borderColor: 'rgba(255,255,255,0.2)',
+                  transform: 'translateY(-2px)'
                 },
-                mr: 3,
+                mr: 4,
                 display: 'flex',
                 alignItems: 'center',
-                height: 64,
+                height: 54,
                 pr: 4,
-                pl: 3,
+                pl: 1.5,
+                my: 2, // Extra vertical breathing room
               }}>
-                <Link href={`/${item.challengeId}/${item.subcategoryId}/${item.section}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', width: '100%', gap: 16 }}>
+                <Link href={item.link || `/${item.challengeId}/${item.subcategoryId}/${item.section}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', width: '100%', gap: 12 }}>
                   
-                  {/* Glowing Icon Hexagon */}
-                  <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0, mr: 1 }}>
+                  {/* Glowing Status Dot (Replaces Hexagon) */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
                     <Box sx={{ 
-                       width: 16, height: 16, bgcolor: statusColor, 
-                       clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
-                       boxShadow: `0 0 12px ${statusColor}`,
-                       animation: (statusLabel === 'HAPPENING' || statusLabel === 'ACTION REQ') ? 'urgentPulse 2s ease-in-out infinite' : 'none',
-                    }} />
+                       width: 36, height: 36, 
+                       borderRadius: '50%',
+                       bgcolor: alpha(statusColor, 0.15),
+                       border: `1px solid ${alpha(statusColor, 0.5)}`,
+                       display: 'flex', alignItems: 'center', justifyContent: 'center',
+                       boxShadow: `0 0 12px ${alpha(statusColor, 0.4)}`,
+                    }}>
+                       <Box sx={{
+                           width: 8, height: 8, borderRadius: '50%', bgcolor: statusColor,
+                           animation: (statusLabel === 'HAPPENING' || statusLabel === 'ACTION REQ') ? 'urgentPulse 2s ease-in-out infinite' : 'none',
+                       }} />
+                    </Box>
                   </Box>
 
                   {/* Status & Title Stack */}
