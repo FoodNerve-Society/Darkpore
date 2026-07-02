@@ -3,41 +3,38 @@ import { Box, Container, Typography, Grid, Card, Button, Chip } from '@mui/mater
 import Link from 'next/link';
 import { headers } from 'next/headers';
 import { getTenantConfig } from '@/lib/cms';
-
-/* ── dummy metrics per project index ── */
-const projectMetrics: Record<number, { label: string; value: string }[]> = {
-  0: [
-    { label: 'Target Market', value: '$12.5B' },
-    { label: 'Stage', value: 'Pilot' },
-    { label: 'Region', value: 'Northern Nigeria' },
-    { label: 'Hectares Mapped', value: '10,000+' },
-  ],
-  1: [
-    { label: 'Units Funded', value: '50' },
-    { label: 'Stage', value: 'Deployment' },
-    { label: 'Region', value: 'Lagos, Nigeria' },
-    { label: 'Food Saved/yr', value: '8,200 tons' },
-  ],
-};
-
-const fallbackMetrics = [
-  { label: 'Target Market', value: '$8B+' },
-  { label: 'Stage', value: 'Scaling' },
-  { label: 'Region', value: 'West Africa' },
-  { label: 'Impact', value: 'Transformative' },
-];
-
-/* ── sector tags per project ── */
-const sectorTags: Record<number, string> = {
-  0: 'PRECISION AGRICULTURE',
-  1: 'COLD-CHAIN LOGISTICS',
-};
+import prisma from '@/lib/prisma';
 
 export default async function ProjectsManifestoPage() {
   const headersList = await headers();
   const tenantId = headersList.get('x-tenant-id') || 'food';
   const tenant = getTenantConfig(tenantId);
-  const homepageConfig = tenant.com.homepage;
+
+  // Fetch live active deployments from DB
+  let activeDeployments: any[] = [];
+  try {
+    activeDeployments = await prisma.campaign.findMany({
+      where: { status: 'active_deployment' },
+      orderBy: { createdAt: 'desc' },
+      take: 10
+    });
+  } catch (e) {
+    console.error("SERVER LOG - Failed to fetch active deployments", e);
+  }
+
+  // Map to local variables for rendering
+  const projectsToRender = activeDeployments.length > 0 ? activeDeployments : tenant.com.homepage.showcaseProjects.map((p, idx) => ({
+    id: String(idx),
+    title: p.title,
+    description: p.description,
+    imageUrl: p.imageUrl,
+    tractionMetric: 'Active Operations',
+    goalAmount: 500000,
+    raisedAmount: 120000,
+    originTag: 'Core Deployment',
+    subcategory: 'INNOVATION',
+    challengeId: tenant.com.homepage.challenges[0]?.id || 'general'
+  }));
 
   return (
     <Box sx={{ bgcolor: '#000', minHeight: '100vh' }}>
@@ -158,13 +155,20 @@ export default async function ProjectsManifestoPage() {
       {/* ═══════════════════════════════════════════════════════════════
           2. IMMERSIVE PROJECT SECTIONS
       ═══════════════════════════════════════════════════════════════ */}
-      {homepageConfig.showcaseProjects.map((project, idx) => {
+      {projectsToRender.map((project, idx) => {
         const isEven = idx % 2 === 0;
-        const metrics = projectMetrics[idx] || fallbackMetrics;
-        const sector = sectorTags[idx] || 'INNOVATION';
+        const sector = project.subcategory || project.originTag || 'INNOVATION';
+        
+        // Dynamically build metrics based on live DB fields
+        const metrics = [
+          { label: 'Target Capital', value: project.goalAmount ? `$${(project.goalAmount / 1000).toFixed(0)}k` : 'TBD' },
+          { label: 'Stage', value: 'Active Deployment' },
+          { label: 'Traction', value: project.tractionMetric || 'Scaling' },
+          { label: 'Raised', value: project.raisedAmount ? `$${(project.raisedAmount / 1000).toFixed(0)}k` : 'Private' },
+        ];
 
         return (
-          <React.Fragment key={idx}>
+          <React.Fragment key={project.id || idx}>
             {/* ── Divider ── */}
             {idx > 0 && (
               <Box
@@ -234,7 +238,7 @@ export default async function ProjectsManifestoPage() {
                 sx={{
                   position: 'absolute',
                   inset: 0,
-                  backgroundImage: `url(${project.imageUrl})`,
+                  backgroundImage: `url(${project.imageUrl || project.thumbnailUrl || '/images/default-deployment.jpg'})`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
                   filter: 'brightness(0.3) saturate(1.2)',
@@ -354,7 +358,7 @@ export default async function ProjectsManifestoPage() {
                     </Typography>
 
                     {/* CTA */}
-                    <Link href={`${project.link}`} passHref style={{ textDecoration: 'none' }}>
+                      <Link href={`/${project.id}`} passHref style={{ textDecoration: 'none' }}>
                       <Button
                         variant="contained"
                         size="large"
