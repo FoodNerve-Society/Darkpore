@@ -3,7 +3,7 @@ import { Box, Container, Typography, Grid, Card, Button, Chip } from '@mui/mater
 import Link from 'next/link';
 import { headers } from 'next/headers';
 import { getTenantConfig } from '@/lib/cms';
-import prisma from '@/lib/prisma';
+import { prisma } from '@/lib/db/client';
 
 export default async function ProjectsManifestoPage() {
   const headersList = await headers();
@@ -26,7 +26,7 @@ export default async function ProjectsManifestoPage() {
   const projectsToRender = activeDeployments.length > 0 ? activeDeployments : tenant.com.homepage.showcaseProjects.map((p, idx) => ({
     id: String(idx),
     title: p.title,
-    description: p.description,
+    description: p.desc,
     imageUrl: p.imageUrl,
     tractionMetric: 'Active Operations',
     goalAmount: 500000,
@@ -354,7 +354,7 @@ export default async function ProjectsManifestoPage() {
                         ml: { md: isEven ? 0 : 'auto' },
                       }}
                     >
-                      {project.desc}
+                      {project.description}
                     </Typography>
 
                     {/* CTA */}

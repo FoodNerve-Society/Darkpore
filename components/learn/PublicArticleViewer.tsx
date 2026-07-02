@@ -12,9 +12,27 @@ const ERA_COLORS = {
   default: '#f59e0b'  // Amber (Fallback)
 };
 
-export function PublicArticleViewer({ material, tenant, loginUrl }: { material: any, tenant: any, loginUrl: string }) {
+export function PublicArticleViewer({ 
+  material, 
+  tenant, 
+  loginUrl,
+  themeMode = 'light'
+}: { 
+  material: any; 
+  tenant: any; 
+  loginUrl: string;
+  themeMode?: 'light' | 'dark';
+}) {
   // Determine era color based on material tags/timeframe
-  const timeframe = material.bottleneckTags?.find((t: string) => ['past', 'present', 'future'].includes(t.toLowerCase()))?.toLowerCase() || 'default';
+  let tags = [];
+  try {
+    tags = typeof material.bottleneckTags === 'string' 
+      ? JSON.parse(material.bottleneckTags) 
+      : (material.bottleneckTags || []);
+  } catch(e) {
+    tags = [];
+  }
+  const timeframe = tags.find((t: string) => ['past', 'present', 'future'].includes(t?.toLowerCase?.() || ''))?.toLowerCase() || 'default';
   const themeColor = ERA_COLORS[timeframe as keyof typeof ERA_COLORS] || ERA_COLORS.default;
 
   // Progress Bar State
@@ -84,7 +102,7 @@ export function PublicArticleViewer({ material, tenant, loginUrl }: { material: 
                   <Box sx={{
                     height: 4,
                     borderRadius: 2,
-                    bgcolor: isActive ? themeColor : 'rgba(255,255,255,0.1)',
+                    bgcolor: isActive ? themeColor : (themeMode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'),
                     boxShadow: isActive ? `0 0 10px ${themeColor}80` : 'none',
                     transition: 'all 0.3s ease',
                   }} />
@@ -97,8 +115,8 @@ export function PublicArticleViewer({ material, tenant, loginUrl }: { material: 
 
       {/* ── Article Content ── */}
       <Box sx={{
-        bgcolor: 'rgba(255,255,255,0.02)',
-        border: '1px solid rgba(255,255,255,0.05)',
+        bgcolor: themeMode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
+        border: themeMode === 'dark' ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(0,0,0,0.05)',
         borderRadius: '24px',
         p: { xs: 3, md: 6 },
         position: 'relative',
@@ -109,7 +127,7 @@ export function PublicArticleViewer({ material, tenant, loginUrl }: { material: 
           <Typography sx={{ 
             fontSize: '1.25rem',
             lineHeight: 1.6,
-            color: 'rgba(255,255,255,0.9)',
+            color: themeMode === 'dark' ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.9)',
             fontWeight: 400,
             mb: 5,
           }}>
@@ -126,14 +144,14 @@ export function PublicArticleViewer({ material, tenant, loginUrl }: { material: 
                 key={block.id || idx} 
                 sx={{ mb: 6 }}
               >
-                <ArticleBlockRenderer block={block} themeMode="dark" accentColor={themeColor} />
+                <ArticleBlockRenderer block={block} themeMode={themeMode} accentColor={themeColor} />
               </Box>
             ))}
           </Box>
         ) : (
           /* Fallback for legacy articles without blocks */
           material.type === 'article' && !material.isPremium && (
-            <Typography sx={{ fontSize: '1.05rem', lineHeight: 1.8, color: 'rgba(255,255,255,0.6)', whiteSpace: 'pre-line' }}>
+            <Typography sx={{ fontSize: '1.05rem', lineHeight: 1.8, color: themeMode === 'dark' ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.7)', whiteSpace: 'pre-line' }}>
               {material.fullContent}
             </Typography>
           )
@@ -145,9 +163,9 @@ export function PublicArticleViewer({ material, tenant, loginUrl }: { material: 
             {/* Fake faded content for legacy fullContent, or we just blur the bottom of the blocks */}
             {!parsedBlocks.length && (
               <Typography sx={{ 
-                fontSize: '1.05rem', lineHeight: 1.8, color: 'rgba(255,255,255,0.3)', whiteSpace: 'pre-line',
-                maskImage: 'linear-gradient(to bottom, black 0%, transparent 100%)',
-                WebkitMaskImage: 'linear-gradient(to bottom, black 0%, transparent 100%)',
+                fontSize: '1.05rem', lineHeight: 1.8, color: themeMode === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)', whiteSpace: 'pre-line',
+                maskImage: `linear-gradient(to bottom, ${themeMode === 'dark' ? 'black' : 'white'} 0%, transparent 100%)`,
+                WebkitMaskImage: `linear-gradient(to bottom, ${themeMode === 'dark' ? 'black' : 'white'} 0%, transparent 100%)`,
                 pointerEvents: 'none', filter: 'blur(2px)',
               }}>
                 {material.fullContent?.substring(0, 800) || 'Premium intelligence blueprint content goes here...'}
@@ -161,14 +179,16 @@ export function PublicArticleViewer({ material, tenant, loginUrl }: { material: 
               right: 0,
               bottom: parsedBlocks.length > 0 ? '-100px' : 'auto', // Cover remaining if blocks exist
               minHeight: 400,
-              background: 'linear-gradient(180deg, rgba(15,23,42,0) 0%, rgba(15,23,42,0.8) 20%, rgba(15,23,42,0.95) 100%)',
+              background: themeMode === 'dark' 
+                ? 'linear-gradient(180deg, rgba(15,23,42,0) 0%, rgba(15,23,42,0.8) 20%, rgba(15,23,42,0.95) 100%)'
+                : 'linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.8) 20%, rgba(255,255,255,0.95) 100%)',
               backdropFilter: 'blur(8px)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
               zIndex: 10,
-              borderTop: '1px solid rgba(255,255,255,0.05)',
+              borderTop: themeMode === 'dark' ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(0,0,0,0.05)',
               borderBottomRadius: '24px',
               px: { xs: 3, md: 6 },
               py: 8,
@@ -177,9 +197,11 @@ export function PublicArticleViewer({ material, tenant, loginUrl }: { material: 
               
               {/* Premium Inner Modal */}
               <Box sx={{
-                bgcolor: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                boxShadow: `0 30px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1), 0 0 40px ${themeColor}30`,
+                bgcolor: themeMode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.7)',
+                border: themeMode === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.1)',
+                boxShadow: themeMode === 'dark' 
+                  ? `0 30px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1), 0 0 40px ${themeColor}30`
+                  : `0 30px 60px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,1), 0 0 40px ${themeColor}20`,
                 backdropFilter: 'blur(40px)',
                 borderRadius: '24px',
                 p: { xs: 4, md: 6 },
@@ -198,13 +220,15 @@ export function PublicArticleViewer({ material, tenant, loginUrl }: { material: 
                 <Box sx={{
                   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                   width: 72, height: 72, borderRadius: '50%',
-                  background: `linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.02) 100%)`,
-                  border: '1px solid rgba(255,255,255,0.15)',
+                  background: themeMode === 'dark' 
+                    ? `linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.02) 100%)`
+                    : `linear-gradient(135deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.01) 100%)`,
+                  border: themeMode === 'dark' ? '1px solid rgba(255,255,255,0.15)' : '1px solid rgba(0,0,0,0.1)',
                   boxShadow: `0 8px 32px ${themeColor}40`,
                   mb: 4,
                   position: 'relative'
                 }}>
-                  <LockOutlinedIcon sx={{ fontSize: 32, color: '#fff' }} />
+                  <LockOutlinedIcon sx={{ fontSize: 32, color: themeMode === 'dark' ? '#fff' : '#000' }} />
                   {/* Pulsing ring */}
                   <Box sx={{
                     position: 'absolute', inset: -4, borderRadius: '50%',
@@ -214,13 +238,13 @@ export function PublicArticleViewer({ material, tenant, loginUrl }: { material: 
                 </Box>
 
                 <Typography sx={{
-                  color: 'white', fontSize: '1.8rem', fontWeight: 900, mb: 2, letterSpacing: '-0.02em',
+                  color: themeMode === 'dark' ? 'white' : 'black', fontSize: '1.8rem', fontWeight: 900, mb: 2, letterSpacing: '-0.02em',
                 }}>
                   Classified Blueprint
                 </Typography>
                 
                 <Typography sx={{
-                  color: 'rgba(255,255,255,0.6)', fontSize: '1.05rem', lineHeight: 1.6, mb: 5,
+                  color: themeMode === 'dark' ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)', fontSize: '1.05rem', lineHeight: 1.6, mb: 5,
                 }}>
                   You are viewing a restricted preview. Authenticate as a verified member of the {tenant.name} Society to unlock the strategic framework and full analysis.
                 </Typography>

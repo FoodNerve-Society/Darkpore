@@ -18,10 +18,10 @@ import Link from 'next/link';
 interface LearningMaterial {
   slug: string;
   title: string;
-  type: 'article' | 'video' | 'pdf';
+  type: 'article' | 'video' | 'class' | 'livestream';
   thumbnailUrl: string;
-  previewText: string;
-  isPremium: boolean;
+  previewText?: string;
+  isPremium?: boolean;
   dateAdded: string;
   author?: string;
   readTime?: string;
@@ -38,7 +38,8 @@ interface ClientLearnHubProps {
 const typeMeta: Record<string, { color: string; icon: string; label: string }> = {
   article: { color: 'rgba(99, 102, 241, 0.85)', icon: '📰', label: 'ARTICLE' },
   video: { color: 'rgba(236, 72, 153, 0.85)', icon: '🎬', label: 'VIDEO' },
-  pdf: { color: 'rgba(245, 158, 11, 0.85)', icon: '📄', label: 'PDF' },
+  class: { color: 'rgba(16, 185, 129, 0.85)', icon: '🎓', label: 'CLASS' },
+  livestream: { color: 'rgba(245, 158, 11, 0.85)', icon: '📡', label: 'LIVESTREAM' },
 };
 
 export default function ClientLearnHub({ initialMaterials, categories, tenantName }: ClientLearnHubProps) {
@@ -439,7 +440,7 @@ export default function ClientLearnHub({ initialMaterials, categories, tenantNam
           <Typography sx={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', mr: 2, fontWeight: 700 }}>
             FILTER BY TYPE:
           </Typography>
-          {['all', 'article', 'video', 'pdf'].map((type) => {
+          {['all', 'article', 'video', 'class', 'livestream'].map((type) => {
             const isSelected = selectedType === type;
             return (
               <Button
@@ -466,7 +467,8 @@ export default function ClientLearnHub({ initialMaterials, categories, tenantNam
                 {type === 'all' && 'ALL TYPES'}
                 {type === 'article' && '📰 ARTICLES'}
                 {type === 'video' && '🎬 VIDEOS'}
-                {type === 'pdf' && '📄 PDFs'}
+                {type === 'class' && '🎓 CLASSES'}
+                {type === 'livestream' && '📡 LIVESTREAMS'}
               </Button>
             );
           })}
@@ -501,7 +503,7 @@ export default function ClientLearnHub({ initialMaterials, categories, tenantNam
               return (
                 <Link
                   key={idx}
-                  href={`/${material.challengeId}/learn/${material.slug}`}
+                  href={`/learn/${material.type || 'article'}/${material.slug}`}
                   style={{ textDecoration: 'none', display: 'block' }}
                 >
                   <Box

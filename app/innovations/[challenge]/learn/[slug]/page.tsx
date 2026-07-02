@@ -158,7 +158,7 @@ export default async function ContentPage({ params }: { params: Promise<{ challe
       <Divider sx={{ borderColor: 'rgba(255,255,255,0.06)', mb: 6 }} />
 
       {/* ── Main Content Area ── */}
-      <PublicArticleViewer material={material} tenant={tenant} loginUrl={loginUrl} />
+      <PublicArticleViewer material={material} tenant={tenant} loginUrl={loginUrl} themeMode="dark" />
 
       {/* ── Related Knowledge ── */}
       {relatedMaterials.length > 0 && (
