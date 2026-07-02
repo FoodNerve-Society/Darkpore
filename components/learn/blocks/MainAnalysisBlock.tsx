@@ -1,6 +1,6 @@
 import React from 'react';
-import { Box, Typography } from '@mui/material';
-import { Verified as VerifiedIcon } from '@mui/icons-material';
+import { Box, Typography, alpha, useTheme, Avatar } from '@mui/material';
+import { Verified as VerifiedIcon, FormatQuote as QuoteIcon } from '@mui/icons-material';
 
 type MainAnalysisBlockProps = {
   content: {
@@ -100,12 +100,13 @@ export const MainAnalysisBlock: React.FC<MainAnalysisBlockProps> = ({ content, t
         >
           {/* Author Avatar */}
           <Box sx={{ flexShrink: 0, position: 'relative' }}>
-            <Box 
-              component="img" 
+            <Avatar 
               src={author.avatarUrl} 
               alt={author.name}
-              sx={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} 
-            />
+              sx={{ width: 40, height: 40 }} 
+            >
+              {author.name?.charAt(0)}
+            </Avatar>
             <Box sx={{ 
               position: 'absolute', bottom: -2, right: -2, width: 12, height: 12, 
               bgcolor: '#10b981', borderRadius: '50%', border: `2px solid ${isDark ? '#0f172a' : '#fff'}` 

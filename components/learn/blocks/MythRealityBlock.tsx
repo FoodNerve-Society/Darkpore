@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, Avatar } from '@mui/material';
 import { Close as CloseIcon, Check as CheckIcon, Verified as VerifiedIcon } from '@mui/icons-material';
 
 type MythRealityBlockProps = {
@@ -118,7 +118,9 @@ export const MythRealityBlock: React.FC<MythRealityBlockProps> = ({ content, the
                 </Typography>
               </Box>
             </Box>
-            <img src={author.avatarUrl} alt={author.name} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }} />
+            <Avatar src={author.avatarUrl} alt={author.name} sx={{ width: 28, height: 28 }}>
+              {author.name?.charAt(0)}
+            </Avatar>
           </Box>
         </Box>
       )}

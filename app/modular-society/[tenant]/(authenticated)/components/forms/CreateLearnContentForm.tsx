@@ -704,8 +704,8 @@ export default function CreateLearnContentForm({
     const c = block.content;
     let filled = 0;
     let total = 1;
-    switch (block.type) {
-      case 'subheading': case 'spiky_title':
+    switch (block.type as string) {
+      case 'subheading':
         total = 1; if (c.text) filled = 1; break;
       case 'core_interactive': case 'deep_dive':
         total = 1; if (c.bionicText || c.text || c.heading) filled = 1; break;
@@ -1869,7 +1869,7 @@ export default function CreateLearnContentForm({
                   themeMode="light" 
                   accentColor={selectedTimeframe === 'past' ? '#ef4444' : selectedTimeframe === 'present' ? '#10b981' : '#3b82f6'} 
                   author={{ 
-                    name: [profile?.prefixes?.[0], profile?.firstName || profile?.username || "You", profile?.lastName, profile?.suffixes?.[0]].filter(Boolean).join(' '), 
+                    name: [profile?.prefixes?.[0], profile?.firstName || "You", profile?.lastName, profile?.suffixes?.[0]].filter(Boolean).join(' '), 
                     avatarUrl: profile?.avatarUrl || "https://i.pravatar.cc/150?u=preview",
                     isVerified: true
                   }}

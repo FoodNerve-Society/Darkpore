@@ -9,7 +9,9 @@ import {
   Close as CloseIcon, 
   Send as SendIcon, 
   ThumbUpOutlined as ThumbUpIcon,
-  Verified as VerifiedIcon 
+  Verified as VerifiedIcon,
+  ChatBubbleOutlined as ChatIcon,
+  IosShare as ShareIcon
 } from '@mui/icons-material';
 import { useSociety } from '@/context/SocietyContext';
 
@@ -33,6 +35,18 @@ export const BlockInsightsDrawer: React.FC<BlockInsightsDrawerProps> = ({ open, 
       parsedContent = JSON.parse(parsedContent);
     } catch (e) {}
   }
+
+  const getContextSnippet = () => {
+    if (!parsedContent) return 'Selected Block';
+    return parsedContent.text || 
+           parsedContent.discussionPrompt || 
+           parsedContent.bionicText?.replace(/<[^>]+>/g, '') || 
+           parsedContent.heading ||
+           parsedContent.myth ||
+           parsedContent.quote ||
+           parsedContent.question ||
+           'Selected Block';
+  };
 
   // Mock comments for demonstration
   const comments = [
@@ -72,87 +86,85 @@ export const BlockInsightsDrawer: React.FC<BlockInsightsDrawerProps> = ({ open, 
         }
       }}
     >
-      {/* Header */}
+      {/* Premium Header */}
       <Box sx={{ 
         p: 3, 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'space-between',
+        pb: 2,
         borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`,
-        bgcolor: isDark ? 'rgba(15,23,42,0.9)' : 'rgba(248,250,252,0.9)',
-        backdropFilter: 'blur(12px)',
+        bgcolor: isDark ? 'rgba(15,23,42,0.95)' : 'rgba(255,255,255,0.95)',
+        backdropFilter: 'blur(20px)',
         position: 'sticky',
         top: 0,
-        zIndex: 10
+        zIndex: 20
       }}>
-        <Box>
-          <Typography sx={{ fontWeight: 800, fontSize: '1.25rem', color: isDark ? '#f8fafc' : '#0f172a' }}>
-            Block Insights
-          </Typography>
-          <Typography sx={{ fontSize: '0.8rem', color: isDark ? '#94a3b8' : '#64748b' }}>
-            Join the conversation for this specific section
-          </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8b5cf6' }}>
+              {activeBlock ? String(activeBlock.blockType).replace('_', ' ') : 'Insights'}
+            </Typography>
+            <Box sx={{ px: 1, py: 0.25, borderRadius: '100px', bgcolor: alpha('#8b5cf6', 0.1), color: '#8b5cf6', fontSize: '0.7rem', fontWeight: 800 }}>
+              {comments.length} Comments
+            </Box>
+          </Box>
+          <IconButton onClick={onClose} sx={{ mt: -1, mr: -1, bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)', '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' } }}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
         </Box>
-        <IconButton onClick={onClose} sx={{ color: isDark ? '#94a3b8' : '#64748b' }}>
-          <CloseIcon />
-        </IconButton>
+        <Typography sx={{ fontWeight: 600, fontSize: '1rem', color: isDark ? '#f8fafc' : '#0f172a', lineHeight: 1.4 }}>
+          {parsedContent?.discussionPrompt || parsedContent?.anchorQuestion || parsedContent?.question || 'What are your thoughts on this section?'}
+        </Typography>
       </Box>
 
-      {/* Block Context Snippet */}
-      {activeBlock && (
-        <Box sx={{ 
-          p: 2, mx: 3, mt: 3, mb: 1, 
-          bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', 
-          borderRadius: '12px',
-          borderLeft: `4px solid #8b5cf6`
-        }}>
-          <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: '#8b5cf6', textTransform: 'uppercase', mb: 0.5 }}>
-            Commenting on:
-          </Typography>
-          <Typography sx={{ fontSize: '0.85rem', color: isDark ? '#cbd5e1' : '#475569', fontStyle: 'italic', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-            {parsedContent?.text || parsedContent?.discussionPrompt || parsedContent?.bionicText?.replace(/<[^>]+>/g, '') || 'Selected Block'}
-          </Typography>
-        </Box>
-      )}
-
-      {/* Comments List */}
-      <Box sx={{ p: 3, flex: 1, overflowY: 'auto' }}>
+      {/* Main Content Area */}
+      <Box sx={{ flex: 1, overflowY: 'auto' }}>
+        
         {comments.map((comment) => (
-          <Box key={comment.id} sx={{ mb: 4 }}>
+          <Box key={comment.id} sx={{ 
+            p: 3, 
+            borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`,
+            transition: 'background-color 0.2s',
+            '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' }
+          }}>
             <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
-              <Avatar src={comment.avatar} sx={{ width: 40, height: 40 }} />
+              <Avatar src={comment.avatar} sx={{ width: 44, height: 44 }} />
               <Box sx={{ flex: 1 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                  <Typography sx={{ fontWeight: 700, fontSize: '0.9rem', color: isDark ? '#f8fafc' : '#0f172a' }}>
+                  <Typography sx={{ fontWeight: 800, fontSize: '0.95rem', color: isDark ? '#f8fafc' : '#0f172a' }}>
                     {comment.user}
                   </Typography>
                   {comment.isRank4 && (
-                    <VerifiedIcon sx={{ fontSize: 14, color: '#f59e0b' }} />
+                    <VerifiedIcon sx={{ fontSize: 16, color: '#f59e0b' }} />
                   )}
-                  <Typography sx={{ fontSize: '0.75rem', color: isDark ? '#64748b' : '#94a3b8', ml: 'auto' }}>
-                    {comment.time}
+                  <Typography sx={{ fontSize: '0.85rem', color: isDark ? '#64748b' : '#94a3b8' }}>
+                    · {comment.time}
                   </Typography>
                 </Box>
                 <Typography sx={{ 
-                  fontSize: '0.95rem', 
+                  fontSize: '1rem', 
                   lineHeight: 1.5, 
-                  color: isDark ? 'rgba(255,255,255,0.8)' : '#334155',
+                  color: isDark ? 'rgba(255,255,255,0.9)' : '#1e293b',
                   mb: 1.5
                 }}>
                   {comment.text}
                 </Typography>
                 
                 {/* Actions */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, cursor: 'pointer', '&:hover': { color: '#8b5cf6' } }}>
-                    <ThumbUpIcon sx={{ fontSize: 16, color: isDark ? '#64748b' : '#94a3b8' }} />
-                    <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: isDark ? '#64748b' : '#94a3b8' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, cursor: 'pointer', color: isDark ? '#64748b' : '#94a3b8', '&:hover': { color: '#ef4444' } }}>
+                    <ThumbUpIcon sx={{ fontSize: 18 }} />
+                    <Typography sx={{ fontSize: '0.85rem', fontWeight: 600 }}>
                       {comment.likes}
                     </Typography>
                   </Box>
-                  <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: isDark ? '#64748b' : '#94a3b8', cursor: 'pointer', '&:hover': { color: '#8b5cf6' } }}>
-                    Reply
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, cursor: 'pointer', color: isDark ? '#64748b' : '#94a3b8', '&:hover': { color: '#8b5cf6' } }}>
+                    <ChatIcon sx={{ fontSize: 18 }} />
+                    <Typography sx={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                      Reply
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, cursor: 'pointer', color: isDark ? '#64748b' : '#94a3b8', '&:hover': { color: '#10b981' } }}>
+                    <ShareIcon sx={{ fontSize: 18 }} />
+                  </Box>
                 </Box>
               </Box>
             </Box>
@@ -160,51 +172,52 @@ export const BlockInsightsDrawer: React.FC<BlockInsightsDrawerProps> = ({ open, 
         ))}
       </Box>
 
-      {/* Input Area (Glassmorphic bottom) */}
+      {/* Input Area */}
       <Box sx={{ 
-        p: 3, 
-        pt: 2,
+        p: 2, px: 3,
         borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`,
-        bgcolor: isDark ? 'rgba(15,23,42,0.8)' : 'rgba(248,250,252,0.8)',
-        backdropFilter: 'blur(16px)',
+        bgcolor: isDark ? 'rgba(15,23,42,0.95)' : 'rgba(255,255,255,0.95)',
+        backdropFilter: 'blur(20px)',
         position: 'sticky',
         bottom: 0,
-        zIndex: 10
+        zIndex: 20
       }}>
-        <Box sx={{ display: 'flex', gap: 2 }}>
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
           <Avatar src={profile?.avatarUrl} sx={{ width: 40, height: 40 }} />
-          <Box sx={{ flex: 1, position: 'relative' }}>
+          <Box sx={{ 
+            flex: 1, 
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            bgcolor: isDark ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.03)',
+            borderRadius: '24px',
+            border: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+            transition: 'all 0.2s',
+            '&:focus-within': { borderColor: '#8b5cf6', boxShadow: `0 0 0 2px ${alpha('#8b5cf6', 0.2)}` }
+          }}>
             <TextField
               fullWidth
               multiline
               maxRows={4}
-              placeholder="Add your insight..."
+              placeholder="Post your reply..."
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
-              variant="outlined"
+              variant="standard"
+              InputProps={{ disableUnderline: true }}
               sx={{
-                '& .MuiOutlinedInput-root': {
-                  bgcolor: isDark ? 'rgba(0,0,0,0.2)' : '#fff',
-                  borderRadius: '16px',
-                  fontSize: '0.95rem',
-                  p: 1.5,
-                  '& fieldset': { borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' },
-                  '&:hover fieldset': { borderColor: '#8b5cf6' },
-                  '&.Mui-focused fieldset': { borderColor: '#8b5cf6', borderWidth: '1px' }
-                }
+                p: 1.5,
+                px: 2,
+                fontSize: '0.95rem',
+                color: isDark ? '#fff' : '#0f172a'
               }}
             />
             <IconButton 
               disabled={!commentText.trim()}
               sx={{ 
-                position: 'absolute', 
-                bottom: 8, 
-                right: 8,
-                bgcolor: commentText.trim() ? '#8b5cf6' : (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'),
+                mr: 1,
+                bgcolor: commentText.trim() ? '#8b5cf6' : 'transparent',
                 color: commentText.trim() ? '#fff' : (isDark ? '#475569' : '#cbd5e1'),
-                '&:hover': {
-                  bgcolor: commentText.trim() ? '#7c3aed' : undefined
-                }
+                '&:hover': { bgcolor: commentText.trim() ? '#7c3aed' : 'transparent' }
               }}
             >
               <SendIcon sx={{ fontSize: 18 }} />

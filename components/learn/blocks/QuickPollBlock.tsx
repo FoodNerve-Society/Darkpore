@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Typography, Button } from '@mui/material';
+import { Box, Typography, Button, Avatar } from '@mui/material';
 import { Verified as VerifiedIcon } from '@mui/icons-material';
 
 type QuickPollBlockProps = {
@@ -93,7 +93,9 @@ export const QuickPollBlock: React.FC<QuickPollBlockProps> = ({ content, themeMo
               '&:hover .reply-btn': { bgcolor: accentColor || '#8b5cf6', color: '#fff' }
             }}
           >
-            <img src={author.avatarUrl} alt={author.name} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }} />
+            <Avatar src={author.avatarUrl} alt={author.name} sx={{ width: 28, height: 28 }}>
+              {author.name?.charAt(0)}
+            </Avatar>
             <Box sx={{ 
               bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
               borderRadius: '18px', borderTopLeftRadius: '0px',
