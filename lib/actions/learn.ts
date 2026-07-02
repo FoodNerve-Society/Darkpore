@@ -262,3 +262,44 @@ export async function getLearnContentById(id: string) {
     }
   });
 }
+
+// ─── BLOCK COMMENTS ──────────────────────────────────────────
+
+export async function getBlockComments(blockId: string) {
+  return await prisma.blockComment.findMany({
+    where: { blockId, parentId: null },
+    orderBy: { createdAt: 'desc' },
+    include: {
+      replies: {
+        orderBy: { createdAt: 'asc' },
+      }
+    }
+  });
+}
+
+export async function postBlockComment(data: {
+  blockId: string;
+  text: string;
+  userId?: string | null;
+  displayName?: string;
+  avatarUrl?: string | null;
+  parentId?: string | null;
+}) {
+  return await prisma.blockComment.create({
+    data: {
+      blockId: data.blockId,
+      text: data.text,
+      userId: data.userId || null,
+      displayName: data.displayName || 'Anonymous',
+      avatarUrl: data.avatarUrl || null,
+      parentId: data.parentId || null,
+    }
+  });
+}
+
+export async function likeBlockComment(commentId: string) {
+  return await prisma.blockComment.update({
+    where: { id: commentId },
+    data: { likes: { increment: 1 } }
+  });
+}

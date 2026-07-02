@@ -593,52 +593,44 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
             borderBottom: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`
           }}>
             
-            {/* Left: Author Info */}
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
+            {/* Contributors Stack */}
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75, width: '100%' }}>
+              
+              {/* Primary Author */}
               {article.author && (
-                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                  <Avatar src={article.author.avatarUrl} sx={{ width: 48, height: 48, border: `2px solid ${alpha(accentColor, 0.2)}` }} />
-                  <Box>
-                    <Typography sx={{ fontWeight: 800, fontSize: '1.05rem', color: theme.palette.mode === 'dark' ? '#fff' : '#0f172a', lineHeight: 1.2, display: 'flex', alignItems: 'center' }}>
-                      {article.author.name}
-                      {article.author.isVerified && <VerifiedIcon sx={{ fontSize: 16, color: accentColor, ml: 0.5 }} />}
-                    </Typography>
-                    <Typography sx={{ fontSize: '0.85rem', color: theme.palette.mode === 'dark' ? '#94a3b8' : '#64748b', fontWeight: 500, mt: 0.5 }}>
-                      {new Date(article.createdAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
-                    </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: '100%' }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Avatar src={article.author.avatarUrl} sx={{ width: 28, height: 28, fontSize: '0.7rem' }} />
+                    <Box>
+                      <Typography sx={{ fontWeight: 700, fontSize: '0.78rem', color: theme.palette.mode === 'dark' ? '#e2e8f0' : '#1e293b', display: 'flex', alignItems: 'center', lineHeight: 1.2 }}>
+                        {article.author.name}
+                        {article.author.isVerified && <VerifiedIcon sx={{ fontSize: 12, color: accentColor, ml: 0.5 }} />}
+                      </Typography>
+                      <Typography sx={{ fontSize: '0.68rem', color: theme.palette.mode === 'dark' ? '#64748b' : '#94a3b8', fontWeight: 500, lineHeight: 1.2 }}>
+                        {new Date(article.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                      </Typography>
+                    </Box>
                   </Box>
-                </Box>
-              )}
-            </Box>
-
-            {/* Right: Author Title & Editors */}
-            <Box sx={{ display: "flex", alignItems: "flex-end", flexDirection: "column", gap: 0.5 }}>
-              <Typography sx={{ fontSize: '0.75rem', color: accentColor, fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                {article.author?.role || article.author?.title || 'Author'}
-              </Typography>
-              {article.collaborators && article.collaborators.length > 0 && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                  <Typography sx={{ fontSize: '0.7rem', color: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    EDITED BY:
+                  <Typography sx={{ fontSize: '0.62rem', color: accentColor, fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                    {article.author.role || article.author.title || 'Author'}
                   </Typography>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {article.collaborators.map((collab: any, i: number) => (
-                      <Chip 
-                        key={i}
-                        avatar={<Avatar src={collab.avatarUrl} sx={{ width: 20, height: 20 }} />}
-                        label={collab.name}
-                        size="small"
-                        sx={{ 
-                          bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-                          fontWeight: 600,
-                          fontSize: '0.7rem',
-                          height: 24
-                        }}
-                      />
-                    ))}
-                  </Box>
                 </Box>
               )}
+
+              {/* Collaborators */}
+              {article.collaborators && article.collaborators.length > 0 && article.collaborators.map((collab: any, i: number) => (
+                <Box key={i} sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: '100%' }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Avatar src={collab.avatarUrl} sx={{ width: 24, height: 24, fontSize: '0.65rem' }}>{collab.name?.charAt(0)}</Avatar>
+                    <Typography sx={{ fontWeight: 600, fontSize: '0.72rem', color: theme.palette.mode === 'dark' ? '#94a3b8' : '#64748b' }}>
+                      {collab.name}
+                    </Typography>
+                  </Box>
+                  <Typography sx={{ fontSize: '0.58rem', color: theme.palette.mode === 'dark' ? '#475569' : '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    {collab.role || collab.title || 'Editor'}
+                  </Typography>
+                </Box>
+              ))}
             </Box>
 
           </Box>
@@ -665,6 +657,7 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
         onClose={() => setActiveInsightBlockId(null)} 
         blockId={activeInsightBlockId}
         activeBlock={activeBlock}
+        accentColor={accentColor}
       />
     </Box>
   );

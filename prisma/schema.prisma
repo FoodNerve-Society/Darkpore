@@ -229,6 +229,26 @@ model LearnArticleBlock {
 
   article LearnArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
   revisions LearnArticleBlockRevision[]
+  comments  BlockComment[]
+}
+
+model BlockComment {
+  id          String   @id @default(cuid())
+  blockId     String
+  userId      String?  // null for anonymous users
+  displayName String   @default("Anonymous")
+  avatarUrl   String?
+  text        String
+  likes       Int      @default(0)
+  parentId    String?  // for threaded replies
+  createdAt   DateTime @default(now())
+
+  block  LearnArticleBlock @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  parent BlockComment?     @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies BlockComment[]   @relation("CommentReplies")
+
+  @@index([blockId, createdAt])
+  @@index([parentId])
 }
 
 model LearnArticleBlockRevision {
