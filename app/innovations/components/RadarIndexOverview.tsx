@@ -35,7 +35,7 @@ export default function RadarIndexOverview() {
   useEffect(() => {
     const sectionEls = SECTIONS
       .map(s => ({ id: s.id, el: document.getElementById(s.target) }))
-      .filter((s): s is { id: string; el: HTMLElement } => s.el !== null);
+      .filter((s): s is { id: typeof SECTIONS[number]['id']; el: HTMLElement } => s.el !== null);
 
     if (sectionEls.length === 0) return;
 

@@ -200,7 +200,7 @@ export default async function InnovationsHomepage() {
         avatarUrl: c.organizer?.avatarUrl || '/images/default-avatar.png'
       },
       traction: c.tractionMetric || 'Active Operations',
-      link: `/${c.id}`
+      link: `/projects`
     }));
   } catch (e) {
     console.warn("SERVER LOG - Failed to fetch active deployments from DB.", e);

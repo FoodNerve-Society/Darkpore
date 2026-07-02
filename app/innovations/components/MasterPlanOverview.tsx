@@ -58,7 +58,7 @@ export default function MasterPlanOverview() {
 
           <Grid container spacing={4} sx={{ position: 'relative', zIndex: 1 }}>
             {steps.map((step, idx) => (
-              <Grid item xs={12} md={4} key={idx}>
+              <Grid size={{ xs: 12, md: 4 }} key={idx}>
                 <Box sx={{
                   bgcolor: 'rgba(15,15,15,0.6)',
                   backdropFilter: 'blur(16px)',
