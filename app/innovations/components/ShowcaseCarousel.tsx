@@ -1,11 +1,10 @@
 'use client';
 
 import React, { useRef, useState, useEffect } from 'react';
-import { Box, Typography, Grid, Chip, IconButton } from '@mui/material';
+import { Box, Typography, Chip, IconButton } from '@mui/material';
 import Link from 'next/link';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import PremiumButton from '@/components/PremiumButton';
 import PremiumChip from '@/components/PremiumChip';
 
 export default function ShowcaseCarousel({ projects }: { projects: any[] }) {
@@ -111,16 +110,16 @@ export default function ShowcaseCarousel({ projects }: { projects: any[] }) {
             <Link 
               href={project.link || '#'} 
               passHref 
-              style={{ textDecoration: 'none', color: 'inherit', pointerEvents: isActive ? 'auto' : 'none' }}
+              style={{ textDecoration: 'none', color: 'inherit', pointerEvents: isActive ? 'auto' : 'none', display: 'block' }}
             >
               <Box sx={{
                 position: 'relative',
                 minHeight: { xs: 450, md: 420 },
                 display: 'flex',
-                alignItems: 'flex-end',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
                 overflow: 'hidden',
                 borderRadius: 6,
-                cursor: 'pointer',
                 border: '1px solid rgba(255,255,255,0.1)',
                 transition: 'all 0.4s',
                 boxShadow: isActive ? '0 30px 60px rgba(0,0,0,0.5)' : 'none',
@@ -135,105 +134,145 @@ export default function ShowcaseCarousel({ projects }: { projects: any[] }) {
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
                   transition: 'transform 0.6s ease',
+                  zIndex: 0
                 }} />
+                
                 {/* Gradient Overlay */}
                 <Box className="project-overlay" sx={{
                   position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-                  background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.2) 60%, transparent 100%)',
+                  background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.3) 100%)',
                   transition: 'background 0.4s',
+                  zIndex: 1
                 }} />
-                {/* Content */}
-                <Box sx={{ position: 'relative', zIndex: 2, p: { xs: 4, md: 6 }, width: '100%' }}>
-                  <Grid container spacing={4} sx={{ alignItems: 'flex-end', width: '100%', m: 0 }}>
-                    <Grid size={{ xs: 12, md: 7 }} sx={{ p: '0 !important' }}>
-                      <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                        <PremiumChip 
-                          variant="filled" 
-                          glow={true}
-                          baseColor={project.type === 'Venture' ? '#ff4444' : project.type === 'Innovation' ? '#2196f3' : '#1b5e20'}
-                          label={(project.type || 'Deployment').toUpperCase()} 
-                          size="small" 
-                          sx={{ letterSpacing: 1 }} 
-                        />
-                        <Chip
-                          label={project.breadcrumb || `Category → Subcategory → Era`}
-                          size="small"
-                          sx={{
-                            bgcolor: 'rgba(255,255,255,0.1)',
-                            color: 'rgba(255,255,255,0.7)',
-                            backdropFilter: 'blur(10px)',
-                            border: '1px solid rgba(255,255,255,0.1)',
-                            fontWeight: 700,
-                            letterSpacing: 0.5
-                          }}
-                        />
-                      </Box>
-                      <Typography variant="h3" sx={{ fontWeight: 900, mb: 1, lineHeight: 1.1, fontSize: { xs: '2rem', md: '2rem' } }}>
-                        {project.title}
+                
+                {/* 
+                  ========================================
+                  TOP ROW: Breadcrumb & Operator
+                  ========================================
+                */}
+                <Box sx={{ position: 'relative', zIndex: 2, p: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 2 }}>
+                  <Chip
+                    label={project.breadcrumb || `Category → Subcategory → Era`}
+                    size="small"
+                    sx={{
+                      bgcolor: 'rgba(0,0,0,0.4)',
+                      color: 'rgba(255,255,255,0.8)',
+                      backdropFilter: 'blur(10px)',
+                      border: '1px solid rgba(255,255,255,0.15)',
+                      fontWeight: 700,
+                      letterSpacing: 0.5,
+                      fontSize: '0.65rem',
+                      maxWidth: '60%',
+                      '& .MuiChip-label': {
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
+                      }
+                    }}
+                  />
+
+                  {/* Operator Block (Compact) */}
+                  <Box sx={{ 
+                    display: 'flex', alignItems: 'center', gap: 1, 
+                    bgcolor: 'rgba(0,0,0,0.5)', 
+                    backdropFilter: 'blur(12px)',
+                    borderRadius: 100, 
+                    p: 0.5, pr: 2, 
+                    border: '1px solid rgba(255,255,255,0.1)'
+                  }}>
+                    <Box sx={{
+                      width: 28, height: 28,
+                      borderRadius: '50%',
+                      backgroundImage: `url(${project.operator?.avatarUrl || '/images/default-avatar.png'})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                      border: '1px solid rgba(255,255,255,0.2)'
+                    }} />
+                    <Box>
+                      <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', fontWeight: 800, fontSize: '0.55rem', letterSpacing: 1, display: 'block', lineHeight: 1 }}>
+                        LEAD OPERATOR
                       </Typography>
-                      <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.75)', fontWeight: 400, lineHeight: 1.4, mb: 3, maxWidth: 350, display: { xs: 'none', md: 'block' }, fontSize: '0.9rem' }}>
-                        {project.description || project.desc}
+                      <Typography variant="body2" sx={{ fontWeight: 700, color: 'white', lineHeight: 1, mt: 0.2, fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
+                        {project.operator?.name || 'Society Member'}
                       </Typography>
-                      
-                      <PremiumButton variant="filled" size="large" baseColor="white" endIcon={<ArrowForwardIcon />} sx={{
-                        color: '#0a0a0a', px: 3, py: 1, fontWeight: 'bold', fontSize: '0.85rem',
-                        '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' },
-                      }}>
-                        View Live Dashboard
-                      </PremiumButton>
-                    </Grid>
+                    </Box>
+                  </Box>
+                </Box>
+
+                {/* 
+                  ========================================
+                  BOTTOM CONTENT: Titles, Traction & CTA
+                  ========================================
+                */}
+                <Box sx={{ position: 'relative', zIndex: 2, p: { xs: 3, md: 4 }, width: '100%', display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                    <PremiumChip 
+                      variant="filled" 
+                      glow={true}
+                      baseColor={project.type === 'Venture' ? '#ff4444' : project.type === 'Innovation' ? '#2196f3' : '#1b5e20'}
+                      label={(project.type || 'Deployment').toUpperCase()} 
+                      size="small" 
+                      sx={{ letterSpacing: 1, fontSize: '0.65rem' }} 
+                    />
                     
-                    <Grid size={{ xs: 12, md: 5 }} sx={{ p: '0 !important', display: { xs: 'none', md: 'block' } }}>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'flex-end', height: '100%', justifyContent: 'flex-end' }}>
-                        
-                        {/* Operator Block */}
-                        <Box sx={{ 
-                          display: 'flex', alignItems: 'center', gap: 2, 
-                          bgcolor: 'rgba(0,0,0,0.4)', 
-                          backdropFilter: 'blur(12px)',
-                          borderRadius: 100, 
-                          p: 1, pr: 3, 
-                          border: '1px solid rgba(255,255,255,0.1)'
-                        }}>
-                          <Box sx={{
-                            width: 40, height: 40,
-                            borderRadius: '50%',
-                            backgroundImage: `url(${project.operator?.avatarUrl || '/images/default-avatar.png'})`,
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center',
-                            border: '2px solid rgba(255,255,255,0.2)'
-                          }} />
-                          <Box>
-                            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', fontWeight: 700, letterSpacing: 1, display: 'block', lineHeight: 1 }}>
-                              LEAD OPERATOR
-                            </Typography>
-                            <Typography variant="body2" sx={{ fontWeight: 700, color: 'white', lineHeight: 1, mt: 0.5 }}>
-                              {project.operator?.name || 'Society Member'}
-                            </Typography>
-                          </Box>
-                        </Box>
+                    {/* Compact Traction Stat */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#00e676', boxShadow: '0 0 8px #00e676' }} />
+                      <Typography variant="caption" sx={{ color: '#00e676', fontWeight: 800, letterSpacing: 0.5, textTransform: 'uppercase', fontSize: '0.65rem' }}>
+                        {project.traction || 'Gaining momentum'}
+                      </Typography>
+                    </Box>
+                  </Box>
 
-                        {/* Traction Block */}
-                        <Box sx={{
-                          bgcolor: 'rgba(255,255,255,0.08)',
-                          backdropFilter: 'blur(12px)',
-                          border: '1px solid rgba(255,255,255,0.15)',
-                          borderRadius: 4,
-                          px: 3, py: 2,
-                          minWidth: 200,
-                          textAlign: 'right'
-                        }}>
-                          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', display: 'block', mb: 0.5 }}>
-                            TRACTION
-                          </Typography>
-                          <Typography variant="h6" sx={{ fontWeight: 800, color: 'primary.light', lineHeight: 1.2 }}>
-                            {project.traction || 'Gaining momentum'}
-                          </Typography>
-                        </Box>
+                  <Typography variant="h3" sx={{ 
+                    fontWeight: 900, 
+                    lineHeight: 1.1, 
+                    fontSize: { xs: '1.75rem', md: '2rem' },
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                  }}>
+                    {project.title}
+                  </Typography>
 
-                      </Box>
-                    </Grid>
-                  </Grid>
+                  <Typography variant="body1" sx={{ 
+                    color: 'rgba(255,255,255,0.7)', 
+                    fontWeight: 400, 
+                    lineHeight: 1.5, 
+                    fontSize: '0.85rem',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    mb: 2
+                  }}>
+                    {project.description || project.desc}
+                  </Typography>
+                  
+                  <Box sx={{ display: 'flex', justifyContent: 'flex-start', mt: 1 }}>
+                    <Box sx={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 1.5,
+                      color: '#0a0a0a',
+                      bgcolor: 'white',
+                      px: 3, 
+                      py: 1.2,
+                      borderRadius: 100,
+                      fontWeight: 800, 
+                      fontSize: '0.8rem',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      '&:hover': { bgcolor: 'rgba(255,255,255,0.8)' }
+                    }}>
+                      VIEW LIVE DASHBOARD <ArrowForwardIcon sx={{ fontSize: 18 }} />
+                    </Box>
+                  </Box>
+                  
                 </Box>
               </Box>
             </Link>
