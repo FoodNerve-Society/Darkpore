@@ -198,7 +198,9 @@ model LearnContent {
   costNP          Int?
   views           Int      @default(0)
   likes           Int      @default(0)
+  targetDate      DateTime? // The hype/deadline date used for Global Alerts
   createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now()) @updatedAt
 
   // Relations
   article    LearnArticle?
@@ -209,6 +211,7 @@ model LearnContent {
 
   @@index([authorId, status])
   @@index([type, status])
+  @@index([targetDate])
 }
 
 model LearnArticle {

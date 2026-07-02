@@ -35,16 +35,29 @@ export default async function InnovationsHomepage() {
 
   let rawUpdates: any[] = [];
   try {
-    rawUpdates = await getChallengeUpdatesBySubcategories(allSubcatIds);
+    const upcomingEvents = await prisma.learnContent.findMany({
+      where: {
+        subcategory: { in: allSubcatIds },
+        targetDate: { gte: new Date() }
+      },
+      orderBy: { targetDate: 'asc' },
+      take: 15
+    });
+
+    rawUpdates = upcomingEvents.map(event => ({
+      title: event.title,
+      date: event.targetDate,
+      section: event.type === 'livestream' || event.type === 'class' ? 'livestreams' : 'innovations',
+      importance: 'high',
+      challengeTitle: subcatToChallengeMap[event.subcategory || '']?.title || 'Global Alert',
+      challengeId: subcatToChallengeMap[event.subcategory || '']?.id || 'global',
+      link: `/innovations/${subcatToChallengeMap[event.subcategory || '']?.id || 'global'}/${event.subcategory}/learn/article/${event.slug}`
+    }));
   } catch (e) {
-    console.warn("SERVER LOG - Database connection failed, falling back to mock data.");
+    console.warn("SERVER LOG - Database connection failed, falling back to mock data.", e);
   }
   
-  let marqueeItems = rawUpdates.map((u: any) => ({
-    ...u,
-    challengeTitle: subcatToChallengeMap[u.subcategoryId]?.title || 'Global Alert',
-    challengeId: subcatToChallengeMap[u.subcategoryId]?.id || 'global'
-  }));
+  let marqueeItems = rawUpdates;
 
   if (marqueeItems.length === 0) {
     marqueeItems = [
@@ -107,7 +120,9 @@ export default async function InnovationsHomepage() {
       return {
         image: imageUrl,
         title: lc.title,
-        link: `/innovations/${challengeId}/${subcatId}/learn/article/${lc.slug}`
+        link: `/innovations/${challengeId}/${subcatId}/learn/article/${lc.slug}`,
+        updatedAt: lc.updatedAt,
+        createdAt: lc.createdAt
       };
     });
   } catch (e) {

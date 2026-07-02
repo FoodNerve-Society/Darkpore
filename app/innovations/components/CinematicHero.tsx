@@ -5,6 +5,14 @@ import { Box, Container, Typography, Button, Stack, useTheme, alpha, Card } from
 import { EmojiEvents, RocketLaunch, ShowChart, PeopleAlt } from '@mui/icons-material';
 import Link from 'next/link';
 
+export interface SlideshowItem {
+    image: string;
+    title: string;
+    link?: string;
+    updatedAt?: Date | string;
+    createdAt?: Date | string;
+}
+
 interface CinematicHeroProps {
     tenantName: string;
     headline: string;
@@ -13,7 +21,7 @@ interface CinematicHeroProps {
         activeSolutions: number;
         communitySize: number; // changed to number for direct count
     };
-    slideshowItems?: { image: string; title: string }[];
+    slideshowItems?: SlideshowItem[];
 }
 
 export default function CinematicHero({ tenantName, headline, subheadline, stats, slideshowItems = [] }: CinematicHeroProps) {
@@ -227,27 +235,30 @@ export default function CinematicHero({ tenantName, headline, subheadline, stats
                                 elevation={0} 
                                 sx={{ 
                                     textDecoration: 'none',
-                                    bgcolor: alpha('#fff', 0.06),
+                                    background: 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.03) 100%)',
+                                    backdropFilter: 'blur(12px)',
                                     borderRadius: 3,
                                     p: { xs: 1.5, sm: 2 },
                                     flex: 1,
                                     minWidth: { xs: 0, sm: 140 },
-                                    border: `1px solid ${alpha('#fff', 0.1)}`,
+                                    border: '1px solid rgba(255,255,255,0.15)',
+                                    borderTop: '1px solid rgba(255,255,255,0.3)',
+                                    boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
                                     textAlign: 'center',
                                     position: 'relative',
                                     overflow: 'hidden',
                                     transition: 'all 0.3s ease',
                                     '&:hover': {
                                         transform: 'translateY(-4px)',
-                                        bgcolor: alpha('#000', 0.8),
-                                        borderColor: alpha(theme.palette.primary.main, 0.3),
+                                        background: 'linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.05) 100%)',
+                                        borderColor: alpha(theme.palette.primary.main, 0.4),
                                     }
                                 }}
                             >
                                 <Typography variant="h3" color="white" sx={{ fontWeight: 800, mb: 0.5, fontSize: { xs: '1.5rem', sm: '1.75rem' } }}>
                                     {stats.activeSolutions}+
                                 </Typography>
-                                <Typography variant="body1" color="rgba(255,255,255,0.6)" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.65rem' }}>
+                                <Typography variant="body1" color="rgba(255,255,255,0.8)" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.65rem' }}>
                                     Total Contents
                                 </Typography>
                             </Card>
@@ -256,27 +267,30 @@ export default function CinematicHero({ tenantName, headline, subheadline, stats
                             <Card 
                                 elevation={0} 
                                 sx={{ 
-                                    bgcolor: alpha('#fff', 0.06),
+                                    background: 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.03) 100%)',
+                                    backdropFilter: 'blur(12px)',
                                     borderRadius: 3,
                                     p: { xs: 1.5, sm: 2 },
                                     flex: 1,
                                     minWidth: { xs: 0, sm: 140 },
-                                    border: `1px solid ${alpha('#fff', 0.1)}`,
+                                    border: '1px solid rgba(255,255,255,0.15)',
+                                    borderTop: '1px solid rgba(255,255,255,0.3)',
+                                    boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
                                     textAlign: 'center',
                                     position: 'relative',
                                     overflow: 'hidden',
                                     transition: 'all 0.3s ease',
                                     '&:hover': {
                                         transform: 'translateY(-4px)',
-                                        bgcolor: alpha('#000', 0.8),
-                                        borderColor: alpha(theme.palette.secondary.main, 0.3),
+                                        background: 'linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.05) 100%)',
+                                        borderColor: alpha(theme.palette.secondary.main, 0.4),
                                     }
                                 }}
                             >
                                 <Typography variant="h3" color="white" sx={{ fontWeight: 800, mb: 0.5, fontSize: { xs: '1.5rem', sm: '1.75rem' } }}>
                                     {stats.communitySize.toLocaleString()}
                                 </Typography>
-                                <Typography variant="body1" color="rgba(255,255,255,0.6)" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.65rem' }}>
+                                <Typography variant="body1" color="rgba(255,255,255,0.8)" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.65rem' }}>
                                     Members
                                 </Typography>
                             </Card>
@@ -331,10 +345,28 @@ export default function CinematicHero({ tenantName, headline, subheadline, stats
                                             position: 'absolute', inset: 0,
                                             background: `linear-gradient(0deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 60%)`,
                                         }} />
-                                        {/* Title */}
+                                        {/* Title and Date */}
                                         <Box sx={{
                                             position: 'absolute', bottom: 0, left: 0, right: 0, p: 3, pb: 4, zIndex: 2,
                                         }}>
+                                            {(item.updatedAt || item.createdAt) && (
+                                                <Typography variant="caption" sx={{ color: theme.palette.primary.light, fontWeight: 700, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '1px', mb: 0.5, display: 'block' }}>
+                                                    {(() => {
+                                                        const date = new Date(item.updatedAt || item.createdAt || new Date());
+                                                        const diffMs = Date.now() - date.getTime();
+                                                        const diffMins = Math.floor(diffMs / 60000);
+                                                        if (diffMins < 60) return `${diffMins}m ago`;
+                                                        const diffHours = Math.floor(diffMins / 60);
+                                                        if (diffHours < 24) return `${diffHours}h ago`;
+                                                        const diffDays = Math.floor(diffHours / 24);
+                                                        if (diffDays < 7) return `${diffDays}d ago`;
+                                                        const diffWeeks = Math.floor(diffDays / 7);
+                                                        if (diffWeeks < 4) return `${diffWeeks}w ago`;
+                                                        const diffMonths = Math.floor(diffDays / 30);
+                                                        return `${diffMonths}mo ago`;
+                                                    })()}
+                                                </Typography>
+                                            )}
                                             <Typography variant="body1" sx={{ color: '#ffffff', fontWeight: 800, fontSize: '1.05rem', textShadow: '0px 4px 12px rgba(0,0,0,0.8), 0px 1px 3px rgba(0,0,0,1)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.3 }}>
                                                 {item.title}
                                             </Typography>
@@ -362,53 +394,59 @@ export default function CinematicHero({ tenantName, headline, subheadline, stats
                             )}
                         </Box>
 
-                        {/* Join CTA Card - Premium Minimal */}
+                        {/* Join CTA Card - Premium Minimal Dark */}
                         <Card 
                             component={Link}
                             href="/join"
                             elevation={0} 
                             sx={{ 
-                                bgcolor: '#050505',
+                                background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.15)} 0%, ${alpha('#000', 0.4)} 100%)`,
+                                backdropFilter: 'blur(20px)',
                                 textDecoration: 'none',
                                 borderRadius: 3,
                                 p: { xs: 2.5, sm: 3 },
                                 flex: 2,
                                 minWidth: { xs: '100%', sm: 220 },
-                                border: `1px solid ${alpha(theme.palette.primary.main, 0.15)}`,
+                                border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
                                 textAlign: 'left',
                                 position: 'relative',
                                 overflow: 'hidden',
                                 transition: 'all 0.3s ease',
                                 '&:hover': { 
                                     transform: 'translateY(-4px)',
-                                    borderColor: alpha(theme.palette.primary.main, 0.4),
-                                    boxShadow: `0 8px 30px ${alpha(theme.palette.primary.main, 0.1)}`,
+                                    borderColor: alpha(theme.palette.primary.main, 0.5),
+                                    boxShadow: `0 12px 40px ${alpha(theme.palette.primary.main, 0.2)}`,
+                                    background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.2)} 0%, ${alpha('#000', 0.5)} 100%)`,
                                 }
                             }}
                         >
                             <Stack spacing={1.5} sx={{ position: 'relative', zIndex: 1, height: '100%', justifyContent: 'center' }}>
                                 <Box>
-                                    <Typography variant="h3" color="white" sx={{ fontWeight: 800, mb: 0.5, letterSpacing: '0px', fontSize: { xs: '1.5rem', sm: '1.7rem' } }}>
+                                    <Typography variant="h3" color="white" sx={{ fontWeight: 800, mb: 0.5, letterSpacing: '-0.5px', fontSize: { xs: '1.5rem', sm: '1.7rem' } }}>
                                         Join the Society
                                     </Typography>
-                                    <Typography variant="body1" color="rgba(255,255,255,0.7)" sx={{ mb: 2, lineHeight: 1.5, fontWeight: 500, fontSize: '0.9rem' }}>
+                                    <Typography variant="body1" color="rgba(255,255,255,0.75)" sx={{ mb: 2.5, lineHeight: 1.5, fontWeight: 500, fontSize: '0.95rem' }}>
                                         Want a say in shaping our food systems? The real work happens inside the Society. Join us to execute workflows, deploy capital, and collaborate with top innovators.
                                     </Typography>
                                     <Box sx={{ 
                                         display: 'inline-flex', 
                                         alignItems: 'center', 
                                         gap: 1,
-                                        bgcolor: alpha(theme.palette.primary.main, 0.1),
-                                        px: 2,
-                                        py: 1,
+                                        bgcolor: theme.palette.primary.main,
+                                        px: 2.5,
+                                        py: 1.2,
                                         borderRadius: 2,
-                                        fontWeight: 700,
+                                        fontWeight: 800,
                                         fontSize: '0.85rem',
-                                        color: theme.palette.primary.light,
-                                        transition: 'background-color 0.2s',
+                                        color: '#fff',
+                                        boxShadow: `0 4px 14px ${alpha(theme.palette.primary.main, 0.4)}`,
+                                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                                        '&:hover': { 
+                                            bgcolor: theme.palette.primary.light,
+                                        }
                                     }}>
                                         Authenticate Now
-                                        <Typography component="span" sx={{ fontSize: '1.1rem' }}>→</Typography>
+                                        <Typography component="span" sx={{ fontSize: '1.1rem', transition: 'transform 0.2s', '.MuiBox-root:hover &': { transform: 'translateX(4px)' } }}>→</Typography>
                                     </Box>
                                 </Box>
                             </Stack>
