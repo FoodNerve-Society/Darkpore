@@ -1,120 +1,150 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Box, Typography, Grid, Chip } from '@mui/material';
+import React, { useRef, useState, useEffect } from 'react';
+import { Box, Typography, Grid, Chip, IconButton } from '@mui/material';
 import Link from 'next/link';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PremiumButton from '@/components/PremiumButton';
 import PremiumChip from '@/components/PremiumChip';
 
 export default function ShowcaseCarousel({ projects }: { projects: any[] }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
-  // Auto-loop effect
+  // Scroll handler to determine which item is in the center
+  const handleScroll = () => {
+    if (!scrollRef.current) return;
+    const { scrollLeft, clientWidth } = scrollRef.current;
+    
+    const centerPoint = scrollLeft + clientWidth / 2;
+    const children = Array.from(scrollRef.current.children);
+    
+    let closestIndex = 0;
+    let closestDistance = Infinity;
+
+    children.forEach((child) => {
+      const el = child as HTMLElement;
+      if (!el.dataset.index) return;
+      const childCenter = el.offsetLeft + el.clientWidth / 2;
+      const distance = Math.abs(centerPoint - childCenter);
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestIndex = parseInt(el.dataset.index || '0');
+      }
+    });
+
+    if (closestIndex !== activeIndex) {
+      setActiveIndex(closestIndex);
+    }
+  };
+
+  const scrollTo = (index: number) => {
+    if (!scrollRef.current) return;
+    const children = Array.from(scrollRef.current.children);
+    const target = children.find(c => (c as HTMLElement).dataset.index === String(index)) as HTMLElement;
+    if (target) {
+      scrollRef.current.scrollTo({
+        left: target.offsetLeft - (scrollRef.current.clientWidth - target.clientWidth) / 2,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  // Auto-looping functionality
   useEffect(() => {
     if (isHovered || !projects || projects.length === 0) return;
+    
     const interval = setInterval(() => {
-      setActiveIndex((prev) => (prev + 1) % (projects.length + 1));
-    }, 4000); // Change slide every 4 seconds
+      // Calculate next index, including the "See All" card which is projects.length
+      const nextIndex = (activeIndex + 1) % (projects.length + 1);
+      scrollTo(nextIndex);
+    }, 5000); // 5 seconds per slide
+    
     return () => clearInterval(interval);
-  }, [isHovered, projects]);
+  }, [activeIndex, isHovered, projects]);
 
-  // If projects empty, render nothing
   if (!projects || projects.length === 0) return null;
 
   return (
     <Box 
-      onMouseEnter={() => setIsHovered(true)} 
+      sx={{ position: 'relative' }}
+      onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      sx={{ width: '100%', px: { xs: 2, md: 'max(24px, calc((100vw - 1200px) / 2))' }, pb: 8 }}
     >
-      <Box sx={{ 
-        display: 'flex', 
-        flexDirection: { xs: 'column', md: 'row' },
-        gap: 2,
-        height: { xs: 'auto', md: 500 },
-        width: '100%'
-      }}>
+      {/* Horizontal Scroll Container */}
+      <Box 
+        ref={scrollRef}
+        onScroll={handleScroll}
+        sx={{
+          display: 'flex',
+          overflowX: 'auto',
+          scrollSnapType: 'x mandatory',
+          gap: { xs: 2, md: 4 },
+          px: { xs: 2, md: 'max(24px, calc((100vw - 1200px) / 2))' },
+          pb: 8, 
+          pt: 4, 
+          msOverflowStyle: 'none', 
+          scrollbarWidth: 'none',
+          '&::-webkit-scrollbar': { display: 'none' },
+        }}
+      >
         {projects.map((project, idx) => {
           const isActive = idx === activeIndex;
-          
           return (
-            <Box 
-              key={idx}
-              onMouseEnter={() => setActiveIndex(idx)}
-              sx={{
-                flex: isActive ? { xs: 'none', md: 6 } : { xs: 'none', md: 1 },
-                height: { xs: isActive ? 450 : 100, md: '100%' },
-                position: 'relative',
-                borderRadius: 4,
-                overflow: 'hidden',
-                transition: 'all 0.8s cubic-bezier(0.25, 1, 0.5, 1)', // More fluid easing
-                cursor: 'pointer',
-                border: '1px solid',
-                borderColor: isActive ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)',
-                boxShadow: isActive ? '0 30px 60px rgba(0,0,0,0.5)' : 'none',
-              }}
+          <Box 
+            key={idx} 
+            data-index={idx} 
+            onClick={() => { if (!isActive) scrollTo(idx); }}
+            sx={{
+              minWidth: { xs: '85vw', md: '38vw' },
+              maxWidth: { xs: '85vw', md: 600 },
+              scrollSnapAlign: 'center',
+              flexShrink: 0,
+              transition: 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+              opacity: isActive ? 1 : 0.4, // Darken inactive
+              transform: isActive ? 'scale(1)' : 'scale(0.9)', // Shrink inactive
+              filter: isActive ? 'none' : 'grayscale(50%) blur(2px)', // Blur inactive slightly for depth
+              cursor: isActive ? 'default' : 'pointer'
+          }}>
+            <Link 
+              href={project.link || '#'} 
+              passHref 
+              style={{ textDecoration: 'none', color: 'inherit', pointerEvents: isActive ? 'auto' : 'none' }}
             >
-              <Link href={project.link} passHref style={{ textDecoration: 'none', color: 'inherit', display: 'block', width: '100%', height: '100%' }}>
-                
+              <Box sx={{
+                position: 'relative',
+                minHeight: { xs: 450, md: 420 },
+                display: 'flex',
+                alignItems: 'flex-end',
+                overflow: 'hidden',
+                borderRadius: 6,
+                cursor: 'pointer',
+                border: '1px solid rgba(255,255,255,0.1)',
+                transition: 'all 0.4s',
+                boxShadow: isActive ? '0 30px 60px rgba(0,0,0,0.5)' : 'none',
+                '&:hover': { borderColor: 'rgba(255,255,255,0.3)', boxShadow: '0 40px 80px rgba(0,0,0,0.7)' },
+                '&:hover .project-image': { transform: 'scale(1.05)' },
+                '&:hover .project-overlay': { background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.1) 100%)' },
+              }}>
                 {/* Background Image */}
-                <Box sx={{
+                <Box className="project-image" sx={{
                   position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
                   backgroundImage: `url(${project.imageUrl})`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
-                  transition: 'transform 6s ease',
-                  transform: isActive ? 'scale(1.05)' : 'scale(1)',
+                  transition: 'transform 0.6s ease',
                 }} />
-                
                 {/* Gradient Overlay */}
-                <Box sx={{
+                <Box className="project-overlay" sx={{
                   position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-                  background: isActive 
-                    ? 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0.1) 100%)'
-                    : 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 100%)',
-                  transition: 'background 0.6s',
+                  background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.2) 60%, transparent 100%)',
+                  transition: 'background 0.4s',
                 }} />
-
-                {/* INACTIVE STATE (Vertical Text on Desktop) */}
-                <Box sx={{ 
-                  opacity: isActive ? 0 : 1, 
-                  position: 'absolute', 
-                  top: 0, left: 0, right: 0, bottom: 0, 
-                  display: { xs: 'flex', md: 'flex' },
-                  flexDirection: { xs: 'row', md: 'column' },
-                  alignItems: 'center',
-                  justifyContent: { xs: 'flex-start', md: 'flex-end' },
-                  p: { xs: 3, md: 4 },
-                  transition: 'opacity 0.4s',
-                  pointerEvents: 'none'
-                }}>
-                  <Typography variant="h6" sx={{ 
-                    fontWeight: 800, 
-                    whiteSpace: 'nowrap',
-                    color: 'rgba(255,255,255,0.6)',
-                    writingMode: { xs: 'horizontal-tb', md: 'vertical-rl' },
-                    transform: { xs: 'none', md: 'rotate(180deg)' },
-                  }}>
-                    {project.title}
-                  </Typography>
-                </Box>
-
-                {/* ACTIVE STATE (Full Content) */}
-                {/* Wrapped in a fixed-width box to prevent text reflow during flex-basis transition */}
-                <Box sx={{ 
-                  opacity: isActive ? 1 : 0,
-                  position: 'absolute', 
-                  top: 0, left: 0, bottom: 0, 
-                  width: { xs: '90vw', md: 900 }, // Fixed width ensures inner layout doesn't constantly recalculate and cause jank
-                  display: 'flex',
-                  alignItems: 'flex-end',
-                  p: { xs: 3, md: 5 },
-                  transition: 'opacity 0.6s 0.2s',
-                  pointerEvents: isActive ? 'auto' : 'none'
-                }}>
-                  <Grid container spacing={4} sx={{ width: '100%', m: 0 }}>
+                {/* Content */}
+                <Box sx={{ position: 'relative', zIndex: 2, p: { xs: 4, md: 6 }, width: '100%' }}>
+                  <Grid container spacing={4} sx={{ alignItems: 'flex-end', width: '100%', m: 0 }}>
                     <Grid size={{ xs: 12, md: 7 }} sx={{ p: '0 !important' }}>
                       <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
                         <PremiumChip 
@@ -126,7 +156,7 @@ export default function ShowcaseCarousel({ projects }: { projects: any[] }) {
                           sx={{ letterSpacing: 1 }} 
                         />
                         <Chip
-                          label={project.origin || 'Platform'}
+                          label={project.breadcrumb || `Category → Subcategory → Era`}
                           size="small"
                           sx={{
                             bgcolor: 'rgba(255,255,255,0.1)',
@@ -138,15 +168,15 @@ export default function ShowcaseCarousel({ projects }: { projects: any[] }) {
                           }}
                         />
                       </Box>
-                      <Typography variant="h3" sx={{ fontWeight: 900, mb: 2, lineHeight: 1.1, fontSize: { xs: '2rem', md: '2.5rem' } }}>
+                      <Typography variant="h3" sx={{ fontWeight: 900, mb: 1, lineHeight: 1.1, fontSize: { xs: '2rem', md: '2rem' } }}>
                         {project.title}
                       </Typography>
-                      <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.75)', fontWeight: 400, lineHeight: 1.6, mb: 4, maxWidth: 500 }}>
+                      <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.75)', fontWeight: 400, lineHeight: 1.4, mb: 3, maxWidth: 350, display: { xs: 'none', md: 'block' }, fontSize: '0.9rem' }}>
                         {project.description || project.desc}
                       </Typography>
                       
                       <PremiumButton variant="filled" size="large" baseColor="white" endIcon={<ArrowForwardIcon />} sx={{
-                        color: '#0a0a0a', px: 4, py: 1.5, fontWeight: 'bold',
+                        color: '#0a0a0a', px: 3, py: 1, fontWeight: 'bold', fontSize: '0.85rem',
                         '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' },
                       }}>
                         View Live Dashboard
@@ -205,49 +235,130 @@ export default function ShowcaseCarousel({ projects }: { projects: any[] }) {
                     </Grid>
                   </Grid>
                 </Box>
-              </Link>
-            </Box>
-          )
-        })}
+              </Box>
+            </Link>
+          </Box>
+        )})}
 
-        {/* Explore All - Accordion Slide */}
+        {/* See All Projects Trailing Banner */}
         <Box 
-          onMouseEnter={() => setActiveIndex(projects.length)}
+          data-index={projects.length}
           sx={{
-            flex: activeIndex === projects.length ? { xs: 'none', md: 3 } : { xs: 'none', md: 1 },
-            height: { xs: activeIndex === projects.length ? 200 : 100, md: '100%' },
-            position: 'relative',
-            borderRadius: 4,
-            overflow: 'hidden',
-            transition: 'all 0.8s cubic-bezier(0.25, 1, 0.5, 1)',
-            cursor: 'pointer',
-            border: '1px dashed rgba(255,255,255,0.2)',
-            bgcolor: 'rgba(255,255,255,0.02)',
+            minWidth: { xs: '85vw', md: '25vw' },
+            maxWidth: { xs: '85vw', md: 350 },
+            scrollSnapAlign: 'center',
+            flexShrink: 0,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            transition: 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+            opacity: activeIndex === projects.length ? 1 : 0.4,
+            transform: activeIndex === projects.length ? 'scale(1)' : 'scale(0.9)',
+            filter: activeIndex === projects.length ? 'none' : 'grayscale(50%) blur(2px)'
           }}
         >
-          <Link href="/projects" passHref style={{ textDecoration: 'none', color: 'inherit', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Box sx={{ textAlign: 'center', p: 3 }}>
-              <Box sx={{ 
-                p: 2, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.1)', mb: activeIndex === projects.length ? 2 : 0, 
-                display: 'inline-block', transition: 'all 0.4s' 
-              }}>
-                <ArrowForwardIcon sx={{ fontSize: 32, color: 'white' }} />
+          <Link href="/projects" passHref style={{ textDecoration: 'none', color: 'inherit', width: '100%' }}>
+            <Box sx={{
+              minHeight: { xs: 450, md: 420 },
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 6,
+              cursor: 'pointer',
+              border: '1px dashed rgba(255,255,255,0.2)',
+              bgcolor: 'rgba(255,255,255,0.02)',
+              transition: 'all 0.4s',
+              '&:hover': { 
+                borderColor: 'rgba(255,255,255,0.5)', 
+                bgcolor: 'rgba(255,255,255,0.05)',
+              },
+            }}>
+              <Box sx={{ p: 3, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.1)', mb: 3 }}>
+                <ArrowForwardIcon sx={{ fontSize: 40, color: 'white' }} />
               </Box>
-              <Typography variant="h5" sx={{ 
-                fontWeight: 800, color: 'white',
-                opacity: activeIndex === projects.length ? 1 : 0,
-                maxHeight: activeIndex === projects.length ? 50 : 0,
-                transition: 'all 0.4s'
-              }}>
-                See all
+              <Typography variant="h4" sx={{ fontWeight: 800, color: 'white', mb: 1 }}>
+                Tap to see all
+              </Typography>
+              <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>
+                Explore the complete deployment portfolio
               </Typography>
             </Box>
           </Link>
         </Box>
+      </Box>
 
+      {/* Controls: Dots and Arrows */}
+      <Box sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        gap: 4, 
+        mt: 4,
+        px: { xs: 2, md: 'max(24px, calc((100vw - 1200px) / 2))' }, 
+        pb: 4
+      }}>
+        {/* Left Arrow */}
+        <IconButton 
+          onClick={() => scrollTo(Math.max(0, activeIndex - 1))}
+          disabled={activeIndex === 0}
+          sx={{ 
+            color: 'white', 
+            bgcolor: 'rgba(255,255,255,0.05)', 
+            border: '1px solid rgba(255,255,255,0.1)',
+            '&:hover': { bgcolor: 'rgba(255,255,255,0.15)' },
+            '&.Mui-disabled': { color: 'rgba(255,255,255,0.2)', borderColor: 'transparent' }
+          }}
+        >
+          <ArrowBackIcon />
+        </IconButton>
+
+        {/* Dots */}
+        <Box sx={{ display: 'flex', gap: 1.5 }}>
+          {projects.map((_, idx) => (
+            <Box
+              key={idx}
+              onClick={() => scrollTo(idx)}
+              sx={{
+                width: activeIndex === idx ? 32 : 8,
+                height: 8,
+                borderRadius: 4,
+                bgcolor: activeIndex === idx ? 'white' : 'rgba(255,255,255,0.2)',
+                transition: 'all 0.3s ease',
+                cursor: 'pointer',
+                '&:hover': {
+                  bgcolor: activeIndex === idx ? 'white' : 'rgba(255,255,255,0.5)',
+                }
+              }}
+            />
+          ))}
+          <Box
+            onClick={() => scrollTo(projects.length)}
+            sx={{
+              width: activeIndex === projects.length ? 32 : 8,
+              height: 8,
+              borderRadius: 4,
+              bgcolor: activeIndex === projects.length ? 'white' : 'rgba(255,255,255,0.2)',
+              transition: 'all 0.3s ease',
+              cursor: 'pointer',
+            }}
+          />
+        </Box>
+
+        {/* Right Arrow */}
+        <IconButton 
+          onClick={() => scrollTo(Math.min(projects.length, activeIndex + 1))}
+          disabled={activeIndex === projects.length}
+          sx={{ 
+            color: 'white', 
+            bgcolor: 'rgba(255,255,255,0.05)', 
+            border: '1px solid rgba(255,255,255,0.1)',
+            '&:hover': { bgcolor: 'rgba(255,255,255,0.15)' },
+            '&.Mui-disabled': { color: 'rgba(255,255,255,0.2)', borderColor: 'transparent' }
+          }}
+        >
+          <ArrowForwardIcon />
+        </IconButton>
       </Box>
     </Box>
   )

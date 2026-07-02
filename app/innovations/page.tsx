@@ -7,6 +7,7 @@ import { getKnowledgeMaterials } from '@/lib/db/knowledge';
 import KnowledgeTeaser from './components/KnowledgeTeaser';
 import ShowcaseCarousel from './components/ShowcaseCarousel';
 import BentoGridTeaser from './components/BentoGridTeaser';
+import RadarIndexOverview from './components/RadarIndexOverview';
 import CinematicHero from './components/CinematicHero';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
@@ -324,12 +325,15 @@ export default async function InnovationsHomepage() {
         )}
       </Box>
 
+      {/* RADAR INDEX OVERVIEW SECTION */}
+      <RadarIndexOverview />
+
 
       {/* ═══════════════════════════════════════════════════════════
           SECTION 3: THE CHALLENGES TEASER
           Dark manifesto excerpt + premium challenge cards
       ═══════════════════════════════════════════════════════════ */}
-      <Box sx={{ 
+      <Box id="section-challenges" sx={{ 
         pt: { xs: 4, md: 6 }, 
         pb: { xs: 4, md: 5 }, 
         px: 2, 
@@ -392,7 +396,7 @@ export default async function InnovationsHomepage() {
           SECTION 4: THE INNOVATIONS SHOWCASE
           Horizontal Scrollable Cinematic Projects
       ═══════════════════════════════════════════════════════════ */}
-      <Box sx={{ bgcolor: '#022c22', color: 'white', overflow: 'hidden' }}>
+      <Box id="section-deployments" sx={{ bgcolor: '#022c22', color: 'white', overflow: 'hidden' }}>
         {/* Section Header */}
         <Container maxWidth="lg" sx={{ pt: { xs: 8, md: 10 }, pb: 4 }}>
           <Box sx={{ maxWidth: '700px' }}>
@@ -416,7 +420,9 @@ export default async function InnovationsHomepage() {
           SECTION 5: THE KNOWLEDGE CENTER TEASER
           Premium intelligence cards (Client Component)
       ═══════════════════════════════════════════════════════════ */}
-      <KnowledgeTeaser materials={recentIntelligence} />
+      <Box id="section-knowledge">
+        <KnowledgeTeaser materials={recentIntelligence} />
+      </Box>
 
 
       {/* ═══════════════════════════════════════════════════════════
