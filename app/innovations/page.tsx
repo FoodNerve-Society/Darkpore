@@ -13,6 +13,7 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { getChallengeUpdatesBySubcategories } from '@/lib/actions/db';
 import PremiumButton from '@/components/PremiumButton';
+import { prisma } from '@/lib/db/client';
 
 export default async function InnovationsHomepage() {
   const headersList = await headers();
@@ -65,14 +66,66 @@ export default async function InnovationsHomepage() {
     console.warn("SERVER LOG - Database connection failed, falling back to empty intelligence.");
   }
 
-  console.log("SERVER LOG - Normalized Tenant ID:", tenantId);
-  console.log("SERVER LOG - Recent Intelligence count:", recentIntelligence.length);
-
-  // Pick a few challenges for the teaser (we will just use all of them)
+  // Pick all challenges for BentoGrid and fallback slideshow
   const allChallenges = homepageConfig.challenges;
 
-  // Extract images for the hero slideshow
-  const heroSlideshowImages = allChallenges.map(c => c.imageUrl).filter(Boolean);
+  // Fetch real database stats and slideshow content for the Hero
+  let learnContentCount = 142;
+  let userCount = 12500;
+  let slideshowItems: { image: string, title: string }[] = [];
+
+  try {
+    const [lcCount, uCount, recentLC] = await Promise.all([
+      prisma.learnContent.count(),
+      prisma.user.count(),
+      prisma.learnContent.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        include: {
+          article: {
+            include: {
+              blocks: {
+                orderBy: { orderIndex: 'asc' }
+              }
+            }
+          }
+        }
+      })
+    ]);
+    
+    learnContentCount = lcCount;
+    userCount = uCount;
+    slideshowItems = recentLC.map((lc: any) => {
+      // Find the first image block to use as thumbnail
+      const imageBlock = lc.article?.blocks?.find((b: any) => b.type === 'image' && b.payload?.url);
+      const imageUrl = imageBlock ? imageBlock.payload.url : (lc.thumbnailUrl || '');
+      
+      // Determine proper routing parameters
+      const challengeId = subcatToChallengeMap[lc.subcategory]?.id || lc.category || 'land';
+      const subcatId = lc.subcategory || 'third-party-mortgage';
+
+      return {
+        image: imageUrl,
+        title: lc.title,
+        link: `/innovations/${challengeId}/${subcatId}/learn/article/${lc.slug}`
+      };
+    });
+  } catch (e) {
+    console.warn("SERVER LOG - Failed to fetch hero stats from DB.");
+  }
+
+  // Fallback to static challenge images if DB is empty or fails
+  if (slideshowItems.length === 0) {
+    slideshowItems = allChallenges
+      .filter((c: any) => c.imageUrl)
+      .map((c: any) => ({
+        image: c.imageUrl,
+        title: c.title
+      }));
+  }
+
+  console.log("SERVER LOG - Normalized Tenant ID:", tenantId);
+  console.log("SERVER LOG - Recent Intelligence count:", recentIntelligence.length);
 
   return (
     <Box sx={{ bgcolor: 'background.default' }}>
@@ -86,11 +139,10 @@ export default async function InnovationsHomepage() {
         headline={homepageConfig.heroHeadline}
         subheadline={homepageConfig.heroSubheadline}
         stats={{
-          activeSolutions: rawUpdates.length > 0 ? rawUpdates.length : 142,
-          totalCapital: `$${rawUpdates.length > 0 ? (rawUpdates.length * 0.8).toFixed(1) : '24.5'}M`,
-          communitySize: `${recentIntelligence.length > 0 ? recentIntelligence.length * 625 : '12,500'}+`
+          activeSolutions: learnContentCount,
+          communitySize: userCount
         }}
-        slideshowImages={heroSlideshowImages}
+        slideshowItems={slideshowItems}
       />
 
 

@@ -11,24 +11,23 @@ interface CinematicHeroProps {
     subheadline: string;
     stats: {
         activeSolutions: number;
-        totalCapital: string;
-        communitySize: string;
+        communitySize: number; // changed to number for direct count
     };
-    slideshowImages?: string[];
+    slideshowItems?: { image: string; title: string }[];
 }
 
-export default function CinematicHero({ tenantName, headline, subheadline, stats, slideshowImages = [] }: CinematicHeroProps) {
+export default function CinematicHero({ tenantName, headline, subheadline, stats, slideshowItems = [] }: CinematicHeroProps) {
     const theme = useTheme();
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
     const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
 
     React.useEffect(() => {
-        if (!slideshowImages.length) return;
+        if (!slideshowItems.length) return;
         const interval = setInterval(() => {
-            setCurrentSlideIndex((prev) => (prev + 1) % slideshowImages.length);
+            setCurrentSlideIndex((prev) => (prev + 1) % slideshowItems.length);
         }, 3000);
         return () => clearInterval(interval);
-    }, [slideshowImages.length]);
+    }, [slideshowItems.length]);
 
     const keyframes = `
         @keyframes fadeInUp {
@@ -221,55 +220,35 @@ export default function CinematicHero({ tenantName, headline, subheadline, stats
                             spacing={{ xs: 2, sm: 2 }}
                             sx={{ flex: { xs: '1 1 auto', lg: 'none' } }}
                         >
-                            {/* Active Solutions Card */}
+                            {/* Total Contents Card */}
                             <Card 
+                                component={Link}
+                                href="/learn"
                                 elevation={0} 
                                 sx={{ 
-                                    bgcolor: alpha('#000', 0.4),
-                                    backdropFilter: 'blur(20px)',
+                                    textDecoration: 'none',
+                                    bgcolor: alpha('#fff', 0.06),
                                     borderRadius: 3,
                                     p: { xs: 1.5, sm: 2 },
                                     flex: 1,
                                     minWidth: { xs: 0, sm: 140 },
-                                    border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                                    border: `1px solid ${alpha('#fff', 0.1)}`,
                                     textAlign: 'center',
                                     position: 'relative',
                                     overflow: 'hidden',
-                                    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                                    '&::before': {
-                                        content: '""',
-                                        position: 'absolute',
-                                        top: 0,
-                                        left: 0,
-                                        right: 0,
-                                        height: '4px',
-                                        background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.primary.light})`,
-                                        opacity: 0,
-                                        transition: 'opacity 0.3s ease',
-                                    },
+                                    transition: 'all 0.3s ease',
                                     '&:hover': {
-                                        transform: 'translateY(-6px)',
-                                        bgcolor: alpha(theme.palette.primary.main, 0.08),
-                                        borderColor: alpha(theme.palette.primary.main, 0.4),
-                                        boxShadow: `0 8px 30px ${alpha(theme.palette.primary.main, 0.25)}`,
-                                        '&::before': { opacity: 1 }
+                                        transform: 'translateY(-4px)',
+                                        bgcolor: alpha('#000', 0.8),
+                                        borderColor: alpha(theme.palette.primary.main, 0.3),
                                     }
                                 }}
                             >
-                                <Box sx={{ 
-                                    mb: 1, 
-                                    p: 1, 
-                                    borderRadius: '50%', 
-                                    bgcolor: alpha(theme.palette.primary.main, 0.1),
-                                    display: 'inline-flex',
-                                }}>
-                                    <RocketLaunch sx={{ color: theme.palette.primary.light, fontSize: { xs: 20, sm: 24 } }} />
-                                </Box>
-                                <Typography variant="h3" color="white" sx={{ fontWeight: 900, mb: 0.5, fontSize: { xs: '1.5rem', sm: '1.75rem' } }}>
+                                <Typography variant="h3" color="white" sx={{ fontWeight: 800, mb: 0.5, fontSize: { xs: '1.5rem', sm: '1.75rem' } }}>
                                     {stats.activeSolutions}+
                                 </Typography>
-                                <Typography variant="body1" color="rgba(255,255,255,0.7)" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.65rem' }}>
-                                    Active Solutions
+                                <Typography variant="body1" color="rgba(255,255,255,0.6)" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.65rem' }}>
+                                    Total Contents
                                 </Typography>
                             </Card>
 
@@ -277,199 +256,160 @@ export default function CinematicHero({ tenantName, headline, subheadline, stats
                             <Card 
                                 elevation={0} 
                                 sx={{ 
-                                    bgcolor: alpha('#000', 0.4),
-                                    backdropFilter: 'blur(20px)',
+                                    bgcolor: alpha('#fff', 0.06),
                                     borderRadius: 3,
                                     p: { xs: 1.5, sm: 2 },
                                     flex: 1,
                                     minWidth: { xs: 0, sm: 140 },
-                                    border: `1px solid ${alpha(theme.palette.secondary.main, 0.2)}`,
+                                    border: `1px solid ${alpha('#fff', 0.1)}`,
                                     textAlign: 'center',
                                     position: 'relative',
                                     overflow: 'hidden',
-                                    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                                    '&::before': {
-                                        content: '""',
-                                        position: 'absolute',
-                                        top: 0,
-                                        left: 0,
-                                        right: 0,
-                                        height: '4px',
-                                        background: `linear-gradient(90deg, ${theme.palette.secondary.main}, ${theme.palette.secondary.light})`,
-                                        opacity: 0,
-                                        transition: 'opacity 0.3s ease',
-                                    },
+                                    transition: 'all 0.3s ease',
                                     '&:hover': {
-                                        transform: 'translateY(-6px)',
-                                        bgcolor: alpha(theme.palette.secondary.main, 0.08),
-                                        borderColor: alpha(theme.palette.secondary.main, 0.4),
-                                        boxShadow: `0 8px 30px ${alpha(theme.palette.secondary.main, 0.25)}`,
-                                        '&::before': { opacity: 1 }
+                                        transform: 'translateY(-4px)',
+                                        bgcolor: alpha('#000', 0.8),
+                                        borderColor: alpha(theme.palette.secondary.main, 0.3),
                                     }
                                 }}
                             >
-                                <Box sx={{ 
-                                    mb: 1, 
-                                    p: 1, 
-                                    borderRadius: '50%', 
-                                    bgcolor: alpha(theme.palette.secondary.main, 0.1),
-                                    display: 'inline-flex',
-                                }}>
-                                    <PeopleAlt sx={{ color: theme.palette.secondary.light, fontSize: { xs: 20, sm: 24 } }} />
-                                </Box>
-                                <Typography variant="h3" color="white" sx={{ fontWeight: 900, mb: 0.5, fontSize: { xs: '1.5rem', sm: '1.75rem' } }}>
-                                    {stats.communitySize}
+                                <Typography variant="h3" color="white" sx={{ fontWeight: 800, mb: 0.5, fontSize: { xs: '1.5rem', sm: '1.75rem' } }}>
+                                    {stats.communitySize.toLocaleString()}
                                 </Typography>
-                                <Typography variant="body1" color="rgba(255,255,255,0.7)" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.65rem' }}>
+                                <Typography variant="body1" color="rgba(255,255,255,0.6)" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.65rem' }}>
                                     Members
                                 </Typography>
                             </Card>
                         </Stack>
 
-                        {/* Slideshow CTA Card */}
-                        <Card 
-                            elevation={0} 
+                        {/* Slideshow CTA Container (Sliding Track) */}
+                        <Box 
                             sx={{ 
-                                background: `linear-gradient(135deg, ${alpha(theme.palette.secondary.dark, 0.4)} 0%, ${alpha(theme.palette.secondary.dark, 0.8)} 100%)`,
-                                borderRadius: 3,
                                 flex: 1.8,
                                 minWidth: { xs: '100%', sm: 180 },
                                 minHeight: { xs: 150, sm: 'auto' },
-                                border: `1px solid ${alpha(theme.palette.secondary.main, 0.2)}`,
-                                cursor: 'default',
                                 position: 'relative',
                                 overflow: 'hidden',
-                                transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                                '&:hover': { 
-                                    transform: 'translateY(-8px) scale(1.02)',
-                                    borderColor: alpha(theme.palette.secondary.main, 0.4),
-                                    boxShadow: `0 12px 40px ${alpha(theme.palette.secondary.main, 0.3)}`,
-                                }
+                                borderRadius: 3,
+                                border: `1px solid ${alpha(theme.palette.secondary.main, 0.2)}`,
+                                cursor: 'pointer',
                             }}
                         >
-                            {/* Slideshow image container */}
-                <Box
-                    sx={{
-                        position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0,
-                        backgroundColor: '#050505',
-                        backgroundImage: 'radial-gradient(circle at 80% 20%, rgba(27, 94, 32, 0.2) 0%, rgba(5,5,5,1) 100%)', // Premium fallback gradient
-                        transition: 'opacity 1.5s ease-in-out',
-                        opacity: 1,
-                    }}
-                >
-                    {slideshowImages.map((src, idx) => (
-                        <Box
-                            key={src}
-                            sx={{
-                                position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-                                backgroundImage: `url(${src})`,
-                                backgroundSize: 'cover',
-                                backgroundPosition: 'center',
-                                opacity: currentSlideIndex === idx ? 1 : 0,
-                                transition: 'opacity 2s ease-in-out, transform 8s linear',
-                                transform: currentSlideIndex === idx ? 'scale(1.05)' : 'scale(1)',
-                            }}
-                        />
-                    ))}
-                    
-                    {/* Progress Indicator */}
-                    {slideshowImages.length > 1 && (
-                        <Box sx={{ position: 'absolute', bottom: 16, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 1, zIndex: 2 }}>
-                            {slideshowImages.map((_, idx) => (
-                                <Box
-                                    key={idx}
-                                    sx={{
-                                        width: currentSlideIndex === idx ? 24 : 6,
-                                        height: 4,
-                                        borderRadius: 2,
-                                        bgcolor: currentSlideIndex === idx ? 'primary.main' : 'rgba(255,255,255,0.4)',
-                                        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                                    }}
-                                />
-                            ))}
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    width: `${slideshowItems.length * 100}%`,
+                                    height: '100%',
+                                    transform: `translateX(-${currentSlideIndex * (100 / (slideshowItems.length || 1))}%)`,
+                                    transition: 'transform 0.8s cubic-bezier(0.25, 1, 0.5, 1)',
+                                }}
+                            >
+                                {slideshowItems.map((item, idx) => (
+                                    <Box
+                                        key={idx}
+                                        component={item.link ? Link : 'div'}
+                                        href={item.link || '#'}
+                                        sx={{
+                                            width: `${100 / (slideshowItems.length || 1)}%`,
+                                            height: '100%',
+                                            position: 'relative',
+                                            display: 'block',
+                                            textDecoration: 'none',
+                                            flexShrink: 0,
+                                        }}
+                                    >
+                                        <Box
+                                            sx={{
+                                                position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+                                                backgroundImage: item.image ? `url(${item.image})` : 'radial-gradient(circle at 50% 50%, rgba(27, 94, 32, 0.4) 0%, rgba(5,5,5,1) 100%)',
+                                                backgroundSize: 'cover',
+                                                backgroundPosition: 'center',
+                                            }}
+                                        />
+                                        {/* Gradient overlay */}
+                                        <Box sx={{
+                                            position: 'absolute', inset: 0,
+                                            background: `linear-gradient(0deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 60%)`,
+                                        }} />
+                                        {/* Title */}
+                                        <Box sx={{
+                                            position: 'absolute', bottom: 0, left: 0, right: 0, p: 3, pb: 4, zIndex: 2,
+                                        }}>
+                                            <Typography variant="body1" sx={{ color: '#ffffff', fontWeight: 800, fontSize: '1.05rem', textShadow: '0px 4px 12px rgba(0,0,0,0.8), 0px 1px 3px rgba(0,0,0,1)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.3 }}>
+                                                {item.title}
+                                            </Typography>
+                                        </Box>
+                                    </Box>
+                                ))}
+                            </Box>
+                            
+                            {/* Progress Indicators */}
+                            {slideshowItems.length > 1 && (
+                                <Box sx={{ position: 'absolute', bottom: 12, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 1, zIndex: 3 }}>
+                                    {slideshowItems.map((_, idx) => (
+                                        <Box
+                                            key={idx}
+                                            sx={{
+                                                width: currentSlideIndex === idx ? 24 : 6,
+                                                height: 4,
+                                                borderRadius: 2,
+                                                bgcolor: currentSlideIndex === idx ? 'primary.main' : 'rgba(255,255,255,0.4)',
+                                                transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                                            }}
+                                        />
+                                    ))}
+                                </Box>
+                            )}
                         </Box>
-                    )}
-                </Box>
-                            {/* Overlay gradient so it still matches the theme aesthetics slightly */}
-                            <Box sx={{
-                                position: 'absolute',
-                                inset: 0,
-                                background: `linear-gradient(180deg, transparent 0%, ${alpha('#000', 0.6)} 100%)`,
-                                zIndex: 2,
-                            }} />
-                        </Card>
 
-                        {/* Join CTA Card - HERO Detailed */}
+                        {/* Join CTA Card - Premium Minimal */}
                         <Card 
+                            component={Link}
+                            href="/join"
                             elevation={0} 
                             sx={{ 
-                                background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
-                                backgroundSize: '200% 200%',
+                                bgcolor: '#050505',
+                                textDecoration: 'none',
                                 borderRadius: 3,
                                 p: { xs: 2.5, sm: 3 },
                                 flex: 2,
                                 minWidth: { xs: '100%', sm: 220 },
-                                border: `1px solid ${alpha('#fff', 0.2)}`,
+                                border: `1px solid ${alpha(theme.palette.primary.main, 0.15)}`,
                                 textAlign: 'left',
                                 position: 'relative',
                                 overflow: 'hidden',
-                                animation: 'glow-pulse 4s infinite ease-in-out, slide-gradient 6s ease infinite',
-                                transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                                '&::before': {
-                                    content: '""',
-                                    position: 'absolute',
-                                    top: '-50%',
-                                    left: '-50%',
-                                    width: '200%',
-                                    height: '200%',
-                                    background: `radial-gradient(circle, ${alpha(theme.palette.primary.main, 0.15)} 0%, transparent 70%)`,
-                                    opacity: 0,
-                                    transition: 'opacity 0.3s ease',
-                                },
+                                transition: 'all 0.3s ease',
                                 '&:hover': { 
-                                    transform: 'translateY(-8px) scale(1.03)',
-                                    boxShadow: `0 15px 50px ${alpha(theme.palette.primary.main, 0.3)}`,
-                                    border: `1px solid ${alpha(theme.palette.primary.main, 0.4)}`,
-                                    '&::before': { opacity: 1 }
+                                    transform: 'translateY(-4px)',
+                                    borderColor: alpha(theme.palette.primary.main, 0.4),
+                                    boxShadow: `0 8px 30px ${alpha(theme.palette.primary.main, 0.1)}`,
                                 }
                             }}
                         >
                             <Stack spacing={1.5} sx={{ position: 'relative', zIndex: 1, height: '100%', justifyContent: 'center' }}>
-                                <Box sx={{ 
-                                    p: 1, 
-                                    borderRadius: 2, 
-                                    bgcolor: alpha('#fff', 0.15),
-                                    display: 'inline-flex',
-                                    alignSelf: 'flex-start',
-                                }}>
-                                    <EmojiEvents sx={{ color: 'white', fontSize: { xs: 24, sm: 28 } }} />
-                                </Box>
                                 <Box>
-                                    <Typography variant="h3" color="white" sx={{ fontWeight: 900, mb: 0.5, letterSpacing: '0px', fontSize: { xs: '1.5rem', sm: '1.8rem' } }}>
+                                    <Typography variant="h3" color="white" sx={{ fontWeight: 800, mb: 0.5, letterSpacing: '0px', fontSize: { xs: '1.5rem', sm: '1.7rem' } }}>
                                         Join the Society
                                     </Typography>
-                                    <Typography variant="body1" color="rgba(255,255,255,0.95)" sx={{ mb: 2, lineHeight: 1.5, fontWeight: 500, fontSize: '0.9rem' }}>
+                                    <Typography variant="body1" color="rgba(255,255,255,0.7)" sx={{ mb: 2, lineHeight: 1.5, fontWeight: 500, fontSize: '0.9rem' }}>
                                         Want a say in shaping our food systems? The real work happens inside the Society. Join us to execute workflows, deploy capital, and collaborate with top innovators.
                                     </Typography>
-                                    <Link href="/login" style={{ textDecoration: 'none' }}>
-                                        <Box sx={{ 
-                                            display: 'inline-flex', 
-                                            alignItems: 'center', 
-                                            gap: 1,
-                                            bgcolor: alpha('#fff', 0.2),
-                                            px: 2,
-                                            py: 1,
-                                            borderRadius: 2,
-                                            fontWeight: 800,
-                                            fontSize: '0.85rem',
-                                            color: 'white',
-                                            transition: 'background-color 0.2s',
-                                            '&:hover': { bgcolor: alpha('#fff', 0.3) }
-                                        }}>
-                                            Authenticate Now
-                                            <Typography component="span" sx={{ fontSize: '1.1rem' }}>→</Typography>
-                                        </Box>
-                                    </Link>
+                                    <Box sx={{ 
+                                        display: 'inline-flex', 
+                                        alignItems: 'center', 
+                                        gap: 1,
+                                        bgcolor: alpha(theme.palette.primary.main, 0.1),
+                                        px: 2,
+                                        py: 1,
+                                        borderRadius: 2,
+                                        fontWeight: 700,
+                                        fontSize: '0.85rem',
+                                        color: theme.palette.primary.light,
+                                        transition: 'background-color 0.2s',
+                                    }}>
+                                        Authenticate Now
+                                        <Typography component="span" sx={{ fontSize: '1.1rem' }}>→</Typography>
+                                    </Box>
                                 </Box>
                             </Stack>
                         </Card>
