@@ -36,6 +36,7 @@ import {
   Send as SendIcon,
   NavigateNext as NavigateNextIcon,
   Print as PrintIcon,
+  ShortcutOutlined as ForwardIcon,
 } from "@mui/icons-material";
 
 import { useParams, useRouter } from "next/navigation";
@@ -491,23 +492,71 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
 
         {/* ═══════════════════════ PREMIUM ARTICLE HEADER ═══════════════════════ */}
         <Box sx={{ mb: 6 }}>
-          {/* Breadcrumbs */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 4, typography: 'caption', color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            <Box component="span" sx={{ cursor: 'pointer', '&:hover': { color: accentColor } }} onClick={() => router.push('/learn')}>
-              Learn
+          {/* Breadcrumb Pane */}
+          <Box sx={{ 
+            position: 'sticky', 
+            top: 0, 
+            zIndex: 50,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
+            mb: 5, p: 1.5, px: { xs: 2.5, md: 4, lg: 8 }, 
+            mx: { xs: -2.5, md: -4, lg: -8 },
+            mt: { xs: -4, md: -8 },
+            bgcolor: theme.palette.mode === 'dark' ? 'rgba(15,23,42,0.85)' : 'rgba(255,255,255,0.85)',
+            backdropFilter: 'blur(16px)',
+            borderBottom: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`,
+            borderTopLeftRadius: { md: '16px' },
+            borderTopRightRadius: { md: '16px' }
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, fontFamily: 'Inter, sans-serif', fontSize: '0.8rem', fontWeight: 600, color: theme.palette.mode === 'dark' ? '#cbd5e1' : '#475569' }}>
+              <Box 
+                component="span" 
+                onClick={() => router.push('/learn?type=article')}
+                sx={{ 
+                  cursor: 'pointer', 
+                  color: accentColor,
+                  bgcolor: alpha(accentColor, 0.1),
+                  px: 1.5, py: 0.5, borderRadius: '100px',
+                  textTransform: 'uppercase',
+                  fontSize: '0.7rem',
+                  letterSpacing: '0.1em',
+                  fontWeight: 800,
+                  transition: 'all 0.2s',
+                  '&:hover': { bgcolor: alpha(accentColor, 0.2), transform: 'translateY(-1px)' } 
+                }} 
+              >
+                Article
+              </Box>
+              {article.category && (
+                <>
+                  <NavigateNextIcon sx={{ fontSize: 16, opacity: 0.4 }} />
+                  <Box component="span" sx={{ cursor: 'pointer', '&:hover': { color: accentColor } }} onClick={() => router.push(`/learn?category=${encodeURIComponent(article.category)}`)}>
+                    {article.category}
+                  </Box>
+                </>
+              )}
+              {article.subcategory && (
+                <>
+                  <NavigateNextIcon sx={{ fontSize: 16, opacity: 0.4 }} />
+                  <Box component="span" sx={{ cursor: 'pointer', '&:hover': { color: accentColor } }} onClick={() => router.push(`/learn?subcategory=${encodeURIComponent(article.subcategory)}`)}>
+                    {article.subcategory}
+                  </Box>
+                </>
+              )}
+              {article.timeframe && (
+                <>
+                  <NavigateNextIcon sx={{ fontSize: 16, opacity: 0.4 }} />
+                  <Box component="span" sx={{ cursor: 'pointer', '&:hover': { color: accentColor } }} onClick={() => router.push(`/learn?timeframe=${encodeURIComponent(article.timeframe)}`)}>
+                    {article.timeframe}
+                  </Box>
+                </>
+              )}
             </Box>
-            <Box component="span" sx={{ opacity: 0.5 }}>/</Box>
-            <Box component="span" sx={{ cursor: 'pointer', '&:hover': { color: accentColor } }}>
-              {article.swimlane || 'Articles'}
-            </Box>
-            {article.category && (
-              <>
-                <Box component="span" sx={{ opacity: 0.5 }}>/</Box>
-                <Box component="span" sx={{ cursor: 'pointer', '&:hover': { color: accentColor } }}>
-                  {article.category}
-                </Box>
-              </>
-            )}
+            
+            <Tooltip title="Share Article">
+              <IconButton size="small" sx={{ color: 'text.secondary', '&:hover': { color: accentColor, bgcolor: alpha(accentColor, 0.1) } }}>
+                <ForwardIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
           </Box>
 
           {/* Title - only show if there is no SpikyTitleBlock (subheading) at the top */}
@@ -530,7 +579,7 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
             </Box>
           )}
 
-          {/* Metadata & Actions Row */}
+          {/* Metadata Area */}
           <Box sx={{ 
             display: 'flex', 
             flexDirection: { xs: 'column', sm: 'row' }, 
@@ -542,101 +591,66 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
             borderBottom: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`
           }}>
             
-            {/* Left: Author, Date, Collaborators */}
+            {/* Left: Author Profile */}
             <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
               {article.author && (
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1, cursor: "pointer", "&:hover p": { color: accentColor } }}>
-                  <Avatar src={article.author.avatarUrl} sx={{ width: 36, height: 36, border: `2px solid ${alpha(accentColor, 0.3)}` }} />
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                  <Avatar src={article.author.avatarUrl} sx={{ width: 44, height: 44, border: `2px solid ${alpha(accentColor, 0.3)}` }} />
                   <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 800, color: theme.palette.mode === 'dark' ? '#fff' : '#0f172a', transition: "color 0.2s", lineHeight: 1.2 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 800, color: theme.palette.mode === 'dark' ? '#fff' : '#0f172a', lineHeight: 1.2, display: 'flex', alignItems: 'center' }}>
                       {article.author.name}
-                      {article.author.isVerified && <VerifiedIcon sx={{ fontSize: 14, color: accentColor, ml: 0.5, verticalAlign: 'text-top' }} />}
+                      {article.author.isVerified && <VerifiedIcon sx={{ fontSize: 16, color: accentColor, ml: 0.5 }} />}
                     </Typography>
-                    <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                      Author
+                    <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 500 }}>
+                      {article.author.role || article.author.title || 'Society Member'}
                     </Typography>
                   </Box>
                 </Box>
               )}
+            </Box>
+
+            {/* Right: Dates & Collaborators */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <CalendarIcon sx={{ fontSize: 14 }} /> Posted: {new Date(article.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                </Typography>
+                {article.updatedAt && new Date(article.updatedAt).getTime() > new Date(article.createdAt).getTime() + 86400000 && (
+                  <Typography variant="caption" sx={{ color: alpha(theme.palette.text.secondary, 0.7), fontWeight: 500 }}>
+                    Updated: {new Date(article.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  </Typography>
+                )}
+              </Box>
 
               {article.collaborators && article.collaborators.length > 0 && (
                 <>
                   <Box sx={{ width: 1, height: 24, bgcolor: 'divider', mx: 1 }} />
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Typography variant="caption" sx={{ color: "text.secondary", mr: 1, fontWeight: 600 }}>Reviewers</Typography>
-                    <Box sx={{ display: 'flex', flexDirection: 'row' }}>
-                      {article.collaborators.map((collab: any, i: number) => (
-                        <Tooltip key={i} title={`${collab.name} - ${collab.role}`}>
+                  <Tooltip title={`${article.collaborators.length} Reviewer${article.collaborators.length > 1 ? 's' : ''}`}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer', '&:hover': { opacity: 0.8 } }}>
+                      <Box sx={{ display: 'flex', flexDirection: 'row', mr: 0.5 }}>
+                        {article.collaborators.slice(0, 2).map((collab: any, i: number) => (
                           <Avatar 
+                            key={i}
                             src={collab.avatarUrl} 
                             sx={{ 
-                              width: 32, height: 32, 
+                              width: 28, height: 28, 
                               border: `2px solid ${theme.palette.background.paper}`,
                               ml: i > 0 ? -1 : 0,
                               zIndex: 10 - i,
-                              transition: 'transform 0.2s',
-                              '&:hover': { transform: 'translateY(-2px)', zIndex: 20 }
                             }} 
-                          >
-                            {collab.name?.charAt(0)}
-                          </Avatar>
-                        </Tooltip>
-                      ))}
+                          />
+                        ))}
+                      </Box>
+                      {article.collaborators.length > 2 && (
+                        <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary' }}>
+                          +{article.collaborators.length - 2}
+                        </Typography>
+                      )}
                     </Box>
-                  </Box>
+                  </Tooltip>
                 </>
               )}
-              
-              <Box sx={{ width: 1, height: 24, bgcolor: 'divider', mx: 1 }} />
-              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, color: "text.secondary" }}>
-                <CalendarIcon sx={{ fontSize: 16 }} />
-                <Typography variant="caption" sx={{ fontWeight: 500 }}>
-                  {new Date(article.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                </Typography>
-              </Box>
-            </Box>
-
-            {/* Right: Actions */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Tooltip title="Like Article">
-                <IconButton 
-                  onClick={() => setHearted(!hearted)}
-                  sx={{ 
-                    bgcolor: hearted ? alpha('#ef4444', 0.1) : 'transparent',
-                    color: hearted ? '#ef4444' : 'text.secondary',
-                    '&:hover': { bgcolor: alpha('#ef4444', 0.2), color: '#ef4444' }
-                  }}
-                >
-                  <FavoriteIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Bookmark">
-                <IconButton 
-                  onClick={() => setBookmarked(!bookmarked)}
-                  sx={{ 
-                    bgcolor: bookmarked ? alpha(accentColor, 0.1) : 'transparent',
-                    color: bookmarked ? accentColor : 'text.secondary',
-                    '&:hover': { bgcolor: alpha(accentColor, 0.2), color: accentColor }
-                  }}
-                >
-                  <BookmarkIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Print / Download PDF">
-                <IconButton 
-                  onClick={() => window.print()}
-                  sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary', bgcolor: 'action.hover' } }}
-                >
-                  <PrintIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Share">
-                <IconButton 
-                  sx={{ color: 'text.secondary', '&:hover': { color: 'text.primary', bgcolor: 'action.hover' } }}
-                >
-                  <ShareIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
             </Box>
           </Box>
         </Box>
