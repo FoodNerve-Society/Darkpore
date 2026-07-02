@@ -63,15 +63,57 @@ export default async function InnovationsHomepage() {
   // We no longer inject fake/mocked data if marqueeItems is empty.
   // The frontend component handles the empty array gracefully by rendering a STANDBY state.
 
-  // Fetch recent learning materials from the simulated database
+  // Fetch recent learning materials directly from the database
   let recentIntelligence: any[] = [];
   try {
-    recentIntelligence = await getKnowledgeMaterials({
-      tenantId: tenantId,
-      limit: 20 // Fetch a good number so Client component can filter
+    const recentLC = await prisma.learnContent.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+      include: {
+        author: true,
+        article: {
+          include: {
+            blocks: {
+              orderBy: { orderIndex: 'asc' }
+            }
+          }
+        }
+      }
     });
+
+    recentIntelligence = recentLC.map((lc: any) => {
+      // Find the first image block to use as thumbnail
+      const imageBlock = lc.article?.blocks?.find((b: any) => b.type === 'image' && b.payload?.url);
+      return {
+        id: lc.id,
+        challengeId: lc.challengeId || 'global',
+        subcategoryId: lc.subcategory || 'general',
+        slug: lc.slug,
+        title: lc.title,
+        type: lc.type, // 'article', 'video', 'class', 'livestream'
+        thumbnailUrl: lc.thumbnailUrl || imageBlock?.payload?.url || '/images/default-thumbnail.jpg',
+        author: lc.author?.name || lc.author?.username || 'Society Architect',
+        dateAdded: lc.createdAt,
+        readTime: lc.type === 'video' || lc.type === 'livestream' ? 'Watch' : '5 min read'
+      };
+    });
+
+    // Fallback if DB is empty
+    if (recentIntelligence.length === 0) {
+      const mockData = await getKnowledgeMaterials({ tenantId, limit: 20 });
+      // Map mock types to the new types if needed
+      recentIntelligence = mockData.map(m => ({
+        ...m,
+        type: m.type === 'pdf' ? 'class' : m.type
+      }));
+    }
   } catch (e) {
-    console.warn("SERVER LOG - Database connection failed, falling back to empty intelligence.");
+    console.warn("SERVER LOG - Database connection failed, falling back to mock intelligence.");
+    const mockData = await getKnowledgeMaterials({ tenantId, limit: 20 });
+    recentIntelligence = mockData.map(m => ({
+      ...m,
+      type: m.type === 'pdf' ? 'class' : m.type
+    }));
   }
 
   // Pick all challenges for BentoGrid and fallback slideshow
@@ -159,7 +201,7 @@ export default async function InnovationsHomepage() {
         avatarUrl: c.organizer?.avatarUrl || '/images/default-avatar.png'
       },
       traction: c.tractionMetric || 'Active Operations',
-      link: `/support/${c.id}`
+      link: `/innovations/${c.id}`
     }));
   } catch (e) {
     console.warn("SERVER LOG - Failed to fetch active deployments from DB.", e);
@@ -177,7 +219,7 @@ export default async function InnovationsHomepage() {
   }
 
   return (
-    <Box sx={{ bgcolor: 'background.default' }}>
+    <Box sx={{ bgcolor: '#050505', minHeight: '100vh' }}>
       
       {/* ═══════════════════════════════════════════════════════════
           SECTION 1: THE CINEMATIC HERO

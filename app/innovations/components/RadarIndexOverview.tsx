@@ -114,11 +114,12 @@ export default function RadarIndexOverview() {
           <Box
             sx={{
               position: 'relative',
-              background: 'rgba(5, 5, 5, 0.85)',
+              background: isStuck ? 'rgba(20, 20, 20, 0.95)' : 'rgba(5, 5, 5, 0.85)',
               backdropFilter: 'blur(24px)',
               WebkitBackdropFilter: 'blur(24px)',
               py: { xs: 0.75, md: 1 },
               px: { xs: 2, md: 4 },
+              transition: 'background 0.45s ease'
             }}
           >
             {/* Progress track line (full width, behind everything) */}
@@ -127,6 +128,7 @@ export default function RadarIndexOverview() {
               bottom: 0, left: 0, right: 0,
               height: '2px',
               bgcolor: 'rgba(255,255,255,0.04)',
+              transition: 'background-color 0.45s ease'
             }}>
               <Box sx={{
                 height: '100%',
