@@ -59,14 +59,8 @@ export default async function InnovationsHomepage() {
   
   let marqueeItems = rawUpdates;
 
-  if (marqueeItems.length === 0) {
-    marqueeItems = [
-      { challengeTitle: '1. Land', challengeId: 'land', subcategoryId: 'third-party-mortgage', section: 'innovations', title: 'New Agritech Hub Launched in Nairobi', date: new Date().toISOString(), importance: 'high' },
-      { challengeTitle: '3. Inputs', challengeId: 'inputs', subcategoryId: 'improved-crop-breeding', section: 'community', title: 'Seed Distribution Network Expands to 50k Farmers', date: new Date().toISOString(), importance: 'medium' },
-      { challengeTitle: '4. Energy', challengeId: 'energy', subcategoryId: 'storage-refrigeration', section: 'library', title: 'Research Report: Cold Chain Innovations in East Africa', date: new Date().toISOString(), importance: 'high' },
-      { challengeTitle: '6. Post-Harvest Loss', challengeId: 'loss', subcategoryId: 'tomato', section: 'livestreams', title: 'Commodity Trading Strategies Masterclass', date: new Date().toISOString(), importance: 'low' },
-    ];
-  }
+  // We no longer inject fake/mocked data if marqueeItems is empty.
+  // The frontend component handles the empty array gracefully by rendering a STANDBY state.
 
   // Fetch recent learning materials from the simulated database
   let recentIntelligence: any[] = [];
@@ -191,40 +185,36 @@ export default async function InnovationsHomepage() {
           width: 'max-content',
         }}>
           {/* Double the items for seamless infinite loop */}
-          {[...marqueeItems, ...marqueeItems].map((item, idx) => {
-            const eventDate = new Date(item.date);
-            const today = new Date();
-            
-            // Heuristic for time-sensitive language
-            const isToday = eventDate.toDateString() === today.toDateString();
-            const isFuture = eventDate > today;
-            
-            let statusLabel = "POSTED";
-            let statusValue = eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-            let statusColor = "rgba(255,255,255,0.4)";
-            let valueColor = "rgba(255,255,255,0.7)";
+          {(marqueeItems.length > 0 && marqueeItems[0].id !== 'empty' ? [...marqueeItems, ...marqueeItems] : [{
+            id: 'empty',
+            challengeId: '',
+            subcategoryId: '',
+            section: '',
+            title: 'System Alerts — Monitoring Ecosystem... No urgent deadlines right now.',
+            date: null,
+            link: '#'
+          }]).map((item: any, idx) => {
+            let statusLabel = 'ACTIVE';
+            let statusColor = '#ffffff';
 
-            if (item.section === 'livestreams' || item.section === 'activities') {
-              if (isToday || item.importance === 'high') {
-                statusLabel = "HAPPENING";
-                statusValue = "LIVE NOW";
-                statusColor = "#00e676";
-                valueColor = "#00e676";
-              } else if (isFuture) {
-                statusLabel = "STARTS";
-                statusColor = "#ff9933";
-                valueColor = "white";
+            if (item.date) {
+              const diffDays = Math.ceil((new Date(item.date).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
+              if (diffDays < 3) {
+                statusLabel = 'HAPPENING';
+                statusColor = '#ff1744';
+              } else if (diffDays < 7) {
+                statusLabel = 'ACTION REQ';
+                statusColor = '#ff9100';
+              } else {
+                statusLabel = 'UPCOMING';
+                statusColor = '#2196f3';
               }
-            } else if (item.section === 'jobs' || item.section === 'community') {
-              if (isFuture || item.importance === 'high') {
-                statusLabel = "CLOSES BY";
-                statusColor = "#ff9933";
-                valueColor = "white";
-              }
-            } else if (item.importance === 'high') {
-               statusLabel = "ACTION REQ";
-               statusColor = "#ff4444";
-               valueColor = "white";
+            }
+
+            if (item.id === 'empty' || marqueeItems[0]?.id === 'empty') {
+              statusLabel = 'STANDBY';
+              statusColor = 'rgba(255,255,255,0.4)';
+              if(item.id !== 'empty') item.title = 'System Alerts — Monitoring Ecosystem... No urgent deadlines right now.'; // Fallback safeguard
             }
 
             return (
@@ -232,7 +222,7 @@ export default async function InnovationsHomepage() {
                 position: 'relative',
                 background: 'rgba(15, 15, 15, 0.6)',
                 backdropFilter: 'blur(16px)',
-                borderRadius: '100px', // Premium pill shape
+                borderRadius: '100px',
                 border: '1px solid rgba(255,255,255,0.08)',
                 boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
                 transition: 'all 0.4s cubic-bezier(.4,0,.2,1)',
@@ -247,11 +237,10 @@ export default async function InnovationsHomepage() {
                 height: 54,
                 pr: 4,
                 pl: 1.5,
-                my: 2, // Extra vertical breathing room
+                my: 2,
               }}>
-                <Link href={item.link || `/${item.challengeId}/${item.subcategoryId}/${item.section}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', width: '100%', gap: 12 }}>
+                <Link href={item.id === 'empty' ? '#' : (item.link || `/${item.challengeId}/${item.subcategoryId}/${item.section}`)} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', width: '100%', gap: 12, cursor: item.id === 'empty' ? 'default' : 'pointer' }}>
                   
-                  {/* Glowing Status Dot (Replaces Hexagon) */}
                   <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
                     <Box sx={{ 
                        width: 36, height: 36, 
@@ -271,7 +260,7 @@ export default async function InnovationsHomepage() {
                   {/* Status & Title Stack */}
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.2 }}>
                     <Typography variant="caption" sx={{ color: statusColor, fontWeight: 900, letterSpacing: 1.5, fontSize: '0.6rem', whiteSpace: 'nowrap', textTransform: 'uppercase' }}>
-                       {statusLabel === 'POSTED' ? 'NEW' : statusLabel} <span style={{ color: 'rgba(255,255,255,0.5)', margin: '0 4px' }}>//</span> <span style={{ color: valueColor, fontWeight: 600 }}>{statusValue}</span>
+                       {statusLabel} <span style={{ color: 'rgba(255,255,255,0.5)', margin: '0 4px' }}>//</span>
                     </Typography>
                     <Typography variant="body1" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 700, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: { xs: 200, sm: 300, md: 400, lg: 500 } }}>
                       {item.title}
@@ -279,14 +268,16 @@ export default async function InnovationsHomepage() {
                   </Box>
 
                   {/* Context Text */}
-                  <Box sx={{ ml: 4, flexShrink: 0, borderLeft: '1px solid rgba(255,255,255,0.1)', pl: 2.5, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    <Typography sx={{ color: 'rgba(255,255,255,0.3)', fontWeight: 800, fontSize: '0.5rem', letterSpacing: 1, mb: 0.2 }}>
-                      CHALLENGE
-                    </Typography>
-                    <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 600, fontSize: '0.65rem', letterSpacing: 1, textTransform: 'uppercase' }}>
-                      {item.challengeTitle.replace(/^\d+\.\s*/, '')}
-                    </Typography>
-                  </Box>
+                  {item.challengeTitle && (
+                    <Box sx={{ ml: 4, flexShrink: 0, borderLeft: '1px solid rgba(255,255,255,0.1)', pl: 2.5, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                      <Typography sx={{ color: 'rgba(255,255,255,0.3)', fontWeight: 800, fontSize: '0.5rem', letterSpacing: 1, mb: 0.2 }}>
+                        CHALLENGE
+                      </Typography>
+                      <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 600, fontSize: '0.65rem', letterSpacing: 1, textTransform: 'uppercase' }}>
+                        {item.challengeTitle.replace(/^\d+\.\s*/, '')}
+                      </Typography>
+                    </Box>
+                  )}
 
                 </Link>
               </Box>

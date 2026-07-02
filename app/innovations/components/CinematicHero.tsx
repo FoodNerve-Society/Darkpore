@@ -253,7 +253,7 @@ export default function CinematicHero({ tenantName, headline, subheadline, stats
                                     }
                                 }}
                             >
-                                <Typography variant="h3" color="#ffffff" sx={{ fontWeight: 900, mb: 0.5, fontSize: { xs: '1.5rem', sm: '1.75rem' }, fontFamily: 'var(--font-dosis)' }}>
+                                <Typography variant="h3" sx={{ color: theme.palette.primary.light, fontWeight: 900, mb: 0.5, fontSize: { xs: '1.5rem', sm: '1.75rem' }, fontFamily: 'var(--font-dosis)' }}>
                                     {stats.activeSolutions}+
                                 </Typography>
                                 <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', fontSize: '0.6rem' }}>
@@ -283,7 +283,7 @@ export default function CinematicHero({ tenantName, headline, subheadline, stats
                                     }
                                 }}
                             >
-                                <Typography variant="h3" color="#ffffff" sx={{ fontWeight: 900, mb: 0.5, fontSize: { xs: '1.5rem', sm: '1.75rem' }, fontFamily: 'var(--font-dosis)' }}>
+                                <Typography variant="h3" sx={{ color: theme.palette.primary.light, fontWeight: 900, mb: 0.5, fontSize: { xs: '1.5rem', sm: '1.75rem' }, fontFamily: 'var(--font-dosis)' }}>
                                     {stats.communitySize.toLocaleString()}
                                 </Typography>
                                 <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '2px', fontSize: '0.6rem' }}>
@@ -415,18 +415,18 @@ export default function CinematicHero({ tenantName, headline, subheadline, stats
                                 },
                                 '&:hover': { 
                                     transform: 'translateY(-6px)',
-                                    borderColor: alpha(theme.palette.primary.main, 0.3),
-                                    boxShadow: `0 20px 60px ${alpha(theme.palette.primary.main, 0.15)}`,
+                                    borderColor: alpha(theme.palette.secondary.main, 0.3),
+                                    boxShadow: `0 20px 60px ${alpha(theme.palette.secondary.main, 0.15)}`,
                                     '&::before': { opacity: 1 }
                                 }
                             }}
                         >
                             <Stack spacing={2} sx={{ position: 'relative', zIndex: 1, height: '100%', justifyContent: 'center' }}>
                                 <Box>
-                                    <Typography variant="overline" sx={{ color: theme.palette.primary.main, fontWeight: 900, letterSpacing: 3, mb: 1, display: 'block' }}>
+                                    <Typography variant="overline" sx={{ color: theme.palette.primary.light, fontWeight: 900, letterSpacing: 3, mb: 1, display: 'block' }}>
                                         EXCLUSIVE ACCESS
                                     </Typography>
-                                    <Typography variant="h3" color="#ffffff" sx={{ fontWeight: 900, mb: 1, letterSpacing: '-0.5px', fontSize: { xs: '1.6rem', sm: '1.9rem' } }}>
+                                    <Typography variant="h3" sx={{ color: theme.palette.primary.light, fontWeight: 900, mb: 1, letterSpacing: '-0.5px', fontSize: { xs: '1.6rem', sm: '1.9rem' } }}>
                                         Join the Society
                                     </Typography>
                                     <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.5)', mb: 3.5, lineHeight: 1.6, fontWeight: 400, fontSize: '0.95rem' }}>
@@ -441,14 +441,14 @@ export default function CinematicHero({ tenantName, headline, subheadline, stats
                                             bgcolor: 'white',
                                             px: 3,
                                             py: 1.5,
-                                            borderRadius: '100px', // Premium pill button
+                                            borderRadius: '100px',
                                             fontWeight: 800,
                                             fontSize: '0.85rem',
                                             color: '#000',
                                             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                             '&:hover': { 
-                                                bgcolor: theme.palette.primary.main,
-                                                color: '#fff',
+                                                bgcolor: theme.palette.secondary.main,
+                                                color: '#000',
                                                 transform: 'scale(1.05)'
                                             }
                                         }}>
