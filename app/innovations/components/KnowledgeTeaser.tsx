@@ -77,7 +77,7 @@ export default function KnowledgeTeaser({ materials }: { materials: any[] }) {
                     gridRow: isFeatured ? { md: 'span 2' } : 'auto',
                   }}
                 >
-                  <Link href={`/innovations/${material.challengeId}/${material.subcategoryId}/learn/article/${material.slug}`} passHref style={{ textDecoration: 'none' }}>
+                  <Link href={`/learn/${material.type || 'article'}/${material.slug}`} passHref style={{ textDecoration: 'none' }}>
                     <Box sx={{ 
                       display: 'flex', 
                       flexDirection: 'column',

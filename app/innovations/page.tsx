@@ -70,7 +70,6 @@ export default async function InnovationsHomepage() {
       orderBy: { createdAt: 'desc' },
       take: 20,
       include: {
-        author: true,
         article: {
           include: {
             blocks: {
@@ -92,7 +91,7 @@ export default async function InnovationsHomepage() {
         title: lc.title,
         type: lc.type, // 'article', 'video', 'class', 'livestream'
         thumbnailUrl: lc.thumbnailUrl || imageBlock?.payload?.url || '/images/default-thumbnail.jpg',
-        author: lc.author?.name || lc.author?.username || 'Society Architect',
+        author: lc.authorName || 'Society Architect',
         dateAdded: lc.createdAt,
         readTime: lc.type === 'video' || lc.type === 'livestream' ? 'Watch' : '5 min read'
       };
