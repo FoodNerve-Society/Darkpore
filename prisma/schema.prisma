@@ -130,17 +130,19 @@ model TradeListing {
 }
 
 model Campaign {
-  id           String   @id @default(cuid())
-  tier         String // 'initiative' | 'innovation'
-  title        String
-  description  String
-  imageUrl     String?
-  goalAmount   Float
-  raisedAmount Float    @default(0)
-  backerCount  Int      @default(0)
-  deadline     DateTime
-  status       String   @default("active") // 'active' | 'funded' | 'expired'
-  createdAt    DateTime @default(now())
+  id             String   @id @default(cuid())
+  tier           String // 'initiative' | 'innovation' | 'venture'
+  title          String
+  description    String
+  imageUrl       String?
+  goalAmount     Float
+  raisedAmount   Float    @default(0)
+  backerCount    Int      @default(0)
+  deadline       DateTime
+  status         String   @default("funding") // 'funding' | 'active_deployment' | 'completed'
+  originTag      String?
+  tractionMetric String?
+  createdAt      DateTime @default(now())
 
   // Relations
   organizerId String

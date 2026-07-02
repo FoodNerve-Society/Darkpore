@@ -136,6 +136,45 @@ export default async function InnovationsHomepage() {
   console.log("SERVER LOG - Normalized Tenant ID:", tenantId);
   console.log("SERVER LOG - Recent Intelligence count:", recentIntelligence.length);
 
+  // Fetch Live Active Deployments
+  let activeDeployments: any[] = [];
+  try {
+    const rawCampaigns = await prisma.campaign.findMany({
+      where: { status: 'active_deployment' },
+      include: { organizer: true },
+      take: 5
+    });
+    
+    // Map to the ShowcaseCarousel props format
+    activeDeployments = rawCampaigns.map((c: any) => ({
+      id: c.id,
+      title: c.title,
+      description: c.description,
+      imageUrl: c.imageUrl,
+      type: c.tier === 'initiative' ? 'Initiative' : c.tier === 'innovation' ? 'Innovation' : 'Venture',
+      origin: c.originTag || 'Core Deployment',
+      operator: {
+        name: c.organizer?.name || 'Society Hub',
+        avatarUrl: c.organizer?.avatarUrl || '/images/default-avatar.png'
+      },
+      traction: c.tractionMetric || 'Active Operations',
+      link: `/support/${c.id}`
+    }));
+  } catch (e) {
+    console.warn("SERVER LOG - Failed to fetch active deployments from DB.", e);
+  }
+
+  // Fallback to static CMS data if the database is completely empty
+  if (activeDeployments.length === 0) {
+    activeDeployments = homepageConfig.showcaseProjects.map((p: any) => ({
+      ...p,
+      type: 'Venture',
+      origin: 'Core Platform',
+      operator: { name: 'Society Base', avatarUrl: '/images/default-avatar.png' },
+      traction: 'Recently Deployed'
+    }));
+  }
+
   return (
     <Box sx={{ bgcolor: 'background.default' }}>
       
@@ -160,130 +199,129 @@ export default async function InnovationsHomepage() {
           Auto-scrolling horizontal ticker of recent updates
       ═══════════════════════════════════════════════════════════ */}
       <Box sx={{ 
-        py: 4, 
+        py: marqueeItems.length === 0 ? 3 : 4, 
         bgcolor: '#050505',
         color: 'white',
         overflow: 'hidden',
         borderTop: '1px solid rgba(255,255,255,0.08)',
         borderBottom: '1px solid rgba(255,255,255,0.08)',
       }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', px: 4, mb: 2 }}>
-          <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#ff4444', mr: 1.5, animation: 'pulse 2s infinite', '@keyframes pulse': { '0%, 100%': { opacity: 1 }, '50%': { opacity: 0.4 } } }} />
-          <Typography variant="overline" sx={{ color: 'rgba(255,255,255,0.4)', fontWeight: 700, letterSpacing: 3 }}>
-            GLOBAL ALERTS
-          </Typography>
-        </Box>
-        
-        <Box sx={{
-          display: 'flex',
-          animation: 'marquee 40s linear infinite',
-          '&:hover': { animationPlayState: 'paused' },
-          '@keyframes marquee': {
-            '0%': { transform: 'translateX(0)' },
-            '100%': { transform: 'translateX(-50%)' },
-          },
-          width: 'max-content',
-        }}>
-          {/* Double the items for seamless infinite loop */}
-          {(marqueeItems.length > 0 && marqueeItems[0].id !== 'empty' ? [...marqueeItems, ...marqueeItems] : [{
-            id: 'empty',
-            challengeId: '',
-            subcategoryId: '',
-            section: '',
-            title: 'System Alerts — Monitoring Ecosystem... No urgent deadlines right now.',
-            date: null,
-            link: '#'
-          }]).map((item: any, idx) => {
-            let statusLabel = 'ACTIVE';
-            let statusColor = '#ffffff';
+        {marqueeItems.length === 0 ? (
+          <Box sx={{ textAlign: 'center' }}>
+            <Typography variant="overline" sx={{ color: 'rgba(255,255,255,0.4)', fontWeight: 700, letterSpacing: 3, display: 'block', mb: 0.5 }}>
+              GLOBAL ALERTS
+            </Typography>
+            <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.5)', fontStyle: 'italic', fontSize: '0.9rem' }}>
+              System Alerts — Monitoring Ecosystem... Check back for time updates.
+            </Typography>
+          </Box>
+        ) : (
+          <>
+            <Box sx={{ display: 'flex', alignItems: 'center', px: 4, mb: 2 }}>
+              <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#ff4444', mr: 1.5, animation: 'pulse 2s infinite', '@keyframes pulse': { '0%, 100%': { opacity: 1 }, '50%': { opacity: 0.4 } } }} />
+              <Typography variant="overline" sx={{ color: 'rgba(255,255,255,0.4)', fontWeight: 700, letterSpacing: 3 }}>
+                GLOBAL ALERTS
+              </Typography>
+            </Box>
+            
+            <Box sx={{
+              display: 'flex',
+              animation: 'marquee 40s linear infinite',
+              '&:hover': { animationPlayState: 'paused' },
+              '@keyframes marquee': {
+                '0%': { transform: 'translateX(0)' },
+                '100%': { transform: 'translateX(-50%)' },
+              },
+              width: 'max-content',
+            }}>
+              {/* Double the items for seamless infinite loop */}
+              {[...marqueeItems, ...marqueeItems].map((item: any, idx) => {
+                let statusLabel = 'ACTIVE';
+                let statusColor = '#ffffff';
 
-            if (item.date) {
-              const diffDays = Math.ceil((new Date(item.date).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
-              if (diffDays < 3) {
-                statusLabel = 'HAPPENING';
-                statusColor = '#ff1744';
-              } else if (diffDays < 7) {
-                statusLabel = 'ACTION REQ';
-                statusColor = '#ff9100';
-              } else {
-                statusLabel = 'UPCOMING';
-                statusColor = '#2196f3';
-              }
-            }
+                if (item.date) {
+                  const diffDays = Math.ceil((new Date(item.date).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
+                  if (diffDays < 3) {
+                    statusLabel = 'HAPPENING';
+                    statusColor = '#ff1744';
+                  } else if (diffDays < 7) {
+                    statusLabel = 'ACTION REQ';
+                    statusColor = '#ff9100';
+                  } else {
+                    statusLabel = 'UPCOMING';
+                    statusColor = '#2196f3';
+                  }
+                }
 
-            if (item.id === 'empty' || marqueeItems[0]?.id === 'empty') {
-              statusLabel = 'STANDBY';
-              statusColor = 'rgba(255,255,255,0.4)';
-              if(item.id !== 'empty') item.title = 'System Alerts — Monitoring Ecosystem... No urgent deadlines right now.'; // Fallback safeguard
-            }
+                return (
+                  <Box key={idx} sx={{ 
+                    position: 'relative',
+                    background: 'rgba(15, 15, 15, 0.6)',
+                    backdropFilter: 'blur(16px)',
+                    borderRadius: '100px',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
+                    transition: 'all 0.4s cubic-bezier(.4,0,.2,1)',
+                    '&:hover': {
+                      background: 'rgba(25, 25, 25, 0.9)',
+                      borderColor: 'rgba(255,255,255,0.2)',
+                      transform: 'translateY(-2px)'
+                    },
+                    mr: 4,
+                    display: 'flex',
+                    alignItems: 'center',
+                    height: 54,
+                    pr: 4,
+                    pl: 1.5,
+                    my: 2,
+                  }}>
+                    <Link href={item.link || `/${item.challengeId}/${item.subcategoryId}/${item.section}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', width: '100%', gap: 12 }}>
+                      
+                      <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                        <Box sx={{ 
+                           width: 36, height: 36, 
+                           borderRadius: '50%',
+                           bgcolor: alpha(statusColor, 0.15),
+                           border: `1px solid ${alpha(statusColor, 0.5)}`,
+                           display: 'flex', alignItems: 'center', justifyContent: 'center',
+                           boxShadow: `0 0 12px ${alpha(statusColor, 0.4)}`,
+                        }}>
+                           <Box sx={{
+                               width: 8, height: 8, borderRadius: '50%', bgcolor: statusColor,
+                               animation: (statusLabel === 'HAPPENING' || statusLabel === 'ACTION REQ') ? 'urgentPulse 2s ease-in-out infinite' : 'none',
+                           }} />
+                        </Box>
+                      </Box>
 
-            return (
-              <Box key={idx} sx={{ 
-                position: 'relative',
-                background: 'rgba(15, 15, 15, 0.6)',
-                backdropFilter: 'blur(16px)',
-                borderRadius: '100px',
-                border: '1px solid rgba(255,255,255,0.08)',
-                boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
-                transition: 'all 0.4s cubic-bezier(.4,0,.2,1)',
-                '&:hover': {
-                  background: 'rgba(25, 25, 25, 0.9)',
-                  borderColor: 'rgba(255,255,255,0.2)',
-                  transform: 'translateY(-2px)'
-                },
-                mr: 4,
-                display: 'flex',
-                alignItems: 'center',
-                height: 54,
-                pr: 4,
-                pl: 1.5,
-                my: 2,
-              }}>
-                <Link href={item.id === 'empty' ? '#' : (item.link || `/${item.challengeId}/${item.subcategoryId}/${item.section}`)} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', width: '100%', gap: 12, cursor: item.id === 'empty' ? 'default' : 'pointer' }}>
-                  
-                  <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-                    <Box sx={{ 
-                       width: 36, height: 36, 
-                       borderRadius: '50%',
-                       bgcolor: alpha(statusColor, 0.15),
-                       border: `1px solid ${alpha(statusColor, 0.5)}`,
-                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                       boxShadow: `0 0 12px ${alpha(statusColor, 0.4)}`,
-                    }}>
-                       <Box sx={{
-                           width: 8, height: 8, borderRadius: '50%', bgcolor: statusColor,
-                           animation: (statusLabel === 'HAPPENING' || statusLabel === 'ACTION REQ') ? 'urgentPulse 2s ease-in-out infinite' : 'none',
-                       }} />
-                    </Box>
+                      {/* Status & Title Stack */}
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.2 }}>
+                        <Typography variant="caption" sx={{ color: statusColor, fontWeight: 900, letterSpacing: 1.5, fontSize: '0.6rem', whiteSpace: 'nowrap', textTransform: 'uppercase' }}>
+                           {statusLabel} <span style={{ color: 'rgba(255,255,255,0.5)', margin: '0 4px' }}>//</span>
+                        </Typography>
+                        <Typography variant="body1" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 700, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: { xs: 200, sm: 300, md: 400, lg: 500 } }}>
+                          {item.title}
+                        </Typography>
+                      </Box>
+
+                      {/* Context Text */}
+                      {item.challengeTitle && (
+                        <Box sx={{ ml: 4, flexShrink: 0, borderLeft: '1px solid rgba(255,255,255,0.1)', pl: 2.5, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                          <Typography sx={{ color: 'rgba(255,255,255,0.3)', fontWeight: 800, fontSize: '0.5rem', letterSpacing: 1, mb: 0.2 }}>
+                            CHALLENGE
+                          </Typography>
+                          <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 600, fontSize: '0.65rem', letterSpacing: 1, textTransform: 'uppercase' }}>
+                            {item.challengeTitle.replace(/^\d+\.\s*/, '')}
+                          </Typography>
+                        </Box>
+                      )}
+
+                    </Link>
                   </Box>
-
-                  {/* Status & Title Stack */}
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.2 }}>
-                    <Typography variant="caption" sx={{ color: statusColor, fontWeight: 900, letterSpacing: 1.5, fontSize: '0.6rem', whiteSpace: 'nowrap', textTransform: 'uppercase' }}>
-                       {statusLabel} <span style={{ color: 'rgba(255,255,255,0.5)', margin: '0 4px' }}>//</span>
-                    </Typography>
-                    <Typography variant="body1" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 700, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: { xs: 200, sm: 300, md: 400, lg: 500 } }}>
-                      {item.title}
-                    </Typography>
-                  </Box>
-
-                  {/* Context Text */}
-                  {item.challengeTitle && (
-                    <Box sx={{ ml: 4, flexShrink: 0, borderLeft: '1px solid rgba(255,255,255,0.1)', pl: 2.5, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                      <Typography sx={{ color: 'rgba(255,255,255,0.3)', fontWeight: 800, fontSize: '0.5rem', letterSpacing: 1, mb: 0.2 }}>
-                        CHALLENGE
-                      </Typography>
-                      <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 600, fontSize: '0.65rem', letterSpacing: 1, textTransform: 'uppercase' }}>
-                        {item.challengeTitle.replace(/^\d+\.\s*/, '')}
-                      </Typography>
-                    </Box>
-                  )}
-
-                </Link>
-              </Box>
-            );
-          })}
-        </Box>
+                );
+              })}
+            </Box>
+          </>
+        )}
       </Box>
 
 
@@ -292,8 +330,8 @@ export default async function InnovationsHomepage() {
           Dark manifesto excerpt + premium challenge cards
       ═══════════════════════════════════════════════════════════ */}
       <Box sx={{ 
-        pt: { xs: 12, md: 18 }, 
-        pb: { xs: 12, md: 18 }, 
+        pt: { xs: 4, md: 6 }, 
+        pb: { xs: 4, md: 5 }, 
         px: 2, 
         position: 'relative',
         bgcolor: '#050505', 
@@ -309,23 +347,23 @@ export default async function InnovationsHomepage() {
         backgroundSize: '50px 50px'
       }}>
         <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
-          <Box sx={{ maxWidth: '800px', mb: 10 }}>
-            <Typography variant="overline" sx={{ color: 'error.main', fontWeight: 900, letterSpacing: 3, mb: 3, display: 'block' }}>
+          <Box sx={{ maxWidth: '800px', mb: 3 }}>
+            <Typography variant="overline" sx={{ color: 'error.main', fontWeight: 900, letterSpacing: 3, mb: 1, display: 'block' }}>
               THE CHALLENGES
             </Typography>
-            <Typography variant="h2" sx={{ fontWeight: 900, mb: 4, lineHeight: 1.1, letterSpacing: '-0.02em' }}>
-              We mapped the supply chain to isolate exact points of failure.
+            <Typography variant="h3" sx={{ fontWeight: 900, mb: 1, lineHeight: 1.1, letterSpacing: '-0.02em', fontSize: { xs: '2rem', md: '2.5rem' } }}>
+              Systemic Fault Lines Isolated.
             </Typography>
-            <Typography variant="h5" sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 400, lineHeight: 1.7 }}>
-              Keep scrolling to explore the systemic infrastructure deficits preventing scale. Each one has a dedicated dashboard with active solutions.
+            <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 400, lineHeight: 1.6, fontSize: '1rem' }}>
+              Explore the core infrastructure deficits preventing scale.
             </Typography>
           </Box>
 
-          <Box sx={{ mt: 6 }}>
+          <Box sx={{ mt: 2 }}>
             <BentoGridTeaser challenges={allChallenges} />
           </Box>
 
-          <Box sx={{ mt: 10, textAlign: 'center', position: 'relative', zIndex: 2 }}>
+          <Box sx={{ mt: 4, textAlign: 'center', position: 'relative', zIndex: 2 }}>
             <Link href="/challenges" passHref style={{ textDecoration: 'none' }}>
               <PremiumButton 
                 variant="outlined" 
@@ -336,8 +374,8 @@ export default async function InnovationsHomepage() {
                   color: 'white', 
                   borderColor: 'rgba(255,255,255,0.15)', 
                   px: 6, 
-                  py: 2,
-                  fontSize: '1rem',
+                  py: 1.5,
+                  fontSize: '0.9rem',
                   fontWeight: 'bold',
                   '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.1)', boxShadow: '0 0 20px rgba(255,255,255,0.2)' },
                 }}
@@ -356,22 +394,22 @@ export default async function InnovationsHomepage() {
       ═══════════════════════════════════════════════════════════ */}
       <Box sx={{ bgcolor: '#022c22', color: 'white', overflow: 'hidden' }}>
         {/* Section Header */}
-        <Container maxWidth="lg" sx={{ pt: { xs: 10, md: 15 }, pb: 4 }}>
+        <Container maxWidth="lg" sx={{ pt: { xs: 8, md: 10 }, pb: 4 }}>
           <Box sx={{ maxWidth: '700px' }}>
-            <Typography variant="overline" sx={{ color: 'primary.light', fontWeight: 900, letterSpacing: 3, mb: 2, display: 'block' }}>
+            <Typography variant="overline" sx={{ color: 'primary.light', fontWeight: 900, letterSpacing: 3, mb: 1, display: 'block' }}>
               ACTIVE DEPLOYMENTS
             </Typography>
-            <Typography variant="h3" sx={{ fontWeight: 900, mb: 3, lineHeight: 1.2 }}>
-              We don&apos;t just fund startups. We build infrastructure.
+            <Typography variant="h3" sx={{ fontWeight: 900, mb: 2, lineHeight: 1.1 }}>
+              Building core infrastructure.
             </Typography>
-            <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.5)', fontWeight: 400, lineHeight: 1.7 }}>
-              Scroll to explore the massive infrastructure projects currently gaining traction in our ecosystem.
+            <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.5)', fontWeight: 400, lineHeight: 1.6 }}>
+              Explore the massive operational deployments gaining traction.
             </Typography>
           </Box>
         </Container>
 
         {/* Interactive Showcase Carousel */}
-        <ShowcaseCarousel projects={homepageConfig.showcaseProjects} />
+        <ShowcaseCarousel projects={activeDeployments} />
       </Box>
 
       {/* ═══════════════════════════════════════════════════════════

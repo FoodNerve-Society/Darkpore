@@ -1,277 +1,254 @@
 'use client';
 
-import React, { useRef, useState, useEffect } from 'react';
-import { Box, Typography, Grid, Chip, Button, IconButton } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, Typography, Grid, Chip } from '@mui/material';
 import Link from 'next/link';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PremiumButton from '@/components/PremiumButton';
 import PremiumChip from '@/components/PremiumChip';
 
 export default function ShowcaseCarousel({ projects }: { projects: any[] }) {
-  const scrollRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
 
-  const handleScroll = () => {
-    if (!scrollRef.current) return;
-    const { scrollLeft, clientWidth } = scrollRef.current;
-    
-    // Instead of raw scrollLeft, calculate center point to find active slide
-    const centerPoint = scrollLeft + clientWidth / 2;
-    const children = Array.from(scrollRef.current.children);
-    
-    let closestIndex = 0;
-    let closestDistance = Infinity;
+  // Auto-loop effect
+  useEffect(() => {
+    if (isHovered || !projects || projects.length === 0) return;
+    const interval = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % (projects.length + 1));
+    }, 4000); // Change slide every 4 seconds
+    return () => clearInterval(interval);
+  }, [isHovered, projects]);
 
-    children.forEach((child, index) => {
-      const el = child as HTMLElement;
-      // Skip pagination dots and arrows if they are in the children
-      if (!el.dataset.index) return;
-      const childCenter = el.offsetLeft + el.clientWidth / 2;
-      const distance = Math.abs(centerPoint - childCenter);
-      if (distance < closestDistance) {
-        closestDistance = distance;
-        closestIndex = parseInt(el.dataset.index || '0');
-      }
-    });
-
-    if (closestIndex !== activeIndex) {
-      setActiveIndex(closestIndex);
-    }
-  };
-
-  const scrollTo = (index: number) => {
-    if (!scrollRef.current) return;
-    const children = Array.from(scrollRef.current.children);
-    const target = children.find(c => (c as HTMLElement).dataset.index === String(index)) as HTMLElement;
-    if (target) {
-      scrollRef.current.scrollTo({
-        left: target.offsetLeft - (scrollRef.current.clientWidth - target.clientWidth) / 2,
-        behavior: 'smooth'
-      });
-    }
-  };
+  // If projects empty, render nothing
+  if (!projects || projects.length === 0) return null;
 
   return (
-    <Box sx={{ position: 'relative' }}>
-      {/* Horizontal Scroll Container */}
-      <Box 
-        ref={scrollRef}
-        onScroll={handleScroll}
-        sx={{
-          display: 'flex',
-          overflowX: 'auto',
-          scrollSnapType: 'x mandatory',
-          gap: { xs: 2, md: 4 },
-          px: { xs: 2, md: 'max(24px, calc((100vw - 1200px) / 2))' }, // Align first item with container
-          pb: 8, // Added large padding bottom so box-shadow won't clip
-          pt: 4, // Added top padding so cards can scale without clipping
-          // Hide standard scrollbar
-          msOverflowStyle: 'none', 
-          scrollbarWidth: 'none',
-          '&::-webkit-scrollbar': { display: 'none' },
-        }}
-      >
+    <Box 
+      onMouseEnter={() => setIsHovered(true)} 
+      onMouseLeave={() => setIsHovered(false)}
+      sx={{ width: '100%', px: { xs: 2, md: 'max(24px, calc((100vw - 1200px) / 2))' }, pb: 8 }}
+    >
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', md: 'row' },
+        gap: 2,
+        height: { xs: 'auto', md: 500 },
+        width: '100%'
+      }}>
         {projects.map((project, idx) => {
           const isActive = idx === activeIndex;
+          
           return (
-          <Box key={idx} data-index={idx} sx={{
-            minWidth: { xs: '85vw', md: '75vw' },
-            scrollSnapAlign: 'center',
-            flexShrink: 0,
-            transition: 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
-            opacity: isActive ? 1 : 0.6,
-            transform: isActive ? 'scale(1)' : 'scale(0.95)',
-          }}>
-            <Link href={project.link} passHref style={{ textDecoration: 'none', color: 'inherit' }}>
-              <Box sx={{
+            <Box 
+              key={idx}
+              onMouseEnter={() => setActiveIndex(idx)}
+              sx={{
+                flex: isActive ? { xs: 'none', md: 6 } : { xs: 'none', md: 1 },
+                height: { xs: isActive ? 450 : 100, md: '100%' },
                 position: 'relative',
-                minHeight: { xs: 450, md: 550 },
-                display: 'flex',
-                alignItems: 'flex-end',
+                borderRadius: 4,
                 overflow: 'hidden',
-                borderRadius: 6,
+                transition: 'all 0.8s cubic-bezier(0.25, 1, 0.5, 1)', // More fluid easing
                 cursor: 'pointer',
-                border: '1px solid rgba(255,255,255,0.1)',
-                transition: 'all 0.4s',
-                // Updated box shadow logic: visible by default on active, deeper on hover
+                border: '1px solid',
+                borderColor: isActive ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)',
                 boxShadow: isActive ? '0 30px 60px rgba(0,0,0,0.5)' : 'none',
-                '&:hover': { borderColor: 'rgba(255,255,255,0.3)', boxShadow: '0 40px 80px rgba(0,0,0,0.7)' },
-                '&:hover .project-image': { transform: 'scale(1.05)' },
-                '&:hover .project-overlay': { background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.1) 100%)' },
-              }}>
+              }}
+            >
+              <Link href={project.link} passHref style={{ textDecoration: 'none', color: 'inherit', display: 'block', width: '100%', height: '100%' }}>
+                
                 {/* Background Image */}
-                <Box className="project-image" sx={{
+                <Box sx={{
                   position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
                   backgroundImage: `url(${project.imageUrl})`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
-                  transition: 'transform 0.6s ease',
+                  transition: 'transform 6s ease',
+                  transform: isActive ? 'scale(1.05)' : 'scale(1)',
                 }} />
+                
                 {/* Gradient Overlay */}
-                <Box className="project-overlay" sx={{
+                <Box sx={{
                   position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-                  background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.2) 60%, transparent 100%)',
-                  transition: 'background 0.4s',
+                  background: isActive 
+                    ? 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0.1) 100%)'
+                    : 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 100%)',
+                  transition: 'background 0.6s',
                 }} />
-                {/* Content */}
-                <Box sx={{ position: 'relative', zIndex: 2, p: { xs: 4, md: 6 }, width: '100%' }}>
-                  <Grid container spacing={4} sx={{ alignItems: 'flex-end' }}>
-                    <Grid size={{ xs: 12, md: 7 }}>
-                      <PremiumChip 
-                        variant="filled" 
-                        glow={true}
-                        baseColor={idx === 0 ? '#ff4444' : '#1b5e20'}
-                        label={idx === 0 ? 'FLAGSHIP' : 'ACTIVE'} 
-                        size="small" 
-                        sx={{ mb: 2, letterSpacing: 1 }} 
-                      />
-                      <Typography variant="h3" sx={{ fontWeight: 900, mb: 2, lineHeight: 1.1 }}>
+
+                {/* INACTIVE STATE (Vertical Text on Desktop) */}
+                <Box sx={{ 
+                  opacity: isActive ? 0 : 1, 
+                  position: 'absolute', 
+                  top: 0, left: 0, right: 0, bottom: 0, 
+                  display: { xs: 'flex', md: 'flex' },
+                  flexDirection: { xs: 'row', md: 'column' },
+                  alignItems: 'center',
+                  justifyContent: { xs: 'flex-start', md: 'flex-end' },
+                  p: { xs: 3, md: 4 },
+                  transition: 'opacity 0.4s',
+                  pointerEvents: 'none'
+                }}>
+                  <Typography variant="h6" sx={{ 
+                    fontWeight: 800, 
+                    whiteSpace: 'nowrap',
+                    color: 'rgba(255,255,255,0.6)',
+                    writingMode: { xs: 'horizontal-tb', md: 'vertical-rl' },
+                    transform: { xs: 'none', md: 'rotate(180deg)' },
+                  }}>
+                    {project.title}
+                  </Typography>
+                </Box>
+
+                {/* ACTIVE STATE (Full Content) */}
+                {/* Wrapped in a fixed-width box to prevent text reflow during flex-basis transition */}
+                <Box sx={{ 
+                  opacity: isActive ? 1 : 0,
+                  position: 'absolute', 
+                  top: 0, left: 0, bottom: 0, 
+                  width: { xs: '90vw', md: 900 }, // Fixed width ensures inner layout doesn't constantly recalculate and cause jank
+                  display: 'flex',
+                  alignItems: 'flex-end',
+                  p: { xs: 3, md: 5 },
+                  transition: 'opacity 0.6s 0.2s',
+                  pointerEvents: isActive ? 'auto' : 'none'
+                }}>
+                  <Grid container spacing={4} sx={{ width: '100%', m: 0 }}>
+                    <Grid size={{ xs: 12, md: 7 }} sx={{ p: '0 !important' }}>
+                      <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                        <PremiumChip 
+                          variant="filled" 
+                          glow={true}
+                          baseColor={project.type === 'Venture' ? '#ff4444' : project.type === 'Innovation' ? '#2196f3' : '#1b5e20'}
+                          label={(project.type || 'Deployment').toUpperCase()} 
+                          size="small" 
+                          sx={{ letterSpacing: 1 }} 
+                        />
+                        <Chip
+                          label={project.origin || 'Platform'}
+                          size="small"
+                          sx={{
+                            bgcolor: 'rgba(255,255,255,0.1)',
+                            color: 'rgba(255,255,255,0.7)',
+                            backdropFilter: 'blur(10px)',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            fontWeight: 700,
+                            letterSpacing: 0.5
+                          }}
+                        />
+                      </Box>
+                      <Typography variant="h3" sx={{ fontWeight: 900, mb: 2, lineHeight: 1.1, fontSize: { xs: '2rem', md: '2.5rem' } }}>
                         {project.title}
                       </Typography>
-                      <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.75)', fontWeight: 400, lineHeight: 1.6, mb: 4, maxWidth: 500 }}>
-                        {project.desc}
+                      <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.75)', fontWeight: 400, lineHeight: 1.6, mb: 4, maxWidth: 500 }}>
+                        {project.description || project.desc}
                       </Typography>
+                      
                       <PremiumButton variant="filled" size="large" baseColor="white" endIcon={<ArrowForwardIcon />} sx={{
                         color: '#0a0a0a', px: 4, py: 1.5, fontWeight: 'bold',
                         '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' },
                       }}>
-                        View Deployment
+                        View Live Dashboard
                       </PremiumButton>
                     </Grid>
-                    <Grid size={{ xs: 12, md: 5 }}>
-                      <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
-                        {[
-                          { label: 'Minimum to invest', value: idx === 0 ? '$50K' : '$25K' },
-                          { label: 'Minimum to launch', value: idx === 0 ? '$1M' : '$500K' },
-                        ].map((stat, sidx) => (
-                          <Box key={sidx} sx={{
-                            bgcolor: 'rgba(255,255,255,0.08)',
-                            backdropFilter: 'blur(12px)',
-                            border: '1px solid rgba(255,255,255,0.15)',
-                            borderRadius: 4,
-                            px: 3, py: 2,
-                            minWidth: 140,
-                          }}>
-                            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', display: 'block', mb: 0.5 }}>
-                              {stat.label}
+                    
+                    <Grid size={{ xs: 12, md: 5 }} sx={{ p: '0 !important', display: { xs: 'none', md: 'block' } }}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'flex-end', height: '100%', justifyContent: 'flex-end' }}>
+                        
+                        {/* Operator Block */}
+                        <Box sx={{ 
+                          display: 'flex', alignItems: 'center', gap: 2, 
+                          bgcolor: 'rgba(0,0,0,0.4)', 
+                          backdropFilter: 'blur(12px)',
+                          borderRadius: 100, 
+                          p: 1, pr: 3, 
+                          border: '1px solid rgba(255,255,255,0.1)'
+                        }}>
+                          <Box sx={{
+                            width: 40, height: 40,
+                            borderRadius: '50%',
+                            backgroundImage: `url(${project.operator?.avatarUrl || '/images/default-avatar.png'})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            border: '2px solid rgba(255,255,255,0.2)'
+                          }} />
+                          <Box>
+                            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', fontWeight: 700, letterSpacing: 1, display: 'block', lineHeight: 1 }}>
+                              LEAD OPERATOR
                             </Typography>
-                            <Typography variant="h5" sx={{ fontWeight: 800 }}>
-                              {stat.value}
+                            <Typography variant="body2" sx={{ fontWeight: 700, color: 'white', lineHeight: 1, mt: 0.5 }}>
+                              {project.operator?.name || 'Society Member'}
                             </Typography>
                           </Box>
-                        ))}
+                        </Box>
+
+                        {/* Traction Block */}
+                        <Box sx={{
+                          bgcolor: 'rgba(255,255,255,0.08)',
+                          backdropFilter: 'blur(12px)',
+                          border: '1px solid rgba(255,255,255,0.15)',
+                          borderRadius: 4,
+                          px: 3, py: 2,
+                          minWidth: 200,
+                          textAlign: 'right'
+                        }}>
+                          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', display: 'block', mb: 0.5 }}>
+                            TRACTION
+                          </Typography>
+                          <Typography variant="h6" sx={{ fontWeight: 800, color: 'primary.light', lineHeight: 1.2 }}>
+                            {project.traction || 'Gaining momentum'}
+                          </Typography>
+                        </Box>
+
                       </Box>
                     </Grid>
                   </Grid>
                 </Box>
-              </Box>
-            </Link>
-          </Box>
-        )})}
+              </Link>
+            </Box>
+          )
+        })}
 
-        {/* See All Projects Trailing Banner */}
-        <Box sx={{
-          minWidth: { xs: '85vw', md: '30vw' },
-          scrollSnapAlign: 'center',
-          flexShrink: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-          <Link href="/projects" passHref style={{ textDecoration: 'none', color: 'inherit', width: '100%' }}>
-            <Box sx={{
-              minHeight: { xs: 450, md: 550 },
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: 6,
-              cursor: 'pointer',
-              border: '1px dashed rgba(255,255,255,0.2)',
-              bgcolor: 'rgba(255,255,255,0.02)',
-              transition: 'all 0.4s',
-              '&:hover': { 
-                borderColor: 'rgba(255,255,255,0.5)', 
-                bgcolor: 'rgba(255,255,255,0.05)',
-                transform: 'scale(0.98)'
-              },
-            }}>
-              <Box sx={{ p: 3, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.1)', mb: 3 }}>
-                <ArrowForwardIcon sx={{ fontSize: 40, color: 'white' }} />
+        {/* Explore All - Accordion Slide */}
+        <Box 
+          onMouseEnter={() => setActiveIndex(projects.length)}
+          sx={{
+            flex: activeIndex === projects.length ? { xs: 'none', md: 3 } : { xs: 'none', md: 1 },
+            height: { xs: activeIndex === projects.length ? 200 : 100, md: '100%' },
+            position: 'relative',
+            borderRadius: 4,
+            overflow: 'hidden',
+            transition: 'all 0.8s cubic-bezier(0.25, 1, 0.5, 1)',
+            cursor: 'pointer',
+            border: '1px dashed rgba(255,255,255,0.2)',
+            bgcolor: 'rgba(255,255,255,0.02)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          <Link href="/projects" passHref style={{ textDecoration: 'none', color: 'inherit', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Box sx={{ textAlign: 'center', p: 3 }}>
+              <Box sx={{ 
+                p: 2, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.1)', mb: activeIndex === projects.length ? 2 : 0, 
+                display: 'inline-block', transition: 'all 0.4s' 
+              }}>
+                <ArrowForwardIcon sx={{ fontSize: 32, color: 'white' }} />
               </Box>
-              <Typography variant="h4" sx={{ fontWeight: 800, color: 'white', mb: 1 }}>
-                Tap to see all
-              </Typography>
-              <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>
-                Explore the complete deployment portfolio
+              <Typography variant="h5" sx={{ 
+                fontWeight: 800, color: 'white',
+                opacity: activeIndex === projects.length ? 1 : 0,
+                maxHeight: activeIndex === projects.length ? 50 : 0,
+                transition: 'all 0.4s'
+              }}>
+                See all
               </Typography>
             </Box>
           </Link>
         </Box>
-      </Box>
 
-      {/* Controls: Dots and Arrows */}
-      <Box sx={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center', 
-        gap: 4, 
-        mt: 4,
-        px: { xs: 2, md: 'max(24px, calc((100vw - 1200px) / 2))' }, 
-        pb: 4
-      }}>
-        {/* Left Arrow */}
-        <IconButton 
-          onClick={() => scrollTo(Math.max(0, activeIndex - 1))}
-          disabled={activeIndex === 0}
-          sx={{ 
-            color: 'white', 
-            bgcolor: 'rgba(255,255,255,0.05)', 
-            border: '1px solid rgba(255,255,255,0.1)',
-            '&:hover': { bgcolor: 'rgba(255,255,255,0.15)' },
-            '&.Mui-disabled': { color: 'rgba(255,255,255,0.2)', borderColor: 'transparent' }
-          }}
-        >
-          <ArrowBackIcon />
-        </IconButton>
-
-        {/* Dots */}
-        <Box sx={{ display: 'flex', gap: 1.5 }}>
-          {projects.map((_, idx) => (
-            <Box
-              key={idx}
-              onClick={() => scrollTo(idx)}
-              sx={{
-                width: activeIndex === idx ? 32 : 8,
-                height: 8,
-                borderRadius: 4,
-                bgcolor: activeIndex === idx ? 'white' : 'rgba(255,255,255,0.2)',
-                transition: 'all 0.3s ease',
-                cursor: 'pointer',
-                '&:hover': {
-                  bgcolor: activeIndex === idx ? 'white' : 'rgba(255,255,255,0.5)',
-                }
-              }}
-            />
-          ))}
-        </Box>
-
-        {/* Right Arrow */}
-        <IconButton 
-          onClick={() => scrollTo(Math.min(projects.length - 1, activeIndex + 1))}
-          disabled={activeIndex === projects.length - 1}
-          sx={{ 
-            color: 'white', 
-            bgcolor: 'rgba(255,255,255,0.05)', 
-            border: '1px solid rgba(255,255,255,0.1)',
-            '&:hover': { bgcolor: 'rgba(255,255,255,0.15)' },
-            '&.Mui-disabled': { color: 'rgba(255,255,255,0.2)', borderColor: 'transparent' }
-          }}
-        >
-          <ArrowForwardIcon />
-        </IconButton>
       </Box>
     </Box>
-  );
+  )
 }
