@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Button, IconButton } from '@mui/material';
+import { Box, Typography, Button, IconButton, Tooltip, alpha } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { ArticleBlockRenderer } from './ArticleBlockRenderer';
+import { BlockInsightsDrawer } from './BlockInsightsDrawer';
+import { Share as ShareIcon, ShortcutOutlined as ForwardIcon } from '@mui/icons-material';
 
 const ERA_COLORS = {
   past: '#ef4444',    // Red
@@ -37,10 +39,15 @@ export function PublicArticleViewer({
 
   // Progress Bar State
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
+  
+  // Insights Drawer State
+  const [activeInsightBlockId, setActiveInsightBlockId] = useState<string | null>(null);
 
   // Parse blocks
   const rawBlocks = material.articleBlocks || [];
   const parsedBlocks = typeof rawBlocks === 'string' ? JSON.parse(rawBlocks) : rawBlocks;
+
+  const activeInsightBlock = parsedBlocks.find((b: any) => b.id === activeInsightBlockId) || null;
 
   useEffect(() => {
     // Setup intersection observer for blocks
@@ -60,67 +67,91 @@ export function PublicArticleViewer({
     return () => observer.disconnect();
   }, [parsedBlocks]);
 
+  // Helper to estimate proportional height of a block
+  const getBlockWeight = (block: any) => {
+    if (!block || !block.blockType) return 1;
+    switch (block.blockType) {
+      case 'subheading': return 2;
+      case 'exec_summary': return 3;
+      case 'highlight_card': return 4;
+      case 'core_interactive': return 6;
+      case 'media': return 8;
+      case 'myth_fact': return 5;
+      case 'pull_quote': return 3;
+      case 'live_poll': return 4;
+      default: return 2;
+    }
+  };
+
+  const activeIndex = parsedBlocks.findIndex((b: any, i: number) => activeBlockId === `article-block-${b.id || i}`);
+
   return (
     <Box sx={{ position: 'relative' }}>
-      {/* ── Broken Line Progress Bar (Sticky) ── */}
+      
+      {/* ── Vertical Beaded Progress Bar (Custom Scrollbar) ── */}
       {parsedBlocks.length > 0 && (
         <Box sx={{
-          position: 'sticky',
-          top: { xs: 80, md: 100 },
+          position: 'absolute',
+          top: 0,
+          bottom: 0,
+          right: { xs: -16, sm: -24, md: -48 }, // Push outside the main content block
+          width: 24,
+          pointerEvents: 'none',
           zIndex: 40,
-          mb: 6,
-          px: { xs: 2, md: 0 },
         }}>
-          <Box sx={{ 
-            display: 'flex', 
-            alignItems: 'flex-end', 
-            gap: 1, 
-            height: 40,
+          <Box sx={{
+            position: 'sticky',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 0.4,
+            pointerEvents: 'auto',
+            py: 2,
+            height: '70vh',
+            maxHeight: 650,
           }}>
             {parsedBlocks.map((block: any, idx: number) => {
               const isActive = activeBlockId === `article-block-${block.id || idx}`;
-              const label = block.role || block.blockType.replace('_', ' ');
+              const isPast = activeIndex !== -1 && idx < activeIndex;
+              const weight = getBlockWeight(block);
               
               return (
-                <Box key={block.id || idx} sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                  {/* Floating Label for Active Block */}
-                  <Typography sx={{ 
-                    fontSize: '0.65rem', 
-                    fontWeight: 800, 
-                    color: themeColor, 
-                    textTransform: 'uppercase',
-                    opacity: isActive ? 1 : 0,
-                    transform: isActive ? 'translateY(0)' : 'translateY(4px)',
-                    transition: 'all 0.3s ease',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis'
-                  }}>
-                    {label}
-                  </Typography>
-                  {/* Line Segment */}
-                  <Box sx={{
-                    height: 4,
-                    borderRadius: 2,
-                    bgcolor: isActive ? themeColor : (themeMode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'),
-                    boxShadow: isActive ? `0 0 10px ${themeColor}80` : 'none',
-                    transition: 'all 0.3s ease',
-                  }} />
-                </Box>
+                <Tooltip key={block.id || idx} title={String(block.blockType || 'Block').replace('_', ' ').toUpperCase()} placement="left" arrow>
+                  <Box 
+                    onClick={() => {
+                      document.getElementById(`article-block-${block.id || idx}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}
+                    sx={{
+                      flex: weight, 
+                      width: isActive ? 8 : 4,
+                      minHeight: 4, 
+                      borderRadius: 10,
+                      bgcolor: (isActive || isPast) ? themeColor : (themeMode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(15,23,42,0.1)'),
+                      boxShadow: isActive ? `0 0 16px ${alpha(themeColor, 0.8)}` : 'none',
+                      opacity: isActive ? 1 : (isPast ? 0.7 : 0.4),
+                      transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                      cursor: 'pointer',
+                      '&:hover': {
+                        bgcolor: isActive ? themeColor : alpha(themeColor, 0.6),
+                        width: 8,
+                        opacity: 1
+                      }
+                    }} 
+                  />
+                </Tooltip>
               );
             })}
           </Box>
         </Box>
       )}
 
-      {/* ── Article Content ── */}
+      {/* ── Article Content Wrapper ── */}
       <Box sx={{
-        bgcolor: themeMode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
-        border: themeMode === 'dark' ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(0,0,0,0.05)',
-        borderRadius: '24px',
-        p: { xs: 3, md: 6 },
+        bgcolor: themeMode === 'dark' ? 'transparent' : 'transparent', // Remove the boxy background to match ArticleReader
         position: 'relative',
-        overflow: 'hidden' // contain the blur/modal
+        overflow: 'hidden' 
       }}>
         {/* Render Preview Text First */}
         {material.previewText && (
@@ -144,7 +175,13 @@ export function PublicArticleViewer({
                 key={block.id || idx} 
                 sx={{ mb: 6 }}
               >
-                <ArticleBlockRenderer block={block} themeMode={themeMode} accentColor={themeColor} />
+                <ArticleBlockRenderer 
+                  block={block} 
+                  themeMode={themeMode} 
+                  accentColor={themeColor} 
+                  onOpenInsights={(id) => setActiveInsightBlockId(id)}
+                  author={material.author}
+                />
               </Box>
             ))}
           </Box>
@@ -175,21 +212,19 @@ export function PublicArticleViewer({
             <Box sx={{
               position: 'absolute',
               top: parsedBlocks.length > 0 ? '-100px' : '10%',
-              left: 0,
-              right: 0,
-              bottom: parsedBlocks.length > 0 ? '-100px' : 'auto', // Cover remaining if blocks exist
+              left: -48,
+              right: -48,
+              bottom: parsedBlocks.length > 0 ? '-150px' : 'auto', // Cover remaining if blocks exist
               minHeight: 400,
               background: themeMode === 'dark' 
-                ? 'linear-gradient(180deg, rgba(15,23,42,0) 0%, rgba(15,23,42,0.8) 20%, rgba(15,23,42,0.95) 100%)'
-                : 'linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.8) 20%, rgba(255,255,255,0.95) 100%)',
-              backdropFilter: 'blur(8px)',
+                ? 'linear-gradient(180deg, rgba(15,23,42,0) 0%, rgba(15,23,42,0.85) 20%, rgba(15,23,42,1) 100%)'
+                : 'linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.9) 20%, rgba(255,255,255,1) 100%)',
+              backdropFilter: 'blur(12px)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
               zIndex: 10,
-              borderTop: themeMode === 'dark' ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(0,0,0,0.05)',
-              borderBottomRadius: '24px',
               px: { xs: 3, md: 6 },
               py: 8,
               textAlign: 'center',
@@ -273,7 +308,6 @@ export function PublicArticleViewer({
                   </Button>
                 </a>
               </Box>
-
             </Box>
           </Box>
         )}
@@ -287,6 +321,15 @@ export function PublicArticleViewer({
           100% { transform: scale(1); opacity: 0; }
         }
       `}} />
+
+      {/* ── Block Insights Drawer ── */}
+      <BlockInsightsDrawer 
+        open={Boolean(activeInsightBlockId)}
+        onClose={() => setActiveInsightBlockId(null)}
+        blockId={activeInsightBlockId}
+        activeBlock={activeInsightBlock}
+        accentColor={themeColor}
+      />
     </Box>
   );
 }

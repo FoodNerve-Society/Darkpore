@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Drawer, Box, Typography, IconButton, 
-  Avatar, alpha, useTheme, CircularProgress
+  Avatar, alpha, useTheme, CircularProgress, Button
 } from '@mui/material';
 import { 
   Close as CloseIcon, 
@@ -331,55 +331,82 @@ export const BlockInsightsDrawer: React.FC<BlockInsightsDrawerProps> = ({
         bottom: 0,
         zIndex: 20,
       }}>
-        <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-end' }}>
-          <Avatar 
-            src={profile?.avatarUrl} 
-            sx={{ width: 32, height: 32, mb: 0.5, fontSize: '0.75rem' }}
-          >
-            {profile?.firstName?.charAt(0) || '?'}
-          </Avatar>
-          <Box sx={{ flex: 1 }}>
-            <PremiumTextField
-              fullWidth
-              multiline
-              colorTheme={accentColor}
-              maxRows={3}
-              placeholder={profile ? "Post your reply..." : "Reply as anonymous..."}
-              value={commentText}
-              onChange={(e: any) => setCommentText(e.target.value)}
-              size="small"
-              hiddenLabel
-              sx={{
-                '& .MuiFilledInput-root': {
-                  py: 1.5,
+        {profile ? (
+          <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-end' }}>
+            <Avatar 
+              src={profile?.avatarUrl} 
+              sx={{ width: 32, height: 32, mb: 0.5, fontSize: '0.75rem' }}
+            >
+              {profile?.firstName?.charAt(0) || '?'}
+            </Avatar>
+            <Box sx={{ flex: 1 }}>
+              <PremiumTextField
+                fullWidth
+                multiline
+                colorTheme={accentColor}
+                maxRows={3}
+                placeholder="Post your reply..."
+                value={commentText}
+                onChange={(e: any) => setCommentText(e.target.value)}
+                size="small"
+                hiddenLabel
+                sx={{
+                  '& .MuiFilledInput-root': {
+                    py: 1.5,
+                  }
+                }}
+              />
+            </Box>
+            <IconButton 
+              disabled={!commentText.trim() || posting}
+              onClick={handlePost}
+              sx={{ 
+                width: 36, height: 36,
+                mb: 0.5,
+                borderRadius: '12px',
+                bgcolor: commentText.trim() ? accentColor : 'transparent',
+                color: commentText.trim() ? '#fff' : (isDark ? '#334155' : '#cbd5e1'),
+                transition: 'all 0.2s',
+                '&:hover': { 
+                  bgcolor: commentText.trim() ? alpha(accentColor, 0.85) : 'transparent',
+                },
+                '&.Mui-disabled': {
+                  color: isDark ? '#334155' : '#cbd5e1',
                 }
               }}
-            />
-          </Box>
-          <IconButton 
-            disabled={!commentText.trim() || posting}
-            onClick={handlePost}
-            sx={{ 
-              width: 36, height: 36,
-              mb: 0.5,
-              borderRadius: '12px',
-              bgcolor: commentText.trim() ? accentColor : 'transparent',
-              color: commentText.trim() ? '#fff' : (isDark ? '#334155' : '#cbd5e1'),
-              transition: 'all 0.2s',
-              '&:hover': { 
-                bgcolor: commentText.trim() ? alpha(accentColor, 0.85) : 'transparent',
-              },
-              '&.Mui-disabled': {
-                color: isDark ? '#334155' : '#cbd5e1',
+            >
+              {posting 
+                ? <CircularProgress size={16} sx={{ color: '#fff' }} />
+                : <SendIcon sx={{ fontSize: 16 }} />
               }
-            }}
-          >
-            {posting 
-              ? <CircularProgress size={16} sx={{ color: '#fff' }} />
-              : <SendIcon sx={{ fontSize: 16 }} />
-            }
-          </IconButton>
-        </Box>
+            </IconButton>
+          </Box>
+        ) : (
+          <Box sx={{ textAlign: 'center', py: 1 }}>
+            <Typography sx={{ fontSize: '0.85rem', color: isDark ? '#94a3b8' : '#64748b', mb: 1.5 }}>
+              Join the Society to participate in block discussions.
+            </Typography>
+            <Button
+              href="/join"
+              variant="outlined"
+              size="small"
+              sx={{
+                borderRadius: '100px',
+                color: accentColor,
+                borderColor: alpha(accentColor, 0.3),
+                fontWeight: 700,
+                textTransform: 'none',
+                px: 3,
+                '&:hover': {
+                  borderColor: accentColor,
+                  bgcolor: alpha(accentColor, 0.1),
+                }
+              }}
+            >
+              Sign in to add comments
+            </Button>
+          </Box>
+        )}
       </Box>
 
     </Drawer>
