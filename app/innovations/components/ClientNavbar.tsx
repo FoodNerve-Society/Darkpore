@@ -17,12 +17,18 @@ export default function ClientNavbar({ tenantName, orgDomain }: { tenantName: st
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Extract the current challenge from the URL (e.g., /land/innovations/some-update -> 'land')
+  // Extract the current challenge or top route from the URL (e.g., /land/innovations/some-update -> 'land', /learn/article -> 'learn')
   const pathSegments = pathname.split('/').filter(Boolean);
   const knownTopRoutes = ['challenges', 'projects', 'learn'];
   const currentChallenge = pathSegments.length > 0 && !knownTopRoutes.includes(pathSegments[0])
     ? pathSegments[0]
     : null;
+    
+  const currentTopRoute = pathSegments.length > 0 && knownTopRoutes.includes(pathSegments[0])
+    ? pathSegments[0]
+    : null;
+    
+  const activeCategory = currentChallenge || currentTopRoute;
 
   const isActive = (path: string) => {
     if (path === '/' && pathname === '/') return true;
@@ -87,9 +93,9 @@ export default function ClientNavbar({ tenantName, orgDomain }: { tenantName: st
           </Link>
         </Box>
 
-        {/* Challenge context indicator */}
-        {currentChallenge && (
-          <Link href={`/${currentChallenge}`} passHref style={{ textDecoration: 'none' }}>
+        {/* Category context indicator */}
+        {activeCategory && (
+          <Link href={`/${activeCategory}`} passHref style={{ textDecoration: 'none' }}>
             <Box sx={{ 
               display: { xs: 'none', sm: 'flex' },
               alignItems: 'center', 
@@ -109,7 +115,7 @@ export default function ClientNavbar({ tenantName, orgDomain }: { tenantName: st
                 letterSpacing: 1.5, 
                 textTransform: 'uppercase' 
               }}>
-                {currentChallenge}
+                {activeCategory}
               </Typography>
             </Box>
           </Link>

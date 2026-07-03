@@ -98,7 +98,13 @@ export function PublicArticleViewer({
   if (typeof material.author === 'string') {
     try {
       authorObj = JSON.parse(material.author);
-    } catch(e) {}
+    } catch(e) {
+      authorObj = { name: material.author };
+    }
+  }
+  // Ensure authorObj is truthy so that blocks requiring an author will render their insights trigger
+  if (!authorObj) {
+    authorObj = { name: material.authorName || 'Society Architect', role: 'Author' };
   }
 
   return (
@@ -173,7 +179,7 @@ export function PublicArticleViewer({
         {/* ═══════════════════════ BREADCRUMB PANE (STICKY) ═══════════════════════ */}
         <Box sx={{ 
           position: 'sticky', 
-          top: 0, 
+          top: { xs: 70, md: 90 }, 
           zIndex: 50,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
           mb: 5, p: 1.5, px: { xs: 2.5, md: 4 }, 
