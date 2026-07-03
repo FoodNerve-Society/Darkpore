@@ -4,7 +4,6 @@ import { PrismaLibSql } from '@prisma/adapter-libsql';
 
 
 import path from 'path';
-import { createClient } from '@libsql/client';
 
 const rawUrl = process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL;
 let dbUrl = rawUrl && rawUrl !== 'undefined' 
@@ -25,12 +24,10 @@ if (!dbUrl.includes('prisma') && dbUrl.startsWith('file:')) {
     dbUrl = dbUrl.replace('file:', `file:${path.join(process.cwd(), 'prisma')}\\`);
 }
 
-const libsql = createClient({
+const adapter = new PrismaLibSql({
   url: dbUrl,
   authToken: process.env.TURSO_AUTH_TOKEN,
 });
-
-const adapter = new PrismaLibSql(libsql);
 
 const globalForPrisma = globalThis as unknown as {
   prisma_v2: PrismaClient | undefined;
