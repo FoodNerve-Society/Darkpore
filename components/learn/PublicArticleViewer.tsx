@@ -484,6 +484,7 @@ export function PublicArticleViewer({
       <Dialog 
         open={shareModalOpen} 
         onClose={() => setShareModalOpen(false)}
+        // @ts-ignore
         PaperProps={{
           sx: {
             bgcolor: themeMode === 'dark' ? '#0f172a' : '#ffffff',
