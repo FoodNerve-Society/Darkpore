@@ -49,7 +49,7 @@ export default async function ContentPage({ params }: { params: Promise<{ challe
       color: 'white',
       pb: 12
     }}>
-      <Box sx={{ maxWidth: 860, mx: 'auto' }}>
+      <Box sx={{ maxWidth: 860, mx: 'auto', pt: { xs: 14, md: 16 } }}>
         
         {/* ── Main Content Area ── */}
         <PublicArticleViewer material={material} tenant={tenant} loginUrl={loginUrl} themeMode="dark" />

@@ -55,7 +55,7 @@ export default async function GlobalLearnContentPage({ params }: { params: Promi
       color: 'white',
       pb: 12
     }}>
-      <Box sx={{ maxWidth: 860, mx: 'auto' }}>
+      <Box sx={{ maxWidth: 860, mx: 'auto', pt: { xs: 14, md: 16 } }}>
         {/* ── Main Content Area ── */}
         <PublicArticleViewer material={formattedMaterial} tenant={tenant} loginUrl={loginUrl} themeMode="dark" />
 

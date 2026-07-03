@@ -173,13 +173,13 @@ export function PublicArticleViewer({
       <Box sx={{
         bgcolor: 'transparent',
         position: 'relative',
-        overflow: 'hidden' 
+        overflow: 'visible' 
       }}>
 
         {/* ═══════════════════════ BREADCRUMB PANE (STICKY) ═══════════════════════ */}
         <Box sx={{ 
           position: 'sticky', 
-          top: { xs: 70, md: 90 }, 
+          top: { xs: 58, md: 64 }, 
           zIndex: 50,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
           mb: 5, p: 1.5, px: { xs: 2.5, md: 4 }, 
@@ -188,8 +188,8 @@ export function PublicArticleViewer({
           bgcolor: themeMode === 'dark' ? 'rgba(15,23,42,0.85)' : 'rgba(255,255,255,0.85)',
           backdropFilter: 'blur(16px)',
           borderBottom: `1px solid ${themeMode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`,
-          borderTopLeftRadius: { md: '16px' },
-          borderTopRightRadius: { md: '16px' }
+          borderBottomLeftRadius: { xs: '10px', md: '10px' },
+          borderBottomRightRadius: { xs: '10px', md: '10px' }
         }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, fontFamily: 'Quicksand, sans-serif', fontSize: '0.8rem', fontWeight: 600, color: themeMode === 'dark' ? '#cbd5e1' : '#475569' }}>
             <Box 
@@ -211,12 +211,29 @@ export function PublicArticleViewer({
               Article
             </Box>
             
-            {/* Display Category/Subcategory */}
             {material.category && (
               <>
                 <NavigateNextIcon sx={{ fontSize: 16, opacity: 0.4 }} />
                 <Box component="span" sx={{ cursor: 'pointer', '&:hover': { color: themeColor } }} onClick={() => router.push(`/learn?category=${encodeURIComponent(material.category)}`)}>
                   {material.category}
+                </Box>
+              </>
+            )}
+            
+            {material.subcategory && (
+              <>
+                <NavigateNextIcon sx={{ fontSize: 16, opacity: 0.4 }} />
+                <Box component="span" sx={{ cursor: 'pointer', '&:hover': { color: themeColor } }} onClick={() => router.push(`/learn?subcategory=${encodeURIComponent(material.subcategory)}`)}>
+                  {material.subcategory}
+                </Box>
+              </>
+            )}
+
+            {material.timeframe && (
+              <>
+                <NavigateNextIcon sx={{ fontSize: 16, opacity: 0.4 }} />
+                <Box component="span" sx={{ cursor: 'pointer', '&:hover': { color: themeColor } }} onClick={() => router.push(`/learn?timeframe=${encodeURIComponent(material.timeframe)}`)}>
+                  {material.timeframe}
                 </Box>
               </>
             )}
