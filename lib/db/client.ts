@@ -3,14 +3,25 @@ import { PrismaLibSql } from '@prisma/adapter-libsql';
 
 
 
+import path from 'path';
+
 const rawUrl = process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL;
+let dbUrl = rawUrl && rawUrl !== 'undefined' 
+  ? rawUrl 
+  : 'file:./prisma/dev.db';
+
+// Ensure the dbUrl resolves to an absolute path for local SQLite to prevent SQLITE_CANTOPEN (14) errors
+if (dbUrl.startsWith('file:')) {
+  const fileName = path.basename(dbUrl.replace('file:', ''));
+  dbUrl = `file:${path.join(process.cwd(), 'prisma', fileName)}`;
+}
 
 if (!rawUrl) {
   console.warn("WARNING: No database URL provided in environment variables (TURSO_DATABASE_URL or DATABASE_URL).");
 }
 
 const adapter = new PrismaLibSql({
-  url: rawUrl || '',
+  url: dbUrl,
   authToken: process.env.TURSO_AUTH_TOKEN,
 });
 
