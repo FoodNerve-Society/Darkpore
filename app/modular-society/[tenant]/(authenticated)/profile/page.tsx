@@ -101,30 +101,14 @@ export default function ProfilePage() {
     <Box
       sx={{
         flex: 1,
+        minHeight: 0,
+        height: '100%',
         overflowY: 'auto',
         overflowX: 'hidden',
         bgcolor: '#f8fafc',
         WebkitOverflowScrolling: 'touch',
       }}
     >
-      {/* ─── BACK BUTTON ─── */}
-      <Box sx={{ px: { xs: 2, md: 4 }, pt: { xs: 1.5, md: 3 } }}>
-        <Button
-          onClick={() => router.back()}
-          startIcon={<ArrowBackIcon />}
-          sx={{
-            textTransform: 'none',
-            fontWeight: 700,
-            fontSize: '0.9rem',
-            color: 'text.secondary',
-            borderRadius: 3,
-            px: 1.5,
-            '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
-          }}
-        >
-          Back
-        </Button>
-      </Box>
 
       {/* ─── HERO CARD (Dark Gradient) ─── */}
       <Box sx={{ px: { xs: 2, md: 4 }, pt: 1, pb: 0 }}>
@@ -484,7 +468,7 @@ export default function ProfilePage() {
       </Box>
 
       {/* ─── ACCOUNT SETTINGS ─── */}
-      <Box sx={{ px: { xs: 2, md: 4 }, pt: 4, pb: 6 }}>
+      <Box sx={{ px: { xs: 2, md: 4 }, pt: 4, pb: 12 }}>
         <Typography sx={{ fontWeight: 800, fontSize: '1.1rem', mb: 2 }}>
           Account Settings
         </Typography>
@@ -546,6 +530,44 @@ export default function ProfilePage() {
             <ArrowForwardIcon sx={{ fontSize: 18, color: '#ef4444' }} />
           </Box>
         </Box>
+      </Box>
+
+      {/* ─── FLOATING BACK BUTTON (iOS Pill) ─── */}
+      <Box
+        sx={{
+          position: 'fixed',
+          bottom: { xs: 24, md: 32 },
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 100,
+        }}
+      >
+        <Button
+          onClick={() => router.back()}
+          startIcon={<ArrowBackIcon />}
+          sx={{
+            bgcolor: 'rgba(255, 255, 255, 0.75)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            color: '#0f2414',
+            fontWeight: 800,
+            fontSize: '0.95rem',
+            px: 4,
+            py: 1.2,
+            borderRadius: '100px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+            border: '1px solid rgba(255,255,255,0.4)',
+            textTransform: 'none',
+            '&:hover': {
+              bgcolor: 'rgba(255, 255, 255, 0.9)',
+              transform: 'scale(1.02)',
+              boxShadow: '0 12px 40px rgba(0,0,0,0.15)',
+            },
+            transition: 'all 0.2s',
+          }}
+        >
+          Back
+        </Button>
       </Box>
     </Box>
   );

@@ -205,6 +205,7 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
         sx={{ 
           flex: 1, 
+          minHeight: 0,
           display: 'flex', 
           flexDirection: 'column', 
           position: 'relative', 
@@ -228,9 +229,10 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
           component="main" 
           sx={{ 
             flex: 1, 
+            minHeight: 0,
             display: 'flex',
             flexDirection: 'column',
-            pb: 0, // removed extra padding for bottom nav on mobile, layout is true flex now
+            pb: 0, 
           }}
         >
         {showUnauthModal ? (
