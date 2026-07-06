@@ -8,7 +8,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { CategoryTabMenu, Category } from './CategoryTabMenu';
 import { EcosystemCard } from './EcosystemCard';
 
-export type EcosystemType = 'Intelligence' | 'Innovations' | 'Community' | 'Activities' | 'Jobs';
+export type EcosystemType = 'Intelligence' | 'Innovations' | 'Community' | 'Activities' | 'Jobs' | 'Opportunities';
 
 export interface EcosystemItem {
   id: string;
@@ -34,7 +34,7 @@ interface TabbedHeroProps {
   categories: TabCategory[];
 }
 
-const PILLARS: ('All' | EcosystemType)[] = ['All', 'Intelligence', 'Innovations', 'Community', 'Activities', 'Jobs'];
+const PILLARS: ('All' | EcosystemType)[] = ['All', 'Intelligence', 'Innovations', 'Community', 'Activities', 'Jobs', 'Opportunities'];
 
 export default function TabbedHero({ headline, subheadline, categories }: TabbedHeroProps) {
   // State
@@ -105,6 +105,7 @@ export default function TabbedHero({ headline, subheadline, categories }: Tabbed
       case 'Community': return '#8b5cf6'; // Purple
       case 'Activities': return '#f59e0b'; // Orange
       case 'Jobs': return '#ef4444'; // Red
+      case 'Opportunities': return '#fbbf24'; // Premium Gold
       default: return '#0f172a';
     }
   };
