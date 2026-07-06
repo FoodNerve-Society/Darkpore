@@ -81,7 +81,8 @@ export default function TabbedHero({ headline, subheadline, categories }: Tabbed
   const tabCategories: Category[] = categories.map(cat => ({
       id: cat.id,
       title: cat.title,
-      count: cat.items.length
+      count: cat.items.length,
+      themeColor: cat.themeColor
   }));
   
   // Filter by Category -> Pillar
@@ -112,7 +113,7 @@ export default function TabbedHero({ headline, subheadline, categories }: Tabbed
       <Box sx={{ minHeight: '100vh', width: '100%', maxWidth: '100vw', bgcolor: '#ffffff', color: '#0f172a', position: 'relative', display: 'flex', flexDirection: 'column', overflowX: 'hidden' }}>
           
           <Box sx={{ position: 'relative', zIndex: 1, bgcolor: '#ffffff' }}>
-              <Container maxWidth="lg" sx={{ pt: 4, pb: 2, overflowX: 'hidden' }}>
+              <Container maxWidth="lg" sx={{ pt: 4, pb: 2 }}>
                   
                   {/* Hero Header */}
                   <Box component={motion.div} initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, ease: "easeOut" }} onAnimationComplete={() => setHeroAnimationDone(true)} sx={{ pt: { xs: 4, md: 6 }, pb: 2, textAlign: 'center', maxWidth: 900, mx: 'auto' }}>
@@ -148,21 +149,25 @@ export default function TabbedHero({ headline, subheadline, categories }: Tabbed
           </Box>
 
           {/* NEW Tinted Content Area */}
-          <Box sx={{ position: 'relative', flexGrow: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', borderTopLeftRadius: { xs: '32px', md: '48px' }, borderTopRightRadius: { xs: '32px', md: '48px' } }}>
-             <AnimatePresence mode="wait" custom={slideDirection}>
+          <Box sx={{ 
+              position: 'relative', flexGrow: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', 
+              borderTopLeftRadius: { xs: '32px', md: '48px' }, borderTopRightRadius: { xs: '32px', md: '48px' },
+              mx: { xs: 1.5, md: 'auto' }, maxWidth: '1440px', width: { xs: 'calc(100% - 24px)', md: '100%' }
+          }}>
+             <AnimatePresence mode="popLayout" custom={slideDirection}>
                 <Box
                     component={motion.div}
                     key={activeCategory}
                     custom={slideDirection}
                     variants={{
-                        initial: (dir: number) => ({ opacity: 0, x: dir > 0 ? '100vw' : '-100vw' }),
-                        animate: { opacity: 1, x: 0 },
-                        exit: (dir: number) => ({ opacity: 0, x: dir > 0 ? '-100vw' : '100vw' })
+                        initial: (dir: number) => ({ opacity: 0, x: dir > 0 ? '50vw' : '-50vw', scale: 0.95 }),
+                        animate: { opacity: 1, x: 0, scale: 1 },
+                        exit: (dir: number) => ({ opacity: 0, x: dir > 0 ? '-50vw' : '50vw', scale: 0.95 })
                     }}
                     initial="initial"
                     animate="animate"
                     exit="exit"
-                    transition={{ duration: 0.3, ease: 'easeOut' }}
+                    transition={{ duration: 0.5, ease: [0.25, 1, 0.35, 1] }}
                     sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', position: 'relative', minHeight: '80vh' }}
                 >
                     {/* The tinted background and mesh go here */}
@@ -170,7 +175,7 @@ export default function TabbedHero({ headline, subheadline, categories }: Tabbed
                         {MeshBackground}
                     </Box>
                     
-                    <Container maxWidth="lg" sx={{ py: { xs: 4, md: 8 }, position: 'relative', zIndex: 1, overflowX: 'hidden', flexGrow: 1 }}>
+                    <Container maxWidth={false} sx={{ py: { xs: 4, md: 8 }, px: { xs: 2, md: 8 }, position: 'relative', zIndex: 1, flexGrow: 1 }}>
                         {/* Content Area: Sidebar + Stage */}
                         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: { xs: 3, md: 4 }, alignItems: { xs: 'flex-start', md: 'flex-start' } }}>
                         

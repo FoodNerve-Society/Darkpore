@@ -57,18 +57,18 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({ item, themeColor }
                 overflow: 'hidden',
                 bgcolor: '#f1f5f9',
                 border: 'none',
-                minWidth: { xs: '280px', md: '350px' },
-                maxWidth: '350px',
+                minWidth: { xs: '300px', md: '420px' },
+                maxWidth: '420px',
                 flexShrink: 0
             }}
         >
-            {/* FULL BLEED MEDIA CONTAINER (VERTICAL 3:4 RATIO TO MATCH PRODUCT CARD) */}
+            {/* WIDESCREEN MEDIA CONTAINER (16:9 / 4:3 Hybrid to prevent heavy crop) */}
             <Box
                 sx={{
                     position: 'relative',
                     width: '100%',
                     height: '100%',
-                    pt: '133.33%', // 3:4 VERTICAL RATIO
+                    pt: '65%', // Wide enough to not crop 16:9 heavily, tall enough for the deck
                     zIndex: 0,
                     overflow: 'hidden'
                 }}
@@ -86,7 +86,7 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({ item, themeColor }
                     }}
                 />
 
-                {/* Ecosystem Badge (Similar to NEW tag) */}
+                {/* Ecosystem Badge */}
                 <Chip
                     label={item.type.toUpperCase()}
                     size="small"
@@ -98,7 +98,7 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({ item, themeColor }
                 />
             </Box>
 
-            {/* MINIMALIST GLASS DECK (Matches ProductCard exactly) */}
+            {/* TRANSLUCENT GLASS DECK OVERLAID ON IMAGE */}
             <Box sx={{
                 position: 'absolute',
                 bottom: 12,
@@ -117,7 +117,7 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({ item, themeColor }
                 gap: 1
             }}>
                 {/* 1. Title */}
-                <Typography variant="body1" sx={{ fontWeight: 700, color: '#0f172a', lineHeight: 1.25, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                <Typography variant="body1" sx={{ fontWeight: 800, color: '#0f172a', lineHeight: 1.25, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                     {item.title}
                 </Typography>
 
