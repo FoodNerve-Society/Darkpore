@@ -147,15 +147,19 @@ const AppMobileBottomNav: FC<AppMobileBottomNavProps> = ({ profile, onSignOut, b
         sx={{
           display: 'flex', 
           alignItems: 'center', 
-          justifyContent: 'center',
           overflowX: 'auto',
           scrollBehavior: 'smooth',
           scrollSnapType: 'x mandatory',
           pointerEvents: 'auto',
-          px: 2,
           gap: 1,
           pb: 0.5,
-          '&::-webkit-scrollbar': { display: 'none' }
+          '&::-webkit-scrollbar': { display: 'none' },
+          '&::before, &::after': {
+            content: '""',
+            display: 'block',
+            flexShrink: 0,
+            width: '28vw', // Spacer to allow the first and last items to scroll to the center
+          }
         }}
       >
         {filteredNavItems.map(item => {

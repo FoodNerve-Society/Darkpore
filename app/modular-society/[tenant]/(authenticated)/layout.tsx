@@ -282,7 +282,7 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
       >
         <MiniAuthModal pathname={pathname} />
       </Dialog>
-      {isMobile && (
+      {isMobile && !pathname.includes('/profile') && (
         <AppMobileBottomNav
           profile={profile}
           onSignOut={handleSignOut}

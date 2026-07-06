@@ -145,7 +145,7 @@ const AppMobileTopHeader: FC<AppMobileTopHeaderProps> = ({ profile, onSignOut, t
           <Box sx={{ flex: 1 }} />
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <IconButton onClick={() => router.push('/profile')} sx={{ p: 0 }}>
+            <IconButton onClick={(e) => { e.stopPropagation(); router.push('/profile'); }} sx={{ p: 0 }}>
               <Avatar 
                 src={profile?.avatarUrl || user?.photoURL || undefined} 
                 sx={{ width: 38, height: 38, border: '2px solid white', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }} 

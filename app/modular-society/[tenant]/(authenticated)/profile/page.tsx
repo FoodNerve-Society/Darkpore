@@ -14,6 +14,7 @@ import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import BusinessIcon from '@mui/icons-material/Business';
 import PersonIcon from '@mui/icons-material/Person';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { auth } from '@/lib/firebase/client';
 import { signOut } from 'firebase/auth';
 
@@ -150,9 +151,28 @@ export default function ProfilePage() {
         flexDirection: 'column',
       }}
     >
+      {/* Back Button */}
+      <Box sx={{ mb: 1 }}>
+        <Button
+          onClick={() => router.back()}
+          startIcon={<ArrowBackIcon />}
+          sx={{
+            textTransform: 'none',
+            fontWeight: 700,
+            fontSize: '0.9rem',
+            color: 'text.secondary',
+            borderRadius: 3,
+            px: 1.5,
+            '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' },
+          }}
+        >
+          Back
+        </Button>
+      </Box>
+
       {/* Header */}
       <Box>
-        <Typography variant="h4" sx={{ fontWeight: 800 }} sx={{ mb: 0.5 }}>Profile</Typography>
+        <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.5 }}>Profile</Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
           Your private control room — manage your identity, wallet, and rank.
         </Typography>
