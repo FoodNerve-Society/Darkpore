@@ -9,6 +9,7 @@ import ShowcaseCarousel from './components/ShowcaseCarousel';
 import BentoGridTeaser from './components/BentoGridTeaser';
 import RadarIndexOverview from './components/RadarIndexOverview';
 import CinematicHero from './components/CinematicHero';
+import TabbedHero from './components/TabbedHero';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
@@ -93,17 +94,18 @@ export default async function InnovationsHomepage() {
         thumbnailUrl: lc.thumbnailUrl || imageBlock?.payload?.url || '/images/default-thumbnail.jpg',
         author: lc.authorName || 'Society Architect',
         dateAdded: lc.createdAt,
-        readTime: lc.type === 'video' || lc.type === 'livestream' ? 'Watch' : '5 min read'
+        readTime: lc.type === 'video' || lc.type === 'livestream' ? 'Watch' : '5 min read',
+        link: `/innovations/${lc.challengeId || 'global'}/${lc.subcategory || 'general'}/learn/article/${lc.slug}`
       };
     });
 
-    // Fallback if DB is empty
     if (recentIntelligence.length === 0) {
       const mockData = await getKnowledgeMaterials({ tenantId, limit: 20 });
       // Map mock types to the new types if needed
       recentIntelligence = mockData.map(m => ({
         ...m,
-        type: m.type === 'pdf' ? 'class' : m.type
+        type: m.type === 'pdf' ? 'class' : m.type,
+        link: `/innovations/${m.challengeId || 'global'}/${m.subcategory || 'general'}/learn/article/${m.slug}`
       }));
     }
   } catch (e) {
@@ -111,7 +113,8 @@ export default async function InnovationsHomepage() {
     const mockData = await getKnowledgeMaterials({ tenantId, limit: 20 });
     recentIntelligence = mockData.map(m => ({
       ...m,
-      type: m.type === 'pdf' ? 'class' : m.type
+      type: m.type === 'pdf' ? 'class' : m.type,
+      link: `/innovations/${m.challengeId || 'global'}/${m.subcategory || 'general'}/learn/article/${m.slug}`
     }));
   }
 
@@ -217,13 +220,35 @@ export default async function InnovationsHomepage() {
     }));
   }
 
+  // Group recent intelligence by Category for the AccordionHero
+  const accordionCategories = homepageConfig.challenges.map((c: any) => {
+    const articles = recentIntelligence.filter((ri: any) => ri.challengeId === c.id);
+    return {
+      id: c.id,
+      title: c.title,
+      articles
+    };
+  });
+
   return (
     <Box sx={{ bgcolor: '#050505', minHeight: '100vh' }}>
       
       {/* ═══════════════════════════════════════════════════════════
-          SECTION 1: THE CINEMATIC HERO
+          SECTION 1: THE TABBED HERO (Light Mode First)
+      ═══════════════════════════════════════════════════════════ */}
+      <Box sx={{ bgcolor: '#ffffff' }}>
+        <TabbedHero 
+          headline={homepageConfig.heroHeadline}
+          subheadline={homepageConfig.heroSubheadline}
+          categories={accordionCategories} 
+        />
+      </Box>
+
+      {/* ═══════════════════════════════════════════════════════════
+          SECTION 1: THE CINEMATIC HERO (Legacy / Commented Out)
           Full viewport, animated, glowing orbs, stats cards
       ═══════════════════════════════════════════════════════════ */}
+      {/* 
       <CinematicHero 
         tenantName={tenant.name}
         headline={homepageConfig.heroHeadline}
@@ -234,6 +259,7 @@ export default async function InnovationsHomepage() {
         }}
         slideshowItems={slideshowItems}
       />
+      */}
 
 
       {/* ═══════════════════════════════════════════════════════════

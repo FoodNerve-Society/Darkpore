@@ -1,41 +1,37 @@
-# Implementation Plan: Local-First Database Architecture
+# Implementation Plan: 1:1 Replication of `StorePublicView` Hero
 
-## Objective
-Structure the app to be 100% database-ready while keeping all data and execution strictly local for now. We will build the architecture so that moving to a live production database (like Turso) later requires zero code changes.
+## Goal
+To completely replicate the visual design, animations, and structure of the `StorePublicView` snippet for the FoodNerve landing page Hero section, instead of adapting it.
 
-## Architecture Decision (Local First)
-- **Database:** Local SQLite (dev.db file stored directly in the project folder). No cloud services or external databases to configure.
-- **ORM:** Prisma (for strict 1-to-1 TypeScript generation). 
-- *Why:* Prisma allows you to use a local SQLite file today. When you are ready for production, you just change one line in your .env file to a Turso URL, and the entire app connects to the cloud instantly without rewriting any queries.
+## The Challenge
+The code you provided relies on several imported components that do not exist in the FoodNerve repository (e.g., `<CategoryTabMenu>`, `<SearchBar>`, `<ProductSlideshow>`, `<ProductListGrid>`). Because I do not have the source code for those specific files, I must perfectly recreate their visual intent based on the structural context you provided.
 
-## Phase 1: Data Separation Strategy
-1. **Static Data (Stays in Code lib/cms):**
-   - Theme colors, UI copy, and homepage text.
-   - Core bottleneck definitions (IDs, titles, hero descriptions).
-2. **Dynamic Data (Moves to Local SQLite):**
-   - Users & Authentication Profiles (Role, Nerve Points).
-   - Society: Trade Floor listings (Swaps, Flash-sales).
-   - Innovations: Bottleneck Updates, Learning Materials, Project Stats.
+## Proposed Changes: `TabbedHero.tsx`
 
-## Phase 2: Local Setup & Schema Creation
-1. Install Prisma locally (
-pm i -D prisma & 
-px prisma init --datasource-provider sqlite).
-2. Write schema.prisma defining Models (User, TradeListing, BottleneckUpdate, etc.).
-3. Generate the Prisma Client to sync schemas with the frontend.
-4. Write a one-off database seed script to push the current mock data from lib/db/society.ts and lib/cms/energy/bottlenecks.ts into your local dev.db file.
+I will rewrite `TabbedHero.tsx` to exactly match the architecture of `StorePublicView`:
 
-## Phase 3: The Innovations Tab Refactor
-1. Refactor /innovations/page.tsx to fetch total counts (e.g., Active Solutions) via asynchronous Prisma queries rather than statically typing them.
-2. Refactor pp/innovations/[bottleneck]/[section]/page.tsx to fetch BottleneckUpdate rows matching the current bottleneck ID.
-3. Refactor pp/innovations/[bottleneck]/learn/page.tsx to fetch LearningMaterial rows.
+### 1. The "Elite Mesh Background"
+I will implement the exact `framer-motion` background you provided:
+- The `hexToRgb` and `mixWithWhite` tinting logic (using a base theme color, e.g., an earthy green for FoodNerve).
+- The three floating, blurring blobs (`filter: 'blur(100px)'`) animating infinitely across the screen.
+- The subtle dotted radial gradient overlay.
 
-## Phase 4: Society & Trade Floor Refactor
-1. Refactor /society/trade to natively utilize Prisma queries for multi-property filtering (e.g., WHERE category = 'swap' AND location = 'Kano').
-2. Link Trade Floor posts to User records.
-3. Create Next.js Server Actions for users to dynamically create new Trade Floor listings and insert them into the local DB.
+### 2. The Hero Typography
+I will apply the exact styles from your file:
+- **Headline:** `background: linear-gradient(to bottom, ${themeColor} 20%, #0f172a 100%)` with `WebkitBackgroundClip: 'text'`.
+- **Subheadline:** `color: 'rgba(15, 23, 42, 0.6)'` inside a delayed `motion.div` fade-in.
 
-## Phase 5: Production Migration (Future)
-1. Sign up for Turso / Object Storage.
-2. Run database migration to cloud.
-3. Update DATABASE_URL in .env.
+### 3. Recreating the Missing Components In-Line
+Since I don't have your specific sub-components, I will build high-fidelity replicas directly into `TabbedHero`:
+- **Sticky Search Bar:** A simple outlined text input mirroring a standard search bar, anchored with `position: 'sticky'`.
+- **Category Tab Menu:** A scrollable row of tabs. I will ensure the active tab has the exact active/inactive states that a premium e-commerce tab menu uses.
+- **Product Stage (`AnimatePresence`):** The exact directional sliding variants you provided (`x: dir > 0 ? 30 : -30`). 
+- **Article Display:** Instead of `<ProductListGrid>`, I will use the horizontal scrolling article cards we built earlier, but style them to look like premium product cards to match the storefront vibe.
+
+## User Review Required
+> [!IMPORTANT]
+> Because I do not have the actual code for `<CategoryTabMenu>`, `<ProductSlideshow>`, or `<SearchBar>`, I have to rebuild them from scratch to match the *vibe* of the file you sent. 
+> 
+> **Are you okay with me rebuilding these missing pieces to match the aesthetic, or would you prefer to paste the exact code for those components here so I can use them directly?**
+
+Click **Proceed** if you want me to rebuild them, or reply with the component code if you have it!
