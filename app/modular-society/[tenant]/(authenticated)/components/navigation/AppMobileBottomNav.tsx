@@ -121,111 +121,76 @@ const AppMobileBottomNav: FC<AppMobileBottomNavProps> = ({ profile, onSignOut, b
   const totalBadgeCount = Object.values(badges).reduce<number>((sum, val) => sum + (typeof val === 'number' ? val : 0), 0);
 
   return (
-    <>
+    <Box
+      sx={{
+        width: '100%',
+        zIndex: 1200,
+        pointerEvents: 'none',
+        flexShrink: 0,
+        pb: { xs: 2, sm: 3 },
+        pt: 1,
+        px: { xs: 2, sm: 4 },
+      }}
+    >
       <Box
         sx={{
-          width: '100%',
-          px: 2,
-          pb: 2,
-          pt: 1,
-          zIndex: 1200,
-          display: 'flex',
-          gap: 1.5,
-          pointerEvents: 'none', // Let touches pass through the empty space
-          bgcolor: 'transparent',
-          flexShrink: 0, // Prevent it from shrinking in flex column
+          display: 'flex', 
+          alignItems: 'center', 
+          height: '68px',
+          bgcolor: '#ffffff',
+          borderRadius: 4,
+          boxShadow: '0 12px 40px rgba(0,0,0,0.08)',
+          pointerEvents: 'auto',
+          px: 1,
+          gap: 0.5,
         }}
       >
-          {/* Left Bubble: Nav Items */}
-          <Box
-            sx={{
-              flex: 1,
-              display: 'flex', alignItems: 'center', height: '64px', px: 1,
-              pointerEvents: 'auto', // Re-enable touches for the bubble
-              justifyContent: 'space-around', // Distribute icons evenly
-            }}
-          >
-                  <Box
-                    style={{ display: 'flex', gap: '8px', alignItems: 'center', overflowX: 'auto', padding: '0 4px', width: '100%', justifyContent: 'space-evenly' }}
-                  >
-                    {filteredNavItems.map(item => {
-                      const isActive = displayPath.includes(item.href);
-                      const navTheme = PAGE_THEMES[item.themeKey];
-                      const badgeVal = badges[item.href];
-                      
-                      const IconWrapper = ({ children }: { children: React.ReactNode }) => (
-                        isActive ? <>{children}</> : <Badge badgeContent={badgeVal} color="error">{children}</Badge>
-                      );
-
-                      return (
-                        <Box key={item.href}>
-                          <IconWrapper>
-                            <Button
-                              variant={isActive ? 'contained' : 'text'}
-                              onClick={() => handleNavClick(item.href)}
-                              sx={{
-                                borderRadius: 3, // Match sidebar
-                                textTransform: 'none', 
-                                fontWeight: isActive ? 800 : 700, 
-                                minWidth: 0,
-                                bgcolor: isActive ? navTheme.main : 'transparent',
-                                color: isActive ? navTheme.contrastText : 'rgba(0,0,0,0.6)',
-                                backdropFilter: 'none',
-                                boxShadow: isActive ? `0 6px 16px -4px ${alpha(navTheme.main || '#000', 0.5)}` : 'none',
-                                transition: 'all 0.3s cubic-bezier(0.2, 0, 0, 1)',
-                                p: isActive ? '8px 16px' : '8px 12px',
-                                '&:hover': { 
-                                  bgcolor: isActive ? navTheme.main : alpha(navTheme.main, 0.08), 
-                                  transform: 'scale(1.05)' 
-                                }
-                              }}
-                            >
-                              <Box sx={{ display: 'flex', alignItems: 'center', fontSize: isActive ? 24 : 26, '& svg': { fontSize: 'inherit' } }}>
-                                {item.icon}
-                              </Box>
-                              {isActive && (
-                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                  <Typography sx={{ ml: 1, fontWeight: 800 }}>{item.label}</Typography>
-                                  {badgeVal ? (
-                                    <Box component="span" sx={{
-                                      ml: 1,
-                                      bgcolor: '#ffffff', 
-                                      color: navTheme.main, 
-                                      fontSize: '0.65rem', fontWeight: 'bold',
-                                      px: 0.8, py: 0.2, borderRadius: 10, minWidth: 22, textAlign: 'center',
-                                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                                    }}>
-                                      {badgeVal}
-                                    </Box>
-                                  ) : null}
-                                </Box>
-                              )}
-                            </Button>
-                          </IconWrapper>
-                        </Box>
-                      );
-                    })}
-                  </Box>
-          </Box>
-
-          {/* Right Bubble: Profile Avatar */}
-          <Box
-            sx={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              width: '64px', height: '64px',
-              pointerEvents: 'auto',
-            }}
-          >
-            <IconButton onClick={() => router.push('/profile')} sx={{ p: 0 }}>
-              <Avatar 
-                src={profile?.avatarUrl || user?.photoURL || undefined} 
-                sx={{ width: 44, height: 44, border: '2px solid white', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }} 
-              />
-            </IconButton>
-          </Box>
+        {filteredNavItems.map(item => {
+          const isActive = displayPath.includes(item.href);
+          const navTheme = PAGE_THEMES[item.themeKey];
+          const badgeVal = badges[item.href];
+          
+          return (
+            <Button
+              key={item.href}
+              variant={isActive ? 'contained' : 'text'}
+              onClick={() => handleNavClick(item.href)}
+              sx={{
+                flex: isActive ? 1.5 : 1, // Active item takes more space
+                borderRadius: 3, // Match sidebar theming
+                textTransform: 'none', 
+                fontWeight: isActive ? 800 : 600, 
+                minWidth: 0,
+                height: '52px',
+                bgcolor: isActive ? navTheme.main : 'transparent',
+                color: isActive ? navTheme.contrastText : 'rgba(0,0,0,0.5)',
+                boxShadow: isActive ? `0 6px 16px -4px ${alpha(navTheme.main || '#000', 0.5)}` : 'none',
+                transition: 'all 0.3s cubic-bezier(0.2, 0, 0, 1)',
+                p: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                '&:hover': { 
+                  bgcolor: isActive ? navTheme.main : 'rgba(0,0,0,0.04)', 
+                }
+              }}
+            >
+              <Badge badgeContent={badgeVal} color="error" sx={{ '& .MuiBadge-badge': { top: 4, right: 4 } }}>
+                <Box sx={{ fontSize: isActive ? 24 : 26, '& svg': { fontSize: 'inherit' }, mb: isActive ? 0.3 : 0 }}>
+                  {item.icon}
+                </Box>
+              </Badge>
+              {isActive && (
+                <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, lineHeight: 1 }}>
+                  {item.label}
+                </Typography>
+              )}
+            </Button>
+          );
+        })}
       </Box>
-
-    </>
+    </Box>
   );
 };
 

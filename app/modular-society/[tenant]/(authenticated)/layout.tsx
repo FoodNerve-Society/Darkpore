@@ -210,8 +210,8 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
           position: 'relative', 
           zIndex: 10,
           // height: '100dvh', removed height constraint to let flex: 1 govern it
-          overflowY: 'hidden', // Stop the main layout from scrolling, delegate to children
-          overflowX: 'hidden',
+          overflowY: 'visible', // Allow page card shadow to bleed out seamlessly
+          overflowX: 'visible',
           boxSizing: 'border-box'
         }}
       >

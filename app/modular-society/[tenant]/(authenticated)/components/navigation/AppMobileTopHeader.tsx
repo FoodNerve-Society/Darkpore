@@ -144,43 +144,52 @@ const AppMobileTopHeader: FC<AppMobileTopHeaderProps> = ({ profile, onSignOut, t
           {/* Spacer to push right content */}
           <Box sx={{ flex: 1 }} />
 
-          {/* Updates Toggle Button (Right) */}
-          <Button
-            onClick={(e) => {
-              e.stopPropagation();
-              setUpdatesOpen(!isUpdatesOpen);
-            }}
-            sx={{
-              display: 'flex', alignItems: 'center', gap: 1,
-              bgcolor: isUpdatesOpen ? 'rgba(0,0,0,0.08)' : alpha('#10b981', 0.15),
-              borderRadius: 10,
-              px: 1.5, py: 0.8,
-              textTransform: 'none',
-              color: isUpdatesOpen ? 'text.primary' : '#0f2414',
-              transition: 'all 0.2s ease',
-              '&:hover': {
-                bgcolor: isUpdatesOpen ? 'rgba(0,0,0,0.15)' : alpha('#10b981', 0.25),
-              }
-            }}
-          >
-            {isUpdatesOpen ? (
-              <>
-                <KeyboardArrowDownIcon sx={{ fontSize: 20 }} />
-                <Typography sx={{ fontSize: '0.8rem', fontWeight: 800 }}>
-                  Close
-                </Typography>
-              </>
-            ) : (
-              <>
-                <Badge color="error" variant="dot" sx={{ '& .MuiBadge-badge': { right: 2, top: 2 } }}>
-                  <NotificationsIcon sx={{ color: '#10b981', fontSize: 20 }} />
-                </Badge>
-                <Typography sx={{ fontSize: '0.8rem', fontWeight: 800 }}>
-                  Updates
-                </Typography>
-              </>
-            )}
-          </Button>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <IconButton onClick={handleProfileOpen} sx={{ p: 0 }}>
+              <Avatar 
+                src={profile?.avatarUrl || user?.photoURL || undefined} 
+                sx={{ width: 38, height: 38, border: '2px solid white', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }} 
+              />
+            </IconButton>
+
+            {/* Updates Toggle Button (Right) */}
+            <Button
+              onClick={(e) => {
+                e.stopPropagation();
+                setUpdatesOpen(!isUpdatesOpen);
+              }}
+              sx={{
+                display: 'flex', alignItems: 'center', gap: 1,
+                bgcolor: isUpdatesOpen ? 'rgba(0,0,0,0.08)' : alpha('#10b981', 0.15),
+                borderRadius: 10,
+                px: 1.5, py: 0.8,
+                textTransform: 'none',
+                color: isUpdatesOpen ? 'text.primary' : '#0f2414',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  bgcolor: isUpdatesOpen ? 'rgba(0,0,0,0.15)' : alpha('#10b981', 0.25),
+                }
+              }}
+            >
+              {isUpdatesOpen ? (
+                <>
+                  <KeyboardArrowDownIcon sx={{ fontSize: 20 }} />
+                  <Typography sx={{ fontSize: '0.8rem', fontWeight: 800 }}>
+                    Close
+                  </Typography>
+                </>
+              ) : (
+                <>
+                  <Badge color="error" variant="dot" sx={{ '& .MuiBadge-badge': { right: 2, top: 2 } }}>
+                    <NotificationsIcon sx={{ color: '#10b981', fontSize: 20 }} />
+                  </Badge>
+                  <Typography sx={{ fontSize: '0.8rem', fontWeight: 800 }}>
+                    Updates
+                  </Typography>
+                </>
+              )}
+            </Button>
+          </Box>
         </Toolbar>
       </AppBar>
 
