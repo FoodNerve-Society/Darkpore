@@ -41,10 +41,10 @@ export default function FlipContainer({ isFlipped, frontContent, backContent }: 
           sx={{
             position: 'absolute',
             inset: 0,
-            backfaceVisibility: 'hidden',
             display: 'flex',
             flexDirection: 'column',
             zIndex: isFlipped ? 0 : 1,
+            pointerEvents: isFlipped ? 'none' : 'auto',
           }}
         >
           {frontContent}
@@ -55,11 +55,11 @@ export default function FlipContainer({ isFlipped, frontContent, backContent }: 
           sx={{
             position: 'absolute',
             inset: 0,
-            backfaceVisibility: 'hidden',
-            transform: 'rotateY(180deg)',
+            transform: 'rotateY(180deg) translateZ(1px)',
             display: 'flex',
             flexDirection: 'column',
             zIndex: isFlipped ? 1 : 0,
+            pointerEvents: isFlipped ? 'auto' : 'none',
           }}
         >
           {backContent}

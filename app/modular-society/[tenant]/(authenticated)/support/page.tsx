@@ -28,6 +28,8 @@ import BoltIcon from "@mui/icons-material/Bolt";
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import SearchOffIcon from "@mui/icons-material/SearchOff";
+import FlipContainer from "../components/shared/FlipContainer";
+import LaunchCampaignForm from "./LaunchCampaignForm";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
@@ -214,8 +216,9 @@ export default function SupportPage() {
 
   const [campaigns, setCampaigns] = useState<SupportCampaign[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tierFilter, setTierFilter] = useState<CampaignTier | "all">("all");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [tierFilter, setTierFilter] = useState<"all" | CampaignTier>("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "funded" | "completed">("all");
+  const [isFlipped, setIsFlipped] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -273,42 +276,61 @@ export default function SupportPage() {
   const filterKey = `${tierFilter}__${statusFilter}`;
 
   // ── Loading Skeleton ────────────────────────────────────
+  let frontContent;
+  
   if (loading) {
-    return (
-      <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1200, mx: "auto" }}>
-        <Skeleton variant="rounded" height={220} sx={{ borderRadius: "20px", mb: 3 }} />
-        <Box sx={{ display: "flex", gap: 1, mb: 3 }}>
-          {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} variant="rounded" width={140} height={38} sx={{ borderRadius: "19px" }} />
-          ))}
+    frontContent = (
+      <Paper
+        elevation={0}
+        sx={{
+          flex: 1,
+          m: { xs: 1, md: 2 },
+          minHeight: 0,
+          height: { xs: 'calc(100% - 16px)', md: 'calc(100% - 32px)' },
+          bgcolor: '#ffffff',
+          borderRadius: 4,
+          boxShadow: { xs: '0 8px 32px rgba(0,0,0,0.06)', md: '0 10px 40px rgba(0,0,0,0.04)' },
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          boxSizing: 'border-box',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1200, mx: "auto", width: '100%' }}>
+          <Skeleton variant="rounded" height={220} sx={{ borderRadius: "20px", mb: 3 }} />
+          <Box sx={{ display: "flex", gap: 1, mb: 3 }}>
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} variant="rounded" width={140} height={38} sx={{ borderRadius: "19px" }} />
+            ))}
+          </Box>
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2 }}>
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} variant="rounded" height={320} sx={{ borderRadius: "20px" }} />
+            ))}
+          </Box>
         </Box>
-        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2 }}>
-          {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} variant="rounded" height={320} sx={{ borderRadius: "20px" }} />
-          ))}
-        </Box>
-      </Box>
+      </Paper>
     );
-  }
-
-  return (
-    <Paper
-      elevation={0}
-      sx={{
-        p: { xs: 2, md: 4 },
-        flex: 1,
-        m: { xs: 1, md: 2 },
-        minHeight: 0,
-        height: { xs: 'calc(100% - 16px)', md: 'calc(100% - 32px)' },
-        bgcolor: '#ffffff',
-        borderRadius: { xs: 4, md: 4 },
-        boxShadow: { xs: '0 12px 40px rgba(0,0,0,0.08)', md: '0 10px 40px rgba(0,0,0,0.04)' },
-        overflowY: 'auto',
-        overflowX: 'hidden',
-        boxSizing: 'border-box',
-        pb: 8
-      }}
-    >
+  } else {
+    frontContent = (
+      <Paper
+        elevation={0}
+        sx={{
+          flex: 1,
+          m: { xs: 1, md: 2 },
+          minHeight: 0,
+          height: { xs: 'calc(100% - 16px)', md: 'calc(100% - 32px)' },
+          bgcolor: '#ffffff',
+          borderRadius: 4,
+          boxShadow: { xs: '0 8px 32px rgba(0,0,0,0.06)', md: '0 10px 40px rgba(0,0,0,0.04)' },
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          boxSizing: 'border-box',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
       {/* ═══════════════════════════════════════════════════
           1. HERO HEADER WITH ANIMATED IMPACT COUNTER
       ═══════════════════════════════════════════════════ */}
@@ -374,7 +396,7 @@ export default function SupportPage() {
                 <VolunteerActivismIcon sx={{ fontSize: 28 }} />
               </Avatar>
               <Button
-                onClick={() => router.push("/support/launch")}
+                onClick={() => setIsFlipped(true)}
                 startIcon={<AddIcon />}
                 sx={{
                   bgcolor: alpha("#fff", 0.2),
@@ -684,7 +706,18 @@ export default function SupportPage() {
 
       {/* Bottom spacer */}
       <Box sx={{ height: { xs: 24, md: 16 } }} />
-    </Paper>
+      </Paper>
+    );
+  }
+
+  const backContent = <LaunchCampaignForm onCancel={() => setIsFlipped(false)} />;
+
+  return (
+    <FlipContainer
+      isFlipped={isFlipped}
+      frontContent={frontContent}
+      backContent={backContent}
+    />
   );
 }
 
@@ -1111,7 +1144,7 @@ function CampaignCard({ campaign }: { campaign: SupportCampaign }) {
           {isFunded ? (
             <Chip
               icon={<CheckCircleIcon sx={{ fontSize: "16px !important", color: "#fff !important" }} />}
-              label="Funded ✓"
+              label="Funded"
               sx={{
                 bgcolor: GREEN,
                 color: "#ffffff",
