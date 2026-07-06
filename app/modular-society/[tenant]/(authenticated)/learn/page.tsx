@@ -1551,14 +1551,17 @@ export default function LearnPage() {
               `}
             </style>
             
+            {/* ── THE MASTER YOUR CRAFT HERO ── */}
             <Box sx={{ 
-              position: 'relative', px: { xs: 3, sm: 5, md: 8 }, pt: { xs: 6, md: 8 }, pb: 8, 
-              overflow: 'hidden', borderRadius: '24px', m: { xs: 1, md: 2 }, mb: 4, mt: { xs: 1, md: 2 },
-              border: '1px solid rgba(255, 255, 255, 0.1)',
+              position: 'relative', 
+              borderRadius: '24px', 
+              p: { xs: 4, md: 5 }, 
+              mb: 3,
+              overflow: 'hidden',
+              flexShrink: 0,
+              bgcolor: '#1a1a1a', 
+              color: 'white',
               boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
-              bgcolor: 'rgba(15, 23, 42, 0.85)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
               zIndex: 1,
             }}>
               {/* Fiery Edge Gradients (Moving along edges) */}
@@ -1578,13 +1581,13 @@ export default function LearnPage() {
                 animation: 'glideTopEdge 9s ease-in-out infinite alternate',
               }} />
 
-              <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { xs: 'flex-start', md: 'center' }, justifyContent: 'space-between', width: '100%', gap: 4 }}>
+              <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { xs: 'flex-start', md: 'center' }, justifyContent: 'space-between', width: '100%', gap: { xs: 4, md: 5 } }}>
                 <Box sx={{ flex: 1, pr: { md: 4 } }}>
                   <Typography variant="h2" sx={{ 
                     color: '#ffffff', 
                     fontFamily: '"Caveat", cursive',
                     fontWeight: 700, 
-                    fontSize: { xs: '4rem', md: '5.5rem' }, 
+                    fontSize: { xs: '3.5rem', md: '5rem' }, 
                     lineHeight: 1,
                     mb: 1.5,
                     textShadow: '0 4px 20px rgba(0,0,0,0.3)'
@@ -1596,7 +1599,7 @@ export default function LearnPage() {
                     color: 'rgba(255,255,255,0.9)', 
                     fontFamily: '"Plus Jakarta Sans", sans-serif',
                     fontSize: { xs: '1rem', md: '1.15rem' }, 
-                    lineHeight: 1.7, 
+                    lineHeight: 1.6, 
                     fontWeight: 500, 
                     mb: { xs: 2, md: 0 }, 
                     maxWidth: 550 
@@ -1608,7 +1611,7 @@ export default function LearnPage() {
                 {/* ═══════════════════════ CREATOR STUDIO WIDGET ═══════════════════════ */}
                 {!isFlipped && canCreate && (
                   <Paper sx={{
-                    p: { xs: 2.5, md: 3 }, borderRadius: '24px', 
+                    p: { xs: 2.5, md: 3 }, borderRadius: '20px', 
                     bgcolor: 'rgba(255, 255, 255, 0.85)',
                     backdropFilter: 'blur(40px) saturate(200%)', 
                     WebkitBackdropFilter: 'blur(40px) saturate(200%)',
@@ -1617,7 +1620,7 @@ export default function LearnPage() {
                     display: 'flex', 
                     flexDirection: 'column',
                     gap: 3,
-                    width: { xs: '100%', md: '280px' }, 
+                    width: { xs: '100%', md: '300px' }, 
                     flexShrink: 0
                   }}>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -1652,7 +1655,7 @@ export default function LearnPage() {
                                 transition: 'all 0.2s'
                               }}
                             >
-                              <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#FF416C', boxShadow: '0 0 8px #FF416C' }} />
+                              <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#FF416C', boxShadow: '0 0 8px #FF416C', flexShrink: 0 }} />
                               <Typography sx={{ 
                                 fontSize: '0.8rem', fontWeight: 700, color: '#334155', 
                                 noWrap: true, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' 
