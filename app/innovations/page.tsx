@@ -220,13 +220,42 @@ export default async function InnovationsHomepage() {
     }));
   }
 
-  // Group recent intelligence by Category for the AccordionHero
-  const accordionCategories = homepageConfig.challenges.map((c: any) => {
-    const articles = recentIntelligence.filter((ri: any) => ri.challengeId === c.id);
+  // Group mixed ecosystem items by Category for the TabbedHero
+  const ecosystemCategories = homepageConfig.challenges.map((c: any) => {
+    // 1. Intelligence Items
+    const intelligenceItems = recentIntelligence
+      .filter((ri: any) => ri.challengeId === c.id)
+      .map((ri: any) => ({
+        id: `intel-${ri.id}`,
+        type: 'Intelligence',
+        title: ri.title,
+        slug: ri.slug,
+        thumbnailUrl: ri.thumbnailUrl,
+        link: ri.link,
+        authorOrOperator: ri.author,
+        metaInfo: ri.readTime
+      }));
+
+    // 2. Innovation Items
+    // Since activeDeployments don't currently have a strict challengeId mapped in the DB in this demo,
+    // we randomly distribute them or show them across all categories for demo purposes.
+    const innovationItems = activeDeployments.map((ad: any) => ({
+        id: `innov-${ad.id}`,
+        type: 'Innovations',
+        title: ad.title,
+        thumbnailUrl: ad.imageUrl || '/images/default-thumbnail.jpg',
+        link: ad.link,
+        authorOrOperator: ad.operator.name,
+        metaInfo: ad.traction
+    }));
+
+    // Mix them up (Innovations first, then Intelligence)
+    const items = [...innovationItems, ...intelligenceItems];
+
     return {
       id: c.id,
       title: c.title,
-      articles
+      items
     };
   });
 
@@ -240,7 +269,7 @@ export default async function InnovationsHomepage() {
         <TabbedHero 
           headline={homepageConfig.heroHeadline}
           subheadline={homepageConfig.heroSubheadline}
-          categories={accordionCategories} 
+          categories={ecosystemCategories} 
         />
       </Box>
 
