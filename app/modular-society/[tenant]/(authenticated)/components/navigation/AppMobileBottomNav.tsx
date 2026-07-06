@@ -138,8 +138,8 @@ const AppMobileBottomNav: FC<AppMobileBottomNavProps> = ({ profile, onSignOut, b
         zIndex: 1200,
         pointerEvents: 'none',
         flexShrink: 0,
-        pb: { xs: 2, sm: 3 },
-        pt: 1,
+        pb: { xs: 1.5, sm: 2.5 },
+        pt: 0.5,
       }}
     >
       <Box
@@ -147,13 +147,14 @@ const AppMobileBottomNav: FC<AppMobileBottomNavProps> = ({ profile, onSignOut, b
         sx={{
           display: 'flex', 
           alignItems: 'center', 
+          justifyContent: 'center',
           overflowX: 'auto',
           scrollBehavior: 'smooth',
           scrollSnapType: 'x mandatory',
           pointerEvents: 'auto',
-          px: '27.5vw', // Centers the active item which is 45vw wide (50vw - 22.5vw = 27.5vw)
-          gap: 2,
-          pb: 1, // Space for shadow
+          px: 2,
+          gap: 1,
+          pb: 0.5,
           '&::-webkit-scrollbar': { display: 'none' }
         }}
       >
@@ -170,35 +171,53 @@ const AppMobileBottomNav: FC<AppMobileBottomNavProps> = ({ profile, onSignOut, b
               onClick={() => handleNavClick(item.href)}
               sx={{
                 flexShrink: 0,
-                width: isActive ? '45vw' : 'auto', // Active card fills 45% of the screen
+                minWidth: isActive ? '38vw' : 'auto',
                 scrollSnapAlign: 'center',
-                justifyContent: 'flex-start',
-                borderRadius: 3, // Match sidebar theming
+                justifyContent: 'center',
+                borderRadius: '16px',
                 textTransform: 'none', 
-                fontWeight: isActive ? 800 : 600, 
-                bgcolor: isActive ? navTheme.main : 'rgba(255,255,255,0.4)',
-                color: isActive ? '#ffffff' : 'rgba(0,0,0,0.7)',
+                bgcolor: isActive ? navTheme.main : alpha(navTheme.main || '#000', 0.03),
+                color: isActive ? '#ffffff' : '#0f2414',
                 backdropFilter: isActive ? 'none' : 'blur(4px)',
-                boxShadow: isActive ? `0 6px 16px -4px ${alpha(navTheme.main || '#000', 0.5)}` : '0 4px 12px rgba(0,0,0,0.05)',
-                transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                p: '12px 20px',
+                WebkitBackdropFilter: isActive ? 'none' : 'blur(4px)',
+                border: 'none',
+                boxShadow: isActive 
+                  ? `0 4px 14px -2px ${alpha(navTheme.main || '#000', 0.4)}` 
+                  : 'none',
+                transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+                p: isActive ? '10px 20px' : '10px 16px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 1.5,
-                transform: isActive ? 'scale(1)' : 'scale(0.85)',
-                filter: isActive ? 'none' : 'blur(1px)',
-                opacity: isActive ? 1 : 0.6,
+                transform: 'scale(1)',
+                opacity: 1,
                 '&:hover': { 
-                  bgcolor: isActive ? navTheme.main : 'rgba(255,255,255,0.6)', 
+                  bgcolor: isActive ? navTheme.main : alpha(navTheme.main || '#000', 0.08),
+                  color: isActive ? '#ffffff' : 'rgba(15, 36, 20, 0.85)',
+                  boxShadow: isActive 
+                    ? `0 6px 20px -2px ${alpha(navTheme.main || '#000', 0.5)}`
+                    : 'none',
+                  transform: isActive ? 'scale(1)' : 'translateY(-1px)',
                 }
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', fontSize: 24, '& svg': { fontSize: 'inherit' } }}>
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                fontSize: isActive ? 22 : 20, 
+                '& svg': { fontSize: 'inherit' },
+                color: isActive ? '#ffffff' : '#0f2414',
+                transition: 'all 0.3s ease',
+              }}>
                 {item.icon}
               </Box>
               
-              <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Typography sx={{ fontSize: '0.95rem', fontWeight: isActive ? 800 : 600 }}>
+              <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography sx={{ 
+                  fontSize: isActive ? '0.9rem' : '0.85rem', 
+                  fontWeight: isActive ? 800 : 600,
+                  letterSpacing: isActive ? '-0.01em' : 0,
+                }}>
                   {item.label}
                 </Typography>
                 
@@ -206,9 +225,9 @@ const AppMobileBottomNav: FC<AppMobileBottomNavProps> = ({ profile, onSignOut, b
                   <Box component="span" sx={{
                     bgcolor: isActive ? '#ffffff' : navTheme.main, 
                     color: isActive ? navTheme.main : '#ffffff', 
-                    fontSize: '0.7rem', fontWeight: 'bold',
-                    px: 1, py: 0.2, borderRadius: 10, minWidth: 24, textAlign: 'center',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                    fontSize: '0.65rem', fontWeight: 'bold',
+                    px: 0.8, py: 0.1, borderRadius: 10, minWidth: 20, textAlign: 'center',
+                    boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
                   }}>
                     {badgeVal}
                   </Box>

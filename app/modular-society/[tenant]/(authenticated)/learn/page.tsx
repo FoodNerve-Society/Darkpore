@@ -1556,12 +1556,14 @@ export default function LearnPage() {
               position: 'relative', 
               borderRadius: '24px', 
               p: { xs: 4, md: 5 }, 
+              mx: { xs: 1, md: 2 },
+              mt: { xs: 1, md: 2 },
               mb: 3,
               overflow: 'hidden',
               flexShrink: 0,
               bgcolor: '#1a1a1a', 
               color: 'white',
-              boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
               zIndex: 1,
             }}>
               {/* Fiery Edge Gradients (Moving along edges) */}
