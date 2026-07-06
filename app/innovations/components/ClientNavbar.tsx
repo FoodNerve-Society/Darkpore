@@ -1,15 +1,18 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Button, IconButton, Collapse, Stack } from '@mui/material';
+import { Box, Typography, Button, IconButton, Collapse, Stack, Avatar } from '@mui/material';
 import { ExpandMore, ExpandLess } from '@mui/icons-material';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { onAuthStateChanged, User } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 
 export default function ClientNavbar({ tenantName, orgDomain }: { tenantName: string, orgDomain: string }) {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -17,6 +20,13 @@ export default function ClientNavbar({ tenantName, orgDomain }: { tenantName: st
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsubscribe();
   }, []);
 
   // Extract the current challenge or top route from the URL
@@ -50,6 +60,11 @@ export default function ClientNavbar({ tenantName, orgDomain }: { tenantName: st
     { label: 'Knowledge', path: '/learn' },
   ];
 
+  // Extract logo parts for vertical rendering in the logo block
+  const match = tenantName.match(/^(.*)(nerve)$/i);
+  const logoPart1 = match ? match[1].toUpperCase() : tenantName.split(' ')[0]?.toUpperCase() || tenantName.toUpperCase();
+  const logoPart2 = match ? match[2].toUpperCase() : tenantName.split(' ')[1]?.toUpperCase() || '';
+
   return (
     <Box sx={{ 
       position: 'fixed',
@@ -77,28 +92,23 @@ export default function ClientNavbar({ tenantName, orgDomain }: { tenantName: st
       }}>
         
         {/* Brand Identity */}
-        <Box sx={{ position: 'relative', height: '100%', display: 'flex', alignItems: 'center' }}>
-          <Link href="/" passHref style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+        <Box sx={{ position: 'relative', width: scrolled ? '60px' : '85px', height: '100%', display: 'flex', transition: 'width 0.3s ease' }}>
+          <Link href="/" passHref style={{ textDecoration: 'none', position: 'absolute', top: scrolled ? -12 : -12, left: 0, transition: 'top 0.3s ease' }}>
             <Box sx={{
-                bgcolor: '#f1f8e9',
-                width: 40, height: 40,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-                borderRadius: '12px', 
+                bgcolor: '#f1f8e9', /* Static brand color */
+                px: scrolled ? 1.5 : 1.8, 
+                pt: scrolled ? 2.5 : 3.5, 
+                pb: scrolled ? 0.8 : 1.2,
+                display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-end',
+                boxShadow: scrolled ? '0 6px 20px rgba(0, 0, 0, 0.1)' : '0 10px 30px rgba(0, 0, 0, 0.05)',
+                borderRadius: 0, 
+                minHeight: scrolled ? '60px' : '85px',
+                transition: 'all 0.4s cubic-bezier(0.2, 0, 0, 1)'
             }}>
-                <Typography variant="h6" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, fontSize: '0.85rem', color: '#1b5e20', lineHeight: 1, letterSpacing: '-0.02em', textAlign: 'center' }}>
-                    {tenantName.split(' ')[0]?.charAt(0).toUpperCase()}{tenantName.split(' ')[1]?.charAt(0).toUpperCase() || ''}
+                <Typography variant="h6" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, fontSize: scrolled ? '0.65rem' : '0.9rem', color: '#1b5e20', lineHeight: 1, letterSpacing: '-0.02em', textAlign: 'left', transition: 'all 0.4s ease' }}>
+                    {logoPart1}{logoPart2 && <><br />{logoPart2}</>}
                 </Typography>
             </Box>
-            <Typography variant="h6" sx={{ 
-                fontWeight: 900,
-                ml: 1.5,
-                fontSize: { xs: '1rem', md: '1.15rem' }, 
-                letterSpacing: '-0.02em',
-                color: '#0f172a'
-            }}>
-                {tenantName}
-            </Typography>
           </Link>
         </Box>
 
@@ -154,37 +164,51 @@ export default function ClientNavbar({ tenantName, orgDomain }: { tenantName: st
             </Link>
           ))}
 
-          <Link href="/join" style={{ textDecoration: 'none', flexShrink: 0, marginLeft: 8 }}>
-             <Button variant="contained" size="small" sx={{ 
-                bgcolor: '#0f172a', 
-                color: 'white', 
-                borderRadius: 100,
-                px: 3.5, 
-                py: 1,
-                fontWeight: 800,
-                fontSize: '0.85rem',
-                textTransform: 'none',
-                boxShadow: '0 4px 14px rgba(15, 23, 42, 0.15)',
-                transition: 'all 0.3s',
-                '&:hover': { 
-                    bgcolor: '#1e293b',
-                    transform: 'translateY(-1px)' 
-                }
-             }}>
-               Login
-             </Button>
+          <Link href={user ? `https://society.${orgDomain}` : "/join"} style={{ textDecoration: 'none', flexShrink: 0, marginLeft: 8 }}>
+             {user ? (
+                <IconButton sx={{ p: 0.5, border: '1px solid rgba(0,0,0,0.1)', bgcolor: 'white', '&:hover': { bgcolor: 'rgba(255,255,255,0.8)' } }}>
+                    <Avatar src={user.photoURL || undefined} sx={{ width: 32, height: 32, fontSize: '0.9rem', bgcolor: '#0f172a', color: 'white', fontWeight: 'bold' }}>
+                        {user.displayName?.charAt(0) || user.email?.charAt(0) || 'U'}
+                    </Avatar>
+                </IconButton>
+             ) : (
+                <Button variant="contained" size="small" sx={{ 
+                    bgcolor: '#0f172a', 
+                    color: 'white', 
+                    borderRadius: 100,
+                    px: 3.5, 
+                    py: 1,
+                    fontWeight: 800,
+                    fontSize: '0.85rem',
+                    textTransform: 'none',
+                    boxShadow: '0 4px 14px rgba(15, 23, 42, 0.15)',
+                    transition: 'all 0.3s',
+                    '&:hover': { 
+                        bgcolor: '#1e293b',
+                        transform: 'translateY(-1px)' 
+                    }
+                }}>
+                Login
+                </Button>
+             )}
           </Link>
         </Box>
 
         {/* Mobile Menu Toggle */}
         <Box sx={{ display: { xs: 'flex', md: 'none' }, ml: 'auto', gap: 1, alignItems: 'center' }}>
-          <Link href="/join" style={{ textDecoration: 'none' }}>
-             <Button variant="contained" size="small" sx={{ 
-                bgcolor: '#0f172a', color: 'white', borderRadius: 100, px: 2, py: 0.6,
-                fontWeight: 800, fontSize: '0.75rem', textTransform: 'none',
-             }}>
-               Login
-             </Button>
+          <Link href={user ? `https://society.${orgDomain}` : "/join"} style={{ textDecoration: 'none' }}>
+             {user ? (
+                 <Avatar src={user.photoURL || undefined} sx={{ width: 30, height: 30, fontSize: '0.8rem', bgcolor: '#0f172a', color: 'white', fontWeight: 'bold' }}>
+                    {user.displayName?.charAt(0) || user.email?.charAt(0) || 'U'}
+                 </Avatar>
+             ) : (
+                 <Button variant="contained" size="small" sx={{ 
+                    bgcolor: '#0f172a', color: 'white', borderRadius: 100, px: 2, py: 0.6,
+                    fontWeight: 800, fontSize: '0.75rem', textTransform: 'none',
+                 }}>
+                   Login
+                 </Button>
+             )}
           </Link>
           <IconButton onClick={() => setDrawerOpen(!drawerOpen)} sx={{ color: '#0f172a', bgcolor: 'rgba(15, 23, 42, 0.05)', borderRadius: '12px', p: 0.6 }}>
               {drawerOpen ? <ExpandLess /> : <ExpandMore />}

@@ -39,8 +39,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({ value, onChange, themeColo
                 </IconButton>
                 <InputBase
                     sx={{ ml: 1, flex: 1 }}
-                    placeholder="Search intelligence..."
-                    inputProps={{ 'aria-label': 'search intelligence' }}
+                    placeholder="Search ecosystem"
+                    inputProps={{ 'aria-label': 'search ecosystem' }}
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
                 />

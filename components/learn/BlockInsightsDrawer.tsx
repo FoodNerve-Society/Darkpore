@@ -382,29 +382,49 @@ export const BlockInsightsDrawer: React.FC<BlockInsightsDrawerProps> = ({
             </IconButton>
           </Box>
         ) : (
-          <Box sx={{ textAlign: 'center', py: 1 }}>
-            <Typography sx={{ fontSize: '0.85rem', color: isDark ? '#94a3b8' : '#64748b', mb: 1.5 }}>
-              Join the Society to participate in block discussions.
-            </Typography>
-            <Button
-              href="/join"
-              variant="outlined"
-              size="small"
-              sx={{
-                borderRadius: '100px',
-                color: accentColor,
-                borderColor: alpha(accentColor, 0.3),
-                fontWeight: 700,
-                textTransform: 'none',
-                px: 3,
-                '&:hover': {
-                  borderColor: accentColor,
-                  bgcolor: alpha(accentColor, 0.1),
-                }
+          <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-end', position: 'relative' }}>
+            <Avatar 
+              sx={{ width: 32, height: 32, mb: 0.5, bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }}
+            />
+            <Box sx={{ flex: 1, position: 'relative' }}>
+              <Box 
+                onClick={() => window.location.href = `/join?redirect=${encodeURIComponent(window.location.href)}`}
+                sx={{
+                  position: 'absolute', inset: 0, zIndex: 10, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  borderRadius: '12px',
+                  bgcolor: isDark ? 'rgba(15,23,42,0.6)' : 'rgba(255,255,255,0.6)',
+                  backdropFilter: 'blur(4px)',
+                  opacity: 0, transition: 'all 0.3s',
+                  '&:hover': { opacity: 1 }
+                }}
+              >
+                <Typography sx={{ fontWeight: 700, fontSize: '0.85rem', color: accentColor }}>
+                  Sign in to reply
+                </Typography>
+              </Box>
+              <PremiumTextField
+                fullWidth
+                colorTheme={accentColor}
+                placeholder="Sign in to post your reply..."
+                size="small"
+                hiddenLabel
+                disabled
+                sx={{
+                  '& .MuiFilledInput-root': { py: 1.5, opacity: 0.7 }
+                }}
+              />
+            </Box>
+            <IconButton 
+              disabled
+              sx={{ 
+                width: 36, height: 36, mb: 0.5, borderRadius: '12px',
+                bgcolor: 'transparent',
+                color: isDark ? '#334155' : '#cbd5e1'
               }}
             >
-              Sign in to add comments
-            </Button>
+              <SendIcon sx={{ fontSize: 16 }} />
+            </IconButton>
           </Box>
         )}
       </Box>

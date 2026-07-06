@@ -168,7 +168,7 @@ export default function TabbedHero({ headline, subheadline, categories }: Tabbed
                     animate="animate"
                     exit="exit"
                     transition={{ duration: 0.5, ease: [0.25, 1, 0.35, 1] }}
-                    sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', position: 'relative', minHeight: '80vh' }}
+                    sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', position: 'relative', height: 'auto', minHeight: { xs: '60vh', md: '50vh' }, maxHeight: '1200px' }}
                 >
                     {/* The tinted background and mesh go here */}
                     <Box sx={{ position: 'absolute', inset: 0, bgcolor: tintedBg }}>
@@ -256,7 +256,7 @@ export default function TabbedHero({ headline, subheadline, categories }: Tabbed
                             {filteredItems.length > 0 && activeCatData && (
                                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', mt: 8, textAlign: 'center', p: 4, borderRadius: 4, bgcolor: 'rgba(255,255,255,0.4)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.6)' }}>
                                     <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a', mb: 1 }}>
-                                        Looking for more {activeCatData.title}?
+                                        Looking for more {activeCatData.title.replace(/^\d+\.\s*/, '')}?
                                     </Typography>
                                     <Typography variant="body2" sx={{ color: '#475569', mb: 3, maxWidth: 500 }}>
                                         Explore our dedicated repository to discover all the latest insights, deployments, and resources within this category.
@@ -268,7 +268,7 @@ export default function TabbedHero({ headline, subheadline, categories }: Tabbed
                                         href={`/innovations/${activeCatData.id}`}
                                         sx={{ borderRadius: '999px', bgcolor: themeColor, color: '#ffffff', textTransform: 'none', fontWeight: 800, fontSize: '1rem', px: 4, py: 1.5, boxShadow: `0 8px 24px ${themeColor}40`, '&:hover': { bgcolor: '#0f172a', transform: 'translateY(-2px)', boxShadow: '0 12px 32px rgba(15,23,42,0.3)' }, transition: 'all 0.3s ease' }}
                                     >
-                                        Explore the {activeCatData.title} Hub
+                                        Explore the {activeCatData.title.replace(/^\d+\.\s*/, '')} Hub
                                     </Button>
                                 </Box>
                             )}
