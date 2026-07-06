@@ -52,7 +52,23 @@ export const CategoryTabMenu: React.FC<CategoryTabMenuProps> = ({ categories, se
 
     return (
         <Box sx={{ display: 'flex', width: '100%', mb: 4, alignItems: 'center', justifyContent: 'center' }}>
-            <Box sx={{ position: 'relative', width: 'max-content', maxWidth: '100%' }}>
+            {/* Grid Icon Button (Moved to left, styling stripped) */}
+            <IconButton 
+                onClick={() => setGridOpen(true)}
+                sx={{ 
+                    mr: 1, 
+                    width: 48,
+                    height: 48,
+                    color: 'text.secondary',
+                    transition: 'all 0.3s ease',
+                    flexShrink: 0,
+                    '&:hover': { color: themeColor, transform: 'scale(1.05)' }
+                }}
+            >
+                <GridView />
+            </IconButton>
+
+            <Box sx={{ position: 'relative', width: 'max-content', maxWidth: 'calc(100% - 56px)' }}>
                 <Box 
                     ref={scrollContainerRef}
                     onScroll={checkScroll}
@@ -139,26 +155,6 @@ export const CategoryTabMenu: React.FC<CategoryTabMenuProps> = ({ categories, se
                     <Box sx={{ minWidth: 24, flexShrink: 0 }} />
                 </Box>
             </Box>
-
-            {/* Grid Icon Button */}
-            <IconButton 
-                onClick={() => setGridOpen(true)}
-                sx={{ 
-                    ml: 1, 
-                    width: 48,
-                    height: 48,
-                    bgcolor: 'rgba(255,255,255,0.5)', 
-                    backdropFilter: 'blur(16px)',
-                    border: '1px solid rgba(255,255,255,0.4)',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                    color: 'text.secondary',
-                    transition: 'all 0.3s ease',
-                    flexShrink: 0,
-                    '&:hover': { bgcolor: 'white', color: themeColor, transform: 'scale(1.05)' }
-                }}
-            >
-                <GridView />
-            </IconButton>
 
             {/* Grid View Modal */}
             <Dialog 

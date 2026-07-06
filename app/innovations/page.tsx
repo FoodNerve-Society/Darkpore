@@ -252,9 +252,14 @@ export default async function InnovationsHomepage() {
     // Mix them up (Innovations first, then Intelligence)
     const items = [...innovationItems, ...intelligenceItems];
 
+    // Elegant, saturated theme colors for each category
+    const categoryColors = ['#166534', '#b45309', '#4338ca', '#b91c1c', '#0f766e', '#86198f', '#0369a1'];
+    const themeColor = categoryColors[homepageConfig.challenges.indexOf(c) % categoryColors.length];
+
     return {
       id: c.id,
       title: c.title,
+      themeColor,
       items
     };
   });

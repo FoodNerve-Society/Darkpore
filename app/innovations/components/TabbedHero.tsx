@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { CategoryTabMenu, Category } from './CategoryTabMenu';
 import { SearchBar } from './SearchBar';
+import { EcosystemCard } from './EcosystemCard';
 
 export type EcosystemType = 'Intelligence' | 'Innovations' | 'Community' | 'Activities' | 'Jobs';
 
@@ -25,6 +26,7 @@ export interface TabCategory {
   id: string;
   title: string;
   items: EcosystemItem[];
+  themeColor?: string;
 }
 
 interface TabbedHeroProps {
@@ -36,7 +38,15 @@ interface TabbedHeroProps {
 const PILLARS: ('All' | EcosystemType)[] = ['All', 'Intelligence', 'Innovations', 'Community', 'Activities', 'Jobs'];
 
 export default function TabbedHero({ headline, subheadline, categories }: TabbedHeroProps) {
-  const themeColor = '#166534'; // Earthy green for FoodNerve
+  // State
+  const [activeCategory, setActiveCategory] = useState<string>(categories[0]?.id || '');
+  const [activeSubPillar, setActiveSubPillar] = useState<'All' | EcosystemType>('All');
+  const [slideDirection, setSlideDirection] = useState<number>(0);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [heroAnimationDone, setHeroAnimationDone] = useState(false);
+
+  const activeCatData = categories.find(c => c.id === activeCategory) || categories[0];
+  const themeColor = activeCatData?.themeColor || '#166534'; // Earthy green default
 
   const hexToRgb = (hex: string) => {
       const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -50,26 +60,19 @@ export default function TabbedHero({ headline, subheadline, categories }: Tabbed
   const mixWithWhite = (c: number) => Math.round(c * 0.03 + 255 * 0.97);
   const tintedBg = `rgb(${mixWithWhite(rgb.r)}, ${mixWithWhite(rgb.g)}, ${mixWithWhite(rgb.b)})`;
 
-  // State
-  const [activeCategory, setActiveCategory] = useState<string>(categories[0]?.id || '');
-  const [activeSubPillar, setActiveSubPillar] = useState<'All' | EcosystemType>('All');
-  const [slideDirection, setSlideDirection] = useState<number>(0);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [heroAnimationDone, setHeroAnimationDone] = useState(false);
-
   // Mesh Background Generator
   const MeshBackground = useMemo(() => {
       const baseColor = themeColor;
       const colors = [baseColor, `${baseColor}99`, `${baseColor}44`];
       return (
-          <Box sx={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden', bgcolor: tintedBg }}>
+          <Box sx={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden', bgcolor: tintedBg, transition: 'background-color 0.8s ease' }}>
               {[...Array(3)].map((_, i) => (
                   <Box
                       key={i}
                       component={motion.div}
                       animate={{ x: [0, 100, -100, 0], y: [0, -150, 150, 0], scale: [1, 1.2, 0.8, 1] }}
                       transition={{ duration: 15 + i * 5, repeat: Infinity, ease: "linear" }}
-                      sx={{ position: 'absolute', width: '60vw', height: '60vw', borderRadius: '50%', filter: 'blur(100px)', opacity: 0.15, bgcolor: colors[i % colors.length], top: `${20 + i * 20}%`, left: `${10 + i * 25}%` }}
+                      sx={{ position: 'absolute', width: '60vw', height: '60vw', borderRadius: '50%', filter: 'blur(100px)', opacity: 0.15, bgcolor: colors[i % colors.length], top: `${20 + i * 20}%`, left: `${10 + i * 25}%`, transition: 'background-color 0.8s ease' }}
                   />
               ))}
               <Box sx={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(15, 23, 42, 0.05) 1px, transparent 1px)', backgroundSize: '32px 32px', opacity: 0.5 }} />
@@ -82,8 +85,6 @@ export default function TabbedHero({ headline, subheadline, categories }: Tabbed
       title: cat.title,
       count: cat.items.length
   }));
-
-  const activeCatData = categories.find(c => c.id === activeCategory);
   
   // Filter by Category -> Pillar -> Search
   const filteredItems = useMemo(() => {
@@ -114,7 +115,7 @@ export default function TabbedHero({ headline, subheadline, categories }: Tabbed
   };
 
   return (
-      <Box sx={{ minHeight: '100vh', width: '100%', maxWidth: '100vw', bgcolor: tintedBg, color: '#0f172a', position: 'relative', display: 'flex', flexDirection: 'column', overflowX: 'hidden' }}>
+      <Box sx={{ minHeight: '100vh', width: '100%', maxWidth: '100vw', bgcolor: tintedBg, transition: 'background-color 0.8s ease', color: '#0f172a', position: 'relative', display: 'flex', flexDirection: 'column', overflowX: 'hidden' }}>
           {MeshBackground}
           <Box sx={{ position: 'relative', zIndex: 1 }}>
               <Container maxWidth="lg" sx={{ py: 4, overflowX: 'hidden' }}>
@@ -238,28 +239,7 @@ export default function TabbedHero({ headline, subheadline, categories }: Tabbed
                                               </Typography>
                                           ) : (
                                               filteredItems.slice(0, 5).map(item => (
-                                                  <Box 
-                                                      key={item.id} 
-                                                      component={Link}
-                                                      href={item.link}
-                                                      sx={{ minWidth: { xs: '280px', md: '350px' }, maxWidth: '350px', textDecoration: 'none', color: 'inherit', display: 'flex', flexDirection: 'column', gap: 2, group: 'true' }}
-                                                  >
-                                                      <Box sx={{ width: '100%', aspectRatio: '16/9', borderRadius: 3, overflow: 'hidden', position: 'relative', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
-                                                          <Box component="img" src={item.thumbnailUrl} alt={item.title} sx={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s', '&:hover': { transform: 'scale(1.05)' } }} />
-                                                          {/* Ecosystem Badge */}
-                                                          <Box sx={{ position: 'absolute', top: 12, left: 12, bgcolor: getBadgeColor(item.type), color: 'white', px: 1.5, py: 0.5, borderRadius: '999px', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1, boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
-                                                            {item.type}
-                                                          </Box>
-                                                      </Box>
-                                                      <Box>
-                                                          <Typography variant="h6" sx={{ fontWeight: 800, fontFamily: 'serif', lineHeight: 1.3, mb: 1, color: '#0f172a', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                                                              {item.title}
-                                                          </Typography>
-                                                          <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 600 }}>
-                                                              {item.authorOrOperator} • {item.metaInfo}
-                                                          </Typography>
-                                                      </Box>
-                                                  </Box>
+                                                  <EcosystemCard key={item.id} item={item} themeColor={themeColor} />
                                               ))
                                           )}
                                           
