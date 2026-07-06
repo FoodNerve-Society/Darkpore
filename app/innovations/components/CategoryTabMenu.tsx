@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useRef, useEffect, useState } from 'react';
-import { Box, Typography, Stack, useTheme, IconButton, Dialog, DialogTitle, DialogContent } from '@mui/material';
-import { motion } from 'framer-motion';
-import { GridView, Close } from '@mui/icons-material';
+import { Box, Typography, Stack, useTheme, IconButton, Dialog, DialogTitle, DialogContent, TextField } from '@mui/material';
+import { motion, AnimatePresence } from 'framer-motion';
+import { GridView, Close, Search } from '@mui/icons-material';
 
 export interface Category {
     id: string;
@@ -23,6 +23,8 @@ export const CategoryTabMenu: React.FC<CategoryTabMenuProps> = ({ categories, se
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const theme = useTheme();
     const [canScrollRight, setCanScrollRight] = useState(false);
+    const [searchOpen, setSearchOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
     const [gridOpen, setGridOpen] = useState(false);
 
     const checkScroll = () => {
@@ -52,40 +54,84 @@ export const CategoryTabMenu: React.FC<CategoryTabMenuProps> = ({ categories, se
 
     return (
         <Box sx={{ display: 'flex', width: '100%', mb: 4, alignItems: 'center', justifyContent: 'center' }}>
-            {/* Grid Icon Button (Moved to left, styling stripped) */}
+            {/* Search Icon Button */}
             <IconButton 
-                onClick={() => setGridOpen(true)}
+                onClick={() => setSearchOpen(!searchOpen)}
                 sx={{ 
                     mr: 1, 
                     width: 48,
                     height: 48,
-                    color: 'text.secondary',
+                    color: searchOpen ? themeColor : 'text.secondary',
                     transition: 'all 0.3s ease',
                     flexShrink: 0,
-                    '&:hover': { color: themeColor, transform: 'scale(1.05)' }
+                    bgcolor: searchOpen ? `${themeColor}15` : 'transparent',
+                    '&:hover': { color: themeColor, transform: 'scale(1.05)', bgcolor: `${themeColor}20` }
                 }}
             >
-                <GridView />
+                {searchOpen ? <Close /> : <Search />}
             </IconButton>
 
             <Box sx={{ position: 'relative', width: 'max-content', maxWidth: 'calc(100% - 56px)' }}>
-                <Box 
-                    ref={scrollContainerRef}
-                    onScroll={checkScroll}
-                    sx={{ 
-                    width: '100%',
-                    display: 'flex', 
-                    justifyContent: 'flex-start',
-                    alignItems: 'center', 
-                    overflowX: 'auto', 
-                    p: 0.75, 
-                    gap: 1.5, 
-                    scrollSnapType: 'x mandatory', 
-                    '&::-webkit-scrollbar': { display: 'none' }, 
-                    'scrollbarWidth': 'none'
-                }}>
-                    {categories.map((cat) => {
+                <AnimatePresence mode="wait">
+                    {searchOpen ? (
+                        <Box
+                            component={motion.div}
+                            key="search-bar"
+                            initial={{ opacity: 0, width: 0 }}
+                            animate={{ opacity: 1, width: '100%' }}
+                            exit={{ opacity: 0, width: 0 }}
+                            transition={{ duration: 0.3, ease: 'easeInOut' }}
+                            sx={{ display: 'flex', width: '100%', minWidth: { xs: '200px', md: '300px' } }}
+                        >
+                            <TextField
+                                fullWidth
+                                placeholder="Search all categories..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                sx={{
+                                    '& .MuiOutlinedInput-root': {
+                                        borderRadius: '999px',
+                                        bgcolor: 'rgba(255, 255, 255, 0.8)',
+                                        '& fieldset': { borderColor: 'rgba(0,0,0,0.1)' },
+                                        '&:hover fieldset': { borderColor: themeColor },
+                                        '&.Mui-focused fieldset': { borderColor: themeColor }
+                                    }
+                                }}
+                            />
+                        </Box>
+                    ) : (
+                        <Box
+                            component={motion.div}
+                            key="category-list"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 20 }}
+                            transition={{ duration: 0.3, ease: 'easeInOut' }}
+                            sx={{ position: 'relative', width: '100%' }}
+                        >
+                            {canScrollRight && (
+                                <Box sx={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 40, background: 'linear-gradient(to right, transparent, #ffffff)', zIndex: 10, pointerEvents: 'none' }} />
+                            )}
+                            <Box 
+                                ref={scrollContainerRef}
+                                onScroll={checkScroll}
+                                sx={{ 
+                                width: '100%',
+                                display: 'flex', 
+                                justifyContent: 'flex-start',
+                                alignItems: 'center', 
+                                overflowX: 'auto', 
+                                py: 2,
+                                px: 1, 
+                                gap: 0.5, // Tighter gap for segmented look
+                                scrollSnapType: 'x mandatory', 
+                                '&::-webkit-scrollbar': { display: 'none' }, 
+                                'scrollbarWidth': 'none'
+                            }}>
+                    {categories.map((cat, index) => {
                         const isActive = selectedCategoryId === cat.id;
+                        const isFirst = index === 0;
+                        const isLast = index === categories.length - 1;
                         
                         return (
                             <Box
@@ -93,11 +139,17 @@ export const CategoryTabMenu: React.FC<CategoryTabMenuProps> = ({ categories, se
                                 ref={(el) => { tabRefs.current.set(cat.id, el as HTMLDivElement | null); }}
                                 onClick={() => onSelectCategory(cat.id)}
                                 sx={{
-                                    px: 2.5, py: 1.25, position: 'relative', zIndex: 2,
+                                    px: isActive ? 5 : 2.5, py: 1.25, position: 'relative', zIndex: 2,
                                     color: isActive ? 'white' : (cat.id === 'Offers for Today' ? '#dc2626' : 'text.secondary'),
                                     cursor: 'pointer', whiteSpace: 'nowrap',
                                     transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                                    borderRadius: '999px',
+                                    borderRadius: isActive 
+                                        ? '999px !important' 
+                                        : (isFirst 
+                                            ? '999px 8px 8px 999px !important' 
+                                            : isLast 
+                                                ? '8px 999px 999px 8px !important' 
+                                                : '8px !important'),
                                     scrollSnapAlign: 'center',
                                     border: cat.id === 'Offers for Today' && !isActive ? '1px solid rgba(239, 68, 68, 0.5)' : '1px solid transparent',
                                     background: isActive 
@@ -115,21 +167,18 @@ export const CategoryTabMenu: React.FC<CategoryTabMenuProps> = ({ categories, se
                                 }}
                             >
                             <Stack spacing={1} sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
-                                    <Typography variant="button" sx={{ 
+                                    <Box sx={{ 
                                         fontWeight: isActive ? 800 : 700, 
-                                        textTransform: 'none',
                                         letterSpacing: '-0.01em',
                                         fontSize: '0.9rem',
-                                        lineHeight: 1
+                                        lineHeight: 1.2
                                     }}>
                                         {cat.title}
-                                    </Typography>
+                                    </Box>
                                     {cat.count > 0 && (
                                         <Box sx={{ 
                                             bgcolor: isActive ? 'rgba(255,255,255,0.2)' : 'rgba(15, 23, 42, 0.06)', 
-                                            px: 0.8, py: 0.4, borderRadius: 1, fontSize: '0.7rem',
-                                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                                            lineHeight: 1
+                                            px: 0.8, py: 0.2, borderRadius: 1, fontSize: '0.7rem' 
                                         }}>
                                             {cat.count}
                                         </Box>
@@ -153,6 +202,9 @@ export const CategoryTabMenu: React.FC<CategoryTabMenuProps> = ({ categories, se
                     {/* Spacer to allow the very last item to scroll comfortably past the gradient */}
                     <Box sx={{ minWidth: 24, flexShrink: 0 }} />
                 </Box>
+                </Box>
+                )}
+                </AnimatePresence>
             </Box>
 
             <Dialog 

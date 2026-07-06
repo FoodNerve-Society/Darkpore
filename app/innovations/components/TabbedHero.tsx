@@ -115,12 +115,12 @@ export default function TabbedHero({ headline, subheadline, categories }: Tabbed
               <Container maxWidth="lg" sx={{ pt: 4, pb: 2, overflowX: 'hidden' }}>
                   
                   {/* Hero Header */}
-                  <Box component={motion.div} initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, ease: "easeOut" }} onAnimationComplete={() => setHeroAnimationDone(true)} sx={{ pt: { xs: 6, md: 10 }, pb: 4, textAlign: 'center', maxWidth: 900, mx: 'auto' }}>
-                      <Typography variant="h3" component="h1" sx={{ fontWeight: 950, background: `linear-gradient(to bottom, ${themeColor} 20%, #0f172a 100%)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', mb: 2.5, fontSize: { xs: '2.4rem', md: '4.5rem' }, letterSpacing: '-0.05em', lineHeight: 1.1 }}>
+                  <Box component={motion.div} initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, ease: "easeOut" }} onAnimationComplete={() => setHeroAnimationDone(true)} sx={{ pt: { xs: 4, md: 6 }, pb: 2, textAlign: 'center', maxWidth: 900, mx: 'auto' }}>
+                      <Typography variant="h3" component="h1" sx={{ fontWeight: 950, background: `linear-gradient(to bottom, ${themeColor} 20%, #0f172a 100%)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', mb: 1.5, fontSize: { xs: '2rem', md: '3.5rem' }, letterSpacing: '-0.05em', lineHeight: 1.1 }}>
                           {headline || "Intelligence Hub"}
                       </Typography>
                       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6, duration: 1 }}>
-                          <Typography variant="h6" sx={{ color: 'rgba(15, 23, 42, 0.6)', mb: 6, px: 2, fontSize: { xs: '1rem', md: '1.25rem' }, lineHeight: 1.6, fontWeight: 600, maxWidth: 700, mx: 'auto' }}>
+                          <Typography variant="h6" sx={{ color: 'rgba(15, 23, 42, 0.6)', mb: 3, px: 2, fontSize: { xs: '1rem', md: '1.15rem' }, lineHeight: 1.5, fontWeight: 600, maxWidth: 700, mx: 'auto' }}>
                               {subheadline || "Select an area of focus to explore our latest deployments and insights."}
                           </Typography>
                       </motion.div>
@@ -149,115 +149,117 @@ export default function TabbedHero({ headline, subheadline, categories }: Tabbed
 
           {/* NEW Tinted Content Area */}
           <Box sx={{ position: 'relative', flexGrow: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', borderTopLeftRadius: { xs: '32px', md: '48px' }, borderTopRightRadius: { xs: '32px', md: '48px' } }}>
-             {/* The tinted background and mesh go here */}
-             <Box sx={{ position: 'absolute', inset: 0, bgcolor: tintedBg, transition: 'background-color 0.8s ease' }}>
-                {MeshBackground}
-             </Box>
-             
-             <Container maxWidth="lg" sx={{ py: { xs: 4, md: 8 }, position: 'relative', zIndex: 1, overflowX: 'hidden', flexGrow: 1 }}>
-                  <AnimatePresence mode="wait" custom={slideDirection}>
-                      <motion.div
-                          key={activeCategory}
-                          custom={slideDirection}
-                          variants={{
-                              initial: (dir: number) => ({ opacity: 0, x: dir > 0 ? 30 : -30 }),
-                              animate: { opacity: 1, x: 0 },
-                              exit: (dir: number) => ({ opacity: 0, x: dir > 0 ? -30 : 30 })
-                          }}
-                          initial="initial"
-                          animate="animate"
-                          exit="exit"
-                          transition={{ duration: 0.3, ease: 'easeOut' }}
-                      >
-                          {/* Content Area: Sidebar + Stage */}
-                          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: { xs: 3, md: 4 }, alignItems: { xs: 'flex-start', md: 'flex-start' } }}>
-                          
-                          {/* Premium Sub-Pillar Filters (Left on Desktop, Top on Mobile) */}
-                          <Box sx={{ 
-                              display: 'flex', 
-                              flexDirection: { xs: 'row', md: 'column' }, 
-                              flexWrap: { xs: 'wrap', md: 'nowrap' },
-                              gap: 1,
-                              width: { xs: '100%', md: '200px' },
-                              flexShrink: 0,
-                              pb: { xs: 1, md: 0 },
-                              px: { xs: 2, md: 0 },
-                          }}>
-                              {PILLARS.map(pillar => {
-                                  const isActive = activeSubPillar === pillar;
-                                  return (
-                                      <Box 
-                                          key={pillar}
-                                          onClick={() => setActiveSubPillar(pillar)}
-                                          sx={{
-                                              position: 'relative',
-                                              px: 3,
-                                              py: 1.5,
-                                              cursor: 'pointer',
-                                              borderRadius: '16px',
-                                              color: isActive ? themeColor : 'rgba(15, 23, 42, 0.6)',
-                                              fontWeight: isActive ? 800 : 600,
-                                              fontSize: '0.95rem',
-                                              whiteSpace: 'nowrap',
-                                              transition: 'all 0.3s ease',
-                                              '&:hover': {
-                                                  color: isActive ? themeColor : '#0f172a'
-                                              }
-                                          }}
-                                      >
-                                          <Box sx={{ position: 'relative', zIndex: 1 }}>{pillar}</Box>
-                                          {isActive && (
-                                              <motion.div
-                                                  layoutId="active-subpillar"
-                                                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                                                  style={{
-                                                      position: 'absolute', 
-                                                      inset: 0,
-                                                      borderRadius: '16px',
-                                                      backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                                                      backdropFilter: 'blur(8px)',
-                                                      boxShadow: '0 4px 12px rgba(0,0,0,0.05), inset 0 0 0 1px rgba(255,255,255,0.5)',
-                                                      zIndex: 0
-                                                  }}
-                                              />
-                                          )}
-                                      </Box>
-                                  );
-                              })}
-                          </Box>
+             <AnimatePresence mode="wait" custom={slideDirection}>
+                <Box
+                    component={motion.div}
+                    key={activeCategory}
+                    custom={slideDirection}
+                    variants={{
+                        initial: (dir: number) => ({ opacity: 0, x: dir > 0 ? '100vw' : '-100vw' }),
+                        animate: { opacity: 1, x: 0 },
+                        exit: (dir: number) => ({ opacity: 0, x: dir > 0 ? '-100vw' : '100vw' })
+                    }}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                    transition={{ duration: 0.3, ease: 'easeOut' }}
+                    sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', position: 'relative', minHeight: '80vh' }}
+                >
+                    {/* The tinted background and mesh go here */}
+                    <Box sx={{ position: 'absolute', inset: 0, bgcolor: tintedBg }}>
+                        {MeshBackground}
+                    </Box>
+                    
+                    <Container maxWidth="lg" sx={{ py: { xs: 4, md: 8 }, position: 'relative', zIndex: 1, overflowX: 'hidden', flexGrow: 1 }}>
+                        {/* Content Area: Sidebar + Stage */}
+                        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: { xs: 3, md: 4 }, alignItems: { xs: 'flex-start', md: 'flex-start' } }}>
+                        
+                        {/* Premium Sub-Pillar Filters (Left on Desktop, Top on Mobile) */}
+                        <Box sx={{ 
+                            display: 'flex', 
+                            flexDirection: { xs: 'row', md: 'column' }, 
+                            flexWrap: { xs: 'wrap', md: 'nowrap' },
+                            gap: 1,
+                            width: { xs: '100%', md: '200px' },
+                            flexShrink: 0,
+                            pb: { xs: 1, md: 0 },
+                            px: { xs: 2, md: 0 },
+                        }}>
+                            {PILLARS.map(pillar => {
+                                const isActive = activeSubPillar === pillar;
+                                return (
+                                    <Box 
+                                        key={pillar}
+                                        onClick={() => setActiveSubPillar(pillar)}
+                                        sx={{
+                                            position: 'relative',
+                                            px: 2,
+                                            py: 0.75,
+                                            cursor: 'pointer',
+                                            borderRadius: '12px',
+                                            color: isActive ? themeColor : 'rgba(15, 23, 42, 0.6)',
+                                            fontWeight: isActive ? 800 : 600,
+                                            fontSize: '0.8rem',
+                                            whiteSpace: 'nowrap',
+                                            transition: 'all 0.3s ease',
+                                            '&:hover': {
+                                                color: isActive ? themeColor : '#0f172a'
+                                            }
+                                        }}
+                                    >
+                                        <Box sx={{ position: 'relative', zIndex: 1 }}>{pillar}</Box>
+                                        {isActive && (
+                                            <motion.div
+                                                layoutId={`active-subpillar-${activeCategory}`}
+                                                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                                                style={{
+                                                    position: 'absolute', 
+                                                    inset: 0,
+                                                    borderRadius: '12px',
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                                                    backdropFilter: 'blur(8px)',
+                                                    boxShadow: '0 4px 12px rgba(0,0,0,0.05), inset 0 0 0 1px rgba(255,255,255,0.5)',
+                                                    zIndex: 0
+                                                }}
+                                            />
+                                        )}
+                                    </Box>
+                                );
+                            })}
+                        </Box>
 
-                          {/* Animated Content Stage */}
-                          <Box sx={{ flex: 1, minWidth: 0, width: '100%' }}>
-                              <Box sx={{ display: 'flex', gap: 4, overflowX: 'auto', pb: 4, px: 2, scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' } }}>
-                                          {filteredItems.length === 0 ? (
-                                              <Typography sx={{ color: '#94a3b8', fontStyle: 'italic', my: 4 }}>
-                                                  No {activeSubPillar !== 'All' ? activeSubPillar.toLowerCase() : 'items'} found in this category.
-                                              </Typography>
-                                          ) : (
-                                              filteredItems.slice(0, 5).map(item => (
-                                                  <EcosystemCard key={item.id} item={item} themeColor={themeColor} />
-                                              ))
-                                          )}
-                                          
-                                          {filteredItems.length > 0 && activeCatData && (
-                                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '250px' }}>
-                                                  <Button 
-                                                      variant="outlined" 
-                                                      endIcon={<ArrowForwardIcon />}
-                                                      component={Link}
-                                                      href={`/innovations/${activeCatData.id}`}
-                                                      sx={{ borderRadius: '999px', borderColor: themeColor, color: themeColor, textTransform: 'none', fontWeight: 700, fontSize: '1.1rem', px: 4, py: 1.5, '&:hover': { bgcolor: themeColor, color: '#ffffff' } }}
-                                                  >
-                                                      View all {activeCatData.title}
-                                                  </Button>
-                                              </Box>
-                                          )}
-                              </Box>
-                          </Box>
-                      </Box>
-                  </motion.div>
-              </AnimatePresence>
-             </Container>
+                        {/* Animated Content Stage */}
+                        <Box sx={{ flex: 1, minWidth: 0, width: '100%' }}>
+                            <Box sx={{ display: 'flex', gap: 4, overflowX: 'auto', pb: 4, px: 2, scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' } }}>
+                                        {filteredItems.length === 0 ? (
+                                            <Typography sx={{ color: '#94a3b8', fontStyle: 'italic', my: 4 }}>
+                                                No {activeSubPillar !== 'All' ? activeSubPillar.toLowerCase() : 'items'} found in this category.
+                                            </Typography>
+                                        ) : (
+                                            filteredItems.slice(0, 5).map(item => (
+                                                <EcosystemCard key={item.id} item={item} themeColor={themeColor} />
+                                            ))
+                                        )}
+                                        
+                                        {filteredItems.length > 0 && activeCatData && (
+                                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '250px' }}>
+                                                <Button 
+                                                    variant="outlined" 
+                                                    endIcon={<ArrowForwardIcon />}
+                                                    component={Link}
+                                                    href={`/innovations/${activeCatData.id}`}
+                                                    sx={{ borderRadius: '999px', borderColor: themeColor, color: themeColor, textTransform: 'none', fontWeight: 700, fontSize: '1.1rem', px: 4, py: 1.5, '&:hover': { bgcolor: themeColor, color: '#ffffff' } }}
+                                                >
+                                                    View all {activeCatData.title}
+                                                </Button>
+                                            </Box>
+                                        )}
+                            </Box>
+                        </Box>
+                    </Box>
+                    </Container>
+                </Box>
+             </AnimatePresence>
           </Box>
       </Box>
   );
