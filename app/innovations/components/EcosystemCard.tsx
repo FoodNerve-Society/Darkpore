@@ -57,9 +57,7 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({ item, themeColor }
                 overflow: 'hidden',
                 bgcolor: '#f1f5f9',
                 border: 'none',
-                minWidth: { xs: '300px', md: '420px' },
-                maxWidth: '420px',
-                flexShrink: 0
+                width: '100%' // Fluid width to fit Grid
             }}
         >
             {/* WIDESCREEN MEDIA CONTAINER (16:9 / 4:3 Hybrid to prevent heavy crop) */}
@@ -121,54 +119,27 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({ item, themeColor }
                     {item.title}
                 </Typography>
 
-                {/* 2. Sub-info (Replacing Description) */}
-                <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{
-                        fontSize: '0.85rem',
-                        display: '-webkit-box',
-                        WebkitLineClamp: 1,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
-                        lineHeight: 1.5,
-                        opacity: 0.85,
-                        fontWeight: 600
-                    }}
-                >
-                    {item.authorOrOperator}
-                </Typography>
-
-                {/* 3. Action Row (Meta Info Left, Button Right) */}
-                <Stack sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
-                    <Typography variant="body2" sx={{ fontWeight: 800, color: themeColor }}>
-                        {item.metaInfo}
-                    </Typography>
-
-                    <Button
-                        variant="contained"
-                        onClick={handleAction}
-                        startIcon={actionProps.icon}
+                {/* 2. Sub-info & Meta */}
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 0.5 }}>
+                    <Typography
+                        variant="caption"
+                        color="text.secondary"
                         sx={{
-                            bgcolor: '#0f172a',
-                            color: 'white',
-                            borderRadius: 2,
-                            textTransform: 'none',
-                            fontWeight: 'bold',
-                            fontSize: '0.85rem',
-                            px: 2,
-                            py: 0.8,
-                            boxShadow: 'none',
-                            transition: 'all 0.3s ease',
-                            '&:hover': {
-                                bgcolor: themeColor,
-                                boxShadow: `0 4px 12px ${themeColor}60`
-                            }
+                            display: '-webkit-box',
+                            WebkitLineClamp: 1,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                            fontWeight: 600,
+                            opacity: 0.85
                         }}
                     >
-                         {actionProps.text}
-                    </Button>
-                </Stack>
+                        {item.authorOrOperator}
+                    </Typography>
+                    
+                    <Typography variant="caption" sx={{ fontWeight: 800, color: themeColor, flexShrink: 0, ml: 2 }}>
+                        {item.metaInfo}
+                    </Typography>
+                </Box>
             </Box>
 
             {/* Hidden link for SEO */}

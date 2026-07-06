@@ -113,16 +113,16 @@ export default function TabbedHero({ headline, subheadline, categories }: Tabbed
       <Box sx={{ minHeight: '100vh', width: '100%', maxWidth: '100vw', bgcolor: '#ffffff', color: '#0f172a', position: 'relative', display: 'flex', flexDirection: 'column', overflowX: 'hidden' }}>
           
           <Box sx={{ position: 'relative', zIndex: 1, bgcolor: '#ffffff' }}>
-              <Container maxWidth="lg" sx={{ pt: 4, pb: 2 }}>
+              <Container maxWidth="lg" sx={{ pt: { xs: 12, md: 16 }, pb: 2 }}>
                   
-                  {/* Hero Header */}
-                  <Box component={motion.div} initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, ease: "easeOut" }} onAnimationComplete={() => setHeroAnimationDone(true)} sx={{ pt: { xs: 4, md: 6 }, pb: 2, textAlign: 'center', maxWidth: 900, mx: 'auto' }}>
-                      <Typography variant="h3" component="h1" sx={{ fontWeight: 950, background: `linear-gradient(to bottom, ${themeColor} 20%, #0f172a 100%)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', mb: 1.5, fontSize: { xs: '2rem', md: '3.5rem' }, letterSpacing: '-0.05em', lineHeight: 1.1 }}>
-                          {headline || "Intelligence Hub"}
+                  {/* Premium Hero Header */}
+                  <Box component={motion.div} initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, ease: "easeOut" }} onAnimationComplete={() => setHeroAnimationDone(true)} sx={{ pt: { xs: 4, md: 6 }, pb: 4, textAlign: 'center', maxWidth: 900, mx: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <Typography variant="h2" component="h1" sx={{ fontFamily: 'var(--font-inter), sans-serif', fontWeight: 900, color: '#0f172a', mb: 2.5, fontSize: { xs: '2.5rem', md: '4.5rem' }, letterSpacing: '-0.04em', lineHeight: 1.05 }}>
+                          Explore the <Box component="span" sx={{ background: `linear-gradient(135deg, ${themeColor} 0%, #0f172a 100%)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Ecosystem</Box>
                       </Typography>
                       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6, duration: 1 }}>
-                          <Typography variant="h6" sx={{ color: 'rgba(15, 23, 42, 0.6)', mb: 3, px: 2, fontSize: { xs: '1rem', md: '1.15rem' }, lineHeight: 1.5, fontWeight: 600, maxWidth: 700, mx: 'auto' }}>
-                              {subheadline || "Select an area of focus to explore our latest deployments and insights."}
+                          <Typography variant="h6" sx={{ color: '#475569', mb: 2, px: 2, fontSize: { xs: '1rem', md: '1.25rem' }, lineHeight: 1.6, fontWeight: 500, maxWidth: 650, mx: 'auto' }}>
+                              Discover new projects, community updates, and activities across the network. Choose a category below to see what's happening.
                           </Typography>
                       </motion.div>
                   </Box>
@@ -234,32 +234,44 @@ export default function TabbedHero({ headline, subheadline, categories }: Tabbed
                         </Box>
 
                         {/* Animated Content Stage */}
-                        <Box sx={{ flex: 1, minWidth: 0, width: '100%' }}>
-                            <Box sx={{ display: 'flex', gap: 4, overflowX: 'auto', pb: 4, px: 2, scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' } }}>
+                        <Box sx={{ flex: 1, minWidth: 0, width: '100%', pb: 8 }}>
+                            <Box sx={{ 
+                                display: 'grid', 
+                                gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)', xl: 'repeat(3, 1fr)' }, 
+                                gap: 4, 
+                                px: { xs: 0, md: 2 } 
+                            }}>
                                         {filteredItems.length === 0 ? (
                                             <Typography sx={{ color: '#94a3b8', fontStyle: 'italic', my: 4 }}>
                                                 No {activeSubPillar !== 'All' ? activeSubPillar.toLowerCase() : 'items'} found in this category.
                                             </Typography>
                                         ) : (
-                                            filteredItems.slice(0, 5).map(item => (
+                                            filteredItems.slice(0, 6).map(item => (
                                                 <EcosystemCard key={item.id} item={item} themeColor={themeColor} />
                                             ))
                                         )}
-                                        
-                                        {filteredItems.length > 0 && activeCatData && (
-                                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '250px' }}>
-                                                <Button 
-                                                    variant="outlined" 
-                                                    endIcon={<ArrowForwardIcon />}
-                                                    component={Link}
-                                                    href={`/innovations/${activeCatData.id}`}
-                                                    sx={{ borderRadius: '999px', borderColor: themeColor, color: themeColor, textTransform: 'none', fontWeight: 700, fontSize: '1.1rem', px: 4, py: 1.5, '&:hover': { bgcolor: themeColor, color: '#ffffff' } }}
-                                                >
-                                                    View all {activeCatData.title}
-                                                </Button>
-                                            </Box>
-                                        )}
                             </Box>
+                            
+                            {/* CTA Block at Bottom */}
+                            {filteredItems.length > 0 && activeCatData && (
+                                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', mt: 8, textAlign: 'center', p: 4, borderRadius: 4, bgcolor: 'rgba(255,255,255,0.4)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.6)' }}>
+                                    <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a', mb: 1 }}>
+                                        Looking for more {activeCatData.title}?
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ color: '#475569', mb: 3, maxWidth: 500 }}>
+                                        Explore our dedicated repository to discover all the latest insights, deployments, and resources within this category.
+                                    </Typography>
+                                    <Button 
+                                        variant="contained" 
+                                        endIcon={<ArrowForwardIcon />}
+                                        component={Link}
+                                        href={`/innovations/${activeCatData.id}`}
+                                        sx={{ borderRadius: '999px', bgcolor: themeColor, color: '#ffffff', textTransform: 'none', fontWeight: 800, fontSize: '1rem', px: 4, py: 1.5, boxShadow: `0 8px 24px ${themeColor}40`, '&:hover': { bgcolor: '#0f172a', transform: 'translateY(-2px)', boxShadow: '0 12px 32px rgba(15,23,42,0.3)' }, transition: 'all 0.3s ease' }}
+                                    >
+                                        Explore the {activeCatData.title} Hub
+                                    </Button>
+                                </Box>
+                            )}
                         </Box>
                     </Box>
                     </Container>
