@@ -1,20 +1,18 @@
-﻿import React from 'react';
+import React from 'react';
 import { Box, Container, Typography, Grid, Card, CardContent, CardMedia, Button, CardActionArea, Chip, alpha } from '@mui/material';
 import Link from 'next/link';
 import { headers } from 'next/headers';
 import { getTenantConfig } from '@/lib/cms';
 import { getKnowledgeMaterials } from '@/lib/db/knowledge';
-import KnowledgeTeaser from './components/KnowledgeTeaser';
-import ShowcaseCarousel from './components/ShowcaseCarousel';
-import BentoGridTeaser from './components/BentoGridTeaser';
-import RadarIndexOverview from './components/RadarIndexOverview';
-import CinematicHero from './components/CinematicHero';
+import KnowledgeTeaser from '../innovations/components/KnowledgeTeaser';
+import ShowcaseCarousel from '../innovations/components/ShowcaseCarousel';
+import BentoGridTeaser from '../innovations/components/BentoGridTeaser';
+import CinematicHero from '../innovations/components/CinematicHero';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { getChallengeUpdatesBySubcategories } from '@/lib/actions/db';
 import PremiumButton from '@/components/PremiumButton';
-import { prisma } from '@/lib/db/client';
 
 export default async function InnovationsHomepage() {
   const headersList = await headers();
@@ -36,203 +34,65 @@ export default async function InnovationsHomepage() {
 
   let rawUpdates: any[] = [];
   try {
-    const upcomingEvents = await prisma.learnContent.findMany({
-      where: {
-        subcategory: { in: allSubcatIds },
-        targetDate: { gte: new Date() }
-      },
-      orderBy: { targetDate: 'asc' },
-      take: 15
-    });
-
-    rawUpdates = upcomingEvents.map(event => ({
-      title: event.title,
-      date: event.targetDate,
-      section: event.type === 'livestream' || event.type === 'class' ? 'livestreams' : 'innovations',
-      importance: 'high',
-      challengeTitle: subcatToChallengeMap[event.subcategory || '']?.title || 'Global Alert',
-      challengeId: subcatToChallengeMap[event.subcategory || '']?.id || 'global',
-      link: `/innovations/${subcatToChallengeMap[event.subcategory || '']?.id || 'global'}/${event.subcategory}/learn/article/${event.slug}`
-    }));
+    rawUpdates = await getChallengeUpdatesBySubcategories(allSubcatIds);
   } catch (e) {
-    console.warn("SERVER LOG - Database connection failed, falling back to mock data.", e);
+    console.warn("SERVER LOG - Database connection failed, falling back to mock data.");
   }
   
-  let marqueeItems = rawUpdates;
+  let marqueeItems = rawUpdates.map((u: any) => ({
+    ...u,
+    challengeTitle: subcatToChallengeMap[u.subcategoryId]?.title || 'Global Alert',
+    challengeId: subcatToChallengeMap[u.subcategoryId]?.id || 'global'
+  }));
 
-  // We no longer inject fake/mocked data if marqueeItems is empty.
-  // The frontend component handles the empty array gracefully by rendering a STANDBY state.
+  if (marqueeItems.length === 0) {
+    marqueeItems = [
+      { challengeTitle: '1. Land', challengeId: 'land', subcategoryId: 'third-party-mortgage', section: 'innovations', title: 'New Agritech Hub Launched in Nairobi', date: new Date().toISOString(), importance: 'high' },
+      { challengeTitle: '3. Inputs', challengeId: 'inputs', subcategoryId: 'improved-crop-breeding', section: 'community', title: 'Seed Distribution Network Expands to 50k Farmers', date: new Date().toISOString(), importance: 'medium' },
+      { challengeTitle: '4. Energy', challengeId: 'energy', subcategoryId: 'storage-refrigeration', section: 'library', title: 'Research Report: Cold Chain Innovations in East Africa', date: new Date().toISOString(), importance: 'high' },
+      { challengeTitle: '6. Post-Harvest Loss', challengeId: 'loss', subcategoryId: 'tomato', section: 'livestreams', title: 'Commodity Trading Strategies Masterclass', date: new Date().toISOString(), importance: 'low' },
+    ];
+  }
 
-  // Fetch recent learning materials directly from the database
+  // Fetch recent learning materials from the simulated database
   let recentIntelligence: any[] = [];
   try {
-    const recentLC = await prisma.learnContent.findMany({
-      orderBy: { createdAt: 'desc' },
-      take: 20,
-      include: {
-        article: {
-          include: {
-            blocks: {
-              orderBy: { orderIndex: 'asc' }
-            }
-          }
-        }
-      }
-    });
-
-    recentIntelligence = recentLC.map((lc: any) => {
-      // Find the first image block to use as thumbnail
-      const imageBlock = lc.article?.blocks?.find((b: any) => b.type === 'image' && b.payload?.url);
-      return {
-        id: lc.id,
-        challengeId: lc.challengeId || 'global',
-        subcategoryId: lc.subcategory || 'general',
-        slug: lc.slug,
-        title: lc.title,
-        type: lc.type, // 'article', 'video', 'class', 'livestream'
-        thumbnailUrl: lc.thumbnailUrl || imageBlock?.payload?.url || '/images/default-thumbnail.jpg',
-        author: lc.authorName || 'Society Architect',
-        dateAdded: lc.createdAt,
-        readTime: lc.type === 'video' || lc.type === 'livestream' ? 'Watch' : '5 min read'
-      };
-    });
-
-    // Fallback if DB is empty
-    if (recentIntelligence.length === 0) {
-      const mockData = await getKnowledgeMaterials({ tenantId, limit: 20 });
-      // Map mock types to the new types if needed
-      recentIntelligence = mockData.map(m => ({
-        ...m,
-        type: m.type === 'pdf' ? 'class' : m.type
-      }));
-    }
-  } catch (e) {
-    console.warn("SERVER LOG - Database connection failed, falling back to mock intelligence.");
-    const mockData = await getKnowledgeMaterials({ tenantId, limit: 20 });
-    recentIntelligence = mockData.map(m => ({
-      ...m,
-      type: m.type === 'pdf' ? 'class' : m.type
-    }));
-  }
-
-  // Pick all challenges for BentoGrid and fallback slideshow
-  const allChallenges = homepageConfig.challenges;
-
-  // Fetch real database stats and slideshow content for the Hero
-  let learnContentCount = 142;
-  let userCount = 12500;
-  let slideshowItems: { image: string, title: string }[] = [];
-
-  try {
-    const [lcCount, uCount, recentLC] = await Promise.all([
-      prisma.learnContent.count(),
-      prisma.user.count(),
-      prisma.learnContent.findMany({
-        orderBy: { createdAt: 'desc' },
-        take: 5,
-        include: {
-          article: {
-            include: {
-              blocks: {
-                orderBy: { orderIndex: 'asc' }
-              }
-            }
-          }
-        }
-      })
-    ]);
-    
-    learnContentCount = lcCount;
-    userCount = uCount;
-    slideshowItems = recentLC.map((lc: any) => {
-      // Find the first image block to use as thumbnail
-      const imageBlock = lc.article?.blocks?.find((b: any) => b.type === 'image' && b.payload?.url);
-      const imageUrl = imageBlock ? imageBlock.payload.url : (lc.thumbnailUrl || '');
-      
-      // Determine proper routing parameters
-      const challengeId = subcatToChallengeMap[lc.subcategory]?.id || lc.category || 'land';
-      const subcatId = lc.subcategory || 'third-party-mortgage';
-
-      return {
-        image: imageUrl,
-        title: lc.title,
-        link: `/innovations/${challengeId}/${subcatId}/learn/article/${lc.slug}`,
-        updatedAt: lc.updatedAt,
-        createdAt: lc.createdAt
-      };
+    recentIntelligence = await getKnowledgeMaterials({
+      tenantId: tenantId,
+      limit: 20 // Fetch a good number so Client component can filter
     });
   } catch (e) {
-    console.warn("SERVER LOG - Failed to fetch hero stats from DB.");
-  }
-
-  // Fallback to static challenge images if DB is empty or fails
-  if (slideshowItems.length === 0) {
-    slideshowItems = allChallenges
-      .filter((c: any) => c.imageUrl)
-      .map((c: any) => ({
-        image: c.imageUrl,
-        title: c.title
-      }));
+    console.warn("SERVER LOG - Database connection failed, falling back to empty intelligence.");
   }
 
   console.log("SERVER LOG - Normalized Tenant ID:", tenantId);
   console.log("SERVER LOG - Recent Intelligence count:", recentIntelligence.length);
 
-  // Fetch Live Active Deployments
-  let activeDeployments: any[] = [];
-  try {
-    const rawCampaigns = await prisma.campaign.findMany({
-      where: { status: 'active_deployment' },
-      include: { organizer: true },
-      take: 5
-    });
-    
-    // Map to the ShowcaseCarousel props format
-    activeDeployments = rawCampaigns.map((c: any) => ({
-      id: c.id,
-      title: c.title,
-      description: c.description,
-      imageUrl: c.imageUrl,
-      type: c.tier === 'initiative' ? 'Initiative' : c.tier === 'innovation' ? 'Innovation' : 'Venture',
-      origin: c.originTag || 'Core Deployment',
-      operator: {
-        name: c.organizer?.name || 'Society Hub',
-        avatarUrl: c.organizer?.avatarUrl || '/images/default-avatar.png'
-      },
-      traction: c.tractionMetric || 'Active Operations',
-      link: `/projects`
-    }));
-  } catch (e) {
-    console.warn("SERVER LOG - Failed to fetch active deployments from DB.", e);
-  }
+  // Pick a few challenges for the teaser (we will just use all of them)
+  const allChallenges = homepageConfig.challenges;
 
-  // Fallback to static CMS data if the database is completely empty
-  if (activeDeployments.length === 0) {
-    activeDeployments = homepageConfig.showcaseProjects.map((p: any) => ({
-      ...p,
-      type: 'Venture',
-      origin: 'Core Platform',
-      operator: { name: 'Society Base', avatarUrl: '/images/default-avatar.png' },
-      traction: 'Recently Deployed'
-    }));
-  }
+  // Extract images for the hero slideshow in the new SlideshowItem format
+  const heroSlideshowImages = allChallenges.map(c => ({
+    image: c.imageUrl || "https://images.unsplash.com/photo-1509391366360-1e97f52cefd3?w=800",
+    title: c.title || "Challenge"
+  }));
 
   return (
-    <Box sx={{ bgcolor: '#050505', minHeight: '100vh' }}>
+    <Box sx={{ bgcolor: 'background.default' }}>
       
-      {/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+      {/* ═══════════════════════════════════════════════════════════
           SECTION 1: THE CINEMATIC HERO
           Full viewport, animated, glowing orbs, stats cards
-      ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
+      ═══════════════════════════════════════════════════════════ */}
       <CinematicHero 
         tenantName={tenant.name}
         headline={homepageConfig.heroHeadline}
         subheadline={homepageConfig.heroSubheadline}
         stats={{
-          activeSolutions: learnContentCount,
-          communitySize: userCount
+          activeSolutions: rawUpdates.length > 0 ? rawUpdates.length : 142,
+          communitySize: recentIntelligence.length > 0 ? recentIntelligence.length * 625 : 12500
         }}
-        slideshowItems={slideshowItems}
+        slideshowItems={heroSlideshowImages}
       />
 
 
@@ -241,142 +101,132 @@ export default async function InnovationsHomepage() {
           Auto-scrolling horizontal ticker of recent updates
       ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
       <Box sx={{ 
-        py: marqueeItems.length === 0 ? 3 : 4, 
+        py: 4, 
         bgcolor: '#050505',
         color: 'white',
         overflow: 'hidden',
         borderTop: '1px solid rgba(255,255,255,0.08)',
         borderBottom: '1px solid rgba(255,255,255,0.08)',
       }}>
-        {marqueeItems.length === 0 ? (
-          <Box sx={{ textAlign: 'center' }}>
-            <Typography variant="overline" sx={{ color: 'rgba(255,255,255,0.4)', fontWeight: 700, letterSpacing: 3, display: 'block', mb: 0.5 }}>
-              GLOBAL ALERTS
-            </Typography>
-            <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.5)', fontStyle: 'italic', fontSize: '0.9rem' }}>
-              System Alerts ΓÇö Monitoring Ecosystem... Check back for time updates.
-            </Typography>
-          </Box>
-        ) : (
-          <>
-            <Box sx={{ display: 'flex', alignItems: 'center', px: 4, mb: 2 }}>
-              <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#ff4444', mr: 1.5, animation: 'pulse 2s infinite', '@keyframes pulse': { '0%, 100%': { opacity: 1 }, '50%': { opacity: 0.4 } } }} />
-              <Typography variant="overline" sx={{ color: 'rgba(255,255,255,0.4)', fontWeight: 700, letterSpacing: 3 }}>
-                GLOBAL ALERTS
-              </Typography>
-            </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', px: 4, mb: 2 }}>
+          <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#ff4444', mr: 1.5, animation: 'pulse 2s infinite', '@keyframes pulse': { '0%, 100%': { opacity: 1 }, '50%': { opacity: 0.4 } } }} />
+          <Typography variant="overline" sx={{ color: 'rgba(255,255,255,0.4)', fontWeight: 700, letterSpacing: 3 }}>
+            GLOBAL ALERTS
+          </Typography>
+        </Box>
+        
+        <Box sx={{
+          display: 'flex',
+          animation: 'marquee 40s linear infinite',
+          '&:hover': { animationPlayState: 'paused' },
+          '@keyframes marquee': {
+            '0%': { transform: 'translateX(0)' },
+            '100%': { transform: 'translateX(-50%)' },
+          },
+          width: 'max-content',
+        }}>
+          {/* Double the items for seamless infinite loop */}
+          {[...marqueeItems, ...marqueeItems].map((item, idx) => {
+            const eventDate = new Date(item.date);
+            const today = new Date();
             
-            <Box sx={{
-              display: 'flex',
-              animation: 'marquee 40s linear infinite',
-              '&:hover': { animationPlayState: 'paused' },
-              '@keyframes marquee': {
-                '0%': { transform: 'translateX(0)' },
-                '100%': { transform: 'translateX(-50%)' },
-              },
-              width: 'max-content',
-            }}>
-              {/* Double the items for seamless infinite loop */}
-              {[...marqueeItems, ...marqueeItems].map((item: any, idx) => {
-                let statusLabel = 'ACTIVE';
-                let statusColor = '#ffffff';
+            // Heuristic for time-sensitive language
+            const isToday = eventDate.toDateString() === today.toDateString();
+            const isFuture = eventDate > today;
+            
+            let statusLabel = "POSTED";
+            let statusValue = eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            let statusColor = "rgba(255,255,255,0.4)";
+            let valueColor = "rgba(255,255,255,0.7)";
 
-                if (item.date) {
-                  const diffDays = Math.ceil((new Date(item.date).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
-                  if (diffDays < 3) {
-                    statusLabel = 'HAPPENING';
-                    statusColor = '#ff1744';
-                  } else if (diffDays < 7) {
-                    statusLabel = 'ACTION REQ';
-                    statusColor = '#ff9100';
-                  } else {
-                    statusLabel = 'UPCOMING';
-                    statusColor = '#2196f3';
-                  }
-                }
+            if (item.section === 'livestreams' || item.section === 'activities') {
+              if (isToday || item.importance === 'high') {
+                statusLabel = "HAPPENING";
+                statusValue = "LIVE NOW";
+                statusColor = "#00e676";
+                valueColor = "#00e676";
+              } else if (isFuture) {
+                statusLabel = "STARTS";
+                statusColor = "#ff9933";
+                valueColor = "white";
+              }
+            } else if (item.section === 'jobs' || item.section === 'community') {
+              if (isFuture || item.importance === 'high') {
+                statusLabel = "CLOSES BY";
+                statusColor = "#ff9933";
+                valueColor = "white";
+              }
+            } else if (item.importance === 'high') {
+               statusLabel = "ACTION REQ";
+               statusColor = "#ff4444";
+               valueColor = "white";
+            }
 
-                return (
-                  <Box key={idx} sx={{ 
-                    position: 'relative',
-                    background: 'rgba(15, 15, 15, 0.6)',
-                    backdropFilter: 'blur(16px)',
-                    borderRadius: '100px',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
-                    transition: 'all 0.4s cubic-bezier(.4,0,.2,1)',
-                    '&:hover': {
-                      background: 'rgba(25, 25, 25, 0.9)',
-                      borderColor: 'rgba(255,255,255,0.2)',
-                      transform: 'translateY(-2px)'
-                    },
-                    mr: 4,
-                    display: 'flex',
-                    alignItems: 'center',
-                    height: 54,
-                    pr: 4,
-                    pl: 1.5,
-                    my: 2,
-                  }}>
-                    <Link href={item.link || `/${item.challengeId}/${item.subcategoryId}/${item.section}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', width: '100%', gap: 12 }}>
-                      
-                      <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-                        <Box sx={{ 
-                           width: 36, height: 36, 
-                           borderRadius: '50%',
-                           bgcolor: alpha(statusColor, 0.15),
-                           border: `1px solid ${alpha(statusColor, 0.5)}`,
-                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                           boxShadow: `0 0 12px ${alpha(statusColor, 0.4)}`,
-                        }}>
-                           <Box sx={{
-                               width: 8, height: 8, borderRadius: '50%', bgcolor: statusColor,
-                               animation: (statusLabel === 'HAPPENING' || statusLabel === 'ACTION REQ') ? 'urgentPulse 2s ease-in-out infinite' : 'none',
-                           }} />
-                        </Box>
-                      </Box>
-
-                      {/* Status & Title Stack */}
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.2 }}>
-                        <Typography variant="caption" sx={{ color: statusColor, fontWeight: 900, letterSpacing: 1.5, fontSize: '0.6rem', whiteSpace: 'nowrap', textTransform: 'uppercase' }}>
-                           {statusLabel} <span style={{ color: 'rgba(255,255,255,0.5)', margin: '0 4px' }}>//</span>
-                        </Typography>
-                        <Typography variant="body1" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 700, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: { xs: 200, sm: 300, md: 400, lg: 500 } }}>
-                          {item.title}
-                        </Typography>
-                      </Box>
-
-                      {/* Context Text */}
-                      {item.challengeTitle && (
-                        <Box sx={{ ml: 4, flexShrink: 0, borderLeft: '1px solid rgba(255,255,255,0.1)', pl: 2.5, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                          <Typography sx={{ color: 'rgba(255,255,255,0.3)', fontWeight: 800, fontSize: '0.5rem', letterSpacing: 1, mb: 0.2 }}>
-                            CHALLENGE
-                          </Typography>
-                          <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 600, fontSize: '0.65rem', letterSpacing: 1, textTransform: 'uppercase' }}>
-                            {item.challengeTitle.replace(/^\d+\.\s*/, '')}
-                          </Typography>
-                        </Box>
-                      )}
-
-                    </Link>
+            return (
+              <Box key={idx} sx={{ 
+                position: 'relative',
+                background: 'linear-gradient(90deg, rgba(10,10,10,0.85) 0%, rgba(20,20,20,0.2) 100%)',
+                backdropFilter: 'blur(8px)',
+                borderRight: '1px solid rgba(255,255,255,0.05)',
+                borderBottom: `2px solid ${statusColor}`,
+                transition: 'all 0.3s cubic-bezier(.4,0,.2,1)',
+                '&:hover': {
+                  background: 'linear-gradient(90deg, rgba(20,20,20,0.95) 0%, rgba(30,30,30,0.3) 100%)',
+                },
+                mr: 3,
+                display: 'flex',
+                alignItems: 'center',
+                height: 64,
+                pr: 4,
+                pl: 3,
+              }}>
+                <Link href={`/${item.challengeId}/${item.subcategoryId}/${item.section}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', width: '100%', gap: 16 }}>
+                  
+                  {/* Glowing Icon Hexagon */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0, mr: 1 }}>
+                    <Box sx={{ 
+                       width: 16, height: 16, bgcolor: statusColor, 
+                       clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
+                       boxShadow: `0 0 12px ${statusColor}`,
+                       animation: (statusLabel === 'HAPPENING' || statusLabel === 'ACTION REQ') ? 'urgentPulse 2s ease-in-out infinite' : 'none',
+                    }} />
                   </Box>
-                );
-              })}
-            </Box>
-          </>
-        )}
-      </Box>
 
-      {/* RADAR INDEX OVERVIEW SECTION */}
-      <RadarIndexOverview />
+                  {/* Status & Title Stack */}
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.2 }}>
+                    <Typography variant="caption" sx={{ color: statusColor, fontWeight: 900, letterSpacing: 1.5, fontSize: '0.6rem', whiteSpace: 'nowrap', textTransform: 'uppercase' }}>
+                       {statusLabel === 'POSTED' ? 'NEW' : statusLabel} <span style={{ color: 'rgba(255,255,255,0.5)', margin: '0 4px' }}>//</span> <span style={{ color: valueColor, fontWeight: 600 }}>{statusValue}</span>
+                    </Typography>
+                    <Typography variant="body1" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 700, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: { xs: 200, sm: 300, md: 400, lg: 500 } }}>
+                      {item.title}
+                    </Typography>
+                  </Box>
+
+                  {/* Context Text */}
+                  <Box sx={{ ml: 4, flexShrink: 0, borderLeft: '1px solid rgba(255,255,255,0.1)', pl: 2.5, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <Typography sx={{ color: 'rgba(255,255,255,0.3)', fontWeight: 800, fontSize: '0.5rem', letterSpacing: 1, mb: 0.2 }}>
+                      CHALLENGE
+                    </Typography>
+                    <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 600, fontSize: '0.65rem', letterSpacing: 1, textTransform: 'uppercase' }}>
+                      {item.challengeTitle.replace(/^\d+\.\s*/, '')}
+                    </Typography>
+                  </Box>
+
+                </Link>
+              </Box>
+            );
+          })}
+        </Box>
+      </Box>
 
 
       {/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
           SECTION 3: THE CHALLENGES TEASER
           Dark manifesto excerpt + premium challenge cards
       ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
-      <Box id="section-challenges" sx={{ 
-        pt: { xs: 4, md: 6 }, 
-        pb: { xs: 4, md: 5 }, 
+      <Box sx={{ 
+        pt: { xs: 12, md: 18 }, 
+        pb: { xs: 12, md: 18 }, 
         px: 2, 
         position: 'relative',
         bgcolor: '#050505', 
@@ -392,23 +242,23 @@ export default async function InnovationsHomepage() {
         backgroundSize: '50px 50px'
       }}>
         <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
-          <Box sx={{ maxWidth: '800px', mb: 3 }}>
-            <Typography variant="overline" sx={{ color: 'error.main', fontWeight: 900, letterSpacing: 3, mb: 1, display: 'block' }}>
+          <Box sx={{ maxWidth: '800px', mb: 10 }}>
+            <Typography variant="overline" sx={{ color: 'error.main', fontWeight: 900, letterSpacing: 3, mb: 3, display: 'block' }}>
               THE CHALLENGES
             </Typography>
-            <Typography variant="h3" sx={{ fontWeight: 900, mb: 1, lineHeight: 1.1, letterSpacing: '-0.02em', fontSize: { xs: '2rem', md: '2.5rem' } }}>
-              Systemic Fault Lines Isolated.
+            <Typography variant="h2" sx={{ fontWeight: 900, mb: 4, lineHeight: 1.1, letterSpacing: '-0.02em' }}>
+              We mapped the supply chain to isolate exact points of failure.
             </Typography>
-            <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 400, lineHeight: 1.6, fontSize: '1rem' }}>
-              Explore the core infrastructure deficits preventing scale.
+            <Typography variant="h5" sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 400, lineHeight: 1.7 }}>
+              Keep scrolling to explore the systemic infrastructure deficits preventing scale. Each one has a dedicated dashboard with active solutions.
             </Typography>
           </Box>
 
-          <Box sx={{ mt: 2 }}>
+          <Box sx={{ mt: 6 }}>
             <BentoGridTeaser challenges={allChallenges} />
           </Box>
 
-          <Box sx={{ mt: 4, textAlign: 'center', position: 'relative', zIndex: 2 }}>
+          <Box sx={{ mt: 10, textAlign: 'center', position: 'relative', zIndex: 2 }}>
             <Link href="/challenges" passHref style={{ textDecoration: 'none' }}>
               <PremiumButton 
                 variant="outlined" 
@@ -419,8 +269,8 @@ export default async function InnovationsHomepage() {
                   color: 'white', 
                   borderColor: 'rgba(255,255,255,0.15)', 
                   px: 6, 
-                  py: 1.5,
-                  fontSize: '0.9rem',
+                  py: 2,
+                  fontSize: '1rem',
                   fontWeight: 'bold',
                   '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.1)', boxShadow: '0 0 20px rgba(255,255,255,0.2)' },
                 }}
@@ -437,33 +287,31 @@ export default async function InnovationsHomepage() {
           SECTION 4: THE INNOVATIONS SHOWCASE
           Horizontal Scrollable Cinematic Projects
       ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
-      <Box id="section-deployments" sx={{ bgcolor: '#022c22', color: 'white', overflow: 'hidden' }}>
+      <Box sx={{ bgcolor: '#022c22', color: 'white', overflow: 'hidden' }}>
         {/* Section Header */}
-        <Container maxWidth="lg" sx={{ pt: { xs: 8, md: 10 }, pb: 4 }}>
+        <Container maxWidth="lg" sx={{ pt: { xs: 10, md: 15 }, pb: 4 }}>
           <Box sx={{ maxWidth: '700px' }}>
-            <Typography variant="overline" sx={{ color: 'primary.light', fontWeight: 900, letterSpacing: 3, mb: 1, display: 'block' }}>
+            <Typography variant="overline" sx={{ color: 'primary.light', fontWeight: 900, letterSpacing: 3, mb: 2, display: 'block' }}>
               ACTIVE DEPLOYMENTS
             </Typography>
-            <Typography variant="h3" sx={{ fontWeight: 900, mb: 2, lineHeight: 1.1 }}>
-              Building core infrastructure.
+            <Typography variant="h3" sx={{ fontWeight: 900, mb: 3, lineHeight: 1.2 }}>
+              We don&apos;t just fund startups. We build infrastructure.
             </Typography>
-            <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.5)', fontWeight: 400, lineHeight: 1.6 }}>
-              Explore the massive operational deployments gaining traction.
+            <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.5)', fontWeight: 400, lineHeight: 1.7 }}>
+              Scroll to explore the massive infrastructure projects currently gaining traction in our ecosystem.
             </Typography>
           </Box>
         </Container>
 
         {/* Interactive Showcase Carousel */}
-        <ShowcaseCarousel projects={activeDeployments} />
+        <ShowcaseCarousel projects={homepageConfig.showcaseProjects} />
       </Box>
 
       {/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
           SECTION 5: THE KNOWLEDGE CENTER TEASER
           Premium intelligence cards (Client Component)
       ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
-      <Box id="section-knowledge">
-        <KnowledgeTeaser materials={recentIntelligence} />
-      </Box>
+      <KnowledgeTeaser materials={recentIntelligence} />
 
 
       {/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
