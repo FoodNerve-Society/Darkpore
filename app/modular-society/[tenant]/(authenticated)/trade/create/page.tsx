@@ -15,6 +15,7 @@ import {
   alpha,
   Chip,
   IconButton,
+  CircularProgress,
 } from "@mui/material";
 
 import { useRouter } from "next/navigation";
@@ -26,6 +27,7 @@ import {
   type RankLevel,
 } from "@/context/SocietyContext";
 import { type TradeCategory } from "@/lib/db/society";
+import { createTradeListing } from "@/lib/actions/trade";
 
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
@@ -55,11 +57,23 @@ const glassCard = {
 
 // ── Category options ───────────────────────────────────────
 const CATEGORY_OPTIONS: {
-  value: TradeCategory;
+  value: string;
   label: string;
   emoji: string;
   description: string;
 }[] = [
+  {
+    value: "jobs",
+    label: "Jobs",
+    emoji: "👷",
+    description: "Hire talent or post work opportunities in the food system",
+  },
+  {
+    value: "opportunities",
+    label: "Opportunities",
+    emoji: "💡",
+    description: "Grants, RFPs, fellowships, and backing for ventures",
+  },
   {
     value: "flash-sale",
     label: "Flash Sale",
@@ -84,16 +98,10 @@ const CATEGORY_OPTIONS: {
     emoji: "🔍",
     description: "Post a request for a specific commodity or service",
   },
-  {
-    value: "jobs",
-    label: "Jobs",
-    emoji: "👷",
-    description: "Hire talent or post work opportunities in the food system",
-  },
 ];
 
 // ── Step definitions ───────────────────────────────────────
-const STEPS = ["Title", "Category", "Pricing", "Description", "Image"];
+const STEPS = ["Title", "Category", "Location", "Pricing", "Description", "Image"];
 
 // ════════════════════════════════════════════════════════════
 // CREATE LISTING PAGE
@@ -105,10 +113,13 @@ export default function CreateListingPage() {
   // Wizard state
   const [activeStep, setActiveStep] = useState(0);
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState<TradeCategory | "">("");
+  const [category, setCategory] = useState("");
+  const [location, setLocation] = useState("");
+  const [lga, setLga] = useState("");
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   // If still loading profile
@@ -195,9 +206,10 @@ export default function CreateListingPage() {
     switch (step) {
       case 0: return title.trim().length >= 5;
       case 1: return category !== "";
-      case 2: return price.trim().length > 0;
-      case 3: return description.trim().length >= 10;
-      case 4: return true;
+      case 2: return location.trim().length > 0 && lga.trim().length > 0;
+      case 3: return price.trim().length > 0;
+      case 4: return description.trim().length >= 10;
+      case 5: return true;
       default: return false;
     }
   };
@@ -212,9 +224,26 @@ export default function CreateListingPage() {
 
   const handleBack = () => setActiveStep((prev) => prev - 1);
 
-  const handleSubmit = () => {
-    setSubmitted(true);
-    setTimeout(() => router.push("/society/trade"), 2500);
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    const res = await createTradeListing({
+      category: category as string,
+      title,
+      description,
+      priceOrAsk: price,
+      location,
+      lga,
+      postedById: profile.id,
+      nervePointsCost: 0 // Free for verified users right now
+    });
+
+    if (res.success) {
+      setSubmitted(true);
+      setTimeout(() => router.push("/society/trade"), 2500);
+    } else {
+      alert(res.error || "Failed to publish listing.");
+      setIsSubmitting(false);
+    }
   };
 
   if (submitted) {
@@ -275,17 +304,26 @@ export default function CreateListingPage() {
         )}
         {activeStep === 2 && (
           <Box>
-            <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5, fontSize: "1.1rem" }}>Set your price</Typography>
-            <TextField fullWidth label="Price or Ask" value={price} onChange={(e) => setPrice(e.target.value)} sx={{ mt: 2 }} />
+            <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5, fontSize: "1.1rem" }}>Where is this available?</Typography>
+            <Typography variant="body2" sx={{ color: "text.secondary", mb: 2 }}>For digital opportunities, enter "Remote" or "Online".</Typography>
+            <TextField fullWidth label="State / Region" value={location} onChange={(e) => setLocation(e.target.value)} sx={{ mb: 2 }} />
+            <TextField fullWidth label="Local Government Area (LGA) or City" value={lga} onChange={(e) => setLga(e.target.value)} />
           </Box>
         )}
         {activeStep === 3 && (
           <Box>
-            <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5, fontSize: "1.1rem" }}>Tell us more</Typography>
-            <TextField fullWidth multiline rows={5} label="Description" value={description} onChange={(e) => setDescription(e.target.value)} sx={{ mt: 2 }} />
+            <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5, fontSize: "1.1rem" }}>Set your price or compensation</Typography>
+            <Typography variant="body2" sx={{ color: "text.secondary", mb: 2 }}>E.g. "$5,000 Grant", "N150,000/mo", or "Equity".</Typography>
+            <TextField fullWidth label="Price or Ask" value={price} onChange={(e) => setPrice(e.target.value)} sx={{ mt: 1 }} />
           </Box>
         )}
         {activeStep === 4 && (
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5, fontSize: "1.1rem" }}>Tell us more</Typography>
+            <TextField fullWidth multiline rows={5} label="Description & Requirements" value={description} onChange={(e) => setDescription(e.target.value)} sx={{ mt: 2 }} />
+          </Box>
+        )}
+        {activeStep === 5 && (
           <Box>
             <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5, fontSize: "1.1rem" }}>Add an Image (Optional)</Typography>
             <Box sx={{ mt: 2, p: 4, border: `2px dashed ${alpha("#000", 0.2)}`, borderRadius: "14px", textAlign: "center" }}>
@@ -297,9 +335,14 @@ export default function CreateListingPage() {
       </Paper>
 
       <Box sx={{ display: "flex", justifyContent: "space-between", mt: 3, gap: 2 }}>
-        <Button disabled={activeStep === 0} onClick={handleBack} sx={{ fontWeight: 700, color: "text.secondary" }}>Back</Button>
-        <Button variant="contained" onClick={handleNext} disabled={!isStepValid(activeStep)} sx={{ bgcolor: EMERALD, "&:hover": { bgcolor: EMERALD_DARK } }}>
-          {activeStep === STEPS.length - 1 ? "Publish Listing" : "Continue"}
+        <Button disabled={activeStep === 0 || isSubmitting} onClick={handleBack} sx={{ fontWeight: 700, color: "text.secondary" }}>Back</Button>
+        <Button 
+          variant="contained" 
+          onClick={handleNext} 
+          disabled={!isStepValid(activeStep) || isSubmitting} 
+          sx={{ bgcolor: EMERALD, "&:hover": { bgcolor: EMERALD_DARK }, minWidth: 120 }}
+        >
+          {isSubmitting ? <CircularProgress size={24} color="inherit" /> : (activeStep === STEPS.length - 1 ? "Publish Listing" : "Continue")}
         </Button>
       </Box>
     </Box>
