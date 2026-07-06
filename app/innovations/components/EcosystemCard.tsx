@@ -117,7 +117,7 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({ item, themeColor }
                 gap: 1
             }}>
                 {/* 1. Title */}
-                <Typography variant="body1" fontWeight="700" sx={{ color: '#0f172a', lineHeight: 1.25, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                <Typography variant="body1" sx={{ fontWeight: 700, color: '#0f172a', lineHeight: 1.25, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                     {item.title}
                 </Typography>
 
@@ -140,8 +140,8 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({ item, themeColor }
                 </Typography>
 
                 {/* 3. Action Row (Meta Info Left, Button Right) */}
-                <Stack direction="row" justifyContent="space-between" alignItems="center" mt={1}>
-                    <Typography variant="body2" fontWeight="800" sx={{ color: themeColor }}>
+                <Stack sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 800, color: themeColor }}>
                         {item.metaInfo}
                     </Typography>
 

@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { CategoryTabMenu, Category } from './CategoryTabMenu';
-import { SearchBar } from './SearchBar';
 import { EcosystemCard } from './EcosystemCard';
 
 export type EcosystemType = 'Intelligence' | 'Innovations' | 'Community' | 'Activities' | 'Jobs';
@@ -42,7 +41,6 @@ export default function TabbedHero({ headline, subheadline, categories }: Tabbed
   const [activeCategory, setActiveCategory] = useState<string>(categories[0]?.id || '');
   const [activeSubPillar, setActiveSubPillar] = useState<'All' | EcosystemType>('All');
   const [slideDirection, setSlideDirection] = useState<number>(0);
-  const [searchTerm, setSearchTerm] = useState("");
   const [heroAnimationDone, setHeroAnimationDone] = useState(false);
 
   const activeCatData = categories.find(c => c.id === activeCategory) || categories[0];
@@ -86,7 +84,7 @@ export default function TabbedHero({ headline, subheadline, categories }: Tabbed
       count: cat.items.length
   }));
   
-  // Filter by Category -> Pillar -> Search
+  // Filter by Category -> Pillar
   const filteredItems = useMemo(() => {
       if (!activeCatData) return [];
       let result = activeCatData.items;
@@ -95,12 +93,8 @@ export default function TabbedHero({ headline, subheadline, categories }: Tabbed
           result = result.filter(item => item.type === activeSubPillar);
       }
       
-      if (searchTerm) {
-          const lower = searchTerm.toLowerCase();
-          result = result.filter(a => a.title.toLowerCase().includes(lower) || a.authorOrOperator.toLowerCase().includes(lower));
-      }
       return result;
-  }, [activeCatData, activeSubPillar, searchTerm]);
+  }, [activeCatData, activeSubPillar]);
 
   // Map Pillar Types to distinct colors
   const getBadgeColor = (type: EcosystemType) => {
@@ -115,14 +109,14 @@ export default function TabbedHero({ headline, subheadline, categories }: Tabbed
   };
 
   return (
-      <Box sx={{ minHeight: '100vh', width: '100%', maxWidth: '100vw', bgcolor: tintedBg, transition: 'background-color 0.8s ease', color: '#0f172a', position: 'relative', display: 'flex', flexDirection: 'column', overflowX: 'hidden' }}>
-          {MeshBackground}
-          <Box sx={{ position: 'relative', zIndex: 1 }}>
-              <Container maxWidth="lg" sx={{ py: 4, overflowX: 'hidden' }}>
+      <Box sx={{ minHeight: '100vh', width: '100%', maxWidth: '100vw', bgcolor: '#ffffff', color: '#0f172a', position: 'relative', display: 'flex', flexDirection: 'column', overflowX: 'hidden' }}>
+          
+          <Box sx={{ position: 'relative', zIndex: 1, bgcolor: '#ffffff' }}>
+              <Container maxWidth="lg" sx={{ pt: 4, pb: 2, overflowX: 'hidden' }}>
                   
                   {/* Hero Header */}
                   <Box component={motion.div} initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, ease: "easeOut" }} onAnimationComplete={() => setHeroAnimationDone(true)} sx={{ pt: { xs: 6, md: 10 }, pb: 4, textAlign: 'center', maxWidth: 900, mx: 'auto' }}>
-                      <Typography variant="h3" component="h1" fontWeight="950" sx={{ background: `linear-gradient(to bottom, ${themeColor} 20%, #0f172a 100%)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', mb: 2.5, fontSize: { xs: '2.4rem', md: '4.5rem' }, letterSpacing: '-0.05em', lineHeight: 1.1 }}>
+                      <Typography variant="h3" component="h1" sx={{ fontWeight: 950, background: `linear-gradient(to bottom, ${themeColor} 20%, #0f172a 100%)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', mb: 2.5, fontSize: { xs: '2.4rem', md: '4.5rem' }, letterSpacing: '-0.05em', lineHeight: 1.1 }}>
                           {headline || "Intelligence Hub"}
                       </Typography>
                       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6, duration: 1 }}>
@@ -134,13 +128,6 @@ export default function TabbedHero({ headline, subheadline, categories }: Tabbed
 
                   {/* Staggered Reveal Content */}
                   <Box component={motion.div} initial={{ opacity: 0, y: 20 }} animate={heroAnimationDone ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }} transition={{ duration: 0.8, ease: "easeOut" }}>
-                      
-                      {/* Search Anchor */}
-                      <Box sx={{ position: 'sticky', top: { xs: 20, md: 20 }, zIndex: 10, pb: 2, scrollMarginTop: '160px' }}>
-                          <Box sx={{ mx: 2, py: 1, px: 2 }}>
-                              <SearchBar value={searchTerm} onChange={setSearchTerm} themeColor={themeColor} />
-                          </Box>
-                      </Box>
 
                       {/* Main Category Tabs */}
                       <CategoryTabMenu
@@ -156,22 +143,45 @@ export default function TabbedHero({ headline, subheadline, categories }: Tabbed
                           }}
                           themeColor={themeColor}
                       />
+                  </Box>
+              </Container>
+          </Box>
 
-                      {/* Content Area: Sidebar + Stage */}
-                      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: { xs: 3, md: 4 }, alignItems: { xs: 'flex-start', md: 'flex-start' }, mt: 2 }}>
+          {/* NEW Tinted Content Area */}
+          <Box sx={{ position: 'relative', flexGrow: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', borderTopLeftRadius: { xs: '32px', md: '48px' }, borderTopRightRadius: { xs: '32px', md: '48px' } }}>
+             {/* The tinted background and mesh go here */}
+             <Box sx={{ position: 'absolute', inset: 0, bgcolor: tintedBg, transition: 'background-color 0.8s ease' }}>
+                {MeshBackground}
+             </Box>
+             
+             <Container maxWidth="lg" sx={{ py: { xs: 4, md: 8 }, position: 'relative', zIndex: 1, overflowX: 'hidden', flexGrow: 1 }}>
+                  <AnimatePresence mode="wait" custom={slideDirection}>
+                      <motion.div
+                          key={activeCategory}
+                          custom={slideDirection}
+                          variants={{
+                              initial: (dir: number) => ({ opacity: 0, x: dir > 0 ? 30 : -30 }),
+                              animate: { opacity: 1, x: 0 },
+                              exit: (dir: number) => ({ opacity: 0, x: dir > 0 ? -30 : 30 })
+                          }}
+                          initial="initial"
+                          animate="animate"
+                          exit="exit"
+                          transition={{ duration: 0.3, ease: 'easeOut' }}
+                      >
+                          {/* Content Area: Sidebar + Stage */}
+                          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: { xs: 3, md: 4 }, alignItems: { xs: 'flex-start', md: 'flex-start' } }}>
                           
                           {/* Premium Sub-Pillar Filters (Left on Desktop, Top on Mobile) */}
                           <Box sx={{ 
                               display: 'flex', 
                               flexDirection: { xs: 'row', md: 'column' }, 
+                              flexWrap: { xs: 'wrap', md: 'nowrap' },
                               gap: 1,
-                              overflowX: { xs: 'auto', md: 'visible' },
                               width: { xs: '100%', md: '200px' },
                               flexShrink: 0,
                               pb: { xs: 1, md: 0 },
                               px: { xs: 2, md: 0 },
-                              scrollbarWidth: 'none',
-                              '&::-webkit-scrollbar': { display: 'none' }
                           }}>
                               {PILLARS.map(pillar => {
                                   const isActive = activeSubPillar === pillar;
@@ -218,21 +228,7 @@ export default function TabbedHero({ headline, subheadline, categories }: Tabbed
 
                           {/* Animated Content Stage */}
                           <Box sx={{ flex: 1, minWidth: 0, width: '100%' }}>
-                              <AnimatePresence mode="wait" custom={slideDirection}>
-                                  <motion.div
-                                      key={activeCategory + activeSubPillar + (searchTerm || '')}
-                                      custom={slideDirection}
-                                      variants={{
-                                          initial: (dir: number) => ({ opacity: 0, x: dir > 0 ? 30 : -30 }),
-                                          animate: { opacity: 1, x: 0 },
-                                          exit: (dir: number) => ({ opacity: 0, x: dir > 0 ? -30 : 30 })
-                                      }}
-                                      initial="initial"
-                                      animate="animate"
-                                      exit="exit"
-                                      transition={{ duration: 0.3, ease: 'easeOut' }}
-                                  >
-                                      <Box sx={{ display: 'flex', gap: 4, overflowX: 'auto', pb: 4, px: 2, scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' } }}>
+                              <Box sx={{ display: 'flex', gap: 4, overflowX: 'auto', pb: 4, px: 2, scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' } }}>
                                           {filteredItems.length === 0 ? (
                                               <Typography sx={{ color: '#94a3b8', fontStyle: 'italic', my: 4 }}>
                                                   No {activeSubPillar !== 'All' ? activeSubPillar.toLowerCase() : 'items'} found in this category.
@@ -256,13 +252,12 @@ export default function TabbedHero({ headline, subheadline, categories }: Tabbed
                                                   </Button>
                                               </Box>
                                           )}
-                                      </Box>
-                                  </motion.div>
-                              </AnimatePresence>
+                              </Box>
                           </Box>
                       </Box>
-                  </Box>
-              </Container>
+                  </motion.div>
+              </AnimatePresence>
+             </Container>
           </Box>
       </Box>
   );

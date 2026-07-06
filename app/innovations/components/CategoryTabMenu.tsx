@@ -82,13 +82,7 @@ export const CategoryTabMenu: React.FC<CategoryTabMenuProps> = ({ categories, se
                     gap: 1.5, 
                     scrollSnapType: 'x mandatory', 
                     '&::-webkit-scrollbar': { display: 'none' }, 
-                    'scrollbarWidth': 'none',
-                    bgcolor: 'rgba(255, 255, 255, 0.5)',
-                    backdropFilter: 'blur(16px)',
-                    WebkitBackdropFilter: 'blur(16px)',
-                    borderRadius: '32px',
-                    border: '1px solid rgba(255, 255, 255, 0.4)',
-                    boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.4), 0 4px 12px rgba(0,0,0,0.03)'
+                    'scrollbarWidth': 'none'
                 }}>
                     {categories.map((cat) => {
                         const isActive = selectedCategoryId === cat.id;
@@ -106,31 +100,36 @@ export const CategoryTabMenu: React.FC<CategoryTabMenuProps> = ({ categories, se
                                     borderRadius: '999px',
                                     scrollSnapAlign: 'center',
                                     border: cat.id === 'Offers for Today' && !isActive ? '1px solid rgba(239, 68, 68, 0.5)' : '1px solid transparent',
-                                    background: cat.id === 'Offers for Today' && !isActive 
-                                        ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(249, 115, 22, 0.08) 100%)' 
-                                        : 'transparent',
+                                    background: isActive 
+                                        ? 'transparent' 
+                                        : (cat.id === 'Offers for Today' 
+                                            ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(249, 115, 22, 0.08) 100%)' 
+                                            : 'rgba(241, 245, 249, 0.8)'), // Soft frosted gray for inactive
                                     boxShadow: cat.id === 'Offers for Today' && !isActive ? 'inset 0 0 12px rgba(239, 68, 68, 0.05)' : 'none',
                                     '&:hover': { 
                                         color: isActive ? 'white' : (cat.id === 'Offers for Today' ? '#b91c1c' : theme.palette.text.primary),
-                                        background: isActive ? 'transparent' : (cat.id === 'Offers for Today' ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(249, 115, 22, 0.15) 100%)' : 'rgba(0,0,0,0.03)'),
+                                        background: isActive ? 'transparent' : (cat.id === 'Offers for Today' ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(249, 115, 22, 0.15) 100%)' : 'rgba(226, 232, 240, 0.9)'),
                                         borderColor: cat.id === 'Offers for Today' && !isActive ? 'rgba(239, 68, 68, 0.7)' : 'transparent',
                                         transform: cat.id === 'Offers for Today' && !isActive ? 'translateY(-1px)' : 'none'
                                     }
                                 }}
                             >
-                            <Stack direction="row" spacing={1} alignItems="center">
+                            <Stack spacing={1} sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
                                     <Typography variant="button" sx={{ 
                                         fontWeight: isActive ? 800 : 700, 
                                         textTransform: 'none',
                                         letterSpacing: '-0.01em',
-                                        fontSize: '0.9rem'
+                                        fontSize: '0.9rem',
+                                        lineHeight: 1
                                     }}>
                                         {cat.title}
                                     </Typography>
                                     {cat.count > 0 && (
                                         <Box sx={{ 
-                                            bgcolor: isActive ? 'rgba(255,255,255,0.2)' : 'action.hover', 
-                                            px: 0.8, py: 0.2, borderRadius: 1, fontSize: '0.7rem' 
+                                            bgcolor: isActive ? 'rgba(255,255,255,0.2)' : 'rgba(15, 23, 42, 0.06)', 
+                                            px: 0.8, py: 0.4, borderRadius: 1, fontSize: '0.7rem',
+                                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                            lineHeight: 1
                                         }}>
                                             {cat.count}
                                         </Box>
@@ -156,23 +155,15 @@ export const CategoryTabMenu: React.FC<CategoryTabMenuProps> = ({ categories, se
                 </Box>
             </Box>
 
-            {/* Grid View Modal */}
             <Dialog 
                 open={gridOpen} 
                 onClose={() => setGridOpen(false)}
                 maxWidth="md"
                 fullWidth
-                PaperProps={{
-                    sx: {
-                        borderRadius: '24px',
-                        bgcolor: 'background.paper',
-                        boxShadow: '0 24px 48px rgba(0,0,0,0.1)',
-                        p: { xs: 1, sm: 2 }
-                    }
-                }}
+                {...{ PaperProps: { sx: { borderRadius: '24px', bgcolor: 'background.paper', boxShadow: '0 24px 60px rgba(0,0,0,0.1)', p: { xs: 2, sm: 4 } } } } as any}
             >
                 <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 1 }}>
-                    <Typography variant="h5" fontWeight="800" sx={{ letterSpacing: '-0.02em' }}>
+                    <Typography variant="h5" sx={{ fontWeight: 800, letterSpacing: '-0.02em' }}>
                         All Categories
                     </Typography>
                     <IconButton onClick={() => setGridOpen(false)} sx={{ bgcolor: 'action.hover' }}>

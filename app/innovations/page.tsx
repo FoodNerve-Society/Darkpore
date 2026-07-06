@@ -105,7 +105,7 @@ export default async function InnovationsHomepage() {
       recentIntelligence = mockData.map(m => ({
         ...m,
         type: m.type === 'pdf' ? 'class' : m.type,
-        link: `/innovations/${m.challengeId || 'global'}/${m.subcategory || 'general'}/learn/article/${m.slug}`
+        link: `/innovations/${m.challengeId || 'global'}/${(m as any).subcategory || 'general'}/learn/article/${m.slug}`
       }));
     }
   } catch (e) {
@@ -114,7 +114,7 @@ export default async function InnovationsHomepage() {
     recentIntelligence = mockData.map(m => ({
       ...m,
       type: m.type === 'pdf' ? 'class' : m.type,
-      link: `/innovations/${m.challengeId || 'global'}/${m.subcategory || 'general'}/learn/article/${m.slug}`
+      link: `/innovations/${m.challengeId || 'global'}/${(m as any).subcategory || 'general'}/learn/article/${m.slug}`
     }));
   }
 
@@ -227,7 +227,7 @@ export default async function InnovationsHomepage() {
       .filter((ri: any) => ri.challengeId === c.id)
       .map((ri: any) => ({
         id: `intel-${ri.id}`,
-        type: 'Intelligence',
+        type: 'Intelligence' as any,
         title: ri.title,
         slug: ri.slug,
         thumbnailUrl: ri.thumbnailUrl,
@@ -239,9 +239,9 @@ export default async function InnovationsHomepage() {
     // 2. Innovation Items
     // Since activeDeployments don't currently have a strict challengeId mapped in the DB in this demo,
     // we randomly distribute them or show them across all categories for demo purposes.
-    const innovationItems = activeDeployments.map((ad: any) => ({
+      const innovationItems = activeDeployments.map((ad: any) => ({
         id: `innov-${ad.id}`,
-        type: 'Innovations',
+        type: 'Innovations' as any,
         title: ad.title,
         thumbnailUrl: ad.imageUrl || '/images/default-thumbnail.jpg',
         link: ad.link,
