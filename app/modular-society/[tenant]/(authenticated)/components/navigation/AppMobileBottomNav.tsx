@@ -120,6 +120,17 @@ const AppMobileBottomNav: FC<AppMobileBottomNavProps> = ({ profile, onSignOut, b
   
   const totalBadgeCount = Object.values(badges).reduce<number>((sum, val) => sum + (typeof val === 'number' ? val : 0), 0);
 
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+  
+  React.useEffect(() => {
+    if (scrollRef.current) {
+      const activeEl = scrollRef.current.querySelector('[data-active="true"]');
+      if (activeEl) {
+        activeEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      }
+    }
+  }, [displayPath]);
+
   return (
     <Box
       sx={{
@@ -129,20 +140,21 @@ const AppMobileBottomNav: FC<AppMobileBottomNavProps> = ({ profile, onSignOut, b
         flexShrink: 0,
         pb: { xs: 2, sm: 3 },
         pt: 1,
-        px: { xs: 2, sm: 4 },
       }}
     >
       <Box
+        ref={scrollRef}
         sx={{
           display: 'flex', 
           alignItems: 'center', 
-          height: '68px',
-          bgcolor: '#ffffff',
-          borderRadius: 4,
-          boxShadow: '0 12px 40px rgba(0,0,0,0.08)',
+          overflowX: 'auto',
+          scrollBehavior: 'smooth',
+          scrollSnapType: 'x mandatory',
           pointerEvents: 'auto',
-          px: 1,
-          gap: 0.5,
+          px: '27.5vw', // Centers the active item which is 45vw wide (50vw - 22.5vw = 27.5vw)
+          gap: 2,
+          pb: 1, // Space for shadow
+          '&::-webkit-scrollbar': { display: 'none' }
         }}
       >
         {filteredNavItems.map(item => {
@@ -153,39 +165,55 @@ const AppMobileBottomNav: FC<AppMobileBottomNavProps> = ({ profile, onSignOut, b
           return (
             <Button
               key={item.href}
+              data-active={isActive}
               variant={isActive ? 'contained' : 'text'}
               onClick={() => handleNavClick(item.href)}
               sx={{
-                flex: isActive ? 1.5 : 1, // Active item takes more space
+                flexShrink: 0,
+                width: isActive ? '45vw' : 'auto', // Active card fills 45% of the screen
+                scrollSnapAlign: 'center',
+                justifyContent: 'flex-start',
                 borderRadius: 3, // Match sidebar theming
                 textTransform: 'none', 
                 fontWeight: isActive ? 800 : 600, 
-                minWidth: 0,
-                height: '52px',
-                bgcolor: isActive ? navTheme.main : 'transparent',
-                color: isActive ? navTheme.contrastText : 'rgba(0,0,0,0.5)',
-                boxShadow: isActive ? `0 6px 16px -4px ${alpha(navTheme.main || '#000', 0.5)}` : 'none',
-                transition: 'all 0.3s cubic-bezier(0.2, 0, 0, 1)',
-                p: 0,
+                bgcolor: isActive ? navTheme.main : 'rgba(255,255,255,0.4)',
+                color: isActive ? '#ffffff' : 'rgba(0,0,0,0.7)',
+                backdropFilter: isActive ? 'none' : 'blur(4px)',
+                boxShadow: isActive ? `0 6px 16px -4px ${alpha(navTheme.main || '#000', 0.5)}` : '0 4px 12px rgba(0,0,0,0.05)',
+                transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                p: '12px 20px',
                 display: 'flex',
-                flexDirection: 'column',
                 alignItems: 'center',
-                justifyContent: 'center',
+                gap: 1.5,
+                transform: isActive ? 'scale(1)' : 'scale(0.85)',
+                filter: isActive ? 'none' : 'blur(1px)',
+                opacity: isActive ? 1 : 0.6,
                 '&:hover': { 
-                  bgcolor: isActive ? navTheme.main : 'rgba(0,0,0,0.04)', 
+                  bgcolor: isActive ? navTheme.main : 'rgba(255,255,255,0.6)', 
                 }
               }}
             >
-              <Badge badgeContent={badgeVal} color="error" sx={{ '& .MuiBadge-badge': { top: 4, right: 4 } }}>
-                <Box sx={{ fontSize: isActive ? 24 : 26, '& svg': { fontSize: 'inherit' }, mb: isActive ? 0.3 : 0 }}>
-                  {item.icon}
-                </Box>
-              </Badge>
-              {isActive && (
-                <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, lineHeight: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', fontSize: 24, '& svg': { fontSize: 'inherit' } }}>
+                {item.icon}
+              </Box>
+              
+              <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Typography sx={{ fontSize: '0.95rem', fontWeight: isActive ? 800 : 600 }}>
                   {item.label}
                 </Typography>
-              )}
+                
+                {badgeVal ? (
+                  <Box component="span" sx={{
+                    bgcolor: isActive ? '#ffffff' : navTheme.main, 
+                    color: isActive ? navTheme.main : '#ffffff', 
+                    fontSize: '0.7rem', fontWeight: 'bold',
+                    px: 1, py: 0.2, borderRadius: 10, minWidth: 24, textAlign: 'center',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                  }}>
+                    {badgeVal}
+                  </Box>
+                ) : null}
+              </Box>
             </Button>
           );
         })}

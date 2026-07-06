@@ -97,10 +97,10 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
     if (isMobile && isUpdatesOpen && scrollContainer) {
       scrollContainer.style.overflow = 'hidden';
     } else if (scrollContainer) {
-      scrollContainer.style.overflow = 'auto';
+      scrollContainer.style.overflow = 'visible';
     }
     return () => {
-      if (scrollContainer) scrollContainer.style.overflow = 'auto';
+      if (scrollContainer) scrollContainer.style.overflow = 'visible';
     };
   }, [isMobile, isUpdatesOpen]);
 

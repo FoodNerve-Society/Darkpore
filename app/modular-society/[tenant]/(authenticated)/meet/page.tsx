@@ -23,7 +23,7 @@ import { initiateConversation } from '@/lib/actions/chat';
 import { Message as MessageIcon } from '@mui/icons-material';
 
 // ============================================================
-// SHARED PAPER STYLES (matches Learn, Profile, Support)
+// SHARED PAPER STYLES
 // ============================================================
 const sharedPaperSx = {
   flex: 1,
@@ -31,14 +31,13 @@ const sharedPaperSx = {
   minHeight: 0,
   height: { xs: 'calc(100% - 16px)', md: 'calc(100% - 32px)' },
   bgcolor: '#ffffff',
-  borderRadius: { xs: 4, md: 4 },
-  boxShadow: { xs: '0 12px 40px rgba(0,0,0,0.08)', md: '0 10px 40px rgba(0,0,0,0.04)' },
+  borderRadius: 4,
+  boxShadow: { xs: '0 8px 32px rgba(0,0,0,0.06)', md: '0 10px 40px rgba(0,0,0,0.04)' },
   overflowY: 'auto',
   overflowX: 'hidden',
   boxSizing: 'border-box',
   display: 'flex',
   flexDirection: 'column',
-  pb: 12
 };
 
 // ============================================================

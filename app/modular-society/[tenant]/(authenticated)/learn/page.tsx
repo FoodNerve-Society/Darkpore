@@ -1509,15 +1509,17 @@ export default function LearnPage() {
       elevation={0}
       sx={{
         flex: 1,
-        m: { xs: 0, md: 2 },
-        height: { xs: '100vh', md: 'calc(100vh - 32px)' },
+        m: { xs: 1, md: 2 },
+        minHeight: 0,
+        height: { xs: 'calc(100% - 16px)', md: 'calc(100% - 32px)' },
         bgcolor: '#ffffff',
-        borderRadius: { xs: 0, md: 4 },
-        boxShadow: { xs: 'none', md: '0 10px 40px rgba(0,0,0,0.04)' },
-        overflowX: 'hidden',
+        borderRadius: 4,
+        boxShadow: { xs: '0 8px 32px rgba(0,0,0,0.06)', md: '0 10px 40px rgba(0,0,0,0.04)' },
         overflowY: 'auto',
+        overflowX: 'hidden',
         boxSizing: 'border-box',
-        pb: 12
+        display: 'flex',
+        flexDirection: 'column',
       }}
     >
       {activeArticle ? (
@@ -1936,8 +1938,8 @@ export default function LearnPage() {
         minHeight: 0,
         height: { xs: 'calc(100% - 16px)', md: 'calc(100% - 32px)' },
         bgcolor: '#ffffff',
-        borderRadius: { xs: 4, md: 4 },
-        boxShadow: { xs: '0 12px 40px rgba(0,0,0,0.08)', md: '0 10px 40px rgba(0,0,0,0.04)' },
+        borderRadius: 4,
+        boxShadow: { xs: '0 8px 32px rgba(0,0,0,0.06)', md: '0 10px 40px rgba(0,0,0,0.04)' },
         overflowY: 'auto',
         overflowX: 'hidden',
         boxSizing: 'border-box',

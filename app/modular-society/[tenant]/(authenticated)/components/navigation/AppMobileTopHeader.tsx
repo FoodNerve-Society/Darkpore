@@ -2,7 +2,7 @@
 'use client';
 
 import React, { FC, useState, useEffect } from 'react';
-import { AppBar, Toolbar, Box, IconButton, Avatar, Typography, Badge, Popover, MenuItem, ListItemIcon, Divider, alpha, Button } from '@mui/material';
+import { AppBar, Toolbar, Box, IconButton, Avatar, Typography, Badge, Popover, MenuItem, MenuList, ListItemIcon, Divider, alpha, Button } from '@mui/material';
 import Settings from '@mui/icons-material/Settings';
 import Logout from '@mui/icons-material/Logout';
 import NotificationsIcon from '@mui/icons-material/Notifications';
@@ -145,7 +145,7 @@ const AppMobileTopHeader: FC<AppMobileTopHeaderProps> = ({ profile, onSignOut, t
           <Box sx={{ flex: 1 }} />
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <IconButton onClick={handleProfileOpen} sx={{ p: 0 }}>
+            <IconButton onClick={() => router.push('/profile')} sx={{ p: 0 }}>
               <Avatar 
                 src={profile?.avatarUrl || user?.photoURL || undefined} 
                 sx={{ width: 38, height: 38, border: '2px solid white', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }} 
@@ -192,57 +192,6 @@ const AppMobileTopHeader: FC<AppMobileTopHeaderProps> = ({ profile, onSignOut, t
           </Box>
         </Toolbar>
       </AppBar>
-
-      <Popover
-        open={Boolean(profileAnchorEl)}
-        anchorEl={profileAnchorEl}
-        onClose={handleProfileClose}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-        slotProps={{
-          paper: {
-            sx: { mt: 1, minWidth: 200, borderRadius: 3, boxShadow: '0 10px 40px rgba(0,0,0,0.1)' }
-          }
-        }}
-      >
-        <Box sx={{ p: 2, pb: 1, display: 'flex', flexDirection: 'column' }}>
-          <Typography noWrap fontWeight="bold" color="text.primary">
-            {displayName}
-          </Typography>
-          <Typography noWrap variant="body2" color="text.secondary" sx={{ textTransform: 'capitalize' }}>
-            {displayRole}
-          </Typography>
-        </Box>
-        <Divider sx={{ my: 1 }} />
-        <Box sx={{ p: 1, display: 'flex', flexDirection: 'column' }}>
-          <MenuItem 
-            onClick={() => { setProfileAnchorEl(null); router.push('/updates'); }}
-            sx={{ borderRadius: 1.5, py: 1.5, fontWeight: 600, mb: 0.5 }}
-          >
-            <ListItemIcon>
-              <Badge color="error" variant="dot">
-                <NotificationsIcon fontSize="small" sx={{ color: '#10b981' }} />
-              </Badge>
-            </ListItemIcon>
-            <Typography sx={{ color: '#10b981', fontWeight: 600 }}>Notifications & Updates</Typography>
-          </MenuItem>
-
-          <MenuItem 
-            onClick={() => { setProfileAnchorEl(null); router.push('/profile'); }}
-            sx={{ borderRadius: 1.5, py: 1.5, fontWeight: 600 }}
-          >
-            <ListItemIcon><Settings fontSize="small" /></ListItemIcon>
-            Profile & Settings
-          </MenuItem>
-          <MenuItem 
-            onClick={() => { setProfileAnchorEl(null); onSignOut(); }}
-            sx={{ borderRadius: 1.5, py: 1.5, fontWeight: 600, color: 'error.main' }}
-          >
-            <ListItemIcon><Logout fontSize="small" color="error" /></ListItemIcon>
-            Sign Out
-          </MenuItem>
-        </Box>
-      </Popover>
     </>
   );
 };
