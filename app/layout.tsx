@@ -2,10 +2,23 @@ import React from 'react';
 import { playfairDisplay, eduNswActFoundation, dosis, quicksand, ysabeauInfant } from '@/theme/fonts';
 import './globals.css';
 
-export const metadata = {
-  title: 'Society OS',
-  description: 'The Society OS for Food Systems',
-};
+import { headers } from 'next/headers';
+import type { Metadata } from 'next';
+
+export async function generateMetadata(): Promise<Metadata> {
+  const headersList = await headers();
+  const host = headersList.get('host') || '';
+  
+  const isSociety = host.includes('society') || host.includes('.org');
+  
+  return {
+    title: 'Society OS',
+    description: 'The Society OS for Food Systems',
+    icons: {
+      icon: isSociety ? '/images/society-favicon.png' : '/images/foodnerve-favicon.png',
+    }
+  };
+}
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
