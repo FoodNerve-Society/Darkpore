@@ -169,7 +169,7 @@ export default function TabbedHero({ headline, subheadline, categories }: Tabbed
                     animate="animate"
                     exit="exit"
                     transition={{ duration: 0.5, ease: [0.25, 1, 0.35, 1] }}
-                    sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', position: 'relative', height: 'auto', minHeight: { xs: '60vh', md: '50vh' }, maxHeight: '1200px' }}
+                    sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', position: 'relative', height: 'auto', minHeight: { xs: '60vh', md: '50vh' } }}
                 >
                     {/* The tinted background and mesh go here */}
                     <Box sx={{ position: 'absolute', inset: 0, bgcolor: tintedBg }}>
