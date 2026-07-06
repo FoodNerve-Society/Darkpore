@@ -126,7 +126,7 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
   const activeTheme = getActiveTheme(pathname);
 
   return (
-    <Box sx={{ display: 'flex', height: '100vh', flexDirection: isMobile ? 'column' : 'row', position: 'relative', bgcolor: '#f8fafc', overflow: 'hidden' }}>
+    <Box sx={{ display: 'flex', height: '100dvh', flexDirection: isMobile ? 'column' : 'row', position: 'relative', bgcolor: '#f8fafc', overflow: 'hidden' }}>
 
       {/* --- DYNAMIC BACKGROUND LAYER (Fixed behind everything) --- */}
       <Box sx={{
@@ -209,7 +209,7 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
           flexDirection: 'column', 
           position: 'relative', 
           zIndex: 10,
-          height: '100vh',
+          // height: '100dvh', removed height constraint to let flex: 1 govern it
           overflowY: 'auto',
           overflowX: 'hidden',
           boxSizing: 'border-box'
@@ -230,7 +230,7 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
             flex: 1, 
             display: 'flex',
             flexDirection: 'column',
-            pb: { xs: 14, md: 0 }, // extra padding for bottom nav on mobile
+            pb: 0, // removed extra padding for bottom nav on mobile, layout is true flex now
           }}
         >
         {showUnauthModal ? (

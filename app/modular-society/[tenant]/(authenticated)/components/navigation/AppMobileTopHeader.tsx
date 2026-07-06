@@ -37,9 +37,12 @@ const AppMobileTopHeader: FC<AppMobileTopHeaderProps> = ({ profile, onSignOut, t
 
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    const scrollContainer = document.getElementById('main-scroll-container');
+    if (!scrollContainer) return;
+    
+    const handleScroll = () => setScrolled(scrollContainer.scrollTop > 20);
+    scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
+    return () => scrollContainer.removeEventListener('scroll', handleScroll);
   }, []);
 
   return (

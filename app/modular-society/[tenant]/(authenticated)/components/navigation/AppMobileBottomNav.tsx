@@ -124,13 +124,16 @@ const AppMobileBottomNav: FC<AppMobileBottomNavProps> = ({ profile, onSignOut, b
     <>
       <Box
         sx={{
-          position: 'fixed', bottom: 16, left: '50%',
-          transform: 'translateX(-50%)',
-          width: '94%',
+          width: '100%',
+          px: 2,
+          pb: 2,
+          pt: 1,
           zIndex: 1200,
           display: 'flex',
           gap: 1.5,
           pointerEvents: 'none', // Let touches pass through the empty space
+          bgcolor: 'transparent',
+          flexShrink: 0, // Prevent it from shrinking in flex column
         }}
       >
           {/* Left Bubble: Nav Items */}
