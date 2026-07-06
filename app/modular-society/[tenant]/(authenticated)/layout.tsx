@@ -210,7 +210,7 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
           position: 'relative', 
           zIndex: 10,
           // height: '100dvh', removed height constraint to let flex: 1 govern it
-          overflowY: 'auto',
+          overflowY: 'hidden', // Stop the main layout from scrolling, delegate to children
           overflowX: 'hidden',
           boxSizing: 'border-box'
         }}

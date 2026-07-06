@@ -137,101 +137,80 @@ const AppMobileBottomNav: FC<AppMobileBottomNavProps> = ({ profile, onSignOut, b
         }}
       >
           {/* Left Bubble: Nav Items */}
-          <Paper
-            elevation={8}
+          <Box
             sx={{
               flex: 1,
-              borderRadius: '24px',
-              background: activeNavTheme.mobileBg,
-              backdropFilter: 'blur(12px)',
-              border: '1px solid rgba(255, 255, 255, 0.5)',
-              boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.1)',
               display: 'flex', alignItems: 'center', height: '64px', px: 1,
               pointerEvents: 'auto', // Re-enable touches for the bubble
+              justifyContent: 'space-around', // Distribute icons evenly
             }}
           >
-                {isExpanded ? (
                   <Box
                     style={{ display: 'flex', gap: '8px', alignItems: 'center', overflowX: 'auto', padding: '0 4px', width: '100%', justifyContent: 'space-evenly' }}
                   >
                     {filteredNavItems.map(item => {
                       const isActive = displayPath.includes(item.href);
                       const navTheme = PAGE_THEMES[item.themeKey];
+                      const badgeVal = badges[item.href];
+                      
+                      const IconWrapper = ({ children }: { children: React.ReactNode }) => (
+                        isActive ? <>{children}</> : <Badge badgeContent={badgeVal} color="error">{children}</Badge>
+                      );
+
                       return (
                         <Box key={item.href}>
-                          <Badge badgeContent={badges[item.href]} color="error">
+                          <IconWrapper>
                             <Button
                               variant={isActive ? 'contained' : 'text'}
                               onClick={() => handleNavClick(item.href)}
                               sx={{
-                                borderRadius: 100, // M3 Expressive Pill
-                                textTransform: 'none', fontWeight: 'bold', minWidth: 0,
+                                borderRadius: 3, // Match sidebar
+                                textTransform: 'none', 
+                                fontWeight: isActive ? 800 : 700, 
+                                minWidth: 0,
                                 bgcolor: isActive ? navTheme.main : 'transparent',
                                 color: isActive ? navTheme.contrastText : 'rgba(0,0,0,0.6)',
-                                boxShadow: isActive ? `0 4px 12px ${alpha(navTheme.main, 0.4)}` : 'none',
+                                backdropFilter: 'none',
+                                boxShadow: isActive ? `0 6px 16px -4px ${alpha(navTheme.main || '#000', 0.5)}` : 'none',
                                 transition: 'all 0.3s cubic-bezier(0.2, 0, 0, 1)',
-                                p: isActive ? '8px 20px' : '8px',
-                                '&:hover': { bgcolor: isActive ? navTheme.main : alpha(navTheme.main, 0.1), transform: 'scale(1.05)' }
+                                p: isActive ? '8px 16px' : '8px 12px',
+                                '&:hover': { 
+                                  bgcolor: isActive ? navTheme.main : alpha(navTheme.main, 0.08), 
+                                  transform: 'scale(1.05)' 
+                                }
                               }}
                             >
-                              <Box sx={{ display: 'flex', alignItems: 'center', fontSize: isActive ? 24 : 28, '& svg': { fontSize: 'inherit' } }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', fontSize: isActive ? 24 : 26, '& svg': { fontSize: 'inherit' } }}>
                                 {item.icon}
                               </Box>
                               {isActive && (
-                                <Typography sx={{ ml: 1, fontWeight: 800 }}>{item.label}</Typography>
+                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                  <Typography sx={{ ml: 1, fontWeight: 800 }}>{item.label}</Typography>
+                                  {badgeVal ? (
+                                    <Box component="span" sx={{
+                                      ml: 1,
+                                      bgcolor: '#ffffff', 
+                                      color: navTheme.main, 
+                                      fontSize: '0.65rem', fontWeight: 'bold',
+                                      px: 0.8, py: 0.2, borderRadius: 10, minWidth: 22, textAlign: 'center',
+                                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                                    }}>
+                                      {badgeVal}
+                                    </Box>
+                                  ) : null}
+                                </Box>
                               )}
                             </Button>
-                          </Badge>
+                          </IconWrapper>
                         </Box>
                       );
                     })}
                   </Box>
-                ) : (
-                  <Box
-                    style={{ display: 'flex', alignItems: 'center', gap: '4px', width: '100%', justifyContent: 'space-between', padding: '0 8px' }}
-                  >
-                    <IconButton onClick={handlePrevious} size="small" disabled={activeIndex === 0} sx={{ opacity: activeIndex === 0 ? 0 : 1 }}>
-                      <ChevronLeft />
-                    </IconButton>
-                    <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-                      <Badge badgeContent={totalBadgeCount > 0 ? totalBadgeCount : undefined} color="error">
-                        <Box>
-                          <Button
-                            variant="contained"
-                            onClick={toggleNavState}
-                            startIcon={activeItem.icon}
-                            sx={{
-                              borderRadius: 100, // M3 Expressive Pill
-                              textTransform: 'none', fontWeight: 800,
-                              bgcolor: activeNavTheme.main, color: activeNavTheme.contrastText,
-                              boxShadow: `0 4px 16px ${alpha(activeNavTheme.main, 0.4)}`, 
-                              transition: 'all 0.3s cubic-bezier(0.2, 0, 0, 1)',
-                              p: '8px 32px',
-                              fontSize: '1.1rem',
-                              '&:hover': { bgcolor: activeNavTheme.main, transform: 'scale(1.02)' },
-                            }}
-                          >
-                            {activeItem.label}
-                          </Button>
-                        </Box>
-                      </Badge>
-                    </Box>
-                    <IconButton onClick={handleNext} size="small" disabled={activeIndex === filteredNavItems.length - 1} sx={{ opacity: activeIndex === filteredNavItems.length - 1 ? 0 : 1 }}>
-                      <ChevronRight />
-                    </IconButton>
-                  </Box>
-                )}
-          </Paper>
+          </Box>
 
           {/* Right Bubble: Profile Avatar */}
-          <Paper
-            elevation={8}
+          <Box
             sx={{
-              borderRadius: '24px', // Keep consistent pill roundness
-              background: activeNavTheme.mobileBg,
-              backdropFilter: 'blur(12px)',
-              border: '1px solid rgba(255, 255, 255, 0.5)',
-              boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.1)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               width: '64px', height: '64px',
               pointerEvents: 'auto',
@@ -243,7 +222,7 @@ const AppMobileBottomNav: FC<AppMobileBottomNavProps> = ({ profile, onSignOut, b
                 sx={{ width: 44, height: 44, border: '2px solid white', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }} 
               />
             </IconButton>
-          </Paper>
+          </Box>
       </Box>
 
     </>
