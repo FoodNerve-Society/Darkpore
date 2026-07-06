@@ -73,6 +73,10 @@ export function proxy(request: NextRequest) {
     hostname.includes('.org') // Matches .org (prod) AND .org.localhost (dev)
   ) {
     rewriteUrl.pathname = `/modular-society/org${url.pathname}`;
+  } else if (
+    hostname.includes('.net') // Matches .net (prod) AND .net.localhost (dev)
+  ) {
+    rewriteUrl.pathname = `/innovation-center${url.pathname}`;
   } else {
     // Default covers .com (prod) AND .com.localhost (dev)
     rewriteUrl.pathname = `/innovations${url.pathname}`;

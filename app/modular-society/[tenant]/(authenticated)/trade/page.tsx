@@ -10,27 +10,17 @@ import {
   Avatar,
   alpha,
   Skeleton,
-  IconButton,
   Button,
 } from "@mui/material";
 import {
   Add as AddIcon,
-  Store as StoreIcon,
-  LocalOffer as LocalOfferIcon,
-  SwapHoriz as SwapIcon,
-  Work as WorkIcon,
-  Search as SearchIcon,
-  FilterList as FilterListIcon,
   LocationOn as LocationIcon,
-  AccessTime as AccessTimeIcon,
-  ArrowForward as ArrowForwardIcon,
-  ArrowBackIos as ArrowBackIcon,
-  ArrowForwardIos as ArrowForwardIosIcon,
   Bolt as BoltIcon,
 } from "@mui/icons-material";
 import { useRouter } from "next/navigation";
-import { useSociety } from "@/context/SocietyContext";
-import { TradeListing, TradeCategory } from "@/lib/db/society";
+import { TradeListing } from "@/lib/db/society";
+import FlipContainer from "../components/shared/FlipContainer";
+import CreateListingForm from "./components/CreateListingForm";
 
 // ── Colors ────────────────────────────────────────────────
 const EMERALD = "#10b981";
@@ -44,6 +34,20 @@ const glassCard = {
   borderRadius: "20px",
   boxShadow: "0 8px 32px rgba(0, 0, 0, 0.04)",
   transition: "all 0.3s ease",
+};
+
+// ── Shared Paper Styles ──────────────────────────────────
+const sharedPaperSx = {
+  flex: 1,
+  m: { xs: 0, md: 2 },
+  minHeight: { xs: '100vh', md: 'calc(100vh - 32px)' },
+  bgcolor: '#ffffff',
+  borderRadius: { xs: 0, md: 4 },
+  boxShadow: { xs: 'none', md: '0 10px 40px rgba(0,0,0,0.04)' },
+  overflow: 'hidden',
+  boxSizing: 'border-box',
+  display: 'flex',
+  flexDirection: 'column',
 };
 
 // ── Mock Data (until backend is fully wired) ────────────────
@@ -190,7 +194,7 @@ function ListingCard({ listing }: { listing: TradeListing }) {
              </Box>
           </Box>
           <Avatar sx={{ width: 28, height: 28, bgcolor: alpha(EMERALD, 0.1), color: EMERALD_DARK, fontSize: "0.8rem", fontWeight: 700 }}>
-            {listing.postedBy.name.charAt(0)}
+            {listing.postedBy?.name?.charAt(0) || "U"}
           </Avatar>
         </Box>
       </Box>
@@ -202,7 +206,7 @@ function HorizontalScrollRow({ title, emoji, items }: { title: string; emoji: st
   if (!items || items.length === 0) return null;
   return (
     <Box sx={{ mb: 4 }}>
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2, px: { xs: 2, md: 0 } }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2, px: { xs: 2, md: 4 } }}>
         <Typography variant="h6" sx={{ fontWeight: 800, color: "#000" }}>
           {emoji} {title}
         </Typography>
@@ -210,7 +214,7 @@ function HorizontalScrollRow({ title, emoji, items }: { title: string; emoji: st
       </Box>
       <Box
         sx={{
-          display: "flex", gap: 2, overflowX: "auto", pb: 2, px: { xs: 2, md: 0 }, scrollSnapType: "x mandatory",
+          display: "flex", gap: 2, overflowX: "auto", pb: 2, px: { xs: 2, md: 4 }, scrollSnapType: "x mandatory",
           "&::-webkit-scrollbar": { display: "none" }, scrollbarWidth: "none",
         }}
       >
@@ -226,26 +230,13 @@ function HorizontalScrollRow({ title, emoji, items }: { title: string; emoji: st
 // MAIN PAGE
 // ════════════════════════════════════════════════════════════
 
-function TradePageContent() {
-  const router = useRouter();
+export default function TradePage() {
+  const [isFlipped, setIsFlipped] = useState(false);
 
-  return (
-    <Paper 
-      elevation={0}
-      sx={{ 
-        p: { xs: 2, md: 4 }, 
-        flex: 1,
-        m: { xs: 0, md: 2 },
-        minHeight: { xs: '100vh', md: 'calc(100vh - 32px)' },
-        bgcolor: '#ffffff',
-        borderRadius: { xs: 0, md: 4 },
-        boxShadow: { xs: 'none', md: '0 10px 40px rgba(0,0,0,0.04)' },
-        overflow: 'hidden',
-        boxSizing: 'border-box'
-      }}
-    >
+  const FrontContent = (
+    <Paper elevation={0} sx={sharedPaperSx}>
       {/* Header */}
-      <Box sx={{ px: { xs: 2, md: 0 }, pt: { xs: 3, md: 0 }, mb: 4 }}>
+      <Box sx={{ px: { xs: 2, md: 4 }, pt: { xs: 3, md: 4 }, mb: 4 }}>
         <Typography variant="h4" sx={{ fontWeight: 900, mb: 1, color: "#000" }}>
           Trade & Procure
         </Typography>
@@ -255,7 +246,7 @@ function TradePageContent() {
       </Box>
 
       {/* Filter Chips */}
-      <Box sx={{ display: "flex", gap: 1, overflowX: "auto", px: { xs: 2, md: 0 }, mb: 4, pb: 1, "&::-webkit-scrollbar": { display: "none" } }}>
+      <Box sx={{ display: "flex", gap: 1, overflowX: "auto", px: { xs: 2, md: 4 }, mb: 4, pb: 1, "&::-webkit-scrollbar": { display: "none" } }}>
         {["All Listings", "Flash Sales", "Group-Buy", "Swaps", "Needs", "Jobs"].map((filter, i) => (
           <Chip
             key={filter}
@@ -271,18 +262,21 @@ function TradePageContent() {
         ))}
       </Box>
 
-      {/* Swimlanes */}
-      <HorizontalScrollRow title="Urgent Flash Sales" emoji="⚡" items={MOCK_LISTINGS.filter(l => l.category === "flash-sale")} />
-      <HorizontalScrollRow title="Community Group-Buys" emoji="🤝" items={MOCK_LISTINGS.filter(l => l.category === "group-buy")} />
-      <HorizontalScrollRow title="Barter & Swaps" emoji="♻️" items={MOCK_LISTINGS.filter(l => l.category === "swap")} />
+      <Box sx={{ flex: 1, overflowY: 'auto' }}>
+        {/* Swimlanes */}
+        <HorizontalScrollRow title="Urgent Flash Sales" emoji="⚡" items={MOCK_LISTINGS.filter(l => l.category === "flash-sale")} />
+        <HorizontalScrollRow title="Community Group-Buys" emoji="🤝" items={MOCK_LISTINGS.filter(l => l.category === "group-buy")} />
+        <HorizontalScrollRow title="Barter & Swaps" emoji="♻️" items={MOCK_LISTINGS.filter(l => l.category === "swap")} />
+        <Box sx={{ height: { xs: 80, md: 24 } }} />
+      </Box>
 
-      {/* Post Button */}
-      <Box sx={{ px: { xs: 2, md: 0 }, mt: 2, mb: 4 }}>
+      {/* Post Button - Fixed at bottom */}
+      <Box sx={{ p: { xs: 2, md: 4 }, borderTop: '1px solid rgba(0,0,0,0.05)', bgcolor: 'white' }}>
         <Button
           fullWidth
           variant="contained"
           startIcon={<AddIcon />}
-          onClick={() => router.push("/society/trade/create")}
+          onClick={() => setIsFlipped(true)}
           sx={{
             background: `linear-gradient(135deg, ${EMERALD} 0%, ${EMERALD_DARK} 100%)`,
             color: "#ffffff",
@@ -298,16 +292,25 @@ function TradePageContent() {
           Post a Listing
         </Button>
       </Box>
-
-      <Box sx={{ height: { xs: 24, md: 16 } }} />
     </Paper>
   );
-}
 
-export default function TradePage() {
+  const BackContent = (
+    <Paper elevation={0} sx={{ ...sharedPaperSx, overflowY: 'auto' }}>
+      <CreateListingForm 
+        onCancel={() => setIsFlipped(false)}
+        onSuccess={() => setIsFlipped(false)}
+      />
+    </Paper>
+  );
+
   return (
     <Suspense fallback={<Skeleton variant="rounded" width="100%" height={400} sx={{ borderRadius: "20px" }} />}>
-      <TradePageContent />
+      <FlipContainer 
+        isFlipped={isFlipped}
+        frontContent={FrontContent}
+        backContent={BackContent}
+      />
     </Suspense>
   );
 }
