@@ -147,6 +147,11 @@ export type GatekeeperResult = {
 };
 
 export function checkGatekeeper(profile: SocietyProfile, requiredRank: RankLevel): GatekeeperResult {
+  // Bypasses the gatekeeper if the user is an Admin, Super Admin, or Investor (Omni-Filter)
+  if (profile.isAdmin || profile.roles?.includes('investor') || profile.roles?.includes('super_admin' as any)) {
+    return { allowed: true, requiredRank, currentRank: 5 }; // Grant max rank privileges
+  }
+
   const currentRank = calculateRank(profile);
 
   if (currentRank >= requiredRank) {

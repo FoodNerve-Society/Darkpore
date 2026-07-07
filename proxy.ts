@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function proxy(request: NextRequest) {
+export default function middleware(request: NextRequest) {
+  console.log('MIDDLEWARE:', request.nextUrl.pathname);
   const url = request.nextUrl;
   const hostHeader = request.headers.get('host') || '';
   const hostname = hostHeader.split(':')[0]; // Strip port for cleaner logic
@@ -47,6 +48,20 @@ export function proxy(request: NextRequest) {
 
   // Bypass API routes completely
   if (url.pathname.startsWith('/api')) {
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
+  }
+
+  // Prevent infinite rewrite loops
+  if (
+    url.pathname.startsWith('/modular-society') ||
+    url.pathname.startsWith('/darkpore') ||
+    url.pathname.startsWith('/innovation-center') ||
+    url.pathname.startsWith('/innovations')
+  ) {
     return NextResponse.next({
       request: {
         headers: requestHeaders,

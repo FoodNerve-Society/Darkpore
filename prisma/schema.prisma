@@ -104,7 +104,7 @@ model OrganizationMember {
 
 model TradeListing {
   id              String    @id @default(cuid())
-  category        String // 'group-buy' | 'flash-sale' | 'swap' | 'need' | 'jobs'
+  category        String // 'group-buy' | 'flash-sale' | 'swap' | 'need' | 'jobs' | 'volunteer'
   title           String
   description     String
   commodity       String?
@@ -123,6 +123,15 @@ model TradeListing {
   imageUrl        String?
   nervePointsCost Int?
   postedAt        DateTime  @default(now())
+
+  // --- Job & Volunteer Classification Fields ---
+  jobSource       String?   // 'internal_foodnerve' | 'verified_tenant' | 'admin_curated' | 'community_sourced'
+  compType        String?   // 'fiat' | 'volunteer'
+  targetTenantId  String?   // If verified_tenant, links to their profile
+  externalCompany String?   // If admin_curated or community_sourced
+  externalUrl     String?   // Where to apply if external
+  npReward        Int?      // How much NP the volunteer gets (Escrow)
+  minRank         Int?      // Minimum rank required to apply (for Premium internal jobs)
 
   // Relations
   postedById String

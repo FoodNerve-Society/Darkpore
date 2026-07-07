@@ -32,6 +32,7 @@ import ShieldIcon from "@mui/icons-material/Shield";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import StarIcon from "@mui/icons-material/Star";
+import AddIcon from "@mui/icons-material/Add";
 
 // ── Constants ──────────────────────────────────────────────
 const EMERALD = "#10b981";
@@ -63,9 +64,11 @@ const STEPS = ["Title", "Category", "Location", "Pricing", "Description", "Image
 interface CreateListingFormProps {
   onCancel: () => void;
   onSuccess: () => void;
+  postingAs?: 'personal' | 'organization';
+  selectedOrgId?: string | null;
 }
 
-export default function CreateListingForm({ onCancel, onSuccess }: CreateListingFormProps) {
+export default function CreateListingForm({ onCancel, onSuccess, postingAs = 'personal', selectedOrgId = null }: CreateListingFormProps) {
   const { profile } = useSociety();
   const router = useRouter();
 
@@ -93,9 +96,11 @@ export default function CreateListingForm({ onCancel, onSuccess }: CreateListing
   if (gate && !gate.allowed) {
     return (
       <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 600, mx: "auto" }}>
-        <Button startIcon={<ArrowBackIcon />} onClick={onCancel} sx={{ mb: 3, color: "text.secondary", fontWeight: 700, textTransform: "none" }}>
-          Back to Listings
-        </Button>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', width: '100%' }}>
+          <Button onClick={onCancel} sx={{ mb: 3, color: "text.secondary", fontWeight: 700, textTransform: "none" }}>
+            Close ✕
+          </Button>
+        </Box>
         <Paper elevation={0} sx={{ ...glassCard, p: { xs: 4, md: 5 }, textAlign: "center", position: "relative", overflow: "hidden", bgcolor: "#000", color: "#fff" }}>
           <Box sx={{ position: "absolute", top: 0, left: 0, right: 0, height: 5, background: "linear-gradient(90deg, #10b981 0%, #3b82f6 33%, #8b5cf6 66%, #f59e0b 100%)" }} />
           <Box sx={{ position: "absolute", top: -40, right: -40, width: 180, height: 180, borderRadius: "50%", background: `radial-gradient(circle, ${alpha(EMERALD, 0.2)} 0%, transparent 70%)`, pointerEvents: "none" }} />
@@ -149,7 +154,16 @@ export default function CreateListingForm({ onCancel, onSuccess }: CreateListing
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    const res = await createTradeListing({ category: category as string, title, description, priceOrAsk: price, location, lga, postedById: profile.id, nervePointsCost: 0 });
+    const res = await createTradeListing({ 
+      category: category as string, 
+      title, 
+      description, 
+      priceOrAsk: price, 
+      location, 
+      lga, 
+      postedById: postingAs === 'organization' && selectedOrgId ? selectedOrgId : profile.id, 
+      nervePointsCost: 0 
+    });
     if (res.success) {
       setSubmitted(true);
       setTimeout(() => {
@@ -178,14 +192,12 @@ export default function CreateListingForm({ onCancel, onSuccess }: CreateListing
 
   return (
     <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 640, mx: "auto", color: "#000", height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <Button startIcon={<ArrowBackIcon />} onClick={onCancel} sx={{ mb: 2, color: "text.secondary", fontWeight: 700, textTransform: "none", borderRadius: "12px", alignSelf: 'flex-start', "&:hover": { bgcolor: alpha(EMERALD, 0.08) } }}>
-        Cancel
-      </Button>
+      
       <Typography variant="h4" sx={{ fontWeight: 900, fontSize: { xs: "1.5rem", md: "1.8rem" }, mb: 1, background: `linear-gradient(135deg, ${EMERALD} 0%, ${EMERALD_DARK} 100%)`, backgroundClip: "text", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
         Create Listing
       </Typography>
       <Typography variant="body2" sx={{ color: "text.secondary", mb: 3 }}>List something on the marketplace — it takes less than 2 minutes.</Typography>
-
+      
       <Paper elevation={0} sx={{ ...glassCard, p: { xs: 2, md: 3 }, mb: 3 }}>
         <Stepper activeStep={activeStep} alternativeLabel>
           {STEPS.map((label) => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}

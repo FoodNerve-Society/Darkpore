@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 
-import React, { useState, Suspense } from "react";
+import React, { useState, Suspense, useRef, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -11,14 +11,23 @@ import {
   alpha,
   Skeleton,
   Button,
+  Tooltip,
+  IconButton,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import {
   Add as AddIcon,
   LocationOn as LocationIcon,
   Bolt as BoltIcon,
+  ArrowBack as ArrowBackIcon,
+  Business as BusinessIcon,
+  Search as SearchIcon,
+  Close as CloseIcon,
 } from "@mui/icons-material";
 import { useRouter } from "next/navigation";
 import { TradeListing } from "@/lib/db/society";
+import { useSociety } from "@/context/SocietyContext";
 import FlipContainer from "../components/shared/FlipContainer";
 import CreateListingForm from "./components/CreateListingForm";
 
@@ -102,6 +111,41 @@ const MOCK_LISTINGS: TradeListing[] = [
     isBoosted: false,
     imageUrl: "https://images.unsplash.com/photo-1592982537447-6f2a6a0a3824?w=800&auto=format&fit=crop",
   },
+  {
+    id: "l4",
+    category: "jobs",
+    title: "Harvest Supervisor Needed (2 Weeks)",
+    description: "Looking for an experienced supervisor for our tomato harvest.",
+    priceOrAsk: "₦50,000 / week",
+    location: "Abeokuta Farms",
+    lga: "Abeokuta North",
+    postedBy: { name: "Ogun AgriCorp", avatarUrl: "", isVerified: true },
+    postedAt: new Date().toISOString(),
+    urgency: "urgent",
+    status: "active",
+    isBoosted: true,
+    jobSource: "verified_tenant",
+    compType: "fiat",
+    imageUrl: "https://images.unsplash.com/photo-1595841696677-647fa58d20ae?w=800&auto=format&fit=crop",
+  },
+  {
+    id: "l5",
+    category: "volunteer",
+    title: "Translate Agronomy Guide to Yoruba",
+    description: "Help us translate our latest pest-control guide for local farmers.",
+    priceOrAsk: "500 NP",
+    location: "Remote",
+    lga: "Virtual",
+    postedBy: { name: "Food Nerve Core", avatarUrl: "", isVerified: true },
+    postedAt: new Date().toISOString(),
+    urgency: "normal",
+    status: "active",
+    isBoosted: false,
+    jobSource: "internal_foodnerve",
+    compType: "volunteer",
+    npReward: 500,
+    imageUrl: "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&auto=format&fit=crop",
+  },
 ];
 
 // ════════════════════════════════════════════════════════════
@@ -113,14 +157,15 @@ function CategoryAccentBar({ category }: { category: string }) {
   if (category === "flash-sale") color = FLASH_RED;
   if (category === "group-buy") color = "#3b82f6";
   if (category === "swap") color = "#8b5cf6";
-  if (category === "need") color = "#f59e0b";
+  if (category === "jobs") color = "#1e293b"; // Dark premium slate
+  if (category === "volunteer") color = "#ec4899"; // Pink for NP
 
   return (
     <Box sx={{ width: "100%", height: 4, background: `linear-gradient(90deg, ${color} 0%, transparent 100%)` }} />
   );
 }
 
-function ListingCard({ listing }: { listing: TradeListing }) {
+function ListingCard({ listing, isGrid = false }: { listing: TradeListing, isGrid?: boolean }) {
   const router = useRouter();
   
   return (
@@ -129,8 +174,9 @@ function ListingCard({ listing }: { listing: TradeListing }) {
       onClick={() => router.push(`/society/trade/${listing.id}`)}
       sx={{
         ...glassCard,
-        minWidth: { xs: 280, sm: 300 },
-        maxWidth: 320,
+        minWidth: isGrid ? 0 : { xs: 280, sm: 300 },
+        maxWidth: isGrid ? '100%' : 320,
+        width: isGrid ? '100%' : 'auto',
         scrollSnapAlign: "start",
         flexShrink: 0,
         cursor: "pointer",
@@ -228,81 +274,303 @@ function HorizontalScrollRow({ title, emoji, items }: { title: string; emoji: st
   );
 }
 
+function GridScrollRow({ items }: { items: TradeListing[] }) {
+  if (!items || items.length === 0) return (
+    <Box sx={{ px: { xs: 2, md: 4 }, py: 8, textAlign: 'center' }}>
+      <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 700 }}>No listings found in this category.</Typography>
+    </Box>
+  );
+  return (
+    <Box sx={{ px: { xs: 2, md: 4 }, pb: 8 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 3 }}>
+        {items.map(item => <ListingCard key={item.id} listing={item} isGrid={true} />)}
+      </Box>
+    </Box>
+  );
+}
+
 // ════════════════════════════════════════════════════════════
 // MAIN PAGE
 // ════════════════════════════════════════════════════════════
 
 export default function TradePage() {
+  const { profile } = useSociety();
   const [isFlipped, setIsFlipped] = useState(false);
+  const [postingAs, setPostingAs] = useState<'personal' | 'organization'>('personal');
+  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
+  
+  const [activeTab, setActiveTab] = useState("All Listings");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const tabRefs = useRef(new Map<string, HTMLDivElement | null>());
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const tab = tabRefs.current.get(activeTab);
+      if (tab) {
+        tab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [activeTab]);
+
+  const FILTERS = ["All Listings", "Flash Sales", "Group-Buy", "Swaps", "Paid Jobs", "Volunteer (NP)"];
 
   const FrontContent = (
     <Paper elevation={0} sx={sharedPaperSx}>
-      {/* Header */}
-      <Box sx={{ px: { xs: 2, md: 4 }, pt: { xs: 3, md: 4 }, mb: 4 }}>
-        <Typography variant="h4" sx={{ fontWeight: 900, mb: 1, color: "#000" }}>
-          Trade & Procure
-        </Typography>
-        <Typography variant="body1" sx={{ color: "text.secondary", maxWidth: 600 }}>
-          Connect directly with farmers, suppliers, and innovators to buy, sell, or barter.
-        </Typography>
+      {/* Header Mini Container */}
+      <Box sx={{ px: { xs: 1, md: 2 }, pt: { xs: 1, md: 2 }, mb: 3 }}>
+        <Paper elevation={0} sx={{ 
+          p: { xs: 2.5, md: 4 }, 
+          borderRadius: { xs: '20px', md: '28px' }, 
+          background: `linear-gradient(135deg, ${alpha(EMERALD, 0.04)} 0%, ${alpha(EMERALD, 0.12)} 100%)`, 
+          backdropFilter: 'blur(16px)',
+          border: `1px solid ${alpha(EMERALD, 0.15)}`,
+          boxShadow: `inset 0 1px 0 rgba(255,255,255,0.8), 0 8px 32px ${alpha(EMERALD, 0.06)}`,
+          display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { xs: 'flex-start', md: 'center' }, justifyContent: 'space-between', gap: 3
+        }}>
+          <Box>
+            <Typography variant="h5" sx={{ fontWeight: 900, color: "#000" }}>
+              Marketplace & Opportunities
+            </Typography>
+            <Typography variant="body2" sx={{ color: "text.secondary", mt: 0.5, fontWeight: 500 }}>
+              Access flash sales, community group-buys, resource swaps, and discover paid or volunteer roles.
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setIsFlipped(true)}
+            sx={{
+              background: `linear-gradient(135deg, ${EMERALD} 0%, ${EMERALD_DARK} 100%)`,
+              color: "#ffffff",
+              fontWeight: 800,
+              borderRadius: "14px",
+              textTransform: "none",
+              boxShadow: `0 4px 12px ${alpha(EMERALD, 0.3)}`,
+              flexShrink: 0,
+              px: 3, py: 1.2,
+              "&:hover": { background: `linear-gradient(135deg, ${EMERALD_DARK} 0%, #047857 100%)`, transform: 'translateY(-1px)' },
+              transition: 'all 0.2s'
+            }}
+          >
+            Post Listing
+          </Button>
+        </Paper>
       </Box>
 
-      {/* Filter Chips */}
-      <Box sx={{ display: "flex", gap: 1, overflowX: "auto", px: { xs: 2, md: 4 }, mb: 4, pb: 1, "&::-webkit-scrollbar": { display: "none" } }}>
-        {["All Listings", "Flash Sales", "Group-Buy", "Swaps", "Needs", "Jobs"].map((filter, i) => (
-          <Chip
-            key={filter}
-            label={filter}
-            onClick={() => {}}
-            sx={{
-              fontWeight: 700,
-              bgcolor: i === 0 ? EMERALD : "rgba(0,0,0,0.04)",
-              color: i === 0 ? "#fff" : "text.primary",
-              "&:hover": { bgcolor: i === 0 ? EMERALD_DARK : "rgba(0,0,0,0.08)" }
-            }}
-          />
-        ))}
+      {/* Filter Segmented Menu */}
+      <Box sx={{ px: { xs: 2, md: 4 }, mb: 4, display: 'flex', alignItems: 'center' }}>
+        <IconButton 
+          onClick={() => setSearchOpen(!searchOpen)}
+          sx={{ 
+            mr: 1, width: 44, height: 44, flexShrink: 0,
+            color: searchOpen ? EMERALD : 'text.secondary',
+            bgcolor: searchOpen ? alpha(EMERALD, 0.15) : 'transparent',
+            '&:hover': { color: EMERALD, transform: 'scale(1.05)', bgcolor: alpha(EMERALD, 0.2) }
+          }}
+        >
+          {searchOpen ? <CloseIcon /> : <SearchIcon />}
+        </IconButton>
+
+        <Box sx={{ flex: 1, overflowX: "auto", display: 'flex', alignItems: 'center', gap: 0.5, py: 2, px: 1, scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' } }}>
+          {FILTERS.map((filter, index) => {
+            const isActive = activeTab === filter;
+            const isFirst = index === 0;
+            const isLast = index === FILTERS.length - 1;
+            
+            return (
+              <Box
+                key={filter}
+                ref={(el) => { tabRefs.current.set(filter, el as HTMLDivElement | null); }}
+                onClick={() => setActiveTab(filter)}
+                sx={{
+                  px: isActive ? 4 : 3, py: 1.25, position: 'relative', zIndex: 2,
+                  color: isActive ? 'white' : EMERALD,
+                  cursor: 'pointer', whiteSpace: 'nowrap', fontWeight: 700, fontSize: '0.85rem',
+                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                  borderRadius: isActive 
+                    ? '999px !important' 
+                    : (isFirst 
+                        ? '999px 12px 12px 999px !important' 
+                        : isLast 
+                            ? '12px 999px 999px 12px !important' 
+                            : '12px !important'),
+                  background: isActive 
+                      ? `linear-gradient(135deg, ${EMERALD} 0%, ${EMERALD_DARK} 100%)` 
+                      : alpha(EMERALD, 0.08),
+                  boxShadow: isActive ? `0 4px 12px ${alpha(EMERALD, 0.3)}` : 'none',
+                  '&:hover': { 
+                      color: isActive ? 'white' : EMERALD_DARK,
+                      background: isActive ? `linear-gradient(135deg, ${EMERALD} 0%, ${EMERALD_DARK} 100%)` : alpha(EMERALD, 0.15),
+                  }
+                }}
+              >
+                {filter}
+              </Box>
+            );
+          })}
+        </Box>
       </Box>
 
       <Box sx={{ flex: 1, overflowY: 'auto' }}>
-        {/* Swimlanes */}
-        <HorizontalScrollRow title="Urgent Flash Sales" emoji="⚡" items={MOCK_LISTINGS.filter(l => l.category === "flash-sale")} />
-        <HorizontalScrollRow title="Community Group-Buys" emoji="🤝" items={MOCK_LISTINGS.filter(l => l.category === "group-buy")} />
-        <HorizontalScrollRow title="Barter & Swaps" emoji="♻️" items={MOCK_LISTINGS.filter(l => l.category === "swap")} />
-        <Box sx={{ height: { xs: 80, md: 24 } }} />
-      </Box>
-
-      {/* Post Button - Fixed at bottom */}
-      <Box sx={{ p: { xs: 2, md: 4 }, borderTop: '1px solid rgba(0,0,0,0.05)', bgcolor: 'white' }}>
-        <Button
-          fullWidth
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setIsFlipped(true)}
-          sx={{
-            background: `linear-gradient(135deg, ${EMERALD} 0%, ${EMERALD_DARK} 100%)`,
-            color: "#ffffff",
-            fontWeight: 800,
-            fontSize: "1.05rem",
-            py: 1.8,
-            borderRadius: "16px",
-            textTransform: "none",
-            boxShadow: `0 8px 32px ${alpha(EMERALD, 0.4)}`,
-            "&:hover": { background: `linear-gradient(135deg, ${EMERALD_DARK} 0%, #047857 100%)` },
-          }}
-        >
-          Post a Listing
-        </Button>
+        {activeTab === "All Listings" ? (
+          <>
+            <HorizontalScrollRow title="Urgent Flash Sales" emoji="⚡" items={MOCK_LISTINGS.filter(l => l.category === "flash-sale")} />
+            <HorizontalScrollRow title="Paid Opportunities" emoji="💼" items={MOCK_LISTINGS.filter(l => l.category === "jobs")} />
+            <HorizontalScrollRow title="Volunteer & Earn NP" emoji="🌟" items={MOCK_LISTINGS.filter(l => l.category === "volunteer")} />
+            <HorizontalScrollRow title="Community Group-Buys" emoji="🤝" items={MOCK_LISTINGS.filter(l => l.category === "group-buy")} />
+            <HorizontalScrollRow title="Barter & Swaps" emoji="♻️" items={MOCK_LISTINGS.filter(l => l.category === "swap")} />
+            <Box sx={{ height: { xs: 80, md: 24 } }} />
+          </>
+        ) : (
+          <>
+            {activeTab === "Flash Sales" && <GridScrollRow items={MOCK_LISTINGS.filter(l => l.category === "flash-sale")} />}
+            {activeTab === "Paid Jobs" && <GridScrollRow items={MOCK_LISTINGS.filter(l => l.category === "jobs")} />}
+            {activeTab === "Volunteer (NP)" && <GridScrollRow items={MOCK_LISTINGS.filter(l => l.category === "volunteer")} />}
+            {activeTab === "Group-Buy" && <GridScrollRow items={MOCK_LISTINGS.filter(l => l.category === "group-buy")} />}
+            {activeTab === "Swaps" && <GridScrollRow items={MOCK_LISTINGS.filter(l => l.category === "swap")} />}
+          </>
+        )}
       </Box>
     </Paper>
   );
 
   const BackContent = (
-    <Paper elevation={0} sx={{ ...sharedPaperSx, overflowY: 'auto' }}>
-      <CreateListingForm 
-        onCancel={() => setIsFlipped(false)}
-        onSuccess={() => setIsFlipped(false)}
-      />
+    <Paper
+      elevation={0}
+      sx={{
+        flex: 1,
+        m: { xs: 1, md: 2 },
+        minHeight: 0,
+        height: { xs: 'calc(100% - 16px)', md: 'calc(100% - 32px)' },
+        bgcolor: '#ffffff',
+        borderRadius: 4,
+        boxShadow: { xs: '0 8px 32px rgba(0,0,0,0.06)', md: '0 10px 40px rgba(0,0,0,0.04)' },
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      {/* Premium Gradient Header Bar */}
+      <Box sx={{ height: 4, width: '100%', background: `linear-gradient(90deg, ${EMERALD} 0%, ${EMERALD_DARK} 50%, #7c3aed 100%)`, flexShrink: 0, transition: 'background 0.5s ease' }} />
+      <Box
+        sx={{
+          px: { xs: 2.5, md: 3.5 },
+          py: 2,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1.5,
+          borderBottom: '1px solid rgba(0,0,0,0.05)',
+          flexShrink: 0,
+        }}
+      >
+        <Tooltip title="Close Editor">
+          <IconButton
+            onClick={() => setIsFlipped(false)}
+            sx={{
+              width: 36,
+              height: 36,
+              bgcolor: 'rgba(0,0,0,0.03)',
+              '&:hover': { bgcolor: 'rgba(0,0,0,0.06)' },
+            }}
+          >
+            <ArrowBackIcon sx={{ fontSize: 18 }} />
+          </IconButton>
+        </Tooltip>
+        <Box sx={{ flex: 1 }}>
+          <Typography sx={{ fontWeight: 900, fontSize: '1.1rem', letterSpacing: '-0.01em', display: 'flex', alignItems: 'center', gap: 1 }}>
+            <span style={{ opacity: 0.5 }}>Marketplace</span>
+            <span style={{ opacity: 0.5 }}>/</span>
+            Create Listing
+          </Typography>
+          <Typography sx={{ fontSize: '0.72rem', color: 'text.disabled', fontWeight: 600, mt: 0.2 }}>
+            Publishing as {postingAs === 'personal' ? (profile?.displayName || 'Unknown') : (profile?.organizations?.find(o => o.id === selectedOrgId)?.name || 'Organization')}
+          </Typography>
+        </Box>
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Tooltip title="Post as Personal">
+            <IconButton 
+              onClick={() => setPostingAs('personal')}
+              sx={{ 
+                bgcolor: postingAs === 'personal' ? 'rgba(0,0,0,0.04)' : 'transparent', 
+                width: 36, height: 36,
+                border: postingAs === 'personal' ? '1px solid rgba(0,0,0,0.08)' : '1px solid transparent',
+                transition: 'all 0.2s',
+                '&:hover': { bgcolor: 'rgba(0,0,0,0.06)' }
+              }}
+            >
+              <Avatar src={profile?.avatarUrl} sx={{ width: 24, height: 24 }} />
+            </IconButton>
+          </Tooltip>
+
+          {profile?.organizations && profile.organizations.length > 0 && (
+            <Tooltip title="Post as Organization">
+              <IconButton 
+                onClick={() => setPostingAs('organization')}
+                sx={{ 
+                  bgcolor: postingAs === 'organization' ? 'rgba(0,0,0,0.04)' : 'transparent', 
+                  width: 36, height: 36,
+                  border: postingAs === 'organization' ? '1px solid rgba(0,0,0,0.08)' : '1px solid transparent',
+                  transition: 'all 0.2s',
+                  '&:hover': { bgcolor: 'rgba(0,0,0,0.06)' }
+                }}
+              >
+                <BusinessIcon sx={{ color: postingAs === 'organization' ? '#0f172a' : '#94a3b8', fontSize: 20 }} />
+              </IconButton>
+            </Tooltip>
+          )}
+
+          {postingAs === 'organization' && profile?.organizations && profile.organizations.length > 0 && (
+            <Select
+              size="small"
+              value={selectedOrgId || profile.organizations[0]?.id || ''}
+              onChange={(e) => setSelectedOrgId(e.target.value)}
+              renderValue={(selected) => {
+                const org = profile.organizations?.find((o: any) => o.id === selected);
+                if (!org) return null;
+                return (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Avatar src={org.logoUrl} sx={{ width: 20, height: 20 }} />
+                    <Typography sx={{ display: { xs: 'none', sm: 'block' }, fontWeight: 700, fontSize: '0.85rem' }}>
+                      {org.name}
+                    </Typography>
+                  </Box>
+                );
+              }}
+              sx={{
+                ml: 0.5,
+                height: 36,
+                minWidth: { xs: 60, sm: 140 },
+                borderRadius: '12px',
+                bgcolor: 'rgba(0,0,0,0.02)',
+                '& .MuiOutlinedInput-notchedOutline': { border: '1px solid rgba(0,0,0,0.08)' },
+                '&:hover .MuiOutlinedInput-notchedOutline': { border: '1px solid rgba(0,0,0,0.15)' },
+                '& .MuiSelect-select': { py: 0, display: 'flex', alignItems: 'center', gap: 1, fontWeight: 700, fontSize: '0.85rem' }
+              }}
+            >
+              {profile.organizations.map((org: any) => (
+                <MenuItem key={org.id} value={org.id} sx={{ fontWeight: 600, fontSize: '0.85rem', display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                  <Avatar src={org.logoUrl} sx={{ width: 20, height: 20 }} />
+                  {org.name}
+                </MenuItem>
+              ))}
+            </Select>
+          )}
+        </Box>
+      </Box>
+
+      {/* Main Form Body */}
+      <Box sx={{ flex: 1, overflowY: 'auto' }}>
+        <CreateListingForm 
+          onCancel={() => setIsFlipped(false)}
+          onSuccess={() => setIsFlipped(false)}
+          postingAs={postingAs}
+          selectedOrgId={selectedOrgId || (profile?.organizations?.[0]?.id ?? null)}
+        />
+      </Box>
     </Paper>
   );
 

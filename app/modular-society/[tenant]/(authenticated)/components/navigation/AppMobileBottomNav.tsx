@@ -180,6 +180,8 @@ const AppMobileBottomNav: FC<AppMobileBottomNavProps> = ({ profile, onSignOut, b
                 justifyContent: 'center',
                 borderRadius: '16px',
                 textTransform: 'none', 
+                fontFamily: 'var(--font-quicksand)',
+                fontWeight: 700,
                 bgcolor: isActive ? navTheme.main : alpha(navTheme.main || '#000', 0.03),
                 color: isActive ? '#ffffff' : '#0f2414',
                 backdropFilter: isActive ? 'none' : 'blur(4px)',
@@ -218,8 +220,9 @@ const AppMobileBottomNav: FC<AppMobileBottomNavProps> = ({ profile, onSignOut, b
               
               <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Typography sx={{ 
+                  fontFamily: 'inherit',
                   fontSize: isActive ? '0.9rem' : '0.85rem', 
-                  fontWeight: isActive ? 800 : 600,
+                  fontWeight: isActive ? 800 : 700,
                   letterSpacing: isActive ? '-0.01em' : 0,
                 }}>
                   {item.label}

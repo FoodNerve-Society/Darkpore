@@ -220,6 +220,32 @@ export default async function InnovationsHomepage() {
     }));
   }
 
+  // Fetch Jobs & Volunteering Opportunities
+  let activeOpportunities: any[] = [];
+  try {
+    const rawListings = await prisma.tradeListing.findMany({
+      where: { 
+        category: { in: ['jobs', 'volunteer'] },
+        status: 'active'
+      },
+      include: { postedBy: true },
+      take: 10,
+      orderBy: { postedAt: 'desc' }
+    });
+    
+    activeOpportunities = rawListings.map((l: any) => ({
+      id: l.id,
+      title: l.title,
+      type: l.category === 'volunteer' ? 'Volunteering' : 'Jobs',
+      imageUrl: l.imageUrl || '/images/default-thumbnail.jpg',
+      author: l.postedBy?.name || l.externalCompany || 'Food Nerve Network',
+      metric: l.category === 'volunteer' ? `${l.npReward || 'Earn'} NP` : l.priceOrAsk,
+      link: `/modular-society/${tenantId}/trade`
+    }));
+  } catch (e) {
+    console.warn("SERVER LOG - Failed to fetch trade listings from DB.", e);
+  }
+
   // Group mixed ecosystem items by Category for the TabbedHero
   const ecosystemCategories = homepageConfig.challenges.map((c: any) => {
     // 1. Intelligence Items
@@ -249,8 +275,19 @@ export default async function InnovationsHomepage() {
         metaInfo: ad.traction
     }));
 
-    // Mix them up (Innovations first, then Intelligence)
-    const items = [...innovationItems, ...intelligenceItems];
+    // 3. Jobs and Volunteer Opportunities
+    const opportunityItems = activeOpportunities.map((opp: any) => ({
+        id: `opp-${opp.id}`,
+        type: opp.type as any,
+        title: opp.title,
+        thumbnailUrl: opp.imageUrl,
+        link: opp.link,
+        authorOrOperator: opp.author,
+        metaInfo: opp.metric
+    }));
+
+    // Mix them up (Innovations first, then Opportunities, then Intelligence)
+    const items = [...innovationItems, ...opportunityItems, ...intelligenceItems];
 
     // Elegant, saturated theme colors for each category
     const categoryColors = ['#166534', '#b45309', '#4338ca', '#b91c1c', '#0f766e', '#86198f', '#0369a1'];
