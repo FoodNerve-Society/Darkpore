@@ -204,6 +204,10 @@ export default function CreateListingForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  
+  const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Logo toggle mode
   const [mediaUrlMode, setMediaUrlMode] = useState(false);
@@ -233,13 +237,24 @@ export default function CreateListingForm({
         break;
       case 'geography':
         total = 1;
-        if (selectedCountry) filled++;
+        if (selectedCountry) {
+           filled++;
+           const isRemote = initialSelections?.secondary === 'remote';
+           // State is always compulsory
+           total++;
+           if (selectedState) filled++;
+           
+           if (!isRemote) {
+               // City is compulsory if hybrid/onsite
+               total++;
+               if (selectedCity) filled++;
+           }
+        }
         break;
       case 'compensation':
-        total = isVolunteer ? 2 : 4;
-        if (duration) filled++;
+        total = isVolunteer ? 1 : 3;
         if (isVolunteer) {
-           if (npAmount) filled++;
+           if (duration) filled++;
         } else {
            if (currency) filled++;
            if (minSalary) filled++;
@@ -298,22 +313,48 @@ export default function CreateListingForm({
       );
   }
 
-  const handlePublish = async () => {
+  const handleSubmit = async (status: 'draft' | 'active') => {
+    setError(null);
+    setSuccessMsg(null);
+
+    // Enforce title and location for drafts as well
+    if (status === 'draft') {
+        if (!title.trim() || !selectedCountry) {
+            setError("Add a job title and location to save to draft.");
+            scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+        }
+    }
+
+    if (status === 'active') {
+        if (!areAllBlocksFilled) {
+            setError("Please complete all required fields across all blocks before publishing.");
+            scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+        }
+        if (hasSalaryError) {
+            setError("Minimum salary cannot be greater than maximum salary.");
+            scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+        }
+    }
+
     setIsSubmitting(true);
     
     // Upload Logo if a local file was selected
     let finalLogoUrl = companyLogoUrl;
-    if (companyLogoFile) {
+    if (companyLogoFile && !companyDisabled) {
         const result = await uploadFile(companyLogoFile);
-        if (result?.secure_url) {
-            finalLogoUrl = result.secure_url;
+        if (result?.publicUrl || result?.secure_url) {
+            finalLogoUrl = result.publicUrl || result.secure_url;
         } else {
-            alert("Failed to upload company logo.");
+            alert("Failed to upload company logo. Try again.");
             setIsSubmitting(false);
             return;
         }
     }
 
+    const isVolunteer = initialCategory?.toLowerCase().includes('volunteer');
     let compTypeString = isVolunteer ? "Volunteer/NP" : "Fiat";
     let locationString = `${selectedCountry?.name || ''}`;
     if (selectedState) locationString = `${selectedState.name}, ${locationString}`;
@@ -325,9 +366,11 @@ export default function CreateListingForm({
       useEscrow,
       duration,
       currency,
-      minSalary,
-      maxSalary,
-      npAmount,
+      minSalary: minSalary ? parseFloat(minSalary) : undefined,
+      maxSalary: maxSalary ? parseFloat(maxSalary) : undefined,
+      startDate,
+      endDate,
+      npAmount: npAmount ? parseInt(npAmount) : undefined,
       companyName,
       companyLogoUrl: finalLogoUrl,
       commitment: initialSelections?.primary,
@@ -342,21 +385,24 @@ export default function CreateListingForm({
       priceOrAsk: isVolunteer ? (npAmount || "0") : `${currency} ${minSalary} - ${maxSalary}`, 
       location: locationString, 
       lga: selectedCity?.name || "", 
-      postedById: postingAs === 'organization' && selectedOrgId ? selectedOrgId : profile.uid, 
+      postedById: postingAs === 'organization' && selectedOrgId ? selectedOrgId : profile?.uid || "anon", 
       nervePointsCost: 0,
+      status,
       metadata
     });
     
+    setIsSubmitting(false);
     if (res.success) {
-      setSubmitted(true);
-      setShowPreview(false);
-      setTimeout(() => {
-        setSubmitted(false);
+      if (status === 'draft') {
+        setSuccessMsg("Draft saved successfully.");
+        scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        setSubmitted(true);
         onSuccess();
-      }, 2500);
+      }
     } else {
-      alert(res.error || "Failed to publish listing.");
-      setIsSubmitting(false);
+      setError(res.error || "Failed to publish listing.");
+      scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -377,10 +423,28 @@ export default function CreateListingForm({
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', position: 'relative' }}>
       
-      {/* SCROLLABLE MAIN CONTENT */}
-      <Box sx={{ flex: 1, overflowY: 'auto', px: { xs: 2.5, sm: 3.5 }, py: 3, display: 'flex', flexDirection: 'column', gap: 3.5 }}>
+      {/* 3D Container Wrapper */}
+      <Box ref={scrollContainerRef} sx={{ perspective: '1000px', flex: 1, overflowY: 'auto', p: { xs: 2, md: 3 }, display: 'flex', flexDirection: 'column', gap: 4 }}>
         
-        <Box sx={{ maxWidth: 800, mx: "auto", width: '100%' }}>
+        {error && (
+          <Alert severity="error" sx={{ mb: 0, borderRadius: '12px', '& .MuiAlert-message': { fontWeight: 600 } }} onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
+        
+        {successMsg && (
+          <Alert severity="success" sx={{ mb: 0, borderRadius: '12px', '& .MuiAlert-message': { fontWeight: 600 } }} onClose={() => setSuccessMsg(null)}>
+            {successMsg}
+          </Alert>
+        )}
+
+        {(!title.trim() || !selectedCountry) && (
+          <Alert severity="info" sx={{ mb: 0, borderRadius: '12px', '& .MuiAlert-message': { fontWeight: 600 }, bgcolor: 'rgba(59,130,246,0.1)' }}>
+            Please add a job title and location to preview or save this listing as a draft.
+          </Alert>
+        )}
+
+        <Box sx={{ position: 'relative', width: '100%', maxWidth: 800, mx: 'auto', display: 'flex', flexDirection: 'column', gap: 3 }}>
           
           {/* ╭─── CONTEXT HEADER ───╮ */}
           <Box sx={{
@@ -658,10 +722,10 @@ export default function CreateListingForm({
                               <PremiumAutocomplete colorTheme={color} label="Country *" options={countries} getOptionLabel={(opt: any) => opt.name || ''} value={selectedCountry} onChange={(e, val) => setSelectedCountry(val)} />
                               <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', sm: 'row' } }}>
                                   <Box sx={{ flex: 1 }}>
-                                      <PremiumAutocomplete colorTheme={color} label="State / Province" options={states} getOptionLabel={(opt: any) => opt.name || ''} value={selectedState} onChange={(e, val) => setSelectedState(val)} disabled={!selectedCountry || states.length === 0} />
+                                      <PremiumAutocomplete colorTheme={color} label="State / Province *" options={states} getOptionLabel={(opt: any) => opt.name || ''} value={selectedState} onChange={(e, val) => setSelectedState(val)} disabled={!selectedCountry || states.length === 0} />
                                   </Box>
                                   <Box sx={{ flex: 1 }}>
-                                      <PremiumAutocomplete colorTheme={color} label="City / LGA" options={cities} getOptionLabel={(opt: any) => opt.name || ''} value={selectedCity} onChange={(e, val) => setSelectedCity(val)} disabled={!selectedState || cities.length === 0} />
+                                      <PremiumAutocomplete colorTheme={color} label={`City / LGA ${initialSelections?.secondary === 'remote' ? '(Optional)' : '*'}`} options={cities} getOptionLabel={(opt: any) => opt.name || ''} value={selectedCity} onChange={(e, val) => setSelectedCity(val)} disabled={!selectedState || cities.length === 0} />
                                   </Box>
                               </Box>
                           </Box>
@@ -799,8 +863,15 @@ export default function CreateListingForm({
         </Box>
         <Box sx={{ display: 'flex', gap: 2 }}>
           <Button
-            onClick={() => setShowPreview(true)}
-            disabled={!title.trim()}
+            onClick={() => {
+              if (!title.trim() || !selectedCountry) {
+                setError("Please add a job title and location to preview this listing.");
+                scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+              }
+              setShowPreview(true);
+            }}
+            disabled={!title.trim() || !selectedCountry}
             startIcon={<SparkleIcon sx={{ color: '#64748b' }} />}
             sx={{
               color: '#64748b',
@@ -819,6 +890,8 @@ export default function CreateListingForm({
             Preview
           </Button>
           <Button
+            onClick={() => handleSubmit('draft')}
+            disabled={isSubmitting}
             sx={{
               bgcolor: 'rgba(245, 158, 11, 0.1)',
               color: '#d97706',
@@ -831,11 +904,11 @@ export default function CreateListingForm({
               }
             }}
           >
-            Save Draft
+            {isSubmitting ? 'Saving...' : 'Save Draft'}
           </Button>
           <Button 
             variant="contained" 
-            onClick={handlePublish} 
+            onClick={() => handleSubmit('active')} 
             disabled={isSubmitting} 
             sx={{ 
               bgcolor: EMERALD, 

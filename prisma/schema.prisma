@@ -132,6 +132,13 @@ model TradeListing {
   externalUrl     String?   // Where to apply if external
   npReward        Int?      // How much NP the volunteer gets (Escrow)
   minRank         Int?      // Minimum rank required to apply (for Premium internal jobs)
+  currency        String?
+  minSalary       Float?
+  maxSalary       Float?
+  duration        String?
+  startDate       DateTime?
+  endDate         DateTime?
+  workModel       String?   // 'remote' | 'hybrid' | 'onsite'
 
   // Relations
   postedById String
