@@ -15,7 +15,8 @@ import {
   Modal,
   Chip,
   IconButton,
-  Tooltip
+  Tooltip,
+  Alert
 } from "@mui/material";
 
 import { useRouter } from "next/navigation";
@@ -39,7 +40,12 @@ import SparkleIcon from "@mui/icons-material/AutoAwesome";
 
 import PremiumTextField from "@/components/PremiumTextField";
 import PremiumAutocomplete from "@/components/PremiumAutocomplete";
+import PremiumDatePicker from "@/components/PremiumDatePicker";
 import PremiumMarkdownEditor from "@/components/PremiumMarkdownEditor";
+import PreviewListingModal from "./PreviewListingModal";
+import { useStorageUpload } from "@/hooks/useStorageUpload";
+import ImageIcon from "@mui/icons-material/Image";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { Country, State, City } from 'country-state-city';
 import { CATEGORY_OPTIONS } from "@/lib/taxonomy";
 
@@ -136,10 +142,17 @@ export default function CreateListingForm({
   }, [selectedState, selectedCountry]);
 
   // Compensation
+  const [companyLogoUrl, setCompanyLogoUrl] = useState(
+      isFoodNerve ? "https://foodnerve.com/logo.png" : 
+      (isMyOrg && activeOrg?.logoUrl) ? activeOrg.logoUrl : ""
+  );
+  const [companyLogoFile, setCompanyLogoFile] = useState<File | null>(null);
+  const { uploadFile, uploading: uploadingLogo } = useStorageUpload();
   const [deadline, setDeadline] = useState("");
   const [startDate, setStartDate] = useState("");
   const [duration, setDuration] = useState("");
   const [currency, setCurrency] = useState("USD");
+  const CURRENCY_OPTIONS = ["USD", "NGN", "EUR", "GBP", "CAD", "AUD", "KES", "ZAR", "GHS"];
   const [minSalary, setMinSalary] = useState("");
   const [maxSalary, setMaxSalary] = useState("");
   const [npAmount, setNpAmount] = useState("");
@@ -158,6 +171,12 @@ export default function CreateListingForm({
   const [showPreview, setShowPreview] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
+  // Logo toggle mode
+  const [mediaUrlMode, setMediaUrlMode] = useState(false);
+
+  // Salary Validation
+  const hasSalaryError = Boolean(minSalary && maxSalary && Number(minSalary) > Number(maxSalary));
+
   // 3D Block State
   const [flippedBlockId, setFlippedBlockId] = useState<string | null>(null);
 
@@ -168,7 +187,14 @@ export default function CreateListingForm({
       case 'overview':
         total = 3;
         if (title.trim().length >= 5) filled++;
-        if (companyName.trim().length > 0) filled++;
+        if (companyName.trim().length > 0) {
+            // If it's a new company, logo is required
+            if (!companyDisabled) {
+                total++; // Needs logo
+                if (companyLogoUrl.trim().length > 0) filled++;
+            }
+            filled++;
+        }
         if (category) filled++;
         break;
       case 'geography':
@@ -241,6 +267,19 @@ export default function CreateListingForm({
   const handlePublish = async () => {
     setIsSubmitting(true);
     
+    // Upload Logo if a local file was selected
+    let finalLogoUrl = companyLogoUrl;
+    if (companyLogoFile) {
+        const result = await uploadFile(companyLogoFile);
+        if (result?.secure_url) {
+            finalLogoUrl = result.secure_url;
+        } else {
+            alert("Failed to upload company logo.");
+            setIsSubmitting(false);
+            return;
+        }
+    }
+
     let compTypeString = isVolunteer ? "Volunteer/NP" : "Fiat";
     let locationString = `${selectedCountry?.name || ''}`;
     if (selectedState) locationString = `${selectedState.name}, ${locationString}`;
@@ -256,6 +295,7 @@ export default function CreateListingForm({
       maxSalary,
       npAmount,
       companyName,
+      companyLogoUrl: finalLogoUrl,
       commitment: initialSelections?.primary,
       workModel: initialSelections?.secondary,
       hiringEntity: initialSelections?.tertiary
@@ -521,8 +561,48 @@ export default function CreateListingForm({
                           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                               <PremiumTextField colorTheme={color} fullWidth label="Listing Title *" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Senior Agronomist" />
                               <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', sm: 'row' } }}>
-                                  <Box sx={{ flex: 1 }}>
+                                  <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
                                       <PremiumTextField colorTheme={color} fullWidth label="Hiring Entity / Company *" value={companyName} onChange={(e) => setCompanyName(e.target.value)} disabled={companyDisabled} />
+                                      {/* Alert if their org has no logo */}
+                                      {companyDisabled && !companyLogoUrl && (
+                                          <Alert severity="warning" sx={{ borderRadius: 2, bgcolor: alpha('#f59e0b', 0.1), color: '#d97706', '& .MuiAlert-icon': { color: '#f59e0b' }, fontSize: '0.85rem' }}>
+                                              Your organization is missing a logo. Ask your admin to add one to improve listing validity.
+                                          </Alert>
+                                      )}
+                                      {/* If company is custom, ask for logo immediately */}
+                                      {!companyDisabled && (
+                                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: 1 }}>
+                                              <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: '#64748b' }}>Company Logo (Required) *</Typography>
+                                              <Box component="label" sx={{ 
+                                                  borderRadius: '16px', overflow: 'hidden', bgcolor: 'rgba(0,0,0,0.02)', 
+                                                  border: '2px dashed', borderColor: companyLogoUrl ? 'transparent' : 'rgba(0,0,0,0.15)', 
+                                                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', 
+                                                  minHeight: 120, cursor: 'pointer', position: 'relative', 
+                                                  transition: 'all 0.2s', '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' } 
+                                              }}>
+                                                  <input type="file" hidden accept="image/*" onChange={(e) => {
+                                                      if (e.target.files?.[0]) {
+                                                          const file = e.target.files[0];
+                                                          setCompanyLogoFile(file);
+                                                          setCompanyLogoUrl(URL.createObjectURL(file));
+                                                      }
+                                                  }} />
+                                                  {companyLogoUrl ? (
+                                                      <Box sx={{ width: '100%', height: '100%', position: 'relative' }}>
+                                                          <img src={companyLogoUrl} alt="Logo preview" style={{ width: '100%', height: 120, objectFit: 'contain', padding: '8px' }} />
+                                                          <Box sx={{ position: 'absolute', inset: 0, bgcolor: 'rgba(0,0,0,0.4)', opacity: 0, transition: 'opacity 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', '&:hover': { opacity: 1 } }}>
+                                                              <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '0.85rem' }}>Change Logo</Typography>
+                                                          </Box>
+                                                      </Box>
+                                                  ) : (
+                                                      <>
+                                                          <CloudUploadIcon sx={{ fontSize: 32, color: 'rgba(0,0,0,0.2)', mb: 1 }} />
+                                                          <Typography sx={{ color: '#64748b', fontSize: '0.85rem', fontWeight: 600 }}>Click to upload logo</Typography>
+                                                      </>
+                                                  )}
+                                              </Box>
+                                          </Box>
+                                      )}
                                   </Box>
                                   <Box sx={{ flex: 1 }}>
                                       <PremiumAutocomplete colorTheme={color} label="Sector / Category *" options={CATEGORY_OPTIONS} value={category} onChange={(e, val) => setCategory(val as string)} />
@@ -552,10 +632,10 @@ export default function CreateListingForm({
                                 
                                 <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', md: 'row' } }}>
                                     <Box sx={{ flex: 1 }}>
-                                        <PremiumTextField colorTheme={color} fullWidth label="Application Deadline (Optional)" type="date" InputLabelProps={{ shrink: true }} value={deadline} onChange={(e) => setDeadline(e.target.value)} />
+                                        <PremiumDatePicker colorTheme={color} fullWidth label="Application Deadline (Optional)" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
                                     </Box>
                                     <Box sx={{ flex: 1 }}>
-                                        <PremiumTextField colorTheme={color} fullWidth label="Start Date (Optional)" type="date" InputLabelProps={{ shrink: true }} value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                                        <PremiumDatePicker colorTheme={color} fullWidth label="Start Date (Optional)" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
                                     </Box>
                                 </Box>
                                 <PremiumTextField colorTheme={color} fullWidth label="Duration / Engagement Length *" value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="e.g. 3 Months, Ongoing, Project-based" />
@@ -563,16 +643,23 @@ export default function CreateListingForm({
                                 {isVolunteer ? (
                                      <PremiumTextField colorTheme={color} fullWidth label="Nerve Points Offered (Optional)" type="number" value={npAmount} onChange={(e) => setNpAmount(e.target.value)} placeholder="e.g. 500 NP" />
                                 ) : (
-                                    <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', md: 'row' } }}>
-                                        <Box sx={{ flex: 1 }}>
-                                            <PremiumTextField colorTheme={color} fullWidth label="Currency *" value={currency} onChange={(e) => setCurrency(e.target.value)} placeholder="e.g. NGN, USD" />
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                        <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', md: 'row' } }}>
+                                            <Box sx={{ flex: 1 }}>
+                                                <PremiumAutocomplete colorTheme={color} label="Currency *" options={CURRENCY_OPTIONS} value={currency} onChange={(e, val) => setCurrency(val as string)} disableClearable />
+                                            </Box>
+                                            <Box sx={{ flex: 1 }}>
+                                                <PremiumTextField colorTheme={color} fullWidth label="Min Budget/Salary" type="number" value={minSalary} onChange={(e) => setMinSalary(e.target.value)} />
+                                            </Box>
+                                            <Box sx={{ flex: 1 }}>
+                                                <PremiumTextField colorTheme={color} fullWidth label="Max Budget/Salary" type="number" value={maxSalary} onChange={(e) => setMaxSalary(e.target.value)} />
+                                            </Box>
                                         </Box>
-                                        <Box sx={{ flex: 1 }}>
-                                            <PremiumTextField colorTheme={color} fullWidth label="Min Budget/Salary" type="number" value={minSalary} onChange={(e) => setMinSalary(e.target.value)} />
-                                        </Box>
-                                        <Box sx={{ flex: 1 }}>
-                                            <PremiumTextField colorTheme={color} fullWidth label="Max Budget/Salary" type="number" value={maxSalary} onChange={(e) => setMaxSalary(e.target.value)} />
-                                        </Box>
+                                        {hasSalaryError && (
+                                            <Alert severity="error" sx={{ borderRadius: 2, bgcolor: alpha('#ef4444', 0.1), color: '#ef4444', '& .MuiAlert-icon': { color: '#ef4444' } }}>
+                                                Minimum salary cannot be greater than maximum salary.
+                                            </Alert>
+                                        )}
                                     </Box>
                                 )}
                                 
@@ -621,6 +708,30 @@ export default function CreateListingForm({
               );
             })}
           </Box>
+          
+          <PreviewListingModal 
+            open={showPreview} 
+            onClose={() => setShowPreview(false)}
+            onPublish={handlePublish}
+            isSubmitting={isSubmitting}
+            data={{
+              title,
+              companyName,
+              companyLogoUrl,
+              category: category || '',
+              locationString: selectedCountry ? `${selectedCity ? selectedCity.name + ', ' : ''}${selectedState ? selectedState.name + ', ' : ''}${selectedCountry.name}` : '',
+              duration,
+              deadline,
+              startDate,
+              compTypeString: isVolunteer ? "Volunteer/NP" : "Fiat",
+              minSalary,
+              maxSalary,
+              currency,
+              npAmount,
+              description,
+              color: '#3b82f6' // fallback primary color for the modal
+            }}
+          />
         </Box>
       </Box>
 
