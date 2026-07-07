@@ -30,6 +30,7 @@ import { TradeListing } from "@/lib/db/society";
 import { useSociety } from "@/context/SocietyContext";
 import FlipContainer from "../components/shared/FlipContainer";
 import CreateListingForm from "./components/CreateListingForm";
+import ListingStudioDashboard from "./components/ListingStudioDashboard";
 
 // ── Colors ────────────────────────────────────────────────
 const EMERALD = "#10b981";
@@ -298,10 +299,18 @@ export default function TradePage() {
   const [isFlipped, setIsFlipped] = useState(false);
   const [postingAs, setPostingAs] = useState<'personal' | 'organization'>('personal');
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
+  // Dashboard / Form State
+  const [drafts, setDrafts] = useState<any[]>([
+    { id: 'draft-1', title: 'Need 500kg of Cassava', category: 'need', lastEdited: '2 hours ago' },
+    { id: 'draft-2', title: 'Senior Farm Manager', category: 'jobs', lastEdited: 'yesterday' }
+  ]); // To be populated with actual DB data later
+  const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
+  const [createCategory, setCreateCategory] = useState<string>('');
   
   const [activeTab, setActiveTab] = useState("All Listings");
   const [searchOpen, setSearchOpen] = useState(false);
   const tabRefs = useRef(new Map<string, HTMLDivElement | null>());
+  const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -318,21 +327,34 @@ export default function TradePage() {
   const FrontContent = (
     <Paper elevation={0} sx={sharedPaperSx}>
       {/* Header Mini Container */}
-      <Box sx={{ px: { xs: 1, md: 2 }, pt: { xs: 1, md: 2 }, mb: 3 }}>
+      <Box sx={{ 
+        px: { xs: 1, md: 2 }, 
+        pt: isScrolled ? { xs: 1, md: 1 } : { xs: 1, md: 2 }, 
+        mb: isScrolled ? 1 : 3,
+        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)' 
+      }}>
         <Paper elevation={0} sx={{ 
-          p: { xs: 2.5, md: 4 }, 
+          p: isScrolled ? { xs: 1.5, md: 2 } : { xs: 2.5, md: 4 }, 
           borderRadius: { xs: '20px', md: '28px' }, 
           background: `linear-gradient(135deg, ${alpha(EMERALD, 0.04)} 0%, ${alpha(EMERALD, 0.12)} 100%)`, 
           backdropFilter: 'blur(16px)',
           border: `1px solid ${alpha(EMERALD, 0.15)}`,
-          boxShadow: `inset 0 1px 0 rgba(255,255,255,0.8), 0 8px 32px ${alpha(EMERALD, 0.06)}`,
-          display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { xs: 'flex-start', md: 'center' }, justifyContent: 'space-between', gap: 3
+          boxShadow: `inset 0 1px 0 rgba(255,255,255,0.8), 0 ${isScrolled ? 4 : 8}px ${isScrolled ? 16 : 32}px ${alpha(EMERALD, 0.06)}`,
+          display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { xs: 'flex-start', md: 'center' }, justifyContent: 'space-between', gap: isScrolled ? 1.5 : 3,
+          transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
         }}>
           <Box>
-            <Typography variant="h5" sx={{ fontWeight: 900, color: "#000" }}>
+            <Typography variant={isScrolled ? "h6" : "h5"} sx={{ fontWeight: 900, color: "#000", transition: 'all 0.4s ease' }}>
               Marketplace & Opportunities
             </Typography>
-            <Typography variant="body2" sx={{ color: "text.secondary", mt: 0.5, fontWeight: 500 }}>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                color: "text.secondary", mt: 0.5, fontWeight: 500,
+                maxHeight: isScrolled ? 0 : 50, opacity: isScrolled ? 0 : 1, overflow: 'hidden',
+                transition: 'all 0.3s ease'
+              }}
+            >
               Access flash sales, community group-buys, resource swaps, and discover paid or volunteer roles.
             </Typography>
           </Box>
@@ -348,9 +370,9 @@ export default function TradePage() {
               textTransform: "none",
               boxShadow: `0 4px 12px ${alpha(EMERALD, 0.3)}`,
               flexShrink: 0,
-              px: 3, py: 1.2,
+              px: isScrolled ? 2 : 3, py: isScrolled ? 0.8 : 1.2,
               "&:hover": { background: `linear-gradient(135deg, ${EMERALD_DARK} 0%, #047857 100%)`, transform: 'translateY(-1px)' },
-              transition: 'all 0.2s'
+              transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
             }}
           >
             Post Listing
@@ -359,7 +381,12 @@ export default function TradePage() {
       </Box>
 
       {/* Filter Segmented Menu */}
-      <Box sx={{ px: { xs: 2, md: 4 }, mb: 4, display: 'flex', alignItems: 'center' }}>
+      <Box sx={{ 
+        px: { xs: 2, md: 4 }, 
+        mb: isScrolled ? 2 : 4, 
+        display: 'flex', alignItems: 'center',
+        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+      }}>
         <IconButton 
           onClick={() => setSearchOpen(!searchOpen)}
           sx={{ 
@@ -412,7 +439,17 @@ export default function TradePage() {
         </Box>
       </Box>
 
-      <Box sx={{ flex: 1, overflowY: 'auto' }}>
+      <Box 
+        sx={{ flex: 1, overflowY: 'auto' }}
+        onScroll={(e) => {
+          const target = e.target as HTMLDivElement;
+          if (target.scrollTop > 30) {
+            if (!isScrolled) setIsScrolled(true);
+          } else {
+            if (isScrolled) setIsScrolled(false);
+          }
+        }}
+      >
         {activeTab === "All Listings" ? (
           <>
             <HorizontalScrollRow title="Urgent Flash Sales" emoji="⚡" items={MOCK_LISTINGS.filter(l => l.category === "flash-sale")} />
@@ -466,9 +503,16 @@ export default function TradePage() {
           flexShrink: 0,
         }}
       >
-        <Tooltip title="Close Editor">
+        <Tooltip title={(!selectedDraftId || selectedDraftId === null) && selectedDraftId !== 'new' ? "Close Studio" : "Back to Dashboard"}>
           <IconButton
-            onClick={() => setIsFlipped(false)}
+            onClick={() => {
+              if ((!selectedDraftId || selectedDraftId === null) && selectedDraftId !== 'new') {
+                setIsFlipped(false);
+              } else {
+                setCreateCategory('');
+                setSelectedDraftId(null);
+              }
+            }}
             sx={{
               width: 36,
               height: 36,
@@ -481,9 +525,9 @@ export default function TradePage() {
         </Tooltip>
         <Box sx={{ flex: 1 }}>
           <Typography sx={{ fontWeight: 900, fontSize: '1.1rem', letterSpacing: '-0.01em', display: 'flex', alignItems: 'center', gap: 1 }}>
-            <span style={{ opacity: 0.5 }}>Marketplace</span>
+            <span style={{ opacity: 0.5 }}>Studio</span>
             <span style={{ opacity: 0.5 }}>/</span>
-            Create Listing
+            {(!selectedDraftId || selectedDraftId === null) && selectedDraftId !== 'new' ? 'Overview' : (selectedDraftId === 'new' ? 'Create Listing' : 'Edit Listing')}
           </Typography>
           <Typography sx={{ fontSize: '0.72rem', color: 'text.disabled', fontWeight: 600, mt: 0.2 }}>
             Publishing as {postingAs === 'personal' ? (profile?.displayName || 'Unknown') : (profile?.organizations?.find(o => o.id === selectedOrgId)?.name || 'Organization')}
@@ -562,14 +606,42 @@ export default function TradePage() {
         </Box>
       </Box>
 
-      {/* Main Form Body */}
+      {/* Dashboard vs Form Body */}
       <Box sx={{ flex: 1, overflowY: 'auto' }}>
-        <CreateListingForm 
-          onCancel={() => setIsFlipped(false)}
-          onSuccess={() => setIsFlipped(false)}
-          postingAs={postingAs}
-          selectedOrgId={selectedOrgId || (profile?.organizations?.[0]?.id ?? null)}
-        />
+        {(!selectedDraftId || selectedDraftId === null) && selectedDraftId !== 'new' ? (
+          <ListingStudioDashboard
+            userName={
+              profile?.firstName 
+                ? `${profile.prefixes && profile.prefixes.length > 0 ? profile.prefixes.join(' ') + ' ' : ''}${profile.firstName}`
+                : (profile?.displayName ? profile.displayName.split(' ')[0] : 'Creative')
+            }
+            drafts={drafts}
+            onStartFresh={(category) => {
+              setCreateCategory(category);
+              setSelectedDraftId('new');
+              setSessionKey(prev => prev + 1);
+            }}
+            onEditDraft={(draftId) => {
+              setSelectedDraftId(draftId);
+            }}
+            onDeleteDraft={async (draftId) => {
+              // Implementation later
+              setDrafts(drafts.filter((d: any) => d.id !== draftId));
+            }}
+          />
+        ) : (
+          <CreateListingForm 
+            key={sessionKey}
+            initialCategory={createCategory}
+            onCancel={() => {
+              setCreateCategory('');
+              setSelectedDraftId(null);
+            }}
+            onSuccess={() => setIsFlipped(false)}
+            postingAs={postingAs}
+            selectedOrgId={selectedOrgId || (profile?.organizations?.[0]?.id ?? null)}
+          />
+        )}
       </Box>
     </Paper>
   );

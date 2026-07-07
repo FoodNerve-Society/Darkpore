@@ -59,22 +59,23 @@ const CATEGORY_OPTIONS = [
   { value: "need", label: "Need", emoji: "🔍", description: "Post a request for a specific commodity or service" },
 ];
 
-const STEPS = ["Title", "Category", "Location", "Pricing", "Description", "Image"];
+const STEPS = ["Title", "Location", "Pricing", "Description", "Image"];
 
 interface CreateListingFormProps {
+  initialCategory?: string;
   onCancel: () => void;
   onSuccess: () => void;
   postingAs?: 'personal' | 'organization';
   selectedOrgId?: string | null;
 }
 
-export default function CreateListingForm({ onCancel, onSuccess, postingAs = 'personal', selectedOrgId = null }: CreateListingFormProps) {
+export default function CreateListingForm({ initialCategory = "", onCancel, onSuccess, postingAs = 'personal', selectedOrgId = null }: CreateListingFormProps) {
   const { profile } = useSociety();
   const router = useRouter();
 
   const [activeStep, setActiveStep] = useState(0);
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("");
+  const [category, setCategory] = useState(initialCategory);
   const [location, setLocation] = useState("");
   const [lga, setLga] = useState("");
   const [price, setPrice] = useState("");
@@ -130,11 +131,10 @@ export default function CreateListingForm({ onCancel, onSuccess, postingAs = 'pe
   const isStepValid = (step: number): boolean => {
     switch (step) {
       case 0: return title.trim().length >= 5;
-      case 1: return category !== "";
-      case 2: return location.trim().length > 0 && lga.trim().length > 0;
-      case 3: return price.trim().length > 0;
-      case 4: return description.trim().length >= 10;
-      case 5: return true;
+      case 1: return location.trim().length > 0 && lga.trim().length > 0;
+      case 2: return price.trim().length > 0;
+      case 3: return description.trim().length >= 10;
+      case 4: return true;
       default: return false;
     }
   };
@@ -213,39 +213,26 @@ export default function CreateListingForm({ onCancel, onSuccess, postingAs = 'pe
         )}
         {activeStep === 1 && (
           <Box>
-            <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5, fontSize: "1.1rem" }}>Choose a category</Typography>
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, mt: 2 }}>
-              {CATEGORY_OPTIONS.map((opt) => (
-                <Paper key={opt.value} elevation={0} onClick={() => setCategory(opt.value)} sx={{ p: 2, borderRadius: "14px", cursor: "pointer", border: category === opt.value ? `2px solid ${EMERALD}` : `1px solid ${alpha("#000", 0.08)}`, bgcolor: category === opt.value ? alpha(EMERALD, 0.05) : "transparent" }}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{opt.emoji} {opt.label}</Typography>
-                  <Typography variant="body2" color="text.secondary">{opt.description}</Typography>
-                </Paper>
-              ))}
-            </Box>
-          </Box>
-        )}
-        {activeStep === 2 && (
-          <Box>
             <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5, fontSize: "1.1rem" }}>Where is this available?</Typography>
             <Typography variant="body2" sx={{ color: "text.secondary", mb: 2 }}>For digital opportunities, enter "Remote" or "Online".</Typography>
             <TextField fullWidth label="State / Region" value={location} onChange={(e) => setLocation(e.target.value)} sx={{ mb: 2 }} />
             <TextField fullWidth label="Local Government Area (LGA) or City" value={lga} onChange={(e) => setLga(e.target.value)} />
           </Box>
         )}
-        {activeStep === 3 && (
+        {activeStep === 2 && (
           <Box>
             <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5, fontSize: "1.1rem" }}>Set your price or compensation</Typography>
             <Typography variant="body2" sx={{ color: "text.secondary", mb: 2 }}>E.g. "$5,000 Grant", "N150,000/mo", or "Equity".</Typography>
             <TextField fullWidth label="Price or Ask" value={price} onChange={(e) => setPrice(e.target.value)} sx={{ mt: 1 }} />
           </Box>
         )}
-        {activeStep === 4 && (
+        {activeStep === 3 && (
           <Box>
             <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5, fontSize: "1.1rem" }}>Tell us more</Typography>
             <TextField fullWidth multiline rows={5} label="Description & Requirements" value={description} onChange={(e) => setDescription(e.target.value)} sx={{ mt: 2 }} />
           </Box>
         )}
-        {activeStep === 5 && (
+        {activeStep === 4 && (
           <Box>
             <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5, fontSize: "1.1rem" }}>Add an Image (Optional)</Typography>
             <Box sx={{ mt: 2, p: 4, border: `2px dashed ${alpha("#000", 0.2)}`, borderRadius: "14px", textAlign: "center" }}>
