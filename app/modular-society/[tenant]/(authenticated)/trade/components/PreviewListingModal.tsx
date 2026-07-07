@@ -29,11 +29,9 @@ interface PreviewListingModalProps {
         description: string;
         color: string;
     };
-    onPublish: () => void;
-    isSubmitting: boolean;
 }
 
-export default function PreviewListingModal({ open, onClose, data, onPublish, isSubmitting }: PreviewListingModalProps) {
+export default function PreviewListingModal({ open, onClose, data }: PreviewListingModalProps) {
     const {
         title, companyName, companyLogoUrl, category, locationString,
         duration, deadline, startDate, endDate, compTypeString, minSalary, maxSalary, currency, npAmount, description, color
@@ -49,16 +47,32 @@ export default function PreviewListingModal({ open, onClose, data, onPublish, is
             } 
         }}>
             <Box sx={{
-                width: '100%', maxWidth: 800, maxHeight: '90vh', overflowY: 'auto',
+                width: '80vw', height: '80vh', overflowY: 'auto',
                 bgcolor: '#fff', borderRadius: '24px', boxShadow: '0 24px 64px rgba(0,0,0,0.12)',
                 position: 'relative', display: 'flex', flexDirection: 'column'
             }}>
-                {/* Header Image / Pattern Area */}
-                <Box sx={{ height: 120, background: `linear-gradient(135deg, ${alpha(color, 0.2)} 0%, ${alpha(color, 0.05)} 100%)`, position: 'relative' }}>
-                    <IconButton onClick={onClose} sx={{ position: 'absolute', top: 16, right: 16, bgcolor: 'rgba(255,255,255,0.5)', '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' } }}>
-                        <CloseIcon />
+                {/* Floating Glassy Pill Header */}
+                <Box sx={{ 
+                    position: 'absolute', top: 24, right: 24, zIndex: 10,
+                    display: 'flex', alignItems: 'center', gap: 1.5,
+                    p: 1, pr: 1.5, pl: 2,
+                    background: 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,250,252,0.8) 100%)',
+                    backdropFilter: 'blur(16px)',
+                    borderRadius: '100px',
+                    boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
+                    border: '1px solid rgba(255,255,255,0.5)'
+                }}>
+                    <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: 1 }}>
+                        Preview
+                    </Typography>
+                    <Box sx={{ width: '1px', height: 16, bgcolor: 'rgba(0,0,0,0.1)' }} />
+                    <IconButton onClick={onClose} size="small" sx={{ bgcolor: 'rgba(0,0,0,0.04)', color: '#0f172a', '&:hover': { bgcolor: 'rgba(239,68,68,0.1)', color: '#ef4444' } }}>
+                        <CloseIcon fontSize="small" />
                     </IconButton>
                 </Box>
+
+                {/* Header Image / Pattern Area */}
+                <Box sx={{ height: 120, background: `linear-gradient(135deg, ${alpha(color, 0.2)} 0%, ${alpha(color, 0.05)} 100%)`, position: 'relative' }} />
 
                 {/* Content */}
                 <Box sx={{ px: { xs: 3, md: 6 }, pb: { xs: 4, md: 6 }, mt: -6, display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -127,16 +141,6 @@ export default function PreviewListingModal({ open, onClose, data, onPublish, is
                         ) : (
                             <Typography sx={{ color: '#94a3b8', fontStyle: 'italic' }}>No description provided.</Typography>
                         )}
-                    </Box>
-
-                    {/* Actions */}
-                    <Box sx={{ display: 'flex', gap: 2, mt: 4, pt: 3, borderTop: '1px solid #f1f5f9' }}>
-                        <Button variant="outlined" onClick={onClose} sx={{ flex: 1, height: 56, borderRadius: '16px', color: '#64748b', borderColor: '#cbd5e1', fontWeight: 700, '&:hover': { bgcolor: '#f8fafc', borderColor: '#94a3b8' } }}>
-                            Back to Edit
-                        </Button>
-                        <Button variant="contained" disabled={isSubmitting} onClick={onPublish} sx={{ flex: 2, height: 56, borderRadius: '16px', bgcolor: color, color: '#fff', fontWeight: 800, fontSize: '1.1rem', boxShadow: `0 8px 24px ${alpha(color, 0.4)}`, '&:hover': { bgcolor: color, filter: 'brightness(0.9)' } }}>
-                            {isSubmitting ? 'Publishing...' : 'Publish Listing'}
-                        </Button>
                     </Box>
                 </Box>
             </Box>

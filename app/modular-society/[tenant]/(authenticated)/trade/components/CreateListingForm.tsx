@@ -53,13 +53,14 @@ import { differenceInMonths, differenceInDays, addMonths } from 'date-fns';
 const EMERALD = "#10b981";
 const EMERALD_DARK = "#059669";
 
-// Framework Definitions
 const LISTING_FRAMEWORK = [
   { id: 'overview', type: 'role_overview', role: 'The Primary Mandate', desc: 'Define the title, company, and sector to attract the right talent.', hint: 'e.g. Senior Agronomist' },
   { id: 'geography', type: 'geography', role: 'The Ground Operations', desc: 'Specify exactly where this role executes and the base of operations.', hint: '' },
   { id: 'compensation', type: 'compensation', role: 'The Value Exchange', desc: 'Set the duration, escrow terms, and financial commitment.', hint: '' },
   { id: 'description', type: 'description', role: 'The Deep Dive', desc: 'Provide the full requirements, responsibilities, and context.', hint: '' }
 ];
+
+const CURRENCY_OPTIONS = ["USD", "EUR", "GBP", "NGN", "KES", "ZAR", "RWF", "UGX", "GHS"];
 
 const BLOCK_DEFINITIONS: Record<string, { label: string, color: string }> = {
   role_overview: { label: 'Role Overview', color: '#3b82f6' },
@@ -258,7 +259,7 @@ export default function CreateListingForm({
     return stats.filled >= stats.total;
   };
 
-  const areAllBlocksFilled = LISTING_FRAMEWORK.every(b => isBlockFilled(b.id));
+  const areAllBlocksFilled = LISTING_FRAMEWORK.every(b => isBlockFilled(b.id)) && !hasSalaryError;
 
   if (!profile) return <Box sx={{ p: 4, textAlign: "center" }}><CircularProgress /></Box>;
 
@@ -767,8 +768,6 @@ export default function CreateListingForm({
           <PreviewListingModal 
             open={showPreview} 
             onClose={() => setShowPreview(false)}
-            onPublish={handlePublish}
-            isSubmitting={isSubmitting}
             data={{
               title,
               companyName,
@@ -793,32 +792,32 @@ export default function CreateListingForm({
 
       {/* FOOTER ACTION CONTAINER */}
       <Box sx={{ px: 3, py: 2, borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Button onClick={onCancel} sx={{ fontWeight: 700, color: "text.secondary", textTransform: 'none' }}>
-          Cancel
-        </Button>
-        <Box sx={{ display: 'flex', gap: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Button onClick={onCancel} sx={{ fontWeight: 700, color: "text.secondary", textTransform: 'none' }}>
+            Cancel
+          </Button>
           <Button
             onClick={() => setShowPreview(true)}
             disabled={!title.trim()}
-            startIcon={<SparkleIcon sx={{ color: '#8b5cf6' }} />}
+            startIcon={<SparkleIcon sx={{ color: '#64748b' }} />}
             sx={{
-              borderColor: 'rgba(139,92,246,0.3)',
               color: '#64748b',
-              bgcolor: 'rgba(139,92,246,0.05)',
               fontWeight: 800,
               borderRadius: '12px',
-              px: 3,
+              px: 2,
               '&:hover': {
-                bgcolor: 'rgba(139,92,246,0.1)',
-                borderColor: '#8b5cf6',
-                color: '#0f172a',
-                transform: 'translateY(-2px)'
+                bgcolor: 'rgba(0,0,0,0.04)',
+                color: '#0f172a'
               },
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              fontSize: '0.8rem'
             }}
           >
             Preview
           </Button>
+        </Box>
+        <Box sx={{ display: 'flex', gap: 2 }}>
           <Button
             sx={{
               bgcolor: 'rgba(245, 158, 11, 0.1)',
