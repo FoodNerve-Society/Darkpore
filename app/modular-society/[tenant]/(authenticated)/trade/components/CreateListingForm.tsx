@@ -136,6 +136,8 @@ export default function CreateListingForm({
   }, [selectedState, selectedCountry]);
 
   // Compensation
+  const [deadline, setDeadline] = useState("");
+  const [startDate, setStartDate] = useState("");
   const [duration, setDuration] = useState("");
   const [currency, setCurrency] = useState("USD");
   const [minSalary, setMinSalary] = useState("");
@@ -516,75 +518,76 @@ export default function CreateListingForm({
                       <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                         
                         {b.id === 'overview' && (
-                          <Grid container spacing={3}>
-                              <Grid item xs={12}>
-                                  <PremiumTextField colorTheme={color} fullWidth label="Listing Title *" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Senior Agronomist" />
-                              </Grid>
-                              <Grid item xs={12} sm={6}>
-                                  <PremiumTextField colorTheme={color} fullWidth label="Hiring Entity / Company *" value={companyName} onChange={(e) => setCompanyName(e.target.value)} disabled={companyDisabled} />
-                              </Grid>
-                              <Grid item xs={12} sm={6}>
-                                  <PremiumAutocomplete colorTheme={color} label="Sector / Category *" options={CATEGORY_OPTIONS} value={category} onChange={(e, val) => setCategory(val as string)} />
-                              </Grid>
-                          </Grid>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                              <PremiumTextField colorTheme={color} fullWidth label="Listing Title *" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Senior Agronomist" />
+                              <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', sm: 'row' } }}>
+                                  <Box sx={{ flex: 1 }}>
+                                      <PremiumTextField colorTheme={color} fullWidth label="Hiring Entity / Company *" value={companyName} onChange={(e) => setCompanyName(e.target.value)} disabled={companyDisabled} />
+                                  </Box>
+                                  <Box sx={{ flex: 1 }}>
+                                      <PremiumAutocomplete colorTheme={color} label="Sector / Category *" options={CATEGORY_OPTIONS} value={category} onChange={(e, val) => setCategory(val as string)} />
+                                  </Box>
+                              </Box>
+                          </Box>
                         )}
 
                         {b.id === 'geography' && (
-                          <Grid container spacing={3}>
-                              <Grid item xs={12}>
-                                 <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: '#64748b', mb: -1, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Location Details</Typography>
-                              </Grid>
-                              <Grid item xs={12} sm={4}>
-                                  <PremiumAutocomplete colorTheme={color} label="Country *" options={countries} getOptionLabel={(opt: any) => opt.name || ''} value={selectedCountry} onChange={(e, val) => setSelectedCountry(val)} />
-                              </Grid>
-                              <Grid item xs={12} sm={4}>
-                                  <PremiumAutocomplete colorTheme={color} label="State / Province" options={states} getOptionLabel={(opt: any) => opt.name || ''} value={selectedState} onChange={(e, val) => setSelectedState(val)} disabled={!selectedCountry || states.length === 0} />
-                              </Grid>
-                              <Grid item xs={12} sm={4}>
-                                  <PremiumAutocomplete colorTheme={color} label="City / LGA" options={cities} getOptionLabel={(opt: any) => opt.name || ''} value={selectedCity} onChange={(e, val) => setSelectedCity(val)} disabled={!selectedState || cities.length === 0} />
-                              </Grid>
-                          </Grid>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                              <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: '#64748b', mb: -1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Location Details</Typography>
+                              <PremiumAutocomplete colorTheme={color} label="Country *" options={countries} getOptionLabel={(opt: any) => opt.name || ''} value={selectedCountry} onChange={(e, val) => setSelectedCountry(val)} />
+                              <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', sm: 'row' } }}>
+                                  <Box sx={{ flex: 1 }}>
+                                      <PremiumAutocomplete colorTheme={color} label="State / Province" options={states} getOptionLabel={(opt: any) => opt.name || ''} value={selectedState} onChange={(e, val) => setSelectedState(val)} disabled={!selectedCountry || states.length === 0} />
+                                  </Box>
+                                  <Box sx={{ flex: 1 }}>
+                                      <PremiumAutocomplete colorTheme={color} label="City / LGA" options={cities} getOptionLabel={(opt: any) => opt.name || ''} value={selectedCity} onChange={(e, val) => setSelectedCity(val)} disabled={!selectedState || cities.length === 0} />
+                                  </Box>
+                              </Box>
+                          </Box>
                         )}
 
                         {b.id === 'compensation' && (
-                          <>
-                            <Grid container spacing={3}>
-                                <Grid item xs={12}>
-                                   <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: '#64748b', mb: -1, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Time & Reward</Typography>
-                                </Grid>
-                                <Grid item xs={12} sm={isVolunteer ? 12 : 12}>
-                                    <PremiumTextField colorTheme={color} fullWidth label="Duration / Tenure *" value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="e.g. 3 Months, Ongoing, Project-based" />
-                                </Grid>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: '#64748b', mb: -1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Time & Reward</Typography>
+                                
+                                <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', md: 'row' } }}>
+                                    <Box sx={{ flex: 1 }}>
+                                        <PremiumTextField colorTheme={color} fullWidth label="Application Deadline (Optional)" type="date" InputLabelProps={{ shrink: true }} value={deadline} onChange={(e) => setDeadline(e.target.value)} />
+                                    </Box>
+                                    <Box sx={{ flex: 1 }}>
+                                        <PremiumTextField colorTheme={color} fullWidth label="Start Date (Optional)" type="date" InputLabelProps={{ shrink: true }} value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                                    </Box>
+                                </Box>
+                                <PremiumTextField colorTheme={color} fullWidth label="Duration / Engagement Length *" value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="e.g. 3 Months, Ongoing, Project-based" />
+                                
                                 {isVolunteer ? (
-                                     <Grid item xs={12}>
-                                         <PremiumTextField colorTheme={color} fullWidth label="Nerve Points Offered (Optional)" type="number" value={npAmount} onChange={(e) => setNpAmount(e.target.value)} placeholder="e.g. 500 NP" />
-                                     </Grid>
+                                     <PremiumTextField colorTheme={color} fullWidth label="Nerve Points Offered (Optional)" type="number" value={npAmount} onChange={(e) => setNpAmount(e.target.value)} placeholder="e.g. 500 NP" />
                                 ) : (
-                                    <>
-                                        <Grid item xs={12} sm={4}>
-                                            <PremiumTextField colorTheme={color} fullWidth label="Currency *" value={currency} onChange={(e) => setCurrency(e.target.value)} />
-                                        </Grid>
-                                        <Grid item xs={12} sm={4}>
+                                    <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', md: 'row' } }}>
+                                        <Box sx={{ flex: 1 }}>
+                                            <PremiumTextField colorTheme={color} fullWidth label="Currency *" value={currency} onChange={(e) => setCurrency(e.target.value)} placeholder="e.g. NGN, USD" />
+                                        </Box>
+                                        <Box sx={{ flex: 1 }}>
                                             <PremiumTextField colorTheme={color} fullWidth label="Min Budget/Salary" type="number" value={minSalary} onChange={(e) => setMinSalary(e.target.value)} />
-                                        </Grid>
-                                        <Grid item xs={12} sm={4}>
+                                        </Box>
+                                        <Box sx={{ flex: 1 }}>
                                             <PremiumTextField colorTheme={color} fullWidth label="Max Budget/Salary" type="number" value={maxSalary} onChange={(e) => setMaxSalary(e.target.value)} />
-                                        </Grid>
-                                    </>
+                                        </Box>
+                                    </Box>
                                 )}
-                            </Grid>
+                                
                             {isJob && !isVolunteer && (
-                                <Box sx={{ mt: 3, p: 2, borderRadius: '12px', bgcolor: alpha(color, 0.05), border: `1px solid ${alpha(color, 0.2)}` }}>
+                                <Box sx={{ mt: 1, p: 2.5, borderRadius: '12px', bgcolor: alpha(color, 0.05), border: `1px solid ${alpha(color, 0.2)}` }}>
                                   <FormControlLabel
                                     control={<Switch checked={useEscrow} onChange={(e) => setUseEscrow(e.target.checked)} sx={{ '& .MuiSwitch-switchBase.Mui-checked': { color: color }, '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: color } }} />}
                                     label={<Typography sx={{ fontWeight: 800, color: '#0f172a' }}>Secure via Food Nerve Escrow</Typography>}
                                   />
-                                  <Typography variant="body2" sx={{ color: "text.secondary", ml: 4, mt: -0.5, fontWeight: 500 }}>
+                                  <Typography variant="body2" sx={{ color: "text.secondary", ml: 4, mt: 0.5, fontWeight: 500, lineHeight: 1.6 }}>
                                     Build trust by locking funds in escrow. Highly recommended for gig and contract work.
                                   </Typography>
                                 </Box>
                             )}
-                          </>
+                          </Box>
                         )}
 
                         {b.id === 'description' && (
