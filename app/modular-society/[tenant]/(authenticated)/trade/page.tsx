@@ -529,7 +529,9 @@ export default function TradePage() {
           <Typography sx={{ fontWeight: 900, fontSize: '1.1rem', letterSpacing: '-0.01em', display: 'flex', alignItems: 'center', gap: 1 }}>
             <span style={{ opacity: 0.5 }}>Studio</span>
             <span style={{ opacity: 0.5 }}>/</span>
-            {(!selectedDraftId || selectedDraftId === null) && selectedDraftId !== 'new' ? 'Overview' : (selectedDraftId === 'new' ? 'Create Listing' : 'Edit Listing')}
+            <span style={{ textTransform: 'capitalize' }}>
+              {(!selectedDraftId || selectedDraftId === null) && selectedDraftId !== 'new' ? 'Overview' : (selectedDraftId === 'new' ? `Create ${createSelections?.primary || createCategory || 'Listing'}` : 'Edit Listing')}
+            </span>
           </Typography>
           <Typography sx={{ fontSize: '0.72rem', color: 'text.disabled', fontWeight: 600, mt: 0.2 }}>
             Publishing as {postingAs === 'personal' ? (profile?.displayName || 'Unknown') : (profile?.organizations?.find(o => o.id === selectedOrgId)?.name || 'Organization')}

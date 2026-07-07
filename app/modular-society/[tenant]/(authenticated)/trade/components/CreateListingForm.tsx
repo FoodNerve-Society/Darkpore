@@ -14,7 +14,8 @@ import {
   Grid,
   Modal,
   Chip,
-  Collapse
+  IconButton,
+  Tooltip
 } from "@mui/material";
 
 import { useRouter } from "next/navigation";
@@ -32,8 +33,9 @@ import ShieldIcon from "@mui/icons-material/Shield";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import StarIcon from "@mui/icons-material/Star";
 import CloseIcon from "@mui/icons-material/Close";
-import EditIcon from "@mui/icons-material/Edit";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import CheckIcon from "@mui/icons-material/Check";
+import WorkIcon from "@mui/icons-material/Work";
+import SparkleIcon from "@mui/icons-material/AutoAwesome";
 
 import PremiumTextField from "@/components/PremiumTextField";
 import PremiumAutocomplete from "@/components/PremiumAutocomplete";
@@ -44,6 +46,21 @@ import { CATEGORY_OPTIONS } from "@/lib/taxonomy";
 const EMERALD = "#10b981";
 const EMERALD_DARK = "#059669";
 
+// Framework Definitions
+const LISTING_FRAMEWORK = [
+  { id: 'overview', type: 'role_overview', role: 'The Primary Mandate', desc: 'Define the title, company, and sector to attract the right talent.', hint: 'e.g. Senior Agronomist' },
+  { id: 'geography', type: 'geography', role: 'The Ground Operations', desc: 'Specify exactly where this role executes and the base of operations.', hint: '' },
+  { id: 'compensation', type: 'compensation', role: 'The Value Exchange', desc: 'Set the duration, escrow terms, and financial commitment.', hint: '' },
+  { id: 'description', type: 'description', role: 'The Deep Dive', desc: 'Provide the full requirements, responsibilities, and context.', hint: '' }
+];
+
+const BLOCK_DEFINITIONS: Record<string, { label: string, color: string }> = {
+  role_overview: { label: 'Role Overview', color: '#3b82f6' },
+  geography: { label: 'Location Details', color: '#10b981' },
+  compensation: { label: 'Terms & Comp', color: '#f59e0b' },
+  description: { label: 'Full Description', color: '#8b5cf6' },
+};
+
 const glassCard = {
   background: "#fff",
   borderRadius: "20px",
@@ -52,12 +69,6 @@ const glassCard = {
   "&:hover": {
     boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
   },
-};
-
-const activeCardStyle = {
-  ...glassCard,
-  boxShadow: `0 0 0 2px ${EMERALD}, 0 8px 24px ${alpha(EMERALD, 0.15)}`,
-  transform: "scale(1.01)",
 };
 
 interface CreateListingFormProps {
@@ -145,18 +156,48 @@ export default function CreateListingForm({
   const [showPreview, setShowPreview] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  // Block State
-  // 1: Role Details, 2: Geography, 3: Compensation, 4: Description
-  const [activeBlock, setActiveBlock] = useState<number>(1);
-  const blockRefs = useRef<(HTMLDivElement | null)[]>([]);
+  // 3D Block State
+  const [flippedBlockId, setFlippedBlockId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (activeBlock && blockRefs.current[activeBlock]) {
-      setTimeout(() => {
-        blockRefs.current[activeBlock]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 300);
+  const getBlockFillStats = (blockId: string) => {
+    let filled = 0;
+    let total = 1;
+    switch(blockId) {
+      case 'overview':
+        total = 3;
+        if (title.trim().length >= 5) filled++;
+        if (companyName.trim().length > 0) filled++;
+        if (category) filled++;
+        break;
+      case 'geography':
+        total = 1;
+        if (selectedCountry) filled++;
+        break;
+      case 'compensation':
+        total = isVolunteer ? 2 : 4;
+        if (duration) filled++;
+        if (isVolunteer) {
+           if (npAmount) filled++;
+        } else {
+           if (currency) filled++;
+           if (minSalary) filled++;
+           if (maxSalary) filled++;
+        }
+        break;
+      case 'description':
+        total = 1;
+        if (description.length > 20) filled++;
+        break;
     }
-  }, [activeBlock]);
+    return { filled, total };
+  };
+
+  const isBlockFilled = (blockId: string) => {
+    const stats = getBlockFillStats(blockId);
+    return stats.filled >= stats.total;
+  };
+
+  const areAllBlocksFilled = LISTING_FRAMEWORK.every(b => isBlockFilled(b.id));
 
   if (!profile) return <Box sx={{ p: 4, textAlign: "center" }}><CircularProgress /></Box>;
 
@@ -194,10 +235,6 @@ export default function CreateListingForm({
         </Box>
       );
   }
-
-  const isFormValid = () => {
-      return title.trim().length >= 5 && companyName.trim().length > 0 && selectedCountry !== null;
-  };
 
   const handlePublish = async () => {
     setIsSubmitting(true);
@@ -261,281 +298,387 @@ export default function CreateListingForm({
     );
   }
 
-  // Helper component for rendering block summaries
-  const BlockSummary = ({ label, value, isFilled }: { label: string, value: string, isFilled: boolean }) => (
-    <Box sx={{ flex: 1, minWidth: 150 }}>
-      <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, display: 'block', mb: 0.5 }}>{label}</Typography>
-      <Typography variant="body2" sx={{ fontWeight: 700, color: isFilled ? '#000' : 'text.disabled' }}>
-        {value || "Not specified"}
-      </Typography>
-    </Box>
-  );
-
   return (
-    <Box sx={{ pb: { xs: 15, md: 10 }, color: "#000" }}>
-      <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 800, mx: "auto" }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', position: 'relative' }}>
+      
+      {/* SCROLLABLE MAIN CONTENT */}
+      <Box sx={{ flex: 1, overflowY: 'auto', px: { xs: 2.5, sm: 3.5 }, py: 3, display: 'flex', flexDirection: 'column', gap: 3.5 }}>
         
-        <Typography variant="h4" sx={{ fontWeight: 900, fontSize: { xs: "1.5rem", md: "1.8rem" }, mb: 1, background: `linear-gradient(135deg, ${EMERALD} 0%, ${EMERALD_DARK} 100%)`, backgroundClip: "text", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-          {isJob ? "Create Job Listing" : "Create Listing"}
-        </Typography>
-        <Typography variant="body2" sx={{ color: "text.secondary", mb: 4 }}>
-          Complete each section to publish your opportunity.
-        </Typography>
-        
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <Box sx={{ maxWidth: 800, mx: "auto", width: '100%' }}>
           
-          {/* BLOCK 1: ROLE DETAILS */}
-          <Paper 
-            ref={el => blockRefs.current[1] = el}
-            elevation={0} 
-            sx={{ ...(activeBlock === 1 ? activeCardStyle : glassCard), p: { xs: 3, md: 4 }, cursor: activeBlock !== 1 ? 'default' : 'pointer' }}
-            onClick={() => activeBlock !== 1 && setActiveBlock(1)}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: activeBlock === 1 ? 3 : 0 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Box sx={{ width: 28, height: 28, borderRadius: '50%', bgcolor: title.length >= 5 ? EMERALD : alpha(EMERALD, 0.2), display: 'flex', alignItems: 'center', justifyContent: 'center', color: title.length >= 5 ? '#fff' : EMERALD, fontWeight: 800, fontSize: '0.8rem' }}>
-                  {title.length >= 5 ? <CheckCircleIcon sx={{ fontSize: 18 }} /> : "1"}
-                </Box>
-                <Typography variant="h6" sx={{ fontWeight: 800 }}>Role Overview</Typography>
+          {/* ╭─── CONTEXT HEADER ───╮ */}
+          <Box sx={{
+            display: 'inline-flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { md: 'center' }, gap: 2,
+            mb: 4, p: '12px 16px', borderRadius: '16px',
+            background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.03) 0%, rgba(15, 23, 42, 0.08) 100%)',
+            border: '1px solid rgba(15, 23, 42, 0.05)',
+            backdropFilter: 'blur(16px)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,1), 0 4px 12px rgba(0,0,0,0.02)',
+            width: 'fit-content'
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, md: 1 }, flexWrap: 'wrap' }}>
+              
+              {/* Studio Root */}
+              <Box 
+                onClick={onCancel} 
+                sx={{ 
+                  display: 'flex', alignItems: 'center', gap: 0.5, px: 1.5, py: 0.75, borderRadius: '10px',
+                  cursor: 'pointer', transition: 'all 0.2s ease', color: '#0f172a', bgcolor: 'rgba(255,255,255,0.7)',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                  '&:hover': { bgcolor: 'rgba(255,255,255,1)', transform: 'translateY(-1px)' }
+                }}
+              >
+                <WorkIcon sx={{ fontSize: 18 }} />
+                <Typography sx={{ fontWeight: 800, fontSize: '0.85rem' }}>Marketplace</Typography>
               </Box>
-              {activeBlock !== 1 && (
-                <Button size="small" startIcon={<EditIcon />} sx={{ color: EMERALD, fontWeight: 700, textTransform: 'none' }}>Edit</Button>
-              )}
-            </Box>
 
-            <Collapse in={activeBlock === 1}>
-              <Grid container spacing={3}>
-                  <Grid item xs={12}>
-                      <PremiumTextField colorTheme={EMERALD} fullWidth label="Job Title *" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Senior Agronomist" />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                      <PremiumTextField colorTheme={EMERALD} fullWidth label="Company Name *" value={companyName} onChange={(e) => setCompanyName(e.target.value)} disabled={companyDisabled} />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                      <PremiumAutocomplete colorTheme={EMERALD} label="Category / Sector" options={CATEGORY_OPTIONS} value={category} onChange={(e, val) => setCategory(val as string)} />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
-                      <Button variant="contained" onClick={(e) => { e.stopPropagation(); setActiveBlock(2); }} sx={{ bgcolor: EMERALD, '&:hover': { bgcolor: EMERALD_DARK }, borderRadius: 2, fontWeight: 700, px: 4, boxShadow: 'none' }}>
-                        Continue
-                      </Button>
-                    </Box>
-                  </Grid>
-              </Grid>
-            </Collapse>
+              <Typography sx={{ color: 'rgba(15, 23, 42, 0.3)', fontWeight: 400 }}>/</Typography>
 
-            {!activeBlock || activeBlock !== 1 ? (
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mt: 2, pl: 5 }}>
-                <BlockSummary label="Title" value={title} isFilled={!!title} />
-                <BlockSummary label="Company" value={companyName} isFilled={!!companyName} />
-                <BlockSummary label="Category" value={category?.replace('  ↳ ', '') || ''} isFilled={!!category} />
+              {/* Category */}
+              <Box sx={{ display: 'flex', alignItems: 'center', px: 1, py: 0.5, color: '#475569' }}>
+                <Typography sx={{ fontWeight: 600, fontSize: '0.85rem', opacity: 0.9, textTransform: 'capitalize' }}>
+                  {initialCategory || 'Trade'}
+                </Typography>
               </Box>
-            ) : null}
-          </Paper>
 
-          {/* BLOCK 2: GEOGRAPHY */}
-          <Paper 
-            ref={el => blockRefs.current[2] = el}
-            elevation={0} 
-            sx={{ ...(activeBlock === 2 ? activeCardStyle : glassCard), p: { xs: 3, md: 4 }, cursor: activeBlock !== 2 ? 'default' : 'pointer' }}
-            onClick={() => activeBlock !== 2 && setActiveBlock(2)}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: activeBlock === 2 ? 3 : 0 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Box sx={{ width: 28, height: 28, borderRadius: '50%', bgcolor: selectedCountry ? EMERALD : alpha(EMERALD, 0.2), display: 'flex', alignItems: 'center', justifyContent: 'center', color: selectedCountry ? '#fff' : EMERALD, fontWeight: 800, fontSize: '0.8rem' }}>
-                  {selectedCountry ? <CheckCircleIcon sx={{ fontSize: 18 }} /> : "2"}
-                </Box>
-                <Typography variant="h6" sx={{ fontWeight: 800 }}>Location Details</Typography>
+              <Typography sx={{ color: 'rgba(15, 23, 42, 0.3)', fontWeight: 400 }}>/</Typography>
+
+              {/* Subcategory */}
+              <Box sx={{ display: 'flex', alignItems: 'center', px: 1, py: 0.5, color: '#475569' }}>
+                <Typography sx={{ fontWeight: 600, fontSize: '0.85rem', opacity: 0.9, textTransform: 'capitalize' }}>
+                  {initialSelections?.primary || 'Listing'}
+                </Typography>
               </Box>
-              {activeBlock !== 2 && (
-                <Button size="small" startIcon={<EditIcon />} sx={{ color: EMERALD, fontWeight: 700, textTransform: 'none' }}>Edit</Button>
-              )}
-            </Box>
 
-            <Collapse in={activeBlock === 2}>
-              <Grid container spacing={3}>
-                  <Grid item xs={12} sm={4}>
-                      <PremiumAutocomplete colorTheme={EMERALD} label="Country *" options={countries} getOptionLabel={(opt: any) => opt.name || ''} value={selectedCountry} onChange={(e, val) => setSelectedCountry(val)} />
-                  </Grid>
-                  <Grid item xs={12} sm={4}>
-                      <PremiumAutocomplete colorTheme={EMERALD} label="State" options={states} getOptionLabel={(opt: any) => opt.name || ''} value={selectedState} onChange={(e, val) => setSelectedState(val)} disabled={!selectedCountry || states.length === 0} />
-                  </Grid>
-                  <Grid item xs={12} sm={4}>
-                      <PremiumAutocomplete colorTheme={EMERALD} label="City / LGA" options={cities} getOptionLabel={(opt: any) => opt.name || ''} value={selectedCity} onChange={(e, val) => setSelectedCity(val)} disabled={!selectedState || cities.length === 0} />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
-                      <Button variant="contained" onClick={(e) => { e.stopPropagation(); setActiveBlock(3); }} sx={{ bgcolor: EMERALD, '&:hover': { bgcolor: EMERALD_DARK }, borderRadius: 2, fontWeight: 700, px: 4, boxShadow: 'none' }}>
-                        Continue
-                      </Button>
-                    </Box>
-                  </Grid>
-              </Grid>
-            </Collapse>
+              <Typography sx={{ color: 'rgba(15, 23, 42, 0.3)', fontWeight: 400 }}>/</Typography>
 
-            {!activeBlock || activeBlock !== 2 ? (
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mt: 2, pl: 5 }}>
-                <BlockSummary label="Country" value={selectedCountry?.name || ''} isFilled={!!selectedCountry} />
-                <BlockSummary label="State" value={selectedState?.name || ''} isFilled={!!selectedState} />
-                <BlockSummary label="City/LGA" value={selectedCity?.name || ''} isFilled={!!selectedCity} />
-              </Box>
-            ) : null}
-          </Paper>
-
-          {/* BLOCK 3: COMPENSATION */}
-          <Paper 
-            ref={el => blockRefs.current[3] = el}
-            elevation={0} 
-            sx={{ ...(activeBlock === 3 ? activeCardStyle : glassCard), p: { xs: 3, md: 4 }, cursor: activeBlock !== 3 ? 'default' : 'pointer' }}
-            onClick={() => activeBlock !== 3 && setActiveBlock(3)}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: activeBlock === 3 ? 3 : 0 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Box sx={{ width: 28, height: 28, borderRadius: '50%', bgcolor: duration ? EMERALD : alpha(EMERALD, 0.2), display: 'flex', alignItems: 'center', justifyContent: 'center', color: duration ? '#fff' : EMERALD, fontWeight: 800, fontSize: '0.8rem' }}>
-                  {duration ? <CheckCircleIcon sx={{ fontSize: 18 }} /> : "3"}
-                </Box>
-                <Typography variant="h6" sx={{ fontWeight: 800 }}>Compensation & Terms</Typography>
-              </Box>
-              {activeBlock !== 3 && (
-                <Button size="small" startIcon={<EditIcon />} sx={{ color: EMERALD, fontWeight: 700, textTransform: 'none' }}>Edit</Button>
-              )}
-            </Box>
-
-            <Collapse in={activeBlock === 3}>
-              <Grid container spacing={3}>
-                  <Grid item xs={12} sm={6}>
-                      <PremiumTextField colorTheme={EMERALD} fullWidth label="Duration / Tenure" value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="e.g. 3 Months, Ongoing, Project-based" />
-                  </Grid>
-                  {isVolunteer ? (
-                       <Grid item xs={12} sm={6}>
-                           <PremiumTextField colorTheme={EMERALD} fullWidth label="Nerve Points Offered (Optional)" type="number" value={npAmount} onChange={(e) => setNpAmount(e.target.value)} />
-                       </Grid>
-                  ) : (
-                      <>
-                          <Grid item xs={12} sm={2}>
-                              <PremiumTextField colorTheme={EMERALD} fullWidth label="Currency" value={currency} onChange={(e) => setCurrency(e.target.value)} />
-                          </Grid>
-                          <Grid item xs={12} sm={2}>
-                              <PremiumTextField colorTheme={EMERALD} fullWidth label="Min Salary" type="number" value={minSalary} onChange={(e) => setMinSalary(e.target.value)} />
-                          </Grid>
-                          <Grid item xs={12} sm={2}>
-                              <PremiumTextField colorTheme={EMERALD} fullWidth label="Max Salary" type="number" value={maxSalary} onChange={(e) => setMaxSalary(e.target.value)} />
-                          </Grid>
-                      </>
-                  )}
-              </Grid>
-              {isJob && !isVolunteer && (
-                  <Box sx={{ mt: 3, p: 2, borderRadius: '12px', bgcolor: alpha(EMERALD, 0.05), border: `1px solid ${alpha(EMERALD, 0.2)}` }}>
-                    <FormControlLabel
-                      control={<Switch checked={useEscrow} onChange={(e) => setUseEscrow(e.target.checked)} sx={{ '& .MuiSwitch-switchBase.Mui-checked': { color: EMERALD }, '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: EMERALD } }} />}
-                      label={<Typography sx={{ fontWeight: 700 }}>Secure via Food Nerve Escrow</Typography>}
-                    />
-                    <Typography variant="body2" sx={{ color: "text.secondary", ml: 4, mt: -0.5 }}>
-                      Build trust by locking funds in escrow. Recommended for gig and contract work.
-                    </Typography>
-                  </Box>
-              )}
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
-                <Button variant="contained" onClick={(e) => { e.stopPropagation(); setActiveBlock(4); }} sx={{ bgcolor: EMERALD, '&:hover': { bgcolor: EMERALD_DARK }, borderRadius: 2, fontWeight: 700, px: 4, boxShadow: 'none' }}>
-                  Continue
-                </Button>
-              </Box>
-            </Collapse>
-
-            {!activeBlock || activeBlock !== 3 ? (
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mt: 2, pl: 5 }}>
-                <BlockSummary label="Duration" value={duration} isFilled={!!duration} />
-                <BlockSummary label={isVolunteer ? "NP Reward" : "Salary Range"} value={isVolunteer ? (npAmount ? `${npAmount} NP` : '') : (minSalary ? `${currency} ${minSalary} - ${maxSalary}` : '')} isFilled={isVolunteer ? !!npAmount : !!minSalary} />
-              </Box>
-            ) : null}
-          </Paper>
-
-          {/* BLOCK 4: DESCRIPTION */}
-          <Paper 
-            ref={el => blockRefs.current[4] = el}
-            elevation={0} 
-            sx={{ ...(activeBlock === 4 ? activeCardStyle : glassCard), p: { xs: 3, md: 4 }, cursor: activeBlock !== 4 ? 'default' : 'pointer' }}
-            onClick={() => activeBlock !== 4 && setActiveBlock(4)}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: activeBlock === 4 ? 3 : 0 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Box sx={{ width: 28, height: 28, borderRadius: '50%', bgcolor: description.length > 20 ? EMERALD : alpha(EMERALD, 0.2), display: 'flex', alignItems: 'center', justifyContent: 'center', color: description.length > 20 ? '#fff' : EMERALD, fontWeight: 800, fontSize: '0.8rem' }}>
-                  {description.length > 20 ? <CheckCircleIcon sx={{ fontSize: 18 }} /> : "4"}
-                </Box>
-                <Typography variant="h6" sx={{ fontWeight: 800 }}>Full Description</Typography>
-              </Box>
-              {activeBlock !== 4 && (
-                <Button size="small" startIcon={<EditIcon />} sx={{ color: EMERALD, fontWeight: 700, textTransform: 'none' }}>Edit</Button>
-              )}
-            </Box>
-
-            <Collapse in={activeBlock === 4}>
-              <PremiumMarkdownEditor 
-                  colorTheme={EMERALD}
-                  value={description}
-                  onChange={(e: any) => setDescription(e.target.value)}
-                  rows={10}
-                  placeholder="Write a detailed description. Use formatting tools above to structure responsibilities, expectations, etc."
+              {/* Status Chip */}
+              <Chip 
+                label="NEW LISTING" 
+                size="small" 
+                sx={{ 
+                  bgcolor: alpha(EMERALD, 0.1), color: EMERALD, 
+                  fontWeight: 800, border: `1px solid ${alpha(EMERALD, 0.3)}`,
+                  height: 24, fontSize: '0.75rem', letterSpacing: '0.05em', ml: 1
+                }} 
               />
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
-                <Button variant="contained" onClick={(e) => { e.stopPropagation(); setActiveBlock(0); }} sx={{ bgcolor: EMERALD, '&:hover': { bgcolor: EMERALD_DARK }, borderRadius: 2, fontWeight: 700, px: 4, boxShadow: 'none' }}>
-                  Done
-                </Button>
-              </Box>
-            </Collapse>
-            
-            {!activeBlock || activeBlock !== 4 ? (
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mt: 2, pl: 5 }}>
-                <BlockSummary label="Content" value={description ? `${description.substring(0, 100)}...` : ""} isFilled={!!description} />
-              </Box>
-            ) : null}
-          </Paper>
+            </Box>
+          </Box>
+          {/* ╰─── END HEADER ───╯ */}
 
+          
+          
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
+            <Box>
+              <Typography sx={{ fontWeight: 900, fontSize: '1.6rem', color: '#0f172a', letterSpacing: '-0.02em' }}>Block Canvas</Typography>
+              <Typography sx={{ color: '#475569', fontSize: '0.95rem', mt: 0.5, fontWeight: 500 }}>
+                Tap a card to flip it and edit. <strong style={{ color: '#0f172a' }}>{LISTING_FRAMEWORK.filter(b => isBlockFilled(b.id)).length}</strong> of <strong style={{ color: '#0f172a' }}>{LISTING_FRAMEWORK.length}</strong> blocks filled.
+              </Typography>
+            </Box>
+          </Box>
+
+          {/* 3D BLOCKS */}
+          <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+            {LISTING_FRAMEWORK.map((b, i) => {
+              const isFlipped = flippedBlockId === b.id;
+              const fillStats = getBlockFillStats(b.id);
+              const filled = fillStats.filled >= fillStats.total;
+              const fillPercent = Math.min(100, Math.round((fillStats.filled / fillStats.total) * 100));
+              const bDef = BLOCK_DEFINITIONS[b.type] || { color: EMERALD, label: 'Block' };
+              const color = bDef.color;
+
+              // Generate descriptive subtitle for front face when filled
+              let filledSummary = 'Content added — tap to edit';
+              if (filled) {
+                if (b.id === 'overview') filledSummary = `${title} at ${companyName}`;
+                if (b.id === 'geography') filledSummary = `${selectedCity ? selectedCity.name + ', ' : ''}${selectedCountry?.name || ''}`;
+                if (b.id === 'compensation') filledSummary = isVolunteer ? `${duration} • ${npAmount} NP` : `${currency} ${minSalary} - ${maxSalary} • ${duration}`;
+              }
+
+              return (
+                <Box key={b.id} sx={{ perspective: '1600px', mb: 2.5, scrollMarginTop: '120px' }}>
+                  <Box sx={{
+                    position: 'relative',
+                    transition: 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                    transformStyle: 'preserve-3d',
+                    transformOrigin: 'center center',
+                    transform: isFlipped ? 'rotateX(-180deg)' : 'none',
+                  }}>
+                    
+                    {/* FRONT FACE */}
+                    <Box
+                      onClick={() => !isFlipped && setFlippedBlockId(b.id)}
+                      sx={{
+                        backfaceVisibility: 'hidden',
+                        position: isFlipped ? 'absolute' : 'relative',
+                        width: '100%', top: 0,
+                        borderRadius: '20px',
+                        border: `1px solid ${filled ? alpha(color, 0.8) : alpha(color, 0.15)}`,
+                        background: filled 
+                          ? `linear-gradient(135deg, ${color} 0%, ${alpha(color, 0.8)} 100%)`
+                          : `linear-gradient(to right, ${alpha(color, 0.2)} ${fillPercent}%, rgba(255,255,255,0.95) ${fillPercent}%, rgba(248,250,252,0.9) 100%)`,
+                        backdropFilter: 'blur(16px)',
+                        boxShadow: filled ? `0 12px 32px ${alpha(color, 0.3)}` : `0 8px 32px rgba(0,0,0,0.04)`,
+                        overflow: 'hidden',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                        '&:hover': {
+                          borderColor: filled ? color : alpha(color, 0.6),
+                          boxShadow: filled ? `0 16px 48px ${alpha(color, 0.4)}` : `0 12px 48px rgba(0,0,0,0.08)`,
+                          transform: 'translateY(-2px)'
+                        },
+                      }}
+                    >
+                      {fillPercent > 0 && (
+                        <Typography sx={{ 
+                          position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', 
+                          fontWeight: 900, fontSize: { xs: '2rem', md: '3.5rem' }, 
+                          color: filled ? 'rgba(255,255,255,0.15)' : alpha(color, 0.1), pointerEvents: 'none', letterSpacing: '0.05em',
+                          textTransform: 'uppercase', whiteSpace: 'nowrap', zIndex: 0
+                        }}>
+                          {filled ? 'COMPLETED' : `${fillStats.filled} / ${fillStats.total} FILLED`}
+                        </Typography>
+                      )}
+                      <Box sx={{ display: 'flex', alignItems: 'stretch', position: 'relative', zIndex: 1 }}>
+                        {/* Left accent bar */}
+                        <Box sx={{ width: filled ? 0 : 6, flexShrink: 0, background: filled ? `transparent` : `linear-gradient(180deg, ${alpha(color, 0.4)} 0%, ${alpha(color, 0.1)} 100%)` }} />
+                        
+                        <Box sx={{ p: { xs: 2, md: 3 }, flex: 1, display: 'flex', alignItems: 'center', gap: 2.5 }}>
+                          {/* Number badge */}
+                          <Box sx={{
+                            width: 44, height: 44, borderRadius: '14px', flexShrink: 0,
+                            bgcolor: filled ? 'rgba(255,255,255,0.2)' : alpha(color, 0.1), 
+                            border: filled ? '1px solid rgba(255,255,255,0.3)' : `1px solid ${alpha(color, 0.2)}`,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            boxShadow: filled ? '0 4px 12px rgba(0,0,0,0.1)' : 'none',
+                            transition: 'all 0.3s ease'
+                          }}>
+                            {filled ? <CheckIcon sx={{ color: '#fff' }} /> : <Typography sx={{ fontWeight: 800, fontSize: '1.1rem', color }}>{i + 1}</Typography>}
+                          </Box>
+                          {/* Info */}
+                          <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5, flexWrap: 'wrap' }}>
+                              <Typography sx={{ fontWeight: 800, color: filled ? '#fff' : '#0f172a', fontSize: { xs: '1.05rem', md: '1.15rem' }, letterSpacing: '-0.01em' }}>
+                                {b.role}
+                              </Typography>
+                              <Chip label={bDef.label} size="small" sx={{ height: 24, fontSize: '0.7rem', bgcolor: filled ? 'rgba(255,255,255,0.2)' : alpha(color, 0.15), color: filled ? '#fff' : color, fontWeight: 700, border: `1px solid ${filled ? 'rgba(255,255,255,0.3)' : alpha(color, 0.2)}` }} />
+                            </Box>
+                            <Typography sx={{ color: filled ? 'rgba(255,255,255,0.8)' : '#64748b', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }}>
+                              {filled ? filledSummary : b.desc}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Box>
+                    </Box>
+
+                    {/* BACK FACE */}
+                    <Box sx={{
+                      backfaceVisibility: 'hidden',
+                      transform: 'rotateX(180deg)',
+                      position: isFlipped ? 'relative' : 'absolute',
+                      width: '100%', top: 0,
+                      borderRadius: '20px',
+                      border: `1px solid ${alpha(color, 0.4)}`,
+                      background: `linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(248,250,252,0.95) 100%)`,
+                      backdropFilter: 'blur(20px)',
+                      boxShadow: `0 16px 48px rgba(0,0,0,0.08)`,
+                      overflow: 'hidden',
+                    }}>
+                      {/* Back header */}
+                      <Box sx={{
+                        display: 'flex', alignItems: 'center', gap: 2,
+                        px: 3, py: 2,
+                        borderBottom: `1px solid rgba(0,0,0,0.06)`,
+                        background: alpha(color, 0.05),
+                      }}>
+                        <Box sx={{ width: 32, height: 32, borderRadius: '10px', bgcolor: alpha(color, 0.15), display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${alpha(color, 0.2)}` }}>
+                          <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color }}>{i + 1}</Typography>
+                        </Box>
+                        <Typography sx={{ fontWeight: 800, color: '#0f172a', fontSize: '1.1rem', flex: 1 }}>
+                          {b.role}
+                        </Typography>
+                        <Tooltip title="Done editing">
+                          <IconButton
+                            size="medium"
+                            onClick={() => setFlippedBlockId(null)}
+                            sx={{
+                              bgcolor: color, color: '#fff',
+                              boxShadow: `0 4px 12px ${alpha(color, 0.3)}`,
+                              '&:hover': { bgcolor: alpha(color, 0.9), transform: 'scale(1.05)' },
+                            }}
+                          >
+                            <CheckIcon sx={{ fontSize: 20, fontWeight: 900 }} />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+
+                      {/* Back form fields */}
+                      <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                        
+                        {b.id === 'overview' && (
+                          <Grid container spacing={3}>
+                              <Grid item xs={12}>
+                                  <PremiumTextField colorTheme={color} fullWidth label="Listing Title *" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Senior Agronomist" />
+                              </Grid>
+                              <Grid item xs={12} sm={6}>
+                                  <PremiumTextField colorTheme={color} fullWidth label="Hiring Entity / Company *" value={companyName} onChange={(e) => setCompanyName(e.target.value)} disabled={companyDisabled} />
+                              </Grid>
+                              <Grid item xs={12} sm={6}>
+                                  <PremiumAutocomplete colorTheme={color} label="Sector / Category *" options={CATEGORY_OPTIONS} value={category} onChange={(e, val) => setCategory(val as string)} />
+                              </Grid>
+                          </Grid>
+                        )}
+
+                        {b.id === 'geography' && (
+                          <Grid container spacing={3}>
+                              <Grid item xs={12}>
+                                 <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: '#64748b', mb: -1, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Location Details</Typography>
+                              </Grid>
+                              <Grid item xs={12} sm={4}>
+                                  <PremiumAutocomplete colorTheme={color} label="Country *" options={countries} getOptionLabel={(opt: any) => opt.name || ''} value={selectedCountry} onChange={(e, val) => setSelectedCountry(val)} />
+                              </Grid>
+                              <Grid item xs={12} sm={4}>
+                                  <PremiumAutocomplete colorTheme={color} label="State / Province" options={states} getOptionLabel={(opt: any) => opt.name || ''} value={selectedState} onChange={(e, val) => setSelectedState(val)} disabled={!selectedCountry || states.length === 0} />
+                              </Grid>
+                              <Grid item xs={12} sm={4}>
+                                  <PremiumAutocomplete colorTheme={color} label="City / LGA" options={cities} getOptionLabel={(opt: any) => opt.name || ''} value={selectedCity} onChange={(e, val) => setSelectedCity(val)} disabled={!selectedState || cities.length === 0} />
+                              </Grid>
+                          </Grid>
+                        )}
+
+                        {b.id === 'compensation' && (
+                          <>
+                            <Grid container spacing={3}>
+                                <Grid item xs={12}>
+                                   <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: '#64748b', mb: -1, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Time & Reward</Typography>
+                                </Grid>
+                                <Grid item xs={12} sm={isVolunteer ? 12 : 12}>
+                                    <PremiumTextField colorTheme={color} fullWidth label="Duration / Tenure *" value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="e.g. 3 Months, Ongoing, Project-based" />
+                                </Grid>
+                                {isVolunteer ? (
+                                     <Grid item xs={12}>
+                                         <PremiumTextField colorTheme={color} fullWidth label="Nerve Points Offered (Optional)" type="number" value={npAmount} onChange={(e) => setNpAmount(e.target.value)} placeholder="e.g. 500 NP" />
+                                     </Grid>
+                                ) : (
+                                    <>
+                                        <Grid item xs={12} sm={4}>
+                                            <PremiumTextField colorTheme={color} fullWidth label="Currency *" value={currency} onChange={(e) => setCurrency(e.target.value)} />
+                                        </Grid>
+                                        <Grid item xs={12} sm={4}>
+                                            <PremiumTextField colorTheme={color} fullWidth label="Min Budget/Salary" type="number" value={minSalary} onChange={(e) => setMinSalary(e.target.value)} />
+                                        </Grid>
+                                        <Grid item xs={12} sm={4}>
+                                            <PremiumTextField colorTheme={color} fullWidth label="Max Budget/Salary" type="number" value={maxSalary} onChange={(e) => setMaxSalary(e.target.value)} />
+                                        </Grid>
+                                    </>
+                                )}
+                            </Grid>
+                            {isJob && !isVolunteer && (
+                                <Box sx={{ mt: 3, p: 2, borderRadius: '12px', bgcolor: alpha(color, 0.05), border: `1px solid ${alpha(color, 0.2)}` }}>
+                                  <FormControlLabel
+                                    control={<Switch checked={useEscrow} onChange={(e) => setUseEscrow(e.target.checked)} sx={{ '& .MuiSwitch-switchBase.Mui-checked': { color: color }, '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: color } }} />}
+                                    label={<Typography sx={{ fontWeight: 800, color: '#0f172a' }}>Secure via Food Nerve Escrow</Typography>}
+                                  />
+                                  <Typography variant="body2" sx={{ color: "text.secondary", ml: 4, mt: -0.5, fontWeight: 500 }}>
+                                    Build trust by locking funds in escrow. Highly recommended for gig and contract work.
+                                  </Typography>
+                                </Box>
+                            )}
+                          </>
+                        )}
+
+                        {b.id === 'description' && (
+                          <PremiumMarkdownEditor 
+                              colorTheme={color}
+                              value={description}
+                              onChange={(e: any) => setDescription(e.target.value)}
+                              rows={8}
+                              label="Responsibilities & Context"
+                              placeholder="Write a detailed description. Use formatting tools above to structure responsibilities, expectations, etc."
+                          />
+                        )}
+                        
+                        {/* Done Button on back face */}
+                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
+                          <Button
+                            variant="contained"
+                            onClick={() => setFlippedBlockId(null)}
+                            sx={{
+                              bgcolor: color, '&:hover': { bgcolor: alpha(color, 0.9) },
+                              borderRadius: '12px', fontWeight: 700, px: 4, boxShadow: 'none'
+                            }}
+                          >
+                            Save & Close Block
+                          </Button>
+                        </Box>
+                      </Box>
+                    </Box>
+                  </Box>
+                </Box>
+              );
+            })}
+          </Box>
         </Box>
       </Box>
 
-      {/* FIXED BOTTOM ACTIONS */}
-      <Box sx={{ 
-        position: 'fixed', 
-        bottom: 0, left: 0, right: 0, 
-        bgcolor: 'rgba(255, 255, 255, 0.9)', 
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-        borderTop: '1px solid rgba(0,0,0,0.05)',
-        boxShadow: '0 -4px 20px rgba(0,0,0,0.05)',
-        p: 2,
-        px: { xs: 2, md: 4 },
-        zIndex: 1100,
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-      }}>
+      {/* FOOTER ACTION CONTAINER */}
+      <Box sx={{ px: 3, py: 2, borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Button onClick={onCancel} sx={{ fontWeight: 700, color: "text.secondary", textTransform: 'none' }}>
           Cancel
         </Button>
-        <Box sx={{ display: 'flex', gap: { xs: 1, sm: 2 } }}>
-            <Button 
-                variant="outlined" 
-                onClick={() => setShowPreview(true)} 
-                disabled={!isFormValid()} 
-                sx={{ borderColor: EMERALD, color: EMERALD, "&:hover": { borderColor: EMERALD_DARK, bgcolor: alpha(EMERALD, 0.05) }, borderRadius: '12px', fontWeight: 700, textTransform: 'none', px: { xs: 2, sm: 3 } }}
-            >
-                Preview
-            </Button>
-            <Button 
-                variant="contained" 
-                sx={{ bgcolor: "#334155", "&:hover": { bgcolor: "#1e293b" }, borderRadius: '12px', fontWeight: 700, textTransform: 'none', px: { xs: 2, sm: 3 }, boxShadow: 'none', display: { xs: 'none', sm: 'inline-flex' } }}
-            >
-                Save Draft
-            </Button>
-            <Button 
-                variant="contained" 
-                onClick={handlePublish} 
-                disabled={!isFormValid() || isSubmitting} 
-                sx={{ bgcolor: EMERALD, "&:hover": { bgcolor: EMERALD_DARK }, borderRadius: '12px', fontWeight: 800, textTransform: 'none', px: { xs: 3, sm: 4 }, boxShadow: `0 4px 14px ${alpha(EMERALD, 0.4)}` }}
-            >
-                {isSubmitting ? <CircularProgress size={24} color="inherit" /> : "Publish"}
-            </Button>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button
+            onClick={() => setShowPreview(true)}
+            disabled={!areAllBlocksFilled}
+            startIcon={<SparkleIcon sx={{ color: '#8b5cf6' }} />}
+            sx={{
+              borderColor: 'rgba(139,92,246,0.3)',
+              color: '#64748b',
+              bgcolor: 'rgba(139,92,246,0.05)',
+              fontWeight: 800,
+              borderRadius: '12px',
+              px: 3,
+              '&:hover': {
+                bgcolor: 'rgba(139,92,246,0.1)',
+                borderColor: '#8b5cf6',
+                color: '#0f172a',
+                transform: 'translateY(-2px)'
+              },
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            }}
+          >
+            Preview
+          </Button>
+          <Button
+            sx={{
+              bgcolor: 'rgba(245, 158, 11, 0.1)',
+              color: '#d97706',
+              fontWeight: 800,
+              borderRadius: '12px',
+              px: 3,
+              '&:hover': {
+                bgcolor: 'rgba(245, 158, 11, 0.2)',
+                color: '#b45309'
+              }
+            }}
+          >
+            Save Draft
+          </Button>
+          <Button 
+            variant="contained" 
+            onClick={handlePublish} 
+            disabled={isSubmitting} 
+            sx={{ 
+              bgcolor: EMERALD, 
+              fontWeight: 800, 
+              px: 4, 
+              borderRadius: '12px',
+              opacity: areAllBlocksFilled ? 1 : 0.5,
+              '&:hover': { bgcolor: EMERALD_DARK }
+            }}
+          >
+            {isSubmitting ? 'Publishing...' : 'Publish'}
+          </Button>
         </Box>
       </Box>
 
