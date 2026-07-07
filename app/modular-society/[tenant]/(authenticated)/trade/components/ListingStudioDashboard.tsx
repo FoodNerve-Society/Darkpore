@@ -489,15 +489,15 @@ export default function ListingStudioDashboard({
                               {/* Sliding Track */}
                               <Box sx={{
                                 display: 'flex',
-                                width: (config.options?.find((s: any) => s.id === selectedSubOption)?.nextOptions) ? '300%' : '200%',
+                                width: (config.options?.find((s: any) => s.id === selectedSubOption)?.nextOptions) ? '200%' : '100%',
                                 height: 'auto',
-                                transform: selectedTertiaryOption 
-                                  ? 'translateX(-66.666%)' 
-                                  : (selectedSubOption ? (config.options?.find((s: any) => s.id === selectedSubOption)?.nextOptions ? 'translateX(-33.333%)' : 'translateX(-50%)') : 'translateX(0)'),
+                                transform: selectedSubOption && config.options?.find((s: any) => s.id === selectedSubOption)?.nextOptions 
+                                  ? 'translateX(-50%)' 
+                                  : 'translateX(0)',
                                 transition: 'transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1)',
                               }}>
                                 {/* VIEW 1: OPTIONS */}
-                                <Box sx={{ width: (config.options?.find((s: any) => s.id === selectedSubOption)?.nextOptions) ? '33.333%' : '50%', height: 'auto', p: 4, pb: 4 }}>
+                                <Box sx={{ width: (config.options?.find((s: any) => s.id === selectedSubOption)?.nextOptions) ? '50%' : '100%', height: 'auto', p: 4, pb: 4 }}>
                                   <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', mb: 3 }}>
                                     Additional Details
                                   </Typography>
@@ -507,7 +507,15 @@ export default function ListingStudioDashboard({
                                       return (
                                         <Box
                                           key={sub.id}
-                                          onClick={(e) => { e.stopPropagation(); setSelectedSubOption(sub.id); setSelectedTertiaryOption(''); }}
+                                          onClick={(e) => { 
+                                            e.stopPropagation(); 
+                                            if (sub.nextOptions && sub.nextOptions.length > 0) {
+                                              setSelectedSubOption(sub.id); 
+                                              setSelectedTertiaryOption('');
+                                            } else {
+                                              finalizeTaxonomy(sub.id);
+                                            }
+                                          }}
                                           sx={{
                                             display: 'flex', alignItems: 'center', gap: 2,
                                             p: 2, borderRadius: '16px',
@@ -536,7 +544,7 @@ export default function ListingStudioDashboard({
 
                                 {/* VIEW 2: TERTIARY OPTIONS (If applicable) */}
                                 {config.options?.find((s: any) => s.id === selectedSubOption)?.nextOptions && (
-                                  <Box sx={{ width: '33.333%', height: 'auto', p: 4, pb: 4 }}>
+                                  <Box sx={{ width: '50%', height: 'auto', p: 4, pb: 4 }}>
                                     <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', mb: 3 }}>
                                       Who are you hiring for?
                                     </Typography>
@@ -552,7 +560,10 @@ export default function ListingStudioDashboard({
                                             key={ter.id}
                                             onClick={(e) => { 
                                               e.stopPropagation(); 
-                                              if (!isLocked) setSelectedTertiaryOption(ter.id); 
+                                              if (!isLocked) {
+                                                setSelectedTertiaryOption(ter.id); 
+                                                finalizeTaxonomy(selectedSubOption, ter.id);
+                                              }
                                             }}
                                             sx={{
                                               display: 'flex', alignItems: 'center', gap: 2,
@@ -594,37 +605,6 @@ export default function ListingStudioDashboard({
                                   </Box>
                                 )}
 
-                                {/* FINAL VIEW: CONFIRMATION & PROCEED */}
-                                <Box sx={{ width: (config.options?.find((s: any) => s.id === selectedSubOption)?.nextOptions) ? '33.333%' : '50%', height: 'auto', p: 4, pb: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                                  <Box sx={{ textAlign: 'center', maxWidth: 400 }}>
-                                    <Typography variant="h5" sx={{ color: '#fff', fontWeight: 800, letterSpacing: '-0.01em', mb: 2 }}>
-                                      Perfect. Let's create your {opt.title} listing.
-                                    </Typography>
-                                    <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.95rem', mb: 4 }}>
-                                      You'll be able to add images, location, pricing, and all the relevant details in the next step.
-                                    </Typography>
-                                    
-                                    <Button
-                                      variant="contained"
-                                      onClick={() => finalizeTaxonomy(selectedSubOption, selectedTertiaryOption)}
-                                      endIcon={<ArrowForwardArrow />}
-                                      sx={{
-                                        bgcolor: opt.color,
-                                        color: '#fff',
-                                        fontWeight: 800,
-                                        px: 4, py: 1.5,
-                                        borderRadius: '16px',
-                                        textTransform: 'none',
-                                        fontSize: '1.05rem',
-                                        boxShadow: `0 8px 24px ${alpha(opt.color, 0.4)}`,
-                                        '&:hover': { bgcolor: opt.color, filter: 'brightness(1.1)', transform: 'translateY(-2px)' },
-                                        transition: 'all 0.2s'
-                                      }}
-                                    >
-                                      Start Listing
-                                    </Button>
-                                  </Box>
-                                </Box>
                               </Box>
                             </Box>
                           )}

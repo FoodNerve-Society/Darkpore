@@ -307,6 +307,7 @@ export default function TradePage() {
   const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
   const [createCategory, setCreateCategory] = useState<string>('');
   const [createSelections, setCreateSelections] = useState<{ primary: string, secondary: string, tertiary?: string } | null>(null);
+  const [sessionKey, setSessionKey] = useState(0);
   
   const [activeTab, setActiveTab] = useState("All Listings");
   const [searchOpen, setSearchOpen] = useState(false);
