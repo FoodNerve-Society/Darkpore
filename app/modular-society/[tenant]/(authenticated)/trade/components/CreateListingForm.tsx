@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Box,
   Typography,
@@ -13,7 +13,8 @@ import {
   FormControlLabel,
   Grid,
   Modal,
-  Chip
+  Chip,
+  Collapse
 } from "@mui/material";
 
 import { useRouter } from "next/navigation";
@@ -31,11 +32,14 @@ import ShieldIcon from "@mui/icons-material/Shield";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import StarIcon from "@mui/icons-material/Star";
 import CloseIcon from "@mui/icons-material/Close";
+import EditIcon from "@mui/icons-material/Edit";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 
 import PremiumTextField from "@/components/PremiumTextField";
 import PremiumAutocomplete from "@/components/PremiumAutocomplete";
 import PremiumMarkdownEditor from "@/components/PremiumMarkdownEditor";
 import { Country, State, City } from 'country-state-city';
+import { CATEGORY_OPTIONS } from "@/lib/taxonomy";
 
 const EMERALD = "#10b981";
 const EMERALD_DARK = "#059669";
@@ -44,27 +48,17 @@ const glassCard = {
   background: "#fff",
   borderRadius: "20px",
   boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-  transition: "transform 0.2s ease, box-shadow 0.2s ease",
+  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
   "&:hover": {
     boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
   },
 };
 
-// --- TAXONOMY (System Influencers & Value Chain Actors) ---
-const TAXONOMY = {
-  "Primary Production": ["Crop Farming & Horticulture", "Livestock & Poultry", "Aquaculture", "Greenhouse & Hydroponics"],
-  "Processing & Manufacturing": ["Milling & Extrusion", "Cold Storage & Preservation", "Packaging & Labeling", "Fermentation & Bio-processing"],
-  "Logistics & Supply Chain": ["Cold-Chain Transport", "Warehousing & Aggregation", "Last-Mile Delivery"],
-  "Agritech & Data Ecosystem": ["IoT & Farm Sensors", "Drone Mapping & GIS", "Farm Management Software", "Marketplace Platforms"],
-  "Policy, Research & Education": ["Agronomy & Extension Services", "Biotech & Seed Research", "Regulatory & NGO"],
-  "Retail, Trade & Market Access": ["B2B Export", "Wholesale Aggregation", "B2C E-commerce & Grocery"],
-  "Finance & Investment": ["Microfinance & Credit", "Venture Capital & Private Equity", "Insurance & Risk Mitigation"]
+const activeCardStyle = {
+  ...glassCard,
+  boxShadow: `0 0 0 2px ${EMERALD}, 0 8px 24px ${alpha(EMERALD, 0.15)}`,
+  transform: "scale(1.01)",
 };
-
-// Flatten for autocomplete options
-const CATEGORY_OPTIONS = Object.entries(TAXONOMY).map(([influencer, actors]) => {
-    return [influencer, ...actors.map(actor => `  ↳ ${actor}`)];
-}).flat();
 
 interface CreateListingFormProps {
   initialCategory?: string;
@@ -75,7 +69,14 @@ interface CreateListingFormProps {
   selectedOrgId?: string | null;
 }
 
-export default function CreateListingForm({ initialCategory = "", initialSelections = null, onCancel, onSuccess, postingAs = 'personal', selectedOrgId = null }: CreateListingFormProps) {
+export default function CreateListingForm({ 
+  initialCategory = "", 
+  initialSelections = null, 
+  onCancel, 
+  onSuccess, 
+  postingAs = 'personal', 
+  selectedOrgId = null 
+}: CreateListingFormProps) {
   const { profile, activeOrg } = useSociety();
   const router = useRouter();
 
@@ -94,7 +95,6 @@ export default function CreateListingForm({ initialCategory = "", initialSelecti
       isMyOrg ? (activeOrg?.name || profile?.displayName || "My Organization") : ""
   );
   const companyDisabled = isFoodNerve || isMyOrg;
-
   const [category, setCategory] = useState<string | null>(null);
   
   // Geography
@@ -145,11 +145,23 @@ export default function CreateListingForm({ initialCategory = "", initialSelecti
   const [showPreview, setShowPreview] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
+  // Block State
+  // 1: Role Details, 2: Geography, 3: Compensation, 4: Description
+  const [activeBlock, setActiveBlock] = useState<number>(1);
+  const blockRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  useEffect(() => {
+    if (activeBlock && blockRefs.current[activeBlock]) {
+      setTimeout(() => {
+        blockRefs.current[activeBlock]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    }
+  }, [activeBlock]);
+
   if (!profile) return <Box sx={{ p: 4, textAlign: "center" }}><CircularProgress /></Box>;
 
   const gate = checkGatekeeper(profile, 2);
   if (gate && !gate.allowed) {
-      // (Keep existing premium upgrade prompt)
       return (
         <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 600, mx: "auto" }}>
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', width: '100%' }}>
@@ -249,177 +261,278 @@ export default function CreateListingForm({ initialCategory = "", initialSelecti
     );
   }
 
+  // Helper component for rendering block summaries
+  const BlockSummary = ({ label, value, isFilled }: { label: string, value: string, isFilled: boolean }) => (
+    <Box sx={{ flex: 1, minWidth: 150 }}>
+      <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, display: 'block', mb: 0.5 }}>{label}</Typography>
+      <Typography variant="body2" sx={{ fontWeight: 700, color: isFilled ? '#000' : 'text.disabled' }}>
+        {value || "Not specified"}
+      </Typography>
+    </Box>
+  );
+
   return (
-    <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 800, mx: "auto", color: "#000" }}>
-      
-      <Typography variant="h4" sx={{ fontWeight: 900, fontSize: { xs: "1.5rem", md: "1.8rem" }, mb: 1, background: `linear-gradient(135deg, ${EMERALD} 0%, ${EMERALD_DARK} 100%)`, backgroundClip: "text", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-        {isJob ? "Create Job Listing" : "Create Listing"}
-      </Typography>
-      <Typography variant="body2" sx={{ color: "text.secondary", mb: 4 }}>
-        Fill in the details below. Required fields are marked.
-      </Typography>
-      
-      <Paper elevation={0} sx={{ ...glassCard, p: { xs: 3, md: 5 }, display: 'flex', flexDirection: 'column', gap: 5 }}>
+    <Box sx={{ pb: { xs: 15, md: 10 }, color: "#000" }}>
+      <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 800, mx: "auto" }}>
         
-        {/* SECTION 1: ROLE DETAILS */}
-        <Box>
-            <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>1. Role Details</Typography>
-            <Grid container spacing={3}>
-                <Grid item xs={12}>
-                    <PremiumTextField colorTheme={EMERALD} fullWidth label="Job Title *" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Senior Agronomist" />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                    <PremiumTextField 
-                        colorTheme={EMERALD} 
-                        fullWidth 
-                        label="Company Name *" 
-                        value={companyName} 
-                        onChange={(e) => setCompanyName(e.target.value)} 
-                        disabled={companyDisabled}
-                    />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                    <PremiumAutocomplete 
-                        colorTheme={EMERALD}
-                        label="Category / Sector"
-                        options={CATEGORY_OPTIONS}
-                        value={category}
-                        onChange={(e, val) => setCategory(val as string)}
-                    />
-                </Grid>
-            </Grid>
-        </Box>
-
-        {/* SECTION 2: GEOGRAPHY */}
-        <Box>
-            <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>2. Geography</Typography>
-            <Grid container spacing={3}>
-                <Grid item xs={12} sm={4}>
-                    <PremiumAutocomplete
-                        colorTheme={EMERALD}
-                        label="Country *"
-                        options={countries}
-                        getOptionLabel={(opt: any) => opt.name || ''}
-                        value={selectedCountry}
-                        onChange={(e, val) => setSelectedCountry(val)}
-                    />
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                    <PremiumAutocomplete
-                        colorTheme={EMERALD}
-                        label="State"
-                        options={states}
-                        getOptionLabel={(opt: any) => opt.name || ''}
-                        value={selectedState}
-                        onChange={(e, val) => setSelectedState(val)}
-                        disabled={!selectedCountry || states.length === 0}
-                    />
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                    <PremiumAutocomplete
-                        colorTheme={EMERALD}
-                        label="City / LGA"
-                        options={cities}
-                        getOptionLabel={(opt: any) => opt.name || ''}
-                        value={selectedCity}
-                        onChange={(e, val) => setSelectedCity(val)}
-                        disabled={!selectedState || cities.length === 0}
-                    />
-                </Grid>
-            </Grid>
-        </Box>
-
-        {/* SECTION 3: COMPENSATION & COMMITMENT */}
-        <Box>
-            <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>3. Compensation & Commitment</Typography>
-            <Grid container spacing={3}>
-                <Grid item xs={12} sm={6}>
-                    <PremiumTextField 
-                        colorTheme={EMERALD} 
-                        fullWidth 
-                        label="Duration / Tenure" 
-                        value={duration} 
-                        onChange={(e) => setDuration(e.target.value)} 
-                        placeholder="e.g. 3 Months, Ongoing, Project-based" 
-                    />
-                </Grid>
-                {isVolunteer ? (
-                     <Grid item xs={12} sm={6}>
-                         <PremiumTextField 
-                             colorTheme={EMERALD} 
-                             fullWidth 
-                             label="Nerve Points Offered (Optional)" 
-                             type="number"
-                             value={npAmount} 
-                             onChange={(e) => setNpAmount(e.target.value)} 
-                         />
-                     </Grid>
-                ) : (
-                    <>
-                        <Grid item xs={12} sm={2}>
-                            <PremiumTextField colorTheme={EMERALD} fullWidth label="Currency" value={currency} onChange={(e) => setCurrency(e.target.value)} />
-                        </Grid>
-                        <Grid item xs={12} sm={2}>
-                            <PremiumTextField colorTheme={EMERALD} fullWidth label="Min Salary" type="number" value={minSalary} onChange={(e) => setMinSalary(e.target.value)} />
-                        </Grid>
-                        <Grid item xs={12} sm={2}>
-                            <PremiumTextField colorTheme={EMERALD} fullWidth label="Max Salary" type="number" value={maxSalary} onChange={(e) => setMaxSalary(e.target.value)} />
-                        </Grid>
-                    </>
-                )}
-            </Grid>
-            {isJob && !isVolunteer && (
-                <Box sx={{ mt: 3, p: 2, borderRadius: '12px', bgcolor: alpha(EMERALD, 0.05), border: `1px solid ${alpha(EMERALD, 0.2)}` }}>
-                  <FormControlLabel
-                    control={<Switch checked={useEscrow} onChange={(e) => setUseEscrow(e.target.checked)} sx={{ '& .MuiSwitch-switchBase.Mui-checked': { color: EMERALD }, '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: EMERALD } }} />}
-                    label={<Typography sx={{ fontWeight: 700 }}>Secure via Food Nerve Escrow</Typography>}
-                  />
-                  <Typography variant="body2" sx={{ color: "text.secondary", ml: 4, mt: -0.5 }}>
-                    Build trust by locking funds in escrow. Recommended for gig and contract work.
-                  </Typography>
+        <Typography variant="h4" sx={{ fontWeight: 900, fontSize: { xs: "1.5rem", md: "1.8rem" }, mb: 1, background: `linear-gradient(135deg, ${EMERALD} 0%, ${EMERALD_DARK} 100%)`, backgroundClip: "text", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+          {isJob ? "Create Job Listing" : "Create Listing"}
+        </Typography>
+        <Typography variant="body2" sx={{ color: "text.secondary", mb: 4 }}>
+          Complete each section to publish your opportunity.
+        </Typography>
+        
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          
+          {/* BLOCK 1: ROLE DETAILS */}
+          <Paper 
+            ref={el => blockRefs.current[1] = el}
+            elevation={0} 
+            sx={{ ...(activeBlock === 1 ? activeCardStyle : glassCard), p: { xs: 3, md: 4 }, cursor: activeBlock !== 1 ? 'default' : 'pointer' }}
+            onClick={() => activeBlock !== 1 && setActiveBlock(1)}
+          >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: activeBlock === 1 ? 3 : 0 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box sx={{ width: 28, height: 28, borderRadius: '50%', bgcolor: title.length >= 5 ? EMERALD : alpha(EMERALD, 0.2), display: 'flex', alignItems: 'center', justifyContent: 'center', color: title.length >= 5 ? '#fff' : EMERALD, fontWeight: 800, fontSize: '0.8rem' }}>
+                  {title.length >= 5 ? <CheckCircleIcon sx={{ fontSize: 18 }} /> : "1"}
                 </Box>
-            )}
+                <Typography variant="h6" sx={{ fontWeight: 800 }}>Role Overview</Typography>
+              </Box>
+              {activeBlock !== 1 && (
+                <Button size="small" startIcon={<EditIcon />} sx={{ color: EMERALD, fontWeight: 700, textTransform: 'none' }}>Edit</Button>
+              )}
+            </Box>
+
+            <Collapse in={activeBlock === 1}>
+              <Grid container spacing={3}>
+                  <Grid item xs={12}>
+                      <PremiumTextField colorTheme={EMERALD} fullWidth label="Job Title *" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Senior Agronomist" />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                      <PremiumTextField colorTheme={EMERALD} fullWidth label="Company Name *" value={companyName} onChange={(e) => setCompanyName(e.target.value)} disabled={companyDisabled} />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                      <PremiumAutocomplete colorTheme={EMERALD} label="Category / Sector" options={CATEGORY_OPTIONS} value={category} onChange={(e, val) => setCategory(val as string)} />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
+                      <Button variant="contained" onClick={(e) => { e.stopPropagation(); setActiveBlock(2); }} sx={{ bgcolor: EMERALD, '&:hover': { bgcolor: EMERALD_DARK }, borderRadius: 2, fontWeight: 700, px: 4, boxShadow: 'none' }}>
+                        Continue
+                      </Button>
+                    </Box>
+                  </Grid>
+              </Grid>
+            </Collapse>
+
+            {!activeBlock || activeBlock !== 1 ? (
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mt: 2, pl: 5 }}>
+                <BlockSummary label="Title" value={title} isFilled={!!title} />
+                <BlockSummary label="Company" value={companyName} isFilled={!!companyName} />
+                <BlockSummary label="Category" value={category?.replace('  ↳ ', '') || ''} isFilled={!!category} />
+              </Box>
+            ) : null}
+          </Paper>
+
+          {/* BLOCK 2: GEOGRAPHY */}
+          <Paper 
+            ref={el => blockRefs.current[2] = el}
+            elevation={0} 
+            sx={{ ...(activeBlock === 2 ? activeCardStyle : glassCard), p: { xs: 3, md: 4 }, cursor: activeBlock !== 2 ? 'default' : 'pointer' }}
+            onClick={() => activeBlock !== 2 && setActiveBlock(2)}
+          >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: activeBlock === 2 ? 3 : 0 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box sx={{ width: 28, height: 28, borderRadius: '50%', bgcolor: selectedCountry ? EMERALD : alpha(EMERALD, 0.2), display: 'flex', alignItems: 'center', justifyContent: 'center', color: selectedCountry ? '#fff' : EMERALD, fontWeight: 800, fontSize: '0.8rem' }}>
+                  {selectedCountry ? <CheckCircleIcon sx={{ fontSize: 18 }} /> : "2"}
+                </Box>
+                <Typography variant="h6" sx={{ fontWeight: 800 }}>Location Details</Typography>
+              </Box>
+              {activeBlock !== 2 && (
+                <Button size="small" startIcon={<EditIcon />} sx={{ color: EMERALD, fontWeight: 700, textTransform: 'none' }}>Edit</Button>
+              )}
+            </Box>
+
+            <Collapse in={activeBlock === 2}>
+              <Grid container spacing={3}>
+                  <Grid item xs={12} sm={4}>
+                      <PremiumAutocomplete colorTheme={EMERALD} label="Country *" options={countries} getOptionLabel={(opt: any) => opt.name || ''} value={selectedCountry} onChange={(e, val) => setSelectedCountry(val)} />
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                      <PremiumAutocomplete colorTheme={EMERALD} label="State" options={states} getOptionLabel={(opt: any) => opt.name || ''} value={selectedState} onChange={(e, val) => setSelectedState(val)} disabled={!selectedCountry || states.length === 0} />
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                      <PremiumAutocomplete colorTheme={EMERALD} label="City / LGA" options={cities} getOptionLabel={(opt: any) => opt.name || ''} value={selectedCity} onChange={(e, val) => setSelectedCity(val)} disabled={!selectedState || cities.length === 0} />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
+                      <Button variant="contained" onClick={(e) => { e.stopPropagation(); setActiveBlock(3); }} sx={{ bgcolor: EMERALD, '&:hover': { bgcolor: EMERALD_DARK }, borderRadius: 2, fontWeight: 700, px: 4, boxShadow: 'none' }}>
+                        Continue
+                      </Button>
+                    </Box>
+                  </Grid>
+              </Grid>
+            </Collapse>
+
+            {!activeBlock || activeBlock !== 2 ? (
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mt: 2, pl: 5 }}>
+                <BlockSummary label="Country" value={selectedCountry?.name || ''} isFilled={!!selectedCountry} />
+                <BlockSummary label="State" value={selectedState?.name || ''} isFilled={!!selectedState} />
+                <BlockSummary label="City/LGA" value={selectedCity?.name || ''} isFilled={!!selectedCity} />
+              </Box>
+            ) : null}
+          </Paper>
+
+          {/* BLOCK 3: COMPENSATION */}
+          <Paper 
+            ref={el => blockRefs.current[3] = el}
+            elevation={0} 
+            sx={{ ...(activeBlock === 3 ? activeCardStyle : glassCard), p: { xs: 3, md: 4 }, cursor: activeBlock !== 3 ? 'default' : 'pointer' }}
+            onClick={() => activeBlock !== 3 && setActiveBlock(3)}
+          >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: activeBlock === 3 ? 3 : 0 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box sx={{ width: 28, height: 28, borderRadius: '50%', bgcolor: duration ? EMERALD : alpha(EMERALD, 0.2), display: 'flex', alignItems: 'center', justifyContent: 'center', color: duration ? '#fff' : EMERALD, fontWeight: 800, fontSize: '0.8rem' }}>
+                  {duration ? <CheckCircleIcon sx={{ fontSize: 18 }} /> : "3"}
+                </Box>
+                <Typography variant="h6" sx={{ fontWeight: 800 }}>Compensation & Terms</Typography>
+              </Box>
+              {activeBlock !== 3 && (
+                <Button size="small" startIcon={<EditIcon />} sx={{ color: EMERALD, fontWeight: 700, textTransform: 'none' }}>Edit</Button>
+              )}
+            </Box>
+
+            <Collapse in={activeBlock === 3}>
+              <Grid container spacing={3}>
+                  <Grid item xs={12} sm={6}>
+                      <PremiumTextField colorTheme={EMERALD} fullWidth label="Duration / Tenure" value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="e.g. 3 Months, Ongoing, Project-based" />
+                  </Grid>
+                  {isVolunteer ? (
+                       <Grid item xs={12} sm={6}>
+                           <PremiumTextField colorTheme={EMERALD} fullWidth label="Nerve Points Offered (Optional)" type="number" value={npAmount} onChange={(e) => setNpAmount(e.target.value)} />
+                       </Grid>
+                  ) : (
+                      <>
+                          <Grid item xs={12} sm={2}>
+                              <PremiumTextField colorTheme={EMERALD} fullWidth label="Currency" value={currency} onChange={(e) => setCurrency(e.target.value)} />
+                          </Grid>
+                          <Grid item xs={12} sm={2}>
+                              <PremiumTextField colorTheme={EMERALD} fullWidth label="Min Salary" type="number" value={minSalary} onChange={(e) => setMinSalary(e.target.value)} />
+                          </Grid>
+                          <Grid item xs={12} sm={2}>
+                              <PremiumTextField colorTheme={EMERALD} fullWidth label="Max Salary" type="number" value={maxSalary} onChange={(e) => setMaxSalary(e.target.value)} />
+                          </Grid>
+                      </>
+                  )}
+              </Grid>
+              {isJob && !isVolunteer && (
+                  <Box sx={{ mt: 3, p: 2, borderRadius: '12px', bgcolor: alpha(EMERALD, 0.05), border: `1px solid ${alpha(EMERALD, 0.2)}` }}>
+                    <FormControlLabel
+                      control={<Switch checked={useEscrow} onChange={(e) => setUseEscrow(e.target.checked)} sx={{ '& .MuiSwitch-switchBase.Mui-checked': { color: EMERALD }, '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: EMERALD } }} />}
+                      label={<Typography sx={{ fontWeight: 700 }}>Secure via Food Nerve Escrow</Typography>}
+                    />
+                    <Typography variant="body2" sx={{ color: "text.secondary", ml: 4, mt: -0.5 }}>
+                      Build trust by locking funds in escrow. Recommended for gig and contract work.
+                    </Typography>
+                  </Box>
+              )}
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
+                <Button variant="contained" onClick={(e) => { e.stopPropagation(); setActiveBlock(4); }} sx={{ bgcolor: EMERALD, '&:hover': { bgcolor: EMERALD_DARK }, borderRadius: 2, fontWeight: 700, px: 4, boxShadow: 'none' }}>
+                  Continue
+                </Button>
+              </Box>
+            </Collapse>
+
+            {!activeBlock || activeBlock !== 3 ? (
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mt: 2, pl: 5 }}>
+                <BlockSummary label="Duration" value={duration} isFilled={!!duration} />
+                <BlockSummary label={isVolunteer ? "NP Reward" : "Salary Range"} value={isVolunteer ? (npAmount ? `${npAmount} NP` : '') : (minSalary ? `${currency} ${minSalary} - ${maxSalary}` : '')} isFilled={isVolunteer ? !!npAmount : !!minSalary} />
+              </Box>
+            ) : null}
+          </Paper>
+
+          {/* BLOCK 4: DESCRIPTION */}
+          <Paper 
+            ref={el => blockRefs.current[4] = el}
+            elevation={0} 
+            sx={{ ...(activeBlock === 4 ? activeCardStyle : glassCard), p: { xs: 3, md: 4 }, cursor: activeBlock !== 4 ? 'default' : 'pointer' }}
+            onClick={() => activeBlock !== 4 && setActiveBlock(4)}
+          >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: activeBlock === 4 ? 3 : 0 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box sx={{ width: 28, height: 28, borderRadius: '50%', bgcolor: description.length > 20 ? EMERALD : alpha(EMERALD, 0.2), display: 'flex', alignItems: 'center', justifyContent: 'center', color: description.length > 20 ? '#fff' : EMERALD, fontWeight: 800, fontSize: '0.8rem' }}>
+                  {description.length > 20 ? <CheckCircleIcon sx={{ fontSize: 18 }} /> : "4"}
+                </Box>
+                <Typography variant="h6" sx={{ fontWeight: 800 }}>Full Description</Typography>
+              </Box>
+              {activeBlock !== 4 && (
+                <Button size="small" startIcon={<EditIcon />} sx={{ color: EMERALD, fontWeight: 700, textTransform: 'none' }}>Edit</Button>
+              )}
+            </Box>
+
+            <Collapse in={activeBlock === 4}>
+              <PremiumMarkdownEditor 
+                  colorTheme={EMERALD}
+                  value={description}
+                  onChange={(e: any) => setDescription(e.target.value)}
+                  rows={10}
+                  placeholder="Write a detailed description. Use formatting tools above to structure responsibilities, expectations, etc."
+              />
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
+                <Button variant="contained" onClick={(e) => { e.stopPropagation(); setActiveBlock(0); }} sx={{ bgcolor: EMERALD, '&:hover': { bgcolor: EMERALD_DARK }, borderRadius: 2, fontWeight: 700, px: 4, boxShadow: 'none' }}>
+                  Done
+                </Button>
+              </Box>
+            </Collapse>
+            
+            {!activeBlock || activeBlock !== 4 ? (
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mt: 2, pl: 5 }}>
+                <BlockSummary label="Content" value={description ? `${description.substring(0, 100)}...` : ""} isFilled={!!description} />
+              </Box>
+            ) : null}
+          </Paper>
+
         </Box>
+      </Box>
 
-        {/* SECTION 4: DESCRIPTION */}
-        <Box>
-            <Typography variant="h6" sx={{ fontWeight: 800, mb: 2 }}>4. Description</Typography>
-            <PremiumMarkdownEditor 
-                colorTheme={EMERALD}
-                value={description}
-                onChange={(e: any) => setDescription(e.target.value)}
-                rows={10}
-                placeholder="Write a detailed description. Use formatting tools above."
-            />
-        </Box>
-
-      </Paper>
-
-      {/* ACTIONS */}
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 4, gap: 2, flexWrap: 'wrap' }}>
+      {/* FIXED BOTTOM ACTIONS */}
+      <Box sx={{ 
+        position: 'fixed', 
+        bottom: 0, left: 0, right: 0, 
+        bgcolor: 'rgba(255, 255, 255, 0.9)', 
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        borderTop: '1px solid rgba(0,0,0,0.05)',
+        boxShadow: '0 -4px 20px rgba(0,0,0,0.05)',
+        p: 2,
+        px: { xs: 2, md: 4 },
+        zIndex: 1100,
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
+      }}>
         <Button onClick={onCancel} sx={{ fontWeight: 700, color: "text.secondary", textTransform: 'none' }}>
           Cancel
         </Button>
-        <Box sx={{ display: 'flex', gap: 2 }}>
+        <Box sx={{ display: 'flex', gap: { xs: 1, sm: 2 } }}>
             <Button 
                 variant="outlined" 
                 onClick={() => setShowPreview(true)} 
                 disabled={!isFormValid()} 
-                sx={{ borderColor: EMERALD, color: EMERALD, "&:hover": { borderColor: EMERALD_DARK, bgcolor: alpha(EMERALD, 0.05) }, borderRadius: '12px', fontWeight: 700, textTransform: 'none', px: 3 }}
+                sx={{ borderColor: EMERALD, color: EMERALD, "&:hover": { borderColor: EMERALD_DARK, bgcolor: alpha(EMERALD, 0.05) }, borderRadius: '12px', fontWeight: 700, textTransform: 'none', px: { xs: 2, sm: 3 } }}
             >
                 Preview
             </Button>
             <Button 
                 variant="contained" 
-                sx={{ bgcolor: "#334155", "&:hover": { bgcolor: "#1e293b" }, borderRadius: '12px', fontWeight: 700, textTransform: 'none', px: 3, boxShadow: 'none' }}
+                sx={{ bgcolor: "#334155", "&:hover": { bgcolor: "#1e293b" }, borderRadius: '12px', fontWeight: 700, textTransform: 'none', px: { xs: 2, sm: 3 }, boxShadow: 'none', display: { xs: 'none', sm: 'inline-flex' } }}
             >
-                Save as Draft
+                Save Draft
             </Button>
             <Button 
                 variant="contained" 
                 onClick={handlePublish} 
                 disabled={!isFormValid() || isSubmitting} 
-                sx={{ bgcolor: EMERALD, "&:hover": { bgcolor: EMERALD_DARK }, borderRadius: '12px', fontWeight: 800, textTransform: 'none', px: 4, boxShadow: `0 4px 14px ${alpha(EMERALD, 0.4)}` }}
+                sx={{ bgcolor: EMERALD, "&:hover": { bgcolor: EMERALD_DARK }, borderRadius: '12px', fontWeight: 800, textTransform: 'none', px: { xs: 3, sm: 4 }, boxShadow: `0 4px 14px ${alpha(EMERALD, 0.4)}` }}
             >
                 {isSubmitting ? <CircularProgress size={24} color="inherit" /> : "Publish"}
             </Button>
@@ -450,7 +563,6 @@ export default function CreateListingForm({ initialCategory = "", initialSelecti
                   </Typography>
                   
                   <Box sx={{ mt: 4, pt: 3, borderTop: `1px solid ${alpha('#000', 0.1)}`, '& h2': { mt: 0 } }}>
-                      {/* Note: In a real app we'd use react-markdown here, dangerouslySetInnerHTML as fallback for simple preview */}
                       <div dangerouslySetInnerHTML={{ __html: description.replace(/\n/g, '<br />') }} />
                   </Box>
               </Box>
