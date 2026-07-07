@@ -14,6 +14,12 @@ import {
   alpha,
   Chip,
   CircularProgress,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
+  Switch,
+  FormControlLabel
 } from "@mui/material";
 
 import { useRouter } from "next/navigation";
@@ -26,13 +32,11 @@ import {
 } from "@/context/SocietyContext";
 import { createTradeListing } from "@/lib/actions/trade";
 
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import LockIcon from "@mui/icons-material/Lock";
 import ShieldIcon from "@mui/icons-material/Shield";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import StarIcon from "@mui/icons-material/Star";
-import AddIcon from "@mui/icons-material/Add";
 
 // ── Constants ──────────────────────────────────────────────
 const EMERALD = "#10b981";
@@ -50,16 +54,18 @@ const glassCard = {
   },
 };
 
-const CATEGORY_OPTIONS = [
-  { value: "jobs", label: "Jobs", emoji: "👷", description: "Hire talent or post work opportunities in the food system" },
-  { value: "opportunities", label: "Opportunities", emoji: "💡", description: "Grants, RFPs, fellowships, and backing for ventures" },
-  { value: "flash-sale", label: "Flash Sale", emoji: "⚡", description: "Sell perishable or surplus goods quickly before they expire" },
-  { value: "group-buy", label: "Group-Buy (Ajo)", emoji: "🤝", description: "Pool resources with others to share costs on big purchases" },
-  { value: "swap", label: "Swap", emoji: "♻️", description: "Trade goods directly without cash — barter economy style" },
-  { value: "need", label: "Need", emoji: "🔍", description: "Post a request for a specific commodity or service" },
+const SECTORS = [
+  "Primary Production (Farming)",
+  "Processing & Manufacturing",
+  "Logistics & Supply Chain",
+  "Agritech & Software",
+  "Research & Development",
+  "Retail & Market Access",
+  "Other"
 ];
 
-const STEPS = ["Title", "Location", "Pricing", "Description", "Image"];
+const EXPERIENCE_LEVELS = ["Entry Level", "Mid-Level", "Senior", "Executive"];
+const COMPENSATION_TYPES = ["Fiat (NGN)", "Nerve Points (NP)", "Equity / Profit-Share", "Unpaid / Volunteer"];
 
 interface CreateListingFormProps {
   initialCategory?: string;
@@ -74,15 +80,30 @@ export default function CreateListingForm({ initialCategory = "", initialSelecti
   const { profile } = useSociety();
   const router = useRouter();
 
+  const isJob = initialCategory === "jobs";
+  const isVolunteer = initialSelections?.primary === "volunteer";
+
+  // Dynamic Steps
+  const STEPS = isJob 
+    ? ["Role & Location", "Compensation & Details", "Media"]
+    : ["Item & Location", "Pricing & Details", "Media"];
+
   const [activeStep, setActiveStep] = useState(0);
+  
+  // Shared Form State
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState(initialCategory);
   const [location, setLocation] = useState("");
   const [lga, setLga] = useState("");
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
-  const [selections, setSelections] = useState<{ primary: string, secondary: string, tertiary?: string } | null>(initialSelections);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  
+  // Jobs Specific State
+  const [sector, setSector] = useState("");
+  const [experienceLevel, setExperienceLevel] = useState("");
+  const [compType, setCompType] = useState(isVolunteer ? "Nerve Points (NP)" : "Fiat (NGN)");
+  const [useEscrow, setUseEscrow] = useState(false);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
@@ -131,13 +152,20 @@ export default function CreateListingForm({ initialCategory = "", initialSelecti
   }
 
   const isStepValid = (step: number): boolean => {
-    switch (step) {
-      case 0: return title.trim().length >= 5;
-      case 1: return location.trim().length > 0 && lga.trim().length > 0;
-      case 2: return price.trim().length > 0;
-      case 3: return description.trim().length >= 10;
-      case 4: return true;
-      default: return false;
+    if (isJob) {
+      switch (step) {
+        case 0: return title.trim().length >= 5 && location.trim().length > 0 && sector.length > 0;
+        case 1: return description.trim().length >= 10 && price.trim().length > 0;
+        case 2: return true;
+        default: return false;
+      }
+    } else {
+      switch (step) {
+        case 0: return title.trim().length >= 5 && location.trim().length > 0;
+        case 1: return price.trim().length > 0 && description.trim().length >= 10;
+        case 2: return true;
+        default: return false;
+      }
     }
   };
 
@@ -156,16 +184,33 @@ export default function CreateListingForm({ initialCategory = "", initialSelecti
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
+    
+    // Structure metadata based on listing type
+    const metadata = isJob ? {
+      sector,
+      experienceLevel,
+      compType,
+      useEscrow,
+      commitment: initialSelections?.primary,
+      workModel: initialSelections?.secondary,
+      hiringEntity: initialSelections?.tertiary
+    } : {
+      primary: initialSelections?.primary,
+      secondary: initialSelections?.secondary
+    };
+
     const res = await createTradeListing({ 
-      category: category as string, 
+      category: initialCategory, 
       title, 
       description, 
       priceOrAsk: price, 
-      location, 
+      location: `${location}${lga ? `, ${lga}` : ''}`, 
       lga, 
-      postedById: postingAs === 'organization' && selectedOrgId ? selectedOrgId : profile.id, 
-      nervePointsCost: 0 
+      postedById: postingAs === 'organization' && selectedOrgId ? selectedOrgId : profile.uid, 
+      nervePointsCost: 0,
+      metadata
     });
+    
     if (res.success) {
       setSubmitted(true);
       setTimeout(() => {
@@ -196,9 +241,11 @@ export default function CreateListingForm({ initialCategory = "", initialSelecti
     <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 640, mx: "auto", color: "#000", height: '100%', display: 'flex', flexDirection: 'column' }}>
       
       <Typography variant="h4" sx={{ fontWeight: 900, fontSize: { xs: "1.5rem", md: "1.8rem" }, mb: 1, background: `linear-gradient(135deg, ${EMERALD} 0%, ${EMERALD_DARK} 100%)`, backgroundClip: "text", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-        Create Listing
+        {isJob ? "Create Job Listing" : "Create Listing"}
       </Typography>
-      <Typography variant="body2" sx={{ color: "text.secondary", mb: 3 }}>List something on the marketplace — it takes less than 2 minutes.</Typography>
+      <Typography variant="body2" sx={{ color: "text.secondary", mb: 3 }}>
+        {isJob ? "Post a role or gig to the community. Fast and simple." : "List something on the marketplace — it takes less than 2 minutes."}
+      </Typography>
       
       <Paper elevation={0} sx={{ ...glassCard, p: { xs: 2, md: 3 }, mb: 3 }}>
         <Stepper activeStep={activeStep} alternativeLabel>
@@ -207,47 +254,134 @@ export default function CreateListingForm({ initialCategory = "", initialSelecti
       </Paper>
 
       <Paper elevation={0} sx={{ ...glassCard, p: { xs: 3, md: 4 }, flex: 1 }}>
+        
+        {/* ============================================================== */}
+        {/* STEP 1: ROLE/ITEM & LOCATION                                   */}
+        {/* ============================================================== */}
         {activeStep === 0 && (
-          <Box>
-            <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5, fontSize: "1.1rem" }}>What are you listing?</Typography>
-            <TextField fullWidth label="Listing Title" value={title} onChange={(e) => setTitle(e.target.value)} sx={{ mb: 3, mt: 2 }} />
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5, fontSize: "1.1rem" }}>
+                {isJob ? "Role Details" : "What are you listing?"}
+              </Typography>
+              <TextField fullWidth label={isJob ? "Job Title (e.g. Senior Agronomist)" : "Listing Title"} value={title} onChange={(e) => setTitle(e.target.value)} sx={{ mt: 1 }} />
+            </Box>
+
+            {isJob && (
+              <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+                <FormControl fullWidth>
+                  <InputLabel>Sector</InputLabel>
+                  <Select value={sector} label="Sector" onChange={(e) => setSector(e.target.value)}>
+                    {SECTORS.map(s => <MenuItem key={s} value={s}>{s}</MenuItem>)}
+                  </Select>
+                </FormControl>
+                
+                <FormControl fullWidth>
+                  <InputLabel>Experience Level</InputLabel>
+                  <Select value={experienceLevel} label="Experience Level" onChange={(e) => setExperienceLevel(e.target.value)}>
+                    {EXPERIENCE_LEVELS.map(s => <MenuItem key={s} value={s}>{s}</MenuItem>)}
+                  </Select>
+                </FormControl>
+              </Box>
+            )}
+
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5, fontSize: "1.1rem" }}>Location</Typography>
+              <Typography variant="body2" sx={{ color: "text.secondary", mb: 2 }}>
+                {initialSelections?.secondary === 'remote' ? "You selected Remote, but you can specify a timezone or HQ location." : "Where is this available or based?"}
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+                <TextField fullWidth label="State / Region" value={location} onChange={(e) => setLocation(e.target.value)} />
+                <TextField fullWidth label="LGA or City (Optional)" value={lga} onChange={(e) => setLga(e.target.value)} />
+              </Box>
+            </Box>
           </Box>
         )}
+
+        {/* ============================================================== */}
+        {/* STEP 2: COMPENSATION & DETAILS                                 */}
+        {/* ============================================================== */}
         {activeStep === 1 && (
-          <Box>
-            <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5, fontSize: "1.1rem" }}>Where is this available?</Typography>
-            <Typography variant="body2" sx={{ color: "text.secondary", mb: 2 }}>For digital opportunities, enter "Remote" or "Online".</Typography>
-            <TextField fullWidth label="State / Region" value={location} onChange={(e) => setLocation(e.target.value)} sx={{ mb: 2 }} />
-            <TextField fullWidth label="Local Government Area (LGA) or City" value={lga} onChange={(e) => setLga(e.target.value)} />
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5, fontSize: "1.1rem" }}>
+                {isJob ? "Compensation" : "Set your price or ask"}
+              </Typography>
+              
+              {isJob ? (
+                <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' }, mt: 1 }}>
+                  <FormControl fullWidth>
+                    <InputLabel>Compensation Type</InputLabel>
+                    <Select value={compType} label="Compensation Type" onChange={(e) => setCompType(e.target.value)}>
+                      {COMPENSATION_TYPES.map(s => <MenuItem key={s} value={s}>{s}</MenuItem>)}
+                    </Select>
+                  </FormControl>
+                  <TextField 
+                    fullWidth 
+                    label={compType === 'Nerve Points (NP)' ? "NP Amount" : "Salary Range / Budget"} 
+                    value={price} 
+                    onChange={(e) => setPrice(e.target.value)} 
+                    placeholder={compType === 'Fiat (NGN)' ? "e.g. ₦150k - ₦200k/mo" : "e.g. 500 NP"}
+                  />
+                </Box>
+              ) : (
+                <TextField fullWidth label="Price or Ask" value={price} onChange={(e) => setPrice(e.target.value)} sx={{ mt: 1 }} />
+              )}
+            </Box>
+
+            {isJob && (
+              <Box sx={{ p: 2, borderRadius: '12px', bgcolor: alpha(EMERALD, 0.05), border: `1px solid ${alpha(EMERALD, 0.2)}` }}>
+                <FormControlLabel
+                  control={<Switch checked={useEscrow} onChange={(e) => setUseEscrow(e.target.checked)} color="primary" />}
+                  label={<Typography sx={{ fontWeight: 700 }}>Secure via Food Nerve Escrow</Typography>}
+                />
+                <Typography variant="body2" sx={{ color: "text.secondary", ml: 7, mt: -0.5 }}>
+                  Build trust by locking funds in escrow. Recommended for gig and contract work.
+                </Typography>
+              </Box>
+            )}
+
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5, fontSize: "1.1rem" }}>
+                {isJob ? "Job Description & Requirements" : "Tell us more"}
+              </Typography>
+              <TextField 
+                fullWidth 
+                multiline 
+                rows={5} 
+                label={isJob ? "Key responsibilities, required skills, etc." : "Description & Requirements"} 
+                value={description} 
+                onChange={(e) => setDescription(e.target.value)} 
+                sx={{ mt: 1 }} 
+              />
+            </Box>
           </Box>
         )}
+
+        {/* ============================================================== */}
+        {/* STEP 3: MEDIA                                                  */}
+        {/* ============================================================== */}
         {activeStep === 2 && (
           <Box>
-            <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5, fontSize: "1.1rem" }}>Set your price or compensation</Typography>
-            <Typography variant="body2" sx={{ color: "text.secondary", mb: 2 }}>E.g. "$5,000 Grant", "N150,000/mo", or "Equity".</Typography>
-            <TextField fullWidth label="Price or Ask" value={price} onChange={(e) => setPrice(e.target.value)} sx={{ mt: 1 }} />
-          </Box>
-        )}
-        {activeStep === 3 && (
-          <Box>
-            <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5, fontSize: "1.1rem" }}>Tell us more</Typography>
-            <TextField fullWidth multiline rows={5} label="Description & Requirements" value={description} onChange={(e) => setDescription(e.target.value)} sx={{ mt: 2 }} />
-          </Box>
-        )}
-        {activeStep === 4 && (
-          <Box>
-            <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5, fontSize: "1.1rem" }}>Add an Image (Optional)</Typography>
-            <Box sx={{ mt: 2, p: 4, border: `2px dashed ${alpha("#000", 0.2)}`, borderRadius: "14px", textAlign: "center" }}>
-               <CloudUploadIcon sx={{ fontSize: 40, color: "text.secondary", mb: 1 }} />
-               <Typography color="text.secondary">Upload an image of your listing</Typography>
+            <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5, fontSize: "1.1rem" }}>Add Media (Optional)</Typography>
+            <Typography variant="body2" sx={{ color: "text.secondary" }}>
+              {isJob ? "Upload a company logo or an image relating to the role." : "Upload an image of your listing"}
+            </Typography>
+            <Box sx={{ mt: 3, p: 5, border: `2px dashed ${alpha("#000", 0.15)}`, borderRadius: "16px", textAlign: "center", bgcolor: "rgba(0,0,0,0.02)", cursor: "pointer", "&:hover": { bgcolor: "rgba(0,0,0,0.04)" } }}>
+               <CloudUploadIcon sx={{ fontSize: 48, color: "text.secondary", mb: 2 }} />
+               <Typography color="text.secondary" sx={{ fontWeight: 600 }}>Tap to browse or drag and drop</Typography>
+               <Typography variant="caption" sx={{ color: "text.disabled", display: "block", mt: 1 }}>PNG, JPG, or GIF up to 5MB</Typography>
             </Box>
           </Box>
         )}
       </Paper>
 
       <Box sx={{ display: "flex", justifyContent: "space-between", mt: 3, gap: 2 }}>
-        <Button disabled={isSubmitting} onClick={handleBack} sx={{ fontWeight: 700, color: "text.secondary" }}>Back</Button>
-        <Button variant="contained" onClick={handleNext} disabled={!isStepValid(activeStep) || isSubmitting} sx={{ bgcolor: EMERALD, "&:hover": { bgcolor: EMERALD_DARK }, minWidth: 120 }}>
+        <Button disabled={isSubmitting} onClick={handleBack} sx={{ fontWeight: 700, color: "text.secondary" }}>
+          {activeStep === 0 ? "Cancel" : "Back"}
+        </Button>
+        <Button variant="contained" onClick={handleNext} disabled={!isStepValid(activeStep) || isSubmitting} sx={{ bgcolor: EMERALD, "&:hover": { bgcolor: EMERALD_DARK }, minWidth: 120, borderRadius: '12px', fontWeight: 800, textTransform: 'none', py: 1 }}>
           {isSubmitting ? <CircularProgress size={24} color="inherit" /> : (activeStep === STEPS.length - 1 ? "Publish Listing" : "Continue")}
         </Button>
       </Box>
