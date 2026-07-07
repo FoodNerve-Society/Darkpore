@@ -20,6 +20,7 @@ interface PreviewListingModalProps {
         duration: string;
         deadline: string;
         startDate: string;
+        endDate: string;
         compTypeString: string;
         minSalary: string;
         maxSalary: string;
@@ -35,11 +36,18 @@ interface PreviewListingModalProps {
 export default function PreviewListingModal({ open, onClose, data, onPublish, isSubmitting }: PreviewListingModalProps) {
     const {
         title, companyName, companyLogoUrl, category, locationString,
-        duration, deadline, startDate, compTypeString, minSalary, maxSalary, currency, npAmount, description, color
+        duration, deadline, startDate, endDate, compTypeString, minSalary, maxSalary, currency, npAmount, description, color
     } = data;
 
     return (
-        <Modal open={open} onClose={onClose} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: { xs: 2, md: 4 } }}>
+        <Modal open={open} onClose={onClose} sx={{ 
+            display: 'flex', alignItems: 'center', justifyContent: 'center', p: { xs: 2, md: 4 },
+            '& .MuiBackdrop-root': { 
+                backgroundColor: 'rgba(15, 23, 42, 0.6)', 
+                backdropFilter: 'blur(8px)', 
+                WebkitBackdropFilter: 'blur(8px)' 
+            } 
+        }}>
             <Box sx={{
                 width: '100%', maxWidth: 800, maxHeight: '90vh', overflowY: 'auto',
                 bgcolor: '#fff', borderRadius: '24px', boxShadow: '0 24px 64px rgba(0,0,0,0.12)',

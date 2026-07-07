@@ -48,6 +48,7 @@ import ImageIcon from "@mui/icons-material/Image";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { Country, State, City } from 'country-state-city';
 import { CATEGORY_OPTIONS } from "@/lib/taxonomy";
+import { differenceInMonths, differenceInDays, addMonths } from 'date-fns';
 
 const EMERALD = "#10b981";
 const EMERALD_DARK = "#059669";
@@ -149,8 +150,40 @@ export default function CreateListingForm({
   const [companyLogoFile, setCompanyLogoFile] = useState<File | null>(null);
   const { uploadFile, uploading: uploadingLogo } = useStorageUpload();
   const [deadline, setDeadline] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [startDate, setStartDate] = useState("");
   const [duration, setDuration] = useState("");
+
+  // Auto-calculate Duration (day-precise, with weeks)
+  useEffect(() => {
+      if (startDate && endDate) {
+          const start = new Date(startDate);
+          const end = new Date(endDate);
+          if (start < end) {
+              const months = differenceInMonths(end, start);
+              const afterMonths = addMonths(start, months);
+              const remainingDays = differenceInDays(end, afterMonths);
+
+              const parts: string[] = [];
+              if (months > 0) parts.push(`${months} Month${months > 1 ? 's' : ''}`);
+
+              if (remainingDays > 0) {
+                  if (months === 0) {
+                      // No months — break into weeks + days
+                      const weeks = Math.floor(remainingDays / 7);
+                      const days = remainingDays % 7;
+                      if (weeks > 0) parts.push(`${weeks} Week${weeks > 1 ? 's' : ''}`);
+                      if (days > 0) parts.push(`${days} Day${days > 1 ? 's' : ''}`);
+                  } else {
+                      // Has months — just show remaining days
+                      parts.push(`${remainingDays} Day${remainingDays > 1 ? 's' : ''}`);
+                  }
+              }
+
+              setDuration(parts.length > 0 ? parts.join(', ') : 'Same Day');
+          }
+      }
+  }, [startDate, endDate]);
   const [currency, setCurrency] = useState("USD");
   const CURRENCY_OPTIONS = ["USD", "NGN", "EUR", "GBP", "CAD", "AUD", "KES", "ZAR", "GHS"];
   const [minSalary, setMinSalary] = useState("");
@@ -419,6 +452,13 @@ export default function CreateListingForm({
             </Box>
           </Box>
 
+          {/* Title hint — disappears when title is filled */}
+          {!title.trim() && (
+              <Alert severity="info" sx={{ borderRadius: '16px', mb: 2, bgcolor: alpha('#3b82f6', 0.06), color: '#3b82f6', fontWeight: 600, '& .MuiAlert-icon': { color: '#3b82f6' } }}>
+                  Add a <strong>Job Title</strong> in the first block to unlock the Preview button.
+              </Alert>
+          )}
+
           {/* 3D BLOCKS */}
           <Box sx={{ display: 'flex', flexDirection: 'column' }}>
             {LISTING_FRAMEWORK.map((b, i) => {
@@ -630,15 +670,30 @@ export default function CreateListingForm({
                           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                                 <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: '#64748b', mb: -1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Time & Reward</Typography>
                                 
+                                {/* Application Deadline — when can people apply by */}
+                                <PremiumDatePicker colorTheme={color} fullWidth label="Application Deadline (Optional)" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
+
+                                {/* ── Visual separator ── */}
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, my: 0.5 }}>
+                                    <Box sx={{ flex: 1, height: '1px', background: `linear-gradient(90deg, transparent 0%, ${alpha(color, 0.15)} 50%, transparent 100%)` }} />
+                                    <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: alpha(color, 0.4), textTransform: 'uppercase', letterSpacing: '0.1em', whiteSpace: 'nowrap' }}>
+                                        Job Timeline
+                                    </Typography>
+                                    <Box sx={{ flex: 1, height: '1px', background: `linear-gradient(90deg, transparent 0%, ${alpha(color, 0.15)} 50%, transparent 100%)` }} />
+                                </Box>
+
+                                {/* Start / End — when does the work actually run */}
                                 <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', md: 'row' } }}>
-                                    <Box sx={{ flex: 1 }}>
-                                        <PremiumDatePicker colorTheme={color} fullWidth label="Application Deadline (Optional)" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
-                                    </Box>
                                     <Box sx={{ flex: 1 }}>
                                         <PremiumDatePicker colorTheme={color} fullWidth label="Start Date (Optional)" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
                                     </Box>
+                                    <Box sx={{ flex: 1 }}>
+                                        <PremiumDatePicker colorTheme={color} fullWidth label="End Date (Optional)" value={endDate} onChange={(e) => setEndDate(e.target.value)} minDate={startDate ? new Date(startDate) : undefined} />
+                                    </Box>
                                 </Box>
-                                <PremiumTextField colorTheme={color} fullWidth label="Duration / Engagement Length *" value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="e.g. 3 Months, Ongoing, Project-based" />
+
+                                {/* Auto-calculated duration */}
+                                <PremiumTextField colorTheme={color} fullWidth label="Duration / Engagement Length *" value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="e.g. 3 Months, Ongoing, Project-based (Auto-fills from dates)" />
                                 
                                 {isVolunteer ? (
                                      <PremiumTextField colorTheme={color} fullWidth label="Nerve Points Offered (Optional)" type="number" value={npAmount} onChange={(e) => setNpAmount(e.target.value)} placeholder="e.g. 500 NP" />
@@ -723,6 +778,7 @@ export default function CreateListingForm({
               duration,
               deadline,
               startDate,
+              endDate,
               compTypeString: isVolunteer ? "Volunteer/NP" : "Fiat",
               minSalary,
               maxSalary,
@@ -743,7 +799,7 @@ export default function CreateListingForm({
         <Box sx={{ display: 'flex', gap: 2 }}>
           <Button
             onClick={() => setShowPreview(true)}
-            disabled={!areAllBlocksFilled}
+            disabled={!title.trim()}
             startIcon={<SparkleIcon sx={{ color: '#8b5cf6' }} />}
             sx={{
               borderColor: 'rgba(139,92,246,0.3)',
