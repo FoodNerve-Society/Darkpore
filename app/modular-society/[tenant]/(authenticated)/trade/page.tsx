@@ -306,6 +306,7 @@ export default function TradePage() {
   ]); // To be populated with actual DB data later
   const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
   const [createCategory, setCreateCategory] = useState<string>('');
+  const [createSelections, setCreateSelections] = useState<{ primary: string, secondary: string } | null>(null);
   
   const [activeTab, setActiveTab] = useState("All Listings");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -616,8 +617,9 @@ export default function TradePage() {
                 : (profile?.displayName ? profile.displayName.split(' ')[0] : 'Creative')
             }
             drafts={drafts}
-            onStartFresh={(category) => {
+            onStartFresh={(category, selections) => {
               setCreateCategory(category);
+              if (selections) setCreateSelections(selections);
               setSelectedDraftId('new');
               setSessionKey(prev => prev + 1);
             }}
@@ -633,8 +635,10 @@ export default function TradePage() {
           <CreateListingForm 
             key={sessionKey}
             initialCategory={createCategory}
+            initialSelections={createSelections}
             onCancel={() => {
               setCreateCategory('');
+              setCreateSelections(null);
               setSelectedDraftId(null);
             }}
             onSuccess={() => setIsFlipped(false)}

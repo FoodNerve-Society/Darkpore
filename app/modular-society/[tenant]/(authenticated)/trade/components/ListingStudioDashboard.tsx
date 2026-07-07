@@ -36,7 +36,62 @@ const LISTING_OPTIONS = [
     type: 'opportunities', title: "Opportunities", desc: "Grants, RFPs, fellowships.",
     icon: <VolunteerIcon sx={{ fontSize: 32 }} />, color: "#10b981", grad: "linear-gradient(135deg, #065f46 0%, #10b981 100%)", emoji: "💡"
   }
-];
+const TRADE_CONFIGS: Record<string, any[]> = {
+  'jobs': [
+    {
+      id: 'full-time', title: 'Full-Time Role', desc: 'Standard 40h/week employment', color: '#10b981', imageUrl: 'https://images.unsplash.com/photo-1573164713988-8665fc963095?auto=format&fit=crop&w=400&q=80',
+      options: [ { id: 'remote', title: 'Remote', desc: 'Work from anywhere' }, { id: 'on-site', title: 'On-site', desc: 'Physical location required' }, { id: 'hybrid', title: 'Hybrid', desc: 'Mix of both' } ]
+    },
+    {
+      id: 'contract', title: 'Contract / Freelance', desc: 'Project-based or fixed-term', color: '#3b82f6', imageUrl: 'https://images.unsplash.com/photo-1588196749597-9ff04689e526?auto=format&fit=crop&w=400&q=80',
+      options: [ { id: 'remote', title: 'Remote', desc: 'Work from anywhere' }, { id: 'on-site', title: 'On-site', desc: 'Physical location required' }, { id: 'hybrid', title: 'Hybrid', desc: 'Mix of both' } ]
+    },
+    {
+      id: 'volunteer', title: 'Volunteer (Earn NP)', desc: 'Give back, earn Nerve Points', color: '#8b5cf6', imageUrl: 'https://images.unsplash.com/photo-1593113589914-009f4561ea90?auto=format&fit=crop&w=400&q=80',
+      options: [ { id: 'remote', title: 'Remote', desc: 'Work from anywhere' }, { id: 'on-site', title: 'On-site', desc: 'Physical location required' } ]
+    }
+  ],
+  'flash-sale': [
+    {
+      id: 'perishable', title: 'Perishable Goods', desc: 'Fresh produce, dairy, etc.', color: '#ef4444', imageUrl: 'https://images.unsplash.com/photo-1608686207856-001b95cf60ca?auto=format&fit=crop&w=400&q=80',
+      options: [ { id: 'pickup', title: 'Buyer Picks Up', desc: 'Buyer comes to you' }, { id: 'delivery', title: 'Seller Delivers', desc: 'You drop it off' } ]
+    },
+    {
+      id: 'non-perishable', title: 'Non-Perishable / Dry', desc: 'Grains, packaged items', color: '#f59e0b', imageUrl: 'https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?auto=format&fit=crop&w=400&q=80',
+      options: [ { id: 'pickup', title: 'Buyer Picks Up', desc: 'Buyer comes to you' }, { id: 'delivery', title: 'Seller Delivers', desc: 'You drop it off' }, { id: 'nationwide', title: 'Nationwide Shipping', desc: 'Courier dispatch' } ]
+    }
+  ],
+  'group-buy': [
+    {
+      id: 'binding', title: 'Binding (Deposit Required)', desc: 'Firm commitment to buy', color: '#10b981', imageUrl: 'https://images.unsplash.com/photo-1556740758-90de374c12ad?auto=format&fit=crop&w=400&q=80',
+      options: [ { id: 'hub', title: 'Central Hub Pickup', desc: 'Everyone meets at a location' }, { id: 'dispatch', title: 'Individual Dispatch', desc: 'Last mile to each buyer' } ]
+    },
+    {
+      id: 'interest', title: 'Express Interest Only', desc: 'Gauge demand first', color: '#3b82f6', imageUrl: 'https://images.unsplash.com/photo-1529156069898-49953eb1f55f?auto=format&fit=crop&w=400&q=80',
+      options: [ { id: 'hub', title: 'Central Hub Pickup', desc: 'Everyone meets at a location' }, { id: 'dispatch', title: 'Individual Dispatch', desc: 'Last mile to each buyer' } ]
+    }
+  ],
+  'swap': [
+    {
+      id: 'new', title: 'Brand New', desc: 'Unused, in original packaging', color: '#3b82f6', imageUrl: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=400&q=80',
+      options: [ { id: 'pickup', title: 'Buyer Picks Up', desc: 'Buyer comes to you' }, { id: 'delivery', title: 'Seller Delivers', desc: 'You drop it off' } ]
+    },
+    {
+      id: 'used', title: 'Used (Fair Condition)', desc: 'Has wear and tear', color: '#8b5cf6', imageUrl: 'https://images.unsplash.com/photo-1530587191325-3db32d826c18?auto=format&fit=crop&w=400&q=80',
+      options: [ { id: 'pickup', title: 'Buyer Picks Up', desc: 'Buyer comes to you' }, { id: 'delivery', title: 'Seller Delivers', desc: 'You drop it off' } ]
+    }
+  ],
+  'opportunities': [
+    {
+      id: 'grant', title: 'Grant / Funding', desc: 'Financial support available', color: '#10b981', imageUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=400&q=80',
+      options: [ { id: 'digital', title: 'Digital/Remote', desc: 'Apply online' } ]
+    },
+    {
+      id: 'rfp', title: 'RFP / Tender', desc: 'Request for Proposals', color: '#ef4444', imageUrl: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=400&q=80',
+      options: [ { id: 'digital', title: 'Digital/Remote', desc: 'Apply online' }, { id: 'physical', title: 'Physical Submission', desc: 'Deliver physical documents' } ]
+    }
+  ]
+};
 
 export default function ListingStudioDashboard({
   drafts = [],
@@ -46,21 +101,63 @@ export default function ListingStudioDashboard({
   userName
 }: {
   drafts: any[];
-  onStartFresh: (category: string) => void;
+  onStartFresh: (category: string, selections?: { primary: string, secondary: string }) => void;
   onEditDraft: (draftId: string) => void;
   onDeleteDraft: (draftId: string) => void;
   userName?: string;
 }) {
   const [expandedStartType, setExpandedStartType] = useState<string | null>(null);
+  
+  // Accordion / Slide states
+  const [activeAccordionIdx, setActiveAccordionIdx] = useState<number | null>(null);
+  const [categoryLocked, setCategoryLocked] = useState(false);
+  const [selectedSubOption, setSelectedSubOption] = useState<string>('');
+  const [showSubOptions, setShowSubOptions] = useState(false);
 
   const activeOption = LISTING_OPTIONS.find(o => o.type === expandedStartType);
+  const currentConfig = expandedStartType ? TRADE_CONFIGS[expandedStartType] : [];
 
   const handleOpenCreator = (type: string) => {
     setExpandedStartType(type);
+    setActiveAccordionIdx(null);
+    setCategoryLocked(false);
+    setSelectedSubOption('');
+    setShowSubOptions(false);
   };
 
   const handleClose = () => {
     setExpandedStartType(null);
+    setActiveAccordionIdx(null);
+    setCategoryLocked(false);
+    setSelectedSubOption('');
+    setShowSubOptions(false);
+  };
+
+  const handleCategorySelect = (idx: number, id: string) => {
+    if (categoryLocked) return;
+    setActiveAccordionIdx(idx);
+    setCategoryLocked(true);
+    setTimeout(() => {
+      setShowSubOptions(true);
+    }, 400); // Wait for the horizontal slide animation
+  };
+
+  const handleResetCategory = () => {
+    setShowSubOptions(false);
+    setTimeout(() => {
+      setCategoryLocked(false);
+      setSelectedSubOption('');
+      // We don't nullify activeAccordionIdx immediately to allow smooth transition back
+    }, 300);
+  };
+
+  const finalizeTaxonomy = (subOptionId: string) => {
+    setSelectedSubOption(subOptionId);
+    if (!expandedStartType || activeAccordionIdx === null) return;
+    
+    // Call onStartFresh with the collected choices
+    const primaryChoice = currentConfig[activeAccordionIdx].id;
+    onStartFresh(expandedStartType, { primary: primaryChoice, secondary: subOptionId });
   };
 
   const currentHour = new Date().getHours();
@@ -68,15 +165,18 @@ export default function ListingStudioDashboard({
 
   return (
     <Box sx={{
-      p: { xs: 2, sm: 4, md: 6, lg: 8 }, mx: 'auto', width: '100%', flex: 1, overflowY: 'auto',
+      p: { xs: 1.5, sm: 3, md: 5, lg: 8 }, mx: 'auto', width: '100%', flex: 1, overflowY: 'auto',
       background: 'radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.05) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(59, 130, 246, 0.05) 0%, transparent 40%)',
     }}>
+      <style>
+        {`@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap');`}
+      </style>
       {/* Greeting */}
-      <Box sx={{ mb: 6, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-        <Typography variant="h3" sx={{ fontFamily: 'Caveat, cursive', color: EMERALD, mb: 1 }}>
+      <Box sx={{ mb: { xs: 3, sm: 4, md: 6 }, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+        <Typography variant="h3" sx={{ fontFamily: 'Caveat, cursive', color: EMERALD, mb: 1, fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>
           Good {greeting}, {userName || 'Creative'}.
         </Typography>
-        <Typography variant="h4" sx={{ fontWeight: 900, letterSpacing: '-0.02em', mb: 1.5, color: '#1e293b' }}>
+        <Typography variant="h4" sx={{ fontWeight: 900, letterSpacing: '-0.02em', mb: 1.5, color: '#1e293b', fontSize: { xs: '1.25rem', sm: '1.75rem', md: '2.125rem' } }}>
           Welcome to the Studio
         </Typography>
         <Chip
@@ -117,13 +217,13 @@ export default function ListingStudioDashboard({
               elevation={0}
               sx={{
                 flex: isHidden ? '0 0 0%' : (isExpanded ? '0 0 100%' : '0 0 auto'),
-                minWidth: isHidden ? 0 : (isExpanded ? '100%' : 280),
-                maxWidth: isHidden ? 0 : (isExpanded ? '100%' : 280),
-                height: isExpanded ? 'auto' : (isHidden ? 0 : 320),
+                minWidth: isHidden ? 0 : (isExpanded ? '100%' : { xs: 180, sm: 240, md: 280 }),
+                maxWidth: isHidden ? 0 : (isExpanded ? '100%' : { xs: 180, sm: 240, md: 280 }),
+                height: isExpanded ? 'auto' : (isHidden ? 0 : { xs: 220, sm: 280, md: 320 }),
                 opacity: isHidden ? 0 : 1,
-                p: isExpanded ? 0 : (isHidden ? 0 : 3.5),
-                display: 'flex', flexDirection: 'column', gap: 2,
-                borderRadius: '28px', cursor: isExpanded ? 'default' : 'pointer',
+                p: isExpanded ? 0 : (isHidden ? 0 : { xs: 1.5, sm: 2.5, md: 3.5 }),
+                display: 'flex', flexDirection: 'column', gap: { xs: 1, sm: 1.5, md: 2 },
+                borderRadius: { xs: '20px', sm: '24px', md: '28px' }, cursor: isExpanded ? 'default' : 'pointer',
                 background: isExpanded ? `linear-gradient(135deg, #0f172a 0%, #1e293b 100%)` : opt.grad,
                 border: isHidden ? 'none' : '1px solid rgba(255,255,255,0.15)',
                 boxShadow: isHidden ? 'none' : `inset 0 2px 10px rgba(255,255,255,0.2), 0 10px 30px ${alpha(opt.color, 0.25)}`,
@@ -143,7 +243,7 @@ export default function ListingStudioDashboard({
                     {opt.icon}
                   </Box>
                   <Box className="sf-icon" sx={{
-                    p: 1.5, borderRadius: '18px', bgcolor: 'rgba(255,255,255,0.18)',
+                    p: { xs: 1, sm: 1.5 }, borderRadius: { xs: '12px', sm: '18px' }, bgcolor: 'rgba(255,255,255,0.18)',
                     color: '#fff', width: 'fit-content',
                     backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.25)',
                     transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)',
@@ -151,27 +251,27 @@ export default function ListingStudioDashboard({
                     {opt.icon}
                   </Box>
                   <Box sx={{ position: 'relative', zIndex: 1, mt: 1 }}>
-                    <Typography sx={{ fontWeight: 900, fontSize: '1.2rem', mb: 0.5, color: '#fff', letterSpacing: '-0.02em' }}>
+                    <Typography sx={{ fontWeight: 900, fontSize: { xs: '1rem', sm: '1.2rem' }, mb: 0.5, color: '#fff', letterSpacing: '-0.02em' }}>
                       {opt.emoji} {opt.title}
                     </Typography>
-                    <Typography sx={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)', lineHeight: 1.5, fontWeight: 500 }}>
+                    <Typography sx={{ fontSize: { xs: '0.7rem', sm: '0.85rem' }, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5, fontWeight: 500 }}>
                       {opt.desc}
                     </Typography>
                   </Box>
                 </>
               ) : (
-                <Box sx={{ p: 4, width: '100%', height: 'auto', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                <Box sx={{ p: { xs: 2.5, sm: 4 }, width: '100%', height: 'auto', display: 'flex', flexDirection: 'column', position: 'relative' }}>
                   {/* Container Header & Minimize Button */}
-                  <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 4 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: { xs: 2, sm: 4 } }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1.5, sm: 2 } }}>
                       <Box sx={{ p: 1, borderRadius: '12px', bgcolor: 'rgba(255,255,255,0.2)', color: '#fff' }}>
                         {opt.icon}
                       </Box>
                       <Box>
-                        <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>
+                        <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: { xs: '0.75rem', sm: '0.85rem' }, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>
                           {opt.title} Setup
                         </Typography>
-                        <Typography variant="h5" sx={{ fontWeight: 900, letterSpacing: '-0.02em', color: '#fff', mt: 0.5 }}>
+                        <Typography variant="h5" sx={{ fontWeight: 900, letterSpacing: '-0.02em', color: '#fff', mt: 0.5, fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
                           Ready to create?
                         </Typography>
                       </Box>
@@ -183,35 +283,245 @@ export default function ListingStudioDashboard({
                     </Tooltip>
                   </Box>
 
-                  <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', py: 6 }}>
-                    <Box sx={{ textAlign: 'center', maxWidth: 400 }}>
-                      <Typography variant="h6" sx={{ color: '#fff', fontWeight: 700, mb: 2 }}>
-                        Start a new {opt.title} listing
-                      </Typography>
-                      <Typography sx={{ color: 'rgba(255,255,255,0.7)', mb: 4 }}>
-                        {opt.desc} You'll be able to add images, location, pricing, and all the relevant details in the next step.
-                      </Typography>
-                      
-                      <Button
-                        variant="contained"
-                        onClick={() => onStartFresh(opt.type)}
-                        endIcon={<ArrowForwardArrow />}
-                        sx={{
-                          bgcolor: opt.color,
-                          color: '#fff',
-                          fontWeight: 800,
-                          px: 4, py: 1.5,
-                          borderRadius: '16px',
-                          textTransform: 'none',
-                          fontSize: '1.05rem',
-                          boxShadow: `0 8px 24px ${alpha(opt.color, 0.4)}`,
-                          '&:hover': { bgcolor: opt.color, filter: 'brightness(1.1)', transform: 'translateY(-2px)' },
-                          transition: 'all 0.2s'
-                        }}
-                      >
-                        Start Listing
-                      </Button>
-                    </Box>
+                  {/* Accordion Container */}
+                  <Box sx={{ 
+                    display: 'flex',
+                    flexDirection: { xs: 'column', md: 'row' },
+                    width: '100%',
+                    minHeight: { xs: 400, md: 450 },
+                    height: categoryLocked ? 'auto' : { xs: 400, md: 450 }, 
+                    borderRadius: '24px', 
+                    overflow: 'hidden',
+                    boxShadow: '0 12px 40px rgba(0,0,0,0.4)',
+                    transition: 'all 0.6s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                    position: 'relative',
+                    bgcolor: 'transparent'
+                  }}>
+                    {currentConfig.map((config: any, idx: number) => {
+                      const isActive = activeAccordionIdx === idx;
+                      const isLocked = categoryLocked && isActive;
+                      const isHidden = categoryLocked && !isActive;
+                      return (
+                        <Box
+                          key={config.id}
+                          onClick={() => {
+                            if (!categoryLocked) {
+                              handleCategorySelect(idx, config.id);
+                            } else if (isLocked && !selectedSubOption) {
+                              handleResetCategory();
+                            }
+                          }}
+                          sx={{
+                            display: 'flex', flexDirection: 'column',
+                            position: 'relative',
+                            flex: isHidden ? '0 0 0%' : isActive ? (categoryLocked ? '0 0 100%' : '0 0 45%') : '1 1 0%',
+                            minWidth: isHidden ? 0 : (isActive ? undefined : 0),
+                            overflow: 'hidden',
+                            cursor: 'pointer',
+                            transition: 'all 0.6s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                            opacity: isHidden ? 0 : 1,
+                            '&:not(:last-child)': {
+                              borderRight: { xs: 'none', md: isHidden ? 'none' : '1px solid rgba(255,255,255,0.15)' },
+                              borderBottom: { xs: isHidden ? 'none' : '1px solid rgba(255,255,255,0.15)', md: 'none' },
+                            },
+                            '&:hover': !categoryLocked ? {
+                              flex: '0 0 50%',
+                            } : {},
+                          }}
+                        >
+                          {/* Background Image */}
+                          <Box sx={{
+                            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                            backgroundImage: `url(${config.imageUrl})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                            transition: 'transform 0.6s ease',
+                            transform: isActive ? 'scale(1.05)' : 'scale(1.15)',
+                          }} />
+
+                          {/* Dark Overlay */}
+                          <Box sx={{
+                            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                            background: isActive
+                              ? 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0.5) 100%)'
+                              : 'rgba(0,0,0,0.55)',
+                            transition: 'background 0.4s',
+                          }} />
+
+                          {/* Category Label / Breadcrumb */}
+                          <Box sx={{
+                            position: 'absolute',
+                            bottom: categoryLocked && isLocked ? 'auto' : 20,
+                            top: categoryLocked && isLocked ? 20 : 'auto',
+                            left: 20, right: 20,
+                            zIndex: 5,
+                            transition: 'all 0.4s',
+                          }}>
+                            {categoryLocked && isLocked ? (
+                              <Box 
+                                sx={{ 
+                                  display: 'inline-flex', alignItems: 'center', p: 1, ml: -1, borderRadius: 3, 
+                                  bgcolor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)',
+                                  maxWidth: '100%', overflowX: 'auto', whiteSpace: 'nowrap',
+                                  '&::-webkit-scrollbar': { display: 'none' }
+                                }}
+                              >
+                                <Box 
+                                  onClick={(e) => { e.stopPropagation(); handleResetCategory(); }}
+                                  sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer', '&:hover': { opacity: 0.7 }, transition: 'opacity 0.2s' }}
+                                >
+                                  <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                                    Listing Type
+                                  </Typography>
+                                </Box>
+
+                                <Typography sx={{ color: 'rgba(255,255,255,0.3)', mx: 1, fontSize: '0.8rem' }}>/</Typography>
+                                <Typography 
+                                  onClick={(e) => { e.stopPropagation(); setSelectedSubOption(''); }}
+                                  sx={{ color: selectedSubOption ? 'rgba(255,255,255,0.7)' : '#fff', fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.05em', textTransform: 'uppercase', cursor: selectedSubOption ? 'pointer' : 'default', '&:hover': selectedSubOption ? { opacity: 0.7 } : {}, transition: 'opacity 0.2s' }}
+                                >
+                                  {config.title}
+                                </Typography>
+
+                                {selectedSubOption && (
+                                  <>
+                                    <Typography sx={{ color: 'rgba(255,255,255,0.3)', mx: 1, fontSize: '0.8rem' }}>/</Typography>
+                                    <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                                      {config.options?.find((s: any) => s.id === selectedSubOption)?.title || 'Details'}
+                                    </Typography>
+                                  </>
+                                )}
+                              </Box>
+                            ) : (
+                              <Box>
+                                <Typography sx={{
+                                  color: '#fff',
+                                  fontWeight: 900,
+                                  fontSize: isActive ? '1.4rem' : '1rem',
+                                  letterSpacing: '-0.01em',
+                                  lineHeight: 1.2,
+                                  transition: 'font-size 0.4s',
+                                  textShadow: '0 2px 8px rgba(0,0,0,0.5)',
+                                  whiteSpace: isActive ? 'normal' : 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                }}>
+                                  {config.title}
+                                </Typography>
+                                {isActive && !categoryLocked && (
+                                  <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', mt: 0.5, fontWeight: 600 }}>
+                                    Tap to select
+                                  </Typography>
+                                )}
+                              </Box>
+                            )}
+                          </Box>
+
+                          {/* ┌── GLASSMORPHIC REVEAL (inside the locked card) ──┐ */}
+                          {isLocked && showSubOptions && (
+                            <Box 
+                              onClick={(e) => e.stopPropagation()}
+                              sx={{
+                                position: 'relative',
+                                mt: { xs: 8, md: 9 }, // push down past the "Categories / Subcategory" header
+                                flex: 'none',
+                                background: 'rgba(0,0,0,0.4)',
+                                backdropFilter: 'blur(32px)',
+                                WebkitBackdropFilter: 'blur(32px)',
+                                zIndex: 10,
+                                animation: `${slideUpFade} 0.6s cubic-bezier(0.16, 1, 0.3, 1)`,
+                                overflow: 'hidden',
+                                borderBottomLeftRadius: '24px',
+                                borderBottomRightRadius: '24px',
+                                borderTopLeftRadius: { xs: 0, md: '24px' },
+                                borderTopRightRadius: { xs: 0, md: '24px' },
+                                mx: { xs: 0, md: 2 },
+                                mb: { xs: 0, md: 2 },
+                                boxShadow: '0 -4px 24px rgba(0,0,0,0.2)'
+                              }}>
+                              {/* Sliding Track */}
+                              <Box sx={{
+                                display: 'flex',
+                                width: '200%',
+                                height: 'auto',
+                                transform: selectedSubOption ? 'translateX(-50%)' : 'translateX(0)',
+                                transition: 'transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                              }}>
+                                {/* VIEW 1: OPTIONS */}
+                                <Box sx={{ width: '50%', height: 'auto', p: 4, pb: 4 }}>
+                                  <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', mb: 3 }}>
+                                    Additional Details
+                                  </Typography>
+                                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(3, 1fr)' }, gap: 2, pb: 2 }}>
+                                    {config.options?.map((sub: any) => {
+                                      const isSubActive = selectedSubOption === sub.id;
+                                      return (
+                                        <Box
+                                          key={sub.id}
+                                          onClick={(e) => { e.stopPropagation(); setSelectedSubOption(sub.id); }}
+                                          sx={{
+                                            display: 'flex', alignItems: 'center', gap: 2,
+                                            p: 2, borderRadius: '16px',
+                                            cursor: 'pointer', transition: 'all 0.3s',
+                                            border: '1px solid',
+                                            borderColor: isSubActive ? opt.color : 'rgba(255,255,255,0.15)',
+                                            bgcolor: isSubActive ? alpha(opt.color, 0.25) : 'rgba(255,255,255,0.08)',
+                                            boxShadow: isSubActive ? `0 4px 20px ${alpha(opt.color, 0.3)}` : 'none',
+                                            backdropFilter: 'blur(8px)',
+                                            '&:hover': { bgcolor: isSubActive ? alpha(opt.color, 0.35) : 'rgba(255,255,255,0.15)', transform: 'translateY(-2px)' }
+                                          }}
+                                        >
+                                          <Box>
+                                            <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: '0.95rem', letterSpacing: '-0.01em', mb: 0.25 }}>{sub.title}</Typography>
+                                            {sub.desc && (
+                                              <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', fontWeight: 500, display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                                {sub.desc}
+                                              </Typography>
+                                            )}
+                                          </Box>
+                                        </Box>
+                                      );
+                                    })}
+                                  </Box>
+                                </Box>
+
+                                {/* VIEW 2: CONFIRMATION & PROCEED */}
+                                <Box sx={{ width: '50%', height: 'auto', p: 4, pb: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                                  <Box sx={{ textAlign: 'center', maxWidth: 400 }}>
+                                    <Typography variant="h5" sx={{ color: '#fff', fontWeight: 800, letterSpacing: '-0.01em', mb: 2 }}>
+                                      Perfect. Let's create your {opt.title} listing.
+                                    </Typography>
+                                    <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.95rem', mb: 4 }}>
+                                      You'll be able to add images, location, pricing, and all the relevant details in the next step.
+                                    </Typography>
+                                    
+                                    <Button
+                                      variant="contained"
+                                      onClick={() => finalizeTaxonomy(selectedSubOption)}
+                                      endIcon={<ArrowForwardArrow />}
+                                      sx={{
+                                        bgcolor: opt.color,
+                                        color: '#fff',
+                                        fontWeight: 800,
+                                        px: 4, py: 1.5,
+                                        borderRadius: '16px',
+                                        textTransform: 'none',
+                                        fontSize: '1.05rem',
+                                        boxShadow: `0 8px 24px ${alpha(opt.color, 0.4)}`,
+                                        '&:hover': { bgcolor: opt.color, filter: 'brightness(1.1)', transform: 'translateY(-2px)' },
+                                        transition: 'all 0.2s'
+                                      }}
+                                    >
+                                      Start Listing
+                                    </Button>
+                                  </Box>
+                                </Box>
+                              </Box>
+                            </Box>
+                          )}
+                        </Box>
+                      );
+                    })}
                   </Box>
                 </Box>
               )}

@@ -63,13 +63,14 @@ const STEPS = ["Title", "Location", "Pricing", "Description", "Image"];
 
 interface CreateListingFormProps {
   initialCategory?: string;
+  initialSelections?: { primary: string, secondary: string } | null;
   onCancel: () => void;
   onSuccess: () => void;
   postingAs?: 'personal' | 'organization';
   selectedOrgId?: string | null;
 }
 
-export default function CreateListingForm({ initialCategory = "", onCancel, onSuccess, postingAs = 'personal', selectedOrgId = null }: CreateListingFormProps) {
+export default function CreateListingForm({ initialCategory = "", initialSelections = null, onCancel, onSuccess, postingAs = 'personal', selectedOrgId = null }: CreateListingFormProps) {
   const { profile } = useSociety();
   const router = useRouter();
 
@@ -80,6 +81,7 @@ export default function CreateListingForm({ initialCategory = "", onCancel, onSu
   const [lga, setLga] = useState("");
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
+  const [selections, setSelections] = useState<{ primary: string, secondary: string } | null>(initialSelections);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
