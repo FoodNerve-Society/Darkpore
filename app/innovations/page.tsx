@@ -37,16 +37,17 @@ export default async function InnovationsHomepage() {
 
   let rawUpdates: any[] = [];
   try {
+    // 1. Fetch Upcoming Learn Content
     const upcomingEvents = await prisma.learnContent.findMany({
       where: {
         subcategory: { in: allSubcatIds },
         targetDate: { gte: new Date() }
       },
       orderBy: { targetDate: 'asc' },
-      take: 15
+      take: 10
     });
 
-    rawUpdates = upcomingEvents.map(event => ({
+    const learnUpdates = upcomingEvents.map(event => ({
       title: event.title,
       date: event.targetDate,
       section: event.type === 'livestream' || event.type === 'class' ? 'livestreams' : 'innovations',
@@ -55,11 +56,45 @@ export default async function InnovationsHomepage() {
       challengeId: subcatToChallengeMap[event.subcategory || '']?.id || 'global',
       link: `/innovations/${subcatToChallengeMap[event.subcategory || '']?.id || 'global'}/${event.subcategory}/learn/article/${event.slug}`
     }));
+
+    // 2. Fetch Recent Jobs/Volunteer (within last 10 days)
+    const tenDaysAgo = new Date();
+    tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
+    const recentJobs = await prisma.tradeListing.findMany({
+      where: {
+        category: { in: ['jobs', 'volunteer'] },
+        status: 'active',
+        postedAt: { gte: tenDaysAgo }
+      },
+      orderBy: { postedAt: 'desc' },
+      take: 10
+    });
+
+    const jobUpdates = recentJobs.map(job => ({
+      title: `${job.category === 'volunteer' ? 'VOLUNTEER' : 'JOB'}: ${job.title}`,
+      date: job.postedAt,
+      section: 'jobs',
+      importance: 'high',
+      challengeTitle: 'Talent & Ops',
+      challengeId: 'global',
+      link: `/modular-society/${tenantId}/trade/${job.id}`
+    }));
+
+    // 3. Combine and Sort by Date
+    rawUpdates = [...learnUpdates, ...jobUpdates].sort((a, b) => {
+      const dateA = a.date ? new Date(a.date).getTime() : 0;
+      const dateB = b.date ? new Date(b.date).getTime() : 0;
+      // Jobs are usually past (postedAt) while events are future (targetDate).
+      // If we sort by absolute difference from now, the most relevant ones appear first.
+      const now = new Date().getTime();
+      return Math.abs(dateA - now) - Math.abs(dateB - now);
+    });
+
   } catch (e) {
     console.warn("SERVER LOG - Database connection failed, falling back to mock data.", e);
   }
   
-  let marqueeItems = rawUpdates;
+  let marqueeItems = rawUpdates.slice(0, 15);
 
   // We no longer inject fake/mocked data if marqueeItems is empty.
   // The frontend component handles the empty array gracefully by rendering a STANDBY state.
@@ -223,10 +258,14 @@ export default async function InnovationsHomepage() {
   // Fetch Jobs & Volunteering Opportunities
   let activeOpportunities: any[] = [];
   try {
+    const tenDaysAgo = new Date();
+    tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
+
     const rawListings = await prisma.tradeListing.findMany({
       where: { 
         category: { in: ['jobs', 'volunteer'] },
-        status: 'active'
+        status: 'active',
+        postedAt: { gte: tenDaysAgo } // Auto-archive jobs older than 10 days
       },
       include: { postedBy: true },
       take: 10,

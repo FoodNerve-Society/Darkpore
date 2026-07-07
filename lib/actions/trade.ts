@@ -12,6 +12,7 @@ export interface CreateTradeListingPayload {
   postedById: string;
   imageUrl?: string;
   nervePointsCost?: number;
+  metadata?: any;
 }
 
 export async function createTradeListing(data: CreateTradeListingPayload) {
@@ -19,6 +20,10 @@ export async function createTradeListing(data: CreateTradeListingPayload) {
     if (!data.title || !data.category || !data.priceOrAsk || !data.location || !data.lga || !data.postedById) {
       return { success: false, error: 'Missing required fields.' };
     }
+
+    // Extract additional metadata fields
+    const metadata = data.metadata || {};
+    const isJobOrVolunteer = data.category === 'jobs' || data.category === 'volunteer';
 
     const listing = await prisma.tradeListing.create({
       data: {
@@ -33,6 +38,16 @@ export async function createTradeListing(data: CreateTradeListingPayload) {
         nervePointsCost: data.nervePointsCost || 0,
         status: 'active',
         urgency: 'normal',
+        commodity: metadata.sector || undefined, // We map Sector to commodity here
+        
+        // Job-specific mappings
+        ...(isJobOrVolunteer ? {
+          jobSource: metadata.jobSource || undefined,
+          compType: metadata.compType || undefined,
+          externalCompany: metadata.companyName || undefined,
+          npReward: metadata.npAmount || undefined,
+          targetTenantId: metadata.targetTenantId || undefined,
+        } : {}),
       },
     });
 
