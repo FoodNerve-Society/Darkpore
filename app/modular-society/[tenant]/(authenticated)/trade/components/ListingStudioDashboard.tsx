@@ -1,4 +1,7 @@
+"use client";
+
 import React, { useState } from 'react';
+import { useSociety } from '@/context/SocietyContext';
 import { Box, Typography, Paper, Chip, IconButton, alpha, Tooltip, Button } from '@mui/material';
 import {
   Add as AddIcon,
@@ -12,8 +15,14 @@ import {
   Edit as EditIcon,
   ArrowForward as ArrowForwardArrow
 } from '@mui/icons-material';
+import { keyframes } from '@mui/system';
 
 const EMERALD = "#10b981";
+
+const slideUpFade = keyframes`
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
+`;
 
 const LISTING_OPTIONS = [
   {
@@ -36,19 +45,38 @@ const LISTING_OPTIONS = [
     type: 'opportunities', title: "Opportunities", desc: "Grants, RFPs, fellowships.",
     icon: <VolunteerIcon sx={{ fontSize: 32 }} />, color: "#10b981", grad: "linear-gradient(135deg, #065f46 0%, #10b981 100%)", emoji: "💡"
   }
+];
+
+const hiringEntityOptions = [
+  { id: 'org', title: 'My Organization', desc: 'Direct hire for your business', minRank: 4 },
+  { id: 'foodnerve', title: 'Food Nerve Core', desc: 'Recruit for Food Nerve', reqAdmin: true },
+  { id: 'external', title: 'External Company', desc: 'Sourcing labor (Costs NP)', minRank: 2 }
+];
+
 const TRADE_CONFIGS: Record<string, any[]> = {
   'jobs': [
     {
       id: 'full-time', title: 'Full-Time Role', desc: 'Standard 40h/week employment', color: '#10b981', imageUrl: 'https://images.unsplash.com/photo-1573164713988-8665fc963095?auto=format&fit=crop&w=400&q=80',
-      options: [ { id: 'remote', title: 'Remote', desc: 'Work from anywhere' }, { id: 'on-site', title: 'On-site', desc: 'Physical location required' }, { id: 'hybrid', title: 'Hybrid', desc: 'Mix of both' } ]
+      options: [ 
+        { id: 'remote', title: 'Remote', desc: 'Work from anywhere', nextOptions: hiringEntityOptions }, 
+        { id: 'on-site', title: 'On-site', desc: 'Physical location required', nextOptions: hiringEntityOptions }, 
+        { id: 'hybrid', title: 'Hybrid', desc: 'Mix of both', nextOptions: hiringEntityOptions } 
+      ]
     },
     {
       id: 'contract', title: 'Contract / Freelance', desc: 'Project-based or fixed-term', color: '#3b82f6', imageUrl: 'https://images.unsplash.com/photo-1588196749597-9ff04689e526?auto=format&fit=crop&w=400&q=80',
-      options: [ { id: 'remote', title: 'Remote', desc: 'Work from anywhere' }, { id: 'on-site', title: 'On-site', desc: 'Physical location required' }, { id: 'hybrid', title: 'Hybrid', desc: 'Mix of both' } ]
+      options: [ 
+        { id: 'remote', title: 'Remote', desc: 'Work from anywhere', nextOptions: hiringEntityOptions }, 
+        { id: 'on-site', title: 'On-site', desc: 'Physical location required', nextOptions: hiringEntityOptions }, 
+        { id: 'hybrid', title: 'Hybrid', desc: 'Mix of both', nextOptions: hiringEntityOptions } 
+      ]
     },
     {
       id: 'volunteer', title: 'Volunteer (Earn NP)', desc: 'Give back, earn Nerve Points', color: '#8b5cf6', imageUrl: 'https://images.unsplash.com/photo-1593113589914-009f4561ea90?auto=format&fit=crop&w=400&q=80',
-      options: [ { id: 'remote', title: 'Remote', desc: 'Work from anywhere' }, { id: 'on-site', title: 'On-site', desc: 'Physical location required' } ]
+      options: [ 
+        { id: 'remote', title: 'Remote', desc: 'Work from anywhere', nextOptions: hiringEntityOptions }, 
+        { id: 'on-site', title: 'On-site', desc: 'Physical location required', nextOptions: hiringEntityOptions } 
+      ]
     }
   ],
   'flash-sale': [
@@ -101,17 +129,19 @@ export default function ListingStudioDashboard({
   userName
 }: {
   drafts: any[];
-  onStartFresh: (category: string, selections?: { primary: string, secondary: string }) => void;
+  onStartFresh: (category: string, selections?: { primary: string, secondary: string, tertiary?: string }) => void;
   onEditDraft: (draftId: string) => void;
   onDeleteDraft: (draftId: string) => void;
   userName?: string;
 }) {
+  const { profile } = useSociety();
   const [expandedStartType, setExpandedStartType] = useState<string | null>(null);
   
   // Accordion / Slide states
   const [activeAccordionIdx, setActiveAccordionIdx] = useState<number | null>(null);
   const [categoryLocked, setCategoryLocked] = useState(false);
   const [selectedSubOption, setSelectedSubOption] = useState<string>('');
+  const [selectedTertiaryOption, setSelectedTertiaryOption] = useState<string>('');
   const [showSubOptions, setShowSubOptions] = useState(false);
 
   const activeOption = LISTING_OPTIONS.find(o => o.type === expandedStartType);
@@ -122,6 +152,7 @@ export default function ListingStudioDashboard({
     setActiveAccordionIdx(null);
     setCategoryLocked(false);
     setSelectedSubOption('');
+    setSelectedTertiaryOption('');
     setShowSubOptions(false);
   };
 
@@ -130,6 +161,7 @@ export default function ListingStudioDashboard({
     setActiveAccordionIdx(null);
     setCategoryLocked(false);
     setSelectedSubOption('');
+    setSelectedTertiaryOption('');
     setShowSubOptions(false);
   };
 
@@ -147,17 +179,20 @@ export default function ListingStudioDashboard({
     setTimeout(() => {
       setCategoryLocked(false);
       setSelectedSubOption('');
+      setSelectedTertiaryOption('');
       // We don't nullify activeAccordionIdx immediately to allow smooth transition back
     }, 300);
   };
 
-  const finalizeTaxonomy = (subOptionId: string) => {
-    setSelectedSubOption(subOptionId);
+  const finalizeTaxonomy = (subOptionId: string, tertiaryId?: string) => {
+    if (tertiaryId) setSelectedTertiaryOption(tertiaryId);
+    else setSelectedSubOption(subOptionId);
+
     if (!expandedStartType || activeAccordionIdx === null) return;
     
     // Call onStartFresh with the collected choices
     const primaryChoice = currentConfig[activeAccordionIdx].id;
-    onStartFresh(expandedStartType, { primary: primaryChoice, secondary: subOptionId });
+    onStartFresh(expandedStartType, { primary: primaryChoice, secondary: subOptionId, tertiary: tertiaryId });
   };
 
   const currentHour = new Date().getHours();
@@ -172,11 +207,11 @@ export default function ListingStudioDashboard({
         {`@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap');`}
       </style>
       {/* Greeting */}
-      <Box sx={{ mb: { xs: 3, sm: 4, md: 6 }, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-        <Typography variant="h3" sx={{ fontFamily: 'Caveat, cursive', color: EMERALD, mb: 1, fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>
+      <Box sx={{ mb: { xs: 2.5, sm: 4, md: 6 }, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+        <Typography variant="h3" sx={{ fontFamily: 'Caveat, cursive', color: '#10b981', mb: 0.5, fontSize: { xs: '1.4rem', sm: '2.5rem', md: '3rem' } }}>
           Good {greeting}, {userName || 'Creative'}.
         </Typography>
-        <Typography variant="h4" sx={{ fontWeight: 900, letterSpacing: '-0.02em', mb: 1.5, color: '#1e293b', fontSize: { xs: '1.25rem', sm: '1.75rem', md: '2.125rem' } }}>
+        <Typography variant="h4" sx={{ fontWeight: 900, letterSpacing: '-0.02em', mb: 1.5, color: '#1e293b', fontSize: { xs: '1.1rem', sm: '1.75rem', md: '2.125rem' } }}>
           Welcome to the Studio
         </Typography>
         <Chip
@@ -217,13 +252,13 @@ export default function ListingStudioDashboard({
               elevation={0}
               sx={{
                 flex: isHidden ? '0 0 0%' : (isExpanded ? '0 0 100%' : '0 0 auto'),
-                minWidth: isHidden ? 0 : (isExpanded ? '100%' : { xs: 180, sm: 240, md: 280 }),
-                maxWidth: isHidden ? 0 : (isExpanded ? '100%' : { xs: 180, sm: 240, md: 280 }),
-                height: isExpanded ? 'auto' : (isHidden ? 0 : { xs: 220, sm: 280, md: 320 }),
+                minWidth: isHidden ? 0 : (isExpanded ? '100%' : { xs: 140, sm: 240, md: 280 }),
+                maxWidth: isHidden ? 0 : (isExpanded ? '100%' : { xs: 140, sm: 240, md: 280 }),
+                height: isExpanded ? 'auto' : (isHidden ? 0 : { xs: 160, sm: 280, md: 320 }),
                 opacity: isHidden ? 0 : 1,
                 p: isExpanded ? 0 : (isHidden ? 0 : { xs: 1.5, sm: 2.5, md: 3.5 }),
                 display: 'flex', flexDirection: 'column', gap: { xs: 1, sm: 1.5, md: 2 },
-                borderRadius: { xs: '20px', sm: '24px', md: '28px' }, cursor: isExpanded ? 'default' : 'pointer',
+                borderRadius: { xs: '16px', sm: '24px', md: '28px' }, cursor: isExpanded ? 'default' : 'pointer',
                 background: isExpanded ? `linear-gradient(135deg, #0f172a 0%, #1e293b 100%)` : opt.grad,
                 border: isHidden ? 'none' : '1px solid rgba(255,255,255,0.15)',
                 boxShadow: isHidden ? 'none' : `inset 0 2px 10px rgba(255,255,255,0.2), 0 10px 30px ${alpha(opt.color, 0.25)}`,
@@ -250,11 +285,11 @@ export default function ListingStudioDashboard({
                   }}>
                     {opt.icon}
                   </Box>
-                  <Box sx={{ position: 'relative', zIndex: 1, mt: 1 }}>
-                    <Typography sx={{ fontWeight: 900, fontSize: { xs: '1rem', sm: '1.2rem' }, mb: 0.5, color: '#fff', letterSpacing: '-0.02em' }}>
-                      {opt.emoji} {opt.title}
+                  <Box sx={{ position: 'relative', zIndex: 1, mt: { xs: 0, sm: 1 } }}>
+                    <Typography sx={{ fontWeight: 900, fontSize: { xs: '0.85rem', sm: '1.2rem' }, mb: 0.25, color: '#fff', letterSpacing: '-0.02em' }}>
+                      {opt.title}
                     </Typography>
-                    <Typography sx={{ fontSize: { xs: '0.7rem', sm: '0.85rem' }, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5, fontWeight: 500 }}>
+                    <Typography sx={{ fontSize: { xs: '0.65rem', sm: '0.85rem' }, color: 'rgba(255,255,255,0.8)', lineHeight: 1.4, fontWeight: 500 }}>
                       {opt.desc}
                     </Typography>
                   </Box>
@@ -386,8 +421,20 @@ export default function ListingStudioDashboard({
                                 {selectedSubOption && (
                                   <>
                                     <Typography sx={{ color: 'rgba(255,255,255,0.3)', mx: 1, fontSize: '0.8rem' }}>/</Typography>
-                                    <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                                    <Typography 
+                                      onClick={(e) => { e.stopPropagation(); setSelectedTertiaryOption(''); }}
+                                      sx={{ color: selectedTertiaryOption ? 'rgba(255,255,255,0.7)' : '#fff', fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.05em', textTransform: 'uppercase', cursor: selectedTertiaryOption ? 'pointer' : 'default', '&:hover': selectedTertiaryOption ? { opacity: 0.7 } : {}, transition: 'opacity 0.2s' }}
+                                    >
                                       {config.options?.find((s: any) => s.id === selectedSubOption)?.title || 'Details'}
+                                    </Typography>
+                                  </>
+                                )}
+
+                                {selectedTertiaryOption && (
+                                  <>
+                                    <Typography sx={{ color: 'rgba(255,255,255,0.3)', mx: 1, fontSize: '0.8rem' }}>/</Typography>
+                                    <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                                      {config.options?.find((s: any) => s.id === selectedSubOption)?.nextOptions?.find((t: any) => t.id === selectedTertiaryOption)?.title || 'Role'}
                                     </Typography>
                                   </>
                                 )}
@@ -442,13 +489,15 @@ export default function ListingStudioDashboard({
                               {/* Sliding Track */}
                               <Box sx={{
                                 display: 'flex',
-                                width: '200%',
+                                width: (config.options?.find((s: any) => s.id === selectedSubOption)?.nextOptions) ? '300%' : '200%',
                                 height: 'auto',
-                                transform: selectedSubOption ? 'translateX(-50%)' : 'translateX(0)',
+                                transform: selectedTertiaryOption 
+                                  ? 'translateX(-66.666%)' 
+                                  : (selectedSubOption ? (config.options?.find((s: any) => s.id === selectedSubOption)?.nextOptions ? 'translateX(-33.333%)' : 'translateX(-50%)') : 'translateX(0)'),
                                 transition: 'transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1)',
                               }}>
                                 {/* VIEW 1: OPTIONS */}
-                                <Box sx={{ width: '50%', height: 'auto', p: 4, pb: 4 }}>
+                                <Box sx={{ width: (config.options?.find((s: any) => s.id === selectedSubOption)?.nextOptions) ? '33.333%' : '50%', height: 'auto', p: 4, pb: 4 }}>
                                   <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', mb: 3 }}>
                                     Additional Details
                                   </Typography>
@@ -458,7 +507,7 @@ export default function ListingStudioDashboard({
                                       return (
                                         <Box
                                           key={sub.id}
-                                          onClick={(e) => { e.stopPropagation(); setSelectedSubOption(sub.id); }}
+                                          onClick={(e) => { e.stopPropagation(); setSelectedSubOption(sub.id); setSelectedTertiaryOption(''); }}
                                           sx={{
                                             display: 'flex', alignItems: 'center', gap: 2,
                                             p: 2, borderRadius: '16px',
@@ -485,8 +534,68 @@ export default function ListingStudioDashboard({
                                   </Box>
                                 </Box>
 
-                                {/* VIEW 2: CONFIRMATION & PROCEED */}
-                                <Box sx={{ width: '50%', height: 'auto', p: 4, pb: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                                {/* VIEW 2: TERTIARY OPTIONS (If applicable) */}
+                                {config.options?.find((s: any) => s.id === selectedSubOption)?.nextOptions && (
+                                  <Box sx={{ width: '33.333%', height: 'auto', p: 4, pb: 4 }}>
+                                    <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', mb: 3 }}>
+                                      Who are you hiring for?
+                                    </Typography>
+                                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(3, 1fr)' }, gap: 2, pb: 2 }}>
+                                      {config.options.find((s: any) => s.id === selectedSubOption).nextOptions.map((ter: any) => {
+                                        const isTerActive = selectedTertiaryOption === ter.id;
+                                        const isAdmin = profile?.isAdmin || false;
+                                        const rank = profile?.currentRank || 1;
+                                        const isLocked = (ter.minRank && rank < ter.minRank) || (ter.reqAdmin && !isAdmin);
+
+                                        return (
+                                          <Box
+                                            key={ter.id}
+                                            onClick={(e) => { 
+                                              e.stopPropagation(); 
+                                              if (!isLocked) setSelectedTertiaryOption(ter.id); 
+                                            }}
+                                            sx={{
+                                              display: 'flex', alignItems: 'center', gap: 2,
+                                              p: 2, borderRadius: '16px',
+                                              cursor: isLocked ? 'not-allowed' : 'pointer', transition: 'all 0.3s',
+                                              border: '1px solid',
+                                              borderColor: isTerActive ? opt.color : 'rgba(255,255,255,0.15)',
+                                              bgcolor: isTerActive ? alpha(opt.color, 0.25) : (isLocked ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.08)'),
+                                              boxShadow: isTerActive ? `0 4px 20px ${alpha(opt.color, 0.3)}` : 'none',
+                                              backdropFilter: 'blur(8px)',
+                                              opacity: isLocked ? 0.6 : 1,
+                                              '&:hover': !isLocked ? { bgcolor: isTerActive ? alpha(opt.color, 0.35) : 'rgba(255,255,255,0.15)', transform: 'translateY(-2px)' } : {}
+                                            }}
+                                          >
+                                            <Box>
+                                              <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: '0.95rem', letterSpacing: '-0.01em', mb: 0.25 }}>
+                                                {ter.title} {isLocked && '🔒'}
+                                              </Typography>
+                                              {ter.desc && (
+                                                <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', fontWeight: 500, display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                                  {ter.desc}
+                                                </Typography>
+                                              )}
+                                              {isLocked && ter.minRank && (
+                                                <Typography sx={{ color: '#ef4444', fontSize: '0.7rem', fontWeight: 700, mt: 0.5 }}>
+                                                  Requires Rank {ter.minRank}
+                                                </Typography>
+                                              )}
+                                              {isLocked && ter.reqAdmin && (
+                                                <Typography sx={{ color: '#ef4444', fontSize: '0.7rem', fontWeight: 700, mt: 0.5 }}>
+                                                  Admin Only
+                                                </Typography>
+                                              )}
+                                            </Box>
+                                          </Box>
+                                        );
+                                      })}
+                                    </Box>
+                                  </Box>
+                                )}
+
+                                {/* FINAL VIEW: CONFIRMATION & PROCEED */}
+                                <Box sx={{ width: (config.options?.find((s: any) => s.id === selectedSubOption)?.nextOptions) ? '33.333%' : '50%', height: 'auto', p: 4, pb: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                                   <Box sx={{ textAlign: 'center', maxWidth: 400 }}>
                                     <Typography variant="h5" sx={{ color: '#fff', fontWeight: 800, letterSpacing: '-0.01em', mb: 2 }}>
                                       Perfect. Let's create your {opt.title} listing.
@@ -497,7 +606,7 @@ export default function ListingStudioDashboard({
                                     
                                     <Button
                                       variant="contained"
-                                      onClick={() => finalizeTaxonomy(selectedSubOption)}
+                                      onClick={() => finalizeTaxonomy(selectedSubOption, selectedTertiaryOption)}
                                       endIcon={<ArrowForwardArrow />}
                                       sx={{
                                         bgcolor: opt.color,

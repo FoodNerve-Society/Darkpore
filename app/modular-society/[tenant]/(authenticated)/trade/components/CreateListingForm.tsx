@@ -63,7 +63,7 @@ const STEPS = ["Title", "Location", "Pricing", "Description", "Image"];
 
 interface CreateListingFormProps {
   initialCategory?: string;
-  initialSelections?: { primary: string, secondary: string } | null;
+  initialSelections?: { primary: string, secondary: string, tertiary?: string } | null;
   onCancel: () => void;
   onSuccess: () => void;
   postingAs?: 'personal' | 'organization';
@@ -81,7 +81,7 @@ export default function CreateListingForm({ initialCategory = "", initialSelecti
   const [lga, setLga] = useState("");
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
-  const [selections, setSelections] = useState<{ primary: string, secondary: string } | null>(initialSelections);
+  const [selections, setSelections] = useState<{ primary: string, secondary: string, tertiary?: string } | null>(initialSelections);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);

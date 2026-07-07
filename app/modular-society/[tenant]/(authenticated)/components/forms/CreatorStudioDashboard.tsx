@@ -133,11 +133,11 @@ export default function CreatorStudioDashboard({
       </style>
       
       {/* Greeting */}
-      <Box sx={{ mb: { xs: 3, sm: 4, md: 6 }, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-        <Typography variant="h3" sx={{ fontFamily: 'Caveat, cursive', color: ACCENT, mb: 1, fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>
+      <Box sx={{ mb: { xs: 2.5, sm: 4, md: 6 }, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+        <Typography variant="h3" sx={{ fontFamily: 'Caveat, cursive', color: ACCENT, mb: 0.5, fontSize: { xs: '1.4rem', sm: '2.5rem', md: '3rem' } }}>
           Good {greeting}, {userName || 'Creator'}.
         </Typography>
-        <Typography variant="h4" sx={{ fontWeight: 900, letterSpacing: '-0.02em', mb: 1.5, color: '#1e293b', fontSize: { xs: '1.25rem', sm: '1.75rem', md: '2.125rem' } }}>
+        <Typography variant="h4" sx={{ fontWeight: 900, letterSpacing: '-0.02em', mb: 1.5, color: '#1e293b', fontSize: { xs: '1.1rem', sm: '1.75rem', md: '2.125rem' } }}>
           Welcome to the Studio
         </Typography>
         <Chip
@@ -178,13 +178,13 @@ export default function CreatorStudioDashboard({
               elevation={0}
               sx={{
                 flex: isHidden ? '0 0 0%' : (isExpanded ? '0 0 100%' : '0 0 auto'),
-                minWidth: isHidden ? 0 : (isExpanded ? '100%' : { xs: 180, sm: 240, md: 280 }),
-                maxWidth: isHidden ? 0 : (isExpanded ? '100%' : { xs: 180, sm: 240, md: 280 }),
-                height: isExpanded ? 'auto' : (isHidden ? 0 : { xs: 220, sm: 280, md: 320 }),
+                minWidth: isHidden ? 0 : (isExpanded ? '100%' : { xs: 140, sm: 240, md: 280 }),
+                maxWidth: isHidden ? 0 : (isExpanded ? '100%' : { xs: 140, sm: 240, md: 280 }),
+                height: isExpanded ? 'auto' : (isHidden ? 0 : { xs: 160, sm: 280, md: 320 }),
                 opacity: isHidden ? 0 : 1,
                 p: isExpanded ? 0 : (isHidden ? 0 : { xs: 1.5, sm: 2.5, md: 3.5 }),
                 display: 'flex', flexDirection: 'column', gap: { xs: 1, sm: 1.5, md: 2 },
-                borderRadius: { xs: '20px', sm: '24px', md: '28px' }, cursor: isExpanded ? 'default' : 'pointer',
+                borderRadius: { xs: '16px', sm: '24px', md: '28px' }, cursor: isExpanded ? 'default' : 'pointer',
                 background: isExpanded ? `linear-gradient(135deg, #0f172a 0%, #1e293b 100%)` : opt.grad,
                 border: isHidden ? 'none' : '1px solid rgba(255,255,255,0.15)',
                 boxShadow: isHidden ? 'none' : `inset 0 2px 10px rgba(255,255,255,0.2), 0 10px 30px ${alpha(opt.color, 0.25)}`,
@@ -211,11 +211,11 @@ export default function CreatorStudioDashboard({
                   }}>
                     {opt.icon}
                   </Box>
-                  <Box sx={{ position: 'relative', zIndex: 1, mt: 1 }}>
-                    <Typography sx={{ fontWeight: 900, fontSize: { xs: '1rem', sm: '1.2rem' }, mb: 0.5, color: '#fff', letterSpacing: '-0.02em' }}>
+                  <Box sx={{ position: 'relative', zIndex: 1, mt: { xs: 0, sm: 1 } }}>
+                    <Typography sx={{ fontWeight: 900, fontSize: { xs: '0.85rem', sm: '1.2rem' }, mb: 0.25, color: '#fff', letterSpacing: '-0.02em' }}>
                       {opt.title}
                     </Typography>
-                    <Typography sx={{ fontSize: { xs: '0.7rem', sm: '0.85rem' }, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5, fontWeight: 500 }}>
+                    <Typography sx={{ fontSize: { xs: '0.65rem', sm: '0.85rem' }, color: 'rgba(255,255,255,0.8)', lineHeight: 1.4, fontWeight: 500 }}>
                       {opt.desc}
                     </Typography>
                   </Box>
