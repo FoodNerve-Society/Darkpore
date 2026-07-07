@@ -796,6 +796,8 @@ export default function CreateListingForm({
           <Button onClick={onCancel} sx={{ fontWeight: 700, color: "text.secondary", textTransform: 'none' }}>
             Cancel
           </Button>
+        </Box>
+        <Box sx={{ display: 'flex', gap: 2 }}>
           <Button
             onClick={() => setShowPreview(true)}
             disabled={!title.trim()}
@@ -816,8 +818,6 @@ export default function CreateListingForm({
           >
             Preview
           </Button>
-        </Box>
-        <Box sx={{ display: 'flex', gap: 2 }}>
           <Button
             sx={{
               bgcolor: 'rgba(245, 158, 11, 0.1)',
@@ -851,42 +851,6 @@ export default function CreateListingForm({
         </Box>
       </Box>
 
-      {/* PREVIEW MODAL */}
-      <Modal open={showPreview} onClose={() => setShowPreview(false)}>
-          <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: { xs: '95%', md: '700px' }, maxHeight: '90vh', bgcolor: 'background.paper', borderRadius: 4, boxShadow: 24, p: 4, overflowY: 'auto' }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                  <Typography variant="h5" fontWeight={800}>Preview Listing</Typography>
-                  <Button onClick={() => setShowPreview(false)} sx={{ minWidth: 0, p: 1 }}><CloseIcon /></Button>
-              </Box>
-              
-              <Box sx={{ p: 3, borderRadius: 3, border: `1px solid ${alpha('#000', 0.1)}`, bgcolor: '#fff' }}>
-                  <Typography variant="h4" fontWeight={900} gutterBottom>{title}</Typography>
-                  <Typography variant="h6" color="primary" gutterBottom>{companyName}</Typography>
-                  
-                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 3, mt: 2 }}>
-                      <Chip label={initialSelections?.primary || "Job"} sx={{ bgcolor: alpha(EMERALD, 0.1), color: EMERALD, fontWeight: 700 }} />
-                      <Chip label={initialSelections?.secondary || "Location"} variant="outlined" />
-                      <Chip label={category?.replace('  ↳ ', '') || 'No Sector'} variant="outlined" />
-                      <Chip label={`${selectedCity?.name ? selectedCity.name + ', ' : ''}${selectedState?.name ? selectedState.name + ', ' : ''}${selectedCountry?.name || ''}`} variant="outlined" />
-                  </Box>
-
-                  <Typography variant="subtitle1" fontWeight={700} gutterBottom>
-                      {isVolunteer ? `Volunteer Role (${duration}) - ${npAmount} NP` : `${currency} ${minSalary} - ${maxSalary} (${duration})`}
-                  </Typography>
-                  
-                  <Box sx={{ mt: 4, pt: 3, borderTop: `1px solid ${alpha('#000', 0.1)}`, '& h2': { mt: 0 } }}>
-                      <div dangerouslySetInnerHTML={{ __html: description.replace(/\n/g, '<br />') }} />
-                  </Box>
-              </Box>
-
-              <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-                  <Button onClick={() => setShowPreview(false)} color="inherit" sx={{ fontWeight: 700 }}>Edit</Button>
-                  <Button variant="contained" onClick={handlePublish} disabled={isSubmitting} sx={{ bgcolor: EMERALD, '&:hover': { bgcolor: EMERALD_DARK }, borderRadius: 3, fontWeight: 800 }}>
-                      {isSubmitting ? "Publishing..." : "Publish Now"}
-                  </Button>
-              </Box>
-          </Box>
-      </Modal>
 
     </Box>
   );
