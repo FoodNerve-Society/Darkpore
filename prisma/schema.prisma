@@ -78,6 +78,12 @@ model Organization {
   verified  Boolean  @default(false)
   rank      Int      @default(3) // Businesses start at Rank 3
   createdAt DateTime @default(now())
+  logoUrl   String?
+  country   String?
+  state     String?
+  lga       String?
+  address   String?
+  isVirtual Boolean  @default(false)
 
   // Relations
   members        OrganizationMember[]

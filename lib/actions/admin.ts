@@ -2,6 +2,32 @@
 
 import { prisma } from "@/lib/db/client";
 
+export type AffiliationData = {
+  active: boolean;
+  role: string;
+  longName?: string;
+  shortName?: string;
+  logoUrl?: string;
+  country?: string;
+  state?: string;
+  lga?: string;
+  address?: string;
+  isVirtual?: boolean;
+};
+
+export async function getCoreOrganizations() {
+  try {
+    const [darkpore, foodnerve] = await Promise.all([
+      prisma.organization.findUnique({ where: { slug: 'darkpore' } }),
+      prisma.organization.findUnique({ where: { slug: 'foodnerve' } })
+    ]);
+    return { darkpore, foodnerve };
+  } catch (error) {
+    console.error("Error fetching core orgs:", error);
+    return { darkpore: null, foodnerve: null };
+  }
+}
+
 export async function submitAdminOnboarding(
   uid: string, 
   data: { 
@@ -9,10 +35,10 @@ export async function submitAdminOnboarding(
     lastName: string;
     prefixes?: string[];
     suffixes?: string[];
-    role: string; 
-    department?: string; 
     bio: string; 
     avatarUrl: string;
+    darkpore: AffiliationData;
+    foodnerve: AffiliationData;
   }
 ) {
   if (!uid) throw new Error("Missing user ID");
@@ -26,7 +52,7 @@ export async function submitAdminOnboarding(
   const fullName = nameParts.filter(Boolean).join(' ');
 
   // 1. Update the user's profile
-  await prisma.user.update({
+  const user = await prisma.user.update({
     where: { firebaseUid: uid },
     data: {
       name: fullName,
@@ -44,42 +70,60 @@ export async function submitAdminOnboarding(
     }
   });
 
-  // 2. Ensure "Food Nerve" organization exists
-  let foodNerveOrg = await prisma.organization.findUnique({
-    where: { slug: 'foodnerve' }
-  });
+  // Helper to handle org upsert and membership linking
+  async function handleAffiliation(slug: 'darkpore' | 'foodnerve', defaultName: string, affil: AffiliationData) {
+    if (!affil.active) return;
 
-  if (!foodNerveOrg) {
-    foodNerveOrg = await prisma.organization.create({
-      data: {
-        name: 'Food Nerve',
-        slug: 'foodnerve',
-        verified: true,
-        rank: 5,
+    // Ensure the org exists
+    let org = await prisma.organization.findUnique({
+      where: { slug }
+    });
+
+    if (!org) {
+      if (!affil.shortName && !affil.longName) {
+        throw new Error(`Missing required fields to create the ${defaultName} organization.`);
+      }
+      org = await prisma.organization.create({
+        data: {
+          slug,
+          name: affil.shortName || defaultName,
+          legalName: affil.longName || affil.shortName || defaultName,
+          logoUrl: affil.logoUrl,
+          country: affil.country,
+          state: affil.state,
+          lga: affil.lga,
+          address: affil.address,
+          isVirtual: affil.isVirtual || false,
+          verified: true,
+          rank: 5,
+        }
+      });
+    }
+
+    // Link the user to the org
+    await prisma.organizationMember.upsert({
+      where: {
+        userId_organizationId: {
+          userId: user.id,
+          organizationId: org.id,
+        }
+      },
+      update: {
+        role: affil.role,
+        department: 'Executive', // Default to Executive for core team
+      },
+      create: {
+        userId: user.id,
+        organizationId: org.id,
+        role: affil.role,
+        department: 'Executive',
       }
     });
   }
 
-  // 3. Add the user to Food Nerve with their specific role
-  // @ts-ignore - department added to schema but client not regenerated yet due to dev server lock
-  await prisma.organizationMember.upsert({
-    where: {
-      userId_organizationId: {
-        userId: uid,
-        organizationId: foodNerveOrg.id,
-      }
-    },
-    update: {
-      role: data.role,
-      department: data.department,
-    },
-    create: {
-      userId: uid,
-      organizationId: foodNerveOrg.id,
-      role: data.role,
-      department: data.department,
-    }
-  });
+  // Handle both affiliations
+  await handleAffiliation('darkpore', 'Darkpore', data.darkpore);
+  await handleAffiliation('foodnerve', 'Food Nerve', data.foodnerve);
 
   return { success: true };
 }
