@@ -40,8 +40,14 @@ const ROLES = [
   'Senior Manager', 'Manager', 'Lead', 'Specialist', 'Coordinator'
 ];
 
+const DEPARTMENTS = [
+  'Executive', 'Engineering', 'Product', 'Marketing', 'Sales', 
+  'Operations', 'Finance', 'Human Resources', 'Legal', 'Design'
+];
+
 type OrgData = {
   active: boolean;
+  department: string;
   role: string;
   longName: string;
   shortName: string;
@@ -55,6 +61,7 @@ type OrgData = {
 
 const DEFAULT_ORG_STATE: OrgData = {
   active: false,
+  department: '',
   role: '',
   longName: '',
   shortName: '',
@@ -124,7 +131,7 @@ export default function AdminOnboardingModal() {
   if (!isPendingAdmin || !user) return null;
 
   const handleNextStep = () => {
-    if (!firstName || !lastName || !bio) return;
+    if (!firstName || !lastName || !bio || !avatarUrl) return;
     setStep(2);
   };
 
@@ -134,12 +141,12 @@ export default function AdminOnboardingModal() {
       setSubmitError("You must affiliate with at least one organization.");
       return;
     }
-    if (darkpore.active && !darkpore.role) {
-      setSubmitError("Please specify a role for Darkpore.");
+    if (darkpore.active && (!darkpore.role || !darkpore.department)) {
+      setSubmitError("Please specify a department and role for Darkpore.");
       return;
     }
-    if (foodnerve.active && !foodnerve.role) {
-      setSubmitError("Please specify a role for Food Nerve.");
+    if (foodnerve.active && (!foodnerve.role || !foodnerve.department)) {
+      setSubmitError("Please specify a department and role for Food Nerve.");
       return;
     }
     setShowConfirmation(true);
@@ -228,15 +235,30 @@ export default function AdminOnboardingModal() {
                 <Typography variant="body2" sx={{ color: '#64748b', display: 'flex', gap: 1 }}><strong>Legal Name:</strong> {existingData.legalName}</Typography>
                 <Typography variant="body2" sx={{ color: '#64748b', display: 'flex', gap: 1 }}><strong>Location:</strong> {existingData.isVirtual ? 'Virtual Entity' : `${existingData.state}, ${existingData.country}`}</Typography>
               </Box>
-              <PremiumAutocomplete
-                freeSolo
-                label={`Role at ${defaultName}`}
-                options={ROLES}
-                value={state.role}
-                onChange={(_, newValue) => setState({ ...state, role: typeof newValue === 'string' ? newValue : '' })}
-                onInputChange={(_, newInputValue) => setState({ ...state, role: newInputValue })}
-                colorTheme="#10b981"
-              />
+              <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', md: 'row' } }}>
+                <Box sx={{ flex: 1 }}>
+                  <PremiumAutocomplete
+                    freeSolo
+                    label={`Department`}
+                    options={DEPARTMENTS}
+                    value={state.department}
+                    onChange={(_, newValue) => setState({ ...state, department: typeof newValue === 'string' ? newValue : '' })}
+                    onInputChange={(_, newInputValue) => setState({ ...state, department: newInputValue })}
+                    colorTheme="#10b981"
+                  />
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <PremiumAutocomplete
+                    freeSolo
+                    label={`Role at ${defaultName}`}
+                    options={ROLES}
+                    value={state.role}
+                    onChange={(_, newValue) => setState({ ...state, role: typeof newValue === 'string' ? newValue : '' })}
+                    onInputChange={(_, newInputValue) => setState({ ...state, role: newInputValue })}
+                    colorTheme="#10b981"
+                  />
+                </Box>
+              </Box>
             </Box>
           ) : (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -252,36 +274,50 @@ export default function AdminOnboardingModal() {
               {/* Note: In a real app we'd have another file uploader here for the logo. For brevity in this Modal, using a TextField for Logo URL, or we can use our existing hook. We'll leave it as TextField for now to keep the Modal simple. */}
               <PremiumTextField label="Logo URL (Optional)" value={state.logoUrl} onChange={(e: any) => setState({...state, logoUrl: e.target.value})} fullWidth colorTheme="#10b981" />
               
-              <Box sx={{ p: 2, border: '1px solid #e2e8f0', borderRadius: 2 }}>
+              <Box sx={{ p: 2, border: '1px solid #e2e8f0', borderRadius: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <FormControlLabel
                   control={<Switch checked={state.isVirtual} onChange={(e) => setState({...state, isVirtual: e.target.checked})} color="success" />}
                   label={<Typography variant="body2" sx={{ fontWeight: 600 }}>Virtual / Remote Organization</Typography>}
-                  sx={{ mb: state.isVirtual ? 0 : 2 }}
+                  sx={{ mb: 0 }}
                 />
                 
+                <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', md: 'row' } }}>
+                  <PremiumTextField label="Country" value={state.country} onChange={(e: any) => setState({...state, country: e.target.value})} fullWidth colorTheme="#10b981" />
+                  <PremiumTextField label="State/Province" value={state.state} onChange={(e: any) => setState({...state, state: e.target.value})} fullWidth colorTheme="#10b981" />
+                </Box>
+                
                 {!state.isVirtual && (
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', md: 'row' } }}>
-                      <PremiumTextField label="Country" value={state.country} onChange={(e: any) => setState({...state, country: e.target.value})} fullWidth colorTheme="#10b981" />
-                      <PremiumTextField label="State/Province" value={state.state} onChange={(e: any) => setState({...state, state: e.target.value})} fullWidth colorTheme="#10b981" />
-                    </Box>
-                    <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', md: 'row' } }}>
-                      <PremiumTextField label="LGA/County" value={state.lga} onChange={(e: any) => setState({...state, lga: e.target.value})} fullWidth colorTheme="#10b981" />
-                      <PremiumTextField label="Street Address" value={state.address} onChange={(e: any) => setState({...state, address: e.target.value})} fullWidth colorTheme="#10b981" />
-                    </Box>
+                  <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', md: 'row' } }}>
+                    <PremiumTextField label="LGA/County" value={state.lga} onChange={(e: any) => setState({...state, lga: e.target.value})} fullWidth colorTheme="#10b981" />
+                    <PremiumTextField label="Street Address" value={state.address} onChange={(e: any) => setState({...state, address: e.target.value})} fullWidth colorTheme="#10b981" />
                   </Box>
                 )}
               </Box>
 
-              <PremiumAutocomplete
-                freeSolo
-                label={`Your Initial Role at ${defaultName}`}
-                options={ROLES}
-                value={state.role}
-                onChange={(_, newValue) => setState({ ...state, role: typeof newValue === 'string' ? newValue : '' })}
-                onInputChange={(_, newInputValue) => setState({ ...state, role: newInputValue })}
-                colorTheme="#10b981"
-              />
+              <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', md: 'row' } }}>
+                <Box sx={{ flex: 1 }}>
+                  <PremiumAutocomplete
+                    freeSolo
+                    label={`Department`}
+                    options={DEPARTMENTS}
+                    value={state.department}
+                    onChange={(_, newValue) => setState({ ...state, department: typeof newValue === 'string' ? newValue : '' })}
+                    onInputChange={(_, newInputValue) => setState({ ...state, department: newInputValue })}
+                    colorTheme="#10b981"
+                  />
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <PremiumAutocomplete
+                    freeSolo
+                    label={`Initial Role`}
+                    options={ROLES}
+                    value={state.role}
+                    onChange={(_, newValue) => setState({ ...state, role: typeof newValue === 'string' ? newValue : '' })}
+                    onInputChange={(_, newInputValue) => setState({ ...state, role: newInputValue })}
+                    colorTheme="#10b981"
+                  />
+                </Box>
+              </Box>
             </Box>
           )}
         </AccordionDetails>
@@ -335,7 +371,7 @@ export default function AdminOnboardingModal() {
           display: 'flex',
           flexDirection: 'column',
           justifyContent: { xs: 'flex-start', md: 'center' },
-          width: { xs: '100%', md: '45%' },
+          width: { xs: '100%', md: '30%' },
           height: { xs: 'auto', md: '100%' },
           position: 'relative',
           bgcolor: 'rgba(248, 250, 252, 0.6)',
@@ -419,7 +455,7 @@ export default function AdminOnboardingModal() {
         <Box sx={{
           display: 'flex',
           flexDirection: 'column',
-          width: { xs: '100%', md: '55%' },
+          width: { xs: '100%', md: '70%' },
           height: '100%',
           overflowY: 'auto',
           bgcolor: 'transparent',
@@ -494,7 +530,7 @@ export default function AdminOnboardingModal() {
                         </Box>
                         {!avatarUrl && (
                           <Typography variant="caption" sx={{ mt: 3, color: '#ef4444', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
-                            * Professional Headshot Highly Recommended *
+                            * Professional Headshot Required *
                           </Typography>
                         )}
                       </Box>
@@ -551,18 +587,20 @@ export default function AdminOnboardingModal() {
                         onChange={(e: any) => setBio(e.target.value)}
                       />
 
-                      <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
                         <Button 
                           variant="contained"
                           onClick={handleNextStep}
-                          disabled={!firstName.trim() || !lastName.trim() || !bio.trim()}
+                          disabled={!firstName.trim() || !lastName.trim() || !bio.trim() || !avatarUrl}
                           endIcon={<ArrowForwardIcon />}
-                          sx={{ 
-                            bgcolor: '#3b82f6', 
-                            '&:hover': { bgcolor: '#2563eb' },
-                            borderRadius: 100,
-                            px: 4, py: 1.5,
-                            fontWeight: 700
+                          sx={{
+                            py: 1.5, px: 5, borderRadius: 3, fontWeight: 800, fontSize: '0.95rem',
+                            letterSpacing: '0.5px', color: 'white',
+                            background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                            boxShadow: '0 8px 24px rgba(59, 130, 246, 0.3), inset 0 1px 0 rgba(255,255,255,0.3)',
+                            textTransform: 'uppercase', transition: 'all 0.3s ease',
+                            '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 12px 28px rgba(59, 130, 246, 0.4), inset 0 1px 0 rgba(255,255,255,0.4)' },
+                            '&.Mui-disabled': { background: 'rgba(0,0,0,0.04)', color: 'rgba(0,0,0,0.25)', boxShadow: 'none' }
                           }}
                         >
                           Continue
@@ -594,8 +632,8 @@ export default function AdminOnboardingModal() {
                             <CheckCircleOutlinedIcon fontSize="small" /> Please Confirm Details
                           </Typography>
                           <Typography variant="body2" sx={{ color: '#334155' }}><strong>Name:</strong> {firstName} {lastName}</Typography>
-                          {darkpore.active && <Typography variant="body2" sx={{ color: '#334155' }}><strong>Darkpore Role:</strong> {darkpore.role}</Typography>}
-                          {foodnerve.active && <Typography variant="body2" sx={{ color: '#334155' }}><strong>Food Nerve Role:</strong> {foodnerve.role}</Typography>}
+                          {darkpore.active && <Typography variant="body2" sx={{ color: '#334155' }}><strong>Darkpore:</strong> {darkpore.role} ({darkpore.department})</Typography>}
+                          {foodnerve.active && <Typography variant="body2" sx={{ color: '#334155' }}><strong>Food Nerve:</strong> {foodnerve.role} ({foodnerve.department})</Typography>}
                         </Box>
                       )}
 

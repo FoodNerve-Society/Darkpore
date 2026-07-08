@@ -29,6 +29,7 @@ function PremiumAutocomplete<
 
     return (
         <Autocomplete
+            forcePopupIcon
             {...rest}
             renderInput={(params) => (
                 <TextField
@@ -126,6 +127,13 @@ function PremiumAutocomplete<
                 }
             }}
             sx={{
+                '& .MuiAutocomplete-popupIndicator, & .MuiAutocomplete-clearIndicator': {
+                    color: alpha(colorTheme, 0.7),
+                    '&:hover': {
+                        color: colorTheme,
+                        bgcolor: alpha(colorTheme, 0.1),
+                    }
+                },
                 ...props.sx
             }}
         />

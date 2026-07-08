@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db/client";
 
 export type AffiliationData = {
   active: boolean;
+  department?: string;
   role: string;
   longName?: string;
   shortName?: string;
@@ -110,13 +111,13 @@ export async function submitAdminOnboarding(
       },
       update: {
         role: affil.role,
-        department: 'Executive', // Default to Executive for core team
+        department: affil.department || 'Executive',
       },
       create: {
         userId: user.id,
         organizationId: org.id,
         role: affil.role,
-        department: 'Executive',
+        department: affil.department || 'Executive',
       }
     });
   }
