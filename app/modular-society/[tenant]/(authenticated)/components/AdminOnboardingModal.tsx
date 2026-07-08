@@ -40,7 +40,9 @@ import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import CheckIcon from '@mui/icons-material/Check';
 import { alpha } from '@mui/material';
 import { Country, State, City } from 'country-state-city';
-import ExportAsImage from '@/components/ExportAsImage';
+import { useExportAsImage } from '@/components/ExportAsImage';
+import { useParams } from 'next/navigation';
+import ShareIcon from '@mui/icons-material/Share';
 
 const ROLES = [
   'Founder', 'Chief Executive Officer', 'Director', 'Head of Department',
@@ -83,6 +85,10 @@ const DEFAULT_ORG_STATE: OrgData = {
 export default function AdminOnboardingModal() {
   const { user, profile } = useSociety();
   const theme = useTheme();
+  const params = useParams();
+  const tenant = params?.tenant as string;
+  const cardRef = React.useRef<HTMLDivElement>(null);
+  const { exportAsImage, isExporting: isDownloading } = useExportAsImage();
   
   const [loading, setLoading] = useState(false);
   const [fetchingOrgs, setFetchingOrgs] = useState(true);
@@ -109,9 +115,11 @@ export default function AdminOnboardingModal() {
   // Existing Orgs pulled from DB
   const [existingOrgs, setExistingOrgs] = useState<{ darkpore: any; foodnerve: any }>({ darkpore: null, foodnerve: null });
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [cardTheme, setCardTheme] = useState(tenant === 'innovations' ? '#10b981' : '#0ea5e9');
 
   const PREFIX_OPTIONS = ['Dr.', 'Prof.', 'Engr.', 'Arch.', 'Pharm.', 'Rev.', 'Chief', 'Mr.', 'Mrs.', 'Ms.'];
   const SUFFIX_OPTIONS = ['PhD', 'MSc', 'BSc', 'MBA', 'CFA', 'Esq.', 'MD', 'DO', 'CPA'];
+  const CARD_THEMES = ['#10b981', '#0ea5e9', '#8b5cf6', '#f59e0b', '#0f172a'];
 
   // Trigger Logic
   const isPendingAdmin = profile?.isAdmin && profile?.currentRank < 5;
@@ -391,31 +399,12 @@ export default function AdminOnboardingModal() {
                     As the first admin, please establish the core profile for {defaultName}.
                   </Typography>
                   
-                  <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', md: 'row' } }}>
-                    <Box sx={{ flex: 1 }}>
-                      <PremiumAutocomplete
-                        freeSolo
-                        label={`Department`}
-                        options={DEPARTMENTS}
-                        value={state.department}
-                        onChange={(_, newValue) => setState({ ...state, department: typeof newValue === 'string' ? newValue : '' })}
-                        onInputChange={(_, newInputValue) => setState({ ...state, department: newInputValue })}
-                        colorTheme={color}
-                      />
-                    </Box>
-                    <Box sx={{ flex: 1 }}>
-                      <PremiumAutocomplete
-                        freeSolo
-                        label={`Role/Designation in ${defaultName}`}
-                        options={ROLES}
-                        value={state.role}
-                        onChange={(_, newValue) => setState({ ...state, role: typeof newValue === 'string' ? newValue : '' })}
-                        onInputChange={(_, newInputValue) => setState({ ...state, role: newInputValue })}
-                        colorTheme={color}
-                      />
-                    </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                    <Box sx={{ width: 24, height: 24, borderRadius: '50%', bgcolor: alpha(color, 0.1), color: color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.75rem' }}>1</Box>
+                    <Typography variant="body2" sx={{ color: '#0f172a', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem' }}>
+                      Organization Details
+                    </Typography>
                   </Box>
-
                   <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', md: 'row' } }}>
                     <Box sx={{ flex: 1 }}>
                       <PremiumTextField label="Organization Full Legal Name" value={state.longName} onChange={(e: any) => setState({...state, longName: e.target.value})} fullWidth colorTheme={color} required={state.active} />
@@ -509,6 +498,13 @@ export default function AdminOnboardingModal() {
                     )}
                   </Box>
 
+                  <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                    <Box sx={{ width: 24, height: 24, borderRadius: '50%', bgcolor: alpha(color, 0.1), color: color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.75rem' }}>2</Box>
+                    <Typography variant="body2" sx={{ color: '#0f172a', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '0.75rem' }}>
+                      Your Affiliation Details
+                    </Typography>
+                  </Box>
+
                   <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', md: 'row' } }}>
                     <Box sx={{ flex: 1 }}>
                       <PremiumAutocomplete
@@ -533,6 +529,8 @@ export default function AdminOnboardingModal() {
                       />
                     </Box>
                   </Box>
+
+
                 </Box>
               )}
             </Box>
@@ -865,85 +863,116 @@ export default function AdminOnboardingModal() {
                         </Typography>
                       </Box>
 
+                      <Box sx={{ mb: 2 }}>
+                        <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 600, textAlign: 'center', mb: 1.5, textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.7rem' }}>
+                          Select Card Theme
+                        </Typography>
+                        <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+                          {CARD_THEMES.map(t => (
+                            <Box 
+                              key={t} 
+                              onClick={() => setCardTheme(t)}
+                              sx={{ 
+                                width: 32, height: 32, borderRadius: '50%', bgcolor: t, cursor: 'pointer',
+                                border: cardTheme === t ? '3px solid #fff' : '2px solid transparent',
+                                boxShadow: cardTheme === t ? `0 0 0 2px ${t}` : '0 2px 8px rgba(0,0,0,0.1)',
+                                transition: 'all 0.2s ease',
+                                '&:hover': { transform: 'scale(1.1)' }
+                              }} 
+                            />
+                          ))}
+                        </Box>
+                      </Box>
+
                       <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-                        <ExportAsImage fileName={`${firstName}-Executive-Profile`} showButtonHoverOnly={false} buttonPosition="bottom-right" buttonSx={{ bottom: 16, right: 16 }}>
+                        <Box ref={cardRef}>
                           <Box sx={{
                             borderRadius: '24px', 
                             background: '#ffffff',
-                            border: '1px solid rgba(0,0,0,0.05)',
-                            boxShadow: '0 20px 40px rgba(0,0,0,0.08), inset 0 1px 0 #fff',
+                            border: `1px solid ${alpha(cardTheme, 0.1)}`,
+                            boxShadow: `0 20px 40px ${alpha(cardTheme, 0.15)}`,
                             display: 'flex', flexDirection: 'column',
                             position: 'relative', overflow: 'hidden',
                             width: { xs: 320, sm: 400 },
                             aspectRatio: '3 / 4',
                           }}>
-                            {/* Poster Header */}
-                            <Box sx={{ 
-                              height: '35%', 
-                              background: `linear-gradient(135deg, ${tenant === 'innovations' ? '#10b981' : '#0ea5e9'} 0%, ${tenant === 'innovations' ? '#059669' : '#0284c7'} 100%)`, 
-                              position: 'relative', overflow: 'hidden'
-                            }}>
-                              <Box sx={{ position: 'absolute', top: -50, right: -50, width: 200, height: 200, background: 'radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%)', borderRadius: '50%' }} />
-                              <Box sx={{ position: 'absolute', bottom: -30, left: -30, width: 120, height: 120, background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)', borderRadius: '50%' }} />
-                            </Box>
+                            {/* Decorative Top Bar */}
+                            <Box sx={{ width: '100%', height: 8, bgcolor: cardTheme }} />
 
-                            {/* Massive Centered Avatar */}
-                            <Box sx={{ display: 'flex', justifyContent: 'center', mt: '-60px', position: 'relative', zIndex: 2 }}>
-                              <Avatar src={avatarUrl} sx={{ width: 120, height: 120, border: '6px solid #fff', boxShadow: '0 12px 24px rgba(0,0,0,0.15)', bgcolor: '#f8fafc' }} />
-                            </Box>
-
-                            {/* Main Body */}
-                            <Box sx={{ flexGrow: 1, p: 3, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 1 }}>
-                              <Typography sx={{ fontWeight: 900, fontSize: '1.6rem', color: '#0f172a', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
-                                {[...prefixes, firstName, lastName, ...suffixes].filter(Boolean).join(' ')}
-                              </Typography>
-                              <Typography sx={{ color: tenant === 'innovations' ? '#10b981' : '#0ea5e9', fontWeight: 800, textTransform: 'uppercase', fontSize: '0.8rem', letterSpacing: '2px', mb: 0.5 }}>
-                                Executive Leader
-                              </Typography>
-                              <Typography sx={{ color: '#64748b', fontSize: '0.9rem', fontWeight: 500, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                                {bio}
-                              </Typography>
-                            </Box>
-
-                            {/* Affiliations & Footer */}
-                            <Box sx={{ p: 3, pt: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                              <Box sx={{ display: 'flex', justifyContent: 'center', gap: 4, alignItems: 'flex-start' }}>
+                            {/* Content Container */}
+                            <Box sx={{ p: 4, flexGrow: 1, display: 'flex', flexDirection: 'column', zIndex: 2 }}>
+                              
+                              {/* Free Flowing Logos */}
+                              <Box sx={{ display: 'flex', gap: 3, alignItems: 'center', mb: 3 }}>
                                 {darkpore.active && (
-                                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                                    <Avatar src={darkpore.logoUrl || existingOrgs?.darkpore?.logoUrl} sx={{ width: 56, height: 56, bgcolor: '#fff', border: '2px solid rgba(14, 165, 233, 0.1)', boxShadow: '0 8px 16px rgba(14, 165, 233, 0.1)' }}>
-                                      <BusinessIcon fontSize="medium" sx={{ color: '#0ea5e9' }} />
-                                    </Avatar>
-                                    <Box sx={{ textAlign: 'center' }}>
-                                      <Typography sx={{ fontWeight: 800, color: '#0ea5e9', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Darkpore</Typography>
-                                      <Typography sx={{ color: '#64748b', fontSize: '0.65rem', fontWeight: 600 }}>{darkpore.role}</Typography>
-                                    </Box>
-                                  </Box>
+                                  <img src={darkpore.logoUrl || existingOrgs?.darkpore?.logoUrl || ''} alt="Darkpore" style={{ height: 36, width: 'auto', objectFit: 'contain' }} />
                                 )}
-
                                 {foodnerve.active && (
-                                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                                    <Avatar src={foodnerve.logoUrl || existingOrgs?.foodnerve?.logoUrl} sx={{ width: 56, height: 56, bgcolor: '#fff', border: '2px solid rgba(16, 185, 129, 0.1)', boxShadow: '0 8px 16px rgba(16, 185, 129, 0.1)' }}>
-                                      <BusinessIcon fontSize="medium" sx={{ color: '#10b981' }} />
-                                    </Avatar>
-                                    <Box sx={{ textAlign: 'center' }}>
-                                      <Typography sx={{ fontWeight: 800, color: '#10b981', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Food Nerve</Typography>
-                                      <Typography sx={{ color: '#64748b', fontSize: '0.65rem', fontWeight: 600 }}>{foodnerve.role}</Typography>
-                                    </Box>
-                                  </Box>
+                                  <img src={foodnerve.logoUrl || existingOrgs?.foodnerve?.logoUrl || ''} alt="Food Nerve" style={{ height: 36, width: 'auto', objectFit: 'contain' }} />
                                 )}
                               </Box>
 
-                              <Box sx={{ mt: 'auto', borderTop: '1px solid rgba(0,0,0,0.06)', pt: 2, display: 'flex', justifyContent: 'center' }}>
-                                <Typography sx={{ fontWeight: 900, color: '#cbd5e1', letterSpacing: '4px', fontSize: '0.7rem', textTransform: 'uppercase' }}>
-                                  foodnerve.com
+                              {/* Announcement Text Area */}
+                              <Typography sx={{ color: cardTheme, fontWeight: 800, textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '2px', mb: 2 }}>
+                                New Leadership Appointment
+                              </Typography>
+                              
+                              <Typography sx={{ fontWeight: 900, fontSize: '1.6rem', color: '#0f172a', letterSpacing: '-0.02em', lineHeight: 1.2, mb: 3 }}>
+                                I'm thrilled to share that I've joined <span style={{ color: cardTheme }}>{[darkpore.active ? 'Darkpore' : '', foodnerve.active ? 'Food Nerve' : ''].filter(Boolean).join(' & ')}</span> as {[darkpore.active ? darkpore.role : '', foodnerve.active ? foodnerve.role : ''].filter(Boolean).join(' and ')}.
+                              </Typography>
+
+                              <Box sx={{ mt: 'auto', display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                                <Typography sx={{ fontWeight: 900, fontSize: '1.3rem', color: '#0f172a' }}>
+                                  {[...prefixes, firstName, lastName, ...suffixes].filter(Boolean).join(' ')}
+                                </Typography>
+                                <Typography sx={{ color: '#64748b', fontSize: '0.9rem', fontWeight: 600 }}>
+                                  {[darkpore.active ? darkpore.department : '', foodnerve.active ? foodnerve.department : ''].filter(Boolean).join(' & ')} Department
                                 </Typography>
                               </Box>
                             </Box>
+
+                            {/* Massive Edge-to-Edge Image at the Bottom */}
+                            <Box sx={{ width: '100%', height: '42%', position: 'relative' }}>
+                              <img src={avatarUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              {/* Dark gradient overlay for text readability */}
+                              <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)' }} />
+                              
+                              <Typography sx={{ position: 'absolute', bottom: 20, right: 24, fontWeight: 800, color: '#fff', letterSpacing: '3px', fontSize: '0.65rem', textTransform: 'uppercase' }}>
+                                foodnerve.com
+                              </Typography>
+                            </Box>
                           </Box>
-                        </ExportAsImage>
+                        </Box>
                       </Box>
 
-                      {submitError && (
+                      <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+                        <Button
+                          variant="contained"
+                          disabled={isDownloading}
+                          onClick={() => exportAsImage(cardRef.current, `${firstName}-Announcement`)}
+                          startIcon={isDownloading ? <CircularProgress size={20} color="inherit" /> : <ShareIcon />}
+                          sx={{
+                            bgcolor: cardTheme,
+                            color: '#fff',
+                            py: 1.5,
+                            px: 4,
+                              borderRadius: 4,
+                              fontWeight: 800,
+                              textTransform: 'none',
+                              fontSize: '1rem',
+                              boxShadow: `0 8px 24px ${alpha(cardTheme, 0.4)}`,
+                              '&:hover': {
+                                bgcolor: cardTheme,
+                                transform: 'translateY(-2px)',
+                                boxShadow: `0 12px 28px ${alpha(cardTheme, 0.6)}`
+                              }
+                            }}
+                          >
+                            {isDownloading ? 'Generating High-Res Image...' : 'Download & Share Card'}
+                          </Button>
+                        </Box>
+
+                        {submitError && (
                         <Typography variant="body2" sx={{ color: '#ef4444', fontWeight: 600, textAlign: 'center', mt: 1 }}>
                           {submitError}
                         </Typography>
