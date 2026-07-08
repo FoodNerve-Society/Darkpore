@@ -14,6 +14,7 @@ export interface CreateTradeListingPayload {
   nervePointsCost?: number;
   status?: string;
   metadata?: any;
+  organizationId?: string | null;
 }
 
 export async function createTradeListing(data: CreateTradeListingPayload) {
@@ -40,6 +41,26 @@ export async function createTradeListing(data: CreateTradeListingPayload) {
     const metadata = data.metadata || {};
     const isJobOrVolunteer = data.category === 'jobs' || data.category === 'volunteer';
 
+    let finalOrganizationId = data.organizationId;
+
+    if (metadata.isExternal && !finalOrganizationId) {
+      // Create external organization
+      const extOrg = await prisma.organization.create({
+        data: {
+          name: metadata.externalEntityName || 'External Organization',
+          slug: `ext-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+          legalName: metadata.externalEntityShortName,
+          country: metadata.externalCountry,
+          state: metadata.externalState,
+          lga: metadata.externalLga,
+          logoUrl: metadata.externalEntityLogoUrl,
+          isExternal: true,
+          rank: 1, // Or whatever rank is deemed appropriate for external entities
+        }
+      });
+      finalOrganizationId = extOrg.id;
+    }
+
     const listing = await prisma.tradeListing.create({
       data: {
         category: data.category || 'jobs', // Fallback for drafts
@@ -54,6 +75,7 @@ export async function createTradeListing(data: CreateTradeListingPayload) {
         status: data.status || 'active',
         urgency: 'normal',
         commodity: metadata.sector || undefined, // We map Sector to commodity here
+        organizationId: finalOrganizationId,
         
         // Job-specific mappings
         ...(isJobOrVolunteer ? {
