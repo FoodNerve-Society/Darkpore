@@ -96,6 +96,8 @@ export default function AdminOnboardingModal() {
   const [step, setStep] = useState(1);
 
   // Form State
+  const errorRef = React.useRef<HTMLDivElement>(null);
+  const [loadingStep, setLoadingStep] = useState<string>('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [prefixes, setPrefixes] = useState<string[]>([]);
@@ -116,6 +118,7 @@ export default function AdminOnboardingModal() {
   const [existingOrgs, setExistingOrgs] = useState<{ darkpore: any; foodnerve: any }>({ darkpore: null, foodnerve: null });
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [cardTheme, setCardTheme] = useState(tenant === 'innovations' ? '#10b981' : '#0ea5e9');
+  const [cardStyle, setCardStyle] = useState<'announcement' | 'membership'>('announcement');
 
   const PREFIX_OPTIONS = ['Dr.', 'Prof.', 'Engr.', 'Arch.', 'Pharm.', 'Rev.', 'Chief', 'Mr.', 'Mrs.', 'Ms.'];
   const SUFFIX_OPTIONS = ['PhD', 'MSc', 'BSc', 'MBA', 'CFA', 'Esq.', 'MD', 'DO', 'CPA'];
@@ -182,10 +185,12 @@ export default function AdminOnboardingModal() {
   const handleSubmit = async () => {
     setLoading(true);
     setSubmitError('');
+    setLoadingStep('Initializing secure connection...');
     try {
       let finalAvatarUrl = avatarUrl;
       
       if (avatarFile) {
+        setLoadingStep('Uploading professional headshot...');
         const uploadResult = await uploadFile(avatarFile);
         if (uploadResult && uploadResult.secure_url) {
           finalAvatarUrl = uploadResult.secure_url;
@@ -196,6 +201,7 @@ export default function AdminOnboardingModal() {
       
       let finalDarkpore = { ...darkpore };
       if (darkporeLogoFile) {
+        setLoadingStep('Uploading Darkpore organization logo...');
         const uploadResult = await uploadFile(darkporeLogoFile);
         if (uploadResult && uploadResult.secure_url) {
           finalDarkpore.logoUrl = uploadResult.secure_url;
@@ -206,6 +212,7 @@ export default function AdminOnboardingModal() {
       
       let finalFoodnerve = { ...foodnerve };
       if (foodnerveLogoFile) {
+        setLoadingStep('Uploading Food Nerve organization logo...');
         const uploadResult = await uploadFile(foodnerveLogoFile);
         if (uploadResult && uploadResult.secure_url) {
           finalFoodnerve.logoUrl = uploadResult.secure_url;
@@ -214,6 +221,7 @@ export default function AdminOnboardingModal() {
         }
       }
 
+      setLoadingStep('Finalizing profile and organization affiliations in database...');
       await submitAdminOnboarding(user.uid, {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
@@ -224,11 +232,16 @@ export default function AdminOnboardingModal() {
         darkpore: finalDarkpore,
         foodnerve: finalFoodnerve,
       });
+      setLoadingStep('Success! Entering dashboard...');
       window.location.reload();
     } catch (error: any) {
       console.error(error);
       setSubmitError(error.message || 'An unexpected error occurred. Please try again.');
       setLoading(false);
+      setLoadingStep('');
+      setTimeout(() => {
+        errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
     }
   };
 
@@ -816,9 +829,18 @@ export default function AdminOnboardingModal() {
                       {renderOrgBlock('foodnerve', 'Food Nerve', foodnerve, setFoodnerve, existingOrgs.foodnerve, foodnerveLogoFile, setFoodnerveLogoFile, '#10b981')}
 
                       {submitError && (
-                        <Typography variant="body2" sx={{ color: '#ef4444', fontWeight: 600, textAlign: 'center', mt: 1 }}>
-                          {submitError}
-                        </Typography>
+                        <Box ref={errorRef} sx={{ mt: 2, scrollMarginTop: '20px' }}>
+                          <Alert severity="error" sx={{ borderRadius: 2, '& .MuiAlert-message': { fontWeight: 600 } }}>
+                            {submitError}
+                          </Alert>
+                        </Box>
+                      )}
+
+                      {loadingStep && loading && (
+                        <Box sx={{ mt: 2, p: 2, bgcolor: alpha('#10b981', 0.05), border: '1px solid', borderColor: alpha('#10b981', 0.2), borderRadius: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <CircularProgress size={20} sx={{ color: '#10b981' }} />
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: '#059669' }}>{loadingStep}</Typography>
+                        </Box>
                       )}
 
                       <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
@@ -863,6 +885,28 @@ export default function AdminOnboardingModal() {
                         </Typography>
                       </Box>
 
+                      <Box sx={{ mb: 3 }}>
+                        <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 600, textAlign: 'center', mb: 1.5, textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.7rem' }}>
+                          Select Card Type
+                        </Typography>
+                        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
+                          <Button 
+                            variant={cardStyle === 'announcement' ? 'contained' : 'outlined'} 
+                            onClick={() => setCardStyle('announcement')}
+                            sx={{ borderRadius: 3, textTransform: 'none', fontWeight: 700, px: 3, bgcolor: cardStyle === 'announcement' ? '#0f172a' : 'transparent', color: cardStyle === 'announcement' ? '#fff' : '#475569', borderColor: '#cbd5e1' }}
+                          >
+                            New Role Announcement
+                          </Button>
+                          <Button 
+                            variant={cardStyle === 'membership' ? 'contained' : 'outlined'} 
+                            onClick={() => setCardStyle('membership')}
+                            sx={{ borderRadius: 3, textTransform: 'none', fontWeight: 700, px: 3, bgcolor: cardStyle === 'membership' ? '#0f172a' : 'transparent', color: cardStyle === 'membership' ? '#fff' : '#475569', borderColor: '#cbd5e1' }}
+                          >
+                            Official Membership
+                          </Button>
+                        </Box>
+                      </Box>
+
                       <Box sx={{ mb: 2 }}>
                         <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 600, textAlign: 'center', mb: 1.5, textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.7rem' }}>
                           Select Card Theme
@@ -887,7 +931,7 @@ export default function AdminOnboardingModal() {
                       <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
                         <Box ref={cardRef}>
                           <Box sx={{
-                            borderRadius: '24px', 
+                            p: 4, borderRadius: '24px', 
                             background: '#ffffff',
                             border: `1px solid ${alpha(cardTheme, 0.1)}`,
                             boxShadow: `0 20px 40px ${alpha(cardTheme, 0.15)}`,
@@ -896,51 +940,114 @@ export default function AdminOnboardingModal() {
                             width: { xs: 320, sm: 400 },
                             aspectRatio: '3 / 4',
                           }}>
-                            {/* Decorative Top Bar */}
-                            <Box sx={{ width: '100%', height: 8, bgcolor: cardTheme }} />
+                            {cardStyle === 'announcement' ? (
+                              <>
+                                {/* Decorative Background Glows */}
+                                <Box sx={{ position: 'absolute', top: -50, right: -50, width: 300, height: 300, background: `radial-gradient(circle, ${alpha(cardTheme, 0.05)} 0%, transparent 70%)`, borderRadius: '50%', zIndex: 1 }} />
+                                <Box sx={{ position: 'absolute', bottom: -50, left: -50, width: 250, height: 250, background: `radial-gradient(circle, ${alpha(cardTheme, 0.05)} 0%, transparent 70%)`, borderRadius: '50%', zIndex: 1 }} />
 
-                            {/* Content Container */}
-                            <Box sx={{ p: 4, flexGrow: 1, display: 'flex', flexDirection: 'column', zIndex: 2 }}>
-                              
-                              {/* Free Flowing Logos */}
-                              <Box sx={{ display: 'flex', gap: 3, alignItems: 'center', mb: 3 }}>
-                                {darkpore.active && (
-                                  <img src={darkpore.logoUrl || existingOrgs?.darkpore?.logoUrl || ''} alt="Darkpore" style={{ height: 36, width: 'auto', objectFit: 'contain' }} />
-                                )}
-                                {foodnerve.active && (
-                                  <img src={foodnerve.logoUrl || existingOrgs?.foodnerve?.logoUrl || ''} alt="Food Nerve" style={{ height: 36, width: 'auto', objectFit: 'contain' }} />
-                                )}
-                              </Box>
+                                {/* Free Flowing Logos */}
+                                <Box sx={{ display: 'flex', gap: 3, alignItems: 'center', mb: 3, zIndex: 2 }}>
+                                  {darkpore.active && (
+                                    <img src={darkpore.logoUrl || existingOrgs?.darkpore?.logoUrl || ''} alt="Darkpore" style={{ height: 40, width: 'auto', objectFit: 'contain' }} />
+                                  )}
+                                  {foodnerve.active && (
+                                    <img src={foodnerve.logoUrl || existingOrgs?.foodnerve?.logoUrl || ''} alt="Food Nerve" style={{ height: 40, width: 'auto', objectFit: 'contain' }} />
+                                  )}
+                                </Box>
 
-                              {/* Announcement Text Area */}
-                              <Typography sx={{ color: cardTheme, fontWeight: 800, textTransform: 'uppercase', fontSize: '0.7rem', letterSpacing: '2px', mb: 2 }}>
-                                New Leadership Appointment
-                              </Typography>
-                              
-                              <Typography sx={{ fontWeight: 900, fontSize: '1.6rem', color: '#0f172a', letterSpacing: '-0.02em', lineHeight: 1.2, mb: 3 }}>
-                                I'm thrilled to share that I've joined <span style={{ color: cardTheme }}>{[darkpore.active ? 'Darkpore' : '', foodnerve.active ? 'Food Nerve' : ''].filter(Boolean).join(' & ')}</span> as {[darkpore.active ? darkpore.role : '', foodnerve.active ? foodnerve.role : ''].filter(Boolean).join(' and ')}.
-                              </Typography>
+                                {/* Announcement Text Area */}
+                                <Box sx={{ zIndex: 2, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                                  <Typography sx={{ color: cardTheme, fontWeight: 800, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '2px', mb: 1.5 }}>
+                                    I'm thrilled to announce...
+                                  </Typography>
+                                  
+                                  <Typography sx={{ fontWeight: 900, fontSize: '1.45rem', color: '#0f172a', letterSpacing: '-0.02em', lineHeight: 1.3, mb: 3, maxWidth: '85%' }}>
+                                    I started a new position as <span style={{ color: cardTheme }}>{[darkpore.active ? darkpore.role : '', foodnerve.active ? foodnerve.role : ''].filter(Boolean).join(' & ')}</span> at {[darkpore.active ? 'Darkpore' : '', foodnerve.active ? 'Food Nerve' : ''].filter(Boolean).join(' and ')} in the <span style={{ color: '#475569' }}>{[darkpore.active ? darkpore.department : '', foodnerve.active ? foodnerve.department : ''].filter(Boolean).join(' & ')}</span> department.
+                                  </Typography>
 
-                              <Box sx={{ mt: 'auto', display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                                <Typography sx={{ fontWeight: 900, fontSize: '1.3rem', color: '#0f172a' }}>
-                                  {[...prefixes, firstName, lastName, ...suffixes].filter(Boolean).join(' ')}
-                                </Typography>
-                                <Typography sx={{ color: '#64748b', fontSize: '0.9rem', fontWeight: 600 }}>
-                                  {[darkpore.active ? darkpore.department : '', foodnerve.active ? foodnerve.department : ''].filter(Boolean).join(' & ')} Department
-                                </Typography>
-                              </Box>
-                            </Box>
+                                  <Box sx={{ mt: 'auto', mb: 4, maxWidth: '60%' }}>
+                                    <Box sx={{ width: 32, height: 3, bgcolor: cardTheme, borderRadius: 2, mb: 1 }} />
+                                    <Typography sx={{ fontWeight: 800, fontSize: '1.2rem', color: '#0f172a' }}>
+                                      {[...prefixes, firstName, lastName, ...suffixes].filter(Boolean).join(' ')}
+                                    </Typography>
+                                  </Box>
+                                </Box>
 
-                            {/* Massive Edge-to-Edge Image at the Bottom */}
-                            <Box sx={{ width: '100%', height: '42%', position: 'relative' }}>
-                              <img src={avatarUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                              {/* Dark gradient overlay for text readability */}
-                              <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)' }} />
-                              
-                              <Typography sx={{ position: 'absolute', bottom: 20, right: 24, fontWeight: 800, color: '#fff', letterSpacing: '3px', fontSize: '0.65rem', textTransform: 'uppercase' }}>
-                                foodnerve.com
-                              </Typography>
-                            </Box>
+                                {/* Admin Avatar overlapping bottom right */}
+                                <Box sx={{ 
+                                  position: 'absolute', bottom: -10, right: -20, width: 220, height: 220, 
+                                  borderRadius: '50%', 
+                                  border: '8px solid #fff', 
+                                  backgroundImage: `url(${avatarUrl})`,
+                                  backgroundSize: 'cover',
+                                  backgroundPosition: 'center',
+                                  bgcolor: '#f8fafc',
+                                  zIndex: 3 
+                                }} />
+                                
+                                {/* Footer branding */}
+                                <Box sx={{ position: 'absolute', bottom: 24, left: 32, zIndex: 2 }}>
+                                  <Typography sx={{ fontWeight: 900, color: '#94a3b8', letterSpacing: '2px', fontSize: '0.65rem', textTransform: 'uppercase' }}>
+                                    foodnerve.org
+                                  </Typography>
+                                </Box>
+                              </>
+                            ) : (
+                              <>
+                                {/* Membership Header */}
+                                <Box sx={{ height: '35%', background: cardTheme, position: 'relative', overflow: 'hidden' }}>
+                                  <Box sx={{ position: 'absolute', top: -50, right: -50, width: 200, height: 200, background: 'radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%)', borderRadius: '50%' }} />
+                                  <Box sx={{ position: 'absolute', bottom: -30, left: -30, width: 120, height: 120, background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)', borderRadius: '50%' }} />
+                                </Box>
+
+                                {/* Massive Centered Avatar */}
+                                <Box sx={{ display: 'flex', justifyContent: 'center', mt: '-60px', position: 'relative', zIndex: 2 }}>
+                                  <Box sx={{ 
+                                    width: 120, height: 120, 
+                                    borderRadius: '50%', 
+                                    border: '6px solid #fff', 
+                                    backgroundImage: `url(${avatarUrl})`,
+                                    backgroundSize: 'cover',
+                                    backgroundPosition: 'center',
+                                    bgcolor: '#f8fafc' 
+                                  }} />
+                                </Box>
+
+                                {/* Main Body */}
+                                <Box sx={{ flexGrow: 1, p: 3, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 1 }}>
+                                  <Typography sx={{ fontWeight: 900, fontSize: '1.6rem', color: '#0f172a', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
+                                    {[...prefixes, firstName, lastName, ...suffixes].filter(Boolean).join(' ')}
+                                  </Typography>
+                                  <Typography sx={{ color: cardTheme, fontWeight: 800, textTransform: 'uppercase', fontSize: '0.8rem', letterSpacing: '2px', mb: 0.5 }}>
+                                    Proud Member of Food Nerve Society
+                                  </Typography>
+                                  
+                                  <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center', gap: 4, alignItems: 'flex-start' }}>
+                                    {darkpore.active && (
+                                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                                        <img src={darkpore.logoUrl || existingOrgs?.darkpore?.logoUrl || ''} style={{ height: 32, objectFit: 'contain' }} />
+                                        <Typography sx={{ color: '#0f172a', fontSize: '0.75rem', fontWeight: 700 }}>Darkpore</Typography>
+                                        <Typography sx={{ color: '#64748b', fontSize: '0.65rem', fontWeight: 600 }}>{darkpore.role}</Typography>
+                                      </Box>
+                                    )}
+                                    {foodnerve.active && (
+                                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                                        <img src={foodnerve.logoUrl || existingOrgs?.foodnerve?.logoUrl || ''} style={{ height: 32, objectFit: 'contain' }} />
+                                        <Typography sx={{ color: '#0f172a', fontSize: '0.75rem', fontWeight: 700 }}>Food Nerve</Typography>
+                                        <Typography sx={{ color: '#64748b', fontSize: '0.65rem', fontWeight: 600 }}>{foodnerve.role}</Typography>
+                                      </Box>
+                                    )}
+                                  </Box>
+                                </Box>
+
+                                <Box sx={{ p: 3, pt: 0, display: 'flex', justifyContent: 'center' }}>
+                                  <Typography sx={{ fontWeight: 900, color: '#cbd5e1', letterSpacing: '4px', fontSize: '0.7rem', textTransform: 'uppercase' }}>
+                                    foodnerve.org
+                                  </Typography>
+                                </Box>
+                              </>
+                            )}
                           </Box>
                         </Box>
                       </Box>
@@ -973,10 +1080,19 @@ export default function AdminOnboardingModal() {
                         </Box>
 
                         {submitError && (
-                        <Typography variant="body2" sx={{ color: '#ef4444', fontWeight: 600, textAlign: 'center', mt: 1 }}>
-                          {submitError}
-                        </Typography>
-                      )}
+                          <Box ref={errorRef} sx={{ mt: 2, scrollMarginTop: '20px' }}>
+                            <Alert severity="error" sx={{ borderRadius: 2, '& .MuiAlert-message': { fontWeight: 600 } }}>
+                              {submitError}
+                            </Alert>
+                          </Box>
+                        )}
+
+                        {loadingStep && loading && (
+                          <Box sx={{ mt: 2, p: 2, bgcolor: alpha('#10b981', 0.05), border: '1px solid', borderColor: alpha('#10b981', 0.2), borderRadius: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <CircularProgress size={20} sx={{ color: '#10b981' }} />
+                            <Typography variant="body2" sx={{ fontWeight: 600, color: '#059669' }}>{loadingStep}</Typography>
+                          </Box>
+                        )}
 
                       <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
                         <Button
