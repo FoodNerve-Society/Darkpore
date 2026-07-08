@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Box, Container, Typography, Card, CardContent, Stack, Button, Avatar, Chip, Divider, LinearProgress, Switch, FormControlLabel, Select, MenuItem, Paper, IconButton, alpha } from '@mui/material';
+import { Box, Container, Typography, Card, CardContent, Stack, Button, Avatar, Chip, Divider, LinearProgress, Switch, FormControlLabel, Select, MenuItem, Paper, IconButton, alpha, Dialog } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import { useSociety, RANK_NAMES, RANK_COLORS, calculateRank, type RankLevel } from '@/context/SocietyContext';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
@@ -35,6 +35,7 @@ export default function ProfilePage() {
   const { profile, activeOrg, switchOrg } = useSociety();
   const router = useRouter();
   const [isEditModalOpen, setEditModalOpen] = useState(false);
+  const [isCardsModalOpen, setIsCardsModalOpen] = useState(false);
 
   const cardRef1 = React.useRef<HTMLDivElement>(null);
   const cardRef2 = React.useRef<HTMLDivElement>(null);
@@ -307,7 +308,15 @@ export default function ProfilePage() {
           </Typography>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
             {profile.organizations.map((org) => (
-              <Box key={org.id} sx={{
+              <Box key={org.id} 
+                onClick={() => {
+                  if (profile.isAdmin) {
+                    setIsCardsModalOpen(true);
+                  } else {
+                    setEditModalOpen(true);
+                  }
+                }}
+                sx={{
                 bgcolor: 'rgba(255,255,255,0.6)',
                 backdropFilter: 'blur(20px)',
                 borderRadius: '20px',
@@ -315,6 +324,13 @@ export default function ProfilePage() {
                 border: '1px solid rgba(0,0,0,0.05)',
                 display: 'flex', gap: 3, alignItems: 'center',
                 boxShadow: '0 8px 32px rgba(0,0,0,0.02)',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                '&:hover': {
+                   transform: 'translateY(-2px)',
+                   boxShadow: '0 12px 40px rgba(0,0,0,0.06)',
+                   bgcolor: '#fff',
+                }
               }}>
                 <Avatar src={org.logoUrl} variant="rounded" sx={{ width: 64, height: 64, borderRadius: '16px', bgcolor: '#fff', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
                   {org.name.charAt(0)}
@@ -330,31 +346,52 @@ export default function ProfilePage() {
               </Box>
             ))}
           </Box>
+          <Typography sx={{ mt: 2, fontSize: '0.85rem', color: '#64748b', textAlign: 'center' }}>
+            Tap an affiliation to view your Executive Identity Cards or edit details.
+          </Typography>
         </Box>
       )}
 
-      {/* ─── EXECUTIVE IDENTITY CARDS ─── */}
-      {profile.isAdmin && (dpOrg || fnOrg) && (
-        <Box>
-          <Typography sx={{ fontWeight: 800, fontSize: '1.2rem', mb: 2, color: '#0f172a' }}>
+      {/* ─── EXECUTIVE IDENTITY CARDS MODAL ─── */}
+      <Dialog
+        open={isCardsModalOpen}
+        onClose={() => setIsCardsModalOpen(false)}
+        maxWidth="lg"
+        fullWidth
+        PaperProps={{
+          sx: { borderRadius: '24px', bgcolor: '#f8fafc', p: { xs: 2, md: 4 } }
+        }}
+      >
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Typography sx={{ fontWeight: 800, fontSize: '1.5rem', color: '#0f172a' }}>
             Executive Identity Cards
           </Typography>
-          <Typography variant="body2" sx={{ color: '#64748b', mb: 3 }}>
-            Download your officially generated ID cards to share across your networks.
-          </Typography>
+          <Button 
+            onClick={() => { setIsCardsModalOpen(false); setEditModalOpen(true); }} 
+            variant="contained" 
+            sx={{ borderRadius: '12px', bgcolor: '#1e293b', color: '#fff', '&:hover': { bgcolor: '#0f172a' } }} 
+            startIcon={<EditIcon />}
+          >
+            Edit Details
+          </Button>
+        </Box>
+        <Typography variant="body1" sx={{ color: '#64748b', mb: 4 }}>
+          Download your officially generated ID cards to share across your networks.
+        </Typography>
 
+        {profile.isAdmin && (dpOrg || fnOrg) && (
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' }, gap: 4 }}>
             {/* Card 1: Announcement */}
             <Box>
                <Box ref={cardRef1} sx={{ borderRadius: '24px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}>
-                  <ExecutiveCard cardTheme="dark" cardStyle="announcement" {...execProps} />
+                  <ExecutiveCard cardTheme="#0f172a" cardStyle="announcement" {...execProps} />
                </Box>
                <Button
                  fullWidth
                  variant="outlined"
                  startIcon={<DownloadIcon />}
                  onClick={() => exportCard1('executive_announcement.png')}
-                 sx={{ mt: 2, py: 1.5, borderRadius: '16px', fontWeight: 800, borderColor: 'rgba(0,0,0,0.1)', color: '#0f172a' }}
+                 sx={{ mt: 3, py: 1.5, borderRadius: '16px', fontWeight: 800, borderColor: 'rgba(0,0,0,0.1)', color: '#0f172a' }}
                >
                  Download Announcement
                </Button>
@@ -363,21 +400,21 @@ export default function ProfilePage() {
             {/* Card 2: Membership */}
             <Box>
                <Box ref={cardRef2} sx={{ borderRadius: '24px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}>
-                  <ExecutiveCard cardTheme="light" cardStyle="membership" {...execProps} />
+                  <ExecutiveCard cardTheme="#10b981" cardStyle="membership" {...execProps} />
                </Box>
                <Button
                  fullWidth
                  variant="outlined"
                  startIcon={<DownloadIcon />}
                  onClick={() => exportCard2('executive_id.png')}
-                 sx={{ mt: 2, py: 1.5, borderRadius: '16px', fontWeight: 800, borderColor: 'rgba(0,0,0,0.1)', color: '#0f172a' }}
+                 sx={{ mt: 3, py: 1.5, borderRadius: '16px', fontWeight: 800, borderColor: 'rgba(0,0,0,0.1)', color: '#0f172a' }}
                >
                  Download ID Card
                </Button>
             </Box>
           </Box>
-        </Box>
-      )}
+        )}
+      </Dialog>
 
       {/* ─── NERVE WALLET ─── */}
       <Box>
