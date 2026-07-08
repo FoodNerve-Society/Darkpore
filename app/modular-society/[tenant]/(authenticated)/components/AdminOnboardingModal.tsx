@@ -20,7 +20,8 @@ import {
   FormControlLabel,
   Switch,
   Checkbox,
-  Tooltip
+  Tooltip,
+  Alert
 } from '@mui/material';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
@@ -38,6 +39,7 @@ import { useStorageUpload } from '@/hooks/useStorageUpload';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import CheckIcon from '@mui/icons-material/Check';
 import { alpha } from '@mui/material';
+import { Country, State, City } from 'country-state-city';
 
 const ROLES = [
   'Founder', 'Chief Executive Officer', 'Director', 'Head of Department',
@@ -142,29 +144,29 @@ export default function AdminOnboardingModal() {
     setStep(2);
   };
 
+  const isOrgFilled = (state: OrgData, existingData: any) => {
+    const isExisting = !!existingData;
+    return state.active && (isExisting ? (state.role && state.department) : (state.role && state.department && state.longName && state.shortName && state.logoUrl));
+  };
+
+  const darkporeFilled = isOrgFilled(darkpore, existingOrgs?.darkpore);
+  const foodnerveFilled = isOrgFilled(foodnerve, existingOrgs?.foodnerve);
+
   const handleReviewClick = (e: React.FormEvent) => {
     e.preventDefault();
     if (!darkpore.active && !foodnerve.active) {
       setSubmitError("You must affiliate with at least one organization.");
       return;
     }
-    if (darkpore.active && (!darkpore.role || !darkpore.department)) {
-      setSubmitError("Please specify a department and role for Darkpore.");
+    if (darkpore.active && !darkporeFilled) {
+      setSubmitError("Please complete the required fields for Darkpore.");
       return;
     }
-    if (darkpore.active && !existingOrgs?.darkpore && !darkpore.logoUrl) {
-      setSubmitError("Please upload a logo for Darkpore.");
+    if (foodnerve.active && !foodnerveFilled) {
+      setSubmitError("Please complete the required fields for Food Nerve.");
       return;
     }
-    if (foodnerve.active && (!foodnerve.role || !foodnerve.department)) {
-      setSubmitError("Please specify a department and role for Food Nerve.");
-      return;
-    }
-    if (foodnerve.active && !existingOrgs?.foodnerve && !foodnerve.logoUrl) {
-      setSubmitError("Please upload a logo for Food Nerve.");
-      return;
-    }
-    setShowConfirmation(true);
+    setStep(3);
     setSubmitError("");
   };
 
@@ -230,8 +232,14 @@ export default function AdminOnboardingModal() {
   const renderOrgBlock = (key: 'darkpore' | 'foodnerve', defaultName: string, state: OrgData, setState: React.Dispatch<React.SetStateAction<OrgData>>, existingData: any, logoFile: File | null, setLogoFile: React.Dispatch<React.SetStateAction<File | null>>, color: string) => {
     const isExisting = !!existingData;
     const isFlipped = flippedBlockId === key;
-    const filled = state.active && (isExisting ? (state.role && state.department) : (state.role && state.department && state.longName && state.shortName && state.logoUrl));
+    const filled = isOrgFilled(state, existingData);
     const fillPercent = filled ? 100 : (state.active ? 50 : 0);
+
+    const countries = Country.getAllCountries();
+    const selectedCountry = countries.find(c => c.name === state.country);
+    const states = selectedCountry ? State.getStatesOfCountry(selectedCountry.isoCode) : [];
+    const selectedState = states.find(s => s.name === state.state);
+    const lgas = selectedCountry && selectedState ? City.getCitiesOfState(selectedCountry.isoCode, selectedState.isoCode) : [];
 
     return (
       <Box sx={{ perspective: '1600px', mb: 2.5 }}>
@@ -288,7 +296,7 @@ export default function AdminOnboardingModal() {
                       {defaultName}
                     </Typography>
                     <Box sx={{ px: 1, py: 0.5, borderRadius: '12px', fontSize: '0.7rem', bgcolor: filled ? 'rgba(255,255,255,0.2)' : alpha(color, 0.15), color: filled ? '#fff' : color, fontWeight: 700, border: `1px solid ${filled ? 'rgba(255,255,255,0.3)' : alpha(color, 0.2)}` }}>
-                      {state.active ? "Affiliated" : "Pending"}
+                      {state.active ? (filled ? "Completed" : "Incomplete") : "Click to Configure"}
                     </Box>
                   </Box>
                   <Typography sx={{ color: filled ? 'rgba(255,255,255,0.8)' : '#64748b', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }}>
@@ -318,14 +326,16 @@ export default function AdminOnboardingModal() {
               borderBottom: `1px solid rgba(0,0,0,0.06)`,
               background: alpha(color, 0.05),
             }}>
-              <Checkbox 
-                checked={state.active} 
-                onChange={(e) => setState({ ...state, active: e.target.checked })} 
-                sx={{ color, '&.Mui-checked': { color } }}
+              <FormControlLabel
+                control={<Switch size="medium" checked={state.active} onChange={(e) => setState({ ...state, active: e.target.checked })} sx={{ '& .MuiSwitch-switchBase.Mui-checked': { color }, '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: color } }} />}
+                label={
+                  <Box>
+                    <Typography sx={{ fontWeight: 800, color: '#0f172a', fontSize: '1.1rem' }}>Enable Affiliation</Typography>
+                    <Typography variant="caption" sx={{ color: '#64748b' }}>Include {defaultName} in your profile</Typography>
+                  </Box>
+                }
+                sx={{ flex: 1, m: 0 }}
               />
-              <Typography sx={{ fontWeight: 800, color: '#0f172a', fontSize: '1.1rem', flex: 1 }}>
-                Enable Affiliation
-              </Typography>
               <Tooltip title="Done editing">
                 <IconButton
                   size="medium"
@@ -382,6 +392,31 @@ export default function AdminOnboardingModal() {
                   
                   <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', md: 'row' } }}>
                     <Box sx={{ flex: 1 }}>
+                      <PremiumAutocomplete
+                        freeSolo
+                        label={`Department`}
+                        options={DEPARTMENTS}
+                        value={state.department}
+                        onChange={(_, newValue) => setState({ ...state, department: typeof newValue === 'string' ? newValue : '' })}
+                        onInputChange={(_, newInputValue) => setState({ ...state, department: newInputValue })}
+                        colorTheme={color}
+                      />
+                    </Box>
+                    <Box sx={{ flex: 1 }}>
+                      <PremiumAutocomplete
+                        freeSolo
+                        label={`Role/Designation in ${defaultName}`}
+                        options={ROLES}
+                        value={state.role}
+                        onChange={(_, newValue) => setState({ ...state, role: typeof newValue === 'string' ? newValue : '' })}
+                        onInputChange={(_, newInputValue) => setState({ ...state, role: newInputValue })}
+                        colorTheme={color}
+                      />
+                    </Box>
+                  </Box>
+
+                  <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', md: 'row' } }}>
+                    <Box sx={{ flex: 1 }}>
                       <PremiumTextField label="Organization Full Legal Name" value={state.longName} onChange={(e: any) => setState({...state, longName: e.target.value})} fullWidth colorTheme={color} required />
                     </Box>
                     <Box sx={{ flex: 1 }}>
@@ -402,7 +437,11 @@ export default function AdminOnboardingModal() {
                             if (e.target.files?.[0]) {
                                 const file = e.target.files[0];
                                 setLogoFile(file);
-                                setState({...state, logoUrl: URL.createObjectURL(file)});
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                    setState(prev => ({...prev, logoUrl: reader.result as string}));
+                                };
+                                reader.readAsDataURL(file);
                             }
                         }} />
                         {state.logoUrl ? (
@@ -430,17 +469,37 @@ export default function AdminOnboardingModal() {
                     
                     <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', md: 'row' } }}>
                       <Box sx={{ flex: 1 }}>
-                        <PremiumTextField label="Country" value={state.country} onChange={(e: any) => setState({...state, country: e.target.value})} fullWidth colorTheme={color} />
+                        <PremiumAutocomplete 
+                          label="Country" 
+                          options={countries.map(c => c.name)} 
+                          value={state.country || ''} 
+                          onChange={(_, v) => setState({...state, country: typeof v === 'string' ? v : '', state: '', lga: ''})} 
+                          colorTheme={color} 
+                        />
                       </Box>
                       <Box sx={{ flex: 1 }}>
-                        <PremiumTextField label="State/Province" value={state.state} onChange={(e: any) => setState({...state, state: e.target.value})} fullWidth colorTheme={color} />
+                        <PremiumAutocomplete 
+                          label="State/Province" 
+                          options={states.map(s => s.name)} 
+                          value={state.state || ''} 
+                          onChange={(_, v) => setState({...state, state: typeof v === 'string' ? v : '', lga: ''})} 
+                          colorTheme={color} 
+                          disabled={!state.country}
+                        />
                       </Box>
                     </Box>
                     
                     {!state.isVirtual && (
                       <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', md: 'row' } }}>
                         <Box sx={{ flex: 1 }}>
-                          <PremiumTextField label="LGA/County" value={state.lga} onChange={(e: any) => setState({...state, lga: e.target.value})} fullWidth colorTheme={color} />
+                          <PremiumAutocomplete 
+                            label="LGA/County/City" 
+                            options={lgas.map(l => l.name)} 
+                            value={state.lga || ''} 
+                            onChange={(_, v) => setState({...state, lga: typeof v === 'string' ? v : ''})} 
+                            colorTheme={color} 
+                            disabled={!state.state}
+                          />
                         </Box>
                         <Box sx={{ flex: 1 }}>
                           <PremiumTextField label="Street Address" value={state.address} onChange={(e: any) => setState({...state, address: e.target.value})} fullWidth colorTheme={color} />
@@ -576,7 +635,8 @@ export default function AdminOnboardingModal() {
             }}>
               {[ 
                 { num: 1, label: 'Personal Base', desc: 'Identify your profile' },
-                { num: 2, label: 'Affiliations', desc: 'Organizational ties' }
+                { num: 2, label: 'Affiliations', desc: 'Organizational ties' },
+                { num: 3, label: 'Review Details', desc: 'Confirm profile details' }
               ].map((s) => (
                 <Box key={s.num} sx={{ display: 'flex', alignItems: 'center', gap: 2, opacity: step === s.num ? 1 : 0.4, transition: 'all 0.3s ease' }}>
                   <Box sx={{ 
@@ -629,67 +689,41 @@ export default function AdminOnboardingModal() {
                 <AnimatePresence mode="wait" custom={step === 1 ? -1 : 1}>
                   {step === 1 && (
                     <Box component={motion.div} key="step1" custom={-1} variants={slideVariants} initial="hidden" animate="visible" exit="exit" sx={{ display: 'flex', flexDirection: 'column', gap: 3.5 }}>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 3 }}>
-                        <Box 
-                          component={motion.div}
-                          whileHover={{ scale: 1.05 }}
-                          sx={{ 
-                            position: 'relative',
-                            cursor: 'pointer',
-                            borderRadius: '50%',
-                            p: 1,
-                            background: avatarUrl ? 'linear-gradient(135deg, #10b981, #3b82f6)' : 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(59, 130, 246, 0.2))',
-                            boxShadow: avatarUrl ? '0 12px 32px rgba(16, 185, 129, 0.4)' : '0 12px 32px rgba(0, 0, 0, 0.1)',
-                            animation: !avatarUrl ? 'pulse 2s infinite' : 'none',
-                            '@keyframes pulse': {
-                              '0%': { boxShadow: '0 0 0 0 rgba(16, 185, 129, 0.4)' },
-                              '70%': { boxShadow: '0 0 0 15px rgba(16, 185, 129, 0)' },
-                              '100%': { boxShadow: '0 0 0 0 rgba(16, 185, 129, 0)' }
-                            }
-                          }}
-                        >
-                          <Avatar 
-                            src={avatarUrl} 
-                            sx={{ 
-                              width: 140, height: 140, 
-                              bgcolor: 'white', color: '#059669', fontSize: '3rem',
-                              border: '4px solid white',
-                              boxShadow: 'inset 0 4px 12px rgba(0,0,0,0.1)',
-                              transition: 'all 0.3s ease'
-                            }}
-                          >
-                            {firstName ? firstName.charAt(0).toUpperCase() : <PhotoCameraIcon sx={{ fontSize: 48, opacity: 0.5 }} />}
-                          </Avatar>
-                          <Button 
-                            component="label"
-                            variant="contained"
-                            startIcon={<PhotoCameraIcon />}
-                            sx={{ 
-                              position: 'absolute', bottom: -16, left: '50%', transform: 'translateX(-50%)',
-                              bgcolor: '#10b981', color: 'white',
-                              boxShadow: '0 8px 16px rgba(16, 185, 129, 0.4)',
-                              borderRadius: 100, px: 3, py: 1, whiteSpace: 'nowrap',
-                              fontWeight: 800, letterSpacing: '0.5px', textTransform: 'uppercase',
-                              fontSize: '0.75rem', '&:hover': { bgcolor: '#059669', transform: 'translateX(-50%) translateY(-2px)' }
-                            }}
-                          >
-                            Upload Profile
-                            <input 
-                              hidden accept="image/*" type="file" 
-                              onChange={(e) => {
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
+                        <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: '#64748b' }}>Professional Headshot (Required) *</Typography>
+                        <Box component="label" sx={{ 
+                            borderRadius: '16px', overflow: 'hidden', bgcolor: 'rgba(0,0,0,0.02)', 
+                            border: '2px dashed', borderColor: avatarUrl ? 'transparent' : 'rgba(0,0,0,0.15)', 
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', 
+                            minHeight: 160, cursor: 'pointer', position: 'relative', 
+                            transition: 'all 0.2s', '&:hover': { bgcolor: 'rgba(0,0,0,0.04)', borderColor: 'rgba(16, 185, 129, 0.4)' } 
+                        }}>
+                            <input type="file" hidden accept="image/*" onChange={(e) => {
                                 if (e.target.files?.[0]) {
-                                  setAvatarFile(e.target.files[0]);
-                                  setAvatarUrl(URL.createObjectURL(e.target.files[0]));
+                                    const file = e.target.files[0];
+                                    setAvatarFile(file);
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => {
+                                        setAvatarUrl(reader.result as string);
+                                    };
+                                    reader.readAsDataURL(file);
                                 }
-                              }}
-                            />
-                          </Button>
+                            }} />
+                            {avatarUrl ? (
+                                <Box sx={{ width: '100%', height: '100%', position: 'relative' }}>
+                                    <img src={avatarUrl} alt="Profile preview" style={{ width: '100%', height: 160, objectFit: 'cover' }} />
+                                    <Box sx={{ position: 'absolute', inset: 0, bgcolor: 'rgba(0,0,0,0.4)', opacity: 0, transition: 'opacity 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', '&:hover': { opacity: 1 } }}>
+                                        <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '0.9rem' }}>Change Photo</Typography>
+                                    </Box>
+                                </Box>
+                            ) : (
+                                <>
+                                    <PhotoCameraIcon sx={{ fontSize: 40, color: 'rgba(16, 185, 129, 0.5)', mb: 1 }} />
+                                    <Typography sx={{ color: '#64748b', fontSize: '0.95rem', fontWeight: 700 }}>Click to upload profile picture</Typography>
+                                    <Typography variant="caption" sx={{ color: '#94a3b8', mt: 0.5 }}>JPEG, PNG, or WebP (Max 5MB)</Typography>
+                                </>
+                            )}
                         </Box>
-                        {!avatarUrl && (
-                          <Typography variant="caption" sx={{ mt: 3, color: '#ef4444', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
-                            * Professional Headshot Required *
-                          </Typography>
-                        )}
                       </Box>
 
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -774,25 +808,13 @@ export default function AdminOnboardingModal() {
                         <Typography variant="body2" sx={{ color: '#64748b', lineHeight: 1.6 }}>
                           Establish your placement within the ecosystem's anchors.
                         </Typography>
+                        <Alert severity="info" sx={{ mt: 2, borderRadius: 2, '& .MuiAlert-message': { fontWeight: 600 } }}>
+                          You must belong to and complete the required fields for at least one organization to proceed.
+                        </Alert>
                       </Box>
 
                       {renderOrgBlock('darkpore', 'Darkpore', darkpore, setDarkpore, existingOrgs.darkpore, darkporeLogoFile, setDarkporeLogoFile, '#0ea5e9')}
                       {renderOrgBlock('foodnerve', 'Food Nerve', foodnerve, setFoodnerve, existingOrgs.foodnerve, foodnerveLogoFile, setFoodnerveLogoFile, '#10b981')}
-
-                      {showConfirmation && (
-                        <Box component={motion.div} initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} sx={{
-                          mt: 1, p: 3, borderRadius: 3, bgcolor: 'rgba(16, 185, 129, 0.05)',
-                          border: '1px solid rgba(16, 185, 129, 0.1)',
-                          display: 'flex', flexDirection: 'column', gap: 1
-                        }}>
-                          <Typography variant="subtitle2" sx={{ color: '#059669', fontWeight: 800, textTransform: 'uppercase', mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <CheckCircleOutlinedIcon fontSize="small" /> Please Confirm Details
-                          </Typography>
-                          <Typography variant="body2" sx={{ color: '#334155' }}><strong>Name:</strong> {firstName} {lastName}</Typography>
-                          {darkpore.active && <Typography variant="body2" sx={{ color: '#334155' }}><strong>Darkpore:</strong> {darkpore.role} ({darkpore.department})</Typography>}
-                          {foodnerve.active && <Typography variant="body2" sx={{ color: '#334155' }}><strong>Food Nerve:</strong> {foodnerve.role} ({foodnerve.department})</Typography>}
-                        </Box>
-                      )}
 
                       {submitError && (
                         <Typography variant="body2" sx={{ color: '#ef4444', fontWeight: 600, textAlign: 'center', mt: 1 }}>
@@ -802,10 +824,108 @@ export default function AdminOnboardingModal() {
 
                       <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
                         <Button
-                          onClick={() => {
-                            if (showConfirmation) setShowConfirmation(false);
-                            else setStep(1);
-                          }} 
+                          onClick={() => setStep(1)} 
+                          variant="outlined"
+                          disabled={loading}
+                          startIcon={<ArrowBackIcon />}
+                          sx={{
+                            py: 1.5, px: 3, borderRadius: 3, fontWeight: 700,
+                            color: '#475569', borderColor: 'rgba(0,0,0,0.08)',
+                            '&:hover': { bgcolor: 'rgba(0,0,0,0.02)', borderColor: 'rgba(0,0,0,0.15)' }
+                          }}
+                        >
+                          Back
+                        </Button>
+                        <Button
+                          type="submit" fullWidth variant="contained" 
+                          disabled={loading || uploading || (!darkpore.active && !foodnerve.active) || (darkpore.active && !darkporeFilled) || (foodnerve.active && !foodnerveFilled)}
+                          sx={{
+                            py: 1.5, borderRadius: 3, fontWeight: 800, fontSize: '0.95rem',
+                            letterSpacing: '0.5px', color: 'white',
+                            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                            boxShadow: '0 8px 24px rgba(16, 185, 129, 0.3), inset 0 1px 0 rgba(255,255,255,0.3)',
+                            textTransform: 'uppercase', transition: 'all 0.3s ease',
+                            '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 12px 28px rgba(16, 185, 129, 0.4), inset 0 1px 0 rgba(255,255,255,0.4)' },
+                            '&.Mui-disabled': { background: 'rgba(0,0,0,0.04)', color: 'rgba(0,0,0,0.25)', boxShadow: 'none' }
+                          }}
+                        >
+                          Review Details
+                        </Button>
+                      </Box>
+                    </Box>
+                  )}
+
+                  {step === 3 && (
+                    <Box component={motion.form} onSubmit={(e: React.FormEvent) => { e.preventDefault(); handleSubmit(); }} key="step3" custom={1} variants={slideVariants} initial="hidden" animate="visible" exit="exit" sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                      <Box sx={{ mb: 1 }}>
+                        <Typography variant="body1" sx={{ color: '#0f172a', fontWeight: 800, mb: 0.5 }}>Final Review</Typography>
+                        <Typography variant="body2" sx={{ color: '#64748b', lineHeight: 1.6 }}>
+                          Confirm your executive profile details before deployment.
+                        </Typography>
+                      </Box>
+
+                      <Box sx={{
+                        p: 4, borderRadius: '24px', 
+                        background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                        border: '1px solid rgba(0,0,0,0.05)',
+                        boxShadow: '0 20px 40px rgba(0,0,0,0.06), inset 0 1px 0 #fff',
+                        display: 'flex', flexDirection: 'column', gap: 3,
+                        position: 'relative', overflow: 'hidden'
+                      }}>
+                        <Box sx={{ position: 'absolute', top: -50, right: -50, width: 200, height: 200, background: 'radial-gradient(circle, rgba(16,185,129,0.08) 0%, transparent 70%)', borderRadius: '50%' }} />
+
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, position: 'relative', zIndex: 1 }}>
+                          <Avatar src={avatarUrl} sx={{ width: 80, height: 80, border: '3px solid #fff', boxShadow: '0 8px 16px rgba(0,0,0,0.1)' }} />
+                          <Box>
+                            <Typography sx={{ fontWeight: 900, fontSize: '1.4rem', color: '#0f172a', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+                              {[...prefixes, firstName, lastName, ...suffixes].filter(Boolean).join(' ')}
+                            </Typography>
+                            <Typography sx={{ color: '#64748b', fontSize: '0.9rem', mt: 0.5, fontWeight: 500, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                              {bio}
+                            </Typography>
+                          </Box>
+                        </Box>
+
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, position: 'relative', zIndex: 1 }}>
+                          <Typography variant="subtitle2" sx={{ color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.75rem' }}>
+                            Confirmed Affiliations
+                          </Typography>
+                          
+                          {darkpore.active && (
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, borderRadius: '16px', bgcolor: 'rgba(14, 165, 233, 0.05)', border: '1px solid rgba(14, 165, 233, 0.1)' }}>
+                              <Avatar src={darkpore.logoUrl || existingOrgs?.darkpore?.logoUrl} sx={{ width: 40, height: 40, bgcolor: '#fff', border: '1px solid rgba(0,0,0,0.05)' }}>
+                                <BusinessIcon fontSize="small" sx={{ color: '#0ea5e9' }} />
+                              </Avatar>
+                              <Box>
+                                <Typography sx={{ fontWeight: 800, color: '#0ea5e9' }}>Darkpore</Typography>
+                                <Typography variant="body2" sx={{ color: '#475569', fontWeight: 500 }}>{darkpore.role} • {darkpore.department}</Typography>
+                              </Box>
+                            </Box>
+                          )}
+
+                          {foodnerve.active && (
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, borderRadius: '16px', bgcolor: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.1)' }}>
+                              <Avatar src={foodnerve.logoUrl || existingOrgs?.foodnerve?.logoUrl} sx={{ width: 40, height: 40, bgcolor: '#fff', border: '1px solid rgba(0,0,0,0.05)' }}>
+                                <BusinessIcon fontSize="small" sx={{ color: '#10b981' }} />
+                              </Avatar>
+                              <Box>
+                                <Typography sx={{ fontWeight: 800, color: '#10b981' }}>Food Nerve</Typography>
+                                <Typography variant="body2" sx={{ color: '#475569', fontWeight: 500 }}>{foodnerve.role} • {foodnerve.department}</Typography>
+                              </Box>
+                            </Box>
+                          )}
+                        </Box>
+                      </Box>
+
+                      {submitError && (
+                        <Typography variant="body2" sx={{ color: '#ef4444', fontWeight: 600, textAlign: 'center', mt: 1 }}>
+                          {submitError}
+                        </Typography>
+                      )}
+
+                      <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+                        <Button
+                          onClick={() => setStep(2)} 
                           variant="outlined"
                           disabled={loading}
                           startIcon={<ArrowBackIcon />}
@@ -829,7 +949,7 @@ export default function AdminOnboardingModal() {
                             '&.Mui-disabled': { background: 'rgba(0,0,0,0.04)', color: 'rgba(0,0,0,0.25)', boxShadow: 'none' }
                           }}
                         >
-                          {loading ? <CircularProgress size={24} sx={{ color: 'white' }} /> : (showConfirmation ? 'Finalize Profile' : 'Review Details')}
+                          {loading ? <CircularProgress size={24} sx={{ color: 'white' }} /> : 'Finalize Profile'}
                         </Button>
                       </Box>
                     </Box>
