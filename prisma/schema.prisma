@@ -84,10 +84,12 @@ model Organization {
   lga       String?
   address   String?
   isVirtual Boolean  @default(false)
+  isExternal Boolean @default(false)
 
   // Relations
   members        OrganizationMember[]
   communityGroup CommunityGroup?
+  tradeListings  TradeListing[]
 }
 
 model OrganizationMember {
@@ -149,6 +151,9 @@ model TradeListing {
   // Relations
   postedById String
   postedBy   User   @relation(fields: [postedById], references: [id], onDelete: Cascade)
+
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
 }
 
 model Campaign {

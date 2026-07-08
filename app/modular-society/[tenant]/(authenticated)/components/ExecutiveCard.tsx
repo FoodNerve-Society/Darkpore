@@ -15,6 +15,14 @@ export type ExecutiveCardProps = {
   foodnerve: { active: boolean; role?: string; department?: string; logoUrl?: string };
 };
 
+const safeAlpha = (color: string, opacity: number) => {
+  try {
+    return alpha(color, opacity);
+  } catch (e) {
+    return `rgba(0,0,0,${opacity})`;
+  }
+};
+
 const ExecutiveCard = forwardRef<HTMLDivElement, ExecutiveCardProps>(({
   cardTheme,
   cardStyle,
@@ -30,8 +38,8 @@ const ExecutiveCard = forwardRef<HTMLDivElement, ExecutiveCardProps>(({
     <Box ref={ref} sx={{
       p: 4, borderRadius: '24px', 
       background: '#ffffff',
-      border: `1px solid ${alpha(cardTheme, 0.1)}`,
-      boxShadow: `0 20px 40px ${alpha(cardTheme, 0.15)}`,
+      border: `1px solid ${safeAlpha(cardTheme, 0.1)}`,
+      boxShadow: `0 20px 40px ${safeAlpha(cardTheme, 0.15)}`,
       display: 'flex', flexDirection: 'column',
       position: 'relative', overflow: 'hidden',
       width: { xs: 320, sm: 400 },
@@ -39,8 +47,8 @@ const ExecutiveCard = forwardRef<HTMLDivElement, ExecutiveCardProps>(({
     }}>
       {cardStyle === 'announcement' ? (
         <>
-          <Box sx={{ position: 'absolute', top: -50, right: -50, width: 300, height: 300, background: `radial-gradient(circle, ${alpha(cardTheme, 0.05)} 0%, transparent 70%)`, borderRadius: '50%', zIndex: 1 }} />
-          <Box sx={{ position: 'absolute', bottom: -50, left: -50, width: 250, height: 250, background: `radial-gradient(circle, ${alpha(cardTheme, 0.05)} 0%, transparent 70%)`, borderRadius: '50%', zIndex: 1 }} />
+          <Box sx={{ position: 'absolute', top: -50, right: -50, width: 300, height: 300, background: `radial-gradient(circle, ${safeAlpha(cardTheme, 0.05)} 0%, transparent 70%)`, borderRadius: '50%', zIndex: 1 }} />
+          <Box sx={{ position: 'absolute', bottom: -50, left: -50, width: 250, height: 250, background: `radial-gradient(circle, ${safeAlpha(cardTheme, 0.05)} 0%, transparent 70%)`, borderRadius: '50%', zIndex: 1 }} />
 
           <Box sx={{ display: 'flex', gap: 3, alignItems: 'center', mb: 3, zIndex: 2 }}>
             {darkpore.active && darkpore.logoUrl && (

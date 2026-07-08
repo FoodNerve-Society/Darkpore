@@ -48,9 +48,9 @@ const LISTING_OPTIONS = [
 ];
 
 const hiringEntityOptions = [
-  { id: 'org', title: 'My Organization', desc: 'Direct hire for your business', minRank: 4 },
-  { id: 'foodnerve', title: 'Food Nerve Core', desc: 'Recruit for Food Nerve', reqAdmin: true },
-  { id: 'external', title: 'External Company', desc: 'Sourcing labor (Costs NP)', minRank: 2 }
+  { id: 'my-org', title: 'My Organisations', desc: 'Direct hire for your business', minRank: 2 },
+  { id: 'foodnerve-org', title: 'Organisations in Food Nerve', desc: 'Recruit for a verified partner', reqAdmin: false },
+  { id: 'external', title: 'External Organisations', desc: 'Sourcing labor for an outside entity', minRank: 2 }
 ];
 
 const TRADE_CONFIGS: Record<string, any[]> = {

@@ -16,7 +16,9 @@ import {
   Chip,
   IconButton,
   Tooltip,
-  Alert
+  Alert,
+  Select,
+  MenuItem
 } from "@mui/material";
 
 import { useRouter } from "next/navigation";
@@ -54,19 +56,19 @@ const EMERALD = "#10b981";
 const EMERALD_DARK = "#059669";
 
 const LISTING_FRAMEWORK = [
-  { id: 'overview', type: 'role_overview', role: 'The Primary Mandate', desc: 'Define the title, company, and sector to attract the right talent.', hint: 'e.g. Senior Agronomist' },
+  { id: 'identity', type: 'identity', role: 'The Hiring Identity', desc: 'Establish the organization posting this job.', hint: '' },
+  { id: 'mandate', type: 'mandate', role: 'The Primary Mandate', desc: 'Define the title, sector, and provide the deep dive description.', hint: 'e.g. Senior Agronomist' },
   { id: 'geography', type: 'geography', role: 'The Ground Operations', desc: 'Specify exactly where this role executes and the base of operations.', hint: '' },
-  { id: 'compensation', type: 'compensation', role: 'The Value Exchange', desc: 'Set the duration, escrow terms, and financial commitment.', hint: '' },
-  { id: 'description', type: 'description', role: 'The Deep Dive', desc: 'Provide the full requirements, responsibilities, and context.', hint: '' }
+  { id: 'compensation', type: 'compensation', role: 'The Value Exchange', desc: 'Set the duration, escrow terms, and financial commitment.', hint: '' }
 ];
 
 const CURRENCY_OPTIONS = ["USD", "EUR", "GBP", "NGN", "KES", "ZAR", "RWF", "UGX", "GHS"];
 
 const BLOCK_DEFINITIONS: Record<string, { label: string, color: string }> = {
-  role_overview: { label: 'Role Overview', color: '#3b82f6' },
+  identity: { label: 'Hiring Identity', color: '#ef4444' },
+  mandate: { label: 'Primary Mandate', color: '#3b82f6' },
   geography: { label: 'Location Details', color: '#10b981' },
   compensation: { label: 'Terms & Comp', color: '#f59e0b' },
-  description: { label: 'Full Description', color: '#8b5cf6' },
 };
 
 const glassCard = {
@@ -105,15 +107,19 @@ export default function CreateListingForm({
   // Form State
   const [title, setTitle] = useState("");
   
-  // Company Logic
+  // Identity Logic
   const tertiary = initialSelections?.tertiary;
-  const isFoodNerve = tertiary === 'foodnerve';
-  const isMyOrg = tertiary === 'org';
-  const [companyName, setCompanyName] = useState(
-      isFoodNerve ? "Food Nerve Core" : 
-      isMyOrg ? (activeOrg?.name || profile?.displayName || "My Organization") : ""
-  );
-  const companyDisabled = isFoodNerve || isMyOrg;
+  const isFoodNerve = tertiary === 'foodnerve-org';
+  const isMyOrg = tertiary === 'my-org';
+  const isExternal = tertiary === 'external';
+
+  const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
+  
+  // For External Organization
+  const [externalEntityName, setExternalEntityName] = useState("");
+  const [externalIndustry, setExternalIndustry] = useState("");
+  const [externalCountry, setExternalCountry] = useState<any>(null);
+
   const [category, setCategory] = useState<string | null>(null);
   
   // Geography
@@ -144,11 +150,9 @@ export default function CreateListingForm({
   }, [selectedState, selectedCountry]);
 
   // Compensation
-  const [companyLogoUrl, setCompanyLogoUrl] = useState(
-      isFoodNerve ? "https://foodnerve.com/logo.png" : 
-      (isMyOrg && activeOrg?.logoUrl) ? activeOrg.logoUrl : ""
-  );
-  const [companyLogoFile, setCompanyLogoFile] = useState<File | null>(null);
+  // External Logo
+  const [externalEntityLogoUrl, setExternalEntityLogoUrl] = useState("");
+  const [externalEntityLogoFile, setExternalEntityLogoFile] = useState<File | null>(null);
   const { uploadFile, uploading: uploadingLogo } = useStorageUpload();
   const [deadline, setDeadline] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -222,18 +226,23 @@ export default function CreateListingForm({
     let filled = 0;
     let total = 1;
     switch(blockId) {
-      case 'overview':
+      case 'identity':
+        total = 1;
+        if (isExternal) {
+            total = 4; // Name, Industry, Country, Logo
+            if (externalEntityName.trim().length > 0) filled++;
+            if (externalIndustry) filled++;
+            if (externalCountry) filled++;
+            if (externalEntityLogoUrl.trim().length > 0) filled++;
+        } else {
+            if (selectedEntityId) filled++;
+        }
+        break;
+      case 'mandate':
         total = 3;
         if (title.trim().length >= 5) filled++;
-        if (companyName.trim().length > 0) {
-            // If it's a new company, logo is required
-            if (!companyDisabled) {
-                total++; // Needs logo
-                if (companyLogoUrl.trim().length > 0) filled++;
-            }
-            filled++;
-        }
         if (category) filled++;
+        if (description.length > 20) filled++;
         break;
       case 'geography':
         total = 1;
@@ -260,10 +269,6 @@ export default function CreateListingForm({
            if (minSalary) filled++;
            if (maxSalary) filled++;
         }
-        break;
-      case 'description':
-        total = 1;
-        if (description.length > 20) filled++;
         break;
     }
     return { filled, total };
@@ -342,16 +347,19 @@ export default function CreateListingForm({
     setIsSubmitting(true);
     
     // Upload Logo if a local file was selected
-    let finalLogoUrl = companyLogoUrl;
-    if (companyLogoFile && !companyDisabled) {
-        const result = await uploadFile(companyLogoFile);
+    let finalLogoUrl = "";
+    if (isExternal && externalEntityLogoFile) {
+        const result = await uploadFile(externalEntityLogoFile);
         if (result?.publicUrl || result?.secure_url) {
             finalLogoUrl = result.publicUrl || result.secure_url;
+            setExternalEntityLogoUrl(finalLogoUrl);
         } else {
-            alert("Failed to upload company logo. Try again.");
+            alert("Failed to upload external organization logo. Try again.");
             setIsSubmitting(false);
             return;
         }
+    } else if (isExternal) {
+        finalLogoUrl = externalEntityLogoUrl;
     }
 
     const isVolunteer = initialCategory?.toLowerCase().includes('volunteer');
@@ -359,6 +367,14 @@ export default function CreateListingForm({
     let locationString = `${selectedCountry?.name || ''}`;
     if (selectedState) locationString = `${selectedState.name}, ${locationString}`;
     if (selectedCity) locationString = `${selectedCity.name}, ${locationString}`;
+
+    // Determine the organizationId
+    let organizationId = selectedEntityId;
+    if (isMyOrg || isFoodNerve) {
+        organizationId = selectedEntityId; // User selected an org from dropdown
+    } else if (isExternal) {
+        organizationId = null; // We will handle creating external org in the server action if organizationId is not passed, but we pass metadata
+    }
 
     const metadata = {
       sector: category?.replace('  ↳ ', '') || '',
@@ -371,11 +387,15 @@ export default function CreateListingForm({
       startDate,
       endDate,
       npAmount: npAmount ? parseInt(npAmount) : undefined,
-      companyName,
-      companyLogoUrl: finalLogoUrl,
       commitment: initialSelections?.primary,
       workModel: initialSelections?.secondary,
-      hiringEntity: initialSelections?.tertiary
+      hiringEntity: initialSelections?.tertiary,
+      // External organization data
+      isExternal,
+      externalEntityName: isExternal ? externalEntityName : undefined,
+      externalIndustry: isExternal ? externalIndustry : undefined,
+      externalCountry: isExternal ? externalCountry?.name : undefined,
+      externalEntityLogoUrl: isExternal ? finalLogoUrl : undefined,
     };
 
     const res = await createTradeListing({ 
@@ -385,7 +405,8 @@ export default function CreateListingForm({
       priceOrAsk: isVolunteer ? (npAmount || "0") : `${currency} ${minSalary} - ${maxSalary}`, 
       location: locationString, 
       lga: selectedCity?.name || "", 
-      postedById: postingAs === 'organization' && selectedOrgId ? selectedOrgId : profile?.uid || "anon", 
+      postedById: profile?.uid || "anon", 
+      organizationId,
       nervePointsCost: 0,
       status,
       metadata
@@ -662,57 +683,91 @@ export default function CreateListingForm({
                       {/* Back form fields */}
                       <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                         
-                        {b.id === 'overview' && (
+                        {b.id === 'identity' && (
                           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                              <PremiumTextField colorTheme={color} fullWidth label="Listing Title *" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Senior Agronomist" />
-                              <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', sm: 'row' } }}>
+                              {!isExternal ? (
                                   <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                      <PremiumTextField colorTheme={color} fullWidth label="Hiring Entity / Company *" value={companyName} onChange={(e) => setCompanyName(e.target.value)} disabled={companyDisabled} />
+                                      <Select
+                                        size="medium"
+                                        value={selectedEntityId || ''}
+                                        onChange={(e) => setSelectedEntityId(e.target.value)}
+                                        displayEmpty
+                                        sx={{ borderRadius: '12px', height: 48, fontWeight: 700, bgcolor: 'rgba(0,0,0,0.02)' }}
+                                      >
+                                        <MenuItem value="" disabled>Select Organization</MenuItem>
+                                        {profile?.organizations?.filter((o: any) => isFoodNerve ? o.id === 'fn-core' : o.id !== 'fn-core').map((org: any) => (
+                                          <MenuItem key={org.id} value={org.id}>{org.name}</MenuItem>
+                                        ))}
+                                      </Select>
                                       {/* Alert if their org has no logo */}
-                                      {companyDisabled && !companyLogoUrl && (
+                                      {selectedEntityId && profile?.organizations?.find((o: any) => o.id === selectedEntityId) && !profile.organizations.find((o: any) => o.id === selectedEntityId).logoUrl && (
                                           <Alert severity="warning" sx={{ borderRadius: 2, bgcolor: alpha('#f59e0b', 0.1), color: '#d97706', '& .MuiAlert-icon': { color: '#f59e0b' }, fontSize: '0.85rem' }}>
                                               Your organization is missing a logo. Ask your admin to add one to improve listing validity.
                                           </Alert>
                                       )}
-                                      {/* If company is custom, ask for logo immediately */}
-                                      {!companyDisabled && (
-                                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: 1 }}>
-                                              <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: '#64748b' }}>Company Logo (Required) *</Typography>
-                                              <Box component="label" sx={{ 
-                                                  borderRadius: '16px', overflow: 'hidden', bgcolor: 'rgba(0,0,0,0.02)', 
-                                                  border: '2px dashed', borderColor: companyLogoUrl ? 'transparent' : 'rgba(0,0,0,0.15)', 
-                                                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', 
-                                                  minHeight: 120, cursor: 'pointer', position: 'relative', 
-                                                  transition: 'all 0.2s', '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' } 
-                                              }}>
-                                                  <input type="file" hidden accept="image/*" onChange={(e) => {
-                                                      if (e.target.files?.[0]) {
-                                                          const file = e.target.files[0];
-                                                          setCompanyLogoFile(file);
-                                                          setCompanyLogoUrl(URL.createObjectURL(file));
-                                                      }
-                                                  }} />
-                                                  {companyLogoUrl ? (
-                                                      <Box sx={{ width: '100%', height: '100%', position: 'relative' }}>
-                                                          <img src={companyLogoUrl} alt="Logo preview" style={{ width: '100%', height: 120, objectFit: 'contain', padding: '8px' }} />
-                                                          <Box sx={{ position: 'absolute', inset: 0, bgcolor: 'rgba(0,0,0,0.4)', opacity: 0, transition: 'opacity 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', '&:hover': { opacity: 1 } }}>
-                                                              <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '0.85rem' }}>Change Logo</Typography>
-                                                          </Box>
-                                                      </Box>
-                                                  ) : (
-                                                      <>
-                                                          <CloudUploadIcon sx={{ fontSize: 32, color: 'rgba(0,0,0,0.2)', mb: 1 }} />
-                                                          <Typography sx={{ color: '#64748b', fontSize: '0.85rem', fontWeight: 600 }}>Click to upload logo</Typography>
-                                                      </>
-                                                  )}
-                                              </Box>
+                                  </Box>
+                              ) : (
+                                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                      <PremiumTextField colorTheme={color} fullWidth label="External Organization Name *" value={externalEntityName} onChange={(e) => setExternalEntityName(e.target.value)} placeholder="e.g. Acme Corp" />
+                                      <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', sm: 'row' } }}>
+                                          <Box sx={{ flex: 1 }}>
+                                              <PremiumTextField colorTheme={color} fullWidth label="Industry *" value={externalIndustry} onChange={(e) => setExternalIndustry(e.target.value)} placeholder="e.g. Logistics" />
                                           </Box>
-                                      )}
+                                          <Box sx={{ flex: 1 }}>
+                                              <PremiumAutocomplete colorTheme={color} label="Country *" options={countries} getOptionLabel={(opt: any) => opt.name || ''} value={externalCountry} onChange={(e, val) => setExternalCountry(val)} />
+                                          </Box>
+                                      </Box>
+                                      
+                                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: 1 }}>
+                                          <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: '#64748b' }}>Company Logo (Required) *</Typography>
+                                          <Box component="label" sx={{ 
+                                              borderRadius: '16px', overflow: 'hidden', bgcolor: 'rgba(0,0,0,0.02)', 
+                                              border: '2px dashed', borderColor: externalEntityLogoUrl ? 'transparent' : 'rgba(0,0,0,0.15)', 
+                                              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', 
+                                              minHeight: 120, cursor: 'pointer', position: 'relative', 
+                                              transition: 'all 0.2s', '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' } 
+                                          }}>
+                                              <input type="file" hidden accept="image/*" onChange={(e) => {
+                                                  if (e.target.files?.[0]) {
+                                                      const file = e.target.files[0];
+                                                      setExternalEntityLogoFile(file);
+                                                      setExternalEntityLogoUrl(URL.createObjectURL(file));
+                                                  }
+                                              }} />
+                                              {externalEntityLogoUrl ? (
+                                                  <Box sx={{ width: '100%', height: '100%', position: 'relative' }}>
+                                                      <img src={externalEntityLogoUrl} alt="Logo preview" style={{ width: '100%', height: 120, objectFit: 'contain', padding: '8px' }} />
+                                                      <Box sx={{ position: 'absolute', inset: 0, bgcolor: 'rgba(0,0,0,0.4)', opacity: 0, transition: 'opacity 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', '&:hover': { opacity: 1 } }}>
+                                                          <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '0.85rem' }}>Change Logo</Typography>
+                                                      </Box>
+                                                  </Box>
+                                              ) : (
+                                                  <>
+                                                      <CloudUploadIcon sx={{ fontSize: 32, color: 'rgba(0,0,0,0.2)', mb: 1 }} />
+                                                      <Typography sx={{ color: '#64748b', fontSize: '0.85rem', fontWeight: 600 }}>Click to upload logo</Typography>
+                                                  </>
+                                              )}
+                                          </Box>
+                                      </Box>
                                   </Box>
-                                  <Box sx={{ flex: 1 }}>
-                                      <PremiumAutocomplete colorTheme={color} label="Sector / Category *" options={CATEGORY_OPTIONS} value={category} onChange={(e, val) => setCategory(val as string)} />
-                                  </Box>
-                              </Box>
+                              )}
+                          </Box>
+                        )}
+
+                        {b.id === 'mandate' && (
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                              <PremiumTextField colorTheme={color} fullWidth label="Listing Title *" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Senior Agronomist" />
+                              <PremiumAutocomplete colorTheme={color} label="Sector / Category *" options={CATEGORY_OPTIONS} value={category} onChange={(e, val) => setCategory(val as string)} />
+                              
+                              <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: '#64748b', mt: 2, mb: -1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Full Description</Typography>
+                              <PremiumMarkdownEditor 
+                                  colorTheme={color}
+                                  value={description}
+                                  onChange={(e: any) => setDescription(e.target.value)}
+                                  rows={8}
+                                  label="Responsibilities & Context"
+                                  placeholder="Write a detailed description. Use formatting tools above to structure responsibilities, expectations, etc."
+                              />
                           </Box>
                         )}
 
@@ -796,17 +851,6 @@ export default function CreateListingForm({
                             )}
                           </Box>
                         )}
-
-                        {b.id === 'description' && (
-                          <PremiumMarkdownEditor 
-                              colorTheme={color}
-                              value={description}
-                              onChange={(e: any) => setDescription(e.target.value)}
-                              rows={8}
-                              label="Responsibilities & Context"
-                              placeholder="Write a detailed description. Use formatting tools above to structure responsibilities, expectations, etc."
-                          />
-                        )}
                         
                         {/* Done Button on back face */}
                         <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
@@ -834,8 +878,8 @@ export default function CreateListingForm({
             onClose={() => setShowPreview(false)}
             data={{
               title,
-              companyName,
-              companyLogoUrl,
+              companyName: isExternal ? externalEntityName : profile?.organizations?.find((o: any) => o.id === selectedEntityId)?.name || 'Unknown Entity',
+              companyLogoUrl: isExternal ? externalEntityLogoUrl : profile?.organizations?.find((o: any) => o.id === selectedEntityId)?.logoUrl || '',
               category: category || '',
               locationString: selectedCountry ? `${selectedCity ? selectedCity.name + ', ' : ''}${selectedState ? selectedState.name + ', ' : ''}${selectedCountry.name}` : '',
               duration,
