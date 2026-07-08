@@ -117,8 +117,57 @@ export default function CreateListingForm({
   
   // For External Organization
   const [externalEntityName, setExternalEntityName] = useState("");
-  const [externalIndustry, setExternalIndustry] = useState("");
+  const [externalEntityShortName, setExternalEntityShortName] = useState("");
   const [externalCountry, setExternalCountry] = useState<any>(null);
+  const [externalState, setExternalState] = useState<any>(null);
+  const [externalLga, setExternalLga] = useState<any>(null);
+  const [externalStates, setExternalStates] = useState<any[]>([]);
+  const [externalCities, setExternalCities] = useState<any[]>([]);
+
+  // Food Nerve Organizations
+  const [foodNerveOrgs, setFoodNerveOrgs] = useState<any[]>([]);
+  const [loadingFoodNerveOrgs, setLoadingFoodNerveOrgs] = useState(false);
+
+  useEffect(() => {
+      if (initialSelections?.tertiary === 'food-nerve' && foodNerveOrgs.length === 0) {
+          setLoadingFoodNerveOrgs(true);
+          import("@/lib/actions/organizations").then(({ getFoodNerveOrganizations }) => {
+              getFoodNerveOrganizations().then((res) => {
+                  if (res.success && res.data) {
+                      setFoodNerveOrgs(res.data);
+                  }
+                  setLoadingFoodNerveOrgs(false);
+              });
+          });
+      }
+  }, [initialSelections?.tertiary]);
+
+  useEffect(() => {
+      if (externalCountry) {
+          setExternalStates(State.getStatesOfCountry(externalCountry.isoCode));
+          setExternalState(null);
+          setExternalLga(null);
+      } else {
+          setExternalStates([]);
+      }
+  }, [externalCountry]);
+
+  // Auto-select if My Organisation and user only has 1
+  useEffect(() => {
+      const isMyOrg = initialSelections?.tertiary === 'my-org';
+      if (isMyOrg && profile?.organizations?.length === 1 && !selectedEntityId) {
+          setSelectedEntityId(profile.organizations[0].id);
+      }
+  }, [initialSelections?.tertiary, profile?.organizations]);
+
+  useEffect(() => {
+      if (externalState && externalCountry) {
+          setExternalCities(City.getCitiesOfState(externalCountry.isoCode, externalState.isoCode));
+          setExternalLga(null);
+      } else {
+          setExternalCities([]);
+      }
+  }, [externalState, externalCountry]);
 
   const [category, setCategory] = useState<string | null>(null);
   
@@ -229,10 +278,8 @@ export default function CreateListingForm({
       case 'identity':
         total = 1;
         if (isExternal) {
-            total = 4; // Name, Industry, Country, Logo
+            total = 2; // Name and Logo are compulsory
             if (externalEntityName.trim().length > 0) filled++;
-            if (externalIndustry) filled++;
-            if (externalCountry) filled++;
             if (externalEntityLogoUrl.trim().length > 0) filled++;
         } else {
             if (selectedEntityId) filled++;
@@ -393,8 +440,10 @@ export default function CreateListingForm({
       // External organization data
       isExternal,
       externalEntityName: isExternal ? externalEntityName : undefined,
-      externalIndustry: isExternal ? externalIndustry : undefined,
+      externalEntityShortName: isExternal ? externalEntityShortName : undefined,
       externalCountry: isExternal ? externalCountry?.name : undefined,
+      externalState: isExternal ? externalState?.name : undefined,
+      externalLga: isExternal ? externalLga?.name : undefined,
       externalEntityLogoUrl: isExternal ? finalLogoUrl : undefined,
     };
 
@@ -687,34 +736,116 @@ export default function CreateListingForm({
                           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                               {!isExternal ? (
                                   <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                      <Select
-                                        size="medium"
-                                        value={selectedEntityId || ''}
-                                        onChange={(e) => setSelectedEntityId(e.target.value)}
-                                        displayEmpty
-                                        sx={{ borderRadius: '12px', height: 48, fontWeight: 700, bgcolor: 'rgba(0,0,0,0.02)' }}
-                                      >
-                                        <MenuItem value="" disabled>Select Organization</MenuItem>
-                                        {profile?.organizations?.filter((o: any) => isFoodNerve ? o.id === 'fn-core' : o.id !== 'fn-core').map((org: any) => (
-                                          <MenuItem key={org.id} value={org.id}>{org.name}</MenuItem>
-                                        ))}
-                                      </Select>
-                                      {/* Alert if their org has no logo */}
-                                      {selectedEntityId && profile?.organizations?.find((o: any) => o.id === selectedEntityId) && !profile.organizations.find((o: any) => o.id === selectedEntityId).logoUrl && (
-                                          <Alert severity="warning" sx={{ borderRadius: 2, bgcolor: alpha('#f59e0b', 0.1), color: '#d97706', '& .MuiAlert-icon': { color: '#f59e0b' }, fontSize: '0.85rem' }}>
-                                              Your organization is missing a logo. Ask your admin to add one to improve listing validity.
-                                          </Alert>
-                                      )}
+                                      {/* Mock FoodNerve Orgs for demo purposes, since global org search API is pending */}
+                                      {(() => {
+                                          if (isMyOrg) {
+                                              const userOrgs = profile?.organizations || [];
+                                              return (
+                                                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                                      {userOrgs.map((org: any) => {
+                                                          const isSelected = selectedEntityId === org.id;
+                                                          return (
+                                                              <Paper 
+                                                                  key={org.id}
+                                                                  onClick={() => setSelectedEntityId(org.id)}
+                                                                  sx={{ 
+                                                                      p: 2, borderRadius: '16px', display: 'flex', alignItems: 'center', gap: 2,
+                                                                      border: `2px solid ${isSelected ? color : 'transparent'}`, 
+                                                                      bgcolor: isSelected ? alpha(color, 0.05) : 'rgba(0,0,0,0.02)',
+                                                                      cursor: 'pointer', transition: 'all 0.2s',
+                                                                      opacity: selectedEntityId && !isSelected ? 0.5 : 1,
+                                                                      '&:hover': { bgcolor: isSelected ? alpha(color, 0.08) : 'rgba(0,0,0,0.04)' }
+                                                                  }}
+                                                              >
+                                                                  <Box sx={{ width: 48, height: 48, borderRadius: '12px', bgcolor: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px solid rgba(0,0,0,0.05)' }}>
+                                                                      {org.logoUrl ? (
+                                                                          <img src={org.logoUrl} alt={org.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                                                      ) : (
+                                                                          <WorkIcon sx={{ color: 'rgba(0,0,0,0.2)' }} />
+                                                                      )}
+                                                                  </Box>
+                                                                  <Box sx={{ flex: 1 }}>
+                                                                      <Typography sx={{ fontWeight: 800, color: '#0f172a' }}>{org.name}</Typography>
+                                                                      <Typography sx={{ fontSize: '0.85rem', color: '#64748b' }}>{org.role || 'Verified Entity'}</Typography>
+                                                                  </Box>
+                                                                  {isSelected && <CheckIcon sx={{ color }} />}
+                                                              </Paper>
+                                                          );
+                                                      })}
+                                                      {selectedEntityId && profile?.organizations?.find((o: any) => o.id === selectedEntityId && !o.logoUrl) && (
+                                                          <Alert severity="warning" sx={{ borderRadius: 2, bgcolor: alpha('#f59e0b', 0.1), color: '#d97706', '& .MuiAlert-icon': { color: '#f59e0b' }, fontSize: '0.85rem', mt: 1 }}>
+                                                              Your organization is missing a logo. Ask your admin to add one to improve listing validity.
+                                                          </Alert>
+                                                      )}
+                                                  </Box>
+                                              );
+                                          }
+
+                                          // Food Nerve Orgs (Global)
+                                          const userOrgIds = profile?.organizations?.map((o: any) => o.id) || [];
+                                          const options = foodNerveOrgs.filter(o => !userOrgIds.includes(o.id));
+                                          
+                                          const selectedOrg = options.find((o: any) => o.id === selectedEntityId);
+
+                                          return (
+                                              <>
+                                                  <PremiumAutocomplete
+                                                      colorTheme={color}
+                                                      label="Search Food Nerve Organizations"
+                                                      options={options}
+                                                      getOptionLabel={(opt: any) => opt.name || ''}
+                                                      value={selectedOrg || null}
+                                                      onChange={(e, val) => setSelectedEntityId(val ? val.id : null)}
+                                                  />
+                                                  
+                                                  {selectedOrg && (
+                                                      <Paper sx={{ 
+                                                          mt: 2, p: 2, borderRadius: '16px', display: 'flex', alignItems: 'center', gap: 2,
+                                                          border: `1px solid ${alpha(color, 0.2)}`, bgcolor: alpha(color, 0.02)
+                                                      }}>
+                                                          <Box sx={{ width: 48, height: 48, borderRadius: '12px', bgcolor: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px solid rgba(0,0,0,0.05)' }}>
+                                                              {selectedOrg.logoUrl ? (
+                                                                  <img src={selectedOrg.logoUrl} alt={selectedOrg.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                                              ) : (
+                                                                  <WorkIcon sx={{ color: 'rgba(0,0,0,0.2)' }} />
+                                                              )}
+                                                          </Box>
+                                                          <Box sx={{ flex: 1 }}>
+                                                              <Typography sx={{ fontWeight: 800, color: '#0f172a' }}>{selectedOrg.name}</Typography>
+                                                              <Typography sx={{ fontSize: '0.85rem', color: '#64748b' }}>{selectedOrg.role || 'Verified Entity'}</Typography>
+                                                          </Box>
+                                                          <CheckIcon sx={{ color }} />
+                                                      </Paper>
+                                                  )}
+
+                                                  {selectedEntityId && selectedOrg && !selectedOrg.logoUrl && (
+                                                      <Alert severity="warning" sx={{ borderRadius: 2, bgcolor: alpha('#f59e0b', 0.1), color: '#d97706', '& .MuiAlert-icon': { color: '#f59e0b' }, fontSize: '0.85rem', mt: 1 }}>
+                                                          Your organization is missing a logo. Ask your admin to add one to improve listing validity.
+                                                      </Alert>
+                                                  )}
+                                              </>
+                                          );
+                                      })()}
                                   </Box>
                               ) : (
                                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                                       <PremiumTextField colorTheme={color} fullWidth label="External Organization Name *" value={externalEntityName} onChange={(e) => setExternalEntityName(e.target.value)} placeholder="e.g. Acme Corp" />
+                                      
                                       <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', sm: 'row' } }}>
                                           <Box sx={{ flex: 1 }}>
-                                              <PremiumTextField colorTheme={color} fullWidth label="Industry *" value={externalIndustry} onChange={(e) => setExternalIndustry(e.target.value)} placeholder="e.g. Logistics" />
+                                              <PremiumTextField colorTheme={color} fullWidth label="Short Name (Optional)" value={externalEntityShortName} onChange={(e) => setExternalEntityShortName(e.target.value)} placeholder="e.g. Acme" />
                                           </Box>
                                           <Box sx={{ flex: 1 }}>
-                                              <PremiumAutocomplete colorTheme={color} label="Country *" options={countries} getOptionLabel={(opt: any) => opt.name || ''} value={externalCountry} onChange={(e, val) => setExternalCountry(val)} />
+                                              <PremiumAutocomplete colorTheme={color} label="Country" options={countries} getOptionLabel={(opt: any) => opt.name || ''} value={externalCountry} onChange={(e, val) => setExternalCountry(val)} />
+                                          </Box>
+                                      </Box>
+
+                                      <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', sm: 'row' } }}>
+                                          <Box sx={{ flex: 1 }}>
+                                              <PremiumAutocomplete colorTheme={color} label="State" options={externalStates} getOptionLabel={(opt: any) => opt.name || ''} value={externalState} onChange={(e, val) => setExternalState(val)} disabled={!externalCountry} />
+                                          </Box>
+                                          <Box sx={{ flex: 1 }}>
+                                              <PremiumAutocomplete colorTheme={color} label="LGA / City" options={externalCities} getOptionLabel={(opt: any) => opt.name || ''} value={externalLga} onChange={(e, val) => setExternalLga(val)} disabled={!externalState} />
                                           </Box>
                                       </Box>
                                       
