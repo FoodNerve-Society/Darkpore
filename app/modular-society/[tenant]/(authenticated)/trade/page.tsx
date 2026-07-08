@@ -31,6 +31,7 @@ import { useSociety } from "@/context/SocietyContext";
 import FlipContainer from "../components/shared/FlipContainer";
 import CreateListingForm from "./components/CreateListingForm";
 import ListingStudioDashboard from "./components/ListingStudioDashboard";
+import { getUserDrafts, deleteTradeListing, getTradeListings } from "@/lib/actions/trade";
 
 // ── Colors ────────────────────────────────────────────────
 const EMERALD = "#10b981";
@@ -300,10 +301,30 @@ export default function TradePage() {
   const [postingAs, setPostingAs] = useState<'personal' | 'organization'>('personal');
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
   // Dashboard / Form State
-  const [drafts, setDrafts] = useState<any[]>([
-    { id: 'draft-1', title: 'Need 500kg of Cassava', category: 'need', lastEdited: '2 hours ago' },
-    { id: 'draft-2', title: 'Senior Farm Manager', category: 'jobs', lastEdited: 'yesterday' }
-  ]); // To be populated with actual DB data later
+  const [drafts, setDrafts] = useState<any[]>([]);
+  const [feedListings, setFeedListings] = useState<any[]>(MOCK_LISTINGS);
+
+  useEffect(() => {
+    // Fetch actual db listings for jobs and volunteering
+    getTradeListings({ categories: ['jobs', 'volunteer'] }).then(res => {
+      if (res.success && res.listings) {
+        setFeedListings(prev => {
+          const others = prev.filter((l: any) => l.category !== 'jobs' && l.category !== 'volunteer');
+          return [...others, ...res.listings];
+        });
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    if (profile?.id) {
+      getUserDrafts(profile.id).then(res => {
+        if (res.success && res.drafts) {
+          setDrafts(res.drafts);
+        }
+      });
+    }
+  }, [profile?.id]);
   const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
   const [createCategory, setCreateCategory] = useState<string>('');
   const [createSelections, setCreateSelections] = useState<{ primary: string, secondary: string, tertiary?: string } | null>(null);
@@ -454,20 +475,20 @@ export default function TradePage() {
       >
         {activeTab === "All Listings" ? (
           <>
-            <HorizontalScrollRow title="Urgent Flash Sales" emoji="⚡" items={MOCK_LISTINGS.filter(l => l.category === "flash-sale")} />
-            <HorizontalScrollRow title="Paid Opportunities" emoji="💼" items={MOCK_LISTINGS.filter(l => l.category === "jobs")} />
-            <HorizontalScrollRow title="Volunteer & Earn NP" emoji="🌟" items={MOCK_LISTINGS.filter(l => l.category === "volunteer")} />
-            <HorizontalScrollRow title="Community Group-Buys" emoji="🤝" items={MOCK_LISTINGS.filter(l => l.category === "group-buy")} />
-            <HorizontalScrollRow title="Barter & Swaps" emoji="♻️" items={MOCK_LISTINGS.filter(l => l.category === "swap")} />
+            <HorizontalScrollRow title="Urgent Flash Sales" emoji="⚡" items={feedListings.filter(l => l.category === "flash-sale")} />
+            <HorizontalScrollRow title="Paid Opportunities" emoji="💼" items={feedListings.filter(l => l.category === "jobs")} />
+            <HorizontalScrollRow title="Volunteer & Earn NP" emoji="🌟" items={feedListings.filter(l => l.category === "volunteer")} />
+            <HorizontalScrollRow title="Community Group-Buys" emoji="🤝" items={feedListings.filter(l => l.category === "group-buy")} />
+            <HorizontalScrollRow title="Barter & Swaps" emoji="♻️" items={feedListings.filter(l => l.category === "swap")} />
             <Box sx={{ height: { xs: 80, md: 24 } }} />
           </>
         ) : (
           <>
-            {activeTab === "Flash Sales" && <GridScrollRow items={MOCK_LISTINGS.filter(l => l.category === "flash-sale")} />}
-            {activeTab === "Paid Jobs" && <GridScrollRow items={MOCK_LISTINGS.filter(l => l.category === "jobs")} />}
-            {activeTab === "Volunteer (NP)" && <GridScrollRow items={MOCK_LISTINGS.filter(l => l.category === "volunteer")} />}
-            {activeTab === "Group-Buy" && <GridScrollRow items={MOCK_LISTINGS.filter(l => l.category === "group-buy")} />}
-            {activeTab === "Swaps" && <GridScrollRow items={MOCK_LISTINGS.filter(l => l.category === "swap")} />}
+            {activeTab === "Flash Sales" && <GridScrollRow items={feedListings.filter(l => l.category === "flash-sale")} />}
+            {activeTab === "Paid Jobs" && <GridScrollRow items={feedListings.filter(l => l.category === "jobs")} />}
+            {activeTab === "Volunteer (NP)" && <GridScrollRow items={feedListings.filter(l => l.category === "volunteer")} />}
+            {activeTab === "Group-Buy" && <GridScrollRow items={feedListings.filter(l => l.category === "group-buy")} />}
+            {activeTab === "Swaps" && <GridScrollRow items={feedListings.filter(l => l.category === "swap")} />}
           </>
         )}
       </Box>
@@ -630,8 +651,12 @@ export default function TradePage() {
               setSelectedDraftId(draftId);
             }}
             onDeleteDraft={async (draftId) => {
-              // Implementation later
-              setDrafts(drafts.filter((d: any) => d.id !== draftId));
+              if (profile?.id) {
+                const res = await deleteTradeListing(draftId, profile.id);
+                if (res.success) {
+                  setDrafts(drafts.filter((d: any) => d.id !== draftId));
+                }
+              }
             }}
           />
         ) : (

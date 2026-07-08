@@ -101,3 +101,126 @@ export async function createTradeListing(data: CreateTradeListingPayload) {
     return { success: false, error: error.message || 'Failed to create trade listing.' };
   }
 }
+export async function getUserDrafts(userId: string) {
+  try {
+    const drafts = await prisma.tradeListing.findMany({
+      where: {
+        postedById: userId,
+        status: 'draft'
+      },
+      orderBy: {
+        postedAt: 'desc'
+      },
+      select: {
+        id: true,
+        title: true,
+        category: true,
+        postedAt: true
+      }
+    });
+    
+    const formattedDrafts = drafts.map(d => ({
+      id: d.id,
+      title: d.title || 'Untitled Listing',
+      category: d.category,
+      lastEdited: d.postedAt.toLocaleDateString() // Simplistic relative time placeholder
+    }));
+
+    return { success: true, drafts: formattedDrafts };
+  } catch (error: any) {
+    console.error('Failed to get drafts:', error);
+    return { success: false, error: error.message };
+  }
+}
+export async function deleteTradeListing(listingId: string, userId: string) {
+  try {
+    const listing = await prisma.tradeListing.findUnique({
+      where: { id: listingId }
+    });
+    if (!listing) return { success: false, error: 'Not found' };
+    if (listing.postedById !== userId) return { success: false, error: 'Unauthorized' };
+
+    await prisma.tradeListing.delete({
+      where: { id: listingId }
+    });
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Failed to delete listing:', error);
+    return { success: false, error: error.message };
+  }
+}
+export async function getTradeListings(options?: { categories?: string[] }) {
+  try {
+    const whereClause: any = {
+      status: 'active',
+    };
+    if (options?.categories && options.categories.length > 0) {
+      whereClause.category = { in: options.categories };
+    }
+
+    const listings = await prisma.tradeListing.findMany({
+      where: whereClause,
+      orderBy: {
+        endDate: 'asc' // Nulls last isn't natively supported, we'll sort in JS or use another strategy, but let's default to asc for deadlines
+      },
+      include: {
+        postedBy: {
+          select: {
+            id: true,
+            firstName: true,
+            name: true,
+            avatarUrl: true,
+            verified: true
+          }
+        },
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            logoUrl: true,
+            verified: true
+          }
+        }
+      }
+    });
+
+    // Formatting for the frontend
+    const formattedListings = listings.map(l => ({
+      id: l.id,
+      category: l.category,
+      title: l.title,
+      description: l.description,
+      priceOrAsk: l.priceOrAsk,
+      location: l.location,
+      lga: l.lga,
+      postedBy: { 
+        name: l.organization?.name || l.postedBy?.name || l.postedBy?.firstName || 'User',
+        avatarUrl: l.organization?.logoUrl || l.postedBy?.avatarUrl || '',
+        isVerified: l.organization?.verified || l.postedBy?.verified || false
+      },
+      postedAt: l.postedAt.toISOString(),
+      urgency: l.urgency,
+      status: l.status,
+      isBoosted: l.isBoosted,
+      imageUrl: l.imageUrl,
+      jobSource: l.jobSource,
+      compType: l.compType,
+      endDate: l.endDate ? l.endDate.toISOString() : null,
+      workModel: l.workModel,
+    }));
+
+    // In Prisma SQLite, sorting by endDate asc puts nulls at the top, or we can just sort in JS
+    formattedListings.sort((a, b) => {
+      if (a.endDate && b.endDate) return new Date(a.endDate).getTime() - new Date(b.endDate).getTime();
+      if (a.endDate) return -1;
+      if (b.endDate) return 1;
+      return new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime(); // fallback to postedAt desc
+    });
+
+    return { success: true, listings: formattedListings };
+  } catch (error: any) {
+    console.error('Failed to get trade listings:', error);
+    return { success: false, error: error.message };
+  }
+}
