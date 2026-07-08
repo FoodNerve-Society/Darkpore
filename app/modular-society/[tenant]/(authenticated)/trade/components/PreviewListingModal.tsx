@@ -89,10 +89,10 @@ export default function PreviewListingModal({ open, onClose, data }: PreviewList
                                 {companyName?.charAt(0)}
                             </Avatar>
                         )}
-                        <Typography variant="h3" fontWeight={800} sx={{ mb: 1, lineHeight: 1.2, color: '#0f172a' }}>{title || 'Untitled Role'}</Typography>
-                        <Typography variant="h6" color={color} fontWeight={700}>{companyName || 'Unknown Entity'}</Typography>
+                        <Typography variant="h3" sx={{ fontWeight: 800, mb: 1, lineHeight: 1.2, color: '#0f172a' }}>{title || 'Untitled Role'}</Typography>
+                        <Typography variant="h6" color={color} sx={{ fontWeight: 700 }}>{companyName || 'Unknown Entity'}</Typography>
                         <Divider sx={{ my: 3, bgcolor: alpha('#000', 0.05) }} />
-                        <Stack spacing={1.5} sx={{ mb: 4 }} direction="row" flexWrap="wrap" useFlexGap alignItems="flex-start">
+                        <Stack spacing={1.5} direction="row" useFlexGap sx={{ mb: 4, flexWrap: 'wrap', alignItems: 'flex-start' }}>
                             {category && <Chip size="medium" icon={<BusinessCenterOutlinedIcon />} label={category} sx={{ bgcolor: alpha(color, 0.1), color: color, fontWeight: 700, py: 2.5, px: 1, '& .MuiChip-icon': { color: color } }} />}
                             {locationString && <Chip size="medium" icon={<LocationOnOutlinedIcon />} label={locationString} sx={{ bgcolor: '#f1f5f9', color: '#475569', fontWeight: 600, py: 2.5, px: 1, '& .MuiChip-icon': { color: '#64748b' } }} />}
                             <Chip size="medium" icon={<WorkIcon />} label={duration || 'Duration Not Set'} sx={{ bgcolor: '#f1f5f9', color: '#475569', fontWeight: 600, py: 2.5, px: 1, '& .MuiChip-icon': { color: '#64748b' } }} />

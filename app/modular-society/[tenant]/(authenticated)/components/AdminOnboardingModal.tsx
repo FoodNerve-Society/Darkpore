@@ -171,6 +171,14 @@ export default function AdminOnboardingModal({
               active: true,
               role: dpOrg.role,
               department: dpOrg.department || '',
+              shortName: dpOrg.organization.name || '',
+              longName: dpOrg.organization.legalName || '',
+              logoUrl: dpOrg.organization.logoUrl || '',
+              country: dpOrg.organization.country || '',
+              state: dpOrg.organization.state || '',
+              lga: dpOrg.organization.lga || '',
+              address: dpOrg.organization.address || '',
+              isVirtual: dpOrg.organization.isVirtual || false,
             }));
           }
           if (fnOrg) {
@@ -179,6 +187,14 @@ export default function AdminOnboardingModal({
               active: true,
               role: fnOrg.role,
               department: fnOrg.department || '',
+              shortName: fnOrg.organization.name || '',
+              longName: fnOrg.organization.legalName || '',
+              logoUrl: fnOrg.organization.logoUrl || '',
+              country: fnOrg.organization.country || '',
+              state: fnOrg.organization.state || '',
+              lga: fnOrg.organization.lga || '',
+              address: fnOrg.organization.address || '',
+              isVirtual: fnOrg.organization.isVirtual || false,
             }));
           }
         }

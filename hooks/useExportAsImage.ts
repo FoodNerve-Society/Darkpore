@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import html2canvas from 'html2canvas';
+import { toPng } from 'html-to-image';
 
 const useExportAsImage = (ref: React.RefObject<HTMLElement>) => {
   const [isExporting, setIsExporting] = useState(false);
@@ -8,13 +8,14 @@ const useExportAsImage = (ref: React.RefObject<HTMLElement>) => {
     if (!ref.current) return;
     try {
       setIsExporting(true);
-      const canvas = await html2canvas(ref.current, {
-        scale: 2, // High resolution
-        useCORS: true,
-        backgroundColor: null, // preserve transparency if any
+      const dataUrl = await toPng(ref.current, {
+        cacheBust: true,
+        pixelRatio: 2, // High resolution
+        style: {
+          transform: 'scale(1)',
+        }
       });
-      const image = canvas.toDataURL('image/png', 1.0);
-      downloadImage(image, imageFileName);
+      downloadImage(dataUrl, imageFileName);
     } catch (err) {
       console.error('Failed to export image', err);
     } finally {
