@@ -29,6 +29,26 @@ export async function getCoreOrganizations() {
   }
 }
 
+export async function getExecutiveProfile(uid: string) {
+  if (!uid) return null;
+  try {
+    const user = await prisma.user.findUnique({
+      where: { firebaseUid: uid },
+      include: {
+        organizationMembers: {
+          include: {
+            organization: true
+          }
+        }
+      }
+    });
+    return user;
+  } catch (error) {
+    console.error("Error fetching executive profile:", error);
+    return null;
+  }
+}
+
 export async function submitAdminOnboarding(
   uid: string, 
   data: { 

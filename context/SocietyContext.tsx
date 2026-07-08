@@ -60,7 +60,8 @@ export interface Organization {
   id: string;
   name: string;
   slug?: string;
-  role: 'admin' | 'trader' | 'content-creator' | 'viewer' | 'editor';
+  department?: string;
+  role: 'admin' | 'trader' | 'content-creator' | 'viewer' | 'editor' | string;
   verified?: boolean;
   logoUrl?: string;
   website?: string;
@@ -302,8 +303,10 @@ export function SocietyProvider({ children }: { children: React.ReactNode }) {
               organizations: prismaUser.organizationMembers?.map((m: any) => ({
                 id: m.organization.id,
                 name: m.organization.name,
+                slug: m.organization.slug,
+                department: m.department,
                 role: m.role,
-                logoUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(m.organization.name)}&background=0f172a&color=fff`,
+                logoUrl: m.organization.logoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(m.organization.name)}&background=0f172a&color=fff`,
                 website: ''
               })) || [],
               activeOrgId: null,

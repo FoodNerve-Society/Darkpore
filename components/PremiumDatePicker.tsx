@@ -57,7 +57,10 @@ export default function PremiumDatePicker({
           label={label}
           value={displayValue}
           onClick={() => setOpen(true)}
-          inputProps={{ readOnly: true, style: { cursor: 'pointer' } }}
+          InputProps={{
+            readOnly: true,
+            style: { cursor: 'pointer' }
+          }}
           sx={{ 
             cursor: 'pointer',
             '& .MuiInputBase-root': { cursor: 'pointer' },

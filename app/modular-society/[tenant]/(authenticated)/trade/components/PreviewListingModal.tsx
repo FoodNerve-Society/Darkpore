@@ -92,7 +92,7 @@ export default function PreviewListingModal({ open, onClose, data }: PreviewList
                         <Typography variant="h3" fontWeight={800} sx={{ mb: 1, lineHeight: 1.2, color: '#0f172a' }}>{title || 'Untitled Role'}</Typography>
                         <Typography variant="h6" color={color} fontWeight={700}>{companyName || 'Unknown Entity'}</Typography>
                         <Divider sx={{ my: 3, bgcolor: alpha('#000', 0.05) }} />
-                        <Stack spacing={1.5} mb={4} direction="row" flexWrap="wrap" useFlexGap alignItems="flex-start">
+                        <Stack spacing={1.5} sx={{ mb: 4 }} direction="row" flexWrap="wrap" useFlexGap alignItems="flex-start">
                             {category && <Chip size="medium" icon={<BusinessCenterOutlinedIcon />} label={category} sx={{ bgcolor: alpha(color, 0.1), color: color, fontWeight: 700, py: 2.5, px: 1, '& .MuiChip-icon': { color: color } }} />}
                             {locationString && <Chip size="medium" icon={<LocationOnOutlinedIcon />} label={locationString} sx={{ bgcolor: '#f1f5f9', color: '#475569', fontWeight: 600, py: 2.5, px: 1, '& .MuiChip-icon': { color: '#64748b' } }} />}
                             <Chip size="medium" icon={<WorkIcon />} label={duration || 'Duration Not Set'} sx={{ bgcolor: '#f1f5f9', color: '#475569', fontWeight: 600, py: 2.5, px: 1, '& .MuiChip-icon': { color: '#64748b' } }} />
@@ -128,10 +128,10 @@ export default function PreviewListingModal({ open, onClose, data }: PreviewList
                         )}
                     </Box>
 
-                    <Stack direction="row" justifyContent="space-between" alignItems="center" pt={3} mt={4} borderTop={1} borderColor={alpha('#000', 0.05)} sx={{ flexShrink: 0 }}>
-                        <Stack direction="row" spacing={1} alignItems="center" sx={{ color: '#64748b' }}>
+                    <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', pt: 3, mt: 4, borderTop: 1, borderColor: alpha('#000', 0.05), flexShrink: 0 }}>
+                        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', color: '#64748b' }}>
                             <GroupIcon fontSize="small"/>
-                            <Typography variant="body2" fontWeight={600}>0 Applications</Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>0 Applications</Typography>
                         </Stack>
                         <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600 }}>Preview Mode</Typography>
                     </Stack>
