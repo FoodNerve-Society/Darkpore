@@ -85,6 +85,9 @@ model Organization {
   address   String?
   isVirtual Boolean  @default(false)
   isExternal Boolean @default(false)
+  isPlatformOwner Boolean @default(false)
+  challenges String? // JSON string array of challenge IDs
+  subcategories String? // JSON string array of subcategory IDs
 
   // Relations
   members        OrganizationMember[]
@@ -147,6 +150,15 @@ model TradeListing {
   startDate       DateTime?
   endDate         DateTime?
   workModel       String?   // 'remote' | 'hybrid' | 'onsite'
+  challenges      String?   // JSON string array of challenge IDs
+  subcategories   String?   // JSON string array of subcategory IDs
+
+  // --- Application & CTA Setup Fields ---
+  applicationMethod       String   @default("native") // 'external' | 'native' | 'email'
+  applicationEmail        String?  // If method is 'email'
+  applicationInstructions String?  // If method is 'email', stores formatting instructions
+  customQuestions         String?  // JSON array of objects if method is 'native'
+  requiredDocuments       String?  // JSON array (e.g., ["resume", "coverLetter", "portfolio"])
 
   // Relations
   postedById String

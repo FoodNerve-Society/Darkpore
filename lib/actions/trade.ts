@@ -42,7 +42,21 @@ export async function createTradeListing(data: CreateTradeListingPayload) {
     const isJobOrVolunteer = data.category === 'jobs' || data.category === 'volunteer';
 
     let finalOrganizationId = data.organizationId;
+    let isPlatformOwner = false;
 
+    if (finalOrganizationId) {
+      const org = await prisma.organization.findUnique({
+        where: { id: finalOrganizationId },
+        select: { isPlatformOwner: true }
+      });
+      if (org) isPlatformOwner = org.isPlatformOwner;
+    }
+
+    if (!isDraft && isJobOrVolunteer && !isPlatformOwner) {
+      if (!metadata.jobChallenges || metadata.jobChallenges.length === 0) {
+        return { success: false, error: 'You must select at least one challenge this role addresses.' };
+      }
+    }
     if (metadata.isExternal && !finalOrganizationId) {
       // Create external organization
       const extOrg = await prisma.organization.create({
@@ -56,6 +70,8 @@ export async function createTradeListing(data: CreateTradeListingPayload) {
           logoUrl: metadata.externalEntityLogoUrl,
           isExternal: true,
           rank: 1, // Or whatever rank is deemed appropriate for external entities
+          challenges: metadata.organizationChallenges ? JSON.stringify(metadata.organizationChallenges) : undefined,
+          subcategories: metadata.organizationSubcategories ? JSON.stringify(metadata.organizationSubcategories) : undefined,
         }
       });
       finalOrganizationId = extOrg.id;
@@ -91,6 +107,8 @@ export async function createTradeListing(data: CreateTradeListingPayload) {
           startDate: metadata.startDate ? new Date(metadata.startDate) : undefined,
           endDate: metadata.endDate ? new Date(metadata.endDate) : undefined,
           workModel: metadata.workModel || undefined,
+          challenges: metadata.jobChallenges ? JSON.stringify(metadata.jobChallenges) : undefined,
+          subcategories: metadata.jobSubcategories ? JSON.stringify(metadata.jobSubcategories) : undefined,
         } : {}),
       },
     });
@@ -221,6 +239,44 @@ export async function getTradeListings(options?: { categories?: string[] }) {
     return { success: true, listings: formattedListings };
   } catch (error: any) {
     console.error('Failed to get trade listings:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getCareersListings() {
+  try {
+    const listingsResult = await getTradeListings({ categories: ['jobs', 'volunteer'] });
+    if (!listingsResult.success || !listingsResult.listings) {
+      throw new Error(listingsResult.error || "Failed to fetch listings");
+    }
+
+    const allListings = listingsResult.listings;
+
+    const coreEcosystemRoles: any[] = [];
+    const societyPartners: any[] = [];
+    const externalSourced: any[] = [];
+
+    allListings.forEach((job: any) => {
+      const isPlatformOwner = job.organization?.isPlatformOwner;
+      const isExternal = job.organization?.isExternal;
+      
+      if (isPlatformOwner) {
+        coreEcosystemRoles.push(job);
+      } else if (!isExternal) {
+        societyPartners.push(job);
+      } else {
+        externalSourced.push(job);
+      }
+    });
+
+    return {
+      success: true,
+      coreEcosystemRoles,
+      societyPartners,
+      externalSourced
+    };
+  } catch (error: any) {
+    console.error('Failed to get career listings:', error);
     return { success: false, error: error.message };
   }
 }

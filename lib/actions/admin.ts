@@ -117,6 +117,7 @@ export async function submitAdminOnboarding(
           isVirtual: affil.isVirtual || false,
           verified: true,
           rank: 5,
+          isPlatformOwner: true,
         }
       });
     }

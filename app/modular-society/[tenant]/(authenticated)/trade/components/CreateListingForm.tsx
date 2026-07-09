@@ -2,6 +2,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { ChevronLeft, ChevronRight, Check, X, Building2, Wallet, Briefcase, Plus, Search, Tag, Users, Activity, Loader2 } from "lucide-react";
+import { getTenantConfig } from "@/lib/cms";
 import {
   Box,
   Typography,
@@ -21,7 +23,7 @@ import {
   MenuItem
 } from "@mui/material";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import {
   useSociety,
   checkGatekeeper,
@@ -59,7 +61,8 @@ const LISTING_FRAMEWORK = [
   { id: 'identity', type: 'identity', role: 'The Hiring Identity', desc: 'Establish the organization posting this job.', hint: '' },
   { id: 'mandate', type: 'mandate', role: 'The Primary Mandate', desc: 'Define the title, sector, and provide the deep dive description.', hint: 'e.g. Senior Agronomist' },
   { id: 'geography', type: 'geography', role: 'The Ground Operations', desc: 'Specify exactly where this role executes and the base of operations.', hint: '' },
-  { id: 'compensation', type: 'compensation', role: 'The Value Exchange', desc: 'Set the duration, escrow terms, and financial commitment.', hint: '' }
+  { id: 'compensation', type: 'compensation', role: 'The Value Exchange', desc: 'Set the duration, escrow terms, and financial commitment.', hint: '' },
+  { id: 'cta', type: 'cta', role: 'Application Setup', desc: 'Configure how candidates apply.', hint: '' }
 ];
 
 const CURRENCY_OPTIONS = ["USD", "EUR", "GBP", "NGN", "KES", "ZAR", "RWF", "UGX", "GHS"];
@@ -69,6 +72,7 @@ const BLOCK_DEFINITIONS: Record<string, { label: string, color: string }> = {
   mandate: { label: 'Primary Mandate', color: '#3b82f6' },
   geography: { label: 'Location Details', color: '#10b981' },
   compensation: { label: 'Terms & Comp', color: '#f59e0b' },
+  cta: { label: 'Application Setup', color: '#8b5cf6' },
 };
 
 const glassCard = {
@@ -100,6 +104,10 @@ export default function CreateListingForm({
 }: CreateListingFormProps) {
   const { profile, activeOrg } = useSociety();
   const router = useRouter();
+  const params = useParams();
+  const tenantId = (params.tenant as string) || "food";
+  const tenantConfig = getTenantConfig(tenantId);
+  const availableChallenges = tenantConfig.com.homepage.challenges || [];
 
   const isJob = initialCategory === "jobs";
   const isVolunteer = initialSelections?.primary === "volunteer";
@@ -121,12 +129,44 @@ export default function CreateListingForm({
   const [externalCountry, setExternalCountry] = useState<any>(null);
   const [externalState, setExternalState] = useState<any>(null);
   const [externalLga, setExternalLga] = useState<any>(null);
+  const [orgChallenges, setOrgChallenges] = useState<any[]>([]);
+  const [orgSubcategories, setOrgSubcategories] = useState<any[]>([]);
+
+  // Category and Description
+  const [category, setCategory] = useState(initialCategory || "jobs");
+  
+  // Job specific state
+  const [jobChallenges, setJobChallenges] = useState<any[]>([]);
+  const [jobSubcategories, setJobSubcategories] = useState<any[]>([]);
   const [externalStates, setExternalStates] = useState<any[]>([]);
   const [externalCities, setExternalCities] = useState<any[]>([]);
 
   // Food Nerve Organizations
   const [foodNerveOrgs, setFoodNerveOrgs] = useState<any[]>([]);
   const [loadingFoodNerveOrgs, setLoadingFoodNerveOrgs] = useState(false);
+
+  // Derive if the active organization is a platform owner and its rank
+  let isPlatformOwnerActive = false;
+  let activeOrgRank = 0;
+  if (!isExternal && selectedEntityId) {
+    if (initialSelections?.tertiary === 'food-nerve') {
+        const o = foodNerveOrgs.find((x: any) => x.id === selectedEntityId);
+        if (o?.isPlatformOwner) isPlatformOwnerActive = true;
+        if (o?.rank) activeOrgRank = o.rank;
+    } else {
+        const o = profile?.organizations?.find((x: any) => x.id === selectedEntityId);
+        if (o?.isPlatformOwner) isPlatformOwnerActive = true;
+        if (o?.rank) activeOrgRank = o.rank;
+    }
+  }
+
+  useEffect(() => {
+    if (isExternal && applicationMethod === 'native') {
+      setApplicationMethod('external');
+    } else if (!isExternal && !isPlatformOwnerActive && activeOrgRank < 3 && applicationMethod === 'native') {
+      setApplicationMethod('email');
+    }
+  }, [isExternal, isPlatformOwnerActive, activeOrgRank, applicationMethod]);
 
   useEffect(() => {
       if (initialSelections?.tertiary === 'food-nerve' && foodNerveOrgs.length === 0) {
@@ -169,8 +209,6 @@ export default function CreateListingForm({
       }
   }, [externalState, externalCountry]);
 
-  const [category, setCategory] = useState<string | null>(null);
-  
   // Geography
   const countries = Country.getAllCountries();
   const [selectedCountry, setSelectedCountry] = useState<any>(null);
@@ -204,6 +242,16 @@ export default function CreateListingForm({
   const [externalEntityLogoFile, setExternalEntityLogoFile] = useState<File | null>(null);
   const { uploadFile, uploading: uploadingLogo } = useStorageUpload();
   const [deadline, setDeadline] = useState("");
+
+  // Application & CTA Setup
+  const [applicationMethod, setApplicationMethod] = useState<'external' | 'native' | 'email'>('native');
+  const [applicationUrl, setApplicationUrl] = useState("");
+  const [applicationEmail, setApplicationEmail] = useState("");
+  const [applicationInstructions, setApplicationInstructions] = useState("");
+  const [requireResume, setRequireResume] = useState(true);
+  const [requireCoverLetter, setRequireCoverLetter] = useState(false);
+  const [requirePortfolio, setRequirePortfolio] = useState(false);
+  const [customQuestions, setCustomQuestions] = useState<{id: string, question: string, type: string, required: boolean}[]>([]);
   const [endDate, setEndDate] = useState("");
   const [startDate, setStartDate] = useState("");
   const [duration, setDuration] = useState("");
@@ -278,9 +326,11 @@ export default function CreateListingForm({
       case 'identity':
         total = 1;
         if (isExternal) {
-            total = 2; // Name and Logo are compulsory
+            total = 4; // Name, Logo, orgChallenges, orgSubcategories
             if (externalEntityName.trim().length > 0) filled++;
             if (externalEntityLogoUrl.trim().length > 0) filled++;
+            if (orgChallenges.length > 0) filled++;
+            if (orgSubcategories.length > 0) filled++;
         } else {
             if (selectedEntityId) filled++;
         }
@@ -290,6 +340,10 @@ export default function CreateListingForm({
         if (title.trim().length >= 5) filled++;
         if (category) filled++;
         if (description.length > 20) filled++;
+        if ((category === 'jobs' || category === 'volunteer') && !isPlatformOwnerActive) {
+            total++;
+            if (jobChallenges.length > 0) filled++;
+        }
         break;
       case 'geography':
         total = 1;
@@ -315,6 +369,18 @@ export default function CreateListingForm({
            if (currency) filled++;
            if (minSalary) filled++;
            if (maxSalary) filled++;
+        }
+        break;
+      case 'cta':
+        if (applicationMethod === 'external') {
+            total = 1;
+            if (applicationUrl.trim().length > 5) filled++;
+        } else if (applicationMethod === 'email') {
+            total = 1;
+            if (applicationEmail.includes('@')) filled++;
+        } else {
+            total = 1; // By default native has `requireResume` checked
+            filled = 1;
         }
         break;
     }
@@ -445,6 +511,10 @@ export default function CreateListingForm({
       externalState: isExternal ? externalState?.name : undefined,
       externalLga: isExternal ? externalLga?.name : undefined,
       externalEntityLogoUrl: isExternal ? finalLogoUrl : undefined,
+      organizationChallenges: isExternal ? orgChallenges.map(c => c.id) : undefined,
+      organizationSubcategories: isExternal ? orgSubcategories.map(s => s.id) : undefined,
+      jobChallenges: jobChallenges.map(c => c.id),
+      jobSubcategories: jobSubcategories.map(s => s.id),
     };
 
     const res = await createTradeListing({ 
@@ -848,6 +918,35 @@ export default function CreateListingForm({
                                               <PremiumAutocomplete colorTheme={color} label="LGA / City" options={externalCities} getOptionLabel={(opt: any) => opt.name || ''} value={externalLga} onChange={(e, val) => setExternalLga(val)} disabled={!externalState} />
                                           </Box>
                                       </Box>
+
+                                      <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', sm: 'row' } }}>
+                                         <Box sx={{ flex: 1 }}>
+                                             <PremiumAutocomplete 
+                                                 multiple 
+                                                 colorTheme={color} 
+                                                 label="Organization Challenges *" 
+                                                 options={availableChallenges} 
+                                                 getOptionLabel={(opt: any) => opt.title} 
+                                                 value={orgChallenges} 
+                                                 onChange={(e, val: any) => {
+                                                     setOrgChallenges(val);
+                                                     setOrgSubcategories(prev => prev.filter(sub => val.some((c: any) => c.subcategories?.some((s: any) => s.id === sub.id))));
+                                                 }} 
+                                             />
+                                         </Box>
+                                         <Box sx={{ flex: 1 }}>
+                                             <PremiumAutocomplete 
+                                                 multiple 
+                                                 colorTheme={color} 
+                                                 label="Organization Subcategories *" 
+                                                 options={orgChallenges.flatMap((c: any) => c.subcategories || [])} 
+                                                 getOptionLabel={(opt: any) => opt.title} 
+                                                 value={orgSubcategories} 
+                                                 onChange={(e, val: any) => setOrgSubcategories(val)} 
+                                                 disabled={orgChallenges.length === 0} 
+                                             />
+                                         </Box>
+                                      </Box>
                                       
                                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: 1 }}>
                                           <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: '#64748b' }}>Company Logo (Required) *</Typography>
@@ -890,6 +989,37 @@ export default function CreateListingForm({
                               <PremiumTextField colorTheme={color} fullWidth label="Listing Title *" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Senior Agronomist" />
                               <PremiumAutocomplete colorTheme={color} label="Sector / Category *" options={CATEGORY_OPTIONS} value={category} onChange={(e, val) => setCategory(val as string)} />
                               
+                              {(isJob || isVolunteer) && (
+                                  <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', sm: 'row' }, mt: 2 }}>
+                                      <Box sx={{ flex: 1 }}>
+                                          <PremiumAutocomplete 
+                                              multiple 
+                                              colorTheme={color} 
+                                              label={isPlatformOwnerActive ? "Job Challenges (Optional)" : "Job Challenges *"} 
+                                              options={availableChallenges} 
+                                              getOptionLabel={(opt: any) => opt.title} 
+                                              value={jobChallenges} 
+                                              onChange={(e, val: any) => {
+                                                  setJobChallenges(val);
+                                                  setJobSubcategories(prev => prev.filter(sub => val.some((c: any) => c.subcategories?.some((s: any) => s.id === sub.id))));
+                                              }} 
+                                          />
+                                      </Box>
+                                      <Box sx={{ flex: 1 }}>
+                                          <PremiumAutocomplete 
+                                              multiple 
+                                              colorTheme={color} 
+                                              label="Job Subcategories" 
+                                              options={jobChallenges.flatMap((c: any) => c.subcategories || [])} 
+                                              getOptionLabel={(opt: any) => opt.title} 
+                                              value={jobSubcategories} 
+                                              onChange={(e, val: any) => setJobSubcategories(val)} 
+                                              disabled={jobChallenges.length === 0} 
+                                          />
+                                      </Box>
+                                  </Box>
+                              )}
+
                               <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: '#64748b', mt: 2, mb: -1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Full Description</Typography>
                               <PremiumMarkdownEditor 
                                   colorTheme={color}
