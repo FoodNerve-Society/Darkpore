@@ -159,6 +159,7 @@ model TradeListing {
   applicationInstructions String?  // If method is 'email', stores formatting instructions
   customQuestions         String?  // JSON array of objects if method is 'native'
   requiredDocuments       String?  // JSON array (e.g., ["resume", "coverLetter", "portfolio"])
+  externalButtonText      String?  // Custom button text for external links
 
   // Relations
   postedById String

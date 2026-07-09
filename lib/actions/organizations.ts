@@ -13,6 +13,7 @@ export async function getFoodNerveOrganizations() {
                 name: true,
                 logoUrl: true,
                 rank: true,
+                isPlatformOwner: true,
             },
             orderBy: {
                 name: 'asc'

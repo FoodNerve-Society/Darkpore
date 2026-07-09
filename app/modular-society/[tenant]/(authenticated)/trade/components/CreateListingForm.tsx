@@ -2,7 +2,6 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { ChevronLeft, ChevronRight, Check, X, Building2, Wallet, Briefcase, Plus, Search, Tag, Users, Activity, Loader2 } from "lucide-react";
 import { getTenantConfig } from "@/lib/cms";
 import {
   Box,
@@ -41,6 +40,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import CheckIcon from "@mui/icons-material/Check";
 import WorkIcon from "@mui/icons-material/Work";
 import SparkleIcon from "@mui/icons-material/AutoAwesome";
+import AddIcon from "@mui/icons-material/Add";
 
 import PremiumTextField from "@/components/PremiumTextField";
 import PremiumAutocomplete from "@/components/PremiumAutocomplete";
@@ -149,7 +149,7 @@ export default function CreateListingForm({
   let isPlatformOwnerActive = false;
   let activeOrgRank = 0;
   if (!isExternal && selectedEntityId) {
-    if (initialSelections?.tertiary === 'food-nerve') {
+    if (initialSelections?.tertiary === 'foodnerve-org') {
         const o = foodNerveOrgs.find((x: any) => x.id === selectedEntityId);
         if (o?.isPlatformOwner) isPlatformOwnerActive = true;
         if (o?.rank) activeOrgRank = o.rank;
@@ -161,15 +161,7 @@ export default function CreateListingForm({
   }
 
   useEffect(() => {
-    if (isExternal && applicationMethod === 'native') {
-      setApplicationMethod('external');
-    } else if (!isExternal && !isPlatformOwnerActive && activeOrgRank < 3 && applicationMethod === 'native') {
-      setApplicationMethod('email');
-    }
-  }, [isExternal, isPlatformOwnerActive, activeOrgRank, applicationMethod]);
-
-  useEffect(() => {
-      if (initialSelections?.tertiary === 'food-nerve' && foodNerveOrgs.length === 0) {
+      if (initialSelections?.tertiary === 'foodnerve-org' && foodNerveOrgs.length === 0) {
           setLoadingFoodNerveOrgs(true);
           import("@/lib/actions/organizations").then(({ getFoodNerveOrganizations }) => {
               getFoodNerveOrganizations().then((res) => {
@@ -246,12 +238,21 @@ export default function CreateListingForm({
   // Application & CTA Setup
   const [applicationMethod, setApplicationMethod] = useState<'external' | 'native' | 'email'>('native');
   const [applicationUrl, setApplicationUrl] = useState("");
+  const [externalButtonText, setExternalButtonText] = useState("Apply Now");
   const [applicationEmail, setApplicationEmail] = useState("");
   const [applicationInstructions, setApplicationInstructions] = useState("");
   const [requireResume, setRequireResume] = useState(true);
   const [requireCoverLetter, setRequireCoverLetter] = useState(false);
   const [requirePortfolio, setRequirePortfolio] = useState(false);
   const [customQuestions, setCustomQuestions] = useState<{id: string, question: string, type: string, required: boolean}[]>([]);
+
+  useEffect(() => {
+    if (isExternal && applicationMethod === 'native') {
+      setApplicationMethod('external');
+    } else if (!isExternal && !isPlatformOwnerActive && activeOrgRank < 3 && applicationMethod === 'native') {
+      setApplicationMethod('email');
+    }
+  }, [isExternal, isPlatformOwnerActive, activeOrgRank, applicationMethod]);
   const [endDate, setEndDate] = useState("");
   const [startDate, setStartDate] = useState("");
   const [duration, setDuration] = useState("");
@@ -377,7 +378,7 @@ export default function CreateListingForm({
             if (applicationUrl.trim().length > 5) filled++;
         } else if (applicationMethod === 'email') {
             total = 1;
-            if (applicationEmail.includes('@')) filled++;
+            if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(applicationEmail)) filled++;
         } else {
             total = 1; // By default native has `requireResume` checked
             filled = 1;
@@ -515,6 +516,14 @@ export default function CreateListingForm({
       organizationSubcategories: isExternal ? orgSubcategories.map(s => s.id) : undefined,
       jobChallenges: jobChallenges.map(c => c.id),
       jobSubcategories: jobSubcategories.map(s => s.id),
+      // CTA Setup
+      applicationMethod,
+      applicationUrl: applicationMethod === 'external' ? applicationUrl : undefined,
+      externalButtonText: applicationMethod === 'external' ? externalButtonText : undefined,
+      applicationEmail: applicationMethod === 'email' ? applicationEmail : undefined,
+      applicationInstructions: applicationMethod === 'email' ? applicationInstructions : undefined,
+      requiredDocuments: applicationMethod === 'native' ? JSON.stringify({ requireResume, requireCoverLetter, requirePortfolio }) : undefined,
+      customQuestions: applicationMethod === 'native' ? JSON.stringify(customQuestions) : undefined,
     };
 
     const res = await createTradeListing({ 
@@ -1112,7 +1121,102 @@ export default function CreateListingForm({
                             )}
                           </Box>
                         )}
-                        
+                        {b.id === 'cta' && (
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                            <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: '#64748b', mb: -1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Application Flow</Typography>
+                            
+                            <Box sx={{ p: 2, borderRadius: '12px', bgcolor: alpha(color, 0.05), border: `1px solid ${alpha(color, 0.2)}` }}>
+                                <Typography sx={{ fontWeight: 700, mb: 2, color: '#1e293b' }}>How should candidates apply?</Typography>
+                                <PremiumAutocomplete
+                                    colorTheme={color}
+                                    options={[
+                                        ...((!isExternal && (isPlatformOwnerActive || activeOrgRank >= 3)) ? [{ label: 'Native Food Nerve Application', value: 'native' }] : []),
+                                        { label: 'Direct Email', value: 'email' },
+                                        { label: 'External Link', value: 'external' }
+                                    ]}
+                                    label="Select Application Method"
+                                    value={{ 
+                                        label: applicationMethod === 'native' ? 'Native Food Nerve Application' : applicationMethod === 'email' ? 'Direct Email' : 'External Link', 
+                                        value: applicationMethod 
+                                    }}
+                                    onChange={(_, val) => {
+                                        if (val) setApplicationMethod(val.value as any);
+                                    }}
+                                />
+
+                                {applicationMethod === 'external' && (
+                                    <Box sx={{ mt: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                        <PremiumTextField
+                                            colorTheme={color}
+                                            fullWidth
+                                            label="External Application URL"
+                                            value={applicationUrl}
+                                            onChange={(e) => setApplicationUrl(e.target.value)}
+                                            placeholder="https://company.com/careers/job-123"
+                                        />
+                                        <PremiumAutocomplete
+                                            colorTheme={color}
+                                            options={[
+                                                { label: 'Apply Now', value: 'Apply Now' },
+                                                { label: 'Apply on Company Site', value: 'Apply on Company Site' },
+                                                { label: 'View Details', value: 'View Details' },
+                                                { label: 'Submit Application', value: 'Submit Application' },
+                                                { label: 'Register Interest', value: 'Register Interest' },
+                                            ]}
+                                            label="Button Text"
+                                            value={{ label: externalButtonText, value: externalButtonText }}
+                                            onChange={(_, val) => setExternalButtonText(val?.value || "Apply Now")}
+                                        />
+                                    </Box>
+                                )}
+                            </Box>
+
+                            {applicationMethod === 'email' && (
+                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                    <PremiumTextField colorTheme={color} fullWidth label="Application Email *" type="email" value={applicationEmail} onChange={(e) => setApplicationEmail(e.target.value)} placeholder="e.g. jobs@company.com" />
+                                    <Box>
+                                        <Typography sx={{ fontWeight: 700, mb: 1, color: '#1e293b', fontSize: '0.9rem' }}>Application Instructions (Optional)</Typography>
+                                        <PremiumMarkdownEditor 
+                                            colorTheme={color} 
+                                            value={applicationInstructions} 
+                                            onChange={setApplicationInstructions} 
+                                            placeholder="e.g. Please format your subject line as..." 
+                                        />
+                                    </Box>
+                                </Box>
+                            )}
+
+                            {applicationMethod === 'native' && (
+                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                    <Box sx={{ p: 2, borderRadius: '12px', bgcolor: alpha(color, 0.05), border: `1px solid ${alpha(color, 0.2)}` }}>
+                                        <Typography sx={{ fontWeight: 700, mb: 1, color: '#1e293b' }}>Required Documents</Typography>
+                                        <FormControlLabel control={<Switch checked={requireResume} onChange={(e) => setRequireResume(e.target.checked)} sx={{ '& .MuiSwitch-switchBase.Mui-checked': { color: color }, '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: color } }} />} label="Resume / CV" />
+                                        <FormControlLabel control={<Switch checked={requireCoverLetter} onChange={(e) => setRequireCoverLetter(e.target.checked)} sx={{ '& .MuiSwitch-switchBase.Mui-checked': { color: color }, '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: color } }} />} label="Cover Letter" />
+                                        <FormControlLabel control={<Switch checked={requirePortfolio} onChange={(e) => setRequirePortfolio(e.target.checked)} sx={{ '& .MuiSwitch-switchBase.Mui-checked': { color: color }, '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: color } }} />} label="Portfolio / Work Samples" />
+                                    </Box>
+
+                                    <Box sx={{ p: 2, borderRadius: '12px', border: `1px solid ${alpha(color, 0.2)}` }}>
+                                        <Typography sx={{ fontWeight: 700, mb: 2, color: '#1e293b' }}>Custom Questions</Typography>
+                                        {customQuestions.map((q, idx) => (
+                                            <Box key={q.id} sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'center' }}>
+                                                <Typography sx={{ fontWeight: 600, color: '#64748b' }}>{idx + 1}.</Typography>
+                                                <Select value={q.type} onChange={(e) => { const n = [...customQuestions]; n[idx].type = e.target.value; setCustomQuestions(n); }} size="small" sx={{ width: '140px', borderRadius: '8px' }}>
+                                                    <MenuItem value="short_text">Short Text</MenuItem>
+                                                    <MenuItem value="markdown">Long Text (Rich)</MenuItem>
+                                                    <MenuItem value="link">URL / Link</MenuItem>
+                                                    <MenuItem value="date">Date</MenuItem>
+                                                </Select>
+                                                <PremiumTextField colorTheme={color} fullWidth label="Question" value={q.question} onChange={(e) => { const n = [...customQuestions]; n[idx].question = e.target.value; setCustomQuestions(n); }} size="small" />
+                                                <FormControlLabel control={<Switch checked={q.required} onChange={(e) => { const n = [...customQuestions]; n[idx].required = e.target.checked; setCustomQuestions(n); }} size="small" />} label="Required" sx={{ minWidth: '100px' }} />
+                                                <IconButton color="error" onClick={() => setCustomQuestions(customQuestions.filter(x => x.id !== q.id))}><CloseIcon sx={{ fontSize: 18 }} /></IconButton>
+                                            </Box>
+                                        ))}
+                                        <Button variant="outlined" startIcon={<AddIcon sx={{ fontSize: 16 }} />} onClick={() => setCustomQuestions([...customQuestions, { id: Math.random().toString(), question: '', type: 'short_text', required: true }])} sx={{ borderRadius: '8px', color: color, borderColor: color, textTransform: 'none', fontWeight: 600 }}>Add Question</Button>
+                                    </Box>
+                                </Box>
+                            )}
+                          </Box>
+                        )}
                         {/* Done Button on back face */}
                         <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
                           <Button

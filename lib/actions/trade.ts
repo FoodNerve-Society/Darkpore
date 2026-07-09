@@ -109,6 +109,15 @@ export async function createTradeListing(data: CreateTradeListingPayload) {
           workModel: metadata.workModel || undefined,
           challenges: metadata.jobChallenges ? JSON.stringify(metadata.jobChallenges) : undefined,
           subcategories: metadata.jobSubcategories ? JSON.stringify(metadata.jobSubcategories) : undefined,
+          
+          // Application & CTA Setup
+          applicationMethod: metadata.applicationMethod || 'native',
+          externalUrl: metadata.applicationUrl || undefined,
+          applicationEmail: metadata.applicationEmail || undefined,
+          applicationInstructions: metadata.applicationInstructions || undefined,
+          requiredDocuments: metadata.requiredDocuments || undefined,
+          customQuestions: metadata.customQuestions || undefined,
+          externalButtonText: metadata.externalButtonText || undefined,
         } : {}),
       },
     });
