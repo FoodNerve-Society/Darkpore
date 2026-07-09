@@ -306,6 +306,8 @@ export function SocietyProvider({ children }: { children: React.ReactNode }) {
                 slug: m.organization.slug,
                 department: m.department,
                 role: m.role,
+                rank: m.organization.rank || 0,
+                isPlatformOwner: m.organization.isPlatformOwner || false,
                 logoUrl: m.organization.logoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(m.organization.name)}&background=0f172a&color=fff`,
                 website: ''
               })) || [],

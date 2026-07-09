@@ -46,6 +46,7 @@ import PremiumTextField from "@/components/PremiumTextField";
 import PremiumAutocomplete from "@/components/PremiumAutocomplete";
 import PremiumDatePicker from "@/components/PremiumDatePicker";
 import PremiumMarkdownEditor from "@/components/PremiumMarkdownEditor";
+import PremiumSwitch from "@/components/PremiumSwitch";
 import PreviewListingModal from "./PreviewListingModal";
 import { useStorageUpload } from "@/hooks/useStorageUpload";
 import ImageIcon from "@mui/icons-material/Image";
@@ -374,14 +375,15 @@ export default function CreateListingForm({
         break;
       case 'cta':
         if (applicationMethod === 'external') {
-            total = 1;
+            total = 2;
             if (applicationUrl.trim().length > 5) filled++;
+            if (externalButtonText.trim().length > 0) filled++;
         } else if (applicationMethod === 'email') {
             total = 1;
             if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(applicationEmail)) filled++;
         } else {
-            total = 1; // By default native has `requireResume` checked
-            filled = 1;
+            total = customQuestions.length > 0 ? customQuestions.length : 1;
+            filled = customQuestions.length > 0 ? customQuestions.filter(q => q.question.trim().length > 0).length : 1;
         }
         break;
     }
@@ -1187,31 +1189,69 @@ export default function CreateListingForm({
                             )}
 
                             {applicationMethod === 'native' && (
-                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                                    <Box sx={{ p: 2, borderRadius: '12px', bgcolor: alpha(color, 0.05), border: `1px solid ${alpha(color, 0.2)}` }}>
-                                        <Typography sx={{ fontWeight: 700, mb: 1, color: '#1e293b' }}>Required Documents</Typography>
-                                        <FormControlLabel control={<Switch checked={requireResume} onChange={(e) => setRequireResume(e.target.checked)} sx={{ '& .MuiSwitch-switchBase.Mui-checked': { color: color }, '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: color } }} />} label="Resume / CV" />
-                                        <FormControlLabel control={<Switch checked={requireCoverLetter} onChange={(e) => setRequireCoverLetter(e.target.checked)} sx={{ '& .MuiSwitch-switchBase.Mui-checked': { color: color }, '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: color } }} />} label="Cover Letter" />
-                                        <FormControlLabel control={<Switch checked={requirePortfolio} onChange={(e) => setRequirePortfolio(e.target.checked)} sx={{ '& .MuiSwitch-switchBase.Mui-checked': { color: color }, '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: color } }} />} label="Portfolio / Work Samples" />
+                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                    <Box>
+                                        <Typography sx={{ fontWeight: 700, mb: 2, color: '#1e293b', fontSize: '1.1rem' }}>Required Documents</Typography>
+                                        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr' }, gap: 2 }}>
+                                            {[
+                                                { label: 'Resume / CV', checked: requireResume, setter: setRequireResume },
+                                                { label: 'Cover Letter', checked: requireCoverLetter, setter: setRequireCoverLetter },
+                                                { label: 'Portfolio / Work', checked: requirePortfolio, setter: setRequirePortfolio }
+                                            ].map((doc, idx) => (
+                                                <Box key={idx} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2, borderRadius: '16px', bgcolor: alpha(color, 0.04), border: `1px solid ${alpha(color, 0.1)}`, transition: 'all 0.2s', '&:hover': { bgcolor: alpha(color, 0.08), borderColor: alpha(color, 0.2) } }}>
+                                                    <Typography sx={{ fontWeight: 600, color: '#334155', fontSize: '0.95rem' }}>{doc.label}</Typography>
+                                                    <PremiumSwitch colorTheme={color} checked={doc.checked} onChange={(e) => doc.setter(e.target.checked)} />
+                                                </Box>
+                                            ))}
+                                        </Box>
                                     </Box>
 
-                                    <Box sx={{ p: 2, borderRadius: '12px', border: `1px solid ${alpha(color, 0.2)}` }}>
-                                        <Typography sx={{ fontWeight: 700, mb: 2, color: '#1e293b' }}>Custom Questions</Typography>
+                                    <Box>
+                                        <Typography sx={{ fontWeight: 700, mb: 3, color: '#1e293b', fontSize: '1.1rem' }}>Custom Questions</Typography>
                                         {customQuestions.map((q, idx) => (
-                                            <Box key={q.id} sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'center' }}>
-                                                <Typography sx={{ fontWeight: 600, color: '#64748b' }}>{idx + 1}.</Typography>
-                                                <Select value={q.type} onChange={(e) => { const n = [...customQuestions]; n[idx].type = e.target.value; setCustomQuestions(n); }} size="small" sx={{ width: '140px', borderRadius: '8px' }}>
-                                                    <MenuItem value="short_text">Short Text</MenuItem>
-                                                    <MenuItem value="markdown">Long Text (Rich)</MenuItem>
-                                                    <MenuItem value="link">URL / Link</MenuItem>
-                                                    <MenuItem value="date">Date</MenuItem>
-                                                </Select>
-                                                <PremiumTextField colorTheme={color} fullWidth label="Question" value={q.question} onChange={(e) => { const n = [...customQuestions]; n[idx].question = e.target.value; setCustomQuestions(n); }} size="small" />
-                                                <FormControlLabel control={<Switch checked={q.required} onChange={(e) => { const n = [...customQuestions]; n[idx].required = e.target.checked; setCustomQuestions(n); }} size="small" />} label="Required" sx={{ minWidth: '100px' }} />
-                                                <IconButton color="error" onClick={() => setCustomQuestions(customQuestions.filter(x => x.id !== q.id))}><CloseIcon sx={{ fontSize: 18 }} /></IconButton>
+                                            <Box key={q.id} sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: { xs: 2, md: 3 }, mb: 3, p: 3, borderRadius: '16px', border: '1px solid rgba(0,0,0,0.08)', bgcolor: '#fff', position: 'relative', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>
+                                                <Typography sx={{ fontWeight: 800, color: alpha(color, 0.5), fontSize: '1.2rem', position: { xs: 'relative', md: 'absolute' }, left: { md: -16 }, top: { md: '50%' }, transform: { md: 'translateY(-50%)' } }}>
+                                                    #{idx + 1}
+                                                </Typography>
+                                                <Box sx={{ width: { xs: '100%', md: '240px' } }}>
+                                                    <PremiumAutocomplete 
+                                                        colorTheme={color} 
+                                                        label="Question Type" 
+                                                        options={[
+                                                            { label: 'Short Text', value: 'short_text' },
+                                                            { label: 'Long Text (Rich)', value: 'markdown' },
+                                                            { label: 'URL / Link', value: 'link' },
+                                                            { label: 'Date', value: 'date' }
+                                                        ]}
+                                                        value={{
+                                                            label: q.type === 'short_text' ? 'Short Text' : q.type === 'markdown' ? 'Long Text (Rich)' : q.type === 'link' ? 'URL / Link' : 'Date',
+                                                            value: q.type
+                                                        }}
+                                                        onChange={(_, val) => {
+                                                            if (val) {
+                                                                const n = [...customQuestions]; 
+                                                                n[idx].type = val.value as any; 
+                                                                setCustomQuestions(n);
+                                                            }
+                                                        }}
+                                                        disableClearable
+                                                    />
+                                                </Box>
+                                                <Box sx={{ flex: 1 }}>
+                                                    <PremiumTextField colorTheme={color} fullWidth label="Question Prompt *" value={q.question} onChange={(e) => { const n = [...customQuestions]; n[idx].question = e.target.value; setCustomQuestions(n); }} />
+                                                </Box>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, minWidth: { md: '140px' } }}>
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                        <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b' }}>Required</Typography>
+                                                        <PremiumSwitch colorTheme={color} checked={q.required} onChange={(e) => { const n = [...customQuestions]; n[idx].required = e.target.checked; setCustomQuestions(n); }} size="small" />
+                                                    </Box>
+                                                    <IconButton color="error" onClick={() => setCustomQuestions(customQuestions.filter(x => x.id !== q.id))} sx={{ bgcolor: 'rgba(239,68,68,0.1)', '&:hover': { bgcolor: 'rgba(239,68,68,0.2)' } }}><CloseIcon sx={{ fontSize: 20 }} /></IconButton>
+                                                </Box>
                                             </Box>
                                         ))}
-                                        <Button variant="outlined" startIcon={<AddIcon sx={{ fontSize: 16 }} />} onClick={() => setCustomQuestions([...customQuestions, { id: Math.random().toString(), question: '', type: 'short_text', required: true }])} sx={{ borderRadius: '8px', color: color, borderColor: color, textTransform: 'none', fontWeight: 600 }}>Add Question</Button>
+                                        <Button variant="outlined" startIcon={<AddIcon />} onClick={() => setCustomQuestions([...customQuestions, { id: Math.random().toString(), question: '', type: 'short_text', required: true }])} sx={{ borderRadius: '12px', color: color, borderColor: alpha(color, 0.4), bgcolor: alpha(color, 0.04), textTransform: 'none', fontWeight: 700, px: 3, py: 1.5, '&:hover': { borderColor: color, bgcolor: alpha(color, 0.1) } }}>
+                                            Add Custom Question
+                                        </Button>
                                     </Box>
                                 </Box>
                             )}

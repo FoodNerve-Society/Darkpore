@@ -1,1 +1,0 @@
-import { prisma } from './lib/db'; async function main() { const orgs = await prisma.organization.findMany({ select: { name: true, isPlatformOwner: true, rank: true } }); console.log(orgs); } main().finally(() => prisma.$disconnect());
