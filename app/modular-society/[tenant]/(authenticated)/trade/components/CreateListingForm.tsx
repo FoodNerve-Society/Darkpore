@@ -50,6 +50,7 @@ import PremiumSwitch from "@/components/PremiumSwitch";
 import PreviewListingModal from "./PreviewListingModal";
 import { useStorageUpload } from "@/hooks/useStorageUpload";
 import ImageIcon from "@mui/icons-material/Image";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { Country, State, City } from 'country-state-city';
 import { CATEGORY_OPTIONS } from "@/lib/taxonomy";
@@ -382,8 +383,9 @@ export default function CreateListingForm({
             total = 1;
             if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(applicationEmail)) filled++;
         } else {
-            total = customQuestions.length > 0 ? customQuestions.length : 1;
-            filled = customQuestions.length > 0 ? customQuestions.filter(q => q.question.trim().length > 0).length : 1;
+            // Native flow: valid if at least one document is required or a custom question exists
+            total = 1;
+            filled = (requireResume || requireCoverLetter || requirePortfolio || customQuestions.length > 0) ? 1 : 0;
         }
         break;
     }
@@ -1181,7 +1183,7 @@ export default function CreateListingForm({
                                         <PremiumMarkdownEditor 
                                             colorTheme={color} 
                                             value={applicationInstructions} 
-                                            onChange={setApplicationInstructions} 
+                                            onChange={(e: any) => setApplicationInstructions(e?.target?.value ?? e)} 
                                             placeholder="e.g. Please format your subject line as..." 
                                         />
                                     </Box>
@@ -1190,6 +1192,13 @@ export default function CreateListingForm({
 
                             {applicationMethod === 'native' && (
                                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, p: 2, borderRadius: '12px', bgcolor: alpha(color, 0.04), border: `1px solid ${alpha(color, 0.15)}` }}>
+                                        <InfoOutlinedIcon sx={{ color, mt: 0.2 }} />
+                                        <Typography sx={{ fontSize: '0.9rem', color: '#475569', lineHeight: 1.6 }}>
+                                            The Native Application is completed when <strong>at least one Required Document</strong> is toggled ON, or if you add Custom Questions. Selecting at least one ensures candidates have a clear submission process.
+                                        </Typography>
+                                    </Box>
+
                                     <Box>
                                         <Typography sx={{ fontWeight: 700, mb: 2, color: '#1e293b', fontSize: '1.1rem' }}>Required Documents</Typography>
                                         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr' }, gap: 2 }}>
