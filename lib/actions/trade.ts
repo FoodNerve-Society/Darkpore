@@ -88,6 +88,7 @@ export async function createTradeListing(data: CreateTradeListingPayload) {
       priceOrAsk: data.priceOrAsk || '0',
       location: data.location,
       lga: data.lga || '',
+      commodity: metadata.sector || undefined,
       postedById: data.postedById,
       imageUrl: data.imageUrl,
       nervePointsCost: data.nervePointsCost || 0,

@@ -119,6 +119,8 @@ export default function CreateListingForm({
 
   // Form State
   const [title, setTitle] = useState("");
+  const [draftLocation, setDraftLocation] = useState("");
+  const [draftOrg, setDraftOrg] = useState<any>(null);
   
   // Identity Logic
   const tertiary = draftData 
@@ -130,6 +132,10 @@ export default function CreateListingForm({
   const isFoodNerve = tertiary === 'foodnerve-org';
   const isMyOrg = tertiary === 'my-org';
   const isExternal = tertiary === 'external';
+  
+  const primarySelection = initialSelections?.primary || draftData?.compType || draftData?.category || 'jobs';
+  const secondarySelection = initialSelections?.secondary || draftData?.workModel || 'onsite';
+  const isRemote = secondarySelection === 'remote';
 
   const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
   
@@ -341,26 +347,40 @@ export default function CreateListingForm({
       }
 
         if (draftData) {
+          // Identity
+          if (draftData.organizationId && draftData.jobSource !== 'community_sourced') {
+            setSelectedEntityId(draftData.organizationId);
+            if (draftData.organization) setDraftOrg(draftData.organization);
+          }
+
           // Duration
           if (draftData.duration) setDuration(draftData.duration);
+          if (draftData.commodity) setSector(draftData.commodity);
           
-          // Location (address is stored in location)
-          if (draftData.location) setAddress(draftData.location);
-          if (draftData.workModel === 'remote') setIsVirtual(true);
+          // Location (Draft Mode Display)
+          if (draftData.location) {
+            setDraftLocation(draftData.location);
+          }
           
           // Challenges & Subcategories
           if (draftData.challenges) {
-            try { setJobChallenges(JSON.parse(draftData.challenges)); } catch(e) {}
+            try { 
+              const cIds = JSON.parse(draftData.challenges); 
+              setJobChallenges(availableChallenges.filter((c: any) => cIds.includes(c.id)));
+            } catch(e) {}
           }
           if (draftData.subcategories) {
-            try { setJobSubcategories(JSON.parse(draftData.subcategories)); } catch(e) {}
+            try { 
+              const sIds = JSON.parse(draftData.subcategories); 
+              const allSubs = availableChallenges.flatMap((c: any) => c.subcategories || []);
+              setJobSubcategories(allSubs.filter((s: any) => sIds.includes(s.id)));
+            } catch(e) {}
           }
           
           // Application & CTA Setup
           if (draftData.applicationMethod) setApplicationMethod(draftData.applicationMethod);
           if (draftData.externalUrl) {
             setApplicationUrl(draftData.externalUrl);
-            setExternalLink(draftData.externalUrl);
           }
           if (draftData.applicationEmail) setApplicationEmail(draftData.applicationEmail);
           if (draftData.applicationInstructions) setApplicationInstructions(draftData.applicationInstructions);
@@ -382,10 +402,17 @@ export default function CreateListingForm({
             if (draftData.organization.logoUrl) setExternalEntityLogoUrl(draftData.organization.logoUrl);
             
             if (draftData.organization.challenges) {
-              try { setOrgChallenges(JSON.parse(draftData.organization.challenges)); } catch(e) {}
+              try { 
+                const oCIds = JSON.parse(draftData.organization.challenges); 
+                setOrgChallenges(availableChallenges.filter((c: any) => oCIds.includes(c.id)));
+              } catch(e) {}
             }
             if (draftData.organization.subcategories) {
-              try { setOrgSubcategories(JSON.parse(draftData.organization.subcategories)); } catch(e) {}
+              try { 
+                const oSIds = JSON.parse(draftData.organization.subcategories); 
+                const allSubs = availableChallenges.flatMap((c: any) => c.subcategories || []);
+                setOrgSubcategories(allSubs.filter((s: any) => oSIds.includes(s.id)));
+              } catch(e) {}
             }
             
             if (draftData.organization.country) setExternalCountry({ name: draftData.organization.country });
@@ -438,7 +465,6 @@ export default function CreateListingForm({
         total = 1;
         if (selectedCountry) {
            filled++;
-           const isRemote = initialSelections?.secondary === 'remote';
            // State is always compulsory
            total++;
            if (selectedState) filled++;
@@ -568,9 +594,12 @@ export default function CreateListingForm({
 
     const isVolunteer = initialCategory?.toLowerCase().includes('volunteer');
     let compTypeString = isVolunteer ? "Volunteer/NP" : "Fiat";
-    let locationString = `${selectedCountry?.name || ''}`;
-    if (selectedState) locationString = `${selectedState.name}, ${locationString}`;
-    if (selectedCity) locationString = `${selectedCity.name}, ${locationString}`;
+    let locationString = draftLocation || '';
+    if (selectedCountry) {
+      locationString = `${selectedCountry.name}`;
+      if (selectedState) locationString = `${selectedState.name}, ${locationString}`;
+      if (selectedCity) locationString = `${selectedCity.name}, ${locationString}`;
+    }
 
     // Determine the organizationId
     let organizationId = selectedEntityId;
@@ -591,9 +620,9 @@ export default function CreateListingForm({
       startDate,
       endDate,
       npAmount: npAmount ? parseInt(npAmount) : undefined,
-      commitment: initialSelections?.primary,
-      workModel: initialSelections?.secondary,
-      hiringEntity: initialSelections?.tertiary,
+      commitment: primarySelection,
+      workModel: secondarySelection,
+      hiringEntity: tertiary,
       // External organization data
       isExternal,
       externalEntityName: isExternal ? externalEntityName : undefined,
@@ -727,7 +756,7 @@ export default function CreateListingForm({
               {/* Subcategory */}
               <Box sx={{ display: 'flex', alignItems: 'center', px: 1, py: 0.5, color: '#475569' }}>
                 <Typography sx={{ fontWeight: 600, fontSize: '0.85rem', opacity: 0.9, textTransform: 'capitalize' }}>
-                  {initialSelections?.primary || 'Listing'}
+                  {primarySelection || 'Listing'}
                 </Typography>
               </Box>
 
@@ -1142,7 +1171,7 @@ export default function CreateListingForm({
                                       <PremiumAutocomplete colorTheme={color} label="State / Province *" options={states} getOptionLabel={(opt: any) => opt.name || ''} value={selectedState} onChange={(e, val) => setSelectedState(val)} disabled={!selectedCountry || states.length === 0} />
                                   </Box>
                                   <Box sx={{ flex: 1 }}>
-                                      <PremiumAutocomplete colorTheme={color} label={`City / LGA ${initialSelections?.secondary === 'remote' ? '(Optional)' : '*'}`} options={cities} getOptionLabel={(opt: any) => opt.name || ''} value={selectedCity} onChange={(e, val) => setSelectedCity(val)} disabled={!selectedState || cities.length === 0} />
+                                      <PremiumAutocomplete colorTheme={color} label={`City / LGA ${isRemote ? '(Optional)' : '*'}`} options={cities} getOptionLabel={(opt: any) => opt.name || ''} value={selectedCity} onChange={(e, val) => setSelectedCity(val)} disabled={!selectedState || cities.length === 0} />
                                   </Box>
                               </Box>
                           </Box>
