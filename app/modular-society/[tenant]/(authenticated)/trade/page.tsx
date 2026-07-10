@@ -345,7 +345,7 @@ export default function TradePage() {
     return () => clearTimeout(timer);
   }, [activeTab]);
 
-  const FILTERS = ["All Listings", "Flash Sales", "Group-Buy", "Swaps", "Paid Jobs", "Volunteer (NP)"];
+  const FILTERS = ["All Listings", "Flash Sales", "Group-Buy", "Swaps", "Paid Jobs", "Internships", "Volunteer (NP)"];
 
   const FrontContent = (
     <Paper elevation={0} sx={sharedPaperSx}>
@@ -475,18 +475,20 @@ export default function TradePage() {
       >
         {activeTab === "All Listings" ? (
           <>
-            <HorizontalScrollRow title="Urgent Flash Sales" emoji="⚡" items={feedListings.filter(l => l.category === "flash-sale")} />
-            <HorizontalScrollRow title="Paid Opportunities" emoji="💼" items={feedListings.filter(l => l.category === "jobs")} />
-            <HorizontalScrollRow title="Volunteer & Earn NP" emoji="🌟" items={feedListings.filter(l => l.category === "volunteer")} />
-            <HorizontalScrollRow title="Community Group-Buys" emoji="🤝" items={feedListings.filter(l => l.category === "group-buy")} />
+            <HorizontalScrollRow title="Urgent Flash Sales" emoji="🚨" items={feedListings.filter(l => l.category === "flash-sale")} />
+            <HorizontalScrollRow title="Paid Opportunities" emoji="💰" items={feedListings.filter(l => l.category === "jobs" && l.metadata?.commitment !== 'volunteer' && l.metadata?.commitment !== 'internship')} />
+            <HorizontalScrollRow title="Internships" emoji="🎓" items={feedListings.filter(l => l.category === "jobs" && l.metadata?.commitment === 'internship')} />
+            <HorizontalScrollRow title="Volunteer & Earn NP" emoji="🤝" items={feedListings.filter(l => l.category === "volunteer" || (l.category === "jobs" && l.metadata?.commitment === 'volunteer'))} />
+            <HorizontalScrollRow title="Community Group-Buys" emoji="🛒" items={feedListings.filter(l => l.category === "group-buy")} />
             <HorizontalScrollRow title="Barter & Swaps" emoji="♻️" items={feedListings.filter(l => l.category === "swap")} />
             <Box sx={{ height: { xs: 80, md: 24 } }} />
           </>
         ) : (
           <>
             {activeTab === "Flash Sales" && <GridScrollRow items={feedListings.filter(l => l.category === "flash-sale")} />}
-            {activeTab === "Paid Jobs" && <GridScrollRow items={feedListings.filter(l => l.category === "jobs")} />}
-            {activeTab === "Volunteer (NP)" && <GridScrollRow items={feedListings.filter(l => l.category === "volunteer")} />}
+            {activeTab === "Paid Jobs" && <GridScrollRow items={feedListings.filter(l => l.category === "jobs" && l.metadata?.commitment !== 'volunteer' && l.metadata?.commitment !== 'internship')} />}
+            {activeTab === "Internships" && <GridScrollRow items={feedListings.filter(l => l.category === "jobs" && l.metadata?.commitment === 'internship')} />}
+            {activeTab === "Volunteer (NP)" && <GridScrollRow items={feedListings.filter(l => l.category === "volunteer" || (l.category === "jobs" && l.metadata?.commitment === 'volunteer'))} />}
             {activeTab === "Group-Buy" && <GridScrollRow items={feedListings.filter(l => l.category === "group-buy")} />}
             {activeTab === "Swaps" && <GridScrollRow items={feedListings.filter(l => l.category === "swap")} />}
           </>

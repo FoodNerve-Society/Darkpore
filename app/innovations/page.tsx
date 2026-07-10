@@ -70,15 +70,20 @@ export default async function InnovationsHomepage() {
       take: 10
     });
 
-    const jobUpdates = recentJobs.map(job => ({
-      title: `${job.category === 'volunteer' ? 'VOLUNTEER' : 'JOB'}: ${job.title}`,
-      date: job.postedAt,
-      section: 'jobs',
-      importance: 'high',
-      challengeTitle: 'Talent & Ops',
-      challengeId: 'global',
-      link: `/modular-society/${tenantId}/trade/${job.id}`
-    }));
+    const jobUpdates = recentJobs.map((job: any) => {
+      const isVolunteer = job.category === 'volunteer' || (job.category === 'jobs' && job.metadata?.commitment === 'volunteer');
+      const isInternship = job.category === 'jobs' && job.metadata?.commitment === 'internship';
+      const label = isVolunteer ? 'VOLUNTEER' : isInternship ? 'INTERNSHIP' : 'JOB';
+      return {
+        title: `${label}: ${job.title}`,
+        date: job.postedAt,
+        section: 'jobs',
+        importance: 'high',
+        challengeTitle: 'Talent & Ops',
+        challengeId: 'global',
+        link: `/innovations/careers/${job.id}`
+      };
+    });
 
     // 3. Combine and Sort by Date
     rawUpdates = [...learnUpdates, ...jobUpdates].sort((a, b) => {
@@ -272,15 +277,20 @@ export default async function InnovationsHomepage() {
       orderBy: { postedAt: 'desc' }
     });
     
-    activeOpportunities = rawListings.map((l: any) => ({
-      id: l.id,
-      title: l.title,
-      type: l.category === 'volunteer' ? 'Volunteering' : 'Jobs',
-      imageUrl: l.imageUrl || '/images/default-thumbnail.jpg',
-      author: l.postedBy?.name || l.externalCompany || 'Food Nerve Network',
-      metric: l.category === 'volunteer' ? `${l.npReward || 'Earn'} NP` : l.priceOrAsk,
-      link: `/modular-society/${tenantId}/trade`
-    }));
+    activeOpportunities = rawListings.map((l: any) => {
+        const isVolunteer = l.category === 'volunteer' || (l.category === 'jobs' && l.metadata?.commitment === 'volunteer');
+        const isInternship = l.category === 'jobs' && l.metadata?.commitment === 'internship';
+        const typeLabel = isVolunteer ? 'Volunteering' : isInternship ? 'Internships' : 'Jobs';
+        return {
+          id: l.id,
+          title: l.title,
+          type: typeLabel,
+          imageUrl: l.imageUrl || '/images/default-thumbnail.jpg',
+          author: l.postedBy?.name || l.externalCompany || 'Food Nerve Network',
+          metric: isVolunteer ? `${l.npReward || l.metadata?.npAmount || 'Earn'} NP` : l.priceOrAsk,
+          link: `/innovations/careers/${l.id}`
+        };
+      });
   } catch (e) {
     console.warn("SERVER LOG - Failed to fetch trade listings from DB.", e);
   }

@@ -69,6 +69,7 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ job
                 logoUrl={job.organization?.logoUrl}
                 location={job.location}
                 workModel={job.workModel}
+                commitment={(job.metadata as any)?.commitment || (job.category === 'volunteer' ? 'volunteer' : 'full-time')}
                 postedAt={job.postedAt}
                 color={color}
             />

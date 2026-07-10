@@ -26,7 +26,7 @@ const slideUpFade = keyframes`
 
 const LISTING_OPTIONS = [
   {
-    type: 'jobs', title: "Paid Jobs & Internships", desc: "Hire talent, or post work & internship opportunities.",
+    type: 'jobs', title: "Jobs, Interns & Volunteering", desc: "Post full-time roles, internships, gigs, or volunteer opportunities.",
     icon: <StorefrontIcon sx={{ fontSize: 32 }} />, color: "#1e293b", grad: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", emoji: "🏢"
   },
   {
@@ -56,7 +56,15 @@ const hiringEntityOptions = [
 const TRADE_CONFIGS: Record<string, any[]> = {
   'jobs': [
     {
-      id: 'full-time', title: 'Full-Time Role', desc: 'Standard 40h/week employment', color: '#10b981', imageUrl: 'https://images.unsplash.com/photo-1573164713988-8665fc963095?auto=format&fit=crop&w=400&q=80',
+      id: 'full-time', title: 'Full-Time Role', desc: 'Standard employment', color: '#10b981', imageUrl: 'https://images.unsplash.com/photo-1573164713988-8665fc963095?auto=format&fit=crop&w=400&q=80',
+      options: [ 
+        { id: 'remote', title: 'Remote', desc: 'Work from anywhere', nextOptions: hiringEntityOptions }, 
+        { id: 'on-site', title: 'On-site', desc: 'Physical location required', nextOptions: hiringEntityOptions }, 
+        { id: 'hybrid', title: 'Hybrid', desc: 'Mix of both', nextOptions: hiringEntityOptions } 
+      ]
+    },
+    {
+      id: 'internship', title: 'Internship', desc: 'Entry-level or student role', color: '#f59e0b', imageUrl: 'https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=400&q=80',
       options: [ 
         { id: 'remote', title: 'Remote', desc: 'Work from anywhere', nextOptions: hiringEntityOptions }, 
         { id: 'on-site', title: 'On-site', desc: 'Physical location required', nextOptions: hiringEntityOptions }, 

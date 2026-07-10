@@ -13,6 +13,7 @@ interface JobHeroHeaderProps {
     logoUrl?: string | null;
     location: string;
     workModel?: string | null;
+    commitment?: string | null;
     postedAt: Date;
     color: string;
 }
@@ -23,6 +24,7 @@ export default function JobHeroHeader({
     logoUrl,
     location,
     workModel,
+    commitment,
     postedAt,
     color
 }: JobHeroHeaderProps) {
@@ -52,27 +54,43 @@ export default function JobHeroHeader({
                         >
                             {organizationName.charAt(0)}
                         </Avatar>
-                        <Typography sx={{ fontWeight: 600, color: '#475569', fontSize: '1.1rem' }}>
+                        <Typography variant="body1" sx={{ color, fontWeight: 700, letterSpacing: '1px' }}>
                             {organizationName}
                         </Typography>
                     </Box>
 
-                    {/* Job Title */}
-                    <Typography 
-                        variant="h1" 
-                        sx={{ 
-                            fontWeight: 800, 
-                            fontSize: { xs: '2.5rem', md: '3.5rem' },
-                            lineHeight: 1.1,
-                            color: '#0f172a',
-                            letterSpacing: '-0.02em'
-                        }}
-                    >
-                        {title}
-                    </Typography>
+                    {/* Job Title and Commitment Badge */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap', mb: 2 }}>
+                        <Typography 
+                            variant="h1" 
+                            sx={{ 
+                                fontWeight: 900, 
+                                fontSize: { xs: '2rem', md: '3rem' }, 
+                                color: '#0f172a',
+                                lineHeight: 1.1,
+                                letterSpacing: '-1px'
+                            }}
+                        >
+                            {title}
+                        </Typography>
+                        {commitment && (
+                            <Chip 
+                                label={commitment === 'volunteer' ? 'Volunteer' : commitment === 'internship' ? 'Internship' : commitment === 'contract' ? 'Contract' : 'Full-time'} 
+                                sx={{ 
+                                    bgcolor: commitment === 'volunteer' ? alpha('#3b82f6', 0.1) : commitment === 'internship' ? alpha('#f59e0b', 0.1) : alpha(color, 0.1), 
+                                    color: commitment === 'volunteer' ? '#3b82f6' : commitment === 'internship' ? '#f59e0b' : color, 
+                                    fontWeight: 800, 
+                                    borderRadius: '8px',
+                                    height: 32,
+                                    px: 1,
+                                    transform: 'translateY(2px)' // align visually with huge text
+                                }} 
+                            />
+                        )}
+                    </Box>
 
                     {/* Meta Row */}
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: { xs: 2, md: 4 }, mt: 1 }}>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: { xs: 2, md: 4 } }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#64748b' }}>
                             <LocationOnIcon fontSize="small" sx={{ color }} />
                             <Typography sx={{ fontWeight: 500 }}>{location}</Typography>

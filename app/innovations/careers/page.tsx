@@ -132,7 +132,10 @@ function Swimlane({ title, subtitle, icon, jobs, tenantId }: { title: string, su
 }
 
 function JobCard({ job, tenantId }: { job: any, tenantId: string }) {
-    const isVolunteer = job.category === 'volunteer';
+    const commitment = job.metadata?.commitment || (job.category === 'volunteer' ? 'volunteer' : 'full-time');
+    const isVolunteer = commitment === 'volunteer';
+    const isIntern = commitment === 'internship';
+    const isContract = commitment === 'contract';
     const org = job.organization;
     const isExternal = org?.isExternal;
     
@@ -165,7 +168,7 @@ function JobCard({ job, tenantId }: { job: any, tenantId: string }) {
             }
         }}>
             {/* Top accent line */}
-            <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: isVolunteer ? '#3b82f6' : EMERALD }} />
+            <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: isVolunteer ? '#3b82f6' : isIntern ? '#f59e0b' : EMERALD }} />
             
             <CardContent sx={{ p: 4, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
@@ -183,11 +186,11 @@ function JobCard({ job, tenantId }: { job: any, tenantId: string }) {
                         )}
                     </Box>
                     <Chip 
-                        label={isVolunteer ? 'Volunteer' : 'Full-time'} 
+                        label={isVolunteer ? 'Volunteer' : isIntern ? 'Internship' : isContract ? 'Contract' : 'Full-time'} 
                         size="small" 
                         sx={{ 
-                            bgcolor: isVolunteer ? alpha('#3b82f6', 0.1) : alpha(EMERALD, 0.1), 
-                            color: isVolunteer ? '#3b82f6' : EMERALD, 
+                            bgcolor: isVolunteer ? alpha('#3b82f6', 0.1) : isIntern ? alpha('#f59e0b', 0.1) : alpha(EMERALD, 0.1), 
+                            color: isVolunteer ? '#3b82f6' : isIntern ? '#f59e0b' : EMERALD, 
                             fontWeight: 700, borderRadius: '8px' 
                         }} 
                     />
@@ -219,7 +222,7 @@ function JobCard({ job, tenantId }: { job: any, tenantId: string }) {
                     )}
                     <Button 
                         component={Link} 
-                        href={`/modular-society/${tenantId}/trade/${job.id}`}
+                        href={`/innovations/careers/${job.id}`}
                         fullWidth 
                         variant="outlined" 
                         endIcon={<ArrowForwardIosIcon className="hover-arrow" sx={{ fontSize: '14px !important', transition: '0.2s' }} />}
