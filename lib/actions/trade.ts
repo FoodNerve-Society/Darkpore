@@ -15,6 +15,7 @@ export interface CreateTradeListingPayload {
   status?: string;
   metadata?: any;
   organizationId?: string | null;
+  expiresAt?: string | Date | null;
 }
 
 export async function createTradeListing(data: CreateTradeListingPayload) {
@@ -49,32 +50,35 @@ export async function createTradeListing(data: CreateTradeListingPayload) {
         where: { id: finalOrganizationId },
         select: { isPlatformOwner: true }
       });
-      if (org) isPlatformOwner = org.isPlatformOwner;
+      isPlatformOwner = org?.isPlatformOwner || false;
+    } else if (metadata.isExternal && metadata.externalEntityName) {
+      // Auto-create a ghost organization for external entities
+      let baseSlug = metadata.externalEntityName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      let slug = baseSlug;
+      let counter = 1;
+      while (await prisma.organization.findUnique({ where: { slug } })) {
+        slug = `${baseSlug}-${counter}`;
+        counter++;
+      }
+
+      const extOrg = await prisma.organization.create({
+        data: {
+          name: metadata.externalEntityName,
+          slug,
+          verified: false,
+          logoUrl: metadata.externalEntityLogoUrl || undefined,
+          country: metadata.externalCountry || undefined,
+          state: metadata.externalState || undefined,
+          lga: metadata.externalLga || undefined,
+        }
+      });
+      finalOrganizationId = extOrg.id;
     }
 
     if (!isDraft && isJobOrVolunteer && !isPlatformOwner) {
       if (!metadata.jobChallenges || metadata.jobChallenges.length === 0) {
         return { success: false, error: 'You must select at least one challenge this role addresses.' };
       }
-    }
-    if (metadata.isExternal && !finalOrganizationId) {
-      // Create external organization
-      const extOrg = await prisma.organization.create({
-        data: {
-          name: metadata.externalEntityName || 'External Organization',
-          slug: `ext-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-          legalName: metadata.externalEntityShortName,
-          country: metadata.externalCountry,
-          state: metadata.externalState,
-          lga: metadata.externalLga,
-          logoUrl: metadata.externalEntityLogoUrl,
-          isExternal: true,
-          rank: 1, // Or whatever rank is deemed appropriate for external entities
-          challenges: metadata.organizationChallenges ? JSON.stringify(metadata.organizationChallenges) : undefined,
-          subcategories: metadata.organizationSubcategories ? JSON.stringify(metadata.organizationSubcategories) : undefined,
-        }
-      });
-      finalOrganizationId = extOrg.id;
     }
 
     const listing = await prisma.tradeListing.create({
@@ -92,6 +96,7 @@ export async function createTradeListing(data: CreateTradeListingPayload) {
         urgency: 'normal',
         commodity: metadata.sector || undefined, // We map Sector to commodity here
         organizationId: finalOrganizationId,
+        expiresAt: data.expiresAt ? new Date(data.expiresAt) : undefined,
         
         // Job-specific mappings
         ...(isJobOrVolunteer ? {

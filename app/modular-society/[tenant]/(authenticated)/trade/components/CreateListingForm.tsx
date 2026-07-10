@@ -43,6 +43,7 @@ import SparkleIcon from "@mui/icons-material/AutoAwesome";
 import AddIcon from "@mui/icons-material/Add";
 
 import PremiumTextField from "@/components/PremiumTextField";
+import PremiumPriceInput from "@/components/PremiumPriceInput";
 import PremiumAutocomplete from "@/components/PremiumAutocomplete";
 import PremiumDatePicker from "@/components/PremiumDatePicker";
 import PremiumMarkdownEditor from "@/components/PremiumMarkdownEditor";
@@ -541,6 +542,7 @@ export default function CreateListingForm({
       organizationId,
       nervePointsCost: 0,
       status,
+      expiresAt: deadline || undefined,
       metadata
     });
     
@@ -1094,7 +1096,7 @@ export default function CreateListingForm({
                                 <PremiumTextField colorTheme={color} fullWidth label="Duration / Engagement Length *" value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="e.g. 3 Months, Ongoing, Project-based (Auto-fills from dates)" />
                                 
                                 {isVolunteer ? (
-                                     <PremiumTextField colorTheme={color} fullWidth label="Nerve Points Offered (Optional)" type="number" value={npAmount} onChange={(e) => setNpAmount(e.target.value)} placeholder="e.g. 500 NP" />
+                                     <PremiumPriceInput colorTheme={color} fullWidth label="Nerve Points Offered (Optional)" value={npAmount} onChange={(e: any) => setNpAmount(e.target.value)} placeholder="e.g. 500 NP" currencySymbol="NP" />
                                 ) : (
                                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                                         <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', md: 'row' } }}>
@@ -1102,10 +1104,10 @@ export default function CreateListingForm({
                                                 <PremiumAutocomplete colorTheme={color} label="Currency *" options={CURRENCY_OPTIONS} value={currency} onChange={(e, val) => setCurrency(val as string)} disableClearable />
                                             </Box>
                                             <Box sx={{ flex: 1 }}>
-                                                <PremiumTextField colorTheme={color} fullWidth label="Min Budget/Salary" type="number" value={minSalary} onChange={(e) => setMinSalary(e.target.value)} />
+                                                <PremiumPriceInput colorTheme={color} fullWidth label="Min Budget/Salary" value={minSalary} onChange={(e: any) => setMinSalary(e.target.value)} currencySymbol={currency} />
                                             </Box>
                                             <Box sx={{ flex: 1 }}>
-                                                <PremiumTextField colorTheme={color} fullWidth label="Max Budget/Salary" type="number" value={maxSalary} onChange={(e) => setMaxSalary(e.target.value)} />
+                                                <PremiumPriceInput colorTheme={color} fullWidth label="Max Budget/Salary" value={maxSalary} onChange={(e: any) => setMaxSalary(e.target.value)} currencySymbol={currency} />
                                             </Box>
                                         </Box>
                                         {hasSalaryError && (

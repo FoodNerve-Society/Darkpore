@@ -1,0 +1,1 @@
+const { PrismaClient } = require('@prisma/client'); const prisma = new PrismaClient(); async function main() { const drafts = await prisma.tradeListing.findMany({ where: { status: 'draft' } }); console.log('Drafts:', drafts); } main().finally(() => prisma.$disconnect());
