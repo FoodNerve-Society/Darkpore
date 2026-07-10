@@ -1064,6 +1064,10 @@ export default function CreateListingForm({
                           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                                 <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: '#64748b', mb: -1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Time & Reward</Typography>
                                 
+                                <Alert severity="info" sx={{ borderRadius: 2, bgcolor: alpha('#3b82f6', 0.1), color: '#3b82f6', '& .MuiAlert-icon': { color: '#3b82f6' } }}>
+                                    <strong>Required to complete this block:</strong> {isVolunteer ? 'Duration / Engagement Length' : 'Currency, Min Budget, and Max Budget'}
+                                </Alert>
+                                
                                 {/* Application Deadline — when can people apply by */}
                                 <PremiumDatePicker colorTheme={color} fullWidth label="Application Deadline (Optional)" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
 
