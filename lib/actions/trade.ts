@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/db/client';
 
 export interface CreateTradeListingPayload {
+  id?: string;
   category: string;
   title: string;
   description: string;
@@ -24,7 +25,7 @@ export async function createTradeListing(data: CreateTradeListingPayload) {
 
     // Title and Location are strictly required even for drafts
     if (!data.title || !data.location) {
-      return { success: false, error: 'Add a job title and location to save to draft.' };
+      return { success: false, error: 'Title and location are required.' };
     }
 
     // Strict validation for active listings
@@ -65,11 +66,10 @@ export async function createTradeListing(data: CreateTradeListingPayload) {
         data: {
           name: metadata.externalEntityName,
           slug,
-          verified: false,
-          logoUrl: metadata.externalEntityLogoUrl || undefined,
-          country: metadata.externalCountry || undefined,
-          state: metadata.externalState || undefined,
-          lga: metadata.externalLga || undefined,
+          isExternal: true,
+          country: metadata.externalCountry?.name,
+          state: metadata.externalState?.name,
+          lga: metadata.externalLga?.name
         }
       });
       finalOrganizationId = extOrg.id;
@@ -81,51 +81,59 @@ export async function createTradeListing(data: CreateTradeListingPayload) {
       }
     }
 
-    const listing = await prisma.tradeListing.create({
-      data: {
-        category: data.category || 'jobs', // Fallback for drafts
-        title: data.title,
-        description: data.description || '',
-        priceOrAsk: data.priceOrAsk || '0',
-        location: data.location,
-        lga: data.lga || '',
-        postedById: data.postedById,
-        imageUrl: data.imageUrl,
-        nervePointsCost: data.nervePointsCost || 0,
-        status: data.status || 'active',
-        urgency: 'normal',
-        commodity: metadata.sector || undefined, // We map Sector to commodity here
-        organizationId: finalOrganizationId,
-        expiresAt: data.expiresAt ? new Date(data.expiresAt) : undefined,
+    const listingData = {
+      category: data.category || 'jobs',
+      title: data.title,
+      description: data.description || '',
+      priceOrAsk: data.priceOrAsk || '0',
+      location: data.location,
+      lga: data.lga || '',
+      postedById: data.postedById,
+      imageUrl: data.imageUrl,
+      nervePointsCost: data.nervePointsCost || 0,
+      status: data.status || 'draft',
+      organizationId: finalOrganizationId,
+      expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
+      
+      // Job-specific mappings
+      ...(isJobOrVolunteer ? {
+        jobSource: metadata.jobSource || undefined,
+        compType: metadata.compType || undefined,
+        externalCompany: metadata.companyName || undefined,
+        npReward: metadata.npAmount || undefined,
+        targetTenantId: metadata.targetTenantId || undefined,
+        currency: metadata.currency || undefined,
+        minSalary: metadata.minSalary || undefined,
+        maxSalary: metadata.maxSalary || undefined,
+        duration: metadata.duration || undefined,
+        startDate: metadata.startDate ? new Date(metadata.startDate) : undefined,
+        endDate: metadata.endDate ? new Date(metadata.endDate) : undefined,
+        workModel: metadata.workModel || undefined,
+        challenges: metadata.jobChallenges ? JSON.stringify(metadata.jobChallenges) : undefined,
+        subcategories: metadata.jobSubcategories ? JSON.stringify(metadata.jobSubcategories) : undefined,
         
-        // Job-specific mappings
-        ...(isJobOrVolunteer ? {
-          jobSource: metadata.jobSource || undefined,
-          compType: metadata.compType || undefined,
-          externalCompany: metadata.companyName || undefined,
-          npReward: metadata.npAmount || undefined,
-          targetTenantId: metadata.targetTenantId || undefined,
-          currency: metadata.currency || undefined,
-          minSalary: metadata.minSalary || undefined,
-          maxSalary: metadata.maxSalary || undefined,
-          duration: metadata.duration || undefined,
-          startDate: metadata.startDate ? new Date(metadata.startDate) : undefined,
-          endDate: metadata.endDate ? new Date(metadata.endDate) : undefined,
-          workModel: metadata.workModel || undefined,
-          challenges: metadata.jobChallenges ? JSON.stringify(metadata.jobChallenges) : undefined,
-          subcategories: metadata.jobSubcategories ? JSON.stringify(metadata.jobSubcategories) : undefined,
-          
-          // Application & CTA Setup
-          applicationMethod: metadata.applicationMethod || 'native',
-          externalUrl: metadata.applicationUrl || undefined,
-          applicationEmail: metadata.applicationEmail || undefined,
-          applicationInstructions: metadata.applicationInstructions || undefined,
-          requiredDocuments: metadata.requiredDocuments || undefined,
-          customQuestions: metadata.customQuestions || undefined,
-          externalButtonText: metadata.externalButtonText || undefined,
-        } : {}),
-      },
-    });
+        // Application & CTA Setup
+        applicationMethod: metadata.applicationMethod || 'native',
+        externalUrl: metadata.applicationUrl || undefined,
+        applicationEmail: metadata.applicationEmail || undefined,
+        applicationInstructions: metadata.applicationInstructions || undefined,
+        requiredDocuments: metadata.requiredDocuments || undefined,
+        customQuestions: metadata.customQuestions || undefined,
+        externalButtonText: metadata.externalButtonText || undefined,
+      } : {})
+    };
+
+    let listing;
+    if (data.id) {
+      listing = await prisma.tradeListing.update({
+        where: { id: data.id },
+        data: listingData
+      });
+    } else {
+      listing = await prisma.tradeListing.create({
+        data: listingData
+      });
+    }
 
     return { success: true, listing };
   } catch (error: any) {
@@ -143,19 +151,14 @@ export async function getUserDrafts(userId: string) {
       orderBy: {
         postedAt: 'desc'
       },
-      select: {
-        id: true,
-        title: true,
-        category: true,
-        postedAt: true
+      include: {
+        organization: true
       }
     });
     
     const formattedDrafts = drafts.map(d => ({
-      id: d.id,
-      title: d.title || 'Untitled Listing',
-      category: d.category,
-      lastEdited: d.postedAt.toLocaleDateString() // Simplistic relative time placeholder
+      ...d,
+      lastEdited: d.postedAt.toLocaleDateString()
     }));
 
     return { success: true, drafts: formattedDrafts };

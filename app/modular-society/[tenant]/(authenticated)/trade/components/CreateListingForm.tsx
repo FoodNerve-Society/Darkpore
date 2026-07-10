@@ -91,6 +91,7 @@ const glassCard = {
 interface CreateListingFormProps {
   initialCategory?: string;
   initialSelections?: { primary: string, secondary: string, tertiary?: string } | null;
+  draftData?: any;
   onCancel: () => void;
   onSuccess: () => void;
   postingAs?: 'personal' | 'organization';
@@ -99,10 +100,11 @@ interface CreateListingFormProps {
 
 export default function CreateListingForm({ 
   initialCategory = "", 
-  initialSelections = null, 
-  onCancel, 
-  onSuccess, 
-  postingAs = 'personal', 
+  initialSelections = null,
+  draftData,
+  onCancel,
+  onSuccess,
+  postingAs = 'personal',
   selectedOrgId = null 
 }: CreateListingFormProps) {
   const { profile, activeOrg } = useSociety();
@@ -112,14 +114,19 @@ export default function CreateListingForm({
   const tenantConfig = getTenantConfig(tenantId);
   const availableChallenges = tenantConfig.com.homepage.challenges || [];
 
-  const isJob = initialCategory === "jobs";
-  const isVolunteer = initialSelections?.primary === "volunteer";
+  const isJob = initialCategory === "jobs" || draftData?.category === "jobs";
+  const isVolunteer = initialSelections?.primary === "volunteer" || draftData?.category === "volunteer" || draftData?.compType === "volunteer";
 
   // Form State
   const [title, setTitle] = useState("");
   
   // Identity Logic
-  const tertiary = initialSelections?.tertiary;
+  const tertiary = draftData 
+      ? (draftData.jobSource === 'internal_foodnerve' ? 'foodnerve-org' : 
+         draftData.jobSource === 'verified_tenant' ? 'my-org' : 
+         draftData.jobSource === 'community_sourced' ? 'external' : undefined)
+      : initialSelections?.tertiary;
+
   const isFoodNerve = tertiary === 'foodnerve-org';
   const isMyOrg = tertiary === 'my-org';
   const isExternal = tertiary === 'external';
@@ -322,6 +329,84 @@ export default function CreateListingForm({
 
   // 3D Block State
   const [flippedBlockId, setFlippedBlockId] = useState<string | null>(null);
+
+  // Rehydrate from draftData
+  useEffect(() => {
+    if (draftData) {
+      setTitle(draftData.title || "");
+      setDescription(draftData.description || "");
+      
+      if (draftData.expiresAt) {
+        setDeadline(new Date(draftData.expiresAt).toISOString().slice(0, 10)); // e.g., 'YYYY-MM-DD'
+      }
+
+        if (draftData) {
+          // Duration
+          if (draftData.duration) setDuration(draftData.duration);
+          
+          // Location (address is stored in location)
+          if (draftData.location) setAddress(draftData.location);
+          if (draftData.workModel === 'remote') setIsVirtual(true);
+          
+          // Challenges & Subcategories
+          if (draftData.challenges) {
+            try { setJobChallenges(JSON.parse(draftData.challenges)); } catch(e) {}
+          }
+          if (draftData.subcategories) {
+            try { setJobSubcategories(JSON.parse(draftData.subcategories)); } catch(e) {}
+          }
+          
+          // Application & CTA Setup
+          if (draftData.applicationMethod) setApplicationMethod(draftData.applicationMethod);
+          if (draftData.externalUrl) {
+            setApplicationUrl(draftData.externalUrl);
+            setExternalLink(draftData.externalUrl);
+          }
+          if (draftData.applicationEmail) setApplicationEmail(draftData.applicationEmail);
+          if (draftData.applicationInstructions) setApplicationInstructions(draftData.applicationInstructions);
+          if (draftData.customQuestions) {
+            try { setCustomQuestions(JSON.parse(draftData.customQuestions)); } catch(e) {}
+          }
+          if (draftData.requiredDocuments) {
+            try { 
+              const docs = JSON.parse(draftData.requiredDocuments); 
+              if (docs.requireResume !== undefined) setRequireResume(docs.requireResume);
+              if (docs.requireCoverLetter !== undefined) setRequireCoverLetter(docs.requireCoverLetter);
+              if (docs.requirePortfolio !== undefined) setRequirePortfolio(docs.requirePortfolio);
+            } catch(e) {}
+          }
+
+          // External Organization Rehydration
+          if (draftData.organization?.isExternal) {
+            setExternalEntityName(draftData.organization.name || "");
+            if (draftData.organization.logoUrl) setExternalEntityLogoUrl(draftData.organization.logoUrl);
+            
+            if (draftData.organization.challenges) {
+              try { setOrgChallenges(JSON.parse(draftData.organization.challenges)); } catch(e) {}
+            }
+            if (draftData.organization.subcategories) {
+              try { setOrgSubcategories(JSON.parse(draftData.organization.subcategories)); } catch(e) {}
+            }
+            
+            if (draftData.organization.country) setExternalCountry({ name: draftData.organization.country });
+            if (draftData.organization.state) setExternalState({ name: draftData.organization.state });
+            if (draftData.organization.lga) setExternalLga({ name: draftData.organization.lga });
+          }
+        }
+      
+      // Price or ask (e.g. "₦ 1000 - 2000" or "500")
+      if (draftData.category === 'volunteer') {
+        setNpAmount(draftData.priceOrAsk || "");
+      } else {
+        const match = String(draftData.priceOrAsk || "").match(/^(.+?)\s+(\d+)\s+-\s+(\d+)$/);
+        if (match) {
+          setCurrency(match[1]);
+          setMinSalary(match[2]);
+          setMaxSalary(match[3]);
+        }
+      }
+    }
+  }, [draftData]);
 
   const getBlockFillStats = (blockId: string) => {
     let filled = 0;
@@ -532,6 +617,7 @@ export default function CreateListingForm({
     };
 
     const res = await createTradeListing({ 
+      id: draftData?.id,
       category: initialCategory, 
       title, 
       description, 

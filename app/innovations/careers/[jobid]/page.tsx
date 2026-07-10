@@ -1,6 +1,6 @@
 import React from 'react';
 import { notFound } from 'next/navigation';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/db/client';
 import { Box, Container, alpha } from '@mui/material';
 import JobHeroHeader from '../components/JobHeroHeader';
 import JobActionBar from '../components/JobActionBar';
@@ -69,7 +69,7 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ job
                 logoUrl={job.organization?.logoUrl}
                 location={job.location}
                 workModel={job.workModel}
-                commitment={(job.metadata as any)?.commitment || (job.category === 'volunteer' ? 'volunteer' : 'full-time')}
+                commitment={job.duration || (job.category === 'volunteer' ? 'volunteer' : 'full-time')}
                 postedAt={job.postedAt}
                 color={color}
             />

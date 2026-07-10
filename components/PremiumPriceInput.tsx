@@ -87,8 +87,7 @@ const PremiumPriceInput: FC<PremiumPriceInputProps> = forwardRef<HTMLDivElement,
                 open={tooltipOpen && !!tooltipText}
                 arrow
                 placement="top"
-                TransitionComponent={Fade}
-                componentsProps={{
+                slotProps={{
                     tooltip: {
                         sx: {
                             bgcolor: colorTheme, // Match the liquid glass theme
@@ -123,7 +122,7 @@ const PremiumPriceInput: FC<PremiumPriceInputProps> = forwardRef<HTMLDivElement,
                                     <Typography sx={{ fontWeight: 800, color: colorTheme }}>{currencySymbol}</Typography>
                                 </InputAdornment>
                             ),
-                            ...props.InputProps as any
+                            ...((props as any).InputProps || {})
                         }}
                     />
                 </div>

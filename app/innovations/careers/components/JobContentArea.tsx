@@ -2,9 +2,8 @@
 
 import React from 'react';
 import { Box, Typography, Grid, Card, CardContent, Avatar, Chip, Divider, alpha, Button } from '@mui/material';
-import MDEditor from '@uiw/react-md-editor';
 import LocalPoliceIcon from '@mui/icons-material/LocalPolice';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PublicIcon from '@mui/icons-material/Public';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
@@ -31,28 +30,24 @@ export default function JobContentArea({
     return (
         <Grid container spacing={6}>
             {/* Left Column - 70% */}
-            <Grid item xs={12} md={8}>
+            <Grid size={{ xs: 12, md: 8 }}>
                 <Box sx={{ mb: 6 }}>
                     <Typography sx={{ fontWeight: 800, fontSize: '1.5rem', color: '#1e293b', mb: 3 }}>
                         Role Overview
                     </Typography>
                     
                     <Box 
-                        data-color-mode="light" 
                         sx={{ 
-                            '& .wmde-markdown': { 
-                                bgcolor: 'transparent',
-                                color: '#334155',
-                                fontSize: '1.05rem',
-                                lineHeight: 1.8,
-                                fontFamily: 'inherit',
-                                '& h1, h2, h3': { color: '#0f172a', fontWeight: 700, mt: 4, mb: 2 },
-                                '& ul, ol': { pl: 3 },
-                                '& li': { mb: 1 }
-                            } 
+                            color: '#334155',
+                            fontSize: '1.05rem',
+                            lineHeight: 1.8,
+                            fontFamily: 'inherit',
+                            '& h1, h2, h3': { color: '#0f172a', fontWeight: 700, mt: 4, mb: 2 },
+                            '& ul, ol': { pl: 3 },
+                            '& li': { mb: 1 }
                         }}
                     >
-                        <MDEditor.Markdown source={description} />
+                        <div dangerouslySetInnerHTML={{ __html: description?.replace(/\n/g, '<br />') || '' }} />
                     </Box>
                 </Box>
 
@@ -84,7 +79,7 @@ export default function JobContentArea({
             </Grid>
 
             {/* Right Column - 30% */}
-            <Grid item xs={12} md={4}>
+            <Grid size={{ xs: 12, md: 4 }}>
                 <Box sx={{ position: 'sticky', top: '100px', display: 'flex', flexDirection: 'column', gap: 3 }}>
                     
                     {/* Compensation Card */}
@@ -139,7 +134,9 @@ export default function JobContentArea({
                                     {organization.isPlatformOwner ? (
                                         <Chip icon={<LocalPoliceIcon />} label="Core Platform Owner" size="small" sx={{ bgcolor: alpha('#10b981', 0.1), color: '#10b981', fontWeight: 600 }} />
                                     ) : (
-                                        <Chip icon={<CheckCircleOutlineIcon />} label="Verified Society Partner" size="small" sx={{ bgcolor: alpha(color, 0.1), color: color, fontWeight: 600 }} />
+                                        organization?.verified && (
+                                            <Chip icon={<CheckCircleIcon />} label="Verified Society Partner" size="small" sx={{ bgcolor: alpha(color, 0.1), color: color, fontWeight: 600 }} />
+                                        )
                                     )}
                                 </Box>
 

@@ -317,14 +317,15 @@ export default function TradePage() {
   }, []);
 
   useEffect(() => {
-    if (profile?.id) {
-      getUserDrafts(profile.id).then(res => {
+    const userId = profile?.uid || profile?.id;
+    if (userId) {
+      getUserDrafts(userId).then(res => {
         if (res.success && res.drafts) {
           setDrafts(res.drafts);
         }
       });
     }
-  }, [profile?.id]);
+  }, [profile?.uid, profile?.id]);
   const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
   const [createCategory, setCreateCategory] = useState<string>('');
   const [createSelections, setCreateSelections] = useState<{ primary: string, secondary: string, tertiary?: string } | null>(null);
@@ -653,8 +654,9 @@ export default function TradePage() {
               setSelectedDraftId(draftId);
             }}
             onDeleteDraft={async (draftId) => {
-              if (profile?.id) {
-                const res = await deleteTradeListing(draftId, profile.id);
+              const userId = profile?.uid || profile?.id;
+              if (userId) {
+                const res = await deleteTradeListing(draftId, userId);
                 if (res.success) {
                   setDrafts(drafts.filter((d: any) => d.id !== draftId));
                 }
@@ -664,8 +666,9 @@ export default function TradePage() {
         ) : (
           <CreateListingForm 
             key={sessionKey}
-            initialCategory={createCategory}
-            initialSelections={createSelections}
+            draftData={selectedDraftId !== 'new' ? drafts.find((d: any) => d.id === selectedDraftId) : undefined}
+            initialCategory={selectedDraftId !== 'new' ? drafts.find((d: any) => d.id === selectedDraftId)?.category : createCategory}
+            initialSelections={selectedDraftId !== 'new' ? drafts.find((d: any) => d.id === selectedDraftId)?.metadata?.selections : createSelections}
             onCancel={() => {
               setCreateCategory('');
               setCreateSelections(null);
