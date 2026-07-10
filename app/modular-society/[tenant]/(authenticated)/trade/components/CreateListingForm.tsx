@@ -134,8 +134,8 @@ export default function CreateListingForm({
   const [orgChallenges, setOrgChallenges] = useState<any[]>([]);
   const [orgSubcategories, setOrgSubcategories] = useState<any[]>([]);
 
-  // Category and Description
-  const [category, setCategory] = useState(initialCategory || "jobs");
+  // Sector and Description
+  const [sector, setSector] = useState("");
   
   // Job specific state
   const [jobChallenges, setJobChallenges] = useState<any[]>([]);
@@ -341,9 +341,9 @@ export default function CreateListingForm({
       case 'mandate':
         total = 3;
         if (title.trim().length >= 5) filled++;
-        if (category) filled++;
+        if (sector) filled++;
         if (description.length > 20) filled++;
-        if ((category === 'jobs' || category === 'volunteer') && !isPlatformOwnerActive) {
+        if ((initialCategory === 'jobs' || initialCategory === 'volunteer') && !isPlatformOwnerActive) {
             total++;
             if (jobChallenges.length > 0) filled++;
         }
@@ -495,7 +495,7 @@ export default function CreateListingForm({
     }
 
     const metadata = {
-      sector: category?.replace('  ↳ ', '') || '',
+      sector: sector?.replace('  ↳ ', '') || '',
       compType: compTypeString,
       useEscrow,
       duration,
@@ -1000,7 +1000,7 @@ export default function CreateListingForm({
                         {b.id === 'mandate' && (
                           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                               <PremiumTextField colorTheme={color} fullWidth label="Listing Title *" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Senior Agronomist" />
-                              <PremiumAutocomplete colorTheme={color} label="Sector / Category *" options={CATEGORY_OPTIONS} value={category} onChange={(e, val) => setCategory(val as string)} />
+                              <PremiumAutocomplete colorTheme={color} label="Sector / Category *" options={CATEGORY_OPTIONS} value={sector} onChange={(e, val) => setSector(val as string)} />
                               
                               {(isJob || isVolunteer) && (
                                   <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', sm: 'row' }, mt: 2 }}>
@@ -1294,7 +1294,7 @@ export default function CreateListingForm({
               title,
               companyName: isExternal ? externalEntityName : profile?.organizations?.find((o: any) => o.id === selectedEntityId)?.name || 'Unknown Entity',
               companyLogoUrl: isExternal ? externalEntityLogoUrl : profile?.organizations?.find((o: any) => o.id === selectedEntityId)?.logoUrl || '',
-              category: category || '',
+              category: sector || '',
               locationString: selectedCountry ? `${selectedCity ? selectedCity.name + ', ' : ''}${selectedState ? selectedState.name + ', ' : ''}${selectedCountry.name}` : '',
               duration,
               deadline,

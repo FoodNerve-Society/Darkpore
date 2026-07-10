@@ -26,8 +26,8 @@ const slideUpFade = keyframes`
 
 const LISTING_OPTIONS = [
   {
-    type: 'jobs', title: "Paid Jobs", desc: "Hire talent or post work opportunities.",
-    icon: <StorefrontIcon sx={{ fontSize: 32 }} />, color: "#1e293b", grad: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", emoji: "👷"
+    type: 'jobs', title: "Paid Jobs & Internships", desc: "Hire talent, or post work & internship opportunities.",
+    icon: <StorefrontIcon sx={{ fontSize: 32 }} />, color: "#1e293b", grad: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", emoji: "🏢"
   },
   {
     type: 'flash-sale', title: "Flash Sale", desc: "Sell perishable goods quickly.",
