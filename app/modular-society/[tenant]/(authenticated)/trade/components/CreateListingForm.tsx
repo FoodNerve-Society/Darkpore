@@ -451,11 +451,11 @@ export default function CreateListingForm({
             if (selectedEntityId) filled++;
         }
         break;
-      case 'mandate':
-        total = 3;
-        if (title.trim().length >= 5) filled++;
-        if (sector) filled++;
-        if (description.length > 20) filled++;
+        case 'mandate':
+          total = 3;
+          if (title.trim().length > 0) filled++;
+          if (sector) filled++;
+          if (description.trim().length > 0) filled++;
         if ((initialCategory === 'jobs' || initialCategory === 'volunteer') && !isPlatformOwnerActive) {
             total++;
             if (jobChallenges.length > 0) filled++;
@@ -463,8 +463,9 @@ export default function CreateListingForm({
         break;
       case 'geography':
         total = 1;
-        if (selectedCountry) {
+        if (selectedCountry || draftLocation) {
            filled++;
+           if (draftLocation && !selectedCountry) return { filled, total: 1 };
            // State is always compulsory
            total++;
            if (selectedState) filled++;
@@ -563,7 +564,9 @@ export default function CreateListingForm({
 
     if (status === 'active') {
         if (!areAllBlocksFilled) {
-            setError("Please complete all required fields across all blocks before publishing.");
+            const incompleteBlocks = LISTING_FRAMEWORK.filter(b => !isBlockFilled(b.id)).map(b => b.id);
+            const stats = incompleteBlocks.map(id => `${id} (${getBlockFillStats(id).filled}/${getBlockFillStats(id).total})`);
+            setError(`Please complete all required fields. Incomplete: ${stats.join(', ')}`);
             scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
             return;
         }
@@ -988,42 +991,78 @@ export default function CreateListingForm({
                                           const selectedOrg = options.find((o: any) => o.id === selectedEntityId);
 
                                           return (
-                                              <>
-                                                  <PremiumAutocomplete
-                                                      colorTheme={color}
-                                                      label="Search Food Nerve Organizations"
-                                                      options={options}
-                                                      getOptionLabel={(opt: any) => opt.name || ''}
-                                                      value={selectedOrg || null}
-                                                      onChange={(e, val) => setSelectedEntityId(val ? val.id : null)}
-                                                  />
-                                                  
-                                                  {selectedOrg && (
-                                                      <Paper sx={{ 
-                                                          mt: 2, p: 2, borderRadius: '16px', display: 'flex', alignItems: 'center', gap: 2,
-                                                          border: `1px solid ${alpha(color, 0.2)}`, bgcolor: alpha(color, 0.02)
-                                                      }}>
-                                                          <Box sx={{ width: 48, height: 48, borderRadius: '12px', bgcolor: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px solid rgba(0,0,0,0.05)' }}>
-                                                              {selectedOrg.logoUrl ? (
-                                                                  <img src={selectedOrg.logoUrl} alt={selectedOrg.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                                                              ) : (
-                                                                  <WorkIcon sx={{ color: 'rgba(0,0,0,0.2)' }} />
-                                                              )}
-                                                          </Box>
-                                                          <Box sx={{ flex: 1 }}>
-                                                              <Typography sx={{ fontWeight: 800, color: '#0f172a' }}>{selectedOrg.name}</Typography>
-                                                              <Typography sx={{ fontSize: '0.85rem', color: '#64748b' }}>{selectedOrg.role || 'Verified Entity'}</Typography>
-                                                          </Box>
-                                                          <CheckIcon sx={{ color }} />
-                                                      </Paper>
-                                                  )}
-
-                                                  {selectedEntityId && selectedOrg && !selectedOrg.logoUrl && (
-                                                      <Alert severity="warning" sx={{ borderRadius: 2, bgcolor: alpha('#f59e0b', 0.1), color: '#d97706', '& .MuiAlert-icon': { color: '#f59e0b' }, fontSize: '0.85rem', mt: 1 }}>
-                                                          Your organization is missing a logo. Ask your admin to add one to improve listing validity.
-                                                      </Alert>
-                                                  )}
-                                              </>
+                                            <Box>
+                                              {draftOrg && !selectedOrg ? (
+                                                <Box>
+                                                    <Paper sx={{ 
+                                                        p: 2, borderRadius: '16px', display: 'flex', alignItems: 'center', gap: 2,
+                                                        border: `2px solid ${color}`, bgcolor: alpha(color, 0.05), mb: 2
+                                                    }}>
+                                                        <Box sx={{ width: 48, height: 48, borderRadius: '12px', bgcolor: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px solid rgba(0,0,0,0.05)' }}>
+                                                            {draftOrg.logoUrl ? (
+                                                                <img src={draftOrg.logoUrl} alt={draftOrg.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                            ) : (
+                                                                <Typography sx={{ fontWeight: 800, color: '#94a3b8' }}>{draftOrg.name.charAt(0)}</Typography>
+                                                            )}
+                                                        </Box>
+                                                        <Box sx={{ flex: 1 }}>
+                                                            <Typography sx={{ fontWeight: 700, color: '#0f172a' }}>{draftOrg.name}</Typography>
+                                                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>Saved Organization</Typography>
+                                                        </Box>
+                                                    </Paper>
+                                                    <Alert severity="info" sx={{ borderRadius: 2, '& .MuiAlert-message': { width: '100%', fontWeight: 500 } }}>
+                                                      To change this organization, use the search dropdown below.
+                                                    </Alert>
+                                                    
+                                                    <Box sx={{ mt: 3 }}>
+                                                        <PremiumAutocomplete
+                                                            colorTheme={color}
+                                                            label="Search Food Nerve Organizations"
+                                                            options={options}
+                                                            getOptionLabel={(opt: any) => opt.name || ''}
+                                                            value={selectedOrg || null}
+                                                            onChange={(e, val) => setSelectedEntityId(val ? val.id : null)}
+                                                        />
+                                                    </Box>
+                                                </Box>
+                                              ) : (
+                                                  <>
+                                                      <PremiumAutocomplete
+                                                          colorTheme={color}
+                                                          label="Search Food Nerve Organizations"
+                                                          options={options}
+                                                          getOptionLabel={(opt: any) => opt.name || ''}
+                                                          value={selectedOrg || null}
+                                                          onChange={(e, val) => setSelectedEntityId(val ? val.id : null)}
+                                                      />
+                                                      
+                                                      {selectedOrg && (
+                                                          <Paper sx={{ 
+                                                              mt: 2, p: 2, borderRadius: '16px', display: 'flex', alignItems: 'center', gap: 2,
+                                                              border: `2px solid ${alpha(color, 0.2)}`, bgcolor: alpha(color, 0.02)
+                                                          }}>
+                                                              <Box sx={{ width: 48, height: 48, borderRadius: '12px', bgcolor: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px solid rgba(0,0,0,0.05)' }}>
+                                                                  {selectedOrg.logoUrl ? (
+                                                                      <img src={selectedOrg.logoUrl} alt={selectedOrg.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                                  ) : (
+                                                                      <Typography sx={{ fontWeight: 800, color: '#94a3b8' }}>{selectedOrg.name.charAt(0)}</Typography>
+                                                                  )}
+                                                              </Box>
+                                                              <Box>
+                                                                  <Typography sx={{ fontWeight: 700, color: '#0f172a' }}>{selectedOrg.name}</Typography>
+                                                                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>Food Nerve Organization</Typography>
+                                                              </Box>
+                                                              <CheckIcon sx={{ color }} />
+                                                          </Paper>
+                                                      )}
+                                                  </>
+                                              )}
+                                              {selectedEntityId && selectedOrg && !selectedOrg.logoUrl && (
+                                                  <Alert severity="warning" sx={{ borderRadius: 2, bgcolor: alpha('#f59e0b', 0.1), color: '#d97706', '& .MuiAlert-icon': { color: '#f59e0b' }, fontSize: '0.85rem', mt: 1 }}>
+                                                      Your organization is missing a logo. Ask your admin to add one to improve listing validity.
+                                                  </Alert>
+                                              )}
+                                            </Box>
                                           );
                                       })()}
                                   </Box>
@@ -1165,6 +1204,17 @@ export default function CreateListingForm({
                         {b.id === 'geography' && (
                           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                               <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: '#64748b', mb: -1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Location Details</Typography>
+                                {draftLocation && !selectedCountry ? (
+                                  <Box sx={{ mb: 2 }}>
+                                    <Paper sx={{ p: 2, borderRadius: 2, bgcolor: 'rgba(0,0,0,0.02)', border: `1px solid rgba(0,0,0,0.05)`, mb: 2 }}>
+                                      <Typography sx={{ fontWeight: 600, color: '#334155', mb: 0.5, fontSize: '0.85rem', textTransform: 'uppercase' }}>Saved Location</Typography>
+                                      <Typography sx={{ color: '#0f172a', fontWeight: 700, fontSize: '1.1rem' }}>{draftLocation}</Typography>
+                                    </Paper>
+                                    <Alert severity="info" sx={{ borderRadius: 2, '& .MuiAlert-message': { width: '100%', fontWeight: 500 }, mb: 3 }}>
+                                      To edit this location, tap the Country dropdown below to reset your options.
+                                    </Alert>
+                                  </Box>
+                                ) : null}
                               <PremiumAutocomplete colorTheme={color} label="Country *" options={countries} getOptionLabel={(opt: any) => opt.name || ''} value={selectedCountry} onChange={(e, val) => setSelectedCountry(val)} />
                               <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', sm: 'row' } }}>
                                   <Box sx={{ flex: 1 }}>
