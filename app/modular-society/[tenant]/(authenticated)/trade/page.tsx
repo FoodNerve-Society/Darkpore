@@ -191,16 +191,32 @@ function ListingCard({ listing, isGrid = false }: { listing: TradeListing, isGri
       }}
     >
       {/* Image */}
-      <Box sx={{ height: 160, position: "relative" }}>
+      <Box sx={{ height: 160, position: "relative", bgcolor: alpha(EMERALD, 0.05) }}>
         <Box
           sx={{
             position: "absolute",
             inset: 0,
-            backgroundImage: `url(${listing.imageUrl})`,
+            backgroundImage: listing.imageUrl ? `url(${listing.imageUrl})` : `linear-gradient(135deg, ${alpha(EMERALD, 0.6)} 0%, ${alpha('#3b82f6', 0.6)} 100%)`,
             backgroundSize: "cover",
             backgroundPosition: "center",
           }}
         />
+        {/* Avatar / Organization Logo Overlay */}
+        <Box sx={{ position: "absolute", bottom: 12, right: 12 }}>
+          <Avatar 
+            src={listing.postedBy?.avatarUrl || ""}
+            sx={{ 
+              width: 48, height: 48, 
+              border: "3px solid #fff", 
+              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+              bgcolor: alpha(EMERALD, 0.9), 
+              color: "#fff", 
+              fontWeight: 800 
+            }}
+          >
+            {listing.postedBy?.name?.charAt(0) || "U"}
+          </Avatar>
+        </Box>
         {listing.urgency === "expiring" && (
           <Chip
             icon={<BoltIcon sx={{ fontSize: 14 }} />}
@@ -243,9 +259,6 @@ function ListingCard({ listing, isGrid = false }: { listing: TradeListing, isGri
                <Typography variant="caption" color="text.secondary">{listing.location}</Typography>
              </Box>
           </Box>
-          <Avatar sx={{ width: 28, height: 28, bgcolor: alpha(EMERALD, 0.1), color: EMERALD_DARK, fontSize: "0.8rem", fontWeight: 700 }}>
-            {listing.postedBy?.name?.charAt(0) || "U"}
-          </Avatar>
         </Box>
       </Box>
     </Paper>
@@ -304,7 +317,15 @@ export default function TradePage() {
   const [drafts, setDrafts] = useState<any[]>([]);
   const [feedListings, setFeedListings] = useState<any[]>(MOCK_LISTINGS);
 
-  useEffect(() => {
+  const fetchListings = () => {
+    const userId = profile?.uid || profile?.id;
+    if (userId) {
+      getUserDrafts(userId).then(res => {
+        if (res.success && res.drafts) {
+          setDrafts(res.drafts);
+        }
+      });
+    }
     // Fetch actual db listings for jobs and volunteering
     getTradeListings({ categories: ['jobs', 'volunteer'] }).then(res => {
       if (res.success && res.listings) {
@@ -314,17 +335,10 @@ export default function TradePage() {
         });
       }
     });
-  }, []);
+  };
 
   useEffect(() => {
-    const userId = profile?.uid || profile?.id;
-    if (userId) {
-      getUserDrafts(userId).then(res => {
-        if (res.success && res.drafts) {
-          setDrafts(res.drafts);
-        }
-      });
-    }
+    fetchListings();
   }, [profile?.uid, profile?.id]);
   const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
   const [createCategory, setCreateCategory] = useState<string>('');
@@ -674,7 +688,10 @@ export default function TradePage() {
               setCreateSelections(null);
               setSelectedDraftId(null);
             }}
-            onSuccess={() => setIsFlipped(false)}
+            onSuccess={() => {
+              setIsFlipped(false);
+              fetchListings();
+            }}
             postingAs={postingAs}
             selectedOrgId={selectedOrgId || (profile?.organizations?.[0]?.id ?? null)}
           />

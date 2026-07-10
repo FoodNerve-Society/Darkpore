@@ -30,8 +30,14 @@ export async function createTradeListing(data: CreateTradeListingPayload) {
 
     // Strict validation for active listings
     if (!isDraft) {
-      if (!data.category || !data.priceOrAsk || !data.lga || !data.postedById) {
-        return { success: false, error: 'Missing required fields for publishing.' };
+      const missing = [];
+      if (!data.category) missing.push('category');
+      if (!data.priceOrAsk) missing.push('priceOrAsk');
+      // LGA (City) is intentionally omitted from strict validation because it is optional for Remote roles
+      if (!data.postedById) missing.push('postedById');
+
+      if (missing.length > 0) {
+        return { success: false, error: `Missing required fields for publishing: ${missing.join(', ')}` };
       }
     }
 
