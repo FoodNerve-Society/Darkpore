@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import * as React from 'react';
 import { Modal, Box, Typography, Button, IconButton, alpha, Chip, Divider, Avatar, Stack } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
@@ -41,6 +41,71 @@ export default function PreviewListingModal({ open, onClose, data }: PreviewList
         title, companyName, companyLogoUrl, category, locationString,
         duration, deadline, startDate, endDate, compTypeString, minSalary, maxSalary, currency, npAmount, description, color
     } = data;
+
+    const renderMarkdown = (text: string) => {
+        if (!text) return null;
+        
+        const blocks = text.split(/\n\n+/).filter(p => p.trim() !== '');
+        
+        return blocks.map((block, i) => {
+            let isHeading = false;
+            let headingLevel = 0;
+            let isList = false;
+            let isQuote = false;
+            let innerHtml = block.trim();
+
+            if (innerHtml.startsWith('### ')) {
+                isHeading = true;
+                headingLevel = 3;
+                innerHtml = innerHtml.replace(/^### /, '');
+            } else if (innerHtml.startsWith('## ')) {
+                isHeading = true;
+                headingLevel = 2;
+                innerHtml = innerHtml.replace(/^## /, '');
+            } else if (innerHtml.startsWith('# ')) {
+                isHeading = true;
+                headingLevel = 1;
+                innerHtml = innerHtml.replace(/^# /, '');
+            } else if (innerHtml.startsWith('> ')) {
+                isQuote = true;
+                innerHtml = innerHtml.replace(/^>\s?/gm, '');
+            } else if (innerHtml.match(/^[-*]\s/m) || innerHtml.match(/^\d+\.\s/m)) {
+                isList = true;
+                innerHtml = innerHtml.replace(/^[-*]\s+(.*)$/gm, '<li>$1</li>');
+                innerHtml = innerHtml.replace(/^\d+\.\s+(.*)$/gm, '<li>$1</li>');
+                innerHtml = `<ul style="margin:0; padding-left:24px;">${innerHtml}</ul>`;
+            }
+
+            // Inline formatting
+            innerHtml = innerHtml
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/<u>(.*?)<\/u>/g, '<span style="text-decoration: underline;">$1</span>')
+                .replace(/\[(.*?)\]\((.*?)\)/g, `<a href="$2" target="_blank" rel="noopener noreferrer" style="color: ${color}; text-decoration: underline;">$1</a>`);
+
+            if (isList) {
+                return (
+                    <Box key={i} sx={{ mb: 2, '& li': { mb: 0.5, lineHeight: 1.7 } }} dangerouslySetInnerHTML={{ __html: innerHtml }} />
+                );
+            }
+
+            if (isQuote) {
+                return (
+                    <Box key={i} sx={{ borderLeft: `4px solid ${alpha(color, 0.3)}`, pl: 2, my: 2, fontStyle: 'italic', color: '#64748b' }} dangerouslySetInnerHTML={{ __html: innerHtml }} />
+                );
+            }
+
+            if (isHeading) {
+                return (
+                    <Typography key={i} variant={headingLevel === 1 ? 'h4' : headingLevel === 2 ? 'h5' : 'h6'} sx={{ fontWeight: 800, mt: 3, mb: 1.5, color: '#0f172a' }} dangerouslySetInnerHTML={{ __html: innerHtml }} />
+                );
+            }
+
+            return (
+                <Typography key={i} sx={{ mb: 2, lineHeight: 1.8 }} dangerouslySetInnerHTML={{ __html: innerHtml }} />
+            );
+        });
+    };
 
     return (
         <Modal open={open} onClose={onClose} sx={{ 
@@ -122,7 +187,9 @@ export default function PreviewListingModal({ open, onClose, data }: PreviewList
                         }}
                     >
                         {description ? (
-                            <div dangerouslySetInnerHTML={{ __html: description }} />
+                            <Box sx={{ mt: 2 }}>
+                                {renderMarkdown(description)}
+                            </Box>
                         ) : (
                             <Typography sx={{ color: '#94a3b8', fontStyle: 'italic', mt: 4 }}>No description provided yet.</Typography>
                         )}

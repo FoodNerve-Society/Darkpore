@@ -1313,12 +1313,7 @@ export default function CreateListingForm({
       </Box>
 
       {/* FOOTER ACTION CONTAINER */}
-      <Box sx={{ px: 3, py: 2, borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Button onClick={onCancel} sx={{ fontWeight: 700, color: "text.secondary", textTransform: 'none' }}>
-            Cancel
-          </Button>
-        </Box>
+      <Box sx={{ px: 3, py: 2, borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
         <Box sx={{ display: 'flex', gap: 2 }}>
           <Button
             onClick={() => {
