@@ -21,6 +21,7 @@ export interface CreateTradeListingPayload {
 
 export async function createTradeListing(data: CreateTradeListingPayload) {
   try {
+    console.log("CREATE TRADE LISTING PAYLOAD:", JSON.stringify(data, null, 2));
     const isDraft = data.status === 'draft';
 
     // Title and Location are strictly required even for drafts
@@ -31,13 +32,13 @@ export async function createTradeListing(data: CreateTradeListingPayload) {
     // Strict validation for active listings
     if (!isDraft) {
       const missing = [];
-      if (!data.category) missing.push('category');
-      if (!data.priceOrAsk) missing.push('priceOrAsk');
+      if (!data.category) missing.push(`category='${data.category}'`);
+      if (!data.priceOrAsk) missing.push(`priceOrAsk='${data.priceOrAsk}'`);
       // LGA (City) is intentionally omitted from strict validation because it is optional for Remote roles
-      if (!data.postedById) missing.push('postedById');
+      if (!data.postedById) missing.push(`postedById='${data.postedById}'`);
 
       if (missing.length > 0) {
-        return { success: false, error: `Missing required fields for publishing: ${missing.join(', ')}` };
+        return { success: false, error: `Missing required fields for publishing: ${missing.join(', ')}. DEBUG: payload is ${JSON.stringify(data).substring(0, 150)}` };
       }
     }
 
