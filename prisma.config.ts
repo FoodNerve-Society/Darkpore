@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { defineConfig } from '@prisma/config';
 
-const rawUrl = process.env.DATABASE_URL || 'file:./dev.db';
+const rawUrl = process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL || 'file:./dev.db';
 
 export default defineConfig({
   datasource: {
