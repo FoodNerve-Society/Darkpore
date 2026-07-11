@@ -18,10 +18,7 @@ async function main() {
     url,
     authToken
   });
-  let sql = fs.readFileSync('baseline.sql', 'utf16le');
-  if (sql.charCodeAt(0) === 0xFEFF) {
-    sql = sql.slice(1);
-  }
+  let sql = fs.readFileSync('scratch/diff_utf8.sql', 'utf8');
   const queries = sql.split(';')
     .map(q => q.split('\n').filter(line => !line.trim().startsWith('--')).join('\n').trim())
     .filter(q => q.length > 0);
@@ -34,9 +31,7 @@ async function main() {
         await client.execute(q);
         console.log(`Executed query ${i + 1}/${queries.length}`);
       } catch (e) {
-        console.error(`Failed at query ${i + 1}: ${q.substring(0, 50)}...`);
-        console.error(e.message || e);
-        break;
+        console.error(`Failed at query ${i + 1}: ${q.substring(0, 50).replace(/\n/g, ' ')}... -> ${e.message}`);
       }
     }
     console.log("Schema successfully pushed to Turso!");
