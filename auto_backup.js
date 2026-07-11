@@ -10,6 +10,17 @@ function runBackup() {
     // Check if git is initialized
     execSync('git status', { stdio: 'ignore' });
 
+    // Ensure we are on the dev branch
+    try {
+      const currentBranch = execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
+      if (currentBranch !== 'dev') {
+        console.log(`[${timestamp}] Switching to dev branch...`);
+        execSync('git checkout -b dev || git checkout dev', { stdio: 'ignore' });
+      }
+    } catch (e) {
+      console.error("Failed to checkout dev branch:", e.message);
+    }
+
     // Add all changes
     execSync('git add .');
 
@@ -21,12 +32,12 @@ function runBackup() {
     }
 
     // Commit changes
-    const commitMsg = `chore(auto-backup): state saved at ${timestamp}`;
+    const commitMsg = `chore(auto-backup): state saved at ${timestamp} [skip ci]`;
     execSync(`git commit -m "${commitMsg}"`);
     
-    // Push changes
-    console.log(`[${timestamp}] Pushing to remote...`);
-    execSync('git push');
+    // Push changes to dev branch
+    console.log(`[${timestamp}] Pushing to dev branch...`);
+    execSync('git push -u origin dev');
     
     console.log(`[${timestamp}] Auto-backup completed successfully.`);
   } catch (error) {
