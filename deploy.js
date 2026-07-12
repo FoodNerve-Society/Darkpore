@@ -8,8 +8,11 @@ try {
   // 1. Check working directory status
   const status = execSync('git status --porcelain').toString();
   if (status.trim().length > 0) {
-    console.log("Uncommitted changes detected. Running auto-backup first...");
-    execSync('node auto_backup.js', { stdio: 'inherit' });
+    console.log("Uncommitted changes detected. Committing to dev before deployment...");
+    execSync('git add .');
+    const timestamp = new Date().toISOString();
+    execSync(`git commit -m "chore(pre-deploy): state saved at ${timestamp} [skip ci]"`);
+    execSync('git push -u origin dev');
   }
 
   // 2. Database Update
