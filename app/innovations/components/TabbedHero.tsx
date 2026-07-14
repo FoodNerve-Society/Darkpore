@@ -53,68 +53,344 @@ function GlobalAlertBanner({ alerts, activeCategoryId }: { alerts: any[], active
   }, [filteredAlerts.length]);
 
   if (filteredAlerts.length === 0) return null;
-  const currentAlert = filteredAlerts[currentIndex];
 
-  let statusLabel = 'ACTIVE';
-  let statusColor = '#0f172a';
-  if (currentAlert.date) {
-      const diffDays = Math.ceil((new Date(currentAlert.date).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
-      if (diffDays < 3) { statusLabel = 'LIVE NOW'; statusColor = '#ef4444'; }
-      else if (diffDays < 7) { statusLabel = 'ACTION REQ'; statusColor = '#f59e0b'; }
-      else { statusLabel = 'UPCOMING'; statusColor = '#3b82f6'; }
-  }
+  // ──── Systematic Time-Based Color Scheme ────
+  const getAlertStatus = (alert: any) => {
+    const now = new Date();
+    const start = alert.startDate ? new Date(alert.startDate) : null;
+    const end = alert.endDate ? new Date(alert.endDate) : null;
+
+    // Future start
+    if (start && start > now) {
+      const diffMs = start.getTime() - now.getTime();
+      const diffMins = diffMs / (1000 * 60);
+      const diffHours = diffMs / (1000 * 3600);
+      const diffDays = diffHours / 24;
+
+      if (diffMins < 60) return { label: `${Math.ceil(diffMins)}M`, fullLabel: `STARTS IN ${Math.ceil(diffMins)}M`, color: '#f59e0b', dotColor: '#f59e0b', state: 'imminent' as const };
+      if (diffHours < 24) return { label: `${Math.floor(diffHours)}H`, fullLabel: `STARTS IN ${Math.floor(diffHours)}H`, color: '#eab308', dotColor: '#eab308', state: 'today' as const };
+      return { label: `${Math.floor(diffDays)}D`, fullLabel: `STARTS IN ${Math.floor(diffDays)}D`, color: '#6366f1', dotColor: '#818cf8', state: 'scheduled' as const };
+    }
+    // Currently live
+    if (start && now >= start && (!end || now <= end)) return { label: 'LIVE', fullLabel: 'HAPPENING NOW', color: '#ef4444', dotColor: '#ef4444', state: 'live' as const };
+    // Ended
+    if (end && now > end) return { label: 'ENDED', fullLabel: 'ENDED', color: '#94a3b8', dotColor: '#94a3b8', state: 'ended' as const };
+    // No start, has end (closing soon)
+    if (!start && end && now < end) {
+      const diffMs = end.getTime() - now.getTime();
+      const diffMins = diffMs / (1000 * 60);
+      const diffHours = diffMs / (1000 * 3600);
+      const diffDays = diffHours / 24;
+
+      if (diffMins < 60) return { label: `${Math.ceil(diffMins)}M`, fullLabel: `ENDS IN ${Math.ceil(diffMins)}M`, color: '#f59e0b', dotColor: '#f59e0b', state: 'imminent' as const };
+      if (diffHours < 24) return { label: `${Math.floor(diffHours)}H`, fullLabel: `ENDS IN ${Math.floor(diffHours)}H`, color: '#eab308', dotColor: '#eab308', state: 'today' as const };
+      return { label: `${Math.floor(diffDays)}D`, fullLabel: `ENDS IN ${Math.floor(diffDays)}D`, color: '#6366f1', dotColor: '#818cf8', state: 'scheduled' as const };
+    }
+    return { label: 'NEW', fullLabel: 'ACTIVE', color: '#10b981', dotColor: '#34d399', state: 'new' as const };
+  };
+
+  const currentAlert = filteredAlerts[currentIndex];
+  const currentStatus = getAlertStatus(currentAlert);
 
   return (
-    <Box sx={{ bgcolor: '#f8fafc', borderBottom: '1px solid rgba(0,0,0,0.05)', position: 'relative' }}>
-        {/* Progress Bar Background */}
-        {filteredAlerts.length > 1 && (
-            <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, bgcolor: 'rgba(0,0,0,0.05)' }}>
-                <Box
-                    key={currentIndex} // forces re-animation on index change
-                    sx={{
+    <Box sx={{
+      py: 1.5,
+      position: 'relative',
+      zIndex: 2,
+      // Visual separator from category tabs above
+      '&::before': {
+        content: '""',
+        position: 'absolute',
+        top: 0,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: '80%',
+        height: '1px',
+        background: 'linear-gradient(90deg, transparent, rgba(15,23,42,0.06) 30%, rgba(15,23,42,0.06) 70%, transparent)',
+      },
+    }}>
+      <Container maxWidth="lg">
+        <Box sx={{
+          display: 'flex',
+          alignItems: 'stretch',
+          gap: '10px',
+          width: '100%',
+          height: '56px',
+          perspective: '1200px',
+        }}>
+            {filteredAlerts.map((alert, idx) => {
+                const isActive = idx === currentIndex;
+                const status = getAlertStatus(alert);
+
+                // ──── INACTIVE: Mini number pill with 3D flip ────
+                if (!isActive) {
+                  return (
+                    <Box
+                      key={idx}
+                      onClick={() => setCurrentIndex(idx)}
+                      sx={{
+                        flexShrink: 0,
+                        width: '44px',
                         height: '100%',
-                        bgcolor: statusColor,
-                        animation: 'progressFill 6s linear forwards',
-                        '@keyframes progressFill': {
-                            '0%': { width: '0%' },
-                            '100%': { width: '100%' }
-                        }
+                        perspective: '600px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <Box sx={{
+                        width: '100%',
+                        height: '100%',
+                        borderRadius: '14px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '3px',
+                        // Frosted glass
+                        background: 'rgba(255,255,255,0.75)',
+                        backdropFilter: 'blur(16px)',
+                        WebkitBackdropFilter: 'blur(16px)',
+                        // Premium gradient border effect via box-shadow layering
+                        border: '1px solid rgba(226,232,240,0.6)',
+                        boxShadow: `
+                          0 0 0 0.5px rgba(6,95,70,0.08),
+                          0 1px 2px rgba(0,0,0,0.04),
+                          inset 0 1px 0 rgba(255,255,255,0.95)
+                        `,
+                        transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                        transformStyle: 'preserve-3d',
+                        animation: 'flipIn 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+                        '@keyframes flipIn': {
+                          '0%': { transform: 'rotateY(90deg) scale(0.8)', opacity: 0 },
+                          '100%': { transform: 'rotateY(0deg) scale(1)', opacity: 1 },
+                        },
+                        '&:hover': {
+                          background: 'rgba(255,255,255,0.95)',
+                          boxShadow: `
+                            0 0 0 1px rgba(6,95,70,0.12),
+                            0 4px 16px rgba(0,0,0,0.08),
+                            inset 0 1px 0 rgba(255,255,255,1)
+                          `,
+                          transform: 'translateY(-1px)',
+                        },
+                      }}>
+                        <Typography sx={{
+                          fontSize: '0.85rem',
+                          fontWeight: 800,
+                          color: '#1e293b',
+                          lineHeight: 1,
+                          fontFamily: 'var(--font-inter), sans-serif',
+                        }}>
+                          {idx + 1}
+                        </Typography>
+                        {/* Urgency dot */}
+                        <Box sx={{
+                          width: 6, height: 6,
+                          borderRadius: '50%',
+                          bgcolor: status.dotColor,
+                          ...(status.state === 'live' && {
+                            animation: 'livePulse 1.5s ease-in-out infinite',
+                            '@keyframes livePulse': {
+                              '0%, 100%': { opacity: 1, boxShadow: `0 0 0 0 ${status.dotColor}` },
+                              '50%': { opacity: 0.6, boxShadow: `0 0 0 4px transparent` },
+                            },
+                          }),
+                        }} />
+                      </Box>
+                    </Box>
+                  );
+                }
+
+                // ──── ACTIVE: Expanded alert card ────
+                return (
+                  <Box
+                    key={idx}
+                    sx={{
+                      flexGrow: 1,
+                      height: '100%',
+                      position: 'relative',
+                      borderRadius: '14px',
+                      overflow: 'hidden',
+                      // 3D flip entrance
+                      animation: 'expandFlip 0.55s cubic-bezier(0.16, 1, 0.3, 1)',
+                      transformStyle: 'preserve-3d',
+                      '@keyframes expandFlip': {
+                        '0%': { transform: 'rotateY(-90deg) scaleX(0.3)', opacity: 0 },
+                        '40%': { transform: 'rotateY(-15deg) scaleX(0.7)', opacity: 0.7 },
+                        '100%': { transform: 'rotateY(0deg) scaleX(1)', opacity: 1 },
+                      },
                     }}
-                />
-            </Box>
-        )}
-        <Container maxWidth="lg" sx={{ px: { xs: 2, md: 4 }, py: 1 }}>
-            <Box component={Link} href={currentAlert.link || '#'} sx={{
-                textDecoration: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                gap: { xs: 1.5, md: 3 },
-            }}>
-                <Box sx={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
-                     {statusLabel === 'LIVE NOW' && (
-                         <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#ef4444', animation: 'urgentPulse 2s infinite', mr: 1 }} />
-                     )}
-                     <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, color: statusColor, letterSpacing: 1, textTransform: 'uppercase' }}>
-                         {statusLabel}
-                     </Typography>
-                </Box>
-                
-                {currentAlert.imageUrl && (
-                    <Box component="img" src={currentAlert.imageUrl} alt={currentAlert.title} sx={{ width: 40, height: 40, borderRadius: '8px', objectFit: 'cover', flexShrink: 0, display: { xs: 'none', sm: 'block' } }} />
-                )}
+                  >
+                    {/* Gradient border glow — pseudo-element behind the card */}
+                    <Box sx={{
+                      position: 'absolute',
+                      inset: -1,
+                      borderRadius: '15px',
+                      background: 'linear-gradient(135deg, rgba(45,212,191,0.5), rgba(6,95,70,0.3), rgba(45,212,191,0.4))',
+                      zIndex: 0,
+                      filter: 'blur(0.5px)',
+                    }} />
 
-                <Typography sx={{ fontFamily: 'var(--font-dosis)', fontSize: { xs: '0.9rem', md: '1rem' }, fontWeight: 700, color: '#0f172a', flexGrow: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {currentAlert.title}
-                </Typography>
+                    {/* Inner card */}
+                    <Box sx={{
+                      position: 'relative',
+                      zIndex: 1,
+                      width: '100%',
+                      height: '100%',
+                      borderRadius: '14px',
+                      overflow: 'hidden',
+                      // Deep Emerald → Teal gradient
+                      background: 'linear-gradient(135deg, #064e3b 0%, #065f46 30%, #0d9488 70%, #14b8a6 100%)',
+                      boxShadow: `
+                        0 8px 32px rgba(6,95,70,0.3),
+                        0 2px 8px rgba(6,95,70,0.2),
+                        inset 0 1px 0 rgba(255,255,255,0.15)
+                      `,
+                    }}>
+                      {/* Progress wave */}
+                      {filteredAlerts.length > 1 && (
+                        <Box
+                          key={`wave-${currentIndex}`}
+                          sx={{
+                            position: 'absolute',
+                            top: 0, left: 0, bottom: 0,
+                            width: '100%',
+                            background: 'linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.04) 100%)',
+                            transformOrigin: 'left',
+                            borderRadius: '0 14px 14px 0',
+                            animation: 'waveSweep 6s ease-in-out forwards',
+                            pointerEvents: 'none',
+                            '@keyframes waveSweep': {
+                              '0%': { transform: 'scaleX(0)' },
+                              '100%': { transform: 'scaleX(1)' },
+                            },
+                          }}
+                        />
+                      )}
 
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
-                     <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: 'rgba(15,23,42,0.6)', display: { xs: 'none', sm: 'block' } }}>
-                         Tap to action
-                     </Typography>
-                     <ArrowForwardIcon sx={{ fontSize: '1rem', color: 'rgba(15,23,42,0.6)' }} />
-                </Box>
-            </Box>
-        </Container>
+                      {/* Content row */}
+                      <Box
+                        key={`content-${currentIndex}`}
+                        component={Link}
+                        href={alert.link || '#'}
+                        sx={{
+                          textDecoration: 'none',
+                          display: 'flex',
+                          alignItems: 'center',
+                          height: '100%',
+                          gap: { xs: 1.5, md: 2 },
+                          px: { xs: 2, md: 3 },
+                          position: 'relative',
+                          zIndex: 1,
+                          animation: 'contentReveal 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both',
+                          '@keyframes contentReveal': {
+                            '0%': { opacity: 0, transform: 'translateX(-8px)' },
+                            '100%': { opacity: 1, transform: 'translateX(0)' },
+                          },
+                        }}
+                      >
+                        {/* Status badge */}
+                        <Box sx={{
+                          flexShrink: 0,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          bgcolor: 'rgba(0,0,0,0.25)',
+                          borderRadius: '10px',
+                          px: 1.5, py: 0.5,
+                          backdropFilter: 'blur(8px)',
+                          border: '1px solid rgba(255,255,255,0.06)',
+                        }}>
+                          {currentStatus.state === 'live' && (
+                            <Box sx={{
+                              width: 7, height: 7,
+                              borderRadius: '50%',
+                              bgcolor: currentStatus.color,
+                              animation: 'urgentPulse 1.5s ease-in-out infinite',
+                              '@keyframes urgentPulse': {
+                                '0%, 100%': { opacity: 1, transform: 'scale(1)' },
+                                '50%': { opacity: 0.4, transform: 'scale(0.6)' },
+                              },
+                            }} />
+                          )}
+                          <Typography sx={{
+                            fontSize: '0.6rem',
+                            fontWeight: 800,
+                            color: currentStatus.color,
+                            letterSpacing: '0.08em',
+                            textTransform: 'uppercase',
+                            lineHeight: 1,
+                            textShadow: '0 1px 2px rgba(0,0,0,0.2)',
+                          }}>
+                            {currentStatus.fullLabel}
+                          </Typography>
+                        </Box>
+
+                        {/* Thumbnail */}
+                        {alert.imageUrl && (
+                          <Box
+                            component="img"
+                            src={alert.imageUrl}
+                            alt={alert.title}
+                            sx={{
+                              width: 34, height: 34,
+                              borderRadius: '10px',
+                              objectFit: 'cover',
+                              flexShrink: 0,
+                              display: { xs: 'none', sm: 'block' },
+                              border: '1.5px solid rgba(255,255,255,0.15)',
+                              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                            }}
+                          />
+                        )}
+
+                        {/* Title */}
+                        <Typography sx={{
+                          fontFamily: 'var(--font-dosis)',
+                          fontSize: { xs: '0.85rem', md: '0.95rem' },
+                          fontWeight: 700,
+                          color: '#ffffff',
+                          flexGrow: 1,
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          letterSpacing: '0.01em',
+                          textShadow: '0 1px 3px rgba(0,0,0,0.15)',
+                        }}>
+                          {alert.title}
+                        </Typography>
+
+                        {/* CTA pill */}
+                        <Box sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 0.75,
+                          flexShrink: 0,
+                          bgcolor: 'rgba(255,255,255,0.12)',
+                          borderRadius: '10px',
+                          px: 1.5, py: 0.5,
+                          border: '1px solid rgba(255,255,255,0.08)',
+                          backdropFilter: 'blur(8px)',
+                          transition: 'all 0.2s ease',
+                          '&:hover': { bgcolor: 'rgba(255,255,255,0.22)', border: '1px solid rgba(255,255,255,0.15)' },
+                        }}>
+                          <Typography sx={{
+                            fontSize: '0.7rem',
+                            fontWeight: 700,
+                            color: 'rgba(255,255,255,0.9)',
+                            display: { xs: 'none', sm: 'block' },
+                            letterSpacing: '0.03em',
+                          }}>
+                            VIEW
+                          </Typography>
+                          <ArrowForwardIcon sx={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.9)' }} />
+                        </Box>
+                      </Box>
+                    </Box>
+                  </Box>
+                );
+            })}
+        </Box>
+      </Container>
     </Box>
   );
 }

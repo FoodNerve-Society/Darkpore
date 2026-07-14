@@ -91,13 +91,52 @@ export default async function InnovationsHomepage() {
 
     // 3. Combine and Sort by Date
     rawUpdates = [...learnUpdates, ...jobUpdates].sort((a, b) => {
-      const dateA = a.date ? new Date(a.date).getTime() : 0;
-      const dateB = b.date ? new Date(b.date).getTime() : 0;
+      const dateA = a.startDate ? new Date(a.startDate).getTime() : 0;
+      const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
       // Jobs are usually past (postedAt) while events are future (targetDate).
       // If we sort by absolute difference from now, the most relevant ones appear first.
       const now = new Date().getTime();
       return Math.abs(dateA - now) - Math.abs(dateB - now);
     });
+
+    // TEMPORARY MOCK DATA FOR UI TESTING
+    const nowMs = new Date().getTime();
+    const mockAlerts = [
+      {
+        title: "LIVE: Ecosystem Founders AMA with the Minister of Agriculture",
+        startDate: new Date(nowMs - 1000 * 3600), // started 1 hour ago
+        endDate: new Date(nowMs + 1000 * 3600 * 2), // ends in 2 hours
+        link: "#",
+        imageUrl: null,
+        challengeId: "global"
+      },
+      {
+        title: "Webinar: Next-Gen Cold Storage Logistics Masterclass",
+        startDate: new Date(nowMs + 1000 * 3600 * 5), // starts in 5 hours
+        endDate: null,
+        link: "#",
+        imageUrl: null,
+        challengeId: "global"
+      },
+      {
+        title: "Flash Sale: Bulk Fertilizer Procurement (50% Off)",
+        startDate: new Date(nowMs + 1000 * 60 * 45), // starts in 45 minutes
+        endDate: null,
+        link: "#",
+        imageUrl: null,
+        challengeId: "global"
+      },
+      {
+        title: "Call for Applications: 2026 Food Security Grants",
+        startDate: null,
+        endDate: new Date(nowMs + 1000 * 3600 * 48), // ends in 2 days
+        link: "#",
+        imageUrl: null,
+        challengeId: "global"
+      }
+    ] as any;
+
+    rawUpdates = [...mockAlerts, ...rawUpdates];
 
   } catch (e) {
     console.warn("SERVER LOG - Database connection failed, falling back to mock data.", e);
