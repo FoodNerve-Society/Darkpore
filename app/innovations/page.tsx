@@ -107,7 +107,7 @@ export default async function InnovationsHomepage() {
         startDate: new Date(nowMs - 1000 * 3600), // started 1 hour ago
         endDate: new Date(nowMs + 1000 * 3600 * 2), // ends in 2 hours
         link: "#",
-        imageUrl: null,
+        imageUrl: "https://images.unsplash.com/photo-1591696205602-2f950c417cb9?auto=format&fit=crop&q=80&w=800", // Government/Agri imagery
         challengeId: "global"
       },
       {
@@ -115,7 +115,7 @@ export default async function InnovationsHomepage() {
         startDate: new Date(nowMs + 1000 * 3600 * 5), // starts in 5 hours
         endDate: null,
         link: "#",
-        imageUrl: null,
+        imageUrl: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=800", // Warehouse/Logistics
         challengeId: "global"
       },
       {
@@ -123,7 +123,7 @@ export default async function InnovationsHomepage() {
         startDate: new Date(nowMs + 1000 * 60 * 45), // starts in 45 minutes
         endDate: null,
         link: "#",
-        imageUrl: null,
+        imageUrl: "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&q=80&w=800", // Farming/Fertilizer
         challengeId: "global"
       },
       {
@@ -131,7 +131,7 @@ export default async function InnovationsHomepage() {
         startDate: null,
         endDate: new Date(nowMs + 1000 * 3600 * 48), // ends in 2 days
         link: "#",
-        imageUrl: null,
+        imageUrl: "https://images.unsplash.com/photo-1507561561941-863114ce960e?auto=format&fit=crop&q=80&w=800", // Funding/Money/Agri
         challengeId: "global"
       }
     ] as any;
@@ -142,7 +142,8 @@ export default async function InnovationsHomepage() {
     console.warn("SERVER LOG - Database connection failed, falling back to mock data.", e);
   }
   
-  let marqueeItems = rawUpdates.slice(0, 15);
+  // Limit to exactly 5 items max so the expanding stack doesn't push page content down infinitely
+  let marqueeItems = rawUpdates.slice(0, 5);
 
   // We no longer inject fake/mocked data if marqueeItems is empty.
   // The frontend component handles the empty array gracefully by rendering a STANDBY state.
