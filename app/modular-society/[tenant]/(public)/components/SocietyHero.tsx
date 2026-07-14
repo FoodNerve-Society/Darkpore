@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Box, Container, Grid, Stack, Typography, Chip, Button, Paper, useTheme, alpha, Avatar, AvatarGroup } from '@mui/material';
 import { Spa } from '@mui/icons-material';
@@ -7,6 +8,7 @@ import AnimatedCounter from './AnimatedCounter';
 import Link from 'next/link';
 
 export interface Stat {
+    id?: string;
     label: string;
     value: number;
     icon: any;
@@ -14,6 +16,7 @@ export interface Stat {
     gradient: string;
     bgGradient: string;
     imageUrl?: string;
+    tag?: string;
 }
 
 interface HeroSectionProps {
@@ -24,15 +27,30 @@ interface HeroSectionProps {
             valueProposition?: string;
         };
     };
-    stats: Stat[];
+    updates: Stat[];
 }
 
-export default function SocietyHero({ boardData, stats }: HeroSectionProps) {
+export default function SocietyHero({ boardData, updates }: HeroSectionProps) {
     const theme = useTheme();
+    const [startIndex, setStartIndex] = useState(0);
 
+    useEffect(() => {
+        if (!updates || updates.length <= 5) return;
+        
+        const interval = setInterval(() => {
+            setStartIndex(prev => (prev - 1 + updates.length) % updates.length);
+        }, 3500); // Slide a new one in every 3.5 seconds
 
+        return () => clearInterval(interval);
+    }, [updates]);
 
-    return (
+    // Construct the live feed by taking 5 items starting from startIndex
+    const feed = [];
+    if (updates && updates.length > 0) {
+        for (let i = 0; i < Math.min(5, updates.length); i++) {
+            feed.push(updates[(startIndex + i) % updates.length]);
+        }
+    }    return (
         <Box
             sx={{
                 position: 'relative',
@@ -172,99 +190,120 @@ export default function SocietyHero({ boardData, stats }: HeroSectionProps) {
                         </Stack>
                     </Grid>
 
-                    {/* Right: Stacked Cinematic Banners */}
+                    {/* Right: Stacked Cinematic Banners (Live Feed) */}
                     <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', justifyContent: 'center' }}>
                         <Stack spacing={2} sx={{ width: '100%', maxWidth: { xs: '100%', md: 500 }, pt: { xs: 5, md: 0 } }}>
-                            {stats.map((stat, index) => {
-                                // Cinematic dark gradient merging into the image, just like the Global Alerts
-                                const cardBg = stat.imageUrl 
-                                    ? `linear-gradient(90deg, rgba(15,36,20,0.95) 0%, rgba(15,36,20,0.7) 40%, rgba(15,36,20,0.85) 100%), url(${stat.imageUrl}) center/cover no-repeat`
-                                    : `linear-gradient(135deg, rgba(15,36,20,0.95) 0%, rgba(15,36,20,0.85) 100%)`;
+                            <AnimatePresence initial={false} mode="popLayout">
+                                {feed.map((stat, index) => {
+                                    // Cinematic dark gradient merging into the image
+                                    const cardBg = stat.imageUrl 
+                                        ? `linear-gradient(90deg, rgba(15,36,20,0.95) 0%, rgba(15,36,20,0.7) 40%, rgba(15,36,20,0.85) 100%), url(${stat.imageUrl}) center/cover no-repeat`
+                                        : `linear-gradient(135deg, rgba(15,36,20,0.95) 0%, rgba(15,36,20,0.85) 100%)`;
 
-                                return (
-                                    <Paper
-                                        key={index}
-                                        sx={{
-                                            width: '100%',
-                                            height: { xs: 120, md: 140 },
-                                            background: cardBg,
-                                            borderRadius: 4,
-                                            boxShadow: `0 10px 30px rgba(0,0,0,0.05)`,
-                                            border: `1px solid rgba(255,255,255,0.1)`,
-                                            position: 'relative',
-                                            overflow: 'hidden',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            px: 3,
-                                            transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-                                            '&:hover': {
-                                                transform: 'translateY(-4px)',
-                                                boxShadow: `0 15px 40px rgba(0,0,0,0.15), 0 0 0 2px ${stat.gradient.includes('4CAF50') ? '#4CAF50' : stat.gradient.includes('d97706') ? '#d97706' : '#1976d2'}`,
-                                            },
-                                            '&::before': {
-                                                content: '""',
-                                                position: 'absolute',
-                                                left: 0,
-                                                top: 0,
-                                                bottom: 0,
-                                                width: 6,
-                                                background: stat.gradient,
-                                                zIndex: 2,
-                                            },
-                                        }}
-                                    >
-                                        <Box
-                                            sx={{
-                                                width: 64,
-                                                height: 64,
-                                                borderRadius: 3,
-                                                background: 'rgba(255,255,255,0.1)',
-                                                backdropFilter: 'blur(10px)',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                mr: 3,
-                                                border: `1px solid rgba(255,255,255,0.2)`,
-                                            }}
+                                    return (
+                                        <motion.div
+                                            key={stat.id || `${stat.label}-${index}`}
+                                            layout
+                                            initial={{ opacity: 0, y: -40, scale: 0.95 }}
+                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                            exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
+                                            transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                                            style={{ width: '100%' }}
                                         >
-                                            <stat.icon sx={{ fontSize: 32, color: '#fff' }} />
-                                        </Box>
-                                        
-                                        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                                            <Typography
-                                                variant="h3"
+                                            <Paper
                                                 sx={{
-                                                    fontWeight: 900,
-                                                    color: '#fff',
-                                                    fontSize: { xs: '2rem', md: '2.5rem' },
-                                                    lineHeight: 1.1,
-                                                    mb: 0.5,
+                                                    width: '100%',
+                                                    height: { xs: 68, md: 76 }, // Shrunk height to match .com past cards closely while remaining legible
+                                                    background: cardBg,
+                                                    borderRadius: 3, // Slightly less rounded for a tighter card
+                                                    boxShadow: `0 4px 12px rgba(0,0,0,0.1)`,
+                                                    border: `1px solid rgba(255,255,255,0.08)`,
+                                                    position: 'relative',
+                                                    overflow: 'hidden',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    px: 2,
                                                 }}
                                             >
-                                                <AnimatedCounter 
-                                                    key={index} 
-                                                    end={stat.value} 
-                                                    duration={1.5} 
-                                                />
-                                            </Typography>
-                                            <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1 }}>
-                                                <Typography
-                                                    variant="h6"
-                                                    sx={{ fontWeight: 700, fontSize: { xs: '0.95rem', md: '1.1rem' }, color: 'rgba(255,255,255,0.95)', fontFamily: 'var(--font-playfair)' }}
+                                                <Box
+                                                    sx={{
+                                                        width: 44,
+                                                        height: 44,
+                                                        borderRadius: 2,
+                                                        background: 'rgba(255,255,255,0.1)',
+                                                        backdropFilter: 'blur(10px)',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        mr: 2,
+                                                        border: `1px solid rgba(255,255,255,0.15)`,
+                                                    }}
                                                 >
-                                                    {stat.label}
-                                                </Typography>
-                                                <Typography
-                                                    variant="body2"
-                                                    sx={{ fontSize: { xs: '0.85rem', md: '0.9rem' }, color: 'rgba(255,255,255,0.6)', display: { xs: 'none', sm: 'block' } }}
-                                                >
-                                                    — {stat.description}
-                                                </Typography>
-                                            </Box>
-                                        </Box>
-                                    </Paper>
-                                );
-                            })}
+                                                    <stat.icon sx={{ fontSize: 24, color: '#fff' }} />
+                                                </Box>
+                                                
+                                                <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                        {stat.tag && (
+                                                            <Chip 
+                                                                label={stat.tag} 
+                                                                size="small" 
+                                                                sx={{ 
+                                                                    height: 18, 
+                                                                    fontSize: '0.65rem', 
+                                                                    fontWeight: 800, 
+                                                                    color: '#fff', 
+                                                                    bgcolor: 'rgba(255,255,255,0.15)',
+                                                                    backdropFilter: 'blur(4px)',
+                                                                    textTransform: 'uppercase',
+                                                                    letterSpacing: '0.5px'
+                                                                }} 
+                                                            />
+                                                        )}
+                                                        <Typography
+                                                            variant="subtitle2"
+                                                            sx={{ 
+                                                                fontWeight: 700, 
+                                                                fontSize: { xs: '0.75rem', md: '0.8rem' }, 
+                                                                color: stat.gradient.includes('4CAF50') ? '#81c784' : stat.gradient.includes('d97706') ? '#fbbf24' : '#64b5f6', 
+                                                                textTransform: 'uppercase', 
+                                                                letterSpacing: '0.5px',
+                                                                whiteSpace: 'nowrap',
+                                                                overflow: 'hidden',
+                                                                textOverflow: 'ellipsis'
+                                                            }}
+                                                        >
+                                                            {stat.label}
+                                                        </Typography>
+                                                    </Box>
+                                                    <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mt: 0.2 }}>
+                                                        <Typography
+                                                            variant="h5"
+                                                            sx={{
+                                                                fontWeight: 900,
+                                                                color: '#fff',
+                                                                fontSize: { xs: '1.2rem', md: '1.4rem' },
+                                                                lineHeight: 1,
+                                                            }}
+                                                        >
+                                                            <AnimatedCounter 
+                                                                end={stat.value} 
+                                                                duration={1.5} 
+                                                            />
+                                                        </Typography>
+                                                        <Typography
+                                                            variant="body2"
+                                                            sx={{ fontSize: { xs: '0.75rem', md: '0.8rem' }, color: 'rgba(255,255,255,0.6)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                                                        >
+                                                            {stat.description}
+                                                        </Typography>
+                                                    </Box>
+                                                </Box>
+                                            </Paper>
+                                        </motion.div>
+                                    );
+                                })}
+                            </AnimatePresence>
                         </Stack>
                     </Grid>
                 </Grid>

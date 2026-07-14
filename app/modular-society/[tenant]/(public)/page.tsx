@@ -117,45 +117,120 @@ export default async function SocietyPublicHomepage() {
               tagline: content.heroHeadline,
               publicPageSettings: { valueProposition: content.heroSubheadline }
           }} 
-          stats={[
+          updates={[
             {
-                label: 'Active Innovations',
+                id: 'upd_1',
+                label: 'New Innovation Lab Opened',
                 value: 142,
                 icon: SpaIcon,
                 description: 'Pioneering agricultural and food system solutions.',
                 gradient: `linear-gradient(135deg, #4CAF50 0%, #1b5e20 100%)`,
                 bgGradient: `linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(27, 94, 32, 0.2) 100%)`,
                 imageUrl: 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?q=80&w=800&auto=format&fit=crop',
+                tag: 'Innovator',
             },
             {
-                label: 'Capital Deployed',
+                id: 'upd_2',
+                label: 'Series A Capital Deployed',
                 value: 5200000,
                 icon: MonetizationOnIcon,
                 description: 'Funding channeled into sustainable food ventures.',
                 gradient: `linear-gradient(135deg, #d97706 0%, #b45309 100%)`,
                 bgGradient: `linear-gradient(135deg, rgba(217, 119, 6, 0.2) 0%, rgba(180, 83, 9, 0.2) 100%)`,
                 imageUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=800&auto=format&fit=crop',
+                tag: 'Investor',
             },
             {
-                label: 'Global Members',
+                id: 'upd_3',
+                label: 'Global Membership Milestone',
                 value: 12000,
                 icon: PublicIcon,
                 description: 'Farmers, scientists, and investors uniting.',
                 gradient: `linear-gradient(135deg, #1976d2 0%, #0d47a1 100%)`,
                 bgGradient: `linear-gradient(135deg, rgba(25, 118, 210, 0.2) 0%, rgba(13, 71, 161, 0.2) 100%)`,
                 imageUrl: 'https://images.unsplash.com/photo-1559884743-74a57598c6c7?q=80&w=800&auto=format&fit=crop',
+                tag: 'Pioneer',
             },
+            {
+                id: 'upd_4',
+                label: 'New Regional Hub',
+                value: 4,
+                icon: ContactsIcon,
+                description: 'Connecting farmers directly with cold-chain transport.',
+                gradient: `linear-gradient(135deg, #9c27b0 0%, #4a148c 100%)`,
+                bgGradient: `linear-gradient(135deg, rgba(156, 39, 176, 0.2) 0%, rgba(74, 20, 140, 0.2) 100%)`,
+                imageUrl: 'https://images.unsplash.com/photo-1589923188900-85dae4400f7b?q=80&w=800&auto=format&fit=crop',
+                tag: 'Operator',
+            },
+            {
+                id: 'upd_5',
+                label: 'Soil Blueprint Published',
+                value: 85,
+                icon: SchoolIcon,
+                description: 'Open-source blueprints for regional soil analysis.',
+                gradient: `linear-gradient(135deg, #e91e63 0%, #880e4f 100%)`,
+                bgGradient: `linear-gradient(135deg, rgba(233, 30, 99, 0.2) 0%, rgba(136, 14, 79, 0.2) 100%)`,
+                imageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=800&auto=format&fit=crop',
+                tag: 'Researcher',
+            },
+            {
+                id: 'upd_6',
+                label: 'Bulk Crop Traded',
+                value: 4892,
+                icon: HandshakeIcon,
+                description: 'Tons of harvest yields exchanged this quarter.',
+                gradient: `linear-gradient(135deg, #00bcd4 0%, #006064 100%)`,
+                bgGradient: `linear-gradient(135deg, rgba(0, 188, 212, 0.2) 0%, rgba(0, 96, 100, 0.2) 100%)`,
+                imageUrl: 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?q=80&w=800&auto=format&fit=crop',
+                tag: 'Pioneer',
+            },
+            {
+                id: 'upd_7',
+                label: 'Grant Backing Secured',
+                value: 200000,
+                icon: AttachMoneyIcon,
+                description: 'Local initiative backed by Food Nerve grants.',
+                gradient: `linear-gradient(135deg, #ff9800 0%, #e65100 100%)`,
+                bgGradient: `linear-gradient(135deg, rgba(255, 152, 0, 0.2) 0%, rgba(230, 81, 0, 0.2) 100%)`,
+                imageUrl: 'https://images.unsplash.com/photo-1530587191325-3db32d826c18?q=80&w=800&auto=format&fit=crop',
+                tag: 'Regulator',
+            },
+            {
+                id: 'upd_8',
+                label: 'Ecosystem Expansion',
+                value: 24,
+                icon: PublicIcon,
+                description: 'New partners joined the Sustainable Soil Consortium.',
+                gradient: `linear-gradient(135deg, #3f51b5 0%, #1a237e 100%)`,
+                bgGradient: `linear-gradient(135deg, rgba(63, 81, 181, 0.2) 0%, rgba(26, 35, 126, 0.2) 100%)`,
+                imageUrl: 'https://images.unsplash.com/photo-1559884743-74a57598c6c7?q=80&w=800&auto=format&fit=crop',
+                tag: 'Innovator',
+            }
           ]} 
       />
 
       {/* Social Proof Marquee */}
-      <Box sx={{ py: 6, borderBottom: '1px solid rgba(27, 94, 32, 0.05)', bgcolor: 'white', overflow: 'hidden' }}>
-        <Typography variant="overline" sx={{ textAlign: 'center', display: 'block', mb: 3, color: 'rgba(15, 36, 20, 0.4)', fontWeight: 800, letterSpacing: 2 }}>
+      <Box sx={{ 
+          py: { xs: 4, md: 5 }, 
+          borderBottom: '1px solid rgba(27, 94, 32, 0.08)', 
+          background: 'linear-gradient(to right, rgba(255,255,255,0.95), rgba(255,255,255,0.8), rgba(255,255,255,0.95))', 
+          backdropFilter: 'blur(10px)',
+          overflow: 'hidden' 
+        }}>
+        <Typography variant="overline" sx={{ textAlign: 'center', display: 'block', mb: 3, color: 'rgba(15, 36, 20, 0.5)', fontWeight: 900, letterSpacing: 3 }}>
           TRUSTED BY PIONEERS ACROSS THE GLOBE
         </Typography>
-        <Box sx={{ display: 'flex', width: '200%', animation: 'scrollMarquee 30s linear infinite' }}>
+        <Box sx={{ display: 'flex', width: '200%', animation: 'scrollMarquee 40s linear infinite' }}>
           {[...partners, ...partners].map((partner, idx) => (
-            <Typography key={idx} sx={{ flex: 1, textAlign: 'center', fontSize: '1.4rem', fontWeight: 900, color: 'rgba(15, 36, 20, 0.2)', letterSpacing: '-0.5px' }}>
+            <Typography key={idx} sx={{ 
+                flex: 1, 
+                textAlign: 'center', 
+                fontSize: { xs: '1.2rem', md: '1.6rem' }, 
+                fontWeight: 900, 
+                color: 'transparent',
+                WebkitTextStroke: '1px rgba(15, 36, 20, 0.2)', // Premium outline text
+                letterSpacing: '1px' 
+            }}>
               {partner}
             </Typography>
           ))}
@@ -208,7 +283,9 @@ export default async function SocietyPublicHomepage() {
                     display: 'flex',
                     flexDirection: 'column',
                     height: '100%',
-                    bgcolor: 'white',
+                    bgcolor: 'rgba(255, 255, 255, 0.7)',
+                    backdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(255, 255, 255, 0.5)',
                     borderRadius: '28px',
                     overflow: 'hidden',
                     opacity: 0, // Starts invisible for cascade
@@ -216,46 +293,58 @@ export default async function SocietyPublicHomepage() {
                     animationDelay: `${idx * 0.15}s`, // Cascade delay
                     cursor: 'pointer',
                     boxShadow: '0 10px 40px rgba(15, 36, 20, 0.03)',
-                    transition: 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.5s',
+                    transition: 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.5s, background 0.3s ease',
                     '&:hover': {
                       transform: 'translateY(-12px)',
                       boxShadow: `0 30px 60px rgba(15, 36, 20, 0.08), 0 0 0 2px ${pillar.accent}`,
+                      bgcolor: 'rgba(255,255,255,0.95)',
                       '& .pillar-image': { transform: 'scale(1.08)' },
                       '& .pillar-overlay': { opacity: 0.2 },
                     },
                   }}
                 >
-                  {/* Thumbnail Image */}
-                  <Box sx={{ width: '100%', height: '240px', position: 'relative', overflow: 'hidden' }}>
+                  <Box
+                    className="pillar-image"
+                    sx={{
+                      height: '240px',
+                      background: `url(${pillar.imageUrl}) center/cover`,
+                      transition: 'transform 0.7s cubic-bezier(0.16, 1, 0.3, 1)',
+                    }}
+                  />
+                  <Box
+                    className="pillar-overlay"
+                    sx={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: '240px',
+                      background: `linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 100%)`,
+                      opacity: 0.8,
+                      transition: 'opacity 0.5s',
+                    }}
+                  />
+                  <Box sx={{ p: 4, flex: 1, display: 'flex', flexDirection: 'column' }}>
                     <Box
-                      className="pillar-image"
                       sx={{
-                        width: '100%', height: '100%',
-                        backgroundImage: `url(${pillar.imageUrl})`,
-                        backgroundSize: 'cover', backgroundPosition: 'center',
-                        transition: 'transform 0.7s cubic-bezier(0.16, 1, 0.3, 1)',
+                        width: 56,
+                        height: 56,
+                        borderRadius: '50%',
+                        bgcolor: `${pillar.accent}15`,
+                        color: pillar.accent,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        mb: 3,
+                        animation: iconAnimation,
+                        transformOrigin: 'center center',
                       }}
-                    />
-                    <Box className="pillar-overlay" sx={{ position: 'absolute', inset: 0, bgcolor: pillar.accent, opacity: 0, transition: 'opacity 0.5s', mixBlendMode: 'color' }} />
-                  </Box>
-
-                  {/* Content Box */}
-                  <Box sx={{ p: 4, display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                      <Box
-                        className="pillar-icon-box"
-                        sx={{
-                          display: 'inline-flex', p: 1.5, borderRadius: '14px',
-                          bgcolor: `${pillar.accent}15`, color: pillar.accent,
-                          animation: iconAnimation, // Applies the specific feature animation
-                        }}
-                      >
+                    >
                         <Icon sx={{ fontSize: 28 }} />
                       </Box>
                       <Typography variant="h4" sx={{ fontWeight: 900, color: '#0f2414', letterSpacing: '-1px' }}>
                         {pillar.title}
                       </Typography>
-                    </Box>
 
                     <Typography variant="body1" sx={{ color: 'rgba(15, 36, 20, 0.6)', lineHeight: 1.7, mb: 4, flexGrow: 1, fontSize: '1.05rem' }}>
                       {pillar.desc}
