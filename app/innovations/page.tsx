@@ -49,12 +49,14 @@ export default async function InnovationsHomepage() {
 
     const learnUpdates = upcomingEvents.map(event => ({
       title: event.title,
-      date: event.targetDate,
+      startDate: event.targetDate,
+      endDate: null,
       section: event.type === 'livestream' || event.type === 'class' ? 'livestreams' : 'innovations',
       importance: 'high',
       challengeTitle: subcatToChallengeMap[event.subcategory || '']?.title || 'Global Alert',
       challengeId: subcatToChallengeMap[event.subcategory || '']?.id || 'global',
-      link: `/innovations/${subcatToChallengeMap[event.subcategory || '']?.id || 'global'}/${event.subcategory}/learn/article/${event.slug}`
+      link: `/innovations/${subcatToChallengeMap[event.subcategory || '']?.id || 'global'}/${event.subcategory}/learn/article/${event.slug}`,
+      imageUrl: event.thumbnailUrl || '/images/default-thumbnail.jpg'
     }));
 
     // 2. Fetch Recent Jobs/Volunteer (within last 10 days)
@@ -76,12 +78,14 @@ export default async function InnovationsHomepage() {
       const label = isVolunteer ? 'VOLUNTEER' : isInternship ? 'INTERNSHIP' : 'JOB';
       return {
         title: `${label}: ${job.title}`,
-        date: job.postedAt,
+        startDate: job.startDate || job.postedAt,
+        endDate: job.endDate || job.expiresAt || null,
         section: 'jobs',
         importance: 'high',
         challengeTitle: 'Talent & Ops',
         challengeId: 'global',
-        link: `/innovations/careers/${job.id}`
+        link: `/innovations/careers/${job.id}`,
+        imageUrl: job.imageUrl || '/images/default-thumbnail.jpg'
       };
     });
 
@@ -361,6 +365,7 @@ export default async function InnovationsHomepage() {
           headline={homepageConfig.heroHeadline}
           subheadline={homepageConfig.heroSubheadline}
           categories={ecosystemCategories} 
+          globalAlerts={marqueeItems}
         />
       </Box>
 
@@ -380,137 +385,6 @@ export default async function InnovationsHomepage() {
         slideshowItems={slideshowItems}
       />
       */}
-
-
-      {/* ═══════════════════════════════════════════════════════════
-          SECTION 2: LIVE UPDATES MARQUEE
-          Auto-scrolling horizontal ticker of recent updates
-      ═══════════════════════════════════════════════════════════ */}
-      <Box sx={{ 
-        py: marqueeItems.length === 0 ? 3 : 4, 
-        bgcolor: '#050505',
-        color: 'white',
-        overflow: 'hidden',
-        borderTop: '1px solid rgba(255,255,255,0.08)',
-        borderBottom: '1px solid rgba(255,255,255,0.08)',
-      }}>
-        {marqueeItems.length === 0 ? (
-          <Box sx={{ textAlign: 'center' }}>
-            <Typography variant="overline" sx={{ color: 'rgba(255,255,255,0.4)', fontWeight: 700, letterSpacing: 3, display: 'block', mb: 0.5 }}>
-              GLOBAL ALERTS
-            </Typography>
-            <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.5)', fontStyle: 'italic', fontSize: '0.9rem' }}>
-              System Alerts — Monitoring Ecosystem... Check back for time updates.
-            </Typography>
-          </Box>
-        ) : (
-          <>
-            <Box sx={{ display: 'flex', alignItems: 'center', px: 4, mb: 2 }}>
-              <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#ff4444', mr: 1.5, animation: 'pulse 2s infinite', '@keyframes pulse': { '0%, 100%': { opacity: 1 }, '50%': { opacity: 0.4 } } }} />
-              <Typography variant="overline" sx={{ color: 'rgba(255,255,255,0.4)', fontWeight: 700, letterSpacing: 3 }}>
-                GLOBAL ALERTS
-              </Typography>
-            </Box>
-            
-            <Box sx={{
-              display: 'flex',
-              animation: 'marquee 40s linear infinite',
-              '&:hover': { animationPlayState: 'paused' },
-              '@keyframes marquee': {
-                '0%': { transform: 'translateX(0)' },
-                '100%': { transform: 'translateX(-50%)' },
-              },
-              width: 'max-content',
-            }}>
-              {/* Double the items for seamless infinite loop */}
-              {[...marqueeItems, ...marqueeItems].map((item: any, idx) => {
-                let statusLabel = 'ACTIVE';
-                let statusColor = '#ffffff';
-
-                if (item.date) {
-                  const diffDays = Math.ceil((new Date(item.date).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
-                  if (diffDays < 3) {
-                    statusLabel = 'HAPPENING';
-                    statusColor = '#ff1744';
-                  } else if (diffDays < 7) {
-                    statusLabel = 'ACTION REQ';
-                    statusColor = '#ff9100';
-                  } else {
-                    statusLabel = 'UPCOMING';
-                    statusColor = '#2196f3';
-                  }
-                }
-
-                return (
-                  <Box key={idx} sx={{ 
-                    position: 'relative',
-                    background: 'rgba(15, 15, 15, 0.6)',
-                    backdropFilter: 'blur(16px)',
-                    borderRadius: '100px',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
-                    transition: 'all 0.4s cubic-bezier(.4,0,.2,1)',
-                    '&:hover': {
-                      background: 'rgba(25, 25, 25, 0.9)',
-                      borderColor: 'rgba(255,255,255,0.2)',
-                      transform: 'translateY(-2px)'
-                    },
-                    mr: 4,
-                    display: 'flex',
-                    alignItems: 'center',
-                    height: 54,
-                    pr: 4,
-                    pl: 1.5,
-                    my: 2,
-                  }}>
-                    <Link href={item.link || `/${item.challengeId}/${item.subcategoryId}/${item.section}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', width: '100%', gap: 12 }}>
-                      
-                      <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-                        <Box sx={{ 
-                           width: 36, height: 36, 
-                           borderRadius: '50%',
-                           bgcolor: alpha(statusColor, 0.15),
-                           border: `1px solid ${alpha(statusColor, 0.5)}`,
-                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                           boxShadow: `0 0 12px ${alpha(statusColor, 0.4)}`,
-                        }}>
-                           <Box sx={{
-                               width: 8, height: 8, borderRadius: '50%', bgcolor: statusColor,
-                               animation: (statusLabel === 'HAPPENING' || statusLabel === 'ACTION REQ') ? 'urgentPulse 2s ease-in-out infinite' : 'none',
-                           }} />
-                        </Box>
-                      </Box>
-
-                      {/* Status & Title Stack */}
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.2 }}>
-                        <Typography variant="caption" sx={{ color: statusColor, fontWeight: 900, letterSpacing: 1.5, fontSize: '0.6rem', whiteSpace: 'nowrap', textTransform: 'uppercase' }}>
-                           {statusLabel} <span style={{ color: 'rgba(255,255,255,0.5)', margin: '0 4px' }}>//</span>
-                        </Typography>
-                        <Typography variant="body1" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 700, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: { xs: 200, sm: 300, md: 400, lg: 500 } }}>
-                          {item.title}
-                        </Typography>
-                      </Box>
-
-                      {/* Context Text */}
-                      {item.challengeTitle && (
-                        <Box sx={{ ml: 4, flexShrink: 0, borderLeft: '1px solid rgba(255,255,255,0.1)', pl: 2.5, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                          <Typography sx={{ color: 'rgba(255,255,255,0.3)', fontWeight: 800, fontSize: '0.5rem', letterSpacing: 1, mb: 0.2 }}>
-                            CHALLENGE
-                          </Typography>
-                          <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 600, fontSize: '0.65rem', letterSpacing: 1, textTransform: 'uppercase' }}>
-                            {item.challengeTitle.replace(/^\d+\.\s*/, '')}
-                          </Typography>
-                        </Box>
-                      )}
-
-                    </Link>
-                  </Box>
-                );
-              })}
-            </Box>
-          </>
-        )}
-      </Box>
 
       {/* RADAR INDEX OVERVIEW SECTION */}
       <RadarIndexOverview />

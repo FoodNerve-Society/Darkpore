@@ -32,11 +32,94 @@ interface TabbedHeroProps {
   headline: string;
   subheadline: string;
   categories: TabCategory[];
+  globalAlerts?: any[];
 }
 
 const PILLARS: ('All' | EcosystemType)[] = ['All', 'Intelligence', 'Innovations', 'Community', 'Activities', 'Jobs', 'Internships', 'Volunteering', 'Opportunities'];
 
-export default function TabbedHero({ headline, subheadline, categories }: TabbedHeroProps) {
+function GlobalAlertBanner({ alerts, activeCategoryId }: { alerts: any[], activeCategoryId?: string }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const filteredAlerts = useMemo(() => {
+    return alerts.filter(a => a.challengeId === 'global' || a.challengeId === activeCategoryId).slice(0, 5);
+  }, [alerts, activeCategoryId]);
+
+  useEffect(() => {
+    if (filteredAlerts.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentIndex(prev => (prev + 1) % filteredAlerts.length);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [filteredAlerts.length]);
+
+  if (filteredAlerts.length === 0) return null;
+  const currentAlert = filteredAlerts[currentIndex];
+
+  let statusLabel = 'ACTIVE';
+  let statusColor = '#0f172a';
+  if (currentAlert.date) {
+      const diffDays = Math.ceil((new Date(currentAlert.date).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
+      if (diffDays < 3) { statusLabel = 'LIVE NOW'; statusColor = '#ef4444'; }
+      else if (diffDays < 7) { statusLabel = 'ACTION REQ'; statusColor = '#f59e0b'; }
+      else { statusLabel = 'UPCOMING'; statusColor = '#3b82f6'; }
+  }
+
+  return (
+    <Box sx={{ bgcolor: '#f8fafc', borderBottom: '1px solid rgba(0,0,0,0.05)', position: 'relative' }}>
+        {/* Progress Bar Background */}
+        {filteredAlerts.length > 1 && (
+            <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, bgcolor: 'rgba(0,0,0,0.05)' }}>
+                <Box
+                    key={currentIndex} // forces re-animation on index change
+                    sx={{
+                        height: '100%',
+                        bgcolor: statusColor,
+                        animation: 'progressFill 6s linear forwards',
+                        '@keyframes progressFill': {
+                            '0%': { width: '0%' },
+                            '100%': { width: '100%' }
+                        }
+                    }}
+                />
+            </Box>
+        )}
+        <Container maxWidth="lg" sx={{ px: { xs: 2, md: 4 }, py: 1 }}>
+            <Box component={Link} href={currentAlert.link || '#'} sx={{
+                textDecoration: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: { xs: 1.5, md: 3 },
+            }}>
+                <Box sx={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+                     {statusLabel === 'LIVE NOW' && (
+                         <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#ef4444', animation: 'urgentPulse 2s infinite', mr: 1 }} />
+                     )}
+                     <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, color: statusColor, letterSpacing: 1, textTransform: 'uppercase' }}>
+                         {statusLabel}
+                     </Typography>
+                </Box>
+                
+                {currentAlert.imageUrl && (
+                    <Box component="img" src={currentAlert.imageUrl} alt={currentAlert.title} sx={{ width: 40, height: 40, borderRadius: '8px', objectFit: 'cover', flexShrink: 0, display: { xs: 'none', sm: 'block' } }} />
+                )}
+
+                <Typography sx={{ fontFamily: 'var(--font-dosis)', fontSize: { xs: '0.9rem', md: '1rem' }, fontWeight: 700, color: '#0f172a', flexGrow: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {currentAlert.title}
+                </Typography>
+
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
+                     <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: 'rgba(15,23,42,0.6)', display: { xs: 'none', sm: 'block' } }}>
+                         Tap to action
+                     </Typography>
+                     <ArrowForwardIcon sx={{ fontSize: '1rem', color: 'rgba(15,23,42,0.6)' }} />
+                </Box>
+            </Box>
+        </Container>
+    </Box>
+  );
+}
+
+export default function TabbedHero({ headline, subheadline, categories, globalAlerts = [] }: TabbedHeroProps) {
   // State
   const [activeCategory, setActiveCategory] = useState<string>(categories[0]?.id || '');
   const [activeSubPillar, setActiveSubPillar] = useState<'All' | EcosystemType>('All');
@@ -150,6 +233,11 @@ export default function TabbedHero({ headline, subheadline, categories }: Tabbed
                   </Box>
               </Container>
           </Box>
+
+          {/* ═══════════════════════════════════════════════════════════
+              CYCLING GLOBAL ALERT BANNER
+          ═══════════════════════════════════════════════════════════ */}
+          <GlobalAlertBanner alerts={globalAlerts} activeCategoryId={activeCatData?.id} />
 
           {/* NEW Tinted Content Area */}
           <Box sx={{ 
