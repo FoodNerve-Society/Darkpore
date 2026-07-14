@@ -64,7 +64,7 @@ export default function SocietyNavigation() {
                             <Button sx={{ 
                                 color: 'rgba(0,0,0,0.7)', 
                                 fontWeight: 700, fontSize: '0.9rem', 
-                                textTransform: 'none', borderRadius: 100, px: 2, py: 0.8,
+                                textTransform: 'none', borderRadius: '12px', px: 2, py: 0.8,
                                 transition: 'all 0.2s', display: { xs: 'none', sm: 'block' },
                                 '&:hover': { 
                                     color: '#1b5e20', 
@@ -78,7 +78,7 @@ export default function SocietyNavigation() {
                             <Button sx={{ 
                                 color: 'rgba(0,0,0,0.7)', 
                                 fontWeight: 700, fontSize: '0.9rem', 
-                                textTransform: 'none', borderRadius: 100, px: 2, py: 0.8,
+                                textTransform: 'none', borderRadius: '12px', px: 2, py: 0.8,
                                 transition: 'all 0.2s', display: { xs: 'none', sm: 'block' },
                                 '&:hover': { 
                                     color: '#1b5e20', 
@@ -95,7 +95,7 @@ export default function SocietyNavigation() {
                                 sx={{
                                     bgcolor: '#d97706',
                                     color: 'white',
-                                    borderRadius: 100, // M3 Expressive Fully rounded
+                                    borderRadius: '14px',
                                     px: 3.5,
                                     py: 1,
                                     fontWeight: 800,

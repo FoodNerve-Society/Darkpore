@@ -44,7 +44,7 @@ const pillars = [
     title: 'Support',
     icon: AttachMoneyIcon,
     accent: '#ec4899', // Pink
-    desc: 'Donate resources, back Food Nerve initiatives, claim project grants, and scale local innovations.',
+    desc: 'Donate resources, back FoodNerve initiatives, claim project grants, and scale local innovations.',
     stat: 'Active Initiatives',
     link: '/support',
     imageUrl: 'https://images.unsplash.com/photo-1530587191325-3db32d826c18?q=80&w=800&auto=format&fit=crop',
@@ -113,7 +113,7 @@ export default async function SocietyPublicHomepage() {
       <SocietyNavigation />
       <SocietyHero 
           boardData={{
-              displayName: 'Food Nerve Society',
+              displayName: 'FoodNerve Society',
               tagline: content.heroHeadline,
               publicPageSettings: { valueProposition: content.heroSubheadline }
           }} 

@@ -330,7 +330,7 @@ export default async function InnovationsHomepage() {
           title: l.title,
           type: typeLabel,
           imageUrl: l.imageUrl || '/images/default-thumbnail.jpg',
-          author: l.postedBy?.name || l.externalCompany || 'Food Nerve Network',
+          author: l.postedBy?.name || l.externalCompany || 'FoodNerve Network',
           metric: isVolunteer ? `${l.npReward || l.metadata?.npAmount || 'Earn'} NP` : l.priceOrAsk,
           link: `/innovations/careers/${l.id}`
         };

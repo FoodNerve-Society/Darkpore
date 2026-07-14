@@ -16,12 +16,12 @@ export async function generateMetadata({ params }: { params: Promise<{ jobid: st
 
     if (!job) {
         return {
-            title: 'Job Not Found - Food Nerve',
+            title: 'Job Not Found - FoodNerve',
         };
     }
 
     return {
-        title: `${job.title} at ${job.organization?.name || 'Food Nerve'} - Careers`,
+        title: `${job.title} at ${job.organization?.name || 'FoodNerve'} - Careers`,
         description: job.description.substring(0, 160),
     };
 }
@@ -65,7 +65,7 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ job
         <Box sx={{ minHeight: '100vh', bgcolor: '#f8fafc', pb: 12 }}>
             <JobHeroHeader 
                 title={job.title}
-                organizationName={job.organization?.name || 'Food Nerve'}
+                organizationName={job.organization?.name || 'FoodNerve'}
                 logoUrl={job.organization?.logoUrl}
                 location={job.location}
                 workModel={job.workModel}

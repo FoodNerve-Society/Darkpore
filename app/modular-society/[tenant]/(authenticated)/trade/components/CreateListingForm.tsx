@@ -157,7 +157,7 @@ export default function CreateListingForm({
   const [externalStates, setExternalStates] = useState<any[]>([]);
   const [externalCities, setExternalCities] = useState<any[]>([]);
 
-  // Food Nerve Organizations
+  // FoodNerve Organizations
   const [foodNerveOrgs, setFoodNerveOrgs] = useState<any[]>([]);
   const [loadingFoodNerveOrgs, setLoadingFoodNerveOrgs] = useState(false);
 
@@ -984,7 +984,7 @@ export default function CreateListingForm({
                                               );
                                           }
 
-                                          // Food Nerve Orgs (Global)
+                                          // FoodNerve Orgs (Global)
                                           const userOrgIds = profile?.organizations?.map((o: any) => o.id) || [];
                                           const options = foodNerveOrgs.filter(o => !userOrgIds.includes(o.id));
                                           
@@ -1017,7 +1017,7 @@ export default function CreateListingForm({
                                                     <Box sx={{ mt: 3 }}>
                                                         <PremiumAutocomplete
                                                             colorTheme={color}
-                                                            label="Search Food Nerve Organizations"
+                                                            label="Search FoodNerve Organizations"
                                                             options={options}
                                                             getOptionLabel={(opt: any) => opt.name || ''}
                                                             value={selectedOrg || null}
@@ -1029,7 +1029,7 @@ export default function CreateListingForm({
                                                   <>
                                                       <PremiumAutocomplete
                                                           colorTheme={color}
-                                                          label="Search Food Nerve Organizations"
+                                                          label="Search FoodNerve Organizations"
                                                           options={options}
                                                           getOptionLabel={(opt: any) => opt.name || ''}
                                                           value={selectedOrg || null}
@@ -1050,7 +1050,7 @@ export default function CreateListingForm({
                                                               </Box>
                                                               <Box>
                                                                   <Typography sx={{ fontWeight: 700, color: '#0f172a' }}>{selectedOrg.name}</Typography>
-                                                                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>Food Nerve Organization</Typography>
+                                                                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>FoodNerve Organization</Typography>
                                                               </Box>
                                                               <CheckIcon sx={{ color }} />
                                                           </Paper>
@@ -1287,7 +1287,7 @@ export default function CreateListingForm({
                                 <Box sx={{ mt: 1, p: 2.5, borderRadius: '12px', bgcolor: alpha(color, 0.05), border: `1px solid ${alpha(color, 0.2)}` }}>
                                   <FormControlLabel
                                     control={<Switch checked={useEscrow} onChange={(e) => setUseEscrow(e.target.checked)} sx={{ '& .MuiSwitch-switchBase.Mui-checked': { color: color }, '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: color } }} />}
-                                    label={<Typography sx={{ fontWeight: 800, color: '#0f172a' }}>Secure via Food Nerve Escrow</Typography>}
+                                    label={<Typography sx={{ fontWeight: 800, color: '#0f172a' }}>Secure via FoodNerve Escrow</Typography>}
                                   />
                                   <Typography variant="body2" sx={{ color: "text.secondary", ml: 4, mt: 0.5, fontWeight: 500, lineHeight: 1.6 }}>
                                     Build trust by locking funds in escrow. Highly recommended for gig and contract work.
@@ -1305,13 +1305,13 @@ export default function CreateListingForm({
                                 <PremiumAutocomplete
                                     colorTheme={color}
                                     options={[
-                                        ...((!isExternal && (isPlatformOwnerActive || activeOrgRank >= 3)) ? [{ label: 'Native Food Nerve Application', value: 'native' }] : []),
+                                        ...((!isExternal && (isPlatformOwnerActive || activeOrgRank >= 3)) ? [{ label: 'Native FoodNerve Application', value: 'native' }] : []),
                                         { label: 'Direct Email', value: 'email' },
                                         { label: 'External Link', value: 'external' }
                                     ]}
                                     label="Select Application Method"
                                     value={{ 
-                                        label: applicationMethod === 'native' ? 'Native Food Nerve Application' : applicationMethod === 'email' ? 'Direct Email' : 'External Link', 
+                                        label: applicationMethod === 'native' ? 'Native FoodNerve Application' : applicationMethod === 'email' ? 'Direct Email' : 'External Link', 
                                         value: applicationMethod 
                                     }}
                                     onChange={(_, val) => {

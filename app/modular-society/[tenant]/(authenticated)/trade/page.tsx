@@ -138,7 +138,7 @@ const MOCK_LISTINGS: TradeListing[] = [
     priceOrAsk: "500 NP",
     location: "Remote",
     lga: "Virtual",
-    postedBy: { name: "Food Nerve Core", avatarUrl: "", isVerified: true },
+    postedBy: { name: "FoodNerve Core", avatarUrl: "", isVerified: true },
     postedAt: new Date().toISOString(),
     urgency: "normal",
     status: "active",

@@ -2,7 +2,7 @@ import { TenantConfig } from '../types';
 import { foodChallenges } from './challenges';
 
 export const foodTenantConfig: TenantConfig = {
-  name: 'Food Nerve',
+  name: 'FoodNerve',
   domain: 'foodnerve.com',
   people: [
     {
@@ -98,8 +98,8 @@ export const foodTenantConfig: TenantConfig = {
   },
   org: {
     homepage: {
-      title: 'Food Nerve Society',
-      heroHeadline: 'Welcome to the Food Nerve Society',
+      title: 'FoodNerve Society',
+      heroHeadline: 'Welcome to the FoodNerve Society',
       heroSubheadline: 'We are the independent food systems community of the Global South, dedicated to advancing knowledge, collaboration, and innovation in food, energy, health and media for the benefit of Humankind.',
       ctaText: 'Join the Community',
       aboutLinkText: 'Learn more about our mission',
@@ -119,7 +119,7 @@ export const foodTenantConfig: TenantConfig = {
       ],
     },
     about: {
-      title: 'About Food Nerve',
+      title: 'About FoodNerve',
       subtitle: 'We are a community-driven organization dedicated to transforming the agricultural landscape in Africa through technology and collaboration.',
       features: [
         {

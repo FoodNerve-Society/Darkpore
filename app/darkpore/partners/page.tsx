@@ -57,7 +57,7 @@ export default function PartnersPage() {
           <div className={styles.glassCard} style={{ maxWidth: '400px', width: '90%' }}>
             <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.8rem', color: '#fff' }}>Verify Institutional Status</h3>
             <p style={{ color: '#a1a1a6', marginBottom: '2rem', fontSize: '1rem', lineHeight: 1.5 }}>
-              To book a direct 1-on-1 call, you must first authenticate via the Food Nerve Society.
+              To book a direct 1-on-1 call, you must first authenticate via the FoodNerve Society.
             </p>
             <input 
               type="email" 

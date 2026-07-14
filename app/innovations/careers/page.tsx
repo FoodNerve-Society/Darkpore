@@ -6,11 +6,11 @@ import type { Metadata } from 'next';
 import CareersBoard from './components/CareersBoard';
 
 export const metadata: Metadata = {
-    title: 'Careers | Food Nerve Innovations',
+    title: 'Careers | FoodNerve Innovations',
     description: 'Join the ecosystem shaping the future of African food systems.',
 };
 
-// MUI Colors for Food Nerve
+// MUI Colors for FoodNerve
 const EMERALD = '#10b981';
 
 export default async function CareersPage() {
@@ -50,7 +50,7 @@ export default async function CareersPage() {
                             Build the infrastructure <br />of tomorrow.
                         </Typography>
                         <Typography variant="h6" sx={{ color: '#475569', fontWeight: 500, lineHeight: 1.6, maxWidth: 600 }}>
-                            Whether you're an agronomist, an engineer, or a visionary, discover opportunities across the Food Nerve ecosystem to scale impact across Africa.
+                            Whether you're an agronomist, an engineer, or a visionary, discover opportunities across the FoodNerve ecosystem to scale impact across Africa.
                         </Typography>
                     </Box>
                 </Container>

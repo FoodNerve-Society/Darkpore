@@ -55,7 +55,7 @@ const ExecutiveCard = forwardRef<HTMLDivElement, ExecutiveCardProps>(({
               <img src={darkpore.logoUrl} alt="Darkpore" style={{ height: 40, width: 'auto', objectFit: 'contain' }} />
             )}
             {foodnerve.active && foodnerve.logoUrl && (
-              <img src={foodnerve.logoUrl} alt="Food Nerve" style={{ height: 40, width: 'auto', objectFit: 'contain' }} />
+              <img src={foodnerve.logoUrl} alt="FoodNerve" style={{ height: 40, width: 'auto', objectFit: 'contain' }} />
             )}
           </Box>
 
@@ -65,7 +65,7 @@ const ExecutiveCard = forwardRef<HTMLDivElement, ExecutiveCardProps>(({
             </Typography>
             
             <Typography sx={{ fontWeight: 900, fontSize: '1.45rem', color: '#0f172a', letterSpacing: '-0.02em', lineHeight: 1.3, mb: 3, maxWidth: '85%' }}>
-              I started a new position as <span style={{ color: cardTheme }}>{[darkpore.active ? darkpore.role : '', foodnerve.active ? foodnerve.role : ''].filter(Boolean).join(' & ')}</span> at {[darkpore.active ? 'Darkpore' : '', foodnerve.active ? 'Food Nerve' : ''].filter(Boolean).join(' and ')} in the <span style={{ color: '#475569' }}>{[darkpore.active ? darkpore.department : '', foodnerve.active ? foodnerve.department : ''].filter(Boolean).join(' & ')}</span> department.
+              I started a new position as <span style={{ color: cardTheme }}>{[darkpore.active ? darkpore.role : '', foodnerve.active ? foodnerve.role : ''].filter(Boolean).join(' & ')}</span> at {[darkpore.active ? 'Darkpore' : '', foodnerve.active ? 'FoodNerve' : ''].filter(Boolean).join(' and ')} in the <span style={{ color: '#475569' }}>{[darkpore.active ? darkpore.department : '', foodnerve.active ? foodnerve.department : ''].filter(Boolean).join(' & ')}</span> department.
             </Typography>
 
             <Box sx={{ mt: 'auto', mb: 4, maxWidth: '60%' }}>
@@ -117,7 +117,7 @@ const ExecutiveCard = forwardRef<HTMLDivElement, ExecutiveCardProps>(({
               {[...prefixes, firstName, lastName, ...suffixes].filter(Boolean).join(' ')}
             </Typography>
             <Typography sx={{ color: cardTheme, fontWeight: 800, textTransform: 'uppercase', fontSize: '0.8rem', letterSpacing: '2px', mb: 0.5 }}>
-              Proud Member of Food Nerve Society
+              Proud Member of FoodNerve Society
             </Typography>
             
             <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center', gap: 4, alignItems: 'flex-start' }}>
@@ -131,7 +131,7 @@ const ExecutiveCard = forwardRef<HTMLDivElement, ExecutiveCardProps>(({
               {foodnerve.active && foodnerve.logoUrl && (
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
                   <img src={foodnerve.logoUrl} style={{ height: 32, objectFit: 'contain' }} />
-                  <Typography sx={{ color: '#0f172a', fontSize: '0.75rem', fontWeight: 700 }}>Food Nerve</Typography>
+                  <Typography sx={{ color: '#0f172a', fontSize: '0.75rem', fontWeight: 700 }}>FoodNerve</Typography>
                   <Typography sx={{ color: '#64748b', fontSize: '0.65rem', fontWeight: 600 }}>{foodnerve.role}</Typography>
                 </Box>
               )}

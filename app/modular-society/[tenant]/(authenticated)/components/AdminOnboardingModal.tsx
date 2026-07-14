@@ -242,7 +242,7 @@ export default function AdminOnboardingModal({
       return;
     }
     if (foodnerve.active && !foodnerveFilled) {
-      setSubmitError("Please complete the required fields for Food Nerve.");
+      setSubmitError("Please complete the required fields for FoodNerve.");
       return;
     }
     setStep(3);
@@ -279,12 +279,12 @@ export default function AdminOnboardingModal({
       
       let finalFoodnerve = { ...foodnerve };
       if (foodnerveLogoFile) {
-        setLoadingStep('Uploading Food Nerve organization logo...');
+        setLoadingStep('Uploading FoodNerve organization logo...');
         const uploadResult = await uploadFile(foodnerveLogoFile);
         if (uploadResult && uploadResult.secure_url) {
           finalFoodnerve.logoUrl = uploadResult.secure_url;
         } else {
-          throw new Error("Failed to upload Food Nerve logo.");
+          throw new Error("Failed to upload FoodNerve logo.");
         }
       }
 
@@ -902,7 +902,7 @@ export default function AdminOnboardingModal({
                       </Box>
 
                       {renderOrgBlock('darkpore', 'Darkpore', darkpore, setDarkpore, existingOrgs.darkpore, darkporeLogoFile, setDarkporeLogoFile, '#0ea5e9')}
-                      {renderOrgBlock('foodnerve', 'Food Nerve', foodnerve, setFoodnerve, existingOrgs.foodnerve, foodnerveLogoFile, setFoodnerveLogoFile, '#10b981')}
+                      {renderOrgBlock('foodnerve', 'FoodNerve', foodnerve, setFoodnerve, existingOrgs.foodnerve, foodnerveLogoFile, setFoodnerveLogoFile, '#10b981')}
 
                       {submitError && (
                         <Box ref={errorRef} sx={{ mt: 2, scrollMarginTop: '20px' }}>

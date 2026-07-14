@@ -37,7 +37,7 @@ export default async function AboutPage() {
         <Box>
           <Link href="/join" passHref style={{ textDecoration: 'none' }}>
             <Button variant="contained" sx={{ 
-              bgcolor: '#1b5e20', color: 'white', borderRadius: '24px', px: 4, fontWeight: 800, textTransform: 'none',
+              bgcolor: '#1b5e20', color: 'white', borderRadius: '14px', px: 4, fontWeight: 800, textTransform: 'none',
               boxShadow: '0 4px 14px 0 rgba(27, 94, 32, 0.2)', '&:hover': { bgcolor: '#112918' }
             }}>
               Join Society
@@ -145,7 +145,7 @@ export default async function AboutPage() {
           </Typography>
           <Link href="/join" passHref style={{ textDecoration: 'none' }}>
             <Button variant="contained" size="large" sx={{ 
-              py: 2.5, px: 8, fontSize: '1.2rem', borderRadius: '32px', fontWeight: 800,
+              py: 2.5, px: 8, fontSize: '1.2rem', borderRadius: '16px', fontWeight: 800,
               bgcolor: '#2e7d32', color: 'white',
               boxShadow: '0 12px 35px rgba(46, 125, 50, 0.3)', textTransform: 'none',
               transition: 'all 0.3s', '&:hover': { transform: 'translateY(-3px)', bgcolor: '#1b5e20' }

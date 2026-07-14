@@ -171,7 +171,7 @@ export default function DealRoomPage({ params }: { params: Promise<{ id: string 
           <div className={styles.glassCard} style={{ maxWidth: '400px', width: '90%' }}>
             <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.8rem', color: '#fff', fontFamily: 'var(--font-dosis)' }}>Authenticate</h3>
             <p style={{ color: '#a1a1a6', marginBottom: '2rem', fontSize: '1rem', lineHeight: 1.5 }}>
-              Enter your email to secure access. You will be automatically routed to the Food Nerve Society to complete your profile.
+              Enter your email to secure access. You will be automatically routed to the FoodNerve Society to complete your profile.
             </p>
             <input 
               type="email" 

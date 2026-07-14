@@ -3,7 +3,7 @@ import { Button, Typography, Box } from '@mui/material';
 
 export default function SocietyClient({ tenantId }: { tenantId: string }) {
   const isEnergy = tenantId === 'energynerve';
-  const title = isEnergy ? 'Energy Nerve Society' : 'Food Nerve Society';
+  const title = isEnergy ? 'Energy Nerve Society' : 'FoodNerve Society';
   const themeColor = isEnergy ? 'warning' : 'secondary';
 
   return (

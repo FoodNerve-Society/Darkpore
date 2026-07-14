@@ -103,7 +103,7 @@ const MOCK_COMMENTS: MockComment[] = [
     id: "c3",
     author: "Ibrahim Sule",
     avatarLetter: "I",
-    text: "As a student of AgriEng, this is the kind of real-world knowledge we never get in lectures. Any chance Food Nerve can do a video walkthrough of this process?",
+    text: "As a student of AgriEng, this is the kind of real-world knowledge we never get in lectures. Any chance FoodNerve can do a video walkthrough of this process?",
     timestamp: "5 hours ago",
     likes: 6,
     isLiked: false,

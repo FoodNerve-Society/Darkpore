@@ -145,7 +145,7 @@ export async function submitAdminOnboarding(
 
   // Handle both affiliations
   await handleAffiliation('darkpore', 'Darkpore', data.darkpore);
-  await handleAffiliation('foodnerve', 'Food Nerve', data.foodnerve);
+  await handleAffiliation('foodnerve', 'FoodNerve', data.foodnerve);
 
   return { success: true };
 }

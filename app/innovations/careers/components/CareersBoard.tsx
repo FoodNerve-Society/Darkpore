@@ -213,7 +213,7 @@ export default function CareersBoard({
 
             <Swimlane 
                 title="Core Ecosystem Roles" 
-                subtitle="Direct opportunities at Food Nerve and our foundational partners."
+                subtitle="Direct opportunities at FoodNerve and our foundational partners."
                 icon={<WorkOutlineIcon sx={{ color: EMERALD, fontSize: 32 }} />}
                 jobs={filterJobs(coreEcosystemRoles)} 
                 tenantId={tenantId}

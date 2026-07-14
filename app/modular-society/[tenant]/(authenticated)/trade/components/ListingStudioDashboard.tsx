@@ -49,7 +49,7 @@ const LISTING_OPTIONS = [
 
 const hiringEntityOptions = [
   { id: 'my-org', title: 'My Organisations', desc: 'Direct hire for your business', minRank: 2 },
-  { id: 'foodnerve-org', title: 'Organisations in Food Nerve', desc: 'Recruit for a verified partner', reqAdmin: false },
+  { id: 'foodnerve-org', title: 'Organisations in FoodNerve', desc: 'Recruit for a verified partner', reqAdmin: false },
   { id: 'external', title: 'External Organisations', desc: 'Sourcing labor for an outside entity', minRank: 2 }
 ];
 

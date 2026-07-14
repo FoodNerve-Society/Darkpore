@@ -202,7 +202,7 @@ export default function ExploreFeed({ role, onBack, onTabChange }: ExploreFeedPr
                                                     sx={{ 
                                                         bgcolor: 'white', 
                                                         color: 'black', 
-                                                        borderRadius: 8,
+                                                        borderRadius: '14px',
                                                         fontWeight: 700,
                                                         '&:hover': { bgcolor: 'rgba(255,255,255,0.8)' }
                                                     }}

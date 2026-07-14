@@ -99,7 +99,7 @@ const MOCK_CHAT: ChatMessage[] = [
   { id: "ch1", author: "Fatima Bello", avatarLetter: "F", text: "Welcome everyone! We'll be starting in just a moment. Get your questions ready.", timestamp: "2:00 PM", isHost: true },
   { id: "ch2", author: "Amina Yusuf", avatarLetter: "A", text: "Excited for this session! Cold-chain is the biggest challenge in our region.", timestamp: "2:01 PM", isHost: false },
   { id: "ch3", author: "Ibrahim Sule", avatarLetter: "I", text: "Can we discuss the solar-powered cold rooms? I'm building a prototype for my final year project.", timestamp: "2:03 PM", isHost: false },
-  { id: "ch4", author: "Food Nerve", avatarLetter: "FN", text: "Absolutely Ibrahim! We'll cover solar cold storage in the second segment. Stay tuned 🌞", timestamp: "2:04 PM", isHost: true },
+  { id: "ch4", author: "FoodNerve", avatarLetter: "FN", text: "Absolutely Ibrahim! We'll cover solar cold storage in the second segment. Stay tuned 🌞", timestamp: "2:04 PM", isHost: true },
   { id: "ch5", author: "Chidi Okoro", avatarLetter: "C", text: "The cassava processing industry alone loses 40% to post-harvest failures. This is critical.", timestamp: "2:05 PM", isHost: false },
   { id: "ch6", author: "David Adeyemi", avatarLetter: "D", text: "From an investment perspective, cold-chain infrastructure is the highest-ROI play in Nigerian AgTech right now.", timestamp: "2:07 PM", isHost: false },
   { id: "ch7", author: "Dr. Ngozi Eze", avatarLetter: "N", text: "Quick data point: our Sahel region research shows 35% loss reduction with even basic evaporative cooling structures.", timestamp: "2:09 PM", isHost: false },

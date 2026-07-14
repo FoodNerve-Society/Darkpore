@@ -3,7 +3,7 @@ import { Button, Typography, Box } from '@mui/material';
 
 export default function InnovationsClient({ tenantId }: { tenantId: string }) {
   const isEnergy = tenantId === 'energynerve';
-  const title = isEnergy ? 'Energy Nerve Innovations' : 'Food Nerve Innovations';
+  const title = isEnergy ? 'Energy Nerve Innovations' : 'FoodNerve Innovations';
   const themeColor = isEnergy ? 'warning' : 'primary';
   const welcomeText = isEnergy 
     ? 'Welcome to the Energy sector moonshot matrix (.com).' 
