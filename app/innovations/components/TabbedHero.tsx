@@ -47,15 +47,40 @@ function GlobalAlertBanner({ alerts, activeCategoryId }: { alerts: any[], active
       .map((a, idx) => ({ ...a, uniqueKey: a.id || a.title || `alert-${idx}` }));
   }, [alerts, activeCategoryId]);
 
-  const visibleAlerts = useMemo(() => {
-    if (filteredAlerts.length <= 1) return filteredAlerts;
-    const items = [];
-    const count = Math.min(3, filteredAlerts.length);
-    for (let i = 0; i < count; i++) {
-      items.push(filteredAlerts[(currentIndex + i) % filteredAlerts.length]);
+  const getCardTheme = (state: string) => {
+    switch (state) {
+      case 'live':
+        return {
+          bg: 'linear-gradient(135deg, rgba(159,28,69,0.85) 0%, rgba(136,19,55,0.95) 100%)',
+          glow: 'linear-gradient(135deg, rgba(225,29,72,0.4), rgba(159,18,57,0.1))'
+        };
+      case 'imminent':
+        return {
+          bg: 'linear-gradient(135deg, rgba(180,93,19,0.85) 0%, rgba(146,64,14,0.95) 100%)',
+          glow: 'linear-gradient(135deg, rgba(245,158,11,0.4), rgba(180,83,9,0.1))'
+        };
+      case 'today':
+        return {
+          bg: 'linear-gradient(135deg, rgba(161,108,17,0.85) 0%, rgba(133,77,14,0.95) 100%)',
+          glow: 'linear-gradient(135deg, rgba(234,179,8,0.4), rgba(161,98,7,0.1))'
+        };
+      case 'scheduled':
+        return {
+          bg: 'linear-gradient(135deg, rgba(77,66,192,0.85) 0%, rgba(55,48,163,0.95) 100%)',
+          glow: 'linear-gradient(135deg, rgba(99,102,241,0.4), rgba(67,56,202,0.1))'
+        };
+      case 'ended':
+        return {
+          bg: 'linear-gradient(135deg, rgba(51,65,85,0.85) 0%, rgba(30,41,59,0.95) 100%)',
+          glow: 'linear-gradient(135deg, rgba(100,116,139,0.4), rgba(51,65,85,0.1))'
+        };
+      default: // 'new'
+        return {
+          bg: 'linear-gradient(135deg, rgba(14,130,97,0.85) 0%, rgba(4,120,87,0.95) 100%)',
+          glow: 'linear-gradient(135deg, rgba(16,185,129,0.4), rgba(4,120,87,0.1))'
+        };
     }
-    return items;
-  }, [filteredAlerts, currentIndex]);
+  };
 
   useEffect(() => {
     if (filteredAlerts.length <= 1) return;
@@ -102,9 +127,6 @@ function GlobalAlertBanner({ alerts, activeCategoryId }: { alerts: any[], active
     return { label: 'NEW', fullLabel: 'ACTIVE', color: '#10b981', dotColor: '#34d399', state: 'new' as const };
   };
 
-  const currentAlert = filteredAlerts[currentIndex];
-  const currentStatus = getAlertStatus(currentAlert);
-
   return (
     <Box sx={{
       py: 1.5,
@@ -123,41 +145,88 @@ function GlobalAlertBanner({ alerts, activeCategoryId }: { alerts: any[], active
       },
     }}>
       <Container maxWidth="lg">
-        {/* Clipping viewport — the slot the cards travel through */}
-        <Box sx={{
-          position: 'relative',
-          height: '52px',
-          borderRadius: '14px',
-          overflow: 'hidden',
+        {/* Viewport for the stack */}
+        <Box 
+          component={motion.div}
+          animate={{
+            height: filteredAlerts.length > 0
+              ? 52 + (currentIndex * 64) + ((filteredAlerts.length - 1 - currentIndex) * 10)
+              : 52
+          }}
+          transition={{ type: 'spring', stiffness: 260, damping: 28 }}
+          sx={{
+            position: 'relative',
+            borderRadius: '14px',
+            mb: filteredAlerts.length > 1 ? 1 : 0, 
         }}>
-          {/* Vertical conveyor — entire card moves up and out */}
-          <AnimatePresence mode="popLayout" initial={false}>
-            <Box
-              component={motion.div}
-              key={currentIndex}
-              initial={{ y: '100%', rotateX: 12, opacity: 0.3 }}
-              animate={{ y: '0%', rotateX: 0, opacity: 1 }}
-              exit={{ y: '-100%', rotateX: -12, opacity: 0.3 }}
-              transition={{
-                duration: 0.5,
-                ease: [0.32, 0.72, 0, 1],
-              }}
-              sx={{
-                position: 'absolute',
-                inset: 0,
-                transformOrigin: 'center bottom',
-                willChange: 'transform, opacity',
-              }}
-            >
-              {/* Gradient border glow */}
-              <Box sx={{
-                position: 'absolute',
-                inset: -1,
-                borderRadius: '15px',
-                background: 'linear-gradient(135deg, rgba(45,212,191,0.4), rgba(6,95,70,0.25), rgba(45,212,191,0.35))',
-                zIndex: 0,
-                filter: 'blur(0.5px)',
-              }} />
+          {/* Vertical conveyor stack */}
+          <AnimatePresence>
+            {filteredAlerts.map((currentAlert, i) => {
+              const currentStatus = getAlertStatus(currentAlert);
+              const theme = getCardTheme(currentStatus.state);
+              
+              const isCurrent = i === currentIndex;
+              const isPast = i < currentIndex;
+              const isTucked = i > currentIndex;
+              const isActive = isCurrent;
+
+              // Positioning logic (Accumulating Stack)
+              const CARD_HEIGHT = 52;
+              const GAP = 12;
+              const TUCK_OFFSET = 8;
+              let y, scale, opacity, zIndex;
+
+              if (isCurrent) {
+                zIndex = 50;
+              } else if (isPast) {
+                zIndex = 40 - i;
+              } else {
+                zIndex = 30 - i;
+              }
+
+              if (isPast || isCurrent) {
+                y = i * (CARD_HEIGHT + GAP);
+                scale = 1;
+                opacity = 1;
+              } else {
+                const tuckedIndex = i - currentIndex;
+                y = currentIndex * (CARD_HEIGHT + GAP) + tuckedIndex * TUCK_OFFSET;
+                scale = 1 - tuckedIndex * 0.05;
+                opacity = 1; // Keep stack fully opaque to prevent extreme translucency bleed
+              }
+
+              return (
+                <Box
+                  component={motion.div}
+                  key={currentAlert.uniqueKey}
+                  initial={false}
+                  animate={{ y, scale, opacity, zIndex }}
+                  transition={{
+                    type: 'spring',
+                    stiffness: 260,
+                    damping: 28,
+                  }}
+                  sx={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: '52px',
+                    transformOrigin: 'center bottom',
+                    willChange: 'transform, opacity',
+                  }}
+                >
+              {/* Gradient border glow - active only */}
+              {isActive && (
+                <Box sx={{
+                  position: 'absolute',
+                  inset: -1,
+                  borderRadius: '15px',
+                  background: theme.glow,
+                  zIndex: 0,
+                  filter: 'blur(0.5px)',
+                }} />
+              )}
 
               {/* The card itself */}
               <Box sx={{
@@ -167,17 +236,23 @@ function GlobalAlertBanner({ alerts, activeCategoryId }: { alerts: any[], active
                 height: '100%',
                 borderRadius: '14px',
                 overflow: 'hidden',
-                background: 'linear-gradient(135deg, #064e3b 0%, #065f46 30%, #0d9488 70%, #14b8a6 100%)',
-                boxShadow: `
-                  0 8px 32px rgba(6,95,70,0.25),
-                  0 2px 8px rgba(6,95,70,0.15),
+                background: theme.bg,
+                backdropFilter: 'blur(24px)', // Liquid glass effect applied globally
+                border: isActive ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(255,255,255,0.08)',
+                transition: 'background 0.4s ease, backdrop-filter 0.4s ease, border 0.4s ease',
+                boxShadow: isTucked ? `
+                  0 6px 20px rgba(0,0,0,0.35),
+                  inset 0 1px 0 rgba(255,255,255,0.05)
+                ` : `
+                  0 8px 32px rgba(0,0,0,0.4),
+                  0 2px 8px rgba(0,0,0,0.2),
                   inset 0 1px 0 rgba(255,255,255,0.12)
                 `,
               }}>
                 {/* Progress wave */}
-                {filteredAlerts.length > 1 && (
+                {isActive && filteredAlerts.length > 1 && (
                   <Box
-                    key={`wave-${currentIndex}`}
+                    key={`wave-${currentAlert.uniqueKey}`}
                     sx={{
                       position: 'absolute',
                       top: 0, left: 0, bottom: 0,
@@ -220,7 +295,7 @@ function GlobalAlertBanner({ alerts, activeCategoryId }: { alerts: any[], active
                     borderRadius: '10px',
                     px: 1.5, py: 0.5,
                     backdropFilter: 'blur(8px)',
-                    border: '1px solid rgba(255,255,255,0.06)',
+                    border: isTucked ? '1px solid rgba(255,255,255,0.02)' : '1px solid rgba(255,255,255,0.06)',
                   }}>
                     {currentStatus.state === 'live' && (
                       <Box sx={{
@@ -261,6 +336,8 @@ function GlobalAlertBanner({ alerts, activeCategoryId }: { alerts: any[], active
                         display: { xs: 'none', sm: 'block' },
                         border: '1.5px solid rgba(255,255,255,0.15)',
                         boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+                        opacity: isTucked ? 0.6 : 1,
+                        transition: 'opacity 0.4s ease',
                       }}
                     />
                   )}
@@ -270,7 +347,7 @@ function GlobalAlertBanner({ alerts, activeCategoryId }: { alerts: any[], active
                     fontFamily: 'var(--font-dosis)',
                     fontSize: { xs: '0.85rem', md: '0.92rem' },
                     fontWeight: 700,
-                    color: '#ffffff',
+                    color: isTucked ? 'rgba(255,255,255,0.5)' : '#ffffff',
                     flexGrow: 1,
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
@@ -283,24 +360,6 @@ function GlobalAlertBanner({ alerts, activeCategoryId }: { alerts: any[], active
 
                   {/* Pagination dots + CTA */}
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexShrink: 0 }}>
-                    {/* Tiny inline dots */}
-                    {filteredAlerts.length > 1 && (
-                      <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: '4px', alignItems: 'center' }}>
-                        {filteredAlerts.map((_, i) => (
-                          <Box
-                            key={i}
-                            sx={{
-                              width: currentIndex === i ? 12 : 4,
-                              height: 4,
-                              borderRadius: '2px',
-                              bgcolor: currentIndex === i ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.25)',
-                              transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-                            }}
-                          />
-                        ))}
-                      </Box>
-                    )}
-
                     {/* CTA */}
                     <Box sx={{
                       display: 'flex',
@@ -328,9 +387,52 @@ function GlobalAlertBanner({ alerts, activeCategoryId }: { alerts: any[], active
                   </Box>
                 </Box>
               </Box>
-            </Box>
+                </Box>
+              );
+            })}
           </AnimatePresence>
         </Box>
+
+        {/* Premium Pill Counter */}
+        {filteredAlerts.length > 1 && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', pt: 2.5 }}>
+            <Box sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.2,
+              px: 2,
+              py: 0.6,
+              borderRadius: '20px',
+              bgcolor: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              backdropFilter: 'blur(8px)',
+            }}>
+              <Typography sx={{
+                fontSize: '0.65rem',
+                fontWeight: 700,
+                color: 'rgba(255,255,255,0.9)',
+                letterSpacing: '0.15em',
+              }}>
+                {String(currentIndex + 1).padStart(2, '0')}
+              </Typography>
+              <Typography sx={{
+                fontSize: '0.65rem',
+                fontWeight: 400,
+                color: 'rgba(255,255,255,0.3)',
+              }}>
+                /
+              </Typography>
+              <Typography sx={{
+                fontSize: '0.65rem',
+                fontWeight: 600,
+                color: 'rgba(255,255,255,0.5)',
+                letterSpacing: '0.15em',
+              }}>
+                {String(filteredAlerts.length).padStart(2, '0')}
+              </Typography>
+            </Box>
+          </Box>
+        )}
       </Container>
     </Box>
   );
