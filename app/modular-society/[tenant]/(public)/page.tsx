@@ -119,92 +119,104 @@ export default async function SocietyPublicHomepage() {
           }} 
           updates={[
             {
-                id: 'upd_1',
-                label: 'New Innovation Lab Opened',
-                value: 142,
-                icon: SpaIcon,
-                description: 'Pioneering agricultural and food system solutions.',
-                gradient: `linear-gradient(135deg, #4CAF50 0%, #1b5e20 100%)`,
-                bgGradient: `linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(27, 94, 32, 0.2) 100%)`,
-                imageUrl: 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?q=80&w=800&auto=format&fit=crop',
-                tag: 'Innovator',
+                id: 'act_1',
+                userName: 'Aisha Ibrahim',
+                avatarUrl: 'https://images.unsplash.com/photo-1531123897727-8f129e1bfa82?q=80&w=200&auto=format&fit=crop',
+                timeAgo: '2m ago',
+                tab: 'TRADE',
+                action: 'listed 500kg of Cassava Tubers',
+                gradient: `linear-gradient(135deg, #10b981 0%, #047857 100%)`, // Emerald
+                icon: HandshakeIcon
             },
             {
-                id: 'upd_2',
-                label: 'Series A Capital Deployed',
-                value: 5200000,
-                icon: MonetizationOnIcon,
-                description: 'Funding channeled into sustainable food ventures.',
-                gradient: `linear-gradient(135deg, #d97706 0%, #b45309 100%)`,
-                bgGradient: `linear-gradient(135deg, rgba(217, 119, 6, 0.2) 0%, rgba(180, 83, 9, 0.2) 100%)`,
-                imageUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=800&auto=format&fit=crop',
-                tag: 'Investor',
+                id: 'act_2',
+                userName: 'David Okeke',
+                avatarUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=200&auto=format&fit=crop',
+                timeAgo: '5m ago',
+                tab: 'LEARN',
+                action: 'published "Northern Soil Analysis" blueprint',
+                gradient: `linear-gradient(135deg, #f59e0b 0%, #b45309 100%)`, // Amber
+                icon: SchoolIcon
             },
             {
-                id: 'upd_3',
-                label: 'Global Membership Milestone',
-                value: 12000,
-                icon: PublicIcon,
-                description: 'Farmers, scientists, and investors uniting.',
-                gradient: `linear-gradient(135deg, #1976d2 0%, #0d47a1 100%)`,
-                bgGradient: `linear-gradient(135deg, rgba(25, 118, 210, 0.2) 0%, rgba(13, 71, 161, 0.2) 100%)`,
-                imageUrl: 'https://images.unsplash.com/photo-1559884743-74a57598c6c7?q=80&w=800&auto=format&fit=crop',
-                tag: 'Pioneer',
+                id: 'act_3',
+                userName: 'Chioma O.',
+                avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200&auto=format&fit=crop',
+                timeAgo: '12m ago',
+                tab: 'MEET',
+                action: 'responded to the Daily Spark discussion',
+                gradient: `linear-gradient(135deg, #6366f1 0%, #4338ca 100%)`, // Indigo
+                icon: ContactsIcon
             },
             {
-                id: 'upd_4',
-                label: 'New Regional Hub',
-                value: 4,
-                icon: ContactsIcon,
-                description: 'Connecting farmers directly with cold-chain transport.',
-                gradient: `linear-gradient(135deg, #9c27b0 0%, #4a148c 100%)`,
-                bgGradient: `linear-gradient(135deg, rgba(156, 39, 176, 0.2) 0%, rgba(74, 20, 140, 0.2) 100%)`,
-                imageUrl: 'https://images.unsplash.com/photo-1589923188900-85dae4400f7b?q=80&w=800&auto=format&fit=crop',
-                tag: 'Operator',
+                id: 'act_4',
+                userName: 'FarmTech Solutions',
+                avatarUrl: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200&auto=format&fit=crop',
+                timeAgo: '18m ago',
+                tab: 'SUPPORT',
+                action: 'donated $500 to the Rural Irrigation Initiative',
+                gradient: `linear-gradient(135deg, #ec4899 0%, #be185d 100%)`, // Pink
+                icon: AttachMoneyIcon
             },
             {
-                id: 'upd_5',
-                label: 'Soil Blueprint Published',
-                value: 85,
-                icon: SchoolIcon,
-                description: 'Open-source blueprints for regional soil analysis.',
-                gradient: `linear-gradient(135deg, #e91e63 0%, #880e4f 100%)`,
-                bgGradient: `linear-gradient(135deg, rgba(233, 30, 99, 0.2) 0%, rgba(136, 14, 79, 0.2) 100%)`,
-                imageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=800&auto=format&fit=crop',
-                tag: 'Researcher',
+                id: 'act_5',
+                userName: 'Musa Bello',
+                avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=200&auto=format&fit=crop',
+                timeAgo: '22m ago',
+                tab: 'PROFILE',
+                action: 'verified their Pioneer business account',
+                gradient: `linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%)`, // Sky Blue
+                icon: PublicIcon
             },
             {
-                id: 'upd_6',
-                label: 'Bulk Crop Traded',
-                value: 4892,
-                icon: HandshakeIcon,
-                description: 'Tons of harvest yields exchanged this quarter.',
-                gradient: `linear-gradient(135deg, #00bcd4 0%, #006064 100%)`,
-                bgGradient: `linear-gradient(135deg, rgba(0, 188, 212, 0.2) 0%, rgba(0, 96, 100, 0.2) 100%)`,
-                imageUrl: 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?q=80&w=800&auto=format&fit=crop',
-                tag: 'Pioneer',
+                id: 'act_6',
+                userName: 'Grace Nnamdi',
+                avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop',
+                timeAgo: '28m ago',
+                tab: 'TRADE',
+                action: 'purchased 2 tons of Fertilizer',
+                gradient: `linear-gradient(135deg, #10b981 0%, #047857 100%)`, // Emerald
+                icon: HandshakeIcon
             },
             {
-                id: 'upd_7',
-                label: 'Grant Backing Secured',
-                value: 200000,
-                icon: AttachMoneyIcon,
-                description: 'Local initiative backed by Food Nerve grants.',
-                gradient: `linear-gradient(135deg, #ff9800 0%, #e65100 100%)`,
-                bgGradient: `linear-gradient(135deg, rgba(255, 152, 0, 0.2) 0%, rgba(230, 81, 0, 0.2) 100%)`,
-                imageUrl: 'https://images.unsplash.com/photo-1530587191325-3db32d826c18?q=80&w=800&auto=format&fit=crop',
-                tag: 'Regulator',
+                id: 'act_7',
+                userName: 'Dr. Tunde Alabi',
+                avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=200&auto=format&fit=crop',
+                timeAgo: '35m ago',
+                tab: 'LEARN',
+                action: 'completed the "Cold Chain Logistics" module',
+                gradient: `linear-gradient(135deg, #f59e0b 0%, #b45309 100%)`, // Amber
+                icon: SchoolIcon
             },
             {
-                id: 'upd_8',
-                label: 'Ecosystem Expansion',
-                value: 24,
-                icon: PublicIcon,
-                description: 'New partners joined the Sustainable Soil Consortium.',
-                gradient: `linear-gradient(135deg, #3f51b5 0%, #1a237e 100%)`,
-                bgGradient: `linear-gradient(135deg, rgba(63, 81, 181, 0.2) 0%, rgba(26, 35, 126, 0.2) 100%)`,
-                imageUrl: 'https://images.unsplash.com/photo-1559884743-74a57598c6c7?q=80&w=800&auto=format&fit=crop',
-                tag: 'Innovator',
+                id: 'act_8',
+                userName: 'Sarah Adeyemi',
+                avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=200&auto=format&fit=crop',
+                timeAgo: '41m ago',
+                tab: 'MEET',
+                action: 'upvoted the top Daily Spark response',
+                gradient: `linear-gradient(135deg, #6366f1 0%, #4338ca 100%)`, // Indigo
+                icon: ContactsIcon
+            },
+            {
+                id: 'act_9',
+                userName: 'Global Agritech',
+                avatarUrl: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?q=80&w=200&auto=format&fit=crop',
+                timeAgo: '49m ago',
+                tab: 'SUPPORT',
+                action: 'launched a new Grant for Solar Machinery',
+                gradient: `linear-gradient(135deg, #ec4899 0%, #be185d 100%)`, // Pink
+                icon: AttachMoneyIcon
+            },
+            {
+                id: 'act_10',
+                userName: 'Ikenna Okafor',
+                avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop',
+                timeAgo: '1h ago',
+                tab: 'PROFILE',
+                action: 'updated their KYC documentation',
+                gradient: `linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%)`, // Sky Blue
+                icon: PublicIcon
             }
           ]} 
       />
