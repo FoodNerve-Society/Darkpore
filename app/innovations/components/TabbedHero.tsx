@@ -49,36 +49,12 @@ function GlobalAlertBanner({ alerts, activeCategoryId }: { alerts: any[], active
 
   const getCardTheme = (state: string) => {
     switch (state) {
-      case 'live':
-        return {
-          bg: 'linear-gradient(135deg, rgba(159,28,69,0.85) 0%, rgba(136,19,55,0.95) 100%)',
-          glow: 'linear-gradient(135deg, rgba(225,29,72,0.4), rgba(159,18,57,0.1))'
-        };
-      case 'imminent':
-        return {
-          bg: 'linear-gradient(135deg, rgba(180,93,19,0.85) 0%, rgba(146,64,14,0.95) 100%)',
-          glow: 'linear-gradient(135deg, rgba(245,158,11,0.4), rgba(180,83,9,0.1))'
-        };
-      case 'today':
-        return {
-          bg: 'linear-gradient(135deg, rgba(161,108,17,0.85) 0%, rgba(133,77,14,0.95) 100%)',
-          glow: 'linear-gradient(135deg, rgba(234,179,8,0.4), rgba(161,98,7,0.1))'
-        };
-      case 'scheduled':
-        return {
-          bg: 'linear-gradient(135deg, rgba(77,66,192,0.85) 0%, rgba(55,48,163,0.95) 100%)',
-          glow: 'linear-gradient(135deg, rgba(99,102,241,0.4), rgba(67,56,202,0.1))'
-        };
-      case 'ended':
-        return {
-          bg: 'linear-gradient(135deg, rgba(51,65,85,0.85) 0%, rgba(30,41,59,0.95) 100%)',
-          glow: 'linear-gradient(135deg, rgba(100,116,139,0.4), rgba(51,65,85,0.1))'
-        };
-      default: // 'new'
-        return {
-          bg: 'linear-gradient(135deg, rgba(14,130,97,0.85) 0%, rgba(4,120,87,0.95) 100%)',
-          glow: 'linear-gradient(135deg, rgba(16,185,129,0.4), rgba(4,120,87,0.1))'
-        };
+      case 'live': return { color: '#ef4444', soft: 'rgba(159, 28, 69, 0.95)' };
+      case 'imminent': return { color: '#f59e0b', soft: 'rgba(180, 93, 19, 0.95)' };
+      case 'today': return { color: '#eab308', soft: 'rgba(161, 108, 17, 0.95)' };
+      case 'scheduled': return { color: '#6366f1', soft: 'rgba(77, 66, 192, 0.95)' };
+      case 'ended': return { color: '#64748b', soft: 'rgba(51, 65, 85, 0.95)' };
+      default: return { color: '#10b981', soft: 'rgba(14, 130, 97, 0.95)' };
     }
   };
 
@@ -145,9 +121,26 @@ function GlobalAlertBanner({ alerts, activeCategoryId }: { alerts: any[], active
       },
     }}>
       <Container maxWidth="lg">
-        {/* Viewport for the stack */}
-        <Box 
-          component={motion.div}
+        {/* Constrain width on desktop to look like a premium notification stack rather than a massive banner */}
+        <Box sx={{ maxWidth: { md: '850px' }, mx: { md: 'auto' } }}>
+          {/* Section Header */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2, pl: 0.5 }}>
+            <Box sx={{
+              width: 6, height: 6, borderRadius: '50%', bgcolor: 'rgba(15,23,42,0.4)'
+            }} />
+            <Typography sx={{
+              fontSize: '0.75rem',
+              fontWeight: 800,
+              color: 'rgba(15,23,42,0.7)',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+            }}>
+              Global Alerts & Updates
+            </Typography>
+          </Box>
+          {/* Viewport for the stack */}
+          <Box 
+            component={motion.div}
           animate={{
             height: filteredAlerts.length > 0
               ? 52 + (currentIndex * 64) + ((filteredAlerts.length - 1 - currentIndex) * 10)
@@ -195,6 +188,18 @@ function GlobalAlertBanner({ alerts, activeCategoryId }: { alerts: any[], active
                 opacity = 1; // Keep stack fully opaque to prevent extreme translucency bleed
               }
 
+              // Determine the 3-tier visual state of the cards
+              let cardBg = 'rgba(15, 23, 35, 0.4)'; // Past cards (Translucent)
+              let cardBlur = 'blur(12px)';
+              
+              if (isActive) {
+                cardBg = theme.color; // Active card gets the sharp semantic color
+                cardBlur = 'none';
+              } else if (isTucked) {
+                cardBg = theme.soft; // Future cards get opaque, softer semantic color
+                cardBlur = 'none';
+              }
+
               return (
                 <Box
                   component={motion.div}
@@ -216,18 +221,6 @@ function GlobalAlertBanner({ alerts, activeCategoryId }: { alerts: any[], active
                     willChange: 'transform, opacity',
                   }}
                 >
-              {/* Gradient border glow - active only */}
-              {isActive && (
-                <Box sx={{
-                  position: 'absolute',
-                  inset: -1,
-                  borderRadius: '15px',
-                  background: theme.glow,
-                  zIndex: 0,
-                  filter: 'blur(0.5px)',
-                }} />
-              )}
-
               {/* The card itself */}
               <Box sx={{
                 position: 'relative',
@@ -236,35 +229,52 @@ function GlobalAlertBanner({ alerts, activeCategoryId }: { alerts: any[], active
                 height: '100%',
                 borderRadius: '14px',
                 overflow: 'hidden',
-                background: theme.bg,
-                backdropFilter: 'blur(24px)', // Liquid glass effect applied globally
-                border: isActive ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(255,255,255,0.08)',
-                transition: 'background 0.4s ease, backdrop-filter 0.4s ease, border 0.4s ease',
-                boxShadow: isTucked ? `
-                  0 6px 20px rgba(0,0,0,0.35),
-                  inset 0 1px 0 rgba(255,255,255,0.05)
+                background: cardBg,
+                backdropFilter: cardBlur,
+                border: 'none',
+                transition: 'background 0.4s ease, backdrop-filter 0.4s ease',
+                boxShadow: isActive ? `
+                  0 20px 40px -10px rgba(0,0,0,0.5),
+                  0 0 0 1px rgba(255,255,255,0.05),
+                  inset 0 1px 0 rgba(255,255,255,0.15)
                 ` : `
-                  0 8px 32px rgba(0,0,0,0.4),
-                  0 2px 8px rgba(0,0,0,0.2),
-                  inset 0 1px 0 rgba(255,255,255,0.12)
+                  0 10px 20px -5px rgba(0,0,0,0.3),
+                  0 0 0 1px rgba(255,255,255,0.02),
+                  inset 0 1px 0 rgba(255,255,255,0.05)
                 `,
               }}>
+                
+                {/* Ambient Internal Glow (Only for inactive dark cards to hint at color) */}
+                {!isActive && (
+                  <Box sx={{
+                    position: 'absolute',
+                    top: '-50%',
+                    right: '-10%',
+                    width: '150px',
+                    height: '150px',
+                    background: `radial-gradient(circle, ${theme.color} 0%, transparent 70%)`,
+                    opacity: 0.15,
+                    filter: 'blur(30px)',
+                    pointerEvents: 'none',
+                    zIndex: 0,
+                    transition: 'opacity 0.4s ease'
+                  }} />
+                )}
                 {/* Progress wave */}
                 {isActive && filteredAlerts.length > 1 && (
                   <Box
                     key={`wave-${currentAlert.uniqueKey}`}
                     sx={{
                       position: 'absolute',
-                      top: 0, left: 0, bottom: 0,
-                      width: '100%',
-                      background: 'linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 100%)',
-                      transformOrigin: 'left',
-                      animation: 'waveSweep 6s ease-in-out forwards',
+                      bottom: 0, left: 0,
+                      height: '3px',
+                      background: 'rgba(255,255,255,0.9)',
+                      animation: 'waveSweep 6s linear forwards',
                       pointerEvents: 'none',
-                      zIndex: 0,
+                      zIndex: 10,
                       '@keyframes waveSweep': {
-                        '0%': { transform: 'scaleX(0)' },
-                        '100%': { transform: 'scaleX(1)' },
+                        '0%': { width: '0%' },
+                        '100%': { width: '100%' },
                       },
                     }}
                   />
@@ -345,7 +355,7 @@ function GlobalAlertBanner({ alerts, activeCategoryId }: { alerts: any[], active
                   {/* Title */}
                   <Typography sx={{
                     fontFamily: 'var(--font-dosis)',
-                    fontSize: { xs: '0.85rem', md: '0.92rem' },
+                    fontSize: { xs: '0.75rem', md: '0.92rem' }, // Smaller on mobile to fit more text
                     fontWeight: 700,
                     color: isTucked ? 'rgba(255,255,255,0.5)' : '#ffffff',
                     flexGrow: 1,
@@ -433,6 +443,7 @@ function GlobalAlertBanner({ alerts, activeCategoryId }: { alerts: any[], active
             </Box>
           </Box>
         )}
+        </Box>
       </Container>
     </Box>
   );
@@ -531,7 +542,14 @@ export default function TabbedHero({ headline, subheadline, categories, globalAl
                           </Typography>
                       </motion.div>
                   </Box>
+              </Container>
 
+              {/* ═══════════════════════════════════════════════════════════
+                  CYCLING GLOBAL ALERT BANNER (Moved ABOVE Categories)
+              ═══════════════════════════════════════════════════════════ */}
+              <GlobalAlertBanner alerts={globalAlerts} activeCategoryId={activeCatData?.id} />
+
+              <Container maxWidth="lg" sx={{ pb: 2, pt: 1 }}>
                   {/* Staggered Reveal Content */}
                   <Box component={motion.div} initial={{ opacity: 0, y: 20 }} animate={heroAnimationDone ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }} transition={{ duration: 0.8, ease: "easeOut" }}>
 
@@ -552,11 +570,6 @@ export default function TabbedHero({ headline, subheadline, categories, globalAl
                   </Box>
               </Container>
           </Box>
-
-          {/* ═══════════════════════════════════════════════════════════
-              CYCLING GLOBAL ALERT BANNER
-          ═══════════════════════════════════════════════════════════ */}
-          <GlobalAlertBanner alerts={globalAlerts} activeCategoryId={activeCatData?.id} />
 
           {/* NEW Tinted Content Area */}
           <Box sx={{ 
