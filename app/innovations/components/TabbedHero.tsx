@@ -41,8 +41,21 @@ function GlobalAlertBanner({ alerts, activeCategoryId }: { alerts: any[], active
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const filteredAlerts = useMemo(() => {
-    return alerts.filter(a => a.challengeId === 'global' || a.challengeId === activeCategoryId).slice(0, 5);
+    return alerts
+      .filter(a => a.challengeId === 'global' || a.challengeId === activeCategoryId)
+      .slice(0, 5)
+      .map((a, idx) => ({ ...a, uniqueKey: a.id || a.title || `alert-${idx}` }));
   }, [alerts, activeCategoryId]);
+
+  const visibleAlerts = useMemo(() => {
+    if (filteredAlerts.length <= 1) return filteredAlerts;
+    const items = [];
+    const count = Math.min(3, filteredAlerts.length);
+    for (let i = 0; i < count; i++) {
+      items.push(filteredAlerts[(currentIndex + i) % filteredAlerts.length]);
+    }
+    return items;
+  }, [filteredAlerts, currentIndex]);
 
   useEffect(() => {
     if (filteredAlerts.length <= 1) return;
@@ -97,298 +110,226 @@ function GlobalAlertBanner({ alerts, activeCategoryId }: { alerts: any[], active
       py: 1.5,
       position: 'relative',
       zIndex: 2,
-      // Visual separator from category tabs above
+      // Subtle separator from category tabs above
       '&::before': {
         content: '""',
         position: 'absolute',
         top: 0,
         left: '50%',
         transform: 'translateX(-50%)',
-        width: '80%',
+        width: '60%',
         height: '1px',
-        background: 'linear-gradient(90deg, transparent, rgba(15,23,42,0.06) 30%, rgba(15,23,42,0.06) 70%, transparent)',
+        background: 'linear-gradient(90deg, transparent, rgba(15,23,42,0.05) 30%, rgba(15,23,42,0.05) 70%, transparent)',
       },
     }}>
       <Container maxWidth="lg">
+        {/* Clipping viewport — the slot the cards travel through */}
         <Box sx={{
-          display: 'flex',
-          alignItems: 'stretch',
-          gap: '10px',
-          width: '100%',
-          height: '56px',
-          perspective: '1200px',
+          position: 'relative',
+          height: '52px',
+          borderRadius: '14px',
+          overflow: 'hidden',
         }}>
-            {filteredAlerts.map((alert, idx) => {
-                const isActive = idx === currentIndex;
-                const status = getAlertStatus(alert);
+          {/* Vertical conveyor — entire card moves up and out */}
+          <AnimatePresence mode="popLayout" initial={false}>
+            <Box
+              component={motion.div}
+              key={currentIndex}
+              initial={{ y: '100%', rotateX: 12, opacity: 0.3 }}
+              animate={{ y: '0%', rotateX: 0, opacity: 1 }}
+              exit={{ y: '-100%', rotateX: -12, opacity: 0.3 }}
+              transition={{
+                duration: 0.5,
+                ease: [0.32, 0.72, 0, 1],
+              }}
+              sx={{
+                position: 'absolute',
+                inset: 0,
+                transformOrigin: 'center bottom',
+                willChange: 'transform, opacity',
+              }}
+            >
+              {/* Gradient border glow */}
+              <Box sx={{
+                position: 'absolute',
+                inset: -1,
+                borderRadius: '15px',
+                background: 'linear-gradient(135deg, rgba(45,212,191,0.4), rgba(6,95,70,0.25), rgba(45,212,191,0.35))',
+                zIndex: 0,
+                filter: 'blur(0.5px)',
+              }} />
 
-                // ──── INACTIVE: Mini number pill with 3D flip ────
-                if (!isActive) {
-                  return (
-                    <Box
-                      key={idx}
-                      onClick={() => setCurrentIndex(idx)}
-                      sx={{
-                        flexShrink: 0,
-                        width: '44px',
-                        height: '100%',
-                        perspective: '600px',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <Box sx={{
-                        width: '100%',
-                        height: '100%',
-                        borderRadius: '14px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '3px',
-                        // Frosted glass
-                        background: 'rgba(255,255,255,0.75)',
-                        backdropFilter: 'blur(16px)',
-                        WebkitBackdropFilter: 'blur(16px)',
-                        // Premium gradient border effect via box-shadow layering
-                        border: '1px solid rgba(226,232,240,0.6)',
-                        boxShadow: `
-                          0 0 0 0.5px rgba(6,95,70,0.08),
-                          0 1px 2px rgba(0,0,0,0.04),
-                          inset 0 1px 0 rgba(255,255,255,0.95)
-                        `,
-                        transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-                        transformStyle: 'preserve-3d',
-                        animation: 'flipIn 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
-                        '@keyframes flipIn': {
-                          '0%': { transform: 'rotateY(90deg) scale(0.8)', opacity: 0 },
-                          '100%': { transform: 'rotateY(0deg) scale(1)', opacity: 1 },
-                        },
-                        '&:hover': {
-                          background: 'rgba(255,255,255,0.95)',
-                          boxShadow: `
-                            0 0 0 1px rgba(6,95,70,0.12),
-                            0 4px 16px rgba(0,0,0,0.08),
-                            inset 0 1px 0 rgba(255,255,255,1)
-                          `,
-                          transform: 'translateY(-1px)',
-                        },
-                      }}>
-                        <Typography sx={{
-                          fontSize: '0.85rem',
-                          fontWeight: 800,
-                          color: '#1e293b',
-                          lineHeight: 1,
-                          fontFamily: 'var(--font-inter), sans-serif',
-                        }}>
-                          {idx + 1}
-                        </Typography>
-                        {/* Urgency dot */}
-                        <Box sx={{
-                          width: 6, height: 6,
-                          borderRadius: '50%',
-                          bgcolor: status.dotColor,
-                          ...(status.state === 'live' && {
-                            animation: 'livePulse 1.5s ease-in-out infinite',
-                            '@keyframes livePulse': {
-                              '0%, 100%': { opacity: 1, boxShadow: `0 0 0 0 ${status.dotColor}` },
-                              '50%': { opacity: 0.6, boxShadow: `0 0 0 4px transparent` },
-                            },
-                          }),
-                        }} />
-                      </Box>
-                    </Box>
-                  );
-                }
-
-                // ──── ACTIVE: Expanded alert card ────
-                return (
+              {/* The card itself */}
+              <Box sx={{
+                position: 'relative',
+                zIndex: 1,
+                width: '100%',
+                height: '100%',
+                borderRadius: '14px',
+                overflow: 'hidden',
+                background: 'linear-gradient(135deg, #064e3b 0%, #065f46 30%, #0d9488 70%, #14b8a6 100%)',
+                boxShadow: `
+                  0 8px 32px rgba(6,95,70,0.25),
+                  0 2px 8px rgba(6,95,70,0.15),
+                  inset 0 1px 0 rgba(255,255,255,0.12)
+                `,
+              }}>
+                {/* Progress wave */}
+                {filteredAlerts.length > 1 && (
                   <Box
-                    key={idx}
+                    key={`wave-${currentIndex}`}
                     sx={{
-                      flexGrow: 1,
-                      height: '100%',
-                      position: 'relative',
-                      borderRadius: '14px',
-                      overflow: 'hidden',
-                      // 3D flip entrance
-                      animation: 'expandFlip 0.55s cubic-bezier(0.16, 1, 0.3, 1)',
-                      transformStyle: 'preserve-3d',
-                      '@keyframes expandFlip': {
-                        '0%': { transform: 'rotateY(-90deg) scaleX(0.3)', opacity: 0 },
-                        '40%': { transform: 'rotateY(-15deg) scaleX(0.7)', opacity: 0.7 },
-                        '100%': { transform: 'rotateY(0deg) scaleX(1)', opacity: 1 },
+                      position: 'absolute',
+                      top: 0, left: 0, bottom: 0,
+                      width: '100%',
+                      background: 'linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 100%)',
+                      transformOrigin: 'left',
+                      animation: 'waveSweep 6s ease-in-out forwards',
+                      pointerEvents: 'none',
+                      zIndex: 0,
+                      '@keyframes waveSweep': {
+                        '0%': { transform: 'scaleX(0)' },
+                        '100%': { transform: 'scaleX(1)' },
                       },
                     }}
-                  >
-                    {/* Gradient border glow — pseudo-element behind the card */}
-                    <Box sx={{
-                      position: 'absolute',
-                      inset: -1,
-                      borderRadius: '15px',
-                      background: 'linear-gradient(135deg, rgba(45,212,191,0.5), rgba(6,95,70,0.3), rgba(45,212,191,0.4))',
-                      zIndex: 0,
-                      filter: 'blur(0.5px)',
-                    }} />
+                  />
+                )}
 
-                    {/* Inner card */}
-                    <Box sx={{
-                      position: 'relative',
-                      zIndex: 1,
-                      width: '100%',
-                      height: '100%',
-                      borderRadius: '14px',
-                      overflow: 'hidden',
-                      // Deep Emerald → Teal gradient
-                      background: 'linear-gradient(135deg, #064e3b 0%, #065f46 30%, #0d9488 70%, #14b8a6 100%)',
-                      boxShadow: `
-                        0 8px 32px rgba(6,95,70,0.3),
-                        0 2px 8px rgba(6,95,70,0.2),
-                        inset 0 1px 0 rgba(255,255,255,0.15)
-                      `,
+                {/* Content row */}
+                <Box
+                  component={Link}
+                  href={currentAlert.link || '#'}
+                  sx={{
+                    textDecoration: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    height: '100%',
+                    gap: { xs: 1.5, md: 2 },
+                    px: { xs: 2, md: 3 },
+                    position: 'relative',
+                    zIndex: 1,
+                  }}
+                >
+                  {/* Status badge */}
+                  <Box sx={{
+                    flexShrink: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    bgcolor: 'rgba(0,0,0,0.25)',
+                    borderRadius: '10px',
+                    px: 1.5, py: 0.5,
+                    backdropFilter: 'blur(8px)',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                  }}>
+                    {currentStatus.state === 'live' && (
+                      <Box sx={{
+                        width: 7, height: 7,
+                        borderRadius: '50%',
+                        bgcolor: currentStatus.color,
+                        animation: 'urgentPulse 1.5s ease-in-out infinite',
+                        '@keyframes urgentPulse': {
+                          '0%, 100%': { opacity: 1, transform: 'scale(1)' },
+                          '50%': { opacity: 0.4, transform: 'scale(0.6)' },
+                        },
+                      }} />
+                    )}
+                    <Typography sx={{
+                      fontSize: '0.6rem',
+                      fontWeight: 800,
+                      color: currentStatus.color,
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      lineHeight: 1,
+                      textShadow: '0 1px 2px rgba(0,0,0,0.2)',
                     }}>
-                      {/* Progress wave */}
-                      {filteredAlerts.length > 1 && (
-                        <Box
-                          key={`wave-${currentIndex}`}
-                          sx={{
-                            position: 'absolute',
-                            top: 0, left: 0, bottom: 0,
-                            width: '100%',
-                            background: 'linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.04) 100%)',
-                            transformOrigin: 'left',
-                            borderRadius: '0 14px 14px 0',
-                            animation: 'waveSweep 6s ease-in-out forwards',
-                            pointerEvents: 'none',
-                            '@keyframes waveSweep': {
-                              '0%': { transform: 'scaleX(0)' },
-                              '100%': { transform: 'scaleX(1)' },
-                            },
-                          }}
-                        />
-                      )}
+                      {currentStatus.fullLabel}
+                    </Typography>
+                  </Box>
 
-                      {/* Content row */}
-                      <Box
-                        key={`content-${currentIndex}`}
-                        component={Link}
-                        href={alert.link || '#'}
-                        sx={{
-                          textDecoration: 'none',
-                          display: 'flex',
-                          alignItems: 'center',
-                          height: '100%',
-                          gap: { xs: 1.5, md: 2 },
-                          px: { xs: 2, md: 3 },
-                          position: 'relative',
-                          zIndex: 1,
-                          animation: 'contentReveal 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both',
-                          '@keyframes contentReveal': {
-                            '0%': { opacity: 0, transform: 'translateX(-8px)' },
-                            '100%': { opacity: 1, transform: 'translateX(0)' },
-                          },
-                        }}
-                      >
-                        {/* Status badge */}
-                        <Box sx={{
-                          flexShrink: 0,
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          bgcolor: 'rgba(0,0,0,0.25)',
-                          borderRadius: '10px',
-                          px: 1.5, py: 0.5,
-                          backdropFilter: 'blur(8px)',
-                          border: '1px solid rgba(255,255,255,0.06)',
-                        }}>
-                          {currentStatus.state === 'live' && (
-                            <Box sx={{
-                              width: 7, height: 7,
-                              borderRadius: '50%',
-                              bgcolor: currentStatus.color,
-                              animation: 'urgentPulse 1.5s ease-in-out infinite',
-                              '@keyframes urgentPulse': {
-                                '0%, 100%': { opacity: 1, transform: 'scale(1)' },
-                                '50%': { opacity: 0.4, transform: 'scale(0.6)' },
-                              },
-                            }} />
-                          )}
-                          <Typography sx={{
-                            fontSize: '0.6rem',
-                            fontWeight: 800,
-                            color: currentStatus.color,
-                            letterSpacing: '0.08em',
-                            textTransform: 'uppercase',
-                            lineHeight: 1,
-                            textShadow: '0 1px 2px rgba(0,0,0,0.2)',
-                          }}>
-                            {currentStatus.fullLabel}
-                          </Typography>
-                        </Box>
+                  {/* Thumbnail */}
+                  {currentAlert.imageUrl && (
+                    <Box
+                      component="img"
+                      src={currentAlert.imageUrl}
+                      alt={currentAlert.title}
+                      sx={{
+                        width: 32, height: 32,
+                        borderRadius: '8px',
+                        objectFit: 'cover',
+                        flexShrink: 0,
+                        display: { xs: 'none', sm: 'block' },
+                        border: '1.5px solid rgba(255,255,255,0.15)',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+                      }}
+                    />
+                  )}
 
-                        {/* Thumbnail */}
-                        {alert.imageUrl && (
+                  {/* Title */}
+                  <Typography sx={{
+                    fontFamily: 'var(--font-dosis)',
+                    fontSize: { xs: '0.85rem', md: '0.92rem' },
+                    fontWeight: 700,
+                    color: '#ffffff',
+                    flexGrow: 1,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    letterSpacing: '0.01em',
+                    textShadow: '0 1px 3px rgba(0,0,0,0.12)',
+                  }}>
+                    {currentAlert.title}
+                  </Typography>
+
+                  {/* Pagination dots + CTA */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexShrink: 0 }}>
+                    {/* Tiny inline dots */}
+                    {filteredAlerts.length > 1 && (
+                      <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: '4px', alignItems: 'center' }}>
+                        {filteredAlerts.map((_, i) => (
                           <Box
-                            component="img"
-                            src={alert.imageUrl}
-                            alt={alert.title}
+                            key={i}
                             sx={{
-                              width: 34, height: 34,
-                              borderRadius: '10px',
-                              objectFit: 'cover',
-                              flexShrink: 0,
-                              display: { xs: 'none', sm: 'block' },
-                              border: '1.5px solid rgba(255,255,255,0.15)',
-                              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                              width: currentIndex === i ? 12 : 4,
+                              height: 4,
+                              borderRadius: '2px',
+                              bgcolor: currentIndex === i ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.25)',
+                              transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
                             }}
                           />
-                        )}
-
-                        {/* Title */}
-                        <Typography sx={{
-                          fontFamily: 'var(--font-dosis)',
-                          fontSize: { xs: '0.85rem', md: '0.95rem' },
-                          fontWeight: 700,
-                          color: '#ffffff',
-                          flexGrow: 1,
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          letterSpacing: '0.01em',
-                          textShadow: '0 1px 3px rgba(0,0,0,0.15)',
-                        }}>
-                          {alert.title}
-                        </Typography>
-
-                        {/* CTA pill */}
-                        <Box sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 0.75,
-                          flexShrink: 0,
-                          bgcolor: 'rgba(255,255,255,0.12)',
-                          borderRadius: '10px',
-                          px: 1.5, py: 0.5,
-                          border: '1px solid rgba(255,255,255,0.08)',
-                          backdropFilter: 'blur(8px)',
-                          transition: 'all 0.2s ease',
-                          '&:hover': { bgcolor: 'rgba(255,255,255,0.22)', border: '1px solid rgba(255,255,255,0.15)' },
-                        }}>
-                          <Typography sx={{
-                            fontSize: '0.7rem',
-                            fontWeight: 700,
-                            color: 'rgba(255,255,255,0.9)',
-                            display: { xs: 'none', sm: 'block' },
-                            letterSpacing: '0.03em',
-                          }}>
-                            VIEW
-                          </Typography>
-                          <ArrowForwardIcon sx={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.9)' }} />
-                        </Box>
+                        ))}
                       </Box>
+                    )}
+
+                    {/* CTA */}
+                    <Box sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0.5,
+                      flexShrink: 0,
+                      bgcolor: 'rgba(255,255,255,0.1)',
+                      borderRadius: '8px',
+                      px: 1.25, py: 0.4,
+                      border: '1px solid rgba(255,255,255,0.06)',
+                      transition: 'all 0.2s ease',
+                      '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' },
+                    }}>
+                      <Typography sx={{
+                        fontSize: '0.65rem',
+                        fontWeight: 700,
+                        color: 'rgba(255,255,255,0.85)',
+                        display: { xs: 'none', sm: 'block' },
+                        letterSpacing: '0.03em',
+                      }}>
+                        VIEW
+                      </Typography>
+                      <ArrowForwardIcon sx={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.85)' }} />
                     </Box>
                   </Box>
-                );
-            })}
+                </Box>
+              </Box>
+            </Box>
+          </AnimatePresence>
         </Box>
       </Container>
     </Box>
