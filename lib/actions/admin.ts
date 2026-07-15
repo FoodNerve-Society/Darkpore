@@ -100,24 +100,34 @@ export async function submitAdminOnboarding(
       where: { slug }
     });
 
-    if (!org) {
+    const orgData = {
+      name: affil.shortName || defaultName,
+      legalName: affil.longName || affil.shortName || defaultName,
+      logoUrl: affil.logoUrl,
+      country: affil.country,
+      state: affil.state,
+      lga: affil.lga,
+      address: affil.address,
+      isVirtual: affil.isVirtual || false,
+      verified: true,
+      rank: 5,
+      isPlatformOwner: true,
+      isExternal: false,
+    };
+
+    if (org) {
+      org = await prisma.organization.update({
+        where: { id: org.id },
+        data: orgData
+      });
+    } else {
       if (!affil.shortName && !affil.longName) {
         throw new Error(`Missing required fields to create the ${defaultName} organization.`);
       }
       org = await prisma.organization.create({
         data: {
           slug,
-          name: affil.shortName || defaultName,
-          legalName: affil.longName || affil.shortName || defaultName,
-          logoUrl: affil.logoUrl,
-          country: affil.country,
-          state: affil.state,
-          lga: affil.lga,
-          address: affil.address,
-          isVirtual: affil.isVirtual || false,
-          verified: true,
-          rank: 5,
-          isPlatformOwner: true,
+          ...orgData
         }
       });
     }
