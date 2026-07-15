@@ -54,7 +54,7 @@ import ImageIcon from "@mui/icons-material/Image";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { Country, State, City } from 'country-state-city';
-import { CATEGORY_OPTIONS } from "@/lib/taxonomy";
+import { CATEGORY_OPTIONS, JOB_FUNCTIONS } from "@/lib/taxonomy";
 import { differenceInMonths, differenceInDays, addMonths } from 'date-fns';
 
 const EMERALD = "#10b981";
@@ -154,8 +154,9 @@ export default function CreateListingForm({
   const [orgChallenges, setOrgChallenges] = useState<any[]>([]);
   const [orgSubcategories, setOrgSubcategories] = useState<any[]>([]);
 
-  // Sector and Description
+  // Sector, Function and Description
   const [sector, setSector] = useState("");
+  const [jobFunction, setJobFunction] = useState("");
   
   // Job specific state
   const [jobChallenges, setJobChallenges] = useState<any[]>([]);
@@ -449,6 +450,7 @@ export default function CreateListingForm({
       if (fastIngestData.title) setTitle(fastIngestData.title);
       if (fastIngestData.description) setDescription(fastIngestData.description);
       if (fastIngestData.sector) setSector(fastIngestData.sector);
+      if (fastIngestData.jobFunction) setJobFunction(fastIngestData.jobFunction);
       if (fastIngestData.commitment) {
           // Typically commitment is primarySelection, but handled globally
       }
@@ -656,12 +658,12 @@ export default function CreateListingForm({
         case 'mandate':
           total = 3;
           if (title.trim().length > 0) filled++;
-          if (sector) filled++;
+          if (initialCategory === 'jobs' || initialCategory === 'volunteer') {
+              if (jobFunction) filled++;
+          } else {
+              if (sector) filled++;
+          }
           if (description.trim().length > 0) filled++;
-        if ((initialCategory === 'jobs' || initialCategory === 'volunteer') && !isPlatformOwnerActive) {
-            total++;
-            if (jobChallenges.length > 0) filled++;
-        }
         break;
       case 'geography':
         total = 1;
@@ -816,6 +818,7 @@ export default function CreateListingForm({
 
     const metadata = {
       sector: sector?.replace('  ↳ ', '') || '',
+      jobFunction,
       compType: compTypeString,
       useEscrow,
       duration,
@@ -1358,7 +1361,18 @@ export default function CreateListingForm({
                         {b.id === 'mandate' && (
                           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                               <PremiumTextField colorTheme={color} fullWidth label="Listing Title *" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Senior Agronomist" />
-                              <PremiumAutocomplete colorTheme={color} label="Sector / Category *" options={CATEGORY_OPTIONS} value={sector} onChange={(e, val) => setSector(val as string)} />
+                              <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', sm: 'row' } }}>
+                                {!(isJob || isVolunteer) && (
+                                  <Box sx={{ flex: 1 }}>
+                                    <PremiumAutocomplete colorTheme={color} label="Sector / Category *" options={CATEGORY_OPTIONS} value={sector} onChange={(e, val) => setSector(val as string)} />
+                                  </Box>
+                                )}
+                                {(isJob || isVolunteer) && (
+                                  <Box sx={{ flex: 1 }}>
+                                    <PremiumAutocomplete colorTheme={color} label="Job Function / Dept *" options={JOB_FUNCTIONS} value={jobFunction} onChange={(e, val) => setJobFunction(val as string)} />
+                                  </Box>
+                                )}
+                              </Box>
                               
                               {(isJob || isVolunteer) && (
                                   <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', sm: 'row' }, mt: 2 }}>
@@ -1366,7 +1380,7 @@ export default function CreateListingForm({
                                           <PremiumAutocomplete 
                                               multiple 
                                               colorTheme={color} 
-                                              label={isPlatformOwnerActive ? "Job Challenges (Optional)" : "Job Challenges *"} 
+                                              label="Job Challenges (Optional)" 
                                               options={availableChallenges} 
                                               getOptionLabel={(opt: any) => opt.title} 
                                               value={jobChallenges} 

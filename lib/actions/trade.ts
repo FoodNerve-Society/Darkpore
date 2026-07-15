@@ -85,11 +85,6 @@ export async function createTradeListing(data: CreateTradeListingPayload) {
       finalOrganizationId = extOrg.id;
     }
 
-    if (!isDraft && isJobOrVolunteer && !isPlatformOwner) {
-      if (!metadata.jobChallenges || metadata.jobChallenges.length === 0) {
-        return { success: false, error: 'You must select at least one challenge this role addresses.' };
-      }
-    }
 
     const listingData = {
       category: data.category || 'jobs',
@@ -120,6 +115,7 @@ export async function createTradeListing(data: CreateTradeListingPayload) {
         startDate: metadata.startDate ? new Date(metadata.startDate) : undefined,
         endDate: metadata.endDate ? new Date(metadata.endDate) : undefined,
         workModel: metadata.workModel || undefined,
+        jobFunction: metadata.jobFunction || undefined,
         challenges: metadata.jobChallenges ? JSON.stringify(metadata.jobChallenges) : undefined,
         subcategories: metadata.jobSubcategories ? JSON.stringify(metadata.jobSubcategories) : undefined,
         

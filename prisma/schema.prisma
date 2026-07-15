@@ -150,6 +150,7 @@ model TradeListing {
   startDate       DateTime?
   endDate         DateTime?
   workModel       String?   // 'remote' | 'hybrid' | 'onsite'
+  jobFunction     String?   // E.g., 'Finance & Accounting', 'Agronomy'
   challenges      String?   // JSON string array of challenge IDs
   subcategories   String?   // JSON string array of subcategory IDs
 
