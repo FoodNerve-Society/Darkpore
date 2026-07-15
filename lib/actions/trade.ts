@@ -61,6 +61,22 @@ export async function createTradeListing(data: CreateTradeListingPayload) {
       isPlatformOwner = org?.isPlatformOwner || false;
     } else if (metadata.isExternal && metadata.externalEntityId) {
       finalOrganizationId = metadata.externalEntityId;
+      
+      // Fix: Update the existing external organization with any newly provided details
+      const updateData: any = {};
+      if (metadata.externalCountry?.name || metadata.externalCountry) updateData.country = metadata.externalCountry?.name || metadata.externalCountry;
+      if (metadata.externalState?.name || metadata.externalState) updateData.state = metadata.externalState?.name || metadata.externalState;
+      if (metadata.externalLga?.name || metadata.externalLga) updateData.lga = metadata.externalLga?.name || metadata.externalLga;
+      if (metadata.externalEntityLogoUrl) updateData.logoUrl = metadata.externalEntityLogoUrl;
+      if (metadata.organizationChallenges && metadata.organizationChallenges.length > 0) updateData.challenges = JSON.stringify(metadata.organizationChallenges);
+      if (metadata.organizationSubcategories && metadata.organizationSubcategories.length > 0) updateData.subcategories = JSON.stringify(metadata.organizationSubcategories);
+
+      if (Object.keys(updateData).length > 0) {
+        await prisma.organization.update({
+          where: { id: finalOrganizationId },
+          data: updateData
+        });
+      }
     } else if (metadata.isExternal && metadata.externalEntityName) {
       // Auto-create a ghost organization for external entities
       let baseSlug = metadata.externalEntityName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
@@ -107,7 +123,6 @@ export async function createTradeListing(data: CreateTradeListingPayload) {
       ...(isJobOrVolunteer ? {
         jobSource: metadata.jobSource || undefined,
         compType: metadata.compType || undefined,
-        externalCompany: metadata.companyName || undefined,
         npReward: metadata.npAmount || undefined,
         targetTenantId: metadata.targetTenantId || undefined,
         currency: metadata.currency || undefined,

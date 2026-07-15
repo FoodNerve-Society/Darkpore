@@ -14,7 +14,8 @@ import {
   DeleteOutlined as DeleteOutlineIcon,
   Edit as EditIcon,
   ArrowForward as ArrowForwardArrow,
-  AutoAwesome as AutoAwesomeIcon
+  AutoAwesome as AutoAwesomeIcon,
+  ContentPaste as ContentPasteIcon
 } from '@mui/icons-material';
 import { keyframes } from '@mui/system';
 
@@ -315,6 +316,23 @@ export default function ListingStudioDashboard({
                     </Typography>
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Tooltip title="Paste JSON payload">
+                      <IconButton 
+                        size="small" 
+                        onClick={async () => {
+                          try {
+                            const text = await navigator.clipboard.readText();
+                            setFastPayloadText(text);
+                            setFastIngestError('');
+                          } catch (err) {
+                            console.error('Failed to read clipboard contents: ', err);
+                          }
+                        }}
+                        sx={{ color: 'rgba(255,255,255,0.5)', '&:hover': { color: '#fff', bgcolor: 'rgba(255,255,255,0.1)' } }}
+                      >
+                        <ContentPasteIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
                     {parseStatus === 'valid' && (
                       <Chip label="Valid JSON" size="small" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700, bgcolor: 'rgba(34,197,94,0.15)', color: '#22c55e', borderRadius: '6px' }} />
                     )}
