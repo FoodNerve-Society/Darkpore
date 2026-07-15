@@ -96,6 +96,7 @@ interface CreateListingFormProps {
   onSuccess: () => void;
   postingAs?: 'personal' | 'organization';
   selectedOrgId?: string | null;
+  fastIngestData?: any;
 }
 
 export default function CreateListingForm({ 
@@ -105,7 +106,8 @@ export default function CreateListingForm({
   onCancel,
   onSuccess,
   postingAs = 'personal',
-  selectedOrgId = null 
+  selectedOrgId = null,
+  fastIngestData = null
 }: CreateListingFormProps) {
   const { profile, activeOrg } = useSociety();
   const router = useRouter();
@@ -133,11 +135,15 @@ export default function CreateListingForm({
   const isMyOrg = tertiary === 'my-org';
   const isExternal = tertiary === 'external';
   
-  const primarySelection = initialSelections?.primary || draftData?.compType || draftData?.category || 'jobs';
-  const secondarySelection = initialSelections?.secondary || draftData?.workModel || 'onsite';
+  const primarySelection = initialSelections?.primary || draftData?.compType || draftData?.category || fastIngestData?.category || 'jobs';
+  const secondarySelection = initialSelections?.secondary || draftData?.workModel || fastIngestData?.workModel || 'onsite';
   const isRemote = secondarySelection === 'remote';
 
   const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
+
+  // Fast Ingest Action Items Tracker
+  const [fastIngestActionItems, setFastIngestActionItems] = useState<{ id: string, text: string, resolved: boolean }[]>([]);
+  const [isActionItemsMinimized, setIsActionItemsMinimized] = useState(false);
   
   // For External Organization
   const [externalEntityName, setExternalEntityName] = useState("");
@@ -434,6 +440,131 @@ export default function CreateListingForm({
       }
     }
   }, [draftData]);
+
+  // Rehydrate from fastIngestData
+  useEffect(() => {
+    if (fastIngestData) {
+      const actions: typeof fastIngestActionItems = [];
+      
+      if (fastIngestData.title) setTitle(fastIngestData.title);
+      if (fastIngestData.description) setDescription(fastIngestData.description);
+      if (fastIngestData.sector) setSector(fastIngestData.sector);
+      if (fastIngestData.commitment) {
+          // Typically commitment is primarySelection, but handled globally
+      }
+      
+      // Salary / Ask parsing
+      if (fastIngestData.priceOrAsk) {
+        if (isVolunteer) {
+          setNpAmount(fastIngestData.priceOrAsk);
+        } else {
+          // Fallback parsing if legacy schema
+          const raw = fastIngestData.priceOrAsk.replace(/,/g, '');
+          const match = raw.match(/^([^\d\s]+)?\s*(\d+)\s*-\s*(\d+)$/);
+          if (match) {
+            if (match[1]) setCurrency(match[1].trim());
+            setMinSalary(match[2]);
+            setMaxSalary(match[3]);
+          } else {
+            actions.push({ id: 'salary', text: `Verify compensation structure: ${fastIngestData.priceOrAsk}`, resolved: false });
+          }
+        }
+      }
+      
+      // Explicit Salary Schema
+      if (fastIngestData.currency) setCurrency(fastIngestData.currency);
+      if (fastIngestData.minSalary) setMinSalary(fastIngestData.minSalary);
+      if (fastIngestData.maxSalary) setMaxSalary(fastIngestData.maxSalary);
+      
+      // External Organization Identity
+      if (fastIngestData.organizationName && isExternal) {
+        setExternalEntityName(fastIngestData.organizationName);
+      }
+      if (fastIngestData.organizationLogoUrl && isExternal) {
+        setExternalEntityLogoUrl(fastIngestData.organizationLogoUrl);
+      }
+      if (fastIngestData.organizationName && !isExternal) {
+        actions.push({ id: 'org_identity', text: `Role is internal, but AI extracted org: ${fastIngestData.organizationName}. Ensure correct hiring entity is selected.`, resolved: false });
+      }
+
+      // Application Deadline
+      if (fastIngestData.applicationDeadline) {
+        setDeadline(fastIngestData.applicationDeadline);
+      }
+      if (fastIngestData.applicationUrl) {
+        setApplicationUrl(fastIngestData.applicationUrl);
+      }
+
+      // Location parsing (Fuzzy match)
+      if (fastIngestData.location && !isRemote) {
+        const locParts = fastIngestData.location.split(',').map((s: string) => s.trim().toLowerCase());
+        
+        let foundCountry = null;
+        let foundState = null;
+        
+        // 1. Match Country
+        for (const c of countries) {
+          if (locParts.some((p: string) => c.name.toLowerCase().includes(p) || (c.isoCode && c.isoCode.toLowerCase() === p))) {
+            foundCountry = c;
+            break;
+          }
+        }
+        
+        if (foundCountry) {
+          setSelectedCountry(foundCountry);
+          // 2. Match State
+          const stateList = State.getStatesOfCountry(foundCountry.isoCode);
+          for (const s of stateList) {
+            if (locParts.some((p: string) => s.name.toLowerCase().includes(p))) {
+              foundState = s;
+              break;
+            }
+          }
+          if (foundState) {
+            setSelectedState(foundState);
+          } else {
+            actions.push({ id: 'location_state', text: `Please manually select the State/Region for: ${fastIngestData.location}`, resolved: false });
+          }
+        } else {
+          actions.push({ id: 'location_country', text: `Please manually select the Country for: ${fastIngestData.location}`, resolved: false });
+        }
+      }
+
+      // Challenges
+      if (fastIngestData.challenges) {
+        try {
+          let parsedChallenges: string[] = [];
+          if (typeof fastIngestData.challenges === 'string') {
+             parsedChallenges = JSON.parse(fastIngestData.challenges);
+          } else if (Array.isArray(fastIngestData.challenges)) {
+             parsedChallenges = fastIngestData.challenges;
+          }
+          
+          if (parsedChallenges.length > 0) {
+            const matchedChallenges = availableChallenges.filter((c: any) => 
+               parsedChallenges.some(p => c.id.toLowerCase() === p.toLowerCase() || c.label.toLowerCase().includes(p.toLowerCase()))
+            );
+            if (matchedChallenges.length > 0) {
+              setJobChallenges(matchedChallenges);
+            } else {
+              actions.push({ id: 'challenges', text: `Review challenges: [${parsedChallenges.join(', ')}]`, resolved: false });
+            }
+          }
+        } catch(e) {}
+      }
+
+      // Application details
+      if (fastIngestData.applicationMethod) {
+        if (['native', 'external', 'email'].includes(fastIngestData.applicationMethod)) {
+          setApplicationMethod(fastIngestData.applicationMethod as any);
+        }
+      }
+
+      if (actions.length > 0) {
+        setFastIngestActionItems(actions);
+      }
+    }
+  }, [fastIngestData, availableChallenges, isRemote, countries, isVolunteer]);
 
   const getBlockFillStats = (blockId: string) => {
     let filled = 0;
@@ -1548,6 +1679,101 @@ export default function CreateListingForm({
         </Box>
       </Box>
 
+
+      {/* Floating Action Items Widget (For Fast Ingest Fallbacks) */}
+      {fastIngestActionItems.length > 0 && (
+        <Paper
+          elevation={isActionItemsMinimized ? 2 : 8}
+          sx={{
+            position: 'fixed',
+            bottom: { xs: 20, md: 80 }, // Moved up on desktop to avoid footer
+            left: { xs: 16, md: 32 },
+            width: { xs: 'calc(100% - 32px)', sm: 360 },
+            bgcolor: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(12px)',
+            borderRadius: '16px',
+            border: '1px solid rgba(239, 68, 68, 0.2)',
+            zIndex: 1000,
+            overflow: 'hidden',
+            transition: 'all 0.3s ease',
+            maxHeight: isActionItemsMinimized ? '60px' : '400px',
+            boxShadow: isActionItemsMinimized 
+              ? '0 4px 12px rgba(0,0,0,0.05)'
+              : '0 12px 48px rgba(239, 68, 68, 0.15)',
+          }}
+        >
+          {/* Header */}
+          <Box 
+            onClick={() => setIsActionItemsMinimized(!isActionItemsMinimized)}
+            sx={{ 
+              p: 2, 
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              borderBottom: isActionItemsMinimized ? 'none' : '1px solid rgba(0,0,0,0.06)',
+              bgcolor: 'rgba(239, 68, 68, 0.05)',
+              cursor: 'pointer',
+              '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.08)' }
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ 
+                width: 24, height: 24, borderRadius: '6px', 
+                bgcolor: '#ef4444', color: '#fff', 
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontWeight: 800, fontSize: '0.75rem'
+              }}>
+                {fastIngestActionItems.filter(i => !i.resolved).length}
+              </Box>
+              <Typography sx={{ fontWeight: 800, color: '#0f172a', fontSize: '0.9rem' }}>
+                Action Items
+              </Typography>
+            </Box>
+            <IconButton size="small" sx={{ color: '#64748b' }}>
+              {isActionItemsMinimized ? <AddIcon fontSize="small" /> : <MinimizeIcon fontSize="small" />}
+            </IconButton>
+          </Box>
+          
+          {/* List Content */}
+          <Box sx={{ 
+            p: 2, 
+            display: 'flex', flexDirection: 'column', gap: 1.5,
+            overflowY: 'auto', maxHeight: '340px'
+          }}>
+            {fastIngestActionItems.map(item => (
+              <Box 
+                key={item.id}
+                onClick={() => {
+                  setFastIngestActionItems(prev => prev.map(i => i.id === item.id ? { ...i, resolved: !i.resolved } : i));
+                }}
+                sx={{
+                  display: 'flex', gap: 1.5, p: 1.5,
+                  borderRadius: '12px',
+                  bgcolor: item.resolved ? 'rgba(34, 197, 94, 0.05)' : 'rgba(0,0,0,0.02)',
+                  border: `1px solid ${item.resolved ? 'rgba(34, 197, 94, 0.2)' : 'rgba(0,0,0,0.05)'}`,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  '&:hover': { bgcolor: item.resolved ? 'rgba(34, 197, 94, 0.1)' : 'rgba(0,0,0,0.04)' }
+                }}
+              >
+                <Box sx={{ 
+                  width: 20, height: 20, borderRadius: '6px', flexShrink: 0,
+                  border: `2px solid ${item.resolved ? '#22c55e' : '#cbd5e1'}`,
+                  bgcolor: item.resolved ? '#22c55e' : 'transparent',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', mt: 0.2
+                }}>
+                  {item.resolved && <Box sx={{ width: 10, height: 10, bgcolor: '#fff', borderRadius: '2px' }} />}
+                </Box>
+                <Typography sx={{ 
+                  fontSize: '0.85rem', color: item.resolved ? '#64748b' : '#0f172a',
+                  fontWeight: item.resolved ? 500 : 600,
+                  textDecoration: item.resolved ? 'line-through' : 'none'
+                }}>
+                  {item.text}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        </Paper>
+      )}
 
     </Box>
   );
