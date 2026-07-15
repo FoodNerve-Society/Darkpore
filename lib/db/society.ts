@@ -82,6 +82,7 @@ export interface LearnContent {
   title: string;
   description: string;
   thumbnailUrl: string;
+  timeframe?: string;
   author: { name: string; avatarUrl: string; isVerified: boolean; };
   createdAt: string;
   duration?: string;

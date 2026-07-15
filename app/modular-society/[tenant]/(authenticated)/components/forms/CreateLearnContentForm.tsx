@@ -552,15 +552,16 @@ export default function CreateLearnContentForm({
       setSelectedSubcategory(initialDraftData.subcategory || '');
       setSelectedTimeframe(initialDraftData.timeframe as any || '');
       
-      if (initialDraftData.article && initialDraftData.article.blocks) {
+      const sourceBlocks = initialDraftData.articleBlocks || initialDraftData.article?.blocks;
+      if (sourceBlocks) {
         // Sort blocks by orderIndex just in case
-        const sorted = [...initialDraftData.article.blocks].sort((a, b) => a.orderIndex - b.orderIndex);
+        const sorted = [...sourceBlocks].sort((a: any, b: any) => a.orderIndex - b.orderIndex);
         const validBlocks = sorted
           .filter((b: any) => BLOCK_DEFINITIONS[b.blockType])
           .map((b: any) => ({
-            id: b.id,
+            id: b.id || Math.random().toString(36).substring(7),
             type: b.blockType as BlockType,
-            content: typeof b.content === 'string' ? JSON.parse(b.content) : b.content
+            content: typeof b.content === 'string' ? JSON.parse(b.content) : (b.content || {})
           }));
         setBlocks(validBlocks);
       }
