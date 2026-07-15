@@ -662,6 +662,8 @@ export default function CreateLearnContentForm({
     return items;
   }, [blocks, step]);
 
+  const [isActionItemsMinimized, setIsActionItemsMinimized] = useState(false);
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -977,7 +979,7 @@ export default function CreateLearnContentForm({
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', position: 'relative' }}>
-      <Box ref={scrollContainerRef} sx={{ flex: 1, overflowY: 'auto', px: { xs: 2.5, sm: 3.5 }, py: 3, display: 'flex', flexDirection: 'column', gap: 3.5 }}>
+      <Box ref={scrollContainerRef} sx={{ flex: 1, overflowY: 'auto', px: { xs: 2.5, sm: 3.5 }, pt: 3, pb: { xs: 15, md: 20 }, display: 'flex', flexDirection: 'column', gap: 3.5 }}>
         
         {error && (
           <Alert severity="error" sx={{ mb: 2, borderRadius: '12px', '& .MuiAlert-message': { fontWeight: 600 } }} onClose={() => setError(null)}>
@@ -1991,7 +1993,7 @@ export default function CreateLearnContentForm({
         <Box sx={{
           position: 'fixed',
           bottom: { xs: 80, md: 40 },
-          right: { xs: 20, md: 40 },
+          left: { xs: 20, md: 40 }, // Moved to left to avoid covering submit buttons on the right
           zIndex: 1000,
           width: { xs: 'calc(100% - 40px)', sm: 340 },
           background: 'rgba(255, 255, 255, 0.95)',
@@ -2015,15 +2017,31 @@ export default function CreateLearnContentForm({
                 Action Items
               </Typography>
             </Box>
-            <Chip 
-              label={`${actionItems.length} left`}
-              size="small"
-              sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: '#fff', fontWeight: 800, fontSize: '0.7rem', height: 22 }}
-            />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Chip 
+                label={`${actionItems.length} left`}
+                size="small"
+                sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: '#fff', fontWeight: 800, fontSize: '0.7rem', height: 22 }}
+              />
+              <IconButton 
+                size="small" 
+                onClick={() => setIsActionItemsMinimized(!isActionItemsMinimized)}
+                sx={{ color: '#fff', p: 0.5, '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}
+              >
+                {isActionItemsMinimized ? <ArrowUpIcon fontSize="small" /> : <ArrowDownIcon fontSize="small" />}
+              </IconButton>
+            </Box>
           </Box>
           
           {/* List */}
-          <Box sx={{ p: 2, maxHeight: '300px', overflowY: 'auto' }}>
+          <Box sx={{ 
+            p: isActionItemsMinimized ? 0 : 2, 
+            maxHeight: isActionItemsMinimized ? 0 : '300px', 
+            overflowY: 'auto',
+            opacity: isActionItemsMinimized ? 0 : 1,
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            display: isActionItemsMinimized ? 'none' : 'block' // Ensure it doesn't take space/clicks when hidden
+          }}>
             {actionItems.map((item, i) => (
               <Box 
                 key={`${item.id}-${i}`}
