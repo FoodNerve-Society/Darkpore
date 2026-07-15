@@ -30,7 +30,7 @@ import {
   RANK_COLORS,
   type RankLevel,
 } from "@/context/SocietyContext";
-import { createTradeListing } from "@/lib/actions/trade";
+import { createTradeListing, searchExternalOrganizations } from "@/lib/actions/trade";
 
 import LockIcon from "@mui/icons-material/Lock";
 import ShieldIcon from "@mui/icons-material/Shield";
@@ -149,6 +149,9 @@ export default function CreateListingForm({
   
   // For External Organization
   const [externalEntityName, setExternalEntityName] = useState("");
+  const [externalEntityId, setExternalEntityId] = useState<string | null>(null);
+  const [externalOrgOptions, setExternalOrgOptions] = useState<any[]>([]);
+  const [isSearchingOrgs, setIsSearchingOrgs] = useState(false);
   const [externalEntityShortName, setExternalEntityShortName] = useState("");
   const [externalCountry, setExternalCountry] = useState<any>(null);
   const [externalState, setExternalState] = useState<any>(null);
@@ -541,8 +544,23 @@ export default function CreateListingForm({
       
       // External Organization Hydration
       if (isExternal) {
-        if (fastIngestData.organizationName) setExternalEntityName(fastIngestData.organizationName);
-        if (fastIngestData.organizationLogoUrl) setExternalEntityLogoUrl(fastIngestData.organizationLogoUrl);
+        if (fastIngestData.organizationName) {
+        setExternalEntityName(fastIngestData.organizationName);
+        searchExternalOrganizations(fastIngestData.organizationName).then(results => {
+          if (results && results.length > 0) {
+            // Check for exact match (case insensitive)
+            const exactMatch = results.find(o => o.name.toLowerCase() === fastIngestData.organizationName?.toLowerCase());
+            if (exactMatch) {
+              setExternalEntityId(exactMatch.id);
+              if (exactMatch.logoUrl) setExternalEntityLogoUrl(exactMatch.logoUrl);
+            } else {
+              setExternalEntityId(results[0].id);
+              setExternalEntityName(results[0].name);
+              if (results[0].logoUrl) setExternalEntityLogoUrl(results[0].logoUrl);
+            }
+          }
+        });
+      }  if (fastIngestData.organizationLogoUrl) setExternalEntityLogoUrl(fastIngestData.organizationLogoUrl);
         
         if (fastIngestData.organizationChallenges) {
             try {
@@ -641,6 +659,23 @@ export default function CreateListingForm({
 
     return items;
   }, [fastIngestData, isExternal, externalEntityName, externalEntityLogoUrl, externalCountry, externalState, orgChallenges, isRemote, draftLocation, selectedCountry, applicationMethod, applicationUrl, applicationEmail, title, initialCategory, jobFunction, sector, description, isVolunteer, duration, currency, minSalary, maxSalary]);
+
+  // Debounced Search for External Organizations
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      // Only search if it's external, and we have a name, and we aren't already perfectly matched
+      if (isExternal && externalEntityName && externalEntityName.length > 1) {
+        setIsSearchingOrgs(true);
+        searchExternalOrganizations(externalEntityName).then(results => {
+          setExternalOrgOptions(results || []);
+          setIsSearchingOrgs(false);
+        });
+      } else {
+        setExternalOrgOptions([]);
+      }
+    }, 400);
+    return () => clearTimeout(delayDebounceFn);
+  }, [externalEntityName, isExternal]);
 
   const getBlockFillStats = (blockId: string) => {
     let filled = 0;
@@ -838,6 +873,7 @@ export default function CreateListingForm({
       // External organization data
       isExternal,
       externalEntityName: isExternal ? externalEntityName : undefined,
+      externalEntityId: (isExternal && externalEntityId) ? externalEntityId : undefined,
       externalEntityShortName: isExternal ? externalEntityShortName : undefined,
       externalCountry: isExternal ? (externalCountry?.name || fastIngestData?.organizationCountry) : undefined,
       externalState: isExternal ? (externalState?.name || fastIngestData?.organizationState) : undefined,
@@ -1277,7 +1313,35 @@ export default function CreateListingForm({
                                   </Box>
                               ) : (
                                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                                      <PremiumTextField colorTheme={color} fullWidth label="External Organization Name *" value={externalEntityName} onChange={(e) => setExternalEntityName(e.target.value)} placeholder="e.g. Acme Corp" />
+                                      <PremiumAutocomplete
+                                        colorTheme={color}
+                                        label="External Organization Name *"
+                                        options={externalOrgOptions}
+                                        getOptionLabel={(opt: any) => typeof opt === 'string' ? opt : (opt.name || '')}
+                                        value={externalEntityId ? (externalOrgOptions.find(o => o.id === externalEntityId) || { id: externalEntityId, name: externalEntityName }) : externalEntityName}
+                                        freeSolo
+                                        loading={isSearchingOrgs}
+                                        onChange={(e, newValue) => {
+                                          if (typeof newValue === 'string') {
+                                            setExternalEntityName(newValue);
+                                            setExternalEntityId(null);
+                                          } else if (newValue && newValue.id) {
+                                            setExternalEntityName(newValue.name);
+                                            setExternalEntityId(newValue.id);
+                                            if (newValue.logoUrl) setExternalEntityLogoUrl(newValue.logoUrl);
+                                          } else {
+                                            setExternalEntityName("");
+                                            setExternalEntityId(null);
+                                          }
+                                        }}
+                                        onInputChange={(e, newInputValue) => {
+                                          setExternalEntityName(newInputValue);
+                                          if (!newInputValue) {
+                                            setExternalEntityId(null);
+                                          }
+                                        }}
+                                        placeholder="e.g. Acme Corp"
+                                      />
                                       
                                       {fastIngestData && fastIngestData.organizationCountry && (
                                           <Paper sx={{ 

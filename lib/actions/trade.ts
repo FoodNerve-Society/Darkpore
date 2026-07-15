@@ -59,6 +59,8 @@ export async function createTradeListing(data: CreateTradeListingPayload) {
         select: { isPlatformOwner: true }
       });
       isPlatformOwner = org?.isPlatformOwner || false;
+    } else if (metadata.isExternal && metadata.externalEntityId) {
+      finalOrganizationId = metadata.externalEntityId;
     } else if (metadata.isExternal && metadata.externalEntityName) {
       // Auto-create a ghost organization for external entities
       let baseSlug = metadata.externalEntityName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
@@ -299,8 +301,36 @@ export async function getCareersListings() {
       societyPartners,
       externalSourced
     };
-  } catch (error: any) {
-    console.error('Failed to get career listings:', error);
-    return { success: false, error: error.message };
+  } catch (error) {
+    console.error("Error fetching careers listings:", error);
+    return [];
+  }
+}
+
+export async function searchExternalOrganizations(query: string) {
+  if (!query || query.trim() === '') return [];
+  
+  try {
+    const orgs = await prisma.organization.findMany({
+      where: {
+        isExternal: true,
+        name: {
+          contains: query,
+          mode: 'insensitive'
+        }
+      },
+      select: {
+        id: true,
+        name: true,
+        logoUrl: true,
+        country: true,
+        state: true
+      },
+      take: 10
+    });
+    return orgs;
+  } catch (error) {
+    console.error("Error searching external organizations:", error);
+    return [];
   }
 }
