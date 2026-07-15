@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { getTenantConfig } from "@/lib/cms";
 import {
   Box,
@@ -41,6 +41,7 @@ import CheckIcon from "@mui/icons-material/Check";
 import WorkIcon from "@mui/icons-material/Work";
 import SparkleIcon from "@mui/icons-material/AutoAwesome";
 import AddIcon from "@mui/icons-material/Add";
+import RemoveIcon from "@mui/icons-material/Remove";
 
 import PremiumTextField from "@/components/PremiumTextField";
 import PremiumPriceInput from "@/components/PremiumPriceInput";
@@ -142,7 +143,6 @@ export default function CreateListingForm({
   const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
 
   // Fast Ingest Action Items Tracker
-  const [fastIngestActionItems, setFastIngestActionItems] = useState<{ id: string, text: string, resolved: boolean }[]>([]);
   const [isActionItemsMinimized, setIsActionItemsMinimized] = useState(false);
   
   // For External Organization
@@ -444,8 +444,7 @@ export default function CreateListingForm({
 
   // Rehydrate from fastIngestData
   useEffect(() => {
-    if (fastIngestData) {
-      const actions: typeof fastIngestActionItems = [];
+    if (fastIngestData && !isSubmitting) {
       
       if (fastIngestData.title) setTitle(fastIngestData.title);
       if (fastIngestData.description) setDescription(fastIngestData.description);
@@ -537,63 +536,30 @@ export default function CreateListingForm({
       if (fastIngestData.location && !isRemote) {
         setDraftLocation(fastIngestData.location);
       }
-      // External Organization Location & Details Actions
+      
+      // External Organization Hydration
       if (isExternal) {
-        if (!fastIngestData.organizationName) {
-          actions.push({ id: 'org_name_missing', text: `External Organization Name is missing. Please provide the name of the hiring entity.`, resolved: false });
-        }
+        if (fastIngestData.organizationName) setExternalEntityName(fastIngestData.organizationName);
+        if (fastIngestData.organizationLogoUrl) setExternalEntityLogoUrl(fastIngestData.organizationLogoUrl);
         
-        if (fastIngestData.organizationCountry) setExternalCountry({ name: fastIngestData.organizationCountry });
-        else actions.push({ id: 'org_country_missing', text: `Organization Country is missing.`, resolved: false });
-        
-        if (fastIngestData.organizationState) setExternalState({ name: fastIngestData.organizationState });
-        else actions.push({ id: 'org_state_missing', text: `Organization State/Province is missing.`, resolved: false });
-        
-        if (fastIngestData.organizationLga) setExternalLga({ name: fastIngestData.organizationLga });
-        
-        if (!fastIngestData.organizationChallenges || fastIngestData.organizationChallenges.length === 0) {
-          actions.push({ id: 'org_challenges_missing', text: `Organization sector/challenges are missing. Please classify the external organization.`, resolved: false });
-        }
-      }
-
-      // Challenges
-      if (fastIngestData.challenges) {
-        try {
-          let parsedChallenges: string[] = [];
-          if (typeof fastIngestData.challenges === 'string') {
-             parsedChallenges = JSON.parse(fastIngestData.challenges);
-          } else if (Array.isArray(fastIngestData.challenges)) {
-             parsedChallenges = fastIngestData.challenges;
-          }
-          
-          if (parsedChallenges.length > 0) {
-            const matchedChallenges = availableChallenges.filter((c: any) => 
-               parsedChallenges.some(p => c.id.toLowerCase() === p.toLowerCase() || (c.title && c.title.toLowerCase().includes(p.toLowerCase())))
-            );
-            if (matchedChallenges.length > 0) {
-              setJobChallenges(matchedChallenges);
-              
-              // Hydrate Subcategories
-              if (fastIngestData.subcategories) {
-                let parsedSubs: string[] = [];
-                if (typeof fastIngestData.subcategories === 'string') {
-                   parsedSubs = JSON.parse(fastIngestData.subcategories);
-                } else if (Array.isArray(fastIngestData.subcategories)) {
-                   parsedSubs = fastIngestData.subcategories;
+        if (fastIngestData.organizationChallenges) {
+            try {
+                const parsedC = typeof fastIngestData.organizationChallenges === 'string' ? JSON.parse(fastIngestData.organizationChallenges) : fastIngestData.organizationChallenges;
+                if (parsedC && parsedC.length > 0) {
+                    const matchedC = availableChallenges.filter((c: any) => parsedC.some((p: string) => c.id.toLowerCase() === p.toLowerCase() || (c.title && c.title.toLowerCase().includes(p.toLowerCase()))));
+                    if (matchedC.length > 0) {
+                        setOrgChallenges(matchedC);
+                        
+                        if (fastIngestData.organizationSubcategories) {
+                            const parsedS = typeof fastIngestData.organizationSubcategories === 'string' ? JSON.parse(fastIngestData.organizationSubcategories) : fastIngestData.organizationSubcategories;
+                            const allSubs = matchedC.flatMap((c: any) => c.subcategories || []);
+                            const matchedS = allSubs.filter((s: any) => parsedS.some((p: string) => s.id.toLowerCase() === p.toLowerCase() || (s.title && s.title.toLowerCase().includes(p.toLowerCase()))));
+                            if (matchedS.length > 0) setOrgSubcategories(matchedS);
+                        }
+                    }
                 }
-                const allSubs = matchedChallenges.flatMap((c: any) => c.subcategories || []);
-                const matchedSubs = allSubs.filter((s: any) => 
-                   parsedSubs.some(p => s.id.toLowerCase() === p.toLowerCase() || (s.title && s.title.toLowerCase().includes(p.toLowerCase())))
-                );
-                if (matchedSubs.length > 0) {
-                  setJobSubcategories(matchedSubs);
-                }
-              }
-            } else {
-              actions.push({ id: 'challenges', text: `Review challenges: [${parsedChallenges.join(', ')}]`, resolved: false });
-            }
-          }
-        } catch(e) {}
+            } catch(e) {}
+        }
       }
 
       // Application details
@@ -611,31 +577,48 @@ export default function CreateListingForm({
       if (fastIngestData.applicationInstructions) {
         setApplicationInstructions(fastIngestData.applicationInstructions);
       }
-
-      // Application Actions / Checklist
-      if (fastIngestData.applicationMethod === 'external') {
-        if (!fastIngestData.applicationUrl || fastIngestData.applicationUrl === "Not provided") {
-           actions.push({ id: 'app_url_missing', text: `External application URL is missing. Please provide the exact application link.`, resolved: false });
-        } else {
-           actions.push({ id: 'app_url_verify', text: `Verify Application Link: ${fastIngestData.applicationUrl}`, resolved: false });
-        }
-      } else if (fastIngestData.applicationMethod === 'email') {
-        if (!fastIngestData.applicationEmail) {
-           actions.push({ id: 'app_email_missing', text: `Application email is missing. Please provide the email address for applicants.`, resolved: false });
-        } else {
-           actions.push({ id: 'app_email_verify', text: `Verify Application Email: ${fastIngestData.applicationEmail}`, resolved: false });
-        }
-        
-        if (fastIngestData.applicationInstructions) {
-           actions.push({ id: 'app_instructions', text: `Review Application Instructions: ${fastIngestData.applicationInstructions.slice(0, 50)}...`, resolved: false });
-        }
-      }
-
-      if (actions.length > 0) {
-        setFastIngestActionItems(actions);
-      }
     }
   }, [fastIngestData, availableChallenges, isRemote, countries, isVolunteer]);
+
+  // --- ACTION ITEMS CHECKLIST (DYNAMIC) ---
+  const fastIngestActionItems = useMemo(() => {
+    const items: { id: string, text: string }[] = [];
+    if (!fastIngestData) return items;
+
+    if (isExternal) {
+      if (!externalEntityName || externalEntityName.trim() === '') {
+        items.push({ id: 'org_name_missing', text: `External Organization Name is missing. Please provide the name of the hiring entity.` });
+      }
+      if (!externalEntityLogoUrl || externalEntityLogoUrl.trim() === '') {
+        items.push({ id: 'org_logo_missing', text: `Company logo is missing. A logo significantly improves applicant conversion.` });
+      }
+      if (!externalCountry || !externalCountry.name) {
+        items.push({ id: 'org_country_missing', text: `Organization Country is missing.` });
+      }
+      if (!externalState || !externalState.name) {
+        items.push({ id: 'org_state_missing', text: `Organization State/Province is missing.` });
+      }
+      if (orgChallenges.length === 0) {
+        items.push({ id: 'org_challenges_missing', text: `Organization sector/challenges are missing. Please classify the external organization.` });
+      }
+    }
+
+    if (!isRemote && !draftLocation && !selectedCountry) {
+       items.push({ id: 'location_missing', text: `Location is missing. Please provide the physical job location.` });
+    }
+
+    if (applicationMethod === 'external') {
+      if (!applicationUrl || applicationUrl === 'Not provided' || applicationUrl.trim() === '') {
+        items.push({ id: 'app_url_missing', text: `External application URL is missing. Please provide the exact application link.` });
+      }
+    } else if (applicationMethod === 'email') {
+      if (!applicationEmail || applicationEmail.trim() === '') {
+        items.push({ id: 'app_email_missing', text: `Application email is missing. Please provide the email address for applicants.` });
+      }
+    }
+
+    return items;
+  }, [fastIngestData, isExternal, externalEntityName, externalEntityLogoUrl, externalCountry, externalState, orgChallenges, isRemote, draftLocation, selectedCountry, applicationMethod, applicationUrl, applicationEmail]);
 
   const getBlockFillStats = (blockId: string) => {
     let filled = 0;
@@ -1019,7 +1002,7 @@ export default function CreateListingForm({
               }
 
               return (
-                <Box key={b.id} sx={{ perspective: '1600px', mb: 2.5, scrollMarginTop: '120px' }}>
+                <Box key={b.id} id={`block-${b.id}`} sx={{ perspective: '1600px', mb: 2.5, scrollMarginTop: '120px' }}>
                   <Box sx={{
                     position: 'relative',
                     transition: 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
@@ -1273,6 +1256,20 @@ export default function CreateListingForm({
                                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                                       <PremiumTextField colorTheme={color} fullWidth label="External Organization Name *" value={externalEntityName} onChange={(e) => setExternalEntityName(e.target.value)} placeholder="e.g. Acme Corp" />
                                       
+                                      {fastIngestData && fastIngestData.organizationCountry && (
+                                          <Paper sx={{ p: 2, borderRadius: '16px', bgcolor: 'rgba(59, 130, 246, 0.05)', border: '1px solid rgba(59, 130, 246, 0.2)', display: 'flex', gap: 2, alignItems: 'center' }}>
+                                              <Box sx={{ width: 40, height: 40, borderRadius: '10px', bgcolor: '#3b82f6', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                  <SparkleIcon sx={{ fontSize: 20 }} />
+                                              </Box>
+                                              <Box sx={{ flex: 1 }}>
+                                                  <Typography sx={{ fontWeight: 800, color: '#1e3a8a', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.2 }}>AI Extracted Location</Typography>
+                                                  <Typography sx={{ color: '#0f172a', fontWeight: 600 }}>
+                                                      {fastIngestData.organizationLga ? `${fastIngestData.organizationLga}, ` : ''}{fastIngestData.organizationState ? `${fastIngestData.organizationState}, ` : ''}{fastIngestData.organizationCountry}
+                                                  </Typography>
+                                              </Box>
+                                          </Paper>
+                                      )}
+
                                       <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', sm: 'row' } }}>
                                           <Box sx={{ flex: 1 }}>
                                               <PremiumTextField colorTheme={color} fullWidth label="Short Name (Optional)" value={externalEntityShortName} onChange={(e) => setExternalEntityShortName(e.target.value)} placeholder="e.g. Acme" />
@@ -1764,98 +1761,106 @@ export default function CreateListingForm({
 
 
       {/* Floating Action Items Widget (For Fast Ingest Fallbacks) */}
+      {/* FLOATING ACTION ITEMS CHECKLIST */}
       {fastIngestActionItems.length > 0 && (
-        <Paper
-          elevation={isActionItemsMinimized ? 2 : 8}
-          sx={{
-            position: 'fixed',
-            bottom: { xs: 20, md: 80 }, // Moved up on desktop to avoid footer
-            left: { xs: 16, md: 32 },
-            width: { xs: 'calc(100% - 32px)', sm: 360 },
-            bgcolor: 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(12px)',
-            borderRadius: '16px',
-            border: '1px solid rgba(239, 68, 68, 0.2)',
-            zIndex: 1000,
-            overflow: 'hidden',
-            transition: 'all 0.3s ease',
-            maxHeight: isActionItemsMinimized ? '60px' : '400px',
-            boxShadow: isActionItemsMinimized 
-              ? '0 4px 12px rgba(0,0,0,0.05)'
-              : '0 12px 48px rgba(239, 68, 68, 0.15)',
-          }}
-        >
+        <Box sx={{
+          position: 'fixed',
+          bottom: { xs: 80, md: 40 },
+          left: { xs: 20, md: 40 }, 
+          zIndex: 1000,
+          width: { xs: 'calc(100% - 40px)', sm: 340 },
+          background: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: '24px',
+          border: '1px solid rgba(0,0,0,0.08)',
+          boxShadow: '0 12px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.04)',
+          overflow: 'hidden',
+        }}>
           {/* Header */}
-          <Box 
-            onClick={() => setIsActionItemsMinimized(!isActionItemsMinimized)}
-            sx={{ 
-              p: 2, 
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              borderBottom: isActionItemsMinimized ? 'none' : '1px solid rgba(0,0,0,0.06)',
-              bgcolor: 'rgba(239, 68, 68, 0.05)',
-              cursor: 'pointer',
-              '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.08)' }
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Box sx={{ 
-                width: 24, height: 24, borderRadius: '6px', 
-                bgcolor: '#ef4444', color: '#fff', 
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontWeight: 800, fontSize: '0.75rem'
-              }}>
-                {fastIngestActionItems.filter(i => !i.resolved).length}
-              </Box>
-              <Typography sx={{ fontWeight: 800, color: '#0f172a', fontSize: '0.9rem' }}>
+          <Box sx={{ 
+            px: 3, py: 2, 
+            background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+            color: '#fff',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <SparkleIcon sx={{ color: '#fbbf24', fontSize: 18 }} />
+              <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', letterSpacing: '0.05em' }}>
                 Action Items
               </Typography>
             </Box>
-            <IconButton size="small" sx={{ color: '#64748b' }}>
-              {isActionItemsMinimized ? <AddIcon fontSize="small" /> : <MinimizeIcon fontSize="small" />}
-            </IconButton>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Chip 
+                label={`${fastIngestActionItems.length} left`}
+                size="small"
+                sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: '#fff', fontWeight: 800, fontSize: '0.7rem', height: 22 }}
+              />
+              <IconButton 
+                size="small" 
+                onClick={() => setIsActionItemsMinimized(!isActionItemsMinimized)}
+                sx={{ color: '#fff', p: 0.5, '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}
+              >
+                {isActionItemsMinimized ? <AddIcon fontSize="small" /> : <RemoveIcon fontSize="small" />}
+              </IconButton>
+            </Box>
           </Box>
           
-          {/* List Content */}
+          {/* List */}
           <Box sx={{ 
-            p: 2, 
-            display: 'flex', flexDirection: 'column', gap: 1.5,
-            overflowY: 'auto', maxHeight: '340px'
+            p: isActionItemsMinimized ? 0 : 2, 
+            maxHeight: isActionItemsMinimized ? 0 : '300px', 
+            overflowY: 'auto',
+            opacity: isActionItemsMinimized ? 0 : 1,
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            display: isActionItemsMinimized ? 'none' : 'block' 
           }}>
-            {fastIngestActionItems.map(item => (
+            {fastIngestActionItems.map((item, i) => (
               <Box 
-                key={item.id}
+                key={`${item.id}-${i}`}
                 onClick={() => {
-                  setFastIngestActionItems(prev => prev.map(i => i.id === item.id ? { ...i, resolved: !i.resolved } : i));
+                    let targetBlockId = '';
+                    if (item.id.startsWith('org_')) targetBlockId = 'identity';
+                    else if (item.id.startsWith('location_')) targetBlockId = 'geography';
+                    else if (item.id.startsWith('app_')) targetBlockId = 'application';
+                    else if (item.id.startsWith('challenges')) targetBlockId = 'taxonomy';
+                    else if (item.id === 'salary') targetBlockId = 'compensation';
+                    
+                    if (targetBlockId) {
+                        setFlippedBlockId(targetBlockId);
+                        setTimeout(() => {
+                           const el = document.getElementById(`block-${targetBlockId}`);
+                           if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }, 50);
+                    }
                 }}
                 sx={{
                   display: 'flex', gap: 1.5, p: 1.5,
-                  borderRadius: '12px',
-                  bgcolor: item.resolved ? 'rgba(34, 197, 94, 0.05)' : 'rgba(0,0,0,0.02)',
-                  border: `1px solid ${item.resolved ? 'rgba(34, 197, 94, 0.2)' : 'rgba(0,0,0,0.05)'}`,
+                  borderRadius: '16px',
+                  bgcolor: 'rgba(0,0,0,0.02)',
+                  border: `1px solid rgba(0,0,0,0.05)`,
                   cursor: 'pointer',
                   transition: 'all 0.2s',
-                  '&:hover': { bgcolor: item.resolved ? 'rgba(34, 197, 94, 0.1)' : 'rgba(0,0,0,0.04)' }
+                  '&:hover': { bgcolor: 'rgba(0,0,0,0.04)', transform: 'translateY(-2px)' },
+                  mb: i < fastIngestActionItems.length - 1 ? 1 : 0
                 }}
               >
                 <Box sx={{ 
-                  width: 20, height: 20, borderRadius: '6px', flexShrink: 0,
-                  border: `2px solid ${item.resolved ? '#22c55e' : '#cbd5e1'}`,
-                  bgcolor: item.resolved ? '#22c55e' : 'transparent',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', mt: 0.2
+                  width: 24, height: 24, borderRadius: '8px', flexShrink: 0,
+                  bgcolor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
-                  {item.resolved && <Box sx={{ width: 10, height: 10, bgcolor: '#fff', borderRadius: '2px' }} />}
+                  <InfoOutlinedIcon sx={{ fontSize: 16 }} />
                 </Box>
                 <Typography sx={{ 
-                  fontSize: '0.85rem', color: item.resolved ? '#64748b' : '#0f172a',
-                  fontWeight: item.resolved ? 500 : 600,
-                  textDecoration: item.resolved ? 'line-through' : 'none'
+                  fontSize: '0.85rem', color: '#0f172a',
+                  fontWeight: 600, mt: 0.3, lineHeight: 1.4
                 }}>
                   {item.text}
                 </Typography>
               </Box>
             ))}
           </Box>
-        </Paper>
+        </Box>
       )}
 
     </Box>
