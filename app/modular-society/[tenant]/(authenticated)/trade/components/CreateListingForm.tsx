@@ -42,6 +42,8 @@ import WorkIcon from "@mui/icons-material/Work";
 import SparkleIcon from "@mui/icons-material/AutoAwesome";
 import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 
 import PremiumTextField from "@/components/PremiumTextField";
 import PremiumPriceInput from "@/components/PremiumPriceInput";
@@ -592,10 +594,10 @@ export default function CreateListingForm({
       if (!externalEntityLogoUrl || externalEntityLogoUrl.trim() === '') {
         items.push({ id: 'org_logo_missing', text: `Company logo is missing. A logo significantly improves applicant conversion.` });
       }
-      if (!externalCountry || !externalCountry.name) {
+      if (!externalCountry?.name && !fastIngestData?.organizationCountry) {
         items.push({ id: 'org_country_missing', text: `Organization Country is missing.` });
       }
-      if (!externalState || !externalState.name) {
+      if (!externalState?.name && !fastIngestData?.organizationState) {
         items.push({ id: 'org_state_missing', text: `Organization State/Province is missing.` });
       }
       if (orgChallenges.length === 0) {
@@ -617,8 +619,28 @@ export default function CreateListingForm({
       }
     }
 
+    if (!title || title.trim() === '') {
+      items.push({ id: 'mandate_title', text: `Listing title is missing.` });
+    }
+    
+    if (initialCategory === 'jobs' || initialCategory === 'volunteer') {
+      if (!jobFunction) items.push({ id: 'mandate_function', text: `Job Function is missing. Please select a department.` });
+    } else {
+      if (!sector) items.push({ id: 'mandate_sector', text: `Sector is missing. Please select an industry.` });
+    }
+
+    if (!description || description.trim() === '') {
+      items.push({ id: 'mandate_desc', text: `Listing description is missing.` });
+    }
+
+    if (isVolunteer) {
+      if (!duration || duration.trim() === '') items.push({ id: 'comp_duration', text: `Engagement duration is missing.` });
+    } else {
+      if (!currency || !minSalary || !maxSalary || !duration) items.push({ id: 'comp_salary', text: `Compensation details (budget, duration) are incomplete.` });
+    }
+
     return items;
-  }, [fastIngestData, isExternal, externalEntityName, externalEntityLogoUrl, externalCountry, externalState, orgChallenges, isRemote, draftLocation, selectedCountry, applicationMethod, applicationUrl, applicationEmail]);
+  }, [fastIngestData, isExternal, externalEntityName, externalEntityLogoUrl, externalCountry, externalState, orgChallenges, isRemote, draftLocation, selectedCountry, applicationMethod, applicationUrl, applicationEmail, title, initialCategory, jobFunction, sector, description, isVolunteer, duration, currency, minSalary, maxSalary]);
 
   const getBlockFillStats = (blockId: string) => {
     let filled = 0;
@@ -627,11 +649,10 @@ export default function CreateListingForm({
       case 'identity':
         total = 1;
         if (isExternal) {
-            total = 4; // Name, Logo, orgChallenges, orgSubcategories
+            total = 3; // Name, Logo, orgChallenges
             if (externalEntityName.trim().length > 0) filled++;
             if (externalEntityLogoUrl.trim().length > 0) filled++;
             if (orgChallenges.length > 0) filled++;
-            if (orgSubcategories.length > 0) filled++;
         } else {
             if (selectedEntityId) filled++;
         }
@@ -738,9 +759,11 @@ export default function CreateListingForm({
     setError(null);
     setSuccessMsg(null);
 
+    const hasValidLocation = !!(selectedCountry || draftLocation || (isExternal && fastIngestData?.organizationCountry));
+
     // Enforce title and location for drafts as well
     if (status === 'draft') {
-        if (!title.trim() || !selectedCountry) {
+        if (!title.trim() || !hasValidLocation) {
             setError("Add a job title and location to save to draft.");
             scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
             return;
@@ -816,9 +839,9 @@ export default function CreateListingForm({
       isExternal,
       externalEntityName: isExternal ? externalEntityName : undefined,
       externalEntityShortName: isExternal ? externalEntityShortName : undefined,
-      externalCountry: isExternal ? externalCountry?.name : undefined,
-      externalState: isExternal ? externalState?.name : undefined,
-      externalLga: isExternal ? externalLga?.name : undefined,
+      externalCountry: isExternal ? (externalCountry?.name || fastIngestData?.organizationCountry) : undefined,
+      externalState: isExternal ? (externalState?.name || fastIngestData?.organizationState) : undefined,
+      externalLga: isExternal ? (externalLga?.name || fastIngestData?.organizationLga) : undefined,
       externalEntityLogoUrl: isExternal ? finalLogoUrl : undefined,
       organizationChallenges: isExternal ? orgChallenges.map(c => c.id) : undefined,
       organizationSubcategories: isExternal ? orgSubcategories.map(s => s.id) : undefined,
@@ -1257,12 +1280,18 @@ export default function CreateListingForm({
                                       <PremiumTextField colorTheme={color} fullWidth label="External Organization Name *" value={externalEntityName} onChange={(e) => setExternalEntityName(e.target.value)} placeholder="e.g. Acme Corp" />
                                       
                                       {fastIngestData && fastIngestData.organizationCountry && (
-                                          <Paper sx={{ p: 2, borderRadius: '16px', bgcolor: 'rgba(59, 130, 246, 0.05)', border: '1px solid rgba(59, 130, 246, 0.2)', display: 'flex', gap: 2, alignItems: 'center' }}>
-                                              <Box sx={{ width: 40, height: 40, borderRadius: '10px', bgcolor: '#3b82f6', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                          <Paper sx={{ 
+                                              p: 2, borderRadius: '16px', mb: 1,
+                                              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.04) 0%, rgba(168, 85, 247, 0.04) 100%)', 
+                                              border: '1px solid rgba(99, 102, 241, 0.2)', 
+                                              display: 'flex', gap: 2, alignItems: 'center',
+                                              backdropFilter: 'blur(10px)', boxShadow: '0 4px 12px rgba(99, 102, 241, 0.05)'
+                                          }}>
+                                              <Box sx={{ width: 40, height: 40, borderRadius: '10px', background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                                   <SparkleIcon sx={{ fontSize: 20 }} />
                                               </Box>
                                               <Box sx={{ flex: 1 }}>
-                                                  <Typography sx={{ fontWeight: 800, color: '#1e3a8a', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.2 }}>AI Extracted Location</Typography>
+                                                  <Typography sx={{ fontWeight: 800, color: '#4f46e5', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.2 }}>AI Extracted Location</Typography>
                                                   <Typography sx={{ color: '#0f172a', fontWeight: 600 }}>
                                                       {fastIngestData.organizationLga ? `${fastIngestData.organizationLga}, ` : ''}{fastIngestData.organizationState ? `${fastIngestData.organizationState}, ` : ''}{fastIngestData.organizationCountry}
                                                   </Typography>
@@ -1307,7 +1336,7 @@ export default function CreateListingForm({
                                              <PremiumAutocomplete 
                                                  multiple 
                                                  colorTheme={color} 
-                                                 label="Organization Subcategories *" 
+                                                 label="Organization Subcategories" 
                                                  options={orgChallenges.flatMap((c: any) => c.subcategories || [])} 
                                                  getOptionLabel={(opt: any) => opt.title} 
                                                  value={orgSubcategories} 
@@ -1417,10 +1446,23 @@ export default function CreateListingForm({
                               <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: '#64748b', mb: -1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Location Details</Typography>
                                 {draftLocation && !selectedCountry ? (
                                   <Box sx={{ mb: 2 }}>
-                                    <Paper sx={{ p: 2, borderRadius: 2, bgcolor: 'rgba(0,0,0,0.02)', border: `1px solid rgba(0,0,0,0.05)`, mb: 2 }}>
-                                      <Typography sx={{ fontWeight: 600, color: '#334155', mb: 0.5, fontSize: '0.85rem', textTransform: 'uppercase' }}>Saved Location</Typography>
-                                      <Typography sx={{ color: '#0f172a', fontWeight: 700, fontSize: '1.1rem' }}>{draftLocation}</Typography>
-                                    </Paper>
+                                      <Paper sx={{ 
+                                          p: 2, borderRadius: '16px', mb: 1,
+                                          background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.04) 0%, rgba(168, 85, 247, 0.04) 100%)', 
+                                          border: '1px solid rgba(99, 102, 241, 0.2)', 
+                                          display: 'flex', gap: 2, alignItems: 'center',
+                                          backdropFilter: 'blur(10px)', boxShadow: '0 4px 12px rgba(99, 102, 241, 0.05)'
+                                      }}>
+                                          <Box sx={{ width: 40, height: 40, borderRadius: '10px', background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                              <SparkleIcon sx={{ fontSize: 20 }} />
+                                          </Box>
+                                          <Box sx={{ flex: 1 }}>
+                                              <Typography sx={{ fontWeight: 800, color: '#4f46e5', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.2 }}>AI Extracted Location</Typography>
+                                              <Typography sx={{ color: '#0f172a', fontWeight: 600 }}>
+                                                  {draftLocation}
+                                              </Typography>
+                                          </Box>
+                                      </Paper>
                                     <Alert severity="info" sx={{ borderRadius: 2, '& .MuiAlert-message': { width: '100%', fontWeight: 500 }, mb: 3 }}>
                                       To edit this location, tap the Country dropdown below to reset your options.
                                     </Alert>
@@ -1699,14 +1741,15 @@ export default function CreateListingForm({
         <Box sx={{ display: 'flex', gap: 2 }}>
           <Button
             onClick={() => {
-              if (!title.trim() || !selectedCountry) {
+              const hasValidLoc = !!(selectedCountry || draftLocation || (isExternal && fastIngestData?.organizationCountry));
+              if (!title.trim() || !hasValidLoc) {
                 setError("Please add a job title and location to preview this listing.");
                 scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
                 return;
               }
               setShowPreview(true);
             }}
-            disabled={!title.trim() || !selectedCountry}
+            disabled={!title.trim() || !(selectedCountry || draftLocation || (isExternal && fastIngestData?.organizationCountry))}
             startIcon={<SparkleIcon sx={{ color: '#64748b' }} />}
             sx={{
               color: '#64748b',
@@ -1800,7 +1843,7 @@ export default function CreateListingForm({
                 onClick={() => setIsActionItemsMinimized(!isActionItemsMinimized)}
                 sx={{ color: '#fff', p: 0.5, '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}
               >
-                {isActionItemsMinimized ? <AddIcon fontSize="small" /> : <RemoveIcon fontSize="small" />}
+                {isActionItemsMinimized ? <KeyboardArrowUpIcon fontSize="small" /> : <KeyboardArrowDownIcon fontSize="small" />}
               </IconButton>
             </Box>
           </Box>
@@ -1821,7 +1864,9 @@ export default function CreateListingForm({
                     let targetBlockId = '';
                     if (item.id.startsWith('org_')) targetBlockId = 'identity';
                     else if (item.id.startsWith('location_')) targetBlockId = 'geography';
-                    else if (item.id.startsWith('app_')) targetBlockId = 'application';
+                    else if (item.id.startsWith('app_')) targetBlockId = 'cta';
+                    else if (item.id.startsWith('mandate_')) targetBlockId = 'mandate';
+                    else if (item.id.startsWith('comp_')) targetBlockId = 'compensation';
                     else if (item.id.startsWith('challenges')) targetBlockId = 'taxonomy';
                     else if (item.id === 'salary') targetBlockId = 'compensation';
                     
