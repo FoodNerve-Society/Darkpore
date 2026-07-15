@@ -140,6 +140,30 @@ function PollOptionsEditor({ initialOptions, onChange, color }: { initialOptions
   );
 }
 
+const AIImagePromptDisplay = ({ promptText, color }: { promptText: string, color: string }) => {
+  const [copied, setCopied] = useState(false);
+  if (!promptText) return null;
+  return (
+    <Box sx={{ mt: 1, mb: 1, p: 2, borderRadius: '12px', bgcolor: alpha(color, 0.05), border: `1px dashed ${alpha(color, 0.3)}`, display: 'flex', flexDirection: 'column', gap: 1 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: color, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <SparkleIcon sx={{ fontSize: 14 }} /> AI Image Prompt
+        </Typography>
+        <Button 
+          size="small" 
+          onClick={() => { navigator.clipboard.writeText(promptText); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+          sx={{ minWidth: 'auto', p: '4px 8px', fontSize: '0.7rem', fontWeight: 700, borderRadius: '6px', color: copied ? '#10b981' : color, bgcolor: copied ? 'rgba(16,185,129,0.1)' : alpha(color, 0.1) }}
+        >
+          {copied ? 'Copied!' : 'Copy'}
+        </Button>
+      </Box>
+      <Typography sx={{ fontSize: '0.85rem', color: '#475569', fontStyle: 'italic', lineHeight: 1.5 }}>
+        "{promptText}"
+      </Typography>
+    </Box>
+  );
+};
+
 // ----------------------------------------------------------------------
 // EVIDENCE GALLERY EDITOR
 // ----------------------------------------------------------------------
@@ -193,6 +217,8 @@ function EvidenceGalleryEditor({ initialItems, onChange, color, blockId, uploadF
               fullWidth label="Caption" size="small" colorTheme={color}
               placeholder="Describe this visual..." value={item.caption || ''} onChange={e => updateItem(i, 'caption', e.target.value)}
             />
+            {item.imagePrompt && <AIImagePromptDisplay promptText={item.imagePrompt} color={color} />}
+
             <Box sx={{ display: 'flex', gap: 2 }}>
               <PremiumTextField
                 fullWidth label="Source Name (Optional)" size="small" colorTheme={color}
@@ -1631,6 +1657,7 @@ export default function CreateLearnContentForm({
                                         placeholder={b.sopHint || 'What collapsed and when?'} value={b.content.caption || ''} onChange={(e: any) => updateBlock(b.id, 'caption', e.target.value)}
                                         
                                       />
+                                      {b.content.imagePrompt && <AIImagePromptDisplay promptText={b.content.imagePrompt} color={color} />}
                                       <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                                         {mediaUrlMode[b.id] ? (
                                           <PremiumTextField colorTheme={color}

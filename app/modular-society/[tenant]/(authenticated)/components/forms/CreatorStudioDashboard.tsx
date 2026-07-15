@@ -149,9 +149,17 @@ export default function CreatorStudioDashboard({
             try {
               const contentObj = JSON.parse(block.content);
               
-              // Strip fake image URLs
+              // Strip fake image URLs and Extract Image Prompts
               const imageBlocks = ['highlight_card', 'quote_card', 'image_slider', 'interactive_poll', 'expert_analysis', 'pull_quote'];
               if (imageBlocks.includes(block.blockType)) {
+                if (contentObj.caption) {
+                  const match = contentObj.caption.match(/\[?Image Prompt:\s*(.*?)\]?/i);
+                  if (match) {
+                    contentObj.imagePrompt = match[1].trim();
+                    contentObj.caption = contentObj.caption.replace(match[0], '').trim();
+                  }
+                }
+                
                 if (contentObj.imageUrl && (contentObj.imageUrl.toLowerCase().includes('unsplash') || contentObj.imageUrl.toLowerCase().includes('placeholder') || contentObj.imageUrl.toLowerCase().includes('example'))) {
                   delete contentObj.imageUrl;
                 }
@@ -162,6 +170,14 @@ export default function CreatorStudioDashboard({
               
               if (block.blockType === 'media' && Array.isArray(contentObj.items)) {
                 contentObj.items.forEach((item: any) => {
+                  if (item.caption) {
+                    const match = item.caption.match(/\[?Image Prompt:\s*(.*?)\]?/i);
+                    if (match) {
+                      item.imagePrompt = match[1].trim();
+                      item.caption = item.caption.replace(match[0], '').trim();
+                    }
+                  }
+                  
                   if (item.url && (item.url.toLowerCase().includes('unsplash') || item.url.toLowerCase().includes('placeholder') || item.url.toLowerCase().includes('example'))) {
                     item.url = '';
                   }
