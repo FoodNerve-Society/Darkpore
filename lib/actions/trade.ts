@@ -74,9 +74,12 @@ export async function createTradeListing(data: CreateTradeListingPayload) {
           name: metadata.externalEntityName,
           slug,
           isExternal: true,
-          country: metadata.externalCountry?.name,
-          state: metadata.externalState?.name,
-          lga: metadata.externalLga?.name
+          country: metadata.externalCountry?.name || metadata.externalCountry,
+          state: metadata.externalState?.name || metadata.externalState,
+          lga: metadata.externalLga?.name || metadata.externalLga,
+          logoUrl: metadata.externalEntityLogoUrl || undefined,
+          challenges: metadata.organizationChallenges ? JSON.stringify(metadata.organizationChallenges) : undefined,
+          subcategories: metadata.organizationSubcategories ? JSON.stringify(metadata.organizationSubcategories) : undefined
         }
       });
       finalOrganizationId = extOrg.id;

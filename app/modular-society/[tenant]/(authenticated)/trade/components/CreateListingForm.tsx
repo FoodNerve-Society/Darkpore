@@ -484,8 +484,47 @@ export default function CreateListingForm({
       if (fastIngestData.organizationLogoUrl && isExternal) {
         setExternalEntityLogoUrl(fastIngestData.organizationLogoUrl);
       }
+      if (fastIngestData.organizationShortName && isExternal) {
+        setExternalEntityShortName(fastIngestData.organizationShortName);
+      }
       if (fastIngestData.organizationName && !isExternal) {
         actions.push({ id: 'org_identity', text: `Role is internal, but AI extracted org: ${fastIngestData.organizationName}. Ensure correct hiring entity is selected.`, resolved: false });
+      }
+
+      // External Organization Challenges
+      if (fastIngestData.organizationChallenges && isExternal) {
+        try {
+          let parsedOrgChal: string[] = [];
+          if (typeof fastIngestData.organizationChallenges === 'string') {
+            parsedOrgChal = JSON.parse(fastIngestData.organizationChallenges);
+          } else if (Array.isArray(fastIngestData.organizationChallenges)) {
+            parsedOrgChal = fastIngestData.organizationChallenges;
+          }
+          if (parsedOrgChal.length > 0) {
+            const matchedOrgChal = availableChallenges.filter((c: any) => 
+               parsedOrgChal.some(p => c.id.toLowerCase() === p.toLowerCase() || (c.title && c.title.toLowerCase().includes(p.toLowerCase())))
+            );
+            if (matchedOrgChal.length > 0) {
+              setOrgChallenges(matchedOrgChal);
+              
+              if (fastIngestData.organizationSubcategories) {
+                let parsedOrgSubs: string[] = [];
+                if (typeof fastIngestData.organizationSubcategories === 'string') {
+                  parsedOrgSubs = JSON.parse(fastIngestData.organizationSubcategories);
+                } else if (Array.isArray(fastIngestData.organizationSubcategories)) {
+                  parsedOrgSubs = fastIngestData.organizationSubcategories;
+                }
+                const allOrgSubs = matchedOrgChal.flatMap((c: any) => c.subcategories || []);
+                const matchedOrgSubs = allOrgSubs.filter((s: any) => 
+                   parsedOrgSubs.some(p => s.id.toLowerCase() === p.toLowerCase() || (s.title && s.title.toLowerCase().includes(p.toLowerCase())))
+                );
+                if (matchedOrgSubs.length > 0) {
+                  setOrgSubcategories(matchedOrgSubs);
+                }
+              }
+            }
+          }
+        } catch(e) {}
       }
 
       // Application Deadline
@@ -528,6 +567,20 @@ export default function CreateListingForm({
           }
         } else {
           actions.push({ id: 'location_country', text: `Please manually select the Country for: ${fastIngestData.location}`, resolved: false });
+        }
+      }
+
+      // External Organization Location Fuzzy Match
+      if (isExternal && (fastIngestData.organizationCountry || fastIngestData.organizationState)) {
+        let eCountry = null;
+        if (fastIngestData.organizationCountry) {
+           eCountry = countries.find(c => c.name.toLowerCase() === fastIngestData.organizationCountry.toLowerCase() || c.isoCode === fastIngestData.organizationCountry);
+           if (eCountry) setExternalCountry(eCountry);
+        }
+        if (eCountry && fastIngestData.organizationState) {
+           const eStateList = State.getStatesOfCountry(eCountry.isoCode);
+           const eState = eStateList.find(s => s.name.toLowerCase().includes(fastIngestData.organizationState.toLowerCase()));
+           if (eState) setExternalState(eState);
         }
       }
 
