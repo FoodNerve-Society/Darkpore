@@ -475,6 +475,7 @@ export default function CreateListingForm({
       if (fastIngestData.currency) setCurrency(fastIngestData.currency);
       if (fastIngestData.minSalary) setMinSalary(fastIngestData.minSalary);
       if (fastIngestData.maxSalary) setMaxSalary(fastIngestData.maxSalary);
+      if (fastIngestData.duration) setDuration(fastIngestData.duration);
       
       // External Organization Identity
       if (fastIngestData.organizationName && isExternal) {
@@ -542,10 +543,27 @@ export default function CreateListingForm({
           
           if (parsedChallenges.length > 0) {
             const matchedChallenges = availableChallenges.filter((c: any) => 
-               parsedChallenges.some(p => c.id.toLowerCase() === p.toLowerCase() || c.label.toLowerCase().includes(p.toLowerCase()))
+               parsedChallenges.some(p => c.id.toLowerCase() === p.toLowerCase() || (c.title && c.title.toLowerCase().includes(p.toLowerCase())))
             );
             if (matchedChallenges.length > 0) {
               setJobChallenges(matchedChallenges);
+              
+              // Hydrate Subcategories
+              if (fastIngestData.subcategories) {
+                let parsedSubs: string[] = [];
+                if (typeof fastIngestData.subcategories === 'string') {
+                   parsedSubs = JSON.parse(fastIngestData.subcategories);
+                } else if (Array.isArray(fastIngestData.subcategories)) {
+                   parsedSubs = fastIngestData.subcategories;
+                }
+                const allSubs = matchedChallenges.flatMap((c: any) => c.subcategories || []);
+                const matchedSubs = allSubs.filter((s: any) => 
+                   parsedSubs.some(p => s.id.toLowerCase() === p.toLowerCase() || (s.title && s.title.toLowerCase().includes(p.toLowerCase())))
+                );
+                if (matchedSubs.length > 0) {
+                  setJobSubcategories(matchedSubs);
+                }
+              }
             } else {
               actions.push({ id: 'challenges', text: `Review challenges: [${parsedChallenges.join(', ')}]`, resolved: false });
             }
