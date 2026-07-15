@@ -19,6 +19,7 @@ import {
 import { keyframes } from '@mui/system';
 
 const EMERALD = "#10b981";
+const EMERALD_DARK = "#059669";
 
 const slideUpFade = keyframes`
   from { opacity: 0; transform: translateY(40px); }

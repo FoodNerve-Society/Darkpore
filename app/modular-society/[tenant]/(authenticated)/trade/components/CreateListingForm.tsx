@@ -529,60 +529,30 @@ export default function CreateListingForm({
         } catch(e) {}
       }
 
-      // Application Deadline
       if (fastIngestData.applicationDeadline) {
         setDeadline(fastIngestData.applicationDeadline);
       }
-      if (fastIngestData.applicationUrl) {
-        setApplicationUrl(fastIngestData.applicationUrl);
-      }
 
-      // Location parsing (Fuzzy match)
+      // Location parsing
       if (fastIngestData.location && !isRemote) {
-        const locParts = fastIngestData.location.split(',').map((s: string) => s.trim().toLowerCase());
-        
-        let foundCountry = null;
-        let foundState = null;
-        
-        // 1. Match Country
-        for (const c of countries) {
-          if (locParts.some((p: string) => c.name.toLowerCase().includes(p) || (c.isoCode && c.isoCode.toLowerCase() === p))) {
-            foundCountry = c;
-            break;
-          }
-        }
-        
-        if (foundCountry) {
-          setSelectedCountry(foundCountry);
-          // 2. Match State
-          const stateList = State.getStatesOfCountry(foundCountry.isoCode);
-          for (const s of stateList) {
-            if (locParts.some((p: string) => s.name.toLowerCase().includes(p))) {
-              foundState = s;
-              break;
-            }
-          }
-          if (foundState) {
-            setSelectedState(foundState);
-          } else {
-            actions.push({ id: 'location_state', text: `Please manually select the State/Region for: ${fastIngestData.location}`, resolved: false });
-          }
-        } else {
-          actions.push({ id: 'location_country', text: `Please manually select the Country for: ${fastIngestData.location}`, resolved: false });
-        }
+        setDraftLocation(fastIngestData.location);
       }
-
-      // External Organization Location Fuzzy Match
-      if (isExternal && (fastIngestData.organizationCountry || fastIngestData.organizationState)) {
-        let eCountry = null;
-        if (fastIngestData.organizationCountry) {
-           eCountry = countries.find(c => c.name.toLowerCase() === fastIngestData.organizationCountry.toLowerCase() || c.isoCode === fastIngestData.organizationCountry);
-           if (eCountry) setExternalCountry(eCountry);
+      // External Organization Location & Details Actions
+      if (isExternal) {
+        if (!fastIngestData.organizationName) {
+          actions.push({ id: 'org_name_missing', text: `External Organization Name is missing. Please provide the name of the hiring entity.`, resolved: false });
         }
-        if (eCountry && fastIngestData.organizationState) {
-           const eStateList = State.getStatesOfCountry(eCountry.isoCode);
-           const eState = eStateList.find(s => s.name.toLowerCase().includes(fastIngestData.organizationState.toLowerCase()));
-           if (eState) setExternalState(eState);
+        
+        if (fastIngestData.organizationCountry) setExternalCountry({ name: fastIngestData.organizationCountry });
+        else actions.push({ id: 'org_country_missing', text: `Organization Country is missing.`, resolved: false });
+        
+        if (fastIngestData.organizationState) setExternalState({ name: fastIngestData.organizationState });
+        else actions.push({ id: 'org_state_missing', text: `Organization State/Province is missing.`, resolved: false });
+        
+        if (fastIngestData.organizationLga) setExternalLga({ name: fastIngestData.organizationLga });
+        
+        if (!fastIngestData.organizationChallenges || fastIngestData.organizationChallenges.length === 0) {
+          actions.push({ id: 'org_challenges_missing', text: `Organization sector/challenges are missing. Please classify the external organization.`, resolved: false });
         }
       }
 
@@ -630,6 +600,34 @@ export default function CreateListingForm({
       if (fastIngestData.applicationMethod) {
         if (['native', 'external', 'email'].includes(fastIngestData.applicationMethod)) {
           setApplicationMethod(fastIngestData.applicationMethod as any);
+        }
+      }
+      if (fastIngestData.applicationUrl && fastIngestData.applicationUrl !== "Not provided") {
+        setApplicationUrl(fastIngestData.applicationUrl);
+      }
+      if (fastIngestData.applicationEmail) {
+        setApplicationEmail(fastIngestData.applicationEmail);
+      }
+      if (fastIngestData.applicationInstructions) {
+        setApplicationInstructions(fastIngestData.applicationInstructions);
+      }
+
+      // Application Actions / Checklist
+      if (fastIngestData.applicationMethod === 'external') {
+        if (!fastIngestData.applicationUrl || fastIngestData.applicationUrl === "Not provided") {
+           actions.push({ id: 'app_url_missing', text: `External application URL is missing. Please provide the exact application link.`, resolved: false });
+        } else {
+           actions.push({ id: 'app_url_verify', text: `Verify Application Link: ${fastIngestData.applicationUrl}`, resolved: false });
+        }
+      } else if (fastIngestData.applicationMethod === 'email') {
+        if (!fastIngestData.applicationEmail) {
+           actions.push({ id: 'app_email_missing', text: `Application email is missing. Please provide the email address for applicants.`, resolved: false });
+        } else {
+           actions.push({ id: 'app_email_verify', text: `Verify Application Email: ${fastIngestData.applicationEmail}`, resolved: false });
+        }
+        
+        if (fastIngestData.applicationInstructions) {
+           actions.push({ id: 'app_instructions', text: `Review Application Instructions: ${fastIngestData.applicationInstructions.slice(0, 50)}...`, resolved: false });
         }
       }
 

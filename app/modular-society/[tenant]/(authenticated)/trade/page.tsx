@@ -343,6 +343,7 @@ export default function TradePage() {
   const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
   const [createCategory, setCreateCategory] = useState<string>('');
   const [createSelections, setCreateSelections] = useState<{ primary: string, secondary: string, tertiary?: string } | null>(null);
+  const [fastIngestPayload, setFastIngestPayload] = useState<any>(null);
   const [sessionKey, setSessionKey] = useState(0);
   
   const [activeTab, setActiveTab] = useState("All Listings");
@@ -658,9 +659,10 @@ export default function TradePage() {
                 : (profile?.displayName ? profile.displayName.split(' ')[0] : 'Creative')
             }
             drafts={drafts}
-            onStartFresh={(category, selections) => {
+            onStartFresh={(category, selections, ingestData) => {
               setCreateCategory(category);
               if (selections) setCreateSelections(selections);
+              setFastIngestPayload(ingestData || null);
               setSelectedDraftId('new');
               setSessionKey(prev => prev + 1);
             }}
@@ -686,6 +688,7 @@ export default function TradePage() {
             onCancel={() => {
               setCreateCategory('');
               setCreateSelections(null);
+              setFastIngestPayload(null);
               setSelectedDraftId(null);
             }}
             onSuccess={() => {
@@ -694,6 +697,7 @@ export default function TradePage() {
             }}
             postingAs={postingAs}
             selectedOrgId={selectedOrgId || (profile?.organizations?.[0]?.id ?? null)}
+            fastIngestData={selectedDraftId === 'new' ? fastIngestPayload : undefined}
           />
         )}
       </Box>
