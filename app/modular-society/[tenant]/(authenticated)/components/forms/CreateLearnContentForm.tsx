@@ -601,6 +601,41 @@ export default function CreateLearnContentForm({
     }
   }, [flippedBlockId]);
 
+  // --- ACTION ITEMS CHECKLIST ---
+  const actionItems = useMemo(() => {
+    const items: Array<{ id: string, text: string }> = [];
+    if (step !== 3) return items;
+    
+    blocks.forEach((b) => {
+      // Missing Images
+      const imageBlocks = ['highlight_card', 'quote_card', 'image_slider', 'interactive_poll', 'expert_analysis', 'pull_quote'];
+      if (imageBlocks.includes(b.type)) {
+        if (b.type === 'pull_quote' && (!b.content.avatarUrl || b.content.avatarUrl.trim() === '')) {
+          items.push({ id: b.id, text: `Upload avatar for ${BLOCK_DEFINITIONS[b.type as keyof typeof BLOCK_DEFINITIONS]?.label || 'Block'}` });
+        } else if (b.type !== 'pull_quote' && (!b.content.imageUrl || b.content.imageUrl.trim() === '')) {
+          items.push({ id: b.id, text: `Upload image for ${BLOCK_DEFINITIONS[b.type as keyof typeof BLOCK_DEFINITIONS]?.label || 'Block'}` });
+        }
+      }
+      
+      // Missing Media Items (Evidence Block)
+      if (b.type === 'media') {
+        const hasMissingMedia = Array.isArray(b.content.items) && b.content.items.some((item: any) => !item.url || item.url.trim() === '');
+        if (hasMissingMedia || !b.content.items || b.content.items.length === 0) {
+          items.push({ id: b.id, text: `Upload media for Evidence Gallery` });
+        }
+      }
+      
+      // Missing CTA
+      if (b.type === 'final_cta' || b.type === 'call_to_action') {
+        if (!b.content.url || b.content.url.trim() === '') {
+          items.push({ id: b.id, text: `Configure Final CTA URL` });
+        }
+      }
+    });
+    
+    return items;
+  }, [blocks, step]);
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -1924,6 +1959,73 @@ export default function CreateLearnContentForm({
           </Button>
         </DialogActions>
       </Dialog>
+      {/* FLOATING ACTION ITEMS CHECKLIST */}
+      {step === 3 && actionItems.length > 0 && (
+        <Box sx={{
+          position: 'fixed',
+          bottom: { xs: 80, md: 40 },
+          right: { xs: 20, md: 40 },
+          zIndex: 1000,
+          width: { xs: 'calc(100% - 40px)', sm: 340 },
+          background: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: '24px',
+          border: '1px solid rgba(0,0,0,0.08)',
+          boxShadow: '0 12px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.04)',
+          overflow: 'hidden',
+          animation: `${slideUpFade} 0.4s cubic-bezier(0.16, 1, 0.3, 1)`,
+        }}>
+          {/* Header */}
+          <Box sx={{ 
+            px: 3, py: 2, 
+            background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+            color: '#fff',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <SparkleIcon sx={{ color: '#fbbf24', fontSize: 18 }} />
+              <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', letterSpacing: '0.05em' }}>
+                Action Items
+              </Typography>
+            </Box>
+            <Chip 
+              label={`${actionItems.length} left`}
+              size="small"
+              sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: '#fff', fontWeight: 800, fontSize: '0.7rem', height: 22 }}
+            />
+          </Box>
+          
+          {/* List */}
+          <Box sx={{ p: 2, maxHeight: '300px', overflowY: 'auto' }}>
+            {actionItems.map((item, i) => (
+              <Box 
+                key={`${item.id}-${i}`}
+                onClick={() => {
+                  setFlippedBlockId(item.id);
+                  const el = document.getElementById(`block-${item.id}`);
+                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }}
+                sx={{
+                  display: 'flex', alignItems: 'flex-start', gap: 1.5,
+                  p: 1.5, borderRadius: '12px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  '&:hover': { bgcolor: 'rgba(0,0,0,0.03)' }
+                }}
+              >
+                <Box sx={{ 
+                  width: 20, height: 20, borderRadius: '50%', 
+                  border: '2px solid rgba(0,0,0,0.15)', mt: 0.2, flexShrink: 0 
+                }} />
+                <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', lineHeight: 1.4 }}>
+                  {item.text}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      )}
+
     </Box>
   );
 }

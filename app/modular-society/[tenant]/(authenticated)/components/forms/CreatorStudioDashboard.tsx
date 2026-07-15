@@ -138,7 +138,54 @@ export default function CreatorStudioDashboard({
       const subcategory = parsed.subcategory || '';
       const timeframe = parsed.timeframe || '';
       
-      // Call onStartFresh with the 3rd argument (handled loosely to avoid TS errors if interface wasn't updated)
+      // === INTERCEPTOR: Strip AI Hallucinations ===
+      delete parsed.authorName;
+      delete parsed.authorAvatarUrl;
+      delete parsed.authorId;
+
+      if (parsed.articleBlocks && Array.isArray(parsed.articleBlocks)) {
+        parsed.articleBlocks.forEach((block: any) => {
+          if (block.content && typeof block.content === 'string') {
+            try {
+              const contentObj = JSON.parse(block.content);
+              
+              // Strip fake image URLs
+              const imageBlocks = ['highlight_card', 'quote_card', 'image_slider', 'interactive_poll', 'expert_analysis', 'pull_quote'];
+              if (imageBlocks.includes(block.blockType)) {
+                if (contentObj.imageUrl && (contentObj.imageUrl.toLowerCase().includes('unsplash') || contentObj.imageUrl.toLowerCase().includes('placeholder') || contentObj.imageUrl.toLowerCase().includes('example'))) {
+                  delete contentObj.imageUrl;
+                }
+                if (contentObj.avatarUrl && (contentObj.avatarUrl.toLowerCase().includes('unsplash') || contentObj.avatarUrl.toLowerCase().includes('placeholder') || contentObj.avatarUrl.toLowerCase().includes('example'))) {
+                  delete contentObj.avatarUrl;
+                }
+              }
+              
+              if (block.blockType === 'media' && Array.isArray(contentObj.items)) {
+                contentObj.items.forEach((item: any) => {
+                  if (item.url && (item.url.toLowerCase().includes('unsplash') || item.url.toLowerCase().includes('placeholder') || item.url.toLowerCase().includes('example'))) {
+                    item.url = '';
+                  }
+                });
+              }
+              
+              // Strip generic CTA links and text
+              if (block.blockType === 'final_cta' || block.blockType === 'call_to_action') {
+                delete contentObj.url;
+                delete contentObj.text;
+                delete contentObj.macroCtaId;
+              }
+              
+              if (block.blockType === 'strategic_directive') {
+                delete contentObj.microCtaId;
+              }
+              
+              block.content = JSON.stringify(contentObj);
+            } catch (e) {}
+          }
+        });
+      }
+      
+      // Call onStartFresh with the 3rd argument
       (onStartFresh as any)(type, { category, subcategory, timeframe }, parsed);
     } catch (e: any) {
       setFastIngestError(e.message || "Invalid JSON payload.");
