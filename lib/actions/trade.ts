@@ -330,8 +330,7 @@ export async function searchExternalOrganizations(query: string) {
       where: {
         isExternal: true,
         name: {
-          contains: query,
-          mode: 'insensitive'
+          contains: query
         }
       },
       select: {
