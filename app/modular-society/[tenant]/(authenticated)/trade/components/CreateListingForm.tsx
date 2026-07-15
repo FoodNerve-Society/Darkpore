@@ -1231,7 +1231,7 @@ export default function CreateListingForm({
 
                                           // FoodNerve Orgs (Global)
                                           const userOrgIds = profile?.organizations?.map((o: any) => o.id) || [];
-                                          const options = foodNerveOrgs.filter(o => !userOrgIds.includes(o.id));
+                                          const options = foodNerveOrgs;
                                           
                                           const selectedOrg = options.find((o: any) => o.id === selectedEntityId);
 
