@@ -1318,6 +1318,11 @@ export default function CreateListingForm({
                                         label="External Organization Name *"
                                         options={externalOrgOptions}
                                         getOptionLabel={(opt: any) => typeof opt === 'string' ? opt : (opt.name || '')}
+                                        isOptionEqualToValue={(option, value) => {
+                                          if (typeof value === 'string') return option.name === value;
+                                          return option.id === value.id;
+                                        }}
+                                        filterOptions={(x) => x}
                                         value={externalEntityId ? (externalOrgOptions.find(o => o.id === externalEntityId) || { id: externalEntityId, name: externalEntityName }) : externalEntityName}
                                         freeSolo
                                         loading={isSearchingOrgs}
