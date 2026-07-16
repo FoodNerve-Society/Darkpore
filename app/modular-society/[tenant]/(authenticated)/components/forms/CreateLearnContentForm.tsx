@@ -652,7 +652,7 @@ export default function CreateLearnContentForm({
       }
       
       // Missing CTA
-      if (b.type === 'final_cta' || b.type === 'call_to_action') {
+      if (b.type === 'call_to_action') {
         if (!b.content.url || b.content.url.trim() === '') {
           items.push({ id: b.id, text: `Configure Final CTA URL` });
         }

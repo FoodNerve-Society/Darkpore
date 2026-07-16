@@ -318,7 +318,7 @@ export async function getCareersListings() {
     };
   } catch (error) {
     console.error("Error fetching careers listings:", error);
-    return [];
+    return { success: false, error: String(error) };
   }
 }
 
