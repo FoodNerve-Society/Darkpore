@@ -1401,6 +1401,7 @@ export default function LearnPage() {
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
   const [draftTaxonomy, setDraftTaxonomy] = useState<any>(null);
   const [expandedDraftId, setExpandedDraftId] = useState<string | null>(null);
+  const [fastPayload, setFastPayload] = useState<any>(null);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -2078,9 +2079,10 @@ export default function LearnPage() {
           }
           drafts={drafts}
           challengesData={tenantConfig.com.homepage.challenges}
-          onStartFresh={(type, taxonomy) => {
+          onStartFresh={(type, taxonomy, payload) => {
             setCreateContentType(type);
             setDraftTaxonomy(taxonomy);
+            setFastPayload(payload || null);
             setSelectedDraftId('new');
           }}
           onEditDraft={(draftId) => {
@@ -2096,6 +2098,7 @@ export default function LearnPage() {
           key={sessionKey}
           onSuccess={() => {
             setIsFlipped(false);
+            setFastPayload(null);
             setTimeout(() => {
               setCreateContentType('');
               setSelectedDraftId(null);
@@ -2105,6 +2108,7 @@ export default function LearnPage() {
           onCancel={() => {
             setCreateContentType('');
             setSelectedDraftId(null);
+            setFastPayload(null);
           }} 
           postingAs={postingAs}
           selectedOrgId={selectedOrgId}
@@ -2112,7 +2116,7 @@ export default function LearnPage() {
           draftId={selectedDraftId}
           initialTaxonomy={draftTaxonomy}
           initialType={createContentType}
-          initialDraftData={drafts.find((d: any) => d.id === selectedDraftId)}
+          initialDraftData={fastPayload || drafts.find((d: any) => d.id === selectedDraftId)}
         />
       )}
     </Paper>

@@ -167,13 +167,19 @@ function CategoryAccentBar({ category }: { category: string }) {
   );
 }
 
-function ListingCard({ listing, isGrid = false }: { listing: TradeListing, isGrid?: boolean }) {
+function ListingCard({ listing, isGrid = false, onDraftClick }: { listing: TradeListing, isGrid?: boolean, onDraftClick?: (id: string) => void }) {
   const router = useRouter();
   
   return (
     <Paper
       elevation={0}
-      onClick={() => router.push(`/society/trade/${listing.id}`)}
+      onClick={() => {
+        if (listing.status === 'draft' && onDraftClick) {
+          onDraftClick(listing.id);
+        } else {
+          router.push(`/society/trade/${listing.id}`);
+        }
+      }}
       sx={{
         ...glassCard,
         minWidth: isGrid ? 0 : { xs: 280, sm: 300 },
@@ -265,7 +271,7 @@ function ListingCard({ listing, isGrid = false }: { listing: TradeListing, isGri
   );
 }
 
-function HorizontalScrollRow({ title, emoji, items }: { title: string; emoji: string; items: TradeListing[] }) {
+function HorizontalScrollRow({ title, emoji, items, onDraftClick }: { title: string, emoji: string, items: any[], onDraftClick?: (id: string) => void }) {
   if (!items || items.length === 0) return null;
   return (
     <Box sx={{ mb: 4 }}>
@@ -282,14 +288,14 @@ function HorizontalScrollRow({ title, emoji, items }: { title: string; emoji: st
         }}
       >
         {items.map((item) => (
-          <ListingCard key={item.id} listing={item} />
+          <ListingCard key={item.id} listing={item} onDraftClick={onDraftClick} />
         ))}
       </Box>
     </Box>
   );
 }
 
-function GridScrollRow({ items }: { items: TradeListing[] }) {
+function GridScrollRow({ items, onDraftClick }: { items: any[], onDraftClick?: (id: string) => void }) {
   if (!items || items.length === 0) return (
     <Box sx={{ px: { xs: 2, md: 4 }, py: 8, textAlign: 'center' }}>
       <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 700 }}>No listings found in this category.</Typography>
@@ -298,7 +304,7 @@ function GridScrollRow({ items }: { items: TradeListing[] }) {
   return (
     <Box sx={{ px: { xs: 2, md: 4 }, pb: 8 }}>
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 3 }}>
-        {items.map(item => <ListingCard key={item.id} listing={item} isGrid={true} />)}
+        {items.map(item => <ListingCard key={item.id} listing={item} isGrid={true} onDraftClick={onDraftClick} />)}
       </Box>
     </Box>
   );
@@ -343,6 +349,7 @@ export default function TradePage() {
   const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
   const [createCategory, setCreateCategory] = useState<string>('');
   const [createSelections, setCreateSelections] = useState<{ primary: string, secondary: string, tertiary?: string } | null>(null);
+  const [fastIngestPayload, setFastIngestPayload] = useState<any>(null);
   const [sessionKey, setSessionKey] = useState(0);
   
   const [activeTab, setActiveTab] = useState("All Listings");
@@ -396,25 +403,57 @@ export default function TradePage() {
               Access flash sales, community group-buys, resource swaps, and discover paid or volunteer roles.
             </Typography>
           </Box>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => setIsFlipped(true)}
-            sx={{
-              background: `linear-gradient(135deg, ${EMERALD} 0%, ${EMERALD_DARK} 100%)`,
-              color: "#ffffff",
-              fontWeight: 800,
-              borderRadius: "14px",
-              textTransform: "none",
-              boxShadow: `0 4px 12px ${alpha(EMERALD, 0.3)}`,
-              flexShrink: 0,
-              px: isScrolled ? 2 : 3, py: isScrolled ? 0.8 : 1.2,
-              "&:hover": { background: `linear-gradient(135deg, ${EMERALD_DARK} 0%, #047857 100%)`, transform: 'translateY(-1px)' },
-              transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
-            }}
-          >
-            Post Listing
-          </Button>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: { xs: 'stretch', md: 'flex-end' }, gap: 1 }}>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => setIsFlipped(true)}
+              sx={{
+                background: `linear-gradient(135deg, ${EMERALD} 0%, ${EMERALD_DARK} 100%)`,
+                color: "#ffffff",
+                fontWeight: 800,
+                borderRadius: "14px",
+                textTransform: "none",
+                boxShadow: `0 4px 12px ${alpha(EMERALD, 0.3)}`,
+                flexShrink: 0,
+                px: isScrolled ? 2 : 3, py: isScrolled ? 0.8 : 1.2,
+                "&:hover": { background: `linear-gradient(135deg, ${EMERALD_DARK} 0%, #047857 100%)`, transform: 'translateY(-1px)' },
+                transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                width: { xs: '100%', md: 'auto' }
+              }}
+            >
+              Post Listing
+            </Button>
+            
+            {!isScrolled && drafts.length > 0 && (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mt: 1, width: '100%', alignItems: { xs: 'stretch', md: 'flex-end' } }}>
+                <Typography sx={{ fontSize: '0.7rem', fontWeight: 800, color: EMERALD_DARK, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  {drafts.length} Active Draft{drafts.length === 1 ? '' : 's'}
+                </Typography>
+                {drafts.slice(0, 3).map((draft: any) => (
+                  <Box 
+                    key={draft.id}
+                    onClick={() => { setIsFlipped(true); setSelectedDraftId(draft.id); }}
+                    sx={{ 
+                      display: 'flex', alignItems: 'center', gap: 1, p: 1, borderRadius: '8px', 
+                      cursor: 'pointer', bgcolor: 'rgba(255,255,255,0.5)',
+                      border: '1px solid rgba(0,0,0,0.05)',
+                      '&:hover': { bgcolor: '#fff', borderColor: alpha(EMERALD, 0.3), transform: { md: 'translateX(-4px)', xs: 'translateX(4px)' } },
+                      transition: 'all 0.2s', width: { xs: '100%', md: '220px' }
+                    }}
+                  >
+                    <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: EMERALD, boxShadow: `0 0 8px ${EMERALD}`, flexShrink: 0 }} />
+                    <Typography sx={{ 
+                      fontSize: '0.75rem', fontWeight: 700, color: '#334155', 
+                      noWrap: true, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' 
+                    }}>
+                      {draft.title || "Untitled Draft"}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            )}
+          </Box>
         </Paper>
       </Box>
 
@@ -658,9 +697,10 @@ export default function TradePage() {
                 : (profile?.displayName ? profile.displayName.split(' ')[0] : 'Creative')
             }
             drafts={drafts}
-            onStartFresh={(category, selections) => {
+            onStartFresh={(category, selections, ingestData) => {
               setCreateCategory(category);
               if (selections) setCreateSelections(selections);
+              setFastIngestPayload(ingestData || null);
               setSelectedDraftId('new');
               setSessionKey(prev => prev + 1);
             }}
@@ -686,6 +726,7 @@ export default function TradePage() {
             onCancel={() => {
               setCreateCategory('');
               setCreateSelections(null);
+              setFastIngestPayload(null);
               setSelectedDraftId(null);
             }}
             onSuccess={() => {
@@ -694,6 +735,7 @@ export default function TradePage() {
             }}
             postingAs={postingAs}
             selectedOrgId={selectedOrgId || (profile?.organizations?.[0]?.id ?? null)}
+            fastIngestData={selectedDraftId === 'new' ? fastIngestPayload : undefined}
           />
         )}
       </Box>

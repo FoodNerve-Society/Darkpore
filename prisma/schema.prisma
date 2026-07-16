@@ -139,7 +139,6 @@ model TradeListing {
   jobSource       String?   // 'internal_foodnerve' | 'verified_tenant' | 'admin_curated' | 'community_sourced'
   compType        String?   // 'fiat' | 'volunteer'
   targetTenantId  String?   // If verified_tenant, links to their profile
-  externalCompany String?   // If admin_curated or community_sourced
   externalUrl     String?   // Where to apply if external
   npReward        Int?      // How much NP the volunteer gets (Escrow)
   minRank         Int?      // Minimum rank required to apply (for Premium internal jobs)
@@ -150,6 +149,7 @@ model TradeListing {
   startDate       DateTime?
   endDate         DateTime?
   workModel       String?   // 'remote' | 'hybrid' | 'onsite'
+  jobFunction     String?   // E.g., 'Finance & Accounting', 'Agronomy'
   challenges      String?   // JSON string array of challenge IDs
   subcategories   String?   // JSON string array of subcategory IDs
 

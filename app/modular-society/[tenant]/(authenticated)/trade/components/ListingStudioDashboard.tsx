@@ -13,11 +13,14 @@ import {
   SwapHoriz as SwapIcon,
   DeleteOutlined as DeleteOutlineIcon,
   Edit as EditIcon,
-  ArrowForward as ArrowForwardArrow
+  ArrowForward as ArrowForwardArrow,
+  AutoAwesome as AutoAwesomeIcon,
+  ContentPaste as ContentPasteIcon
 } from '@mui/icons-material';
 import { keyframes } from '@mui/system';
 
 const EMERALD = "#10b981";
+const EMERALD_DARK = "#059669";
 
 const slideUpFade = keyframes`
   from { opacity: 0; transform: translateY(40px); }
@@ -137,7 +140,7 @@ export default function ListingStudioDashboard({
   userName
 }: {
   drafts: any[];
-  onStartFresh: (category: string, selections?: { primary: string, secondary: string, tertiary?: string }) => void;
+  onStartFresh: (category: string, selections?: { primary: string, secondary: string, tertiary?: string }, fastIngestData?: any) => void;
   onEditDraft: (draftId: string) => void;
   onDeleteDraft: (draftId: string) => void;
   userName?: string;
@@ -151,6 +154,10 @@ export default function ListingStudioDashboard({
   const [selectedSubOption, setSelectedSubOption] = useState<string>('');
   const [selectedTertiaryOption, setSelectedTertiaryOption] = useState<string>('');
   const [showSubOptions, setShowSubOptions] = useState(false);
+  
+  // Fast Ingest
+  const [fastPayloadText, setFastPayloadText] = useState("");
+  const [fastIngestError, setFastIngestError] = useState("");
 
   const activeOption = LISTING_OPTIONS.find(o => o.type === expandedStartType);
   const currentConfig = expandedStartType ? TRADE_CONFIGS[expandedStartType] : [];
@@ -228,6 +235,200 @@ export default function ListingStudioDashboard({
           sx={{ bgcolor: 'rgba(0,0,0,0.04)', color: 'text.secondary', fontWeight: 600, borderRadius: '8px' }}
         />
       </Box>
+
+      {/* ================================================================ */}
+      {/* FAST INGEST SECTION (ADMINS)                                     */}
+      {/* ================================================================ */}
+      {(() => {
+        // Real-time parse preview
+        let parsedPreview: any = null;
+        let parseStatus: 'empty' | 'valid' | 'invalid' = 'empty';
+        if (fastPayloadText.trim()) {
+          try {
+            parsedPreview = JSON.parse(fastPayloadText);
+            parseStatus = (parsedPreview && typeof parsedPreview === 'object') ? 'valid' : 'invalid';
+          } catch { parseStatus = 'invalid'; }
+        }
+
+        const handleFastIngest = () => {
+          if (parseStatus !== 'valid' || !parsedPreview) return;
+          try {
+            // Support both old flat format (for safety) and new Omni-Trade format
+            const category = parsedPreview.taxonomy?.category || parsedPreview.category || 'jobs';
+            
+            let selections = undefined;
+            if (parsedPreview.taxonomy) {
+                selections = {
+                    primary: parsedPreview.taxonomy.primary,
+                    secondary: parsedPreview.taxonomy.secondary,
+                    tertiary: parsedPreview.taxonomy.tertiary
+                };
+            }
+            
+            const formPayload = parsedPreview.payload || parsedPreview;
+
+            onStartFresh(category, selections, formPayload);
+          } catch (e: any) {
+            setFastIngestError(e.message || "Invalid JSON payload.");
+          }
+        };
+
+        return (
+          <Box sx={{ mb: 5 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', mb: 2, letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 1 }}>
+              <AutoAwesomeIcon sx={{ fontSize: 16, color: EMERALD }} /> Fast Ingest
+            </Typography>
+            <Paper 
+              elevation={0} 
+              sx={{ 
+                borderRadius: '16px', 
+                overflow: 'hidden',
+                border: parseStatus === 'valid' 
+                  ? `1.5px solid ${alpha(EMERALD, 0.5)}` 
+                  : parseStatus === 'invalid' 
+                    ? '1.5px solid rgba(239,68,68,0.4)' 
+                    : '1px solid rgba(0,0,0,0.06)',
+                bgcolor: '#0f172a',
+                transition: 'border-color 0.4s ease, box-shadow 0.4s ease',
+                boxShadow: parseStatus === 'valid' 
+                  ? `0 0 24px ${alpha(EMERALD, 0.12)}, 0 4px 20px rgba(0,0,0,0.15)` 
+                  : '0 4px 20px rgba(0,0,0,0.08)',
+              }}
+            >
+              {/* Code Editor Area */}
+              <Box sx={{ position: 'relative' }}>
+                {/* Top Bar */}
+                <Box sx={{ 
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  px: 2, py: 1.2, 
+                  borderBottom: '1px solid rgba(255,255,255,0.06)',
+                  background: 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, transparent 100%)',
+                }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {/* Traffic light dots */}
+                    <Box sx={{ display: 'flex', gap: 0.6 }}>
+                      <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: parseStatus === 'invalid' ? '#ef4444' : 'rgba(255,255,255,0.15)' }} />
+                      <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: parseStatus === 'valid' ? '#22c55e' : 'rgba(255,255,255,0.15)' }} />
+                      <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: parseStatus === 'valid' ? EMERALD : 'rgba(255,255,255,0.15)' }} />
+                    </Box>
+                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.35)', fontFamily: 'monospace', fontSize: '0.7rem', ml: 1 }}>
+                      payload.json
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Tooltip title="Paste JSON payload">
+                      <IconButton 
+                        size="small" 
+                        onClick={async () => {
+                          try {
+                            const text = await navigator.clipboard.readText();
+                            setFastPayloadText(text);
+                            setFastIngestError('');
+                          } catch (err) {
+                            console.error('Failed to read clipboard contents: ', err);
+                          }
+                        }}
+                        sx={{ color: 'rgba(255,255,255,0.5)', '&:hover': { color: '#fff', bgcolor: 'rgba(255,255,255,0.1)' } }}
+                      >
+                        <ContentPasteIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    {parseStatus === 'valid' && (
+                      <Chip label="Valid JSON" size="small" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700, bgcolor: 'rgba(34,197,94,0.15)', color: '#22c55e', borderRadius: '6px' }} />
+                    )}
+                    {parseStatus === 'invalid' && (
+                      <Chip label="Invalid JSON" size="small" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700, bgcolor: 'rgba(239,68,68,0.15)', color: '#ef4444', borderRadius: '6px' }} />
+                    )}
+                  </Box>
+                </Box>
+
+                {/* Textarea */}
+                <textarea
+                  placeholder='{\n  "title": "Precision Agriculture Specialist",\n  "category": "jobs",\n  ...\n}'
+                  value={fastPayloadText}
+                  onChange={(e) => { setFastPayloadText(e.target.value); setFastIngestError(''); }}
+                  style={{
+                    width: '100%',
+                    minHeight: '120px',
+                    maxHeight: '300px',
+                    backgroundColor: 'transparent',
+                    color: '#e2e8f0',
+                    border: 'none',
+                    padding: '16px 20px',
+                    fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
+                    fontSize: '0.82rem',
+                    lineHeight: 1.7,
+                    resize: 'vertical',
+                    outline: 'none',
+                    caretColor: EMERALD,
+                  }}
+                />
+              </Box>
+
+              {/* Preview Stats Bar */}
+              {parseStatus === 'valid' && parsedPreview && (
+                <Box sx={{ 
+                  px: 2, py: 1.5, 
+                  borderTop: '1px solid rgba(255,255,255,0.06)',
+                  background: 'rgba(255,255,255,0.02)',
+                  display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap',
+                  animation: `${slideUpFade} 0.3s ease`,
+                }}>
+                  {parsedPreview.title && (
+                    <Chip 
+                      label={parsedPreview.title.length > 40 ? parsedPreview.title.slice(0, 40) + '…' : parsedPreview.title}
+                      size="small"
+                      sx={{ height: 24, fontSize: '0.72rem', fontWeight: 600, bgcolor: 'rgba(255,255,255,0.08)', color: '#e2e8f0', borderRadius: '8px', maxWidth: 260 }}
+                    />
+                  )}
+                  {parsedPreview.sector && (
+                    <Chip 
+                      label={parsedPreview.sector}
+                      size="small"
+                      sx={{ height: 24, fontSize: '0.72rem', fontWeight: 600, bgcolor: alpha(EMERALD, 0.15), color: EMERALD, borderRadius: '8px' }}
+                    />
+                  )}
+                  {parsedPreview.commitment && (
+                    <Chip 
+                      label={parsedPreview.commitment}
+                      size="small"
+                      sx={{ height: 24, fontSize: '0.68rem', fontWeight: 700, bgcolor: alpha('#3b82f6', 0.15), color: '#3b82f6', borderRadius: '8px', textTransform: 'capitalize' }}
+                    />
+                  )}
+                </Box>
+              )}
+
+              {/* Error / Action Bar */}
+              <Box sx={{ 
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                px: 2, py: 1.5,
+                borderTop: '1px solid rgba(255,255,255,0.04)',
+                background: 'rgba(0,0,0,0.15)',
+              }}>
+                <Typography variant="caption" sx={{ fontWeight: 600, color: '#ef4444', fontSize: '0.72rem' }}>
+                  {fastIngestError}
+                </Typography>
+                <Box 
+                  onClick={handleFastIngest}
+                  sx={{ 
+                    px: 3, py: 0.9, 
+                    bgcolor: parseStatus === 'valid' ? EMERALD : 'rgba(255,255,255,0.08)',
+                    color: parseStatus === 'valid' ? '#fff' : 'rgba(255,255,255,0.3)',
+                    borderRadius: '12px', fontWeight: 700, fontSize: '0.85rem',
+                    cursor: parseStatus === 'valid' ? 'pointer' : 'default',
+                    transition: 'all 0.3s ease',
+                    display: 'flex', alignItems: 'center', gap: 1,
+                    pointerEvents: parseStatus === 'valid' ? 'auto' : 'none',
+                    '&:hover': parseStatus === 'valid' ? { bgcolor: EMERALD_DARK, transform: 'translateY(-1px)', boxShadow: `0 4px 12px ${alpha(EMERALD, 0.4)}` } : {}
+                  }}
+                >
+                  Parse & Proceed <ArrowForwardArrow fontSize="small" sx={{ ml: 0.5, transition: 'transform 0.2s', ...(parseStatus === 'valid' && { transform: 'translateX(2px)' }) }} />
+                </Box>
+              </Box>
+            </Paper>
+          </Box>
+        );
+      })()}
 
       {/* ================================================================ */}
       {/* START FRESH SECTION                                              */}

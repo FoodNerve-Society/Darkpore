@@ -316,7 +316,7 @@ export default async function InnovationsHomepage() {
         status: 'active',
         postedAt: { gte: tenDaysAgo } // Auto-archive jobs older than 10 days
       },
-      include: { postedBy: true },
+      include: { postedBy: true, organization: true },
       take: 10,
       orderBy: { postedAt: 'desc' }
     });
@@ -330,7 +330,7 @@ export default async function InnovationsHomepage() {
           title: l.title,
           type: typeLabel,
           imageUrl: l.imageUrl || '/images/default-thumbnail.jpg',
-          author: l.postedBy?.name || l.externalCompany || 'FoodNerve Network',
+          author: l.postedBy?.name || l.organization?.name || 'FoodNerve Network',
           metric: isVolunteer ? `${l.npReward || l.metadata?.npAmount || 'Earn'} NP` : l.priceOrAsk,
           link: `/innovations/careers/${l.id}`
         };

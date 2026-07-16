@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { 
   Box, Typography, TextField, Button, Chip, 
   CircularProgress, alpha, IconButton, Tooltip,
@@ -140,6 +140,30 @@ function PollOptionsEditor({ initialOptions, onChange, color }: { initialOptions
   );
 }
 
+const AIImagePromptDisplay = ({ promptText, color }: { promptText: string, color: string }) => {
+  const [copied, setCopied] = useState(false);
+  if (!promptText) return null;
+  return (
+    <Box sx={{ mt: 1, mb: 1, p: 2, borderRadius: '12px', bgcolor: alpha(color, 0.05), border: `1px dashed ${alpha(color, 0.3)}`, display: 'flex', flexDirection: 'column', gap: 1 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: color, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <SparkleIcon sx={{ fontSize: 14 }} /> AI Image Prompt
+        </Typography>
+        <Button 
+          size="small" 
+          onClick={() => { navigator.clipboard.writeText(promptText); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+          sx={{ minWidth: 'auto', p: '4px 8px', fontSize: '0.7rem', fontWeight: 700, borderRadius: '6px', color: copied ? '#10b981' : color, bgcolor: copied ? 'rgba(16,185,129,0.1)' : alpha(color, 0.1) }}
+        >
+          {copied ? 'Copied!' : 'Copy'}
+        </Button>
+      </Box>
+      <Typography sx={{ fontSize: '0.85rem', color: '#475569', fontStyle: 'italic', lineHeight: 1.5 }}>
+        "{promptText}"
+      </Typography>
+    </Box>
+  );
+};
+
 // ----------------------------------------------------------------------
 // EVIDENCE GALLERY EDITOR
 // ----------------------------------------------------------------------
@@ -193,6 +217,8 @@ function EvidenceGalleryEditor({ initialItems, onChange, color, blockId, uploadF
               fullWidth label="Caption" size="small" colorTheme={color}
               placeholder="Describe this visual..." value={item.caption || ''} onChange={e => updateItem(i, 'caption', e.target.value)}
             />
+            {item.imagePrompt && <AIImagePromptDisplay promptText={item.imagePrompt} color={color} />}
+
             <Box sx={{ display: 'flex', gap: 2 }}>
               <PremiumTextField
                 fullWidth label="Source Name (Optional)" size="small" colorTheme={color}
@@ -552,15 +578,16 @@ export default function CreateLearnContentForm({
       setSelectedSubcategory(initialDraftData.subcategory || '');
       setSelectedTimeframe(initialDraftData.timeframe as any || '');
       
-      if (initialDraftData.article && initialDraftData.article.blocks) {
+      const sourceBlocks = initialDraftData.articleBlocks || initialDraftData.article?.blocks;
+      if (sourceBlocks) {
         // Sort blocks by orderIndex just in case
-        const sorted = [...initialDraftData.article.blocks].sort((a, b) => a.orderIndex - b.orderIndex);
+        const sorted = [...sourceBlocks].sort((a: any, b: any) => a.orderIndex - b.orderIndex);
         const validBlocks = sorted
           .filter((b: any) => BLOCK_DEFINITIONS[b.blockType])
           .map((b: any) => ({
-            id: b.id,
+            id: b.id || Math.random().toString(36).substring(7),
             type: b.blockType as BlockType,
-            content: typeof b.content === 'string' ? JSON.parse(b.content) : b.content
+            content: typeof b.content === 'string' ? JSON.parse(b.content) : (b.content || {})
           }));
         setBlocks(validBlocks);
       }
@@ -599,6 +626,43 @@ export default function CreateLearnContentForm({
       }, 250); // slight delay to allow flip animation to settle
     }
   }, [flippedBlockId]);
+
+  // --- ACTION ITEMS CHECKLIST ---
+  const actionItems = useMemo(() => {
+    const items: Array<{ id: string, text: string }> = [];
+    if (step !== 3) return items;
+    
+    blocks.forEach((b) => {
+      // Missing Images
+      const imageBlocks = ['highlight_card', 'quote_card', 'image_slider', 'interactive_poll', 'expert_analysis', 'pull_quote'];
+      if (imageBlocks.includes(b.type)) {
+        if (b.type === 'pull_quote' && (!b.content.avatarUrl || b.content.avatarUrl.trim() === '')) {
+          items.push({ id: b.id, text: `Upload avatar for ${BLOCK_DEFINITIONS[b.type as keyof typeof BLOCK_DEFINITIONS]?.label || 'Block'}` });
+        } else if (b.type !== 'pull_quote' && (!b.content.imageUrl || b.content.imageUrl.trim() === '')) {
+          items.push({ id: b.id, text: `Upload image for ${BLOCK_DEFINITIONS[b.type as keyof typeof BLOCK_DEFINITIONS]?.label || 'Block'}` });
+        }
+      }
+      
+      // Missing Media Items (Evidence Block)
+      if (b.type === 'media') {
+        const hasMissingMedia = Array.isArray(b.content.items) && b.content.items.some((item: any) => !item.url || item.url.trim() === '');
+        if (hasMissingMedia || !b.content.items || b.content.items.length === 0) {
+          items.push({ id: b.id, text: `Upload media for Evidence Gallery` });
+        }
+      }
+      
+      // Missing CTA
+      if (b.type === 'final_cta' || b.type === 'call_to_action') {
+        if (!b.content.url || b.content.url.trim() === '') {
+          items.push({ id: b.id, text: `Configure Final CTA URL` });
+        }
+      }
+    });
+    
+    return items;
+  }, [blocks, step]);
+
+  const [isActionItemsMinimized, setIsActionItemsMinimized] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -915,7 +979,7 @@ export default function CreateLearnContentForm({
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', position: 'relative' }}>
-      <Box ref={scrollContainerRef} sx={{ flex: 1, overflowY: 'auto', px: { xs: 2.5, sm: 3.5 }, py: 3, display: 'flex', flexDirection: 'column', gap: 3.5 }}>
+      <Box ref={scrollContainerRef} sx={{ flex: 1, overflowY: 'auto', px: { xs: 2.5, sm: 3.5 }, pt: 3, pb: { xs: 15, md: 20 }, display: 'flex', flexDirection: 'column', gap: 3.5 }}>
         
         {error && (
           <Alert severity="error" sx={{ mb: 2, borderRadius: '12px', '& .MuiAlert-message': { fontWeight: 600 } }} onClose={() => setError(null)}>
@@ -1595,6 +1659,7 @@ export default function CreateLearnContentForm({
                                         placeholder={b.sopHint || 'What collapsed and when?'} value={b.content.caption || ''} onChange={(e: any) => updateBlock(b.id, 'caption', e.target.value)}
                                         
                                       />
+                                      {b.content.imagePrompt && <AIImagePromptDisplay promptText={b.content.imagePrompt} color={color} />}
                                       <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                                         {mediaUrlMode[b.id] ? (
                                           <PremiumTextField colorTheme={color}
@@ -1923,6 +1988,89 @@ export default function CreateLearnContentForm({
           </Button>
         </DialogActions>
       </Dialog>
+      {/* FLOATING ACTION ITEMS CHECKLIST */}
+      {step === 3 && actionItems.length > 0 && (
+        <Box sx={{
+          position: 'fixed',
+          bottom: { xs: 80, md: 40 },
+          left: { xs: 20, md: 40 }, // Moved to left to avoid covering submit buttons on the right
+          zIndex: 1000,
+          width: { xs: 'calc(100% - 40px)', sm: 340 },
+          background: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: '24px',
+          border: '1px solid rgba(0,0,0,0.08)',
+          boxShadow: '0 12px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.04)',
+          overflow: 'hidden',
+          animation: `${slideUpFade} 0.4s cubic-bezier(0.16, 1, 0.3, 1)`,
+        }}>
+          {/* Header */}
+          <Box sx={{ 
+            px: 3, py: 2, 
+            background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+            color: '#fff',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <SparkleIcon sx={{ color: '#fbbf24', fontSize: 18 }} />
+              <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', letterSpacing: '0.05em' }}>
+                Action Items
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Chip 
+                label={`${actionItems.length} left`}
+                size="small"
+                sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: '#fff', fontWeight: 800, fontSize: '0.7rem', height: 22 }}
+              />
+              <IconButton 
+                size="small" 
+                onClick={() => setIsActionItemsMinimized(!isActionItemsMinimized)}
+                sx={{ color: '#fff', p: 0.5, '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}
+              >
+                {isActionItemsMinimized ? <ArrowUpIcon fontSize="small" /> : <ArrowDownIcon fontSize="small" />}
+              </IconButton>
+            </Box>
+          </Box>
+          
+          {/* List */}
+          <Box sx={{ 
+            p: isActionItemsMinimized ? 0 : 2, 
+            maxHeight: isActionItemsMinimized ? 0 : '300px', 
+            overflowY: 'auto',
+            opacity: isActionItemsMinimized ? 0 : 1,
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            display: isActionItemsMinimized ? 'none' : 'block' // Ensure it doesn't take space/clicks when hidden
+          }}>
+            {actionItems.map((item, i) => (
+              <Box 
+                key={`${item.id}-${i}`}
+                onClick={() => {
+                  setFlippedBlockId(item.id);
+                  const el = document.getElementById(`block-${item.id}`);
+                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }}
+                sx={{
+                  display: 'flex', alignItems: 'flex-start', gap: 1.5,
+                  p: 1.5, borderRadius: '12px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  '&:hover': { bgcolor: 'rgba(0,0,0,0.03)' }
+                }}
+              >
+                <Box sx={{ 
+                  width: 20, height: 20, borderRadius: '50%', 
+                  border: '2px solid rgba(0,0,0,0.15)', mt: 0.2, flexShrink: 0 
+                }} />
+                <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', lineHeight: 1.4 }}>
+                  {item.text}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      )}
+
     </Box>
   );
 }

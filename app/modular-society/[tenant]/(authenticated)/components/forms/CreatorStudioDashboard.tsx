@@ -10,11 +10,14 @@ import {
   ArrowForwardIos as ArrowForwardIcon,
   ArrowBackIosNew as ArrowBackIcon,
   ArrowForward as ArrowForwardArrow,
-  Minimize as MinimizeIcon
+  Minimize as MinimizeIcon,
+  AutoAwesome as AutoAwesomeIcon,
+  ContentPaste as ContentPasteIcon
 } from '@mui/icons-material';
 import { keyframes } from '@mui/system';
 
 const ACCENT = "#f59e0b";
+const ACCENT_DARK = "#d97706";
 
 const slideUpFade = keyframes`
   from { opacity: 0; transform: translateY(40px); }
@@ -64,6 +67,10 @@ export default function CreatorStudioDashboard({
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedSubcategory, setSelectedSubcategory] = useState('');
   
+  // Fast Ingest State
+  const [fastPayloadText, setFastPayloadText] = useState('');
+  const [fastIngestError, setFastIngestError] = useState('');
+
   const accordionTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const activeOption = START_FRESH_OPTIONS.find(o => o.type === expandedStartType);
@@ -120,6 +127,88 @@ export default function CreatorStudioDashboard({
     });
   };
 
+  const handleFastIngest = () => {
+    setFastIngestError('');
+    if (!fastPayloadText.trim()) return;
+    try {
+      const parsed = JSON.parse(fastPayloadText);
+      if (!parsed || typeof parsed !== 'object') throw new Error("Payload must be a JSON object.");
+      
+      const type = parsed.type || 'article';
+      const category = parsed.category || '';
+      const subcategory = parsed.subcategory || '';
+      const timeframe = parsed.timeframe || '';
+      
+      // === INTERCEPTOR: Strip AI Hallucinations ===
+      delete parsed.authorName;
+      delete parsed.authorAvatarUrl;
+      delete parsed.authorId;
+
+      if (parsed.articleBlocks && Array.isArray(parsed.articleBlocks)) {
+        parsed.articleBlocks.forEach((block: any) => {
+          if (block.content && typeof block.content === 'string') {
+            try {
+              const contentObj = JSON.parse(block.content);
+              
+              // Strip fake image URLs and Extract Image Prompts
+              const imageBlocks = ['highlight_card', 'quote_card', 'image_slider', 'interactive_poll', 'expert_analysis', 'pull_quote'];
+              if (imageBlocks.includes(block.blockType)) {
+                if (contentObj.caption) {
+                  const match = contentObj.caption.match(/\[?Image Prompt:\s*(.*?)\]?/i);
+                  if (match) {
+                    contentObj.imagePrompt = match[1].trim();
+                    contentObj.caption = contentObj.caption.replace(match[0], '').trim();
+                  }
+                }
+                
+                if (contentObj.imageUrl && (contentObj.imageUrl.toLowerCase().includes('unsplash') || contentObj.imageUrl.toLowerCase().includes('placeholder') || contentObj.imageUrl.toLowerCase().includes('example'))) {
+                  delete contentObj.imageUrl;
+                }
+                if (contentObj.avatarUrl && (contentObj.avatarUrl.toLowerCase().includes('unsplash') || contentObj.avatarUrl.toLowerCase().includes('placeholder') || contentObj.avatarUrl.toLowerCase().includes('example'))) {
+                  delete contentObj.avatarUrl;
+                }
+              }
+              
+              if (block.blockType === 'media' && Array.isArray(contentObj.items)) {
+                contentObj.items.forEach((item: any) => {
+                  if (item.caption) {
+                    const match = item.caption.match(/\[?Image Prompt:\s*(.*?)\]?/i);
+                    if (match) {
+                      item.imagePrompt = match[1].trim();
+                      item.caption = item.caption.replace(match[0], '').trim();
+                    }
+                  }
+                  
+                  if (item.url && (item.url.toLowerCase().includes('unsplash') || item.url.toLowerCase().includes('placeholder') || item.url.toLowerCase().includes('example'))) {
+                    item.url = '';
+                  }
+                });
+              }
+              
+              // Strip generic CTA links and text
+              if (block.blockType === 'final_cta' || block.blockType === 'call_to_action') {
+                delete contentObj.url;
+                delete contentObj.text;
+                delete contentObj.macroCtaId;
+              }
+              
+              if (block.blockType === 'strategic_directive') {
+                delete contentObj.microCtaId;
+              }
+              
+              block.content = JSON.stringify(contentObj);
+            } catch (e) {}
+          }
+        });
+      }
+      
+      // Call onStartFresh with the 3rd argument
+      (onStartFresh as any)(type, { category, subcategory, timeframe }, parsed);
+    } catch (e: any) {
+      setFastIngestError(e.message || "Invalid JSON payload.");
+    }
+  };
+
   const currentHour = new Date().getHours();
   const greeting = currentHour < 12 ? 'Morning' : currentHour < 18 ? 'Afternoon' : 'Evening';
 
@@ -146,6 +235,230 @@ export default function CreatorStudioDashboard({
           sx={{ bgcolor: 'rgba(0,0,0,0.04)', color: 'text.secondary', fontWeight: 600, borderRadius: '8px' }}
         />
       </Box>
+
+      {/* ================================================================ */}
+      {/* FAST INGEST SECTION (ADMINS)                                     */}
+      {/* ================================================================ */}
+      {(() => {
+        // Real-time parse preview
+        let parsedPreview: any = null;
+        let parseStatus: 'empty' | 'valid' | 'invalid' = 'empty';
+        if (fastPayloadText.trim()) {
+          try {
+            parsedPreview = JSON.parse(fastPayloadText);
+            parseStatus = (parsedPreview && typeof parsedPreview === 'object') ? 'valid' : 'invalid';
+          } catch { parseStatus = 'invalid'; }
+        }
+        const blockCount = parsedPreview?.articleBlocks?.length || 0;
+        const eraMap: Record<string, { emoji: string; label: string; color: string }> = {
+          past: { emoji: '🔴', label: 'The Archives', color: '#ef4444' },
+          present: { emoji: '🟢', label: 'The Now Desk', color: '#10b981' },
+          future: { emoji: '🔵', label: 'The Foresight Brief', color: '#3b82f6' },
+        };
+        const era = eraMap[parsedPreview?.timeframe] || null;
+
+        return (
+          <Box sx={{ mb: 5 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', mb: 2, letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 1 }}>
+              <AutoAwesomeIcon sx={{ fontSize: 16, color: ACCENT }} /> Fast Ingest
+            </Typography>
+            <Paper 
+              elevation={0} 
+              sx={{ 
+                borderRadius: '16px', 
+                overflow: 'hidden',
+                border: parseStatus === 'valid' 
+                  ? `1.5px solid ${alpha(ACCENT, 0.5)}` 
+                  : parseStatus === 'invalid' 
+                    ? '1.5px solid rgba(239,68,68,0.4)' 
+                    : '1px solid rgba(0,0,0,0.06)',
+                bgcolor: '#0f172a',
+                transition: 'border-color 0.4s ease, box-shadow 0.4s ease',
+                boxShadow: parseStatus === 'valid' 
+                  ? `0 0 24px ${alpha(ACCENT, 0.12)}, 0 4px 20px rgba(0,0,0,0.15)` 
+                  : '0 4px 20px rgba(0,0,0,0.08)',
+              }}
+            >
+              {/* Code Editor Area */}
+              <Box sx={{ position: 'relative' }}>
+                {/* Top Bar */}
+                <Box sx={{ 
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  px: 2, py: 1.2, 
+                  borderBottom: '1px solid rgba(255,255,255,0.06)',
+                  background: 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, transparent 100%)',
+                }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {/* Traffic light dots */}
+                    <Box sx={{ display: 'flex', gap: 0.6 }}>
+                      <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: parseStatus === 'invalid' ? '#ef4444' : 'rgba(255,255,255,0.15)' }} />
+                      <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: parseStatus === 'valid' ? '#22c55e' : 'rgba(255,255,255,0.15)' }} />
+                      <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: parseStatus === 'valid' ? ACCENT : 'rgba(255,255,255,0.15)' }} />
+                    </Box>
+                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.35)', fontFamily: 'monospace', fontSize: '0.7rem', ml: 1 }}>
+                      payload.json
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Tooltip title="Paste JSON payload">
+                      <IconButton 
+                        size="small" 
+                        onClick={async () => {
+                          try {
+                            const text = await navigator.clipboard.readText();
+                            setFastPayloadText(text);
+                            setFastIngestError('');
+                          } catch (err) {
+                            console.error('Failed to read clipboard contents: ', err);
+                          }
+                        }}
+                        sx={{ color: 'rgba(255,255,255,0.5)', '&:hover': { color: '#fff', bgcolor: 'rgba(255,255,255,0.1)' } }}
+                      >
+                        <ContentPasteIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    {parseStatus === 'valid' && (
+                      <Chip 
+                        label="Valid JSON" 
+                        size="small" 
+                        sx={{ 
+                          height: 20, fontSize: '0.65rem', fontWeight: 700, 
+                          bgcolor: 'rgba(34,197,94,0.15)', color: '#22c55e',
+                          borderRadius: '6px',
+                        }} 
+                      />
+                    )}
+                    {parseStatus === 'invalid' && (
+                      <Chip 
+                        label="Invalid JSON" 
+                        size="small" 
+                        sx={{ 
+                          height: 20, fontSize: '0.65rem', fontWeight: 700, 
+                          bgcolor: 'rgba(239,68,68,0.15)', color: '#ef4444',
+                          borderRadius: '6px',
+                        }} 
+                      />
+                    )}
+                  </Box>
+                </Box>
+
+                {/* Textarea */}
+                <textarea
+                  placeholder='{\n  "title": "Your Article Title",\n  "timeframe": "past | present | future",\n  "articleBlocks": [...]\n}'
+                  value={fastPayloadText}
+                  onChange={(e) => { setFastPayloadText(e.target.value); setFastIngestError(''); }}
+                  style={{
+                    width: '100%',
+                    minHeight: '120px',
+                    maxHeight: '300px',
+                    backgroundColor: 'transparent',
+                    color: '#e2e8f0',
+                    border: 'none',
+                    padding: '16px 20px',
+                    fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",
+                    fontSize: '0.82rem',
+                    lineHeight: 1.7,
+                    resize: 'vertical',
+                    outline: 'none',
+                    caretColor: ACCENT,
+                  }}
+                />
+              </Box>
+
+              {/* Preview Stats Bar — only shows when payload is valid */}
+              {parseStatus === 'valid' && parsedPreview && (
+                <Box sx={{ 
+                  px: 2, py: 1.5, 
+                  borderTop: '1px solid rgba(255,255,255,0.06)',
+                  background: 'rgba(255,255,255,0.02)',
+                  display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap',
+                  animation: `${slideUpFade} 0.3s ease`,
+                }}>
+                  {/* Title preview */}
+                  {parsedPreview.title && (
+                    <Chip 
+                      label={parsedPreview.title.length > 40 ? parsedPreview.title.slice(0, 40) + '…' : parsedPreview.title}
+                      size="small"
+                      sx={{ 
+                        height: 24, fontSize: '0.72rem', fontWeight: 600,
+                        bgcolor: 'rgba(255,255,255,0.08)', color: '#e2e8f0',
+                        borderRadius: '8px', maxWidth: 260,
+                      }}
+                    />
+                  )}
+                  {/* Era badge */}
+                  {era && (
+                    <Chip 
+                      label={`${era.emoji} ${era.label}`}
+                      size="small"
+                      sx={{ 
+                        height: 24, fontSize: '0.72rem', fontWeight: 700,
+                        bgcolor: alpha(era.color, 0.15), color: era.color,
+                        borderRadius: '8px',
+                      }}
+                    />
+                  )}
+                  {/* Block count */}
+                  {blockCount > 0 && (
+                    <Chip 
+                      label={`${blockCount} block${blockCount !== 1 ? 's' : ''}`}
+                      size="small"
+                      sx={{ 
+                        height: 24, fontSize: '0.72rem', fontWeight: 600,
+                        bgcolor: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)',
+                        borderRadius: '8px',
+                      }}
+                    />
+                  )}
+                  {/* Type badge */}
+                  <Chip 
+                    label={parsedPreview.type || 'article'}
+                    size="small"
+                    sx={{ 
+                      height: 24, fontSize: '0.68rem', fontWeight: 700,
+                      bgcolor: alpha(ACCENT, 0.12), color: ACCENT,
+                      borderRadius: '8px', textTransform: 'capitalize',
+                    }}
+                  />
+                </Box>
+              )}
+
+              {/* Error / Action Bar */}
+              <Box sx={{ 
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                px: 2, py: 1.5,
+                borderTop: '1px solid rgba(255,255,255,0.04)',
+                background: 'rgba(0,0,0,0.15)',
+              }}>
+                <Typography variant="caption" sx={{ fontWeight: 600, color: '#ef4444', fontSize: '0.72rem' }}>
+                  {fastIngestError}
+                </Typography>
+                <Box 
+                  onClick={handleFastIngest}
+                  sx={{ 
+                    px: 3, py: 0.9, 
+                    bgcolor: parseStatus === 'valid' ? ACCENT : 'rgba(255,255,255,0.08)',
+                    color: parseStatus === 'valid' ? '#fff' : 'rgba(255,255,255,0.3)',
+                    borderRadius: '12px', fontWeight: 700, fontSize: '0.85rem',
+                    cursor: parseStatus === 'valid' ? 'pointer' : 'default',
+                    transition: 'all 0.3s ease',
+                    display: 'flex', alignItems: 'center', gap: 1,
+                    pointerEvents: parseStatus === 'valid' ? 'auto' : 'none',
+                    '&:hover': parseStatus === 'valid' ? { 
+                      bgcolor: ACCENT_DARK, 
+                      transform: 'translateY(-1px)',
+                      boxShadow: `0 4px 16px ${alpha(ACCENT, 0.4)}`,
+                    } : {},
+                  }}
+                >
+                  <AutoAwesomeIcon sx={{ fontSize: 16 }} />
+                  Ingest & Edit
+                </Box>
+              </Box>
+            </Paper>
+          </Box>
+        );
+      })()}
 
       {/* ================================================================ */}
       {/* START FRESH SECTION                                              */}
