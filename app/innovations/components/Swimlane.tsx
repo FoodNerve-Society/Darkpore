@@ -31,15 +31,15 @@ export default function Swimlane({ lane }: { lane: any }) {
   }));
 
   return (
-    <Box id={lane.id} sx={{ mb: 8, px: { xs: 2, md: 6 } }}>
+    <Box id={lane.id} sx={{ mb: { xs: 4, md: 8 }, px: { xs: 2, md: 6 } }}>
       <Container maxWidth="xl">
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: lane.color }} />
-            <Typography variant="h4" sx={{ fontWeight: 900, color: '#0f172a' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: { xs: 2, md: 3 } }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, md: 2 } }}>
+            <Box sx={{ width: { xs: 8, md: 12 }, height: { xs: 8, md: 12 }, borderRadius: '50%', bgcolor: lane.color }} />
+            <Typography variant="h4" sx={{ fontWeight: 900, color: '#0f172a', fontSize: { xs: '1.25rem', md: '2.125rem' } }}>
               {lane.title}
             </Typography>
-            <Box sx={{ bgcolor: `${lane.color}15`, color: lane.color, px: 1.5, py: 0.5, borderRadius: '8px', fontSize: '0.85rem', fontWeight: 800 }}>
+            <Box sx={{ bgcolor: `${lane.color}15`, color: lane.color, px: { xs: 1, md: 1.5 }, py: { xs: 0.25, md: 0.5 }, borderRadius: '8px', fontSize: { xs: '0.65rem', md: '0.85rem' }, fontWeight: 800 }}>
               {lane.newCount} New Additions
             </Box>
           </Box>
@@ -61,13 +61,16 @@ export default function Swimlane({ lane }: { lane: any }) {
               display: 'flex', 
               gap: 3, 
               overflowX: 'auto', 
-              pb: 3,
+              py: 5,
+              px: 2,
+              my: -5,
+              mx: -2,
               scrollSnapType: 'x mandatory',
               '&::-webkit-scrollbar': { display: 'none' }, // Hide scrollbar for a much cleaner look
             }}
           >
             {mockItems.map((item) => (
-              <Box key={item.id} sx={{ minWidth: { xs: '70vw', sm: '300px' }, scrollSnapAlign: 'start' }}>
+              <Box key={item.id} sx={{ minWidth: { xs: '200px', sm: '280px' }, scrollSnapAlign: 'start' }}>
                 <EcosystemCard item={item} themeColor={lane.color} hideTags={true} />
               </Box>
             ))}
