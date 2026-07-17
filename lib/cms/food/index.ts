@@ -76,8 +76,8 @@ export const foodTenantConfig: TenantConfig = {
   },
   com: {
     homepage: {
-      heroHeadline: "Showcasing Food Innovation.",
-      heroSubheadline: "Explore the latest breakthroughs, research, and infrastructure projects across the agricultural value chain. Equip yourself with the insights needed to make informed decisions and shape the future of our food space.",
+      heroHeadline: "Explore the Ecosystem.",
+      heroSubheadline: "Explore the latest breakthroughs and infrastructure projects across the agricultural value chain.",
       challengesTitle: "Africa's Structural Bottlenecks",
       challenges: foodChallenges,
       showcaseProjects: [

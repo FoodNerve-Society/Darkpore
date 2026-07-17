@@ -14,9 +14,10 @@ import { useRouter } from 'next/navigation';
 interface EcosystemCardProps {
     item: EcosystemItem;
     themeColor: string;
+    hideTags?: boolean;
 }
 
-export const EcosystemCard: React.FC<EcosystemCardProps> = ({ item, themeColor }) => {
+export const EcosystemCard: React.FC<EcosystemCardProps> = ({ item, themeColor, hideTags = false }) => {
     const theme = useTheme();
     const router = useRouter();
     const [isHovered, setIsHovered] = useState(false);
@@ -48,7 +49,7 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({ item, themeColor }
             onMouseLeave={() => setIsHovered(false)}
             sx={{
                 height: '100%',
-                borderRadius: 4,
+                borderRadius: { xs: 2, sm: 4 },
                 boxShadow: isHovered ? '0 20px 40px -4px rgba(0,0,0,0.2)' : '0 8px 30px -4px rgba(0,0,0,0.1)',
                 transform: isHovered ? 'translateY(-4px)' : 'none',
                 transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -85,25 +86,27 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({ item, themeColor }
                 />
 
                 {/* Ecosystem Badge */}
-                <Chip
-                    label={item.type.toUpperCase()}
-                    size="small"
-                    sx={{
-                        position: 'absolute', top: 16, right: 12, zIndex: 2,
-                        bgcolor: themeColor, color: 'white', fontWeight: 800, fontSize: '0.65rem', height: 20,
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.2)', letterSpacing: 1
-                    }}
-                />
+                {!hideTags && (
+                  <Chip
+                      label={item.type.toUpperCase()}
+                      size="small"
+                      sx={{
+                          position: 'absolute', top: 16, right: 12, zIndex: 2,
+                          bgcolor: themeColor, color: 'white', fontWeight: 800, fontSize: '0.65rem', height: 20,
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.2)', letterSpacing: 1
+                      }}
+                  />
+                )}
             </Box>
 
             {/* TRANSLUCENT GLASS DECK OVERLAID ON IMAGE */}
             <Box sx={{
                 position: 'absolute',
-                bottom: 12,
-                left: 12,
-                right: 12,
-                p: 2,
-                borderRadius: 3,
+                bottom: { xs: 8, sm: 12 },
+                left: { xs: 8, sm: 12 },
+                right: { xs: 8, sm: 12 },
+                p: { xs: 1.5, sm: 2 },
+                borderRadius: { xs: 1.5, sm: 3 },
                 bgcolor: 'rgba(255, 255, 255, 0.70)',
                 backdropFilter: 'blur(24px)',
                 WebkitBackdropFilter: 'blur(24px)',
@@ -112,15 +115,15 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({ item, themeColor }
                 zIndex: 2,
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 1
+                gap: { xs: 0.5, sm: 1 }
             }}>
                 {/* 1. Title */}
-                <Typography variant="body1" sx={{ fontWeight: 800, color: '#0f172a', lineHeight: 1.25, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                <Typography variant="body1" sx={{ fontWeight: 800, color: '#0f172a', lineHeight: 1.25, fontSize: { xs: '0.75rem', sm: '1rem' }, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                     {item.title}
                 </Typography>
 
                 {/* 2. Sub-info & Meta */}
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 0.5 }}>
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', mt: 0.5, gap: { xs: 0.5, sm: 0 } }}>
                     <Typography
                         variant="caption"
                         color="text.secondary"
@@ -130,13 +133,14 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({ item, themeColor }
                             WebkitBoxOrient: 'vertical',
                             overflow: 'hidden',
                             fontWeight: 600,
-                            opacity: 0.85
+                            opacity: 0.85,
+                            fontSize: { xs: '0.6rem', sm: '0.75rem' }
                         }}
                     >
                         {item.authorOrOperator}
                     </Typography>
                     
-                    <Typography variant="caption" sx={{ fontWeight: 800, color: themeColor, flexShrink: 0, ml: 2 }}>
+                    <Typography variant="caption" sx={{ fontWeight: 800, color: themeColor, flexShrink: 0, ml: { xs: 0, sm: 2 }, fontSize: { xs: '0.6rem', sm: '0.75rem' } }}>
                         {item.metaInfo}
                     </Typography>
                 </Box>

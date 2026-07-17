@@ -9,7 +9,8 @@ import ShowcaseCarousel from './components/ShowcaseCarousel';
 import BentoGridTeaser from './components/BentoGridTeaser';
 import RadarIndexOverview from './components/RadarIndexOverview';
 import CinematicHero from './components/CinematicHero';
-import TabbedHero from './components/TabbedHero';
+import CommandCenterHero from './components/CommandCenterHero';
+import Swimlane from './components/Swimlane';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
@@ -104,6 +105,7 @@ export default async function InnovationsHomepage() {
     const mockAlerts = [
       {
         title: "LIVE: Ecosystem Founders AMA with the Minister of Agriculture",
+        categoryLabel: "LIVESTREAMS",
         startDate: new Date(nowMs - 1000 * 3600), // started 1 hour ago
         endDate: new Date(nowMs + 1000 * 3600 * 2), // ends in 2 hours
         link: "#",
@@ -112,6 +114,7 @@ export default async function InnovationsHomepage() {
       },
       {
         title: "Webinar: Next-Gen Cold Storage Logistics Masterclass",
+        categoryLabel: "LIVESTREAMS",
         startDate: new Date(nowMs + 1000 * 3600 * 5), // starts in 5 hours
         endDate: null,
         link: "#",
@@ -120,6 +123,7 @@ export default async function InnovationsHomepage() {
       },
       {
         title: "Flash Sale: Bulk Fertilizer Procurement (50% Off)",
+        categoryLabel: "OPPORTUNITIES",
         startDate: new Date(nowMs + 1000 * 60 * 45), // starts in 45 minutes
         endDate: null,
         link: "#",
@@ -128,6 +132,7 @@ export default async function InnovationsHomepage() {
       },
       {
         title: "Call for Applications: 2026 Food Security Grants",
+        categoryLabel: "OPPORTUNITIES",
         startDate: null,
         endDate: new Date(nowMs + 1000 * 3600 * 48), // ends in 2 days
         link: "#",
@@ -398,15 +403,29 @@ export default async function InnovationsHomepage() {
     <Box sx={{ bgcolor: '#050505', minHeight: '100vh' }}>
       
       {/* ═══════════════════════════════════════════════════════════
-          SECTION 1: THE TABBED HERO (Light Mode First)
+          SECTION 1: THE COMMAND CENTER HERO (Replacing TabbedHero)
       ═══════════════════════════════════════════════════════════ */}
       <Box sx={{ bgcolor: '#ffffff' }}>
-        <TabbedHero 
+        <CommandCenterHero 
           headline={homepageConfig.heroHeadline}
           subheadline={homepageConfig.heroSubheadline}
-          categories={ecosystemCategories} 
           globalAlerts={marqueeItems}
         />
+      </Box>
+
+      {/* ═══════════════════════════════════════════════════════════
+          SECTION 1.5: THE NEW HORIZONTAL SWIMLANES
+      ═══════════════════════════════════════════════════════════ */}
+      <Box sx={{ bgcolor: '#ffffff', py: 8 }}>
+        {[
+          { id: 'lane-articles', title: 'Latest Articles', color: '#3b82f6', newCount: 12 },
+          { id: 'lane-livestreams', title: 'Livestreams', color: '#f59e0b', newCount: 3 },
+          { id: 'lane-jobs', title: 'Jobs & Internships', color: '#10b981', newCount: 8 },
+          { id: 'lane-volunteering', title: 'Volunteering', color: '#ec4899', newCount: 2 },
+          { id: 'lane-opportunities', title: 'Opportunities', color: '#8b5cf6', newCount: 8 }
+        ].map((lane) => (
+          <Swimlane key={lane.id} lane={lane} />
+        ))}
       </Box>
 
       {/* ═══════════════════════════════════════════════════════════

@@ -78,29 +78,49 @@ export async function createTradeListing(data: CreateTradeListingPayload) {
         });
       }
     } else if (metadata.isExternal && metadata.externalEntityName) {
-      // Auto-create a ghost organization for external entities
+      // Auto-create a ghost organization for external entities OR reuse an existing one to prevent duplicates
       let baseSlug = metadata.externalEntityName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-      let slug = baseSlug;
-      let counter = 1;
-      while (await prisma.organization.findUnique({ where: { slug } })) {
-        slug = `${baseSlug}-${counter}`;
-        counter++;
-      }
+      
+      let existingOrg = await prisma.organization.findUnique({ where: { slug: baseSlug } });
+      
 
-      const extOrg = await prisma.organization.create({
-        data: {
-          name: metadata.externalEntityName,
-          slug,
-          isExternal: true,
-          country: metadata.externalCountry?.name || metadata.externalCountry,
-          state: metadata.externalState?.name || metadata.externalState,
-          lga: metadata.externalLga?.name || metadata.externalLga,
-          logoUrl: metadata.externalEntityLogoUrl || undefined,
-          challenges: metadata.organizationChallenges ? JSON.stringify(metadata.organizationChallenges) : undefined,
-          subcategories: metadata.organizationSubcategories ? JSON.stringify(metadata.organizationSubcategories) : undefined
+
+      if (existingOrg) {
+        finalOrganizationId = existingOrg.id;
+        
+        // If it's a ghost org (rank 1), passively update it with any new details the user provided
+        if (existingOrg.rank === 1) {
+          const updateData: any = {};
+          if (metadata.externalCountry?.name || metadata.externalCountry) updateData.country = metadata.externalCountry?.name || metadata.externalCountry;
+          if (metadata.externalState?.name || metadata.externalState) updateData.state = metadata.externalState?.name || metadata.externalState;
+          if (metadata.externalLga?.name || metadata.externalLga) updateData.lga = metadata.externalLga?.name || metadata.externalLga;
+          if (metadata.externalEntityLogoUrl && !existingOrg.logoUrl) updateData.logoUrl = metadata.externalEntityLogoUrl;
+
+          if (Object.keys(updateData).length > 0) {
+            await prisma.organization.update({
+              where: { id: existingOrg.id },
+              data: updateData
+            });
+          }
         }
-      });
-      finalOrganizationId = extOrg.id;
+      } else {
+        // Only create a brand new organization if it truly doesn't exist
+        const extOrg = await prisma.organization.create({
+          data: {
+            name: metadata.externalEntityName,
+            slug: baseSlug, // We know it's unique now
+            isExternal: true,
+            rank: 1, // Start as an unclaimed organization
+            country: metadata.externalCountry?.name || metadata.externalCountry,
+            state: metadata.externalState?.name || metadata.externalState,
+            lga: metadata.externalLga?.name || metadata.externalLga,
+            logoUrl: metadata.externalEntityLogoUrl || undefined,
+            challenges: metadata.organizationChallenges ? JSON.stringify(metadata.organizationChallenges) : undefined,
+            subcategories: metadata.organizationSubcategories ? JSON.stringify(metadata.organizationSubcategories) : undefined
+          }
+        });
+        finalOrganizationId = extOrg.id;
+      }
     }
 
 
@@ -322,29 +342,51 @@ export async function getCareersListings() {
   }
 }
 
-export async function searchExternalOrganizations(query: string) {
+export async function searchExternalOrganizations(query: string, userId?: string, role?: string) {
   if (!query || query.trim() === '') return [];
   
   try {
+    const isAdmin = role?.toLowerCase() === 'admin' || role?.toLowerCase() === 'super_admin';
+
     const orgs = await prisma.organization.findMany({
       where: {
-        isExternal: true,
         name: {
           contains: query
-        }
+        },
+        OR: [
+          // 1. Show unclaimed organizations
+          { rank: 1 },
+          // 2. Show organizations where the user is an official member
+          ...(userId ? [{
+            members: {
+              some: {
+                userId: userId
+              }
+            }
+          }] : []),
+          // 3. Ensure the platform owner is fetched so we can show it to Admins
+          { isPlatformOwner: true }
+        ]
       },
       select: {
         id: true,
         name: true,
         logoUrl: true,
         country: true,
-        state: true
+        state: true,
+        isExternal: true,
+        rank: true,
+        isPlatformOwner: true
       },
       take: 10
     });
-    return orgs;
+
+    // Apply the NOT logic properly after fetching if Prisma's NOT AND doesn't work perfectly, but Prisma handles it.
+    // Wait, the NOT clause above with undefined might cause issues. Let's write it cleanly.
+    return isAdmin ? orgs : orgs.filter(o => !o.isPlatformOwner);
+    
   } catch (error) {
-    console.error("Error searching external organizations:", error);
+    console.error("Error searching organizations:", error);
     return [];
   }
 }
