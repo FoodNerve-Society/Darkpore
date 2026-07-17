@@ -43,13 +43,13 @@ export default function CategoryArchive({ params }: { params: Promise<{ slug: st
   const mockItems: EcosystemItem[] = Array.from({ length: 20 }).map((_, i) => ({
     id: `mock-${slug}-${i}`,
     title: `${title} Item #${i + 1}: Detailed insights and opportunities`,
-    type: title,
+    type: title.includes('Articles') ? 'Intelligence' : title.includes('Jobs') ? 'Jobs' : 'Innovations',
     thumbnailUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=600',
     tags: ['Ecosystem', 'Archived'],
     link: '#',
     description: 'This is a mock description for the UI to represent the data correctly in the archive view.',
     date: '2026-07-17',
-    authorName: 'Food Nerve',
+    authorOrOperator: 'Food Nerve',
     metaInfo: '2 days ago'
   }));
 
@@ -85,7 +85,7 @@ export default function CategoryArchive({ params }: { params: Promise<{ slug: st
         {/* Vertical Grid Layout */}
         <Grid container spacing={3}>
           {mockItems.map((item) => (
-            <Grid item xs={12} sm={6} md={4} lg={3} key={item.id}>
+            <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={item.id}>
               <Box sx={{ height: { xs: '280px', sm: '320px' } }}>
                 <EcosystemCard item={item} themeColor={color} />
               </Box>

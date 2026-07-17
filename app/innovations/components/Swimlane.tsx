@@ -28,7 +28,8 @@ export default function Swimlane({ lane }: { lane: any }) {
     link: '#',
     description: 'This is a mock description for the UI to represent the data correctly.',
     date: '2026-07-17',
-    authorName: 'Food Nerve'
+    authorOrOperator: 'Food Nerve',
+    metaInfo: 'New'
   }));
 
   return (
