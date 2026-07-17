@@ -97,7 +97,7 @@ export default function middleware(request: NextRequest) {
     rewriteUrl.pathname = `/innovations${url.pathname}`;
   }
 
-  return NextResponse.rewrite(rewriteUrl, {
+  return NextResponse.rewrite(rewriteUrl.toString(), {
     request: {
       headers: requestHeaders,
     },

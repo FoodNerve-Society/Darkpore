@@ -13,20 +13,7 @@ const nextConfig: NextConfig = {
     "society.localhost",
     "society.192.168.1.105.nip.io",
   ],
-  experimental: {
-    serverActions: {
-      allowedOrigins: [
-        "foodnerve.com",
-        "darkpore.com",
-        "foodnerve.org",
-        "foodnerve.net",
-        "www.foodnerve.com",
-        "www.darkpore.com",
-        "www.foodnerve.org",
-        "www.foodnerve.net",
-      ],
-    },
-  },
+
 
 };
 
