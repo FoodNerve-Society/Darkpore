@@ -546,7 +546,7 @@ export default function CreateListingForm({
       if (isExternal) {
         if (fastIngestData.organizationName) {
         setExternalEntityName(fastIngestData.organizationName);
-        searchExternalOrganizations(fastIngestData.organizationName).then(results => {
+        searchExternalOrganizations(fastIngestData.organizationName, profile?.id, profile?.role).then(results => {
           if (results && results.length > 0) {
             // Check for exact match (case insensitive)
             const exactMatch = results.find(o => o.name.toLowerCase() === fastIngestData.organizationName?.toLowerCase());
@@ -666,7 +666,7 @@ export default function CreateListingForm({
       // Only search if it's external, and we have a name, and we aren't already perfectly matched
       if (isExternal && externalEntityName && externalEntityName.length > 1) {
         setIsSearchingOrgs(true);
-        searchExternalOrganizations(externalEntityName).then(results => {
+        searchExternalOrganizations(externalEntityName, profile?.id, profile?.role).then(results => {
           setExternalOrgOptions(results || []);
           setIsSearchingOrgs(false);
         });

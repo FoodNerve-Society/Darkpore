@@ -32,11 +32,14 @@ async function main() {
         console.log(`Executed query ${i + 1}/${queries.length}`);
       } catch (e) {
         console.error(`Failed at query ${i + 1}: ${q.substring(0, 50).replace(/\n/g, ' ')}... -> ${e.message}`);
+        console.error("Aborting schema push due to query failure.");
+        process.exit(1);
       }
     }
     console.log("Schema successfully pushed to Turso!");
   } catch(e) {
     console.error("Error executing schema:", e);
+    process.exit(1);
   }
 }
 main();
