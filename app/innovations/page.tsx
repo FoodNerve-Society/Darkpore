@@ -9,7 +9,7 @@ import ShowcaseCarousel from './components/ShowcaseCarousel';
 import BentoGridTeaser from './components/BentoGridTeaser';
 import RadarIndexOverview from './components/RadarIndexOverview';
 import CinematicHero from './components/CinematicHero';
-import TabbedHero from './components/TabbedHero';
+import CommandCenterHero from './components/CommandCenterHero';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
@@ -398,15 +398,70 @@ export default async function InnovationsHomepage() {
     <Box sx={{ bgcolor: '#050505', minHeight: '100vh' }}>
       
       {/* ═══════════════════════════════════════════════════════════
-          SECTION 1: THE TABBED HERO (Light Mode First)
+          SECTION 1: THE COMMAND CENTER HERO (Replacing TabbedHero)
       ═══════════════════════════════════════════════════════════ */}
       <Box sx={{ bgcolor: '#ffffff' }}>
-        <TabbedHero 
+        <CommandCenterHero 
           headline={homepageConfig.heroHeadline}
           subheadline={homepageConfig.heroSubheadline}
-          categories={ecosystemCategories} 
           globalAlerts={marqueeItems}
         />
+      </Box>
+
+      {/* ═══════════════════════════════════════════════════════════
+          SECTION 1.5: THE NEW HORIZONTAL SWIMLANES
+      ═══════════════════════════════════════════════════════════ */}
+      <Box sx={{ bgcolor: '#ffffff', py: 8 }}>
+        {[
+          { id: 'lane-articles', title: 'Latest Articles', color: '#3b82f6' },
+          { id: 'lane-jobs', title: 'Featured Jobs', color: '#10b981' },
+          { id: 'lane-internships', title: 'Internships', color: '#f59e0b' },
+          { id: 'lane-volunteering', title: 'Volunteering', color: '#ec4899' },
+          { id: 'lane-opportunities', title: 'Opportunities', color: '#8b5cf6' }
+        ].map((lane) => (
+          <Box key={lane.id} id={lane.id} sx={{ mb: 8, px: { xs: 2, md: 6 } }}>
+            <Container maxWidth="xl">
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, gap: 2 }}>
+                <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: lane.color }} />
+                <Typography variant="h4" sx={{ fontWeight: 900, color: '#0f172a' }}>
+                  {lane.title}
+                </Typography>
+              </Box>
+              
+              {/* Horizontal Scroll Container */}
+              <Box sx={{ 
+                display: 'flex', 
+                gap: 3, 
+                overflowX: 'auto', 
+                pb: 3,
+                scrollSnapType: 'x mandatory',
+                '&::-webkit-scrollbar': { height: '8px' },
+                '&::-webkit-scrollbar-thumb': { backgroundColor: 'rgba(0,0,0,0.1)', borderRadius: '4px' }
+              }}>
+                {/* Mock Cards for Swimlane */}
+                {[1, 2, 3, 4, 5, 6].map((item) => (
+                  <Box 
+                    key={item} 
+                    sx={{ 
+                      minWidth: { xs: '280px', md: '350px' }, 
+                      bgcolor: '#f8fafc', 
+                      borderRadius: '16px', 
+                      p: 3, 
+                      border: '1px solid #e2e8f0',
+                      scrollSnapAlign: 'start',
+                      transition: 'transform 0.3s ease',
+                      '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }
+                    }}
+                  >
+                    <Box sx={{ height: '180px', bgcolor: '#e2e8f0', borderRadius: '12px', mb: 2 }} />
+                    <Typography sx={{ fontWeight: 800, color: '#1e293b', mb: 1 }}>Mock {lane.title} Item {item}</Typography>
+                    <Typography sx={{ color: '#64748b', fontSize: '0.9rem' }}>This is a placeholder description for the swimlane. It will be replaced with real data soon.</Typography>
+                  </Box>
+                ))}
+              </Box>
+            </Container>
+          </Box>
+        ))}
       </Box>
 
       {/* ═══════════════════════════════════════════════════════════
