@@ -346,8 +346,7 @@ export async function searchExternalOrganizations(query: string, userId?: string
   if (!query || query.trim() === '') return [];
   
   try {
-    const isSuperAdmin = role === 'super_admin';
-    const isAdmin = role === 'admin' || isSuperAdmin;
+    const isAdmin = role?.toLowerCase() === 'admin' || role?.toLowerCase() === 'super_admin';
 
     const orgs = await prisma.organization.findMany({
       where: {
@@ -365,16 +364,9 @@ export async function searchExternalOrganizations(query: string, userId?: string
               }
             }
           }] : []),
-          // 3. Super admins can see everything
-          ...(isSuperAdmin ? [{}] : [])
-        ],
-        // Prevent random users from selecting the platform owner org (Food Nerve)
-        NOT: {
-          AND: [
-            { isPlatformOwner: true },
-            { id: { notIn: isAdmin ? undefined : [] } } // If isAdmin, this NOT doesn't apply (because notIn undefined is ignored, actually we can just check if !isAdmin)
-          ]
-        }
+          // 3. Ensure the platform owner is fetched so we can show it to Admins
+          { isPlatformOwner: true }
+        ]
       },
       select: {
         id: true,

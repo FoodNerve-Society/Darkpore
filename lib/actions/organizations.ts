@@ -4,8 +4,7 @@ import { prisma } from '@/lib/db/client';
 
 export async function getFoodNerveOrganizations(userId?: string, role?: string) {
     try {
-        const isSuperAdmin = role === 'super_admin';
-        const isAdmin = role === 'admin' || isSuperAdmin;
+        const isAdmin = role?.toLowerCase() === 'admin' || role?.toLowerCase() === 'super_admin';
 
         const orgs = await prisma.organization.findMany({
             where: {
@@ -20,16 +19,9 @@ export async function getFoodNerveOrganizations(userId?: string, role?: string) 
                             }
                         }
                     }] : []),
-                    // 3. Super admins can see everything
-                    ...(isSuperAdmin ? [{}] : [])
-                ],
-                // Prevent random users from selecting the platform owner org
-                NOT: {
-                    AND: [
-                        { isPlatformOwner: true },
-                        { id: { notIn: isAdmin ? undefined : [] } }
-                    ]
-                }
+                    // 3. Ensure the platform owner is fetched so we can show it to Admins
+                    { isPlatformOwner: true }
+                ]
             },
             select: {
                 id: true,

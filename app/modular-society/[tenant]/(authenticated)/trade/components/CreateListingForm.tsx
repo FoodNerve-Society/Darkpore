@@ -173,6 +173,95 @@ export default function CreateListingForm({
   const [foodNerveOrgs, setFoodNerveOrgs] = useState<any[]>([]);
   const [loadingFoodNerveOrgs, setLoadingFoodNerveOrgs] = useState(false);
 
+  const renderOrgOption = (props: any, option: any) => {
+      const isClaimed = option.rank > 1;
+      const rColor = RANK_COLORS[option.rank as RankLevel] || '#94a3b8';
+      
+      return (
+          <Box component="li" {...props} sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 1.5, borderBottom: '1px solid rgba(0,0,0,0.05)', '&:last-child': { borderBottom: 'none' } }}>
+              <Box sx={{ width: 44, height: 44, borderRadius: '10px', bgcolor: 'rgba(0,0,0,0.02)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px solid rgba(0,0,0,0.05)', flexShrink: 0 }}>
+                  {option.logoUrl ? (
+                      <img src={option.logoUrl} alt={option.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                  ) : (
+                      <Typography sx={{ fontWeight: 800, color: '#94a3b8', fontSize: '1.2rem' }}>{option.name?.charAt(0) || '?'}</Typography>
+                  )}
+              </Box>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography sx={{ fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {option.name}
+                      </Typography>
+                      {option.isPlatformOwner && (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: alpha('#6366f1', 0.1), color: '#4f46e5', px: 0.75, py: 0.25, borderRadius: '4px' }}>
+                              <StarIcon sx={{ fontSize: 12 }} />
+                              <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase' }}>Core</Typography>
+                          </Box>
+                      )}
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5, flexWrap: 'wrap' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: alpha(rColor, 0.1), color: rColor, px: 0.75, py: 0.25, borderRadius: '4px' }}>
+                          <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.02em' }}>
+                              Rank {option.rank || 1}
+                          </Typography>
+                      </Box>
+                      <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: '#cbd5e1' }} />
+                      <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: isClaimed ? '#059669' : '#64748b' }}>
+                          {isClaimed ? 'Claimed & Verified' : 'Unclaimed'}
+                      </Typography>
+                      {option.country && (
+                          <>
+                              <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: '#cbd5e1' }} />
+                              <Typography sx={{ fontSize: '0.75rem', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }}>
+                                  {option.state ? `${option.state}, ` : ''}{option.country}
+                              </Typography>
+                          </>
+                      )}
+                  </Box>
+              </Box>
+          </Box>
+      );
+  };
+
+  const renderOrgCardDetails = (org: any) => {
+      const isClaimed = org.rank > 1;
+      const rColor = RANK_COLORS[org.rank as RankLevel] || '#94a3b8';
+      
+      return (
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography sx={{ fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {org.name}
+                  </Typography>
+                  {org.isPlatformOwner && (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: alpha('#6366f1', 0.1), color: '#4f46e5', px: 0.75, py: 0.25, borderRadius: '4px' }}>
+                          <StarIcon sx={{ fontSize: 12 }} />
+                          <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase' }}>Core</Typography>
+                      </Box>
+                  )}
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5, flexWrap: 'wrap' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: alpha(rColor, 0.1), color: rColor, px: 0.75, py: 0.25, borderRadius: '4px' }}>
+                      <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.02em' }}>
+                          Rank {org.rank || 1}
+                      </Typography>
+                  </Box>
+                  <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: '#cbd5e1' }} />
+                  <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: isClaimed ? '#059669' : '#64748b' }}>
+                      {isClaimed ? 'Claimed & Verified' : 'Unclaimed'}
+                  </Typography>
+                  {org.country && (
+                      <>
+                          <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: '#cbd5e1' }} />
+                          <Typography sx={{ fontSize: '0.75rem', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }}>
+                              {org.state ? `${org.state}, ` : ''}{org.country}
+                          </Typography>
+                      </>
+                  )}
+              </Box>
+          </Box>
+      );
+  };
+
   // Derive if the active organization is a platform owner and its rank
   let isPlatformOwnerActive = false;
   let activeOrgRank = 0;
@@ -1212,10 +1301,7 @@ export default function CreateListingForm({
                                                                           <WorkIcon sx={{ color: 'rgba(0,0,0,0.2)' }} />
                                                                       )}
                                                                   </Box>
-                                                                  <Box sx={{ flex: 1 }}>
-                                                                      <Typography sx={{ fontWeight: 800, color: '#0f172a' }}>{org.name}</Typography>
-                                                                      <Typography sx={{ fontSize: '0.85rem', color: '#64748b' }}>{org.role || 'Verified Entity'}</Typography>
-                                                                  </Box>
+                                                                  {renderOrgCardDetails(org)}
                                                                   {isSelected && <CheckIcon sx={{ color }} />}
                                                               </Paper>
                                                           );
@@ -1250,10 +1336,7 @@ export default function CreateListingForm({
                                                                 <Typography sx={{ fontWeight: 800, color: '#94a3b8' }}>{draftOrg.name.charAt(0)}</Typography>
                                                             )}
                                                         </Box>
-                                                        <Box sx={{ flex: 1 }}>
-                                                            <Typography sx={{ fontWeight: 700, color: '#0f172a' }}>{draftOrg.name}</Typography>
-                                                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>Saved Organization</Typography>
-                                                        </Box>
+                                                        {renderOrgCardDetails(draftOrg)}
                                                     </Paper>
                                                     <Alert severity="info" sx={{ borderRadius: 2, '& .MuiAlert-message': { width: '100%', fontWeight: 500 } }}>
                                                       To change this organization, use the search dropdown below.
@@ -1265,6 +1348,7 @@ export default function CreateListingForm({
                                                             label="Search FoodNerve Organizations"
                                                             options={options}
                                                             getOptionLabel={(opt: any) => opt.name || ''}
+                                                            renderOption={renderOrgOption}
                                                             value={selectedOrg || null}
                                                             onChange={(e, val) => setSelectedEntityId(val ? val.id : null)}
                                                         />
@@ -1277,6 +1361,7 @@ export default function CreateListingForm({
                                                           label="Search FoodNerve Organizations"
                                                           options={options}
                                                           getOptionLabel={(opt: any) => opt.name || ''}
+                                                          renderOption={renderOrgOption}
                                                           value={selectedOrg || null}
                                                           onChange={(e, val) => setSelectedEntityId(val ? val.id : null)}
                                                       />
@@ -1293,10 +1378,7 @@ export default function CreateListingForm({
                                                                       <Typography sx={{ fontWeight: 800, color: '#94a3b8' }}>{selectedOrg.name.charAt(0)}</Typography>
                                                                   )}
                                                               </Box>
-                                                              <Box>
-                                                                  <Typography sx={{ fontWeight: 700, color: '#0f172a' }}>{selectedOrg.name}</Typography>
-                                                                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>FoodNerve Organization</Typography>
-                                                              </Box>
+                                                              {renderOrgCardDetails(selectedOrg)}
                                                               <CheckIcon sx={{ color }} />
                                                           </Paper>
                                                       )}
@@ -1318,6 +1400,7 @@ export default function CreateListingForm({
                                         label="External Organization Name *"
                                         options={externalOrgOptions}
                                         getOptionLabel={(opt: any) => typeof opt === 'string' ? opt : (opt.name || '')}
+                                        renderOption={(props, option) => typeof option === 'string' ? <li {...props}>{option}</li> : renderOrgOption(props, option)}
                                         isOptionEqualToValue={(option, value) => {
                                           if (typeof value === 'string') return option.name === value;
                                           return option.id === value.id;
