@@ -192,7 +192,7 @@ export default function CreateListingForm({
       if (initialSelections?.tertiary === 'foodnerve-org' && foodNerveOrgs.length === 0) {
           setLoadingFoodNerveOrgs(true);
           import("@/lib/actions/organizations").then(({ getFoodNerveOrganizations }) => {
-              getFoodNerveOrganizations().then((res) => {
+              getFoodNerveOrganizations(profile?.id, profile?.role).then((res) => {
                   if (res.success && res.data) {
                       setFoodNerveOrgs(res.data);
                   }
@@ -1347,6 +1347,15 @@ export default function CreateListingForm({
                                         }}
                                         placeholder="e.g. Acme Corp"
                                       />
+
+                                      {(externalEntityId || externalOrgOptions.some(o => o.name.toLowerCase() === externalEntityName.toLowerCase())) && externalEntityName && (
+                                          <Alert severity="info" sx={{ borderRadius: 2, bgcolor: alpha('#3b82f6', 0.05), color: '#1e3a8a', border: '1px solid rgba(59, 130, 246, 0.2)', '& .MuiAlert-icon': { color: '#3b82f6', mt: 0.5 } }}>
+                                              <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5 }}>Attaching to existing organization</Typography>
+                                              <Typography variant="caption" sx={{ display: 'block', color: '#475569', lineHeight: 1.4 }}>
+                                                  This organization already exists in our registry. The logo and location details you provide below will be used to enrich its public profile.
+                                              </Typography>
+                                          </Alert>
+                                      )}
                                       
                                       {fastIngestData && fastIngestData.organizationCountry && (
                                           <Paper sx={{ 
