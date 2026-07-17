@@ -10,6 +10,7 @@ import BentoGridTeaser from './components/BentoGridTeaser';
 import RadarIndexOverview from './components/RadarIndexOverview';
 import CinematicHero from './components/CinematicHero';
 import CommandCenterHero from './components/CommandCenterHero';
+import Swimlane from './components/Swimlane';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
@@ -104,6 +105,7 @@ export default async function InnovationsHomepage() {
     const mockAlerts = [
       {
         title: "LIVE: Ecosystem Founders AMA with the Minister of Agriculture",
+        categoryLabel: "LIVESTREAMS",
         startDate: new Date(nowMs - 1000 * 3600), // started 1 hour ago
         endDate: new Date(nowMs + 1000 * 3600 * 2), // ends in 2 hours
         link: "#",
@@ -112,6 +114,7 @@ export default async function InnovationsHomepage() {
       },
       {
         title: "Webinar: Next-Gen Cold Storage Logistics Masterclass",
+        categoryLabel: "LIVESTREAMS",
         startDate: new Date(nowMs + 1000 * 3600 * 5), // starts in 5 hours
         endDate: null,
         link: "#",
@@ -120,6 +123,7 @@ export default async function InnovationsHomepage() {
       },
       {
         title: "Flash Sale: Bulk Fertilizer Procurement (50% Off)",
+        categoryLabel: "OPPORTUNITIES",
         startDate: new Date(nowMs + 1000 * 60 * 45), // starts in 45 minutes
         endDate: null,
         link: "#",
@@ -128,6 +132,7 @@ export default async function InnovationsHomepage() {
       },
       {
         title: "Call for Applications: 2026 Food Security Grants",
+        categoryLabel: "OPPORTUNITIES",
         startDate: null,
         endDate: new Date(nowMs + 1000 * 3600 * 48), // ends in 2 days
         link: "#",
@@ -413,54 +418,13 @@ export default async function InnovationsHomepage() {
       ═══════════════════════════════════════════════════════════ */}
       <Box sx={{ bgcolor: '#ffffff', py: 8 }}>
         {[
-          { id: 'lane-articles', title: 'Latest Articles', color: '#3b82f6' },
-          { id: 'lane-jobs', title: 'Featured Jobs', color: '#10b981' },
-          { id: 'lane-internships', title: 'Internships', color: '#f59e0b' },
-          { id: 'lane-volunteering', title: 'Volunteering', color: '#ec4899' },
-          { id: 'lane-opportunities', title: 'Opportunities', color: '#8b5cf6' }
+          { id: 'lane-articles', title: 'Latest Articles', color: '#3b82f6', newCount: 12 },
+          { id: 'lane-livestreams', title: 'Livestreams', color: '#f59e0b', newCount: 3 },
+          { id: 'lane-jobs', title: 'Jobs & Internships', color: '#10b981', newCount: 8 },
+          { id: 'lane-volunteering', title: 'Volunteering', color: '#ec4899', newCount: 2 },
+          { id: 'lane-opportunities', title: 'Opportunities', color: '#8b5cf6', newCount: 8 }
         ].map((lane) => (
-          <Box key={lane.id} id={lane.id} sx={{ mb: 8, px: { xs: 2, md: 6 } }}>
-            <Container maxWidth="xl">
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, gap: 2 }}>
-                <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: lane.color }} />
-                <Typography variant="h4" sx={{ fontWeight: 900, color: '#0f172a' }}>
-                  {lane.title}
-                </Typography>
-              </Box>
-              
-              {/* Horizontal Scroll Container */}
-              <Box sx={{ 
-                display: 'flex', 
-                gap: 3, 
-                overflowX: 'auto', 
-                pb: 3,
-                scrollSnapType: 'x mandatory',
-                '&::-webkit-scrollbar': { height: '8px' },
-                '&::-webkit-scrollbar-thumb': { backgroundColor: 'rgba(0,0,0,0.1)', borderRadius: '4px' }
-              }}>
-                {/* Mock Cards for Swimlane */}
-                {[1, 2, 3, 4, 5, 6].map((item) => (
-                  <Box 
-                    key={item} 
-                    sx={{ 
-                      minWidth: { xs: '280px', md: '350px' }, 
-                      bgcolor: '#f8fafc', 
-                      borderRadius: '16px', 
-                      p: 3, 
-                      border: '1px solid #e2e8f0',
-                      scrollSnapAlign: 'start',
-                      transition: 'transform 0.3s ease',
-                      '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }
-                    }}
-                  >
-                    <Box sx={{ height: '180px', bgcolor: '#e2e8f0', borderRadius: '12px', mb: 2 }} />
-                    <Typography sx={{ fontWeight: 800, color: '#1e293b', mb: 1 }}>Mock {lane.title} Item {item}</Typography>
-                    <Typography sx={{ color: '#64748b', fontSize: '0.9rem' }}>This is a placeholder description for the swimlane. It will be replaced with real data soon.</Typography>
-                  </Box>
-                ))}
-              </Box>
-            </Container>
-          </Box>
+          <Swimlane key={lane.id} lane={lane} />
         ))}
       </Box>
 

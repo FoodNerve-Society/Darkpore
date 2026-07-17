@@ -14,9 +14,10 @@ import { useRouter } from 'next/navigation';
 interface EcosystemCardProps {
     item: EcosystemItem;
     themeColor: string;
+    hideTags?: boolean;
 }
 
-export const EcosystemCard: React.FC<EcosystemCardProps> = ({ item, themeColor }) => {
+export const EcosystemCard: React.FC<EcosystemCardProps> = ({ item, themeColor, hideTags = false }) => {
     const theme = useTheme();
     const router = useRouter();
     const [isHovered, setIsHovered] = useState(false);
@@ -85,15 +86,17 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({ item, themeColor }
                 />
 
                 {/* Ecosystem Badge */}
-                <Chip
-                    label={item.type.toUpperCase()}
-                    size="small"
-                    sx={{
-                        position: 'absolute', top: 16, right: 12, zIndex: 2,
-                        bgcolor: themeColor, color: 'white', fontWeight: 800, fontSize: '0.65rem', height: 20,
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.2)', letterSpacing: 1
-                    }}
-                />
+                {!hideTags && (
+                  <Chip
+                      label={item.type.toUpperCase()}
+                      size="small"
+                      sx={{
+                          position: 'absolute', top: 16, right: 12, zIndex: 2,
+                          bgcolor: themeColor, color: 'white', fontWeight: 800, fontSize: '0.65rem', height: 20,
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.2)', letterSpacing: 1
+                      }}
+                  />
+                )}
             </Box>
 
             {/* TRANSLUCENT GLASS DECK OVERLAID ON IMAGE */}

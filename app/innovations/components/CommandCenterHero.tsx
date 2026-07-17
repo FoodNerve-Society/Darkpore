@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Container, Button, IconButton } from '@mui/material';
+import { Box, Typography, Container, Button, IconButton, keyframes } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -16,14 +16,46 @@ interface CommandCenterHeroProps {
 
 const CATEGORIES = [
   { id: 'lane-articles', label: 'Articles', icon: '📝', color: '#3b82f6', count: 142, newCount: 12 },
-  { id: 'lane-jobs', label: 'Jobs', icon: '💼', color: '#10b981', count: 86, newCount: 5 },
-  { id: 'lane-internships', label: 'Internships', icon: '🎓', color: '#f59e0b', count: 24, newCount: 3 },
+  { id: 'lane-livestreams', label: 'Livestreams', icon: '🎥', color: '#f59e0b', count: 24, newCount: 3 },
+  { id: 'lane-jobs', label: 'Jobs & Internships', icon: '💼', color: '#10b981', count: 110, newCount: 8 },
   { id: 'lane-volunteering', label: 'Volunteering', icon: '🤝', color: '#ec4899', count: 15, newCount: 2 },
   { id: 'lane-opportunities', label: 'Opportunities', icon: '🚀', color: '#8b5cf6', count: 53, newCount: 8 },
 ];
 
+const flowAnimation = keyframes`
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+`;
+
 export default function CommandCenterHero({ headline, subheadline, globalAlerts = [] }: CommandCenterHeroProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
+
+  const renderHeadline = () => {
+    if (headline.startsWith('Explore')) {
+      const rest = headline.substring(7);
+      return (
+        <>
+          <Box component="span" sx={{ 
+            background: 'linear-gradient(270deg, #10b981, #3b82f6, #10b981)', 
+            backgroundSize: '200% 200%', 
+            animation: `${flowAnimation} 4s ease infinite`, 
+            WebkitBackgroundClip: 'text', 
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            color: 'transparent',
+            display: 'inline',
+            paddingRight: '0.1em',
+            marginRight: '-0.1em'
+          }}>
+            Explore
+          </Box>
+          {rest}
+        </>
+      );
+    }
+    return headline;
+  };
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % Math.max(1, globalAlerts.length));
@@ -51,11 +83,11 @@ export default function CommandCenterHero({ headline, subheadline, globalAlerts 
         
         {/* 1. TOP TEXT */}
         <Box sx={{ textAlign: 'center', mb: { xs: 6, md: 10 }, maxWidth: '800px', mx: 'auto' }}>
-          <Typography variant="h1" sx={{ fontFamily: 'var(--font-inter), sans-serif', fontWeight: 900, fontSize: { xs: '3rem', md: '5rem' }, letterSpacing: '-0.05em', lineHeight: 1.05, mb: 3, color: '#0f172a' }}>
-            The Hub of <Box component="span" sx={{ color: '#10b981' }}>Innovation</Box>.
+          <Typography variant="h1" sx={{ fontWeight: 900, fontSize: { xs: '2.5rem', sm: '3.5rem', md: '5rem' }, letterSpacing: '-0.05em', lineHeight: 1.05, mb: 3, color: '#0f172a' }}>
+            {renderHeadline()}
           </Typography>
-          <Typography variant="h6" sx={{ color: '#475569', fontSize: { xs: '1.1rem', md: '1.35rem' }, fontWeight: 500, lineHeight: 1.6 }}>
-            Discover projects, find jobs, and access premium intelligence. The heartbeat of the ecosystem is all right here.
+          <Typography variant="body1" sx={{ color: '#475569', fontSize: { xs: '0.95rem', md: '1.15rem' }, fontWeight: 500, lineHeight: 1.6, maxWidth: '650px', mx: 'auto' }}>
+            {subheadline}
           </Typography>
         </Box>
 
@@ -69,7 +101,7 @@ export default function CommandCenterHero({ headline, subheadline, globalAlerts 
             overflow: 'hidden', 
             bgcolor: '#f8fafc', 
             border: '1px solid #e2e8f0',
-            minHeight: '450px',
+            minHeight: { xs: '350px', md: '450px' },
             display: 'flex',
             flexDirection: 'column',
             boxShadow: '0 20px 40px -10px rgba(0,0,0,0.05)'
@@ -77,7 +109,7 @@ export default function CommandCenterHero({ headline, subheadline, globalAlerts 
             <Box sx={{ p: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 10, position: 'absolute', top: 0, left: 0, right: 0 }}>
               <Box sx={{ bgcolor: '#ffffff', px: 2, py: 1, borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
                 <Typography sx={{ fontWeight: 900, color: '#10b981', letterSpacing: '0.1em', textTransform: 'uppercase', fontSize: '0.75rem' }}>
-                  GLOBAL ALERTS & UPDATES
+                  {globalAlerts[currentSlide]?.categoryLabel || 'GLOBAL UPDATES'}
                 </Typography>
               </Box>
             </Box>
@@ -86,7 +118,7 @@ export default function CommandCenterHero({ headline, subheadline, globalAlerts 
               {globalAlerts.length > 0 ? (
                 <Box
                   component={motion.div}
-                  animate={{ x: `-${currentSlide * 100}%` }}
+                  animate={{ x: `-${(currentSlide * 100) / Math.max(1, globalAlerts.length)}%` }}
                   transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                   sx={{ 
                     display: 'flex', 
@@ -172,8 +204,8 @@ export default function CommandCenterHero({ headline, subheadline, globalAlerts 
             </Box>
           </Box>
 
-          {/* RIGHT: Vertical Premium List */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {/* RIGHT: Vertical Premium List (Hidden on mobile) */}
+          <Box sx={{ display: { xs: 'none', lg: 'flex' }, flexDirection: 'column', gap: 2 }}>
             <Typography sx={{ fontWeight: 800, color: '#64748b', letterSpacing: '0.1em', textTransform: 'uppercase', fontSize: '0.85rem', pl: 1, mb: 1 }}>
               Ecosystem Categories
             </Typography>
