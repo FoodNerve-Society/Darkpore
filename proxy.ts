@@ -8,10 +8,10 @@ export default function middleware(request: NextRequest) {
   const hostname = hostHeader.split(':')[0]; // Strip port for cleaner logic
 
   // Extract the tenant ID from the hostname (basic implementation)
-  const tenant_id = hostname.split('.')[0];
+  const tenant_id = hostname.split('.')[0] || 'foodnerve';
   
   // Clone the URL to modify the pathname for rewriting
-  const rewriteUrl = url.clone();
+  const rewriteUrl = new URL(request.url);
   
   // Determine the correct theme based on routing context
   let theme_id = 'innovations';
