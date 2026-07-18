@@ -155,7 +155,7 @@ export function WikiDrawer() {
               <IconButton 
                 onClick={() => {
                   closeWiki();
-                  router.push(`/modular-society/${activeOrg?.slug || 'darkpore'}/profile/wiki/${doc.slug}`);
+                  router.push(`/profile/wiki/${doc.slug}`);
                 }} 
                 sx={{ color: '#60a5fa' }}
                 title="Open Full Page"

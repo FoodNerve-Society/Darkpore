@@ -136,7 +136,7 @@ export default function WikiDocPage() {
     const res = await createOrUpdateWikiDoc({ ...editForm, authorId: profile?.uid || 'unknown' });
     if (res.success) {
       if (slug === 'new') {
-        router.replace(`/modular-society/${tenant}/profile/wiki/${editForm.slug}`);
+        router.replace(`/profile/wiki/${editForm.slug}`);
       } else {
         await loadDoc(editForm.slug);
         setIsEditing(false);
@@ -487,7 +487,7 @@ export default function WikiDocPage() {
         {!isEditing && (
           <Box sx={{ mb: 2 }}>
             <Button
-              onClick={() => router.push(`/modular-society/${tenant}/profile/wiki`)}
+              onClick={() => router.push(`/profile/wiki`)}
               startIcon={<ArrowBackIcon />}
               sx={{ color: '#64748b', fontWeight: 700, '&:hover': { color: '#0f172a', bgcolor: 'rgba(0,0,0,0.05)' }, borderRadius: '100px', px: 2 }}
             >

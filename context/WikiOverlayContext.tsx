@@ -1,8 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Drawer, Box, IconButton, useMediaQuery, useTheme } from '@mui/material';
-import { getHotspotMappings, getWikiDoc, WikiBlock } from '@/lib/actions/wiki';
+import { Drawer, Box, IconButton, useMediaQuery, useTheme, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Typography, Button } from '@mui/material';
+import { getHotspotMappings, getWikiDoc, WikiBlock, createRegistryHotspot } from '@/lib/actions/wiki';
 import { useSociety } from './SocietyContext';
 import WikiReader from '@/components/wiki/WikiReader';
 import CloseIcon from '@mui/icons-material/Close';
@@ -13,6 +13,7 @@ interface WikiOverlayContextType {
   openWikiBySlug: (slug: string) => void;
   openWikiByHotspot: (hotspotId: string) => void;
   closeWiki: () => void;
+  openRegisterModal: (id: string) => void;
 }
 
 const WikiOverlayContext = createContext<WikiOverlayContextType>({
@@ -20,6 +21,7 @@ const WikiOverlayContext = createContext<WikiOverlayContextType>({
   openWikiBySlug: () => {},
   openWikiByHotspot: () => {},
   closeWiki: () => {},
+  openRegisterModal: () => {},
 });
 
 export const useWikiOverlay = () => useContext(WikiOverlayContext);
@@ -36,6 +38,29 @@ export function WikiOverlayProvider({ children }: { children: React.ReactNode })
   
   const [doc, setDoc] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+
+  // Quick Register Modal State
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [registerId, setRegisterId] = useState('');
+  const [registerLabel, setRegisterLabel] = useState('');
+
+  const openRegisterModal = (id: string) => {
+    setRegisterId(id);
+    setRegisterLabel(id.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
+    setShowRegisterModal(true);
+  };
+
+  const handleCreateHotspot = async () => {
+    if (!registerId || !registerLabel) return;
+    const res = await createRegistryHotspot(registerId, registerLabel);
+    if (res.success) {
+      setShowRegisterModal(false);
+      // Let the developer know they should link it in the studio
+      router.push(`/profile/wiki`);
+    } else {
+      alert("Error: " + res.error);
+    }
+  };
 
   // Load mappings on mount
   useEffect(() => {
@@ -113,17 +138,11 @@ export function WikiOverlayProvider({ children }: { children: React.ReactNode })
 
   const handleEdit = () => {
     closeWiki();
-    // Assuming tenant routing structure, we'd need to extract tenant from url if needed.
-    // For now, doing a simple push. Wait, router push needs tenant.
-    // Let's rely on standard path structure: /modular-society/[tenant]/profile/wiki
-    const tenant = window.location.pathname.split('/')[2];
-    if (tenant) {
-       router.push(`/modular-society/${tenant}/profile/wiki?edit=${activeSlug}`);
-    }
+    router.push(`/profile/wiki?edit=${activeSlug}`);
   };
 
   return (
-    <WikiOverlayContext.Provider value={{ mappings, openWikiBySlug, openWikiByHotspot, closeWiki }}>
+    <WikiOverlayContext.Provider value={{ mappings, openWikiBySlug, openWikiByHotspot, closeWiki, openRegisterModal }}>
       {children}
       
       <Drawer
@@ -153,6 +172,30 @@ export function WikiOverlayProvider({ children }: { children: React.ReactNode })
           }
         />
       </Drawer>
+
+      <Dialog open={showRegisterModal} onClose={() => setShowRegisterModal(false)} PaperProps={{ sx: { bgcolor: '#1e293b', color: '#fff', borderRadius: 4, p: 2, minWidth: 400, zIndex: 9999 } }}>
+        <DialogTitle sx={{ fontWeight: 800 }}>Quick Register Hotspot</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 2 }}>
+          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', mt: 1 }}>
+            Register a Hotspot ID that a developer has placed in the codebase.
+          </Typography>
+          <TextField 
+            label="Hotspot ID (e.g. trade_btn)" 
+            value={registerId} onChange={e => setRegisterId(e.target.value)}
+            sx={{ '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' }, '& .MuiInputBase-root': { color: '#fff' }, '& .MuiFormLabel-root': { color: 'rgba(255,255,255,0.7)' } }}
+          />
+          <TextField 
+            label="Human Readable Label" 
+            value={registerLabel} onChange={e => setRegisterLabel(e.target.value)}
+            sx={{ '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' }, '& .MuiInputBase-root': { color: '#fff' }, '& .MuiFormLabel-root': { color: 'rgba(255,255,255,0.7)' } }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowRegisterModal(false)} sx={{ color: 'rgba(255,255,255,0.5)' }}>Cancel</Button>
+          <Button onClick={handleCreateHotspot} variant="contained" sx={{ bgcolor: '#3b82f6', '&:hover': { bgcolor: '#2563eb' } }}>Register & Go to Studio</Button>
+        </DialogActions>
+      </Dialog>
+
     </WikiOverlayContext.Provider>
   );
 }

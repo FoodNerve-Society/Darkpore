@@ -22,11 +22,8 @@ interface WikiHotspotProps {
 }
 
 export default function WikiHotspot({ id, size = 'small', icon = 'help' }: WikiHotspotProps) {
-  const { mappings, openWikiByHotspot } = useWikiOverlay();
+  const { mappings, openWikiByHotspot, openRegisterModal } = useWikiOverlay();
   const { profile } = useSociety();
-  const router = useRouter();
-  const params = useParams();
-  const tenant = params?.tenant as string;
 
   // If no document is mapped to this hotspot
   if (!mappings[id]) {
@@ -36,9 +33,7 @@ export default function WikiHotspot({ id, size = 'small', icon = 'help' }: WikiH
           <Tooltip title={`Unlinked Hotspot: ${id}. Click to link/create an SOP here.`} placement="top">
             <IconButton 
               size={size}
-              onClick={() => {
-                 router.push(`/modular-society/${tenant || 'society'}/profile/wiki?hotspot=${id}`);
-              }}
+              onClick={() => openRegisterModal(id)}
               sx={{ 
                 color: 'text.disabled', 
                 border: '1px dashed grey',

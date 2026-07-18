@@ -11,6 +11,7 @@ import { useSociety } from '@/context/SocietyContext';
 import { getAllVisibleWikiDocs, getWikiDoc, createOrUpdateWikiDoc, WikiBlock, WikiDocInput, getRegistryHotspots, createRegistryHotspot, deleteRegistryHotspot } from '@/lib/actions/wiki';
 import FlipContainer from '../../components/shared/FlipContainer';
 import WikiReader from '@/components/wiki/WikiReader';
+import WikiStudioDashboard from '../../components/forms/WikiStudioDashboard';
 
 // Icons
 import MenuBookIcon from '@mui/icons-material/MenuBook';
@@ -82,7 +83,7 @@ const sharedPaperSx = {
   
   // SPA Flip State
   const [isFlipped, setIsFlipped] = useState(false);
-  const [viewMode, setViewMode] = useState<'reader' | 'editor'>('reader');
+  const [viewMode, setViewMode] = useState<'reader' | 'editor' | 'lobby'>('reader');
   
   // Reader / Editor State
   const [activeDocSlug, setActiveDocSlug] = useState<string | null>(null);
@@ -112,7 +113,7 @@ const sharedPaperSx = {
         setNewHotspotLabel(qsHotspot.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
         setShowHotspotModal(true);
         // Clear the param so we don't reopen it endlessly on re-renders
-        router.replace(`/modular-society/${tenant}/profile/wiki`);
+        router.replace(`/profile/wiki`);
       }
     });
   }, [profile, searchParams]);
@@ -123,7 +124,7 @@ const sharedPaperSx = {
         loadDoc(activeDocSlug);
       } else {
          setDoc(null);
-         setViewMode('editor');
+         setViewMode('lobby');
          setEditForm({
            slug: '', title: '', category: 'operations', isPublic: false, allowedRoles: ['internal_staff'], allowedUsers: [], blocks: [], tags: [], authorId: profile?.uid || '', hotspotId: ''
          });
@@ -232,6 +233,17 @@ const sharedPaperSx = {
     setEditForm({ ...editForm, blocks: newBlocks });
   };
 
+  const handleStartFresh = (type: string, taxonomy: any, templateBlocks: any[] = []) => {
+    setEditForm({
+      ...editForm,
+      category: taxonomy.category || 'operations',
+      isPublic: taxonomy.clearance === 'public',
+      allowedRoles: taxonomy.clearance === 'public' ? [] : [taxonomy.clearance],
+      blocks: templateBlocks
+    });
+    setViewMode('editor');
+  };
+
   // ========================================================================
   // FRONT CONTENT: Dashboard
   // ========================================================================
@@ -323,7 +335,7 @@ const sharedPaperSx = {
         {/* FLOATING BACK BUTTON */}
         <Box sx={{ position: 'fixed', bottom: { xs: 24, md: 32 }, left: '50%', transform: 'translateX(-50%)', zIndex: 100 }}>
           <Button
-            onClick={() => router.push(`/modular-society/${tenant}/profile`)}
+            onClick={() => router.push(`/profile`)}
             startIcon={<ArrowBackIcon />}
             sx={{
               bgcolor: 'rgba(255, 255, 255, 0.85)',
@@ -371,12 +383,21 @@ const sharedPaperSx = {
             <IconButton onClick={() => setIsFlipped(false)} sx={{ mr: 1 }}><ArrowBackIcon /></IconButton>
           }
         />
+      ) : viewMode === 'lobby' ? (
+        // --- LOBBY ---
+        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <Box sx={{ p: 2, display: 'flex', alignItems: 'center' }}>
+            <IconButton onClick={() => setIsFlipped(false)} sx={{ mr: 1, color: '#64748b' }}><ArrowBackIcon /></IconButton>
+            <Typography sx={{ fontWeight: 700, color: '#64748b' }}>Cancel</Typography>
+          </Box>
+          <WikiStudioDashboard docs={wikiDocs} onStartFresh={handleStartFresh} userName={profile.displayName || profile.uid} />
+        </Box>
       ) : (
         // --- EDITOR ---
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', color: '#fff' }}>
            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 3, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <IconButton onClick={() => { if(doc) setViewMode('reader'); else setIsFlipped(false); }} sx={{ mr: 1, color: '#fff' }}><ArrowBackIcon /></IconButton>
+              <IconButton onClick={() => { if(doc) setViewMode('reader'); else setViewMode('lobby'); }} sx={{ mr: 1, color: '#fff' }}><ArrowBackIcon /></IconButton>
               <EditIcon sx={{ color: '#60a5fa' }} />
               <Typography variant="subtitle2" sx={{ fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase' }}>
                 Wiki Studio {loading && <span style={{ opacity: 0.5, fontSize: '0.8rem', marginLeft: 8 }}>Saving...</span>}

@@ -662,64 +662,65 @@ export default function ProfilePage() {
            <Typography sx={{ fontWeight: 800, fontSize: '1.1rem', color: '#0f172a' }}>
              SOPs & Playbooks
            </Typography>
-           <Box sx={{ display: 'flex', gap: 2 }}>
-             <Button size="small" variant="text" onClick={() => router.push(`/modular-society/${activeOrg?.slug || 'darkpore'}/profile/wiki`)} sx={{ fontWeight: 700, color: '#64748b' }}>
-               Open Full Hub
-             </Button>
-             {profile.isAdmin && (
-               <Button size="small" variant="text" onClick={() => router.push(`/modular-society/${activeOrg?.slug || 'darkpore'}/profile/wiki/new`)} sx={{ fontWeight: 700, color: '#3b82f6' }}>
-                 + New Document
-               </Button>
-             )}
-           </Box>
+           <Button size="small" variant="text" onClick={() => router.push(`/profile/wiki`)} sx={{ fontWeight: 700, color: '#3b82f6' }}>
+             Open Full Hub
+           </Button>
          </Box>
 
-         {wikiDocs.length === 0 ? (
-           <Typography sx={{ color: 'text.secondary', fontSize: '0.9rem', fontStyle: 'italic', bgcolor: 'rgba(0,0,0,0.02)', p: 3, borderRadius: '16px' }}>
-             No playbooks available for your clearance level.
-           </Typography>
-         ) : (
-           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-             {wikiDocs.map(doc => (
-                <Box
-                  key={doc.id}
-                  onClick={() => router.push(`/modular-society/${activeOrg?.slug || 'darkpore'}/profile/wiki/${doc.slug}`)}
-                  sx={{
-                    bgcolor: '#0f172a',
-                    borderRadius: '20px',
-                    p: 3,
-                    display: 'flex', alignItems: 'center', gap: 3,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    boxShadow: '0 12px 32px rgba(15,23,42,0.15)',
-                    '&:hover': {
-                       transform: 'translateY(-2px)',
-                       boxShadow: '0 16px 40px rgba(15,23,42,0.2)',
-                       bgcolor: '#1e293b',
-                    }
-                  }}
-                >
-                  <Box sx={{ p: 2, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '14px', color: '#10b981' }}>
-                    <MenuBookIcon sx={{ fontSize: 32 }} />
-                  </Box>
-                  <Box sx={{ flex: 1 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                      <Typography sx={{ fontWeight: 800, fontSize: '1.1rem', color: '#fff' }}>{doc.title}</Typography>
-                      {doc.isPublic ? (
-                         <Chip label="Public" size="small" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 800, bgcolor: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa' }} />
-                      ) : (
-                         <Chip label="Restricted" size="small" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 800, bgcolor: 'rgba(239, 68, 68, 0.2)', color: '#f87171' }} />
-                      )}
+         <Box sx={{ 
+            bgcolor: '#fff', 
+            borderRadius: '20px', 
+            border: '1px solid rgba(0,0,0,0.06)',
+            overflow: 'hidden',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.02)'
+         }}>
+           {wikiDocs.length === 0 ? (
+             <Box sx={{ p: 3, textAlign: 'center' }}>
+               <Typography sx={{ color: 'text.secondary', fontSize: '0.9rem', fontStyle: 'italic' }}>
+                 No playbooks available for your clearance level.
+               </Typography>
+             </Box>
+           ) : (
+             <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+               {wikiDocs.map((doc, idx) => (
+                  <React.Fragment key={doc.id}>
+                    <Box
+                      onClick={() => router.push(`/profile/wiki/${doc.slug}`)}
+                      sx={{
+                        p: 2.5,
+                        display: 'flex', alignItems: 'center', gap: 2,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        '&:hover': {
+                           bgcolor: 'rgba(59, 130, 246, 0.04)',
+                           pl: 3,
+                        }
+                      }}
+                    >
+                      <Box sx={{ p: 1, bgcolor: 'rgba(59, 130, 246, 0.1)', borderRadius: '10px', color: '#3b82f6' }}>
+                        <MenuBookIcon sx={{ fontSize: 20 }} />
+                      </Box>
+                      <Box sx={{ flex: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Typography sx={{ fontWeight: 700, fontSize: '1rem', color: '#0f172a' }}>{doc.title}</Typography>
+                          {doc.isPublic ? (
+                             <Chip label="Public" size="small" sx={{ height: 18, fontSize: '0.6rem', fontWeight: 800, bgcolor: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }} />
+                          ) : (
+                             <Chip label="Restricted" size="small" sx={{ height: 18, fontSize: '0.6rem', fontWeight: 800, bgcolor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }} />
+                          )}
+                        </Box>
+                        <Typography sx={{ color: '#64748b', fontSize: '0.8rem', mt: 0.5 }}>
+                          Category: <span style={{ textTransform: 'capitalize' }}>{doc.category}</span>
+                        </Typography>
+                      </Box>
+                      <ArrowForwardIcon sx={{ color: '#cbd5e1', fontSize: 20 }} />
                     </Box>
-                    <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem' }}>
-                      Category: <span style={{ textTransform: 'capitalize' }}>{doc.category}</span>
-                    </Typography>
-                  </Box>
-                  <ArrowForwardIcon sx={{ color: 'rgba(255,255,255,0.3)', fontSize: 24 }} />
-                </Box>
-             ))}
-           </Box>
-         )}
+                    {idx < wikiDocs.length - 1 && <Divider sx={{ mx: 2.5 }} />}
+                  </React.Fragment>
+               ))}
+             </Box>
+           )}
+         </Box>
       </Box>
 
       {/* ─── ACCOUNT SETTINGS ─── */}
