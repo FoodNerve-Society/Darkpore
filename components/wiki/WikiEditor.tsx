@@ -24,6 +24,7 @@ import WikiReader from './WikiReader';
 import PremiumTextField from '@/components/PremiumTextField';
 import PremiumAutocomplete from '@/components/PremiumAutocomplete';
 import PremiumSwitch from '@/components/PremiumSwitch';
+import PremiumMarkdownEditor from '@/components/PremiumMarkdownEditor';
 
 const WIKI_DOMAINS = [
   {
@@ -332,20 +333,14 @@ export default function WikiEditor({
                       />
                     </Box>
                     <Box sx={{ gridColumn: '1 / -1' }}>
-                      <PremiumTextField 
+                      <PremiumMarkdownEditor 
                         label="Short Description / Summary" 
                         value={editForm.description || ''} 
                         onChange={e => setEditForm({...editForm, description: e.target.value})}
                         colorTheme="#3b82f6"
-                        multiline
-                        rows={2}
+                        minRows={2}
                       />
                     </Box>
-                    <PremiumTextField 
-                      label="Unique Slug" 
-                      value={editForm.slug} onChange={e => setEditForm({...editForm, slug: e.target.value})}
-                      colorTheme="#3b82f6"
-                    />
                     <PremiumAutocomplete
                       label="Domain (Category)"
                       value={editForm.category}
@@ -462,18 +457,6 @@ export default function WikiEditor({
                           onChange={e => setEditForm({...editForm, isPublic: e.target.checked})}
                           colorTheme="#10b981"
                           label="Publicly Visible"
-                        />
-                        <PremiumSwitch
-                          checked={editForm.isFeatured || false}
-                          onChange={e => setEditForm({...editForm, isFeatured: e.target.checked})}
-                          colorTheme="#f59e0b"
-                          label="Featured / Pinned"
-                        />
-                        <PremiumSwitch
-                          checked={editForm.allowComments !== false}
-                          onChange={e => setEditForm({...editForm, allowComments: e.target.checked})}
-                          colorTheme="#3b82f6"
-                          label="Allow Discussions"
                         />
                       </Box>
                     </Box>
