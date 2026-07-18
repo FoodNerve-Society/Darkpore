@@ -682,6 +682,8 @@ model WikiHotspotRegistry {
   id          String   @id // The exact Hotspot ID used by the developer
   label       String
   description String?
+  category    String?
+  subcategory String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

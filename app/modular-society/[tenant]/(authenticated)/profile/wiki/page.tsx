@@ -45,7 +45,32 @@ const sharedPaperSx = {
 
 // Removed PromptBuilderBlock as it is now in WikiReader
 
-  export default function WikiDashboardPage() {
+const WIKI_DOMAINS = [
+  {
+    id: 'platform_features', title: 'Platform Features',
+    subcategories: [
+      { id: 'innovations', title: 'Innovations Hub' },
+      { id: 'workspace', title: 'Workspace Hub' },
+      { id: 'society', title: 'Modular Society' }
+    ]
+  },
+  {
+    id: 'operations', title: 'Operations & Admin',
+    subcategories: [
+      { id: 'moderation', title: 'Moderation' },
+      { id: 'finance', title: 'Finance & Escrow' }
+    ]
+  },
+  {
+    id: 'engineering', title: 'Engineering',
+    subcategories: [
+      { id: 'frontend', title: 'Frontend (UI/UX)' },
+      { id: 'backend', title: 'Backend (Data)' }
+    ]
+  }
+];
+
+export default function WikiDashboardPage() {
   const { profile } = useSociety();
   const router = useRouter();
   const params = useParams();
@@ -237,6 +262,7 @@ const sharedPaperSx = {
     setEditForm({
       ...editForm,
       category: taxonomy.category || 'operations',
+      tags: taxonomy.subcategory ? [taxonomy.subcategory] : [],
       isPublic: taxonomy.clearance === 'public',
       allowedRoles: taxonomy.clearance === 'public' ? [] : [taxonomy.clearance],
       blocks: templateBlocks
@@ -432,15 +458,27 @@ const sharedPaperSx = {
                     sx={{ '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' }, '& .MuiInputBase-root': { color: '#fff' }, '& .MuiFormLabel-root': { color: 'rgba(255,255,255,0.7)' } }}
                   />
                   <FormControl sx={{ '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' } }}>
-                    <InputLabel sx={{ color: 'rgba(255,255,255,0.7)' }}>Category</InputLabel>
+                    <InputLabel sx={{ color: 'rgba(255,255,255,0.7)' }}>Domain (Category)</InputLabel>
                     <Select 
-                      value={editForm.category} label="Category"
-                      onChange={e => setEditForm({...editForm, category: e.target.value as string})}
+                      value={editForm.category} label="Domain (Category)"
+                      onChange={e => setEditForm({...editForm, category: e.target.value as string, tags: []})}
                       sx={{ color: '#fff' }}
                     >
-                      <MenuItem value="operations">Operations</MenuItem>
-                      <MenuItem value="playbooks">Playbooks</MenuItem>
-                      <MenuItem value="academy">Academy</MenuItem>
+                      {WIKI_DOMAINS.map(domain => (
+                        <MenuItem key={domain.id} value={domain.id}>{domain.title}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <FormControl sx={{ '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' } }}>
+                    <InputLabel sx={{ color: 'rgba(255,255,255,0.7)' }}>Tag (Subcategory)</InputLabel>
+                    <Select 
+                      value={editForm.tags[0] || ''} label="Tag (Subcategory)"
+                      onChange={e => setEditForm({...editForm, tags: [e.target.value as string]})}
+                      sx={{ color: '#fff' }}
+                    >
+                      {WIKI_DOMAINS.find(d => d.id === editForm.category)?.subcategories.map(sub => (
+                        <MenuItem key={sub.id} value={sub.id}>{sub.title}</MenuItem>
+                      ))}
                     </Select>
                   </FormControl>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -452,7 +490,9 @@ const sharedPaperSx = {
                         sx={{ color: '#fff' }}
                       >
                         <MenuItem value=""><em>None (Unlinked)</em></MenuItem>
-                        {registryHotspots.map(h => (
+                        {registryHotspots
+                          .filter(h => h.category === editForm.category && h.subcategory === editForm.tags[0])
+                          .map(h => (
                           <MenuItem key={h.id} value={h.id}>{h.label} ({h.id})</MenuItem>
                         ))}
                       </Select>

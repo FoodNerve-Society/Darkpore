@@ -1,12 +1,37 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Drawer, Box, IconButton, useMediaQuery, useTheme, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Typography, Button } from '@mui/material';
+import { Drawer, Box, IconButton, useMediaQuery, useTheme, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Typography, Button, MenuItem, Select, InputLabel, FormControl } from '@mui/material';
 import { getHotspotMappings, getWikiDoc, WikiBlock, createRegistryHotspot } from '@/lib/actions/wiki';
 import { useSociety } from './SocietyContext';
 import WikiReader from '@/components/wiki/WikiReader';
 import CloseIcon from '@mui/icons-material/Close';
 import { useRouter } from 'next/navigation';
+
+const WIKI_DOMAINS = [
+  {
+    id: 'platform_features', title: 'Platform Features',
+    subcategories: [
+      { id: 'innovations', title: 'Innovations Hub' },
+      { id: 'workspace', title: 'Workspace Hub' },
+      { id: 'society', title: 'Modular Society' }
+    ]
+  },
+  {
+    id: 'operations', title: 'Operations & Admin',
+    subcategories: [
+      { id: 'moderation', title: 'Moderation' },
+      { id: 'finance', title: 'Finance & Escrow' }
+    ]
+  },
+  {
+    id: 'engineering', title: 'Engineering',
+    subcategories: [
+      { id: 'frontend', title: 'Frontend (UI/UX)' },
+      { id: 'backend', title: 'Backend (Data)' }
+    ]
+  }
+];
 
 interface WikiOverlayContextType {
   mappings: Record<string, string>;
@@ -43,16 +68,20 @@ export function WikiOverlayProvider({ children }: { children: React.ReactNode })
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [registerId, setRegisterId] = useState('');
   const [registerLabel, setRegisterLabel] = useState('');
+  const [registerCategory, setRegisterCategory] = useState('');
+  const [registerSubcategory, setRegisterSubcategory] = useState('');
 
   const openRegisterModal = (id: string) => {
     setRegisterId(id);
     setRegisterLabel(id.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
+    setRegisterCategory('');
+    setRegisterSubcategory('');
     setShowRegisterModal(true);
   };
 
   const handleCreateHotspot = async () => {
     if (!registerId || !registerLabel) return;
-    const res = await createRegistryHotspot(registerId, registerLabel);
+    const res = await createRegistryHotspot(registerId, registerLabel, registerCategory, registerSubcategory);
     if (res.success) {
       setShowRegisterModal(false);
       // Let the developer know they should link it in the studio
@@ -189,6 +218,40 @@ export function WikiOverlayProvider({ children }: { children: React.ReactNode })
             value={registerLabel} onChange={e => setRegisterLabel(e.target.value)}
             sx={{ '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' }, '& .MuiInputBase-root': { color: '#fff' }, '& .MuiFormLabel-root': { color: 'rgba(255,255,255,0.7)' } }}
           />
+          
+          <FormControl fullWidth sx={{ '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' }, '& .MuiInputBase-root': { color: '#fff' }, '& .MuiFormLabel-root': { color: 'rgba(255,255,255,0.7)' }, '& .MuiSvgIcon-root': { color: 'rgba(255,255,255,0.7)' } }}>
+            <InputLabel>Domain (Category)</InputLabel>
+            <Select
+              value={registerCategory}
+              label="Domain (Category)"
+              onChange={e => {
+                setRegisterCategory(e.target.value as string);
+                setRegisterSubcategory('');
+              }}
+              MenuProps={{ PaperProps: { sx: { bgcolor: '#1e293b', color: '#fff' } } }}
+            >
+              {WIKI_DOMAINS.map(domain => (
+                <MenuItem key={domain.id} value={domain.id}>{domain.title}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          {registerCategory && (
+            <FormControl fullWidth sx={{ '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' }, '& .MuiInputBase-root': { color: '#fff' }, '& .MuiFormLabel-root': { color: 'rgba(255,255,255,0.7)' }, '& .MuiSvgIcon-root': { color: 'rgba(255,255,255,0.7)' } }}>
+              <InputLabel>Tag (Subcategory)</InputLabel>
+              <Select
+                value={registerSubcategory}
+                label="Tag (Subcategory)"
+                onChange={e => setRegisterSubcategory(e.target.value as string)}
+                MenuProps={{ PaperProps: { sx: { bgcolor: '#1e293b', color: '#fff' } } }}
+              >
+                {WIKI_DOMAINS.find(d => d.id === registerCategory)?.subcategories.map(sub => (
+                  <MenuItem key={sub.id} value={sub.id}>{sub.title}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShowRegisterModal(false)} sx={{ color: 'rgba(255,255,255,0.5)' }}>Cancel</Button>

@@ -180,12 +180,14 @@ export async function getRegistryHotspots() {
   }
 }
 
-export async function createRegistryHotspot(id: string, label: string, description?: string) {
+export async function createRegistryHotspot(id: string, label: string, category?: string, subcategory?: string, description?: string) {
   try {
     const newHotspot = await prisma.wikiHotspotRegistry.create({
       data: {
         id,
         label,
+        category,
+        subcategory,
         description
       }
     });
