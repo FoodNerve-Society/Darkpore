@@ -63,18 +63,25 @@ const WIKI_DOMAINS = [
 // Predefined templates for each type
 const WIKI_TEMPLATES: Record<string, any[]> = {
   sop: [
-    { id: `b-${Date.now()}-1`, type: 'TEXT', visibility: 'public', content: '# Step 1: Open AI Studio\n- [ ] Navigate to Gemini AI Studio or ChatGPT.\n- [ ] Select the latest model.', variables: [] },
-    { id: `b-${Date.now()}-2`, type: 'PROMPT_BUILDER', visibility: 'public', content: 'Act as an expert copywriter for {{location}}. Write an article about {{topic}}.', variables: [{name: 'location', label: 'Target Location'}, {name: 'topic', label: 'Article Topic'}] },
-    { id: `b-${Date.now()}-3`, type: 'TEXT', visibility: 'public', content: '# Step 3: Review & Paste\n- [ ] Copy the AI response.\n- [ ] Paste it into the target document.', variables: [] }
+    { id: `b-${Date.now()}-1`, type: 'HEADER', visibility: 'public', content: 'Objective & Scope', headerLevel: 2 },
+    { id: `b-${Date.now()}-2`, type: 'CALLOUT', visibility: 'public', content: 'Prerequisites & Access: List required software or management approvals here.', calloutType: 'warning' },
+    { id: `b-${Date.now()}-3`, type: 'CHECKLIST', visibility: 'public', content: '', checklistItems: [{ id: '1', text: 'Step 1', checked: false }, { id: '2', text: 'Step 2', checked: false }] },
+    { id: `b-${Date.now()}-4`, type: 'PROMPT_BUILDER', visibility: 'public', content: 'Act as an expert...', variables: [{name: 'task', label: 'Task Name'}] },
+    { id: `b-${Date.now()}-5`, type: 'CALLOUT', visibility: 'public', content: 'Edge Cases & Escalation: If X fails, escalate to Y.', calloutType: 'danger' }
   ],
   policy: [
-    { id: `b-${Date.now()}-1`, type: 'TEXT', visibility: 'public', content: '# Policy Overview\nDescribe the scope and purpose of the policy.', variables: [] },
-    { id: `b-${Date.now()}-2`, type: 'TEXT', visibility: 'public', content: '## Guidelines\nDetail the rules and regulations.', variables: [] },
-    { id: `b-${Date.now()}-3`, type: 'TEXT', visibility: 'internal_staff', content: '## Enforcement\nExplain how this policy is enforced internally.', variables: [] }
+    { id: `b-${Date.now()}-1`, type: 'HEADER', visibility: 'public', content: 'The Policy Mandate', headerLevel: 2 },
+    { id: `b-${Date.now()}-2`, type: 'CALLOUT', visibility: 'public', content: 'Applicability: Define exactly who is bound by this policy.', calloutType: 'info' },
+    { id: `b-${Date.now()}-3`, type: 'TEXT', visibility: 'public', content: 'Provide the detailed guidelines and rules here.' },
+    { id: `b-${Date.now()}-4`, type: 'CALLOUT', visibility: 'public', content: 'Enforcement: State the consequences of violating this policy.', calloutType: 'danger' },
+    { id: `b-${Date.now()}-5`, type: 'TEXT', visibility: 'internal_staff', content: 'Authority & Revision History: Owned by [Name], Last updated [Date].' }
   ],
   technical: [
-    { id: `b-${Date.now()}-1`, type: 'TEXT', visibility: 'public', content: '# Architecture Overview\nSystem context.', variables: [] },
-    { id: `b-${Date.now()}-2`, type: 'TEXT', visibility: 'public', content: '## Dependencies\nLibraries and services used.', variables: [] }
+    { id: `b-${Date.now()}-1`, type: 'HEADER', visibility: 'public', content: 'System Overview', headerLevel: 2 },
+    { id: `b-${Date.now()}-2`, type: 'MEDIA', visibility: 'public', content: 'Upload Architecture Diagram here' },
+    { id: `b-${Date.now()}-3`, type: 'TEXT', visibility: 'public', content: 'Explain data flows and external APIs.' },
+    { id: `b-${Date.now()}-4`, type: 'CODE_SNIPPET', visibility: 'public', content: 'npm run deploy', codeLanguage: 'bash' },
+    { id: `b-${Date.now()}-5`, type: 'PROMPT_BUILDER', visibility: 'public', content: 'Analyze the following error log for the system...', variables: [{name: 'error_log', label: 'Error Log'}] }
   ]
 };
 

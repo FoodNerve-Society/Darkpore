@@ -80,6 +80,21 @@ export default function WikiEditor({
       total = 1 + (b.variables?.length || 0);
       if (b.content && b.content.trim().length > 0) filled++;
       b.variables?.forEach((v: any) => { if (v.name && v.label) filled++; });
+    } else if (b.type === 'HEADER') {
+      if (b.content && b.content.trim().length > 0) filled = 1;
+    } else if (b.type === 'CALLOUT') {
+      if (b.content && b.content.trim().length > 0) filled = 1;
+    } else if (b.type === 'CODE_SNIPPET') {
+      total = 2;
+      if (b.codeLanguage && b.codeLanguage.trim().length > 0) filled++;
+      if (b.content && b.content.trim().length > 0) filled++;
+    } else if (b.type === 'CHECKLIST') {
+      total = Math.max(1, b.checklistItems?.length || 1);
+      if (b.checklistItems && b.checklistItems.length > 0) {
+        filled = b.checklistItems.filter((i: any) => i.text.trim().length > 0).length;
+      }
+    } else if (b.type === 'MEDIA') {
+      if (b.mediaUrl || b.mediaFile) filled = 1;
     }
     return { filled, total, percent: Math.round((filled / total) * 100) };
   };

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Button, TextField, Chip, Divider, IconButton, Stepper, Step, StepLabel, StepContent, Breadcrumbs, Link, Checkbox, FormControlLabel, Paper } from '@mui/material';
+import { Box, Typography, Button, TextField, Chip, Divider, IconButton, Stepper, Step, StepLabel, StepContent, Breadcrumbs, Link, Checkbox, FormControlLabel, Paper, Alert } from '@mui/material';
 import { WikiBlock, getWikiHierarchy } from '@/lib/actions/wiki';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import SecurityIcon from '@mui/icons-material/Security';
@@ -35,6 +35,82 @@ function TextBlock({ content }: { content: string }) {
     </Box>
   );
 }
+
+// --- Header Block Component ---
+function HeaderBlock({ block }: { block: WikiBlock }) {
+  const level = block.headerLevel || 2;
+  const Tag = `h${level}` as any;
+  const variant = level === 1 ? 'h4' : level === 2 ? 'h5' : 'h6';
+  return <Typography variant={variant} component={Tag} sx={{ fontWeight: 800, color: '#0f172a', mt: 2, mb: 1 }}>{block.content}</Typography>;
+}
+
+// --- Callout Block Component ---
+function CalloutBlock({ block }: { block: WikiBlock }) {
+  const severity = block.calloutType === 'danger' ? 'error' : block.calloutType === 'warning' ? 'warning' : 'info';
+  return (
+    <Alert severity={severity} sx={{ mb: 2, borderRadius: '12px', '& .MuiAlert-message': { width: '100%' } }}>
+      <Typography sx={{ whiteSpace: 'pre-wrap', fontWeight: 500 }}>{block.content}</Typography>
+    </Alert>
+  );
+}
+
+// --- Code Snippet Block Component ---
+function CodeSnippetBlock({ block }: { block: WikiBlock }) {
+  return (
+    <Box sx={{ position: 'relative', bgcolor: '#0f172a', borderRadius: '12px', overflow: 'hidden', mb: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, py: 1, bgcolor: 'rgba(255,255,255,0.1)' }}>
+        <Typography sx={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase' }}>{block.codeLanguage || 'text'}</Typography>
+        <IconButton size="small" onClick={() => { navigator.clipboard.writeText(block.content); alert('Code copied!'); }} sx={{ color: '#94a3b8' }}><ContentCopyIcon fontSize="small" /></IconButton>
+      </Box>
+      <Box sx={{ p: 2, overflowX: 'auto' }}>
+        <Typography component="pre" sx={{ color: '#f8fafc', fontFamily: 'monospace', fontSize: '0.9rem', m: 0 }}>{block.content}</Typography>
+      </Box>
+    </Box>
+  );
+}
+
+// --- Checklist Block Component ---
+function ChecklistBlock({ block }: { block: WikiBlock }) {
+  const [items, setItems] = useState(block.checklistItems || []);
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
+      {items.map((item, idx) => (
+        <FormControlLabel 
+          key={item.id} 
+          control={
+            <Checkbox 
+              checked={item.checked} 
+              onChange={(e) => {
+                const newItems = [...items];
+                newItems[idx].checked = e.target.checked;
+                setItems(newItems);
+              }}
+              sx={{ '& .MuiSvgIcon-root': { fontSize: 24 } }} 
+            />
+          } 
+          label={<Typography sx={{ fontSize: '1.05rem', color: '#334155', textDecoration: item.checked ? 'line-through' : 'none', opacity: item.checked ? 0.6 : 1, transition: 'all 0.2s' }}>{item.text}</Typography>} 
+        />
+      ))}
+    </Box>
+  );
+}
+
+// --- Media Block Component ---
+function MediaBlock({ block }: { block: WikiBlock }) {
+  if (!block.mediaUrl && !block.mediaFile) return null;
+  const url = block.mediaUrl || (block.mediaFile ? URL.createObjectURL(block.mediaFile) : '');
+  return (
+    <Box sx={{ mb: 2, borderRadius: '16px', overflow: 'hidden', border: '1px solid #e2e8f0', bgcolor: '#f8fafc' }}>
+      <img src={url} alt={block.content || 'Media'} style={{ width: '100%', maxHeight: 400, objectFit: 'contain', display: 'block' }} />
+      {block.content && (
+        <Box sx={{ p: 2, borderTop: '1px solid #e2e8f0', bgcolor: '#fff' }}>
+          <Typography sx={{ color: '#64748b', fontSize: '0.9rem', textAlign: 'center', fontStyle: 'italic' }}>{block.content}</Typography>
+        </Box>
+      )}
+    </Box>
+  );
+}
+
 
 // --- Prompt Builder Component ---
 function PromptBuilderBlock({ block }: { block: WikiBlock }) {
@@ -198,8 +274,16 @@ export default function WikiReader({ doc, loading, isAdmin, hasAccess, canSeeBlo
                           [Admin View] Visibility: {block.visibility}
                         </Typography>
                       )}
+                      
+                      {/* Dynamic Renderer Mapping */}
                       {block.type === 'TEXT' && <TextBlock content={block.content} />}
+                      {block.type === 'HEADER' && <HeaderBlock block={block} />}
+                      {block.type === 'CALLOUT' && <CalloutBlock block={block} />}
+                      {block.type === 'CHECKLIST' && <ChecklistBlock block={block} />}
+                      {block.type === 'CODE_SNIPPET' && <CodeSnippetBlock block={block} />}
+                      {block.type === 'MEDIA' && <MediaBlock block={block} />}
                       {block.type === 'PROMPT_BUILDER' && <PromptBuilderBlock block={block} />}
+                      
                     </StepContent>
                   </Step>
                 ))}

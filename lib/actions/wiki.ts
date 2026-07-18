@@ -5,12 +5,29 @@ import { revalidatePath } from 'next/cache';
 
 export interface WikiBlock {
   id: string;
-  type: 'TEXT' | 'MEDIA' | 'PROMPT_BUILDER';
+  type: 'TEXT' | 'MEDIA' | 'PROMPT_BUILDER' | 'HEADER' | 'CALLOUT' | 'CHECKLIST' | 'CODE_SNIPPET';
   visibility: 'public' | 'internal_staff' | 'admin' | 'whitelist_only';
   whitelistUsers?: string[];
   content: string;
+  
+  // Media Block
   mediaUrl?: string;
+  mediaFile?: any; // Blob/File reference before upload
+  
+  // Prompt Builder Block
   variables?: { name: string; label: string }[];
+  
+  // Header Block
+  headerLevel?: 1 | 2 | 3;
+  
+  // Callout Block
+  calloutType?: 'info' | 'warning' | 'danger';
+  
+  // Checklist Block
+  checklistItems?: { id: string; text: string; checked: boolean }[];
+  
+  // Code Snippet Block
+  codeLanguage?: string;
 }
 
 export interface WikiDocInput {
