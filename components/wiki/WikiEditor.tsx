@@ -820,26 +820,39 @@ export default function WikiEditor({
         anchor="right"
         open={showSidePreview}
         variant="persistent"
-        PaperProps={{
-          sx: {
+        sx={{
+          '& .MuiDrawer-paper': {
             width: { xs: '100%', lg: '45vw' },
             boxShadow: '-8px 0 32px rgba(0,0,0,0.05)',
             borderLeft: '1px solid rgba(0,0,0,0.08)',
             bgcolor: '#f8fafc',
-            zIndex: 90
+            zIndex: 90,
+            display: 'flex',
+            flexDirection: 'column'
           }
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2, borderBottom: '1px solid rgba(0,0,0,0.05)', bgcolor: '#fff', position: 'sticky', top: 0, zIndex: 10 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <AutoAwesomeIcon sx={{ color: '#10b981', fontSize: 18 }} />
-            <Typography sx={{ fontWeight: 800, color: '#0f172a', letterSpacing: '0.05em', textTransform: 'uppercase', fontSize: '0.9rem' }}>Live Split Preview</Typography>
+        {/* Floating Pill Header (Absolute Position) */}
+        <Box sx={{ position: 'absolute', top: 24, right: 24, zIndex: 100 }}>
+          <Box sx={{ 
+            display: 'inline-flex', alignItems: 'center', gap: 2, 
+            background: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(20px)',
+            px: 2, py: 1, borderRadius: '100px', border: '1px solid rgba(0,0,0,0.08)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.08)'
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#0f172a' }}>
+              <AutoAwesomeIcon sx={{ color: '#8b5cf6', fontSize: 20 }} />
+              <Typography sx={{ fontWeight: 800, letterSpacing: '0.05em', fontSize: '0.9rem', whiteSpace: 'nowrap' }}>SPLIT PREVIEW</Typography>
+            </Box>
+            <Box sx={{ width: 1, height: 24, bgcolor: 'rgba(0,0,0,0.1)', flexShrink: 0 }} />
+            <IconButton onClick={() => setShowSidePreview(false)} size="small" sx={{ bgcolor: 'rgba(0,0,0,0.04)', '&:hover': { bgcolor: 'rgba(239,68,68,0.1)', color: '#ef4444' } }}>
+              <CloseIcon fontSize="small" />
+            </IconButton>
           </Box>
-          <IconButton onClick={() => setShowSidePreview(false)} size="small" sx={{ bgcolor: 'rgba(0,0,0,0.04)', '&:hover': { bgcolor: 'rgba(239,68,68,0.1)', color: '#ef4444' } }}>
-            <CloseIcon fontSize="small" />
-          </IconButton>
         </Box>
-        <Box sx={{ flex: 1, overflowY: 'auto', p: { xs: 2, md: 4 }, display: 'flex', justifyContent: 'center' }}>
+
+        <Box sx={{ flex: 1, overflowY: 'auto', p: { xs: 2, md: 4 }, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+
           <Box sx={{ width: '100%', maxWidth: 700, pb: 12 }}>
             <WikiReader 
               doc={editForm} 

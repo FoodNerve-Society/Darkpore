@@ -187,29 +187,14 @@ export default function WikiReader({ doc, loading, isAdmin, hasAccess, canSeeBlo
     }
   }, [doc?.slug]);
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: '#ffffff' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 3, borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: '#ffffff', position: 'relative' }}>
+      {headerContent && (
+        <Box sx={{ p: 2, position: 'absolute', top: 0, left: 0, zIndex: 10 }}>
           {headerContent}
-          <DocIcon sx={{ color: '#10b981' }} />
-          <Typography variant="subtitle2" sx={{ fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', color: '#0f172a' }}>
-            Omni-Wiki Reader {loading && <span style={{ opacity: 0.5, fontSize: '0.8rem', marginLeft: 8 }}>Loading...</span>}
-          </Typography>
         </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {isAdmin && doc && onEdit && (
-            <Button 
-              onClick={onEdit} 
-              startIcon={<EditIcon />}
-              sx={{ color: '#3b82f6', fontWeight: 700 }}
-            >
-              Edit SOP
-            </Button>
-          )}
-        </Box>
-      </Box>
+      )}
 
-      <Box sx={{ flex: 1, overflowY: 'auto', p: { xs: 2, sm: 6 } }}>
+      <Box sx={{ flex: 1, overflowY: 'auto', p: { xs: 2, sm: 6 }, pt: headerContent ? { xs: 6, sm: 8 } : { xs: 2, sm: 6 } }}>
         {!doc && !loading ? (
           <Box sx={{ textAlign: 'center', mt: 10 }}>
              <Typography sx={{ color: 'text.secondary', mb: 3 }}>Document not found.</Typography>
@@ -259,6 +244,49 @@ export default function WikiReader({ doc, loading, isAdmin, hasAccess, canSeeBlo
             
             <Divider sx={{ my: 2 }} />
 
+            {/* IN THIS SECTION (Children Documents) */}
+            {/* IN THIS SECTION (Children Documents) - Premium Glassmorphism */}
+            {doc.children && doc.children.length > 0 && (
+              <Box sx={{ 
+                mb: 4, p: 3, 
+                background: 'linear-gradient(135deg, rgba(248, 250, 252, 0.8), rgba(241, 245, 249, 0.4))',
+                backdropFilter: 'blur(20px)',
+                borderRadius: '24px', 
+                border: '1px solid rgba(226, 232, 240, 0.6)',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.04), inset 0 2px 4px rgba(255,255,255,1)' 
+              }}>
+                <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <FolderIcon sx={{ fontSize: 16, color: '#8b5cf6' }} /> In This Section
+                </Typography>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
+                  {doc.children.map((child: any) => (
+                    <Box 
+                      key={child.id}
+                      onClick={() => onNavigate && onNavigate(child.slug)}
+                      sx={{ 
+                        display: 'flex', alignItems: 'center', gap: 1.5,
+                        background: 'rgba(255,255,255,0.9)', 
+                        border: '1px solid rgba(0,0,0,0.04)', 
+                        fontWeight: 600, color: '#0f172a', fontSize: '0.9rem',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.02)', 
+                        py: 1, px: 2.5, borderRadius: '16px',
+                        cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        '&:hover': { 
+                          background: '#fff', 
+                          transform: 'translateY(-2px)', 
+                          boxShadow: '0 12px 24px rgba(139,92,246,0.15)',
+                          borderColor: 'rgba(139,92,246,0.2)'
+                        }
+                      }}
+                    >
+                      <DocIcon sx={{ fontSize: '1.1rem', color: '#8b5cf6' }} />
+                      {child.title}
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
+            )}
+
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               <Stepper orientation="vertical" nonLinear activeStep={-1} sx={{ mt: 2 }}>
                 {doc.blocks.filter(canSeeBlock).map((block: WikiBlock, index: number) => (
@@ -294,36 +322,6 @@ export default function WikiReader({ doc, loading, isAdmin, hasAccess, canSeeBlo
               )}
             </Box>
 
-            {doc.children && doc.children.length > 0 && (
-              <Box sx={{ mt: 6 }}>
-                <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a', mb: 2 }}>Sub-Documents</Typography>
-                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
-                  {doc.children.map((child: any) => (
-                    <Paper 
-                      key={child.id} 
-                      elevation={0}
-                      onClick={() => onNavigate && onNavigate(child.slug)}
-                      sx={{ 
-                        p: 2, display: 'flex', alignItems: 'center', gap: 2, 
-                        border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px',
-                        cursor: 'pointer', transition: 'all 0.2s',
-                        '&:hover': { bgcolor: '#f8fafc', borderColor: '#10b981', transform: 'translateY(-2px)' }
-                      }}
-                    >
-                      <FolderIcon sx={{ color: '#10b981' }} />
-                      <Box>
-                        <Typography sx={{ fontWeight: 700, color: '#0f172a' }}>{child.title}</Typography>
-                        {child.isPublic ? (
-                          <Typography variant="caption" sx={{ color: '#3b82f6', fontWeight: 600 }}>Public</Typography>
-                        ) : (
-                          <Typography variant="caption" sx={{ color: '#ef4444', fontWeight: 600 }}>Restricted</Typography>
-                        )}
-                      </Box>
-                    </Paper>
-                  ))}
-                </Box>
-              </Box>
-            )}
           </Box>
         ) : null}
       </Box>
