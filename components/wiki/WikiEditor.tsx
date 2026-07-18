@@ -21,28 +21,31 @@ import CheckIcon from '@mui/icons-material/Check';
 
 import WikiBlockBuilder from './WikiBlockBuilder';
 import WikiReader from './WikiReader';
+import PremiumTextField from '@/components/PremiumTextField';
+import PremiumAutocomplete from '@/components/PremiumAutocomplete';
+import PremiumSwitch from '@/components/PremiumSwitch';
 
 const WIKI_DOMAINS = [
   {
-    id: 'platform_features', title: 'Platform Features',
+    id: 'platform_features', title: 'Platform Features', description: 'Core product capabilities and hubs',
     subcategories: [
-      { id: 'innovations', title: 'Innovations Hub' },
-      { id: 'workspace', title: 'Workspace Hub' },
-      { id: 'society', title: 'Modular Society' }
+      { id: 'innovations', title: 'Innovations Hub', description: 'Tools and systems for innovation management' },
+      { id: 'workspace', title: 'Workspace Hub', description: 'Collaboration and productivity environments' },
+      { id: 'society', title: 'Modular Society', description: 'Community and network structures' }
     ]
   },
   {
-    id: 'operations', title: 'Operations & Admin',
+    id: 'operations', title: 'Operations & Admin', description: 'Internal management and controls',
     subcategories: [
-      { id: 'moderation', title: 'Moderation' },
-      { id: 'finance', title: 'Finance & Escrow' }
+      { id: 'moderation', title: 'Moderation', description: 'Content review and safety guidelines' },
+      { id: 'finance', title: 'Finance & Escrow', description: 'Payment processing and ledger management' }
     ]
   },
   {
-    id: 'engineering', title: 'Engineering',
+    id: 'engineering', title: 'Engineering', description: 'Technical documentation and architecture',
     subcategories: [
-      { id: 'frontend', title: 'Frontend (UI/UX)' },
-      { id: 'backend', title: 'Backend (Data)' }
+      { id: 'frontend', title: 'Frontend (UI/UX)', description: 'Client-side code, design systems, and components' },
+      { id: 'backend', title: 'Backend (Data)', description: 'Server architecture, databases, and APIs' }
     ]
   }
 ];
@@ -319,75 +322,80 @@ export default function WikiEditor({
 
                   {/* Fields */}
                   <Box sx={{ p: 3, display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
-                    <TextField 
-                      label="Title" variant="outlined" 
+                    <PremiumTextField 
+                      label="Title" 
                       value={editForm.title} onChange={e => setEditForm({...editForm, title: e.target.value})}
-                      sx={{ '& fieldset': { borderColor: '#cbd5e1' }, '& .MuiInputBase-root': { color: '#0f172a', bgcolor: '#fff' }, '& .MuiFormLabel-root': { color: '#64748b' } }}
+                      colorTheme="#3b82f6"
                     />
-                    <TextField 
-                      label="Unique Slug" variant="outlined" 
+                    <PremiumTextField 
+                      label="Unique Slug" 
                       value={editForm.slug} onChange={e => setEditForm({...editForm, slug: e.target.value})}
-                      sx={{ '& fieldset': { borderColor: '#cbd5e1' }, '& .MuiInputBase-root': { color: '#0f172a', bgcolor: '#fff' }, '& .MuiFormLabel-root': { color: '#64748b' } }}
+                      colorTheme="#3b82f6"
                     />
-                    <FormControl sx={{ '& fieldset': { borderColor: '#cbd5e1' } }}>
-                      <InputLabel sx={{ color: '#64748b' }}>Domain (Category)</InputLabel>
-                      <Select 
-                        value={editForm.category} label="Domain (Category)"
-                        onChange={e => setEditForm({...editForm, category: e.target.value as string, tags: []})}
-                        sx={{ color: '#0f172a', bgcolor: '#fff' }}
-                      >
-                        {WIKI_DOMAINS.map(domain => (
-                          <MenuItem key={domain.id} value={domain.id}>{domain.title}</MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                    <FormControl sx={{ '& fieldset': { borderColor: '#cbd5e1' } }}>
-                      <InputLabel sx={{ color: '#64748b' }}>Tag (Subcategory)</InputLabel>
-                      <Select 
-                        value={editForm.tags[0] || ''} label="Tag (Subcategory)"
-                        onChange={e => setEditForm({...editForm, tags: [e.target.value as string]})}
-                        sx={{ color: '#0f172a', bgcolor: '#fff' }}
-                      >
-                        {WIKI_DOMAINS.find(d => d.id === editForm.category)?.subcategories.map(sub => (
-                          <MenuItem key={sub.id} value={sub.id}>{sub.title}</MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                    <FormControl sx={{ '& fieldset': { borderColor: '#cbd5e1' } }}>
-                      <InputLabel sx={{ color: '#64748b' }}>Link to UI Hotspot</InputLabel>
-                      <Select 
-                        value={editForm.hotspotId || ''} label="Link to UI Hotspot"
-                        onChange={e => setEditForm({...editForm, hotspotId: e.target.value as string})}
-                        sx={{ color: '#0f172a', bgcolor: '#fff' }}
-                      >
-                        <MenuItem value=""><em>None (Unlinked)</em></MenuItem>
-                        {registryHotspots
-                          .filter(h => h.category === editForm.category && h.subcategory === editForm.tags[0])
-                          .map(h => (
-                          <MenuItem key={h.id} value={h.id}>{h.label} ({h.id})</MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                    <FormControl sx={{ '& fieldset': { borderColor: '#cbd5e1' } }}>
-                      <InputLabel sx={{ color: '#64748b' }}>Parent Document (Optional)</InputLabel>
-                      <Select 
-                        value={editForm.parentId || ''} label="Parent Document (Optional)"
-                        onChange={e => setEditForm({...editForm, parentId: e.target.value as string})}
-                        sx={{ color: '#0f172a', bgcolor: '#fff' }}
-                      >
-                        <MenuItem value=""><em>None (Top Level)</em></MenuItem>
-                        {wikiDocs
-                          .filter(d => d.id !== doc?.id) // Prevent self-nesting
-                          .map(d => (
-                          <MenuItem key={d.id} value={d.id}>{d.title}</MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
+                    <PremiumAutocomplete
+                      label="Domain (Category)"
+                      value={editForm.category}
+                      options={WIKI_DOMAINS.map(domain => ({ label: domain.title, value: domain.id, description: domain.description }))}
+                      onChange={(_, val: any) => setEditForm({...editForm, category: val?.value || val, tags: []})}
+                      colorTheme="#3b82f6"
+                      disableClearable
+                      renderOption={(props, option: any) => (
+                        <Box component="li" {...props} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{option.label}</Typography>
+                          {option.description && (
+                            <Typography variant="caption" sx={{ color: 'text.secondary', mt: 0.5, lineHeight: 1.2 }}>
+                              {option.description}
+                            </Typography>
+                          )}
+                        </Box>
+                      )}
+                    />
+                    <PremiumAutocomplete
+                      label="Tag (Subcategory)"
+                      value={editForm.tags[0] || ''}
+                      options={WIKI_DOMAINS.find(d => d.id === editForm.category)?.subcategories.map(sub => ({ label: sub.title, value: sub.id, description: sub.description })) || []}
+                      onChange={(_, val: any) => setEditForm({...editForm, tags: [val?.value || val]})}
+                      colorTheme="#3b82f6"
+                      disableClearable
+                      renderOption={(props, option: any) => (
+                        <Box component="li" {...props} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{option.label}</Typography>
+                          {option.description && (
+                            <Typography variant="caption" sx={{ color: 'text.secondary', mt: 0.5, lineHeight: 1.2 }}>
+                              {option.description}
+                            </Typography>
+                          )}
+                        </Box>
+                      )}
+                    />
+                    <PremiumAutocomplete
+                      label="Link to UI Hotspot"
+                      value={editForm.hotspotId || ''}
+                      options={[
+                        { label: 'None (Unlinked)', value: '' },
+                        ...registryHotspots.filter(h => h.category === editForm.category && h.subcategory === editForm.tags[0]).map(h => ({ label: `${h.label} (${h.id})`, value: h.id }))
+                      ]}
+                      onChange={(_, val: any) => setEditForm({...editForm, hotspotId: val?.value ?? val})}
+                      colorTheme="#3b82f6"
+                      disableClearable
+                    />
+                    <PremiumAutocomplete
+                      label="Parent Document (Optional)"
+                      value={editForm.parentId || ''}
+                      options={[
+                        { label: 'None (Top Level)', value: '' },
+                        ...wikiDocs.filter(d => d.id !== doc?.id).map(d => ({ label: d.title, value: d.id }))
+                      ]}
+                      onChange={(_, val: any) => setEditForm({...editForm, parentId: val?.value ?? val})}
+                      colorTheme="#3b82f6"
+                      disableClearable
+                    />
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <FormControlLabel 
-                        control={<Switch checked={editForm.isPublic} onChange={e => setEditForm({...editForm, isPublic: e.target.checked})} sx={{ '& .MuiSwitch-switchBase.Mui-checked': { color: '#10b981' }, '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#10b981' } }} />} 
-                        label={<Typography sx={{ fontWeight: 600 }}>Is Public Document?</Typography>} 
-                        sx={{ color: '#0f172a' }}
+                      <PremiumSwitch
+                        checked={editForm.isPublic}
+                        onChange={e => setEditForm({...editForm, isPublic: e.target.checked})}
+                        colorTheme="#10b981"
+                        label="Is Public Document?"
                       />
                     </Box>
                   </Box>

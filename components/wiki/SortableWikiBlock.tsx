@@ -11,6 +11,11 @@ import { CSS } from '@dnd-kit/utilities';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+
+import PremiumTextField from '@/components/PremiumTextField';
+import PremiumAutocomplete from '@/components/PremiumAutocomplete';
+import PremiumButton from '@/components/PremiumButton';
+import PremiumMarkdownEditor from '@/components/PremiumMarkdownEditor';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import ImageIcon from '@mui/icons-material/Image';
@@ -179,107 +184,150 @@ export default function SortableWikiBlock({
 
             <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
               <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
-                <FormControl sx={{ '& fieldset': { borderColor: '#cbd5e1' } }}>
-                  <InputLabel sx={{ color: '#64748b' }}>Type</InputLabel>
-                  <Select value={block.type} label="Type" onChange={e => onUpdate(block.id, { type: e.target.value })} sx={{ color: '#0f172a' }}>
-                    <MenuItem value="TEXT">Text Markdown</MenuItem>
-                    <MenuItem value="HEADER">Header</MenuItem>
-                    <MenuItem value="CALLOUT">Callout (Alert)</MenuItem>
-                    <MenuItem value="CHECKLIST">Checklist</MenuItem>
-                    <MenuItem value="CODE_SNIPPET">Code Snippet</MenuItem>
-                    <MenuItem value="MEDIA">Media / Image</MenuItem>
-                    <MenuItem value="PROMPT_BUILDER">Prompt Builder</MenuItem>
-                  </Select>
-                </FormControl>
-                <FormControl sx={{ '& fieldset': { borderColor: '#cbd5e1' } }}>
-                  <InputLabel sx={{ color: '#64748b' }}>Visibility</InputLabel>
-                  <Select value={block.visibility} label="Visibility" onChange={e => onUpdate(block.id, { visibility: e.target.value })} sx={{ color: '#0f172a' }}>
-                    <MenuItem value="public">Public</MenuItem>
-                    <MenuItem value="internal_staff">Internal Staff</MenuItem>
-                    <MenuItem value="admin">Admin Only</MenuItem>
-                    <MenuItem value="whitelist_only">Whitelist Only</MenuItem>
-                  </Select>
-                </FormControl>
+                <PremiumAutocomplete
+                  label="Block Type"
+                  value={block.type}
+                  options={[
+                    { label: 'Text Markdown', value: 'TEXT', description: 'Standard formatted content area' },
+                    { label: 'Header', value: 'HEADER', description: 'Large section titles and dividers' },
+                    { label: 'Callout (Alert)', value: 'CALLOUT', description: 'Highlight important information' },
+                    { label: 'Checklist', value: 'CHECKLIST', description: 'Interactive to-do list items' },
+                    { label: 'Code Snippet', value: 'CODE_SNIPPET', description: 'Formatted code block with syntax styling' },
+                    { label: 'Media / Image', value: 'MEDIA', description: 'Embed images and visual assets' },
+                    { label: 'Prompt Builder', value: 'PROMPT_BUILDER', description: 'Interactive AI prompt interface' },
+                  ]}
+                  onChange={(_, val: any) => onUpdate(block.id, { type: val?.value || val })}
+                  colorTheme={color}
+                  disableClearable
+                  renderOption={(props, option: any) => (
+                    <Box component="li" {...props} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>{option.label}</Typography>
+                      {option.description && (
+                        <Typography variant="caption" sx={{ color: 'text.secondary', mt: 0.5, lineHeight: 1.2 }}>
+                          {option.description}
+                        </Typography>
+                      )}
+                    </Box>
+                  )}
+                />
+                <PremiumAutocomplete
+                  label="Visibility"
+                  value={block.visibility}
+                  options={[
+                    { label: 'Public', value: 'public', description: 'Visible to anyone on the internet' },
+                    { label: 'Internal Staff', value: 'internal_staff', description: 'Visible to logged-in team members' },
+                    { label: 'Admin Only', value: 'admin', description: 'Visible to platform administrators only' },
+                    { label: 'Whitelist Only', value: 'whitelist_only', description: 'Visible only to explicitly permitted users' },
+                  ]}
+                  onChange={(_, val: any) => onUpdate(block.id, { visibility: val?.value || val })}
+                  colorTheme={color}
+                  disableClearable
+                  renderOption={(props, option: any) => (
+                    <Box component="li" {...props} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>{option.label}</Typography>
+                      {option.description && (
+                        <Typography variant="caption" sx={{ color: 'text.secondary', mt: 0.5, lineHeight: 1.2 }}>
+                          {option.description}
+                        </Typography>
+                      )}
+                    </Box>
+                  )}
+                />
               </Box>
 
               {/* Dynamic UI based on block type */}
               {block.type === 'HEADER' && (
                 <Box sx={{ display: 'flex', gap: 2 }}>
-                  <FormControl sx={{ width: 120, '& fieldset': { borderColor: '#cbd5e1' } }}>
-                    <InputLabel sx={{ color: '#64748b' }}>Size</InputLabel>
-                    <Select value={block.headerLevel || 2} label="Size" onChange={e => onUpdate(block.id, { headerLevel: e.target.value })} sx={{ color: '#0f172a' }}>
-                      <MenuItem value={1}>H1 (Large)</MenuItem>
-                      <MenuItem value={2}>H2 (Medium)</MenuItem>
-                      <MenuItem value={3}>H3 (Small)</MenuItem>
-                    </Select>
-                  </FormControl>
-                  <TextField 
+                  <Box sx={{ width: 160 }}>
+                    <PremiumAutocomplete
+                      label="Size"
+                      value={block.headerLevel || 2}
+                      options={[
+                        { label: 'H1 (Large)', value: 1 },
+                        { label: 'H2 (Medium)', value: 2 },
+                        { label: 'H3 (Small)', value: 3 },
+                      ]}
+                      onChange={(_, val: any) => onUpdate(block.id, { headerLevel: val?.value || val })}
+                      colorTheme={color}
+                      disableClearable
+                    />
+                  </Box>
+                  <PremiumTextField 
                     fullWidth label="Header Text" value={block.content} onChange={e => onUpdate(block.id, { content: e.target.value })}
-                    sx={{ '& fieldset': { borderColor: '#cbd5e1' } }}
+                    colorTheme={color}
                   />
                 </Box>
               )}
 
               {block.type === 'CALLOUT' && (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <FormControl sx={{ '& fieldset': { borderColor: '#cbd5e1' } }}>
-                    <InputLabel sx={{ color: '#64748b' }}>Callout Style</InputLabel>
-                    <Select value={block.calloutType || 'info'} label="Callout Style" onChange={e => onUpdate(block.id, { calloutType: e.target.value })} sx={{ color: '#0f172a' }}>
-                      <MenuItem value="info">Info (Blue)</MenuItem>
-                      <MenuItem value="warning">Warning (Yellow)</MenuItem>
-                      <MenuItem value="danger">Danger (Red)</MenuItem>
-                    </Select>
-                  </FormControl>
-                  <TextField 
-                    multiline fullWidth minRows={2} label="Callout Text" value={block.content} onChange={e => onUpdate(block.id, { content: e.target.value })}
-                    sx={{ '& fieldset': { borderColor: '#cbd5e1' } }}
+                  <PremiumAutocomplete
+                    label="Callout Style"
+                    value={block.calloutType || 'info'}
+                    options={[
+                      { label: 'Info (Blue)', value: 'info' },
+                      { label: 'Warning (Yellow)', value: 'warning' },
+                      { label: 'Danger (Red)', value: 'danger' },
+                    ]}
+                    onChange={(_, val: any) => onUpdate(block.id, { calloutType: val?.value || val })}
+                    colorTheme={color}
+                    disableClearable
+                  />
+                  <PremiumMarkdownEditor 
+                    fullWidth minRows={2} label="Callout Text" value={block.content} onChange={(e: any) => onUpdate(block.id, { content: e.target.value })}
+                    colorTheme={color}
                   />
                 </Box>
               )}
 
               {block.type === 'CODE_SNIPPET' && (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <TextField 
+                  <PremiumTextField 
                     label="Language (e.g. javascript, python)" value={block.codeLanguage || ''} onChange={e => onUpdate(block.id, { codeLanguage: e.target.value })}
-                    sx={{ '& fieldset': { borderColor: '#cbd5e1' } }}
+                    colorTheme={color}
                   />
-                  <TextField 
+                  <PremiumTextField 
                     multiline fullWidth minRows={4} label="Code Content" value={block.content} onChange={e => onUpdate(block.id, { content: e.target.value })}
-                    sx={{ '& fieldset': { borderColor: '#cbd5e1' }, '& .MuiInputBase-root': { fontFamily: 'monospace', bgcolor: '#f8fafc' } }}
+                    colorTheme={color}
+                    sx={{ '& .MuiInputBase-root': { fontFamily: 'monospace', bgcolor: alpha(color, 0.02) } }}
                   />
                 </Box>
               )}
 
               {block.type === 'CHECKLIST' && (
-                <Box sx={{ bgcolor: '#f1f5f9', p: 3, borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
-                  <Typography variant="subtitle2" sx={{ color: '#3b82f6', mb: 1, display: 'block', fontWeight: 800 }}>Checklist Items</Typography>
+                <Box sx={{ bgcolor: alpha(color, 0.03), p: 3, borderRadius: '16px', border: `1px dashed ${alpha(color, 0.2)}` }}>
+                  <Typography variant="subtitle2" sx={{ color: color, mb: 2, display: 'block', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Checklist Items</Typography>
                   {(block.checklistItems || []).map((item: any, iIndex: number) => (
-                    <Box key={item.id} sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'center' }}>
-                      <Checkbox disabled checked={item.checked} />
-                      <TextField 
+                    <Box key={item.id} sx={{ display: 'flex', gap: 1.5, mb: 1.5, alignItems: 'center', p: 1, pr: 2, bgcolor: '#fff', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                      <DragIndicatorIcon sx={{ color: 'rgba(0,0,0,0.2)' }} />
+                      <Checkbox disabled checked={item.checked} sx={{ color: alpha(color, 0.4), '&.Mui-checked': { color } }} />
+                      <PremiumTextField 
                         size="small" placeholder="Checklist item text..." value={item.text} 
                         onChange={e => {
                           const newItems = [...(block.checklistItems || [])];
                           newItems[iIndex].text = e.target.value;
                           onUpdate(block.id, { checklistItems: newItems });
                         }}
-                        sx={{ flex: 1, '& fieldset': { borderColor: '#cbd5e1' }, bgcolor: '#fff' }}
+                        colorTheme={color}
+                        sx={{ flex: 1 }}
                       />
-                      <IconButton color="error" onClick={() => {
+                      <IconButton color="error" size="small" sx={{ '&:hover': { bgcolor: 'rgba(239,68,68,0.1)' } }} onClick={() => {
                         const newItems = [...(block.checklistItems || [])];
                         newItems.splice(iIndex, 1);
                         onUpdate(block.id, { checklistItems: newItems });
                       }}>
-                        <DeleteIcon />
+                        <DeleteIcon fontSize="small" />
                       </IconButton>
                     </Box>
                   ))}
-                  <Button size="small" variant="outlined" onClick={() => {
-                    const newItems = [...(block.checklistItems || []), { id: Date.now().toString(), text: '', checked: false }];
-                    onUpdate(block.id, { checklistItems: newItems });
-                  }} sx={{ color: '#3b82f6', borderColor: 'rgba(59, 130, 246, 0.3)', bgcolor: '#fff', borderRadius: 2, fontWeight: 700 }}>
-                    + Add Item
-                  </Button>
+                  <Box sx={{ mt: 2 }}>
+                    <PremiumButton size="small" baseColor={color} onClick={() => {
+                      const newItems = [...(block.checklistItems || []), { id: Date.now().toString(), text: '', checked: false }];
+                      onUpdate(block.id, { checklistItems: newItems });
+                    }}>
+                      + Add Item
+                    </PremiumButton>
+                  </Box>
                 </Box>
               )}
 
@@ -306,73 +354,88 @@ export default function SortableWikiBlock({
                       <Typography sx={{ color: '#94a3b8', fontSize: '0.75rem', mt: 0.5 }}>Will be uploaded when published</Typography>
                     </Box>
                   )}
-                  <TextField 
+                  <PremiumTextField 
                     fullWidth label="Caption (Optional)" value={block.content} onChange={e => onUpdate(block.id, { content: e.target.value })}
-                    sx={{ '& fieldset': { borderColor: '#cbd5e1' } }}
+                    colorTheme={color}
                   />
                 </Box>
               )}
 
               {block.type === 'PROMPT_BUILDER' && (
-                <Box sx={{ bgcolor: '#f1f5f9', p: 3, borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
-                  <Typography variant="subtitle2" sx={{ color: '#3b82f6', mb: 1, display: 'block', fontWeight: 800 }}>Prompt Variables</Typography>
+                <Box sx={{ bgcolor: alpha(color, 0.03), p: 3, borderRadius: '16px', border: `1px dashed ${alpha(color, 0.2)}` }}>
+                  <Typography variant="subtitle2" sx={{ color: color, mb: 1, display: 'block', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Prompt Variables</Typography>
                   <Typography variant="caption" sx={{ color: '#64748b', mb: 3, display: 'block' }}>
                     Add curly braces {"{{variable_name}}"} in your prompt, then define them below.
                   </Typography>
                   
                   {(block.variables || []).map((v: any, vIndex: number) => (
-                    <Box key={vIndex} sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                      <TextField 
+                    <Box key={vIndex} sx={{ display: 'flex', gap: 1.5, mb: 1.5, alignItems: 'center', p: 1, pr: 2, bgcolor: '#fff', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                      <DragIndicatorIcon sx={{ color: 'rgba(0,0,0,0.2)' }} />
+                      <PremiumTextField 
                         size="small" label="Variable Name (no braces)" value={v.name} 
                         onChange={e => {
                           const newVars = [...(block.variables || [])];
                           newVars[vIndex].name = e.target.value;
                           onUpdate(block.id, { variables: newVars });
                         }}
-                        sx={{ flex: 1, '& fieldset': { borderColor: '#cbd5e1' }, '& .MuiInputBase-root': { color: '#0f172a', bgcolor: '#fff' }, '& .MuiFormLabel-root': { color: '#64748b' } }}
+                        colorTheme={color}
+                        sx={{ flex: 1 }}
                       />
-                      <TextField 
+                      <PremiumTextField 
                         size="small" label="Input Label" value={v.label} 
                         onChange={e => {
                           const newVars = [...(block.variables || [])];
                           newVars[vIndex].label = e.target.value;
                           onUpdate(block.id, { variables: newVars });
                         }}
-                        sx={{ flex: 1, '& fieldset': { borderColor: '#cbd5e1' }, '& .MuiInputBase-root': { color: '#0f172a', bgcolor: '#fff' }, '& .MuiFormLabel-root': { color: '#64748b' } }}
+                        colorTheme={color}
+                        sx={{ flex: 1 }}
                       />
                       <IconButton 
-                        color="error" 
+                        color="error" size="small" sx={{ '&:hover': { bgcolor: 'rgba(239,68,68,0.1)' } }}
                         onClick={() => {
                           const newVars = [...(block.variables || [])];
                           newVars.splice(vIndex, 1);
                           onUpdate(block.id, { variables: newVars });
                         }}
                       >
-                        <DeleteIcon />
+                        <DeleteIcon fontSize="small" />
                       </IconButton>
                     </Box>
                   ))}
-                  <Button 
-                    size="small" 
-                    variant="outlined" 
-                    onClick={() => {
-                      const newVars = [...(block.variables || []), { name: 'new_var', label: 'New Variable' }];
-                      onUpdate(block.id, { variables: newVars });
-                    }}
-                    sx={{ color: '#3b82f6', borderColor: 'rgba(59, 130, 246, 0.3)', bgcolor: '#fff', borderRadius: 2, fontWeight: 700 }}
-                  >
-                    + Add Variable
-                  </Button>
+                  <Box sx={{ mt: 2 }}>
+                    <PremiumButton 
+                      size="small" 
+                      baseColor={color}
+                      onClick={() => {
+                        const newVars = [...(block.variables || []), { name: 'new_var', label: 'New Variable' }];
+                        onUpdate(block.id, { variables: newVars });
+                      }}
+                    >
+                      + Add Variable
+                    </PremiumButton>
+                  </Box>
                 </Box>
               )}
 
-              {(block.type === 'PROMPT_BUILDER' || block.type === 'TEXT') && (
-                <TextField 
+              {block.type === 'TEXT' && (
+                <PremiumMarkdownEditor
+                  fullWidth minRows={6}
+                  label="Content (Markdown Supported)"
+                  value={block.content}
+                  onChange={(e: any) => onUpdate(block.id, { content: e.target.value })}
+                  colorTheme={color}
+                />
+              )}
+
+              {block.type === 'PROMPT_BUILDER' && (
+                <PremiumTextField 
                   multiline fullWidth minRows={6}
-                  label={block.type === 'PROMPT_BUILDER' ? "Prompt Template" : "Content (Markdown Supported)"}
+                  label="Prompt Template"
                   value={block.content}
                   onChange={e => onUpdate(block.id, { content: e.target.value })}
-                  sx={{ '& fieldset': { borderColor: '#cbd5e1' }, '& .MuiInputBase-root': { color: '#0f172a', fontFamily: 'monospace', bgcolor: '#f8fafc' }, '& .MuiFormLabel-root': { color: '#64748b' } }}
+                  colorTheme={color}
+                  sx={{ '& .MuiInputBase-root': { fontFamily: 'monospace', bgcolor: alpha(color, 0.02) } }}
                 />
               )}
             </Box>
