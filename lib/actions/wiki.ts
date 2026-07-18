@@ -24,6 +24,7 @@ export interface WikiDocInput {
   tags: string[];
   authorId: string;
   hotspotId?: string | null;
+  parentId?: string | null;
 }
 
 export async function createOrUpdateWikiDoc(data: WikiDocInput) {
@@ -49,6 +50,7 @@ export async function createOrUpdateWikiDoc(data: WikiDocInput) {
         blocks: JSON.stringify(data.blocks),
         tags: JSON.stringify(data.tags),
         hotspotId: finalHotspotId,
+        parentId: data.parentId || null,
       },
       create: {
         slug: data.slug,
@@ -61,6 +63,7 @@ export async function createOrUpdateWikiDoc(data: WikiDocInput) {
         tags: JSON.stringify(data.tags),
         authorId: data.authorId,
         hotspotId: finalHotspotId,
+        parentId: data.parentId || null,
       },
     });
 
@@ -80,6 +83,9 @@ export async function getWikiDoc(slug: string) {
         author: {
           select: { name: true, avatarUrl: true },
         },
+        children: {
+          select: { id: true, slug: true, title: true, isPublic: true }
+        }
       },
     });
 
@@ -97,6 +103,33 @@ export async function getWikiDoc(slug: string) {
     };
   } catch (error: any) {
     console.error('Error fetching wiki doc:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getWikiHierarchy(slug: string) {
+  try {
+    const breadcrumbs = [];
+    let currentSlug = slug;
+    
+    // Safety break to prevent infinite loops in case of bad data
+    let depth = 0;
+    while (currentSlug && depth < 10) {
+      const doc = await prisma.omniWikiDoc.findUnique({
+        where: { slug: currentSlug },
+        select: { slug: true, title: true, parent: { select: { slug: true } } }
+      });
+      
+      if (!doc) break;
+      
+      breadcrumbs.unshift({ slug: doc.slug, title: doc.title });
+      currentSlug = doc.parent?.slug || '';
+      depth++;
+    }
+    
+    return { success: true, data: breadcrumbs };
+  } catch (error: any) {
+    console.error('Error fetching wiki hierarchy:', error);
     return { success: false, error: error.message };
   }
 }

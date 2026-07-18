@@ -667,6 +667,7 @@ model OmniWikiDoc {
   blocks       String   @default("[]") // JSON stringified array of WikiBlock objects
   
   // Metadata
+  parentId     String?
   hotspotId    String?  @unique
   tags         String   @default("[]") // JSON stringified array of tags
   authorId     String
@@ -674,6 +675,8 @@ model OmniWikiDoc {
   updatedAt    DateTime @updatedAt
 
   author       User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent       OmniWikiDoc?  @relation("WikiHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children     OmniWikiDoc[] @relation("WikiHierarchy")
 
   @@index([category])
 }

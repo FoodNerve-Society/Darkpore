@@ -1,12 +1,40 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Box, Typography, Button, TextField, Chip, Divider, IconButton } from '@mui/material';
-import { WikiBlock } from '@/lib/actions/wiki';
+import React, { useState, useEffect } from 'react';
+import { Box, Typography, Button, TextField, Chip, Divider, IconButton, Stepper, Step, StepLabel, StepContent, Breadcrumbs, Link, Checkbox, FormControlLabel, Paper } from '@mui/material';
+import { WikiBlock, getWikiHierarchy } from '@/lib/actions/wiki';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import SecurityIcon from '@mui/icons-material/Security';
 import DocIcon from '@mui/icons-material/Description';
 import EditIcon from '@mui/icons-material/Edit';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import FolderIcon from '@mui/icons-material/Folder';
+
+// --- Text Block Component with Checklists ---
+function TextBlock({ content }: { content: string }) {
+  const lines = content.split('\n');
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+      {lines.map((line, i) => {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('- [ ]')) {
+          return <FormControlLabel key={i} control={<Checkbox sx={{ '& .MuiSvgIcon-root': { fontSize: 24 } }} />} label={<Typography sx={{ fontSize: '1.05rem', color: '#334155' }}>{trimmed.replace('- [ ]', '').trim()}</Typography>} />;
+        }
+        if (trimmed.startsWith('- [x]') || trimmed.startsWith('- [X]')) {
+          return <FormControlLabel key={i} control={<Checkbox defaultChecked sx={{ '& .MuiSvgIcon-root': { fontSize: 24 } }} />} label={<Typography sx={{ fontSize: '1.05rem', color: '#94a3b8', textDecoration: 'line-through' }}>{trimmed.substring(5).trim()}</Typography>} />;
+        }
+        if (trimmed.startsWith('# ')) {
+          return <Typography key={i} variant="h5" sx={{ fontWeight: 800, mt: 2, mb: 1, color: '#0f172a' }}>{trimmed.replace('# ', '')}</Typography>;
+        }
+        if (trimmed.startsWith('## ')) {
+          return <Typography key={i} variant="h6" sx={{ fontWeight: 700, mt: 2, mb: 1, color: '#1e293b' }}>{trimmed.replace('## ', '')}</Typography>;
+        }
+        if (!trimmed) return <Box key={i} sx={{ height: 8 }} />;
+        return <Typography key={i} sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.7, color: '#334155', fontSize: '1.05rem' }}>{line}</Typography>;
+      })}
+    </Box>
+  );
+}
 
 // --- Prompt Builder Component ---
 function PromptBuilderBlock({ block }: { block: WikiBlock }) {
@@ -66,10 +94,22 @@ interface WikiReaderProps {
   hasAccess: boolean;
   canSeeBlock: (block: WikiBlock) => boolean;
   onEdit?: () => void;
+  onNavigate?: (slug: string) => void;
   headerContent?: React.ReactNode;
 }
 
-export default function WikiReader({ doc, loading, isAdmin, hasAccess, canSeeBlock, onEdit, headerContent }: WikiReaderProps) {
+export default function WikiReader({ doc, loading, isAdmin, hasAccess, canSeeBlock, onEdit, onNavigate, headerContent }: WikiReaderProps) {
+  const [breadcrumbs, setBreadcrumbs] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (doc?.slug) {
+      getWikiHierarchy(doc.slug).then(res => {
+        if (res.success && res.data) {
+          setBreadcrumbs(res.data);
+        }
+      });
+    }
+  }, [doc?.slug]);
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: '#ffffff' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 3, borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
@@ -111,7 +151,27 @@ export default function WikiReader({ doc, loading, isAdmin, hasAccess, canSeeBlo
           </Box>
         ) : doc ? (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, maxWidth: '800px', mx: 'auto' }}>
-            <Typography variant="h3" sx={{ fontWeight: 900, color: '#0f172a' }}>{doc.title}</Typography>
+            <Box sx={{ mb: 2 }}>
+              {breadcrumbs.length > 0 && (
+                <Breadcrumbs separator={<NavigateNextIcon fontSize="small" />} aria-label="breadcrumb" sx={{ mb: 2 }}>
+                  <Link underline="hover" color="inherit" sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }} onClick={() => onNavigate && onNavigate('')}>
+                     <DocIcon sx={{ mr: 0.5, fontSize: 18 }} /> Omni-Wiki
+                  </Link>
+                  {breadcrumbs.map((bc, idx) => {
+                    const isLast = idx === breadcrumbs.length - 1;
+                    return isLast ? (
+                      <Typography key={bc.slug} color="text.primary" sx={{ fontWeight: 700 }}>{bc.title}</Typography>
+                    ) : (
+                      <Link key={bc.slug} underline="hover" color="inherit" sx={{ cursor: 'pointer' }} onClick={() => onNavigate && onNavigate(bc.slug)}>
+                        {bc.title}
+                      </Link>
+                    );
+                  })}
+                </Breadcrumbs>
+              )}
+              <Typography variant="h3" sx={{ fontWeight: 900, color: '#0f172a' }}>{doc.title}</Typography>
+            </Box>
+
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                <Chip label={doc.category} size="small" sx={{ bgcolor: 'rgba(16, 185, 129, 0.1)', color: '#059669', fontWeight: 700 }} />
                {doc.isPublic ? (
@@ -124,28 +184,62 @@ export default function WikiReader({ doc, loading, isAdmin, hasAccess, canSeeBlo
             <Divider sx={{ my: 2 }} />
 
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {doc.blocks.filter(canSeeBlock).map((block: WikiBlock, index: number) => (
-                <Box key={block.id}>
-                  {isAdmin && (
-                    <Typography variant="caption" sx={{ color: '#f59e0b', mb: 1, display: 'block', fontWeight: 700 }}>
-                      [Admin View] Block {index + 1} - Visibility: {block.visibility}
-                    </Typography>
-                  )}
-                  {block.type === 'TEXT' && (
-                    <Typography sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.8, color: '#334155', fontSize: '1.05rem' }}>
-                      {block.content}
-                    </Typography>
-                  )}
-                  {block.type === 'PROMPT_BUILDER' && (
-                    <PromptBuilderBlock block={block} />
-                  )}
-                </Box>
-              ))}
+              <Stepper orientation="vertical" nonLinear activeStep={-1} sx={{ mt: 2 }}>
+                {doc.blocks.filter(canSeeBlock).map((block: WikiBlock, index: number) => (
+                  <Step key={block.id} active={true} expanded={true}>
+                    <StepLabel>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#0f172a' }}>
+                        Step {index + 1}
+                      </Typography>
+                    </StepLabel>
+                    <StepContent sx={{ borderLeft: '2px solid rgba(16, 185, 129, 0.3)', ml: '12px', pl: 3 }}>
+                      {isAdmin && (
+                        <Typography variant="caption" sx={{ color: '#f59e0b', mb: 1, display: 'block', fontWeight: 700 }}>
+                          [Admin View] Visibility: {block.visibility}
+                        </Typography>
+                      )}
+                      {block.type === 'TEXT' && <TextBlock content={block.content} />}
+                      {block.type === 'PROMPT_BUILDER' && <PromptBuilderBlock block={block} />}
+                    </StepContent>
+                  </Step>
+                ))}
+              </Stepper>
               
               {doc.blocks.filter(canSeeBlock).length === 0 && (
-                 <Typography sx={{ color: 'text.disabled', fontStyle: 'italic' }}>No visible steps available in this SOP.</Typography>
+                 <Typography sx={{ color: 'text.disabled', fontStyle: 'italic', pl: 2 }}>No visible steps available in this SOP.</Typography>
               )}
             </Box>
+
+            {doc.children && doc.children.length > 0 && (
+              <Box sx={{ mt: 6 }}>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a', mb: 2 }}>Sub-Documents</Typography>
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+                  {doc.children.map((child: any) => (
+                    <Paper 
+                      key={child.id} 
+                      elevation={0}
+                      onClick={() => onNavigate && onNavigate(child.slug)}
+                      sx={{ 
+                        p: 2, display: 'flex', alignItems: 'center', gap: 2, 
+                        border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px',
+                        cursor: 'pointer', transition: 'all 0.2s',
+                        '&:hover': { bgcolor: '#f8fafc', borderColor: '#10b981', transform: 'translateY(-2px)' }
+                      }}
+                    >
+                      <FolderIcon sx={{ color: '#10b981' }} />
+                      <Box>
+                        <Typography sx={{ fontWeight: 700, color: '#0f172a' }}>{child.title}</Typography>
+                        {child.isPublic ? (
+                          <Typography variant="caption" sx={{ color: '#3b82f6', fontWeight: 600 }}>Public</Typography>
+                        ) : (
+                          <Typography variant="caption" sx={{ color: '#ef4444', fontWeight: 600 }}>Restricted</Typography>
+                        )}
+                      </Box>
+                    </Paper>
+                  ))}
+                </Box>
+              </Box>
+            )}
           </Box>
         ) : null}
       </Box>

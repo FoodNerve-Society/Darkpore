@@ -116,7 +116,7 @@ export default function WikiDashboardPage() {
   const [loading, setLoading] = useState(false);
   
   const [editForm, setEditForm] = useState<WikiDocInput>({
-    slug: '', title: '', category: 'operations', isPublic: false, allowedRoles: [], allowedUsers: [], blocks: [], tags: [], authorId: '', hotspotId: ''
+    slug: '', title: '', category: 'operations', isPublic: false, allowedRoles: [], allowedUsers: [], blocks: [], tags: [], authorId: '', hotspotId: '', parentId: ''
   });
 
   const loadDashboard = async () => {
@@ -151,7 +151,7 @@ export default function WikiDashboardPage() {
          setDoc(null);
          setViewMode('lobby');
          setEditForm({
-           slug: '', title: '', category: 'operations', isPublic: false, allowedRoles: ['internal_staff'], allowedUsers: [], blocks: [], tags: [], authorId: profile?.uid || '', hotspotId: ''
+           slug: '', title: '', category: 'operations', isPublic: false, allowedRoles: ['internal_staff'], allowedUsers: [], blocks: [], tags: [], authorId: profile?.uid || '', hotspotId: '', parentId: ''
          });
       }
     } else {
@@ -176,13 +176,14 @@ export default function WikiDashboardPage() {
         blocks: res.data.blocks,
         tags: res.data.tags, 
         authorId: res.data.authorId,
-        hotspotId: res.data.hotspotId || ''
+        hotspotId: res.data.hotspotId || '',
+        parentId: res.data.parentId || ''
       });
       setViewMode('reader'); // Default to reader as requested
     } else {
       setDoc(null);
       setEditForm({
-        slug: slug, title: '', category: 'operations', isPublic: false, allowedRoles: ['internal_staff'], allowedUsers: [], blocks: [], tags: [], authorId: profile?.uid || '', hotspotId: ''
+        slug: slug, title: '', category: 'operations', isPublic: false, allowedRoles: ['internal_staff'], allowedUsers: [], blocks: [], tags: [], authorId: profile?.uid || '', hotspotId: '', parentId: ''
       });
       setViewMode('editor');
     }
@@ -405,6 +406,15 @@ export default function WikiDashboardPage() {
           hasAccess={hasAccess()}
           canSeeBlock={canSeeBlock}
           onEdit={() => setViewMode('editor')}
+          onNavigate={(slug) => {
+            if (slug) {
+              setActiveDocSlug(slug);
+              loadDoc(slug);
+            } else {
+              // Navigate to root (Dashboard)
+              setIsFlipped(false);
+            }
+          }}
           headerContent={
             <IconButton onClick={() => setIsFlipped(false)} sx={{ mr: 1 }}><ArrowBackIcon /></IconButton>
           }
@@ -505,6 +515,21 @@ export default function WikiDashboardPage() {
                       + Register New Hotspot
                     </Button>
                   </Box>
+                  <FormControl sx={{ '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' } }}>
+                    <InputLabel sx={{ color: 'rgba(255,255,255,0.7)' }}>Parent Document (Optional)</InputLabel>
+                    <Select 
+                      value={editForm.parentId || ''} label="Parent Document (Optional)"
+                      onChange={e => setEditForm({...editForm, parentId: e.target.value as string})}
+                      sx={{ color: '#fff' }}
+                    >
+                      <MenuItem value=""><em>None (Top Level)</em></MenuItem>
+                      {wikiDocs
+                        .filter(d => d.id !== doc?.id) // Prevent self-nesting
+                        .map(d => (
+                        <MenuItem key={d.id} value={d.id}>{d.title}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
                     <FormControlLabel 
                       control={<Switch checked={editForm.isPublic} onChange={e => setEditForm({...editForm, isPublic: e.target.checked})} sx={{ '& .MuiSwitch-switchBase.Mui-checked': { color: '#3b82f6' }, '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#3b82f6' } }} />} 

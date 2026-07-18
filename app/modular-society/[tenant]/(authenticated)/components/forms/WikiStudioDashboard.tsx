@@ -22,20 +22,12 @@ const slideUpFade = keyframes`
 
 const WIKI_START_OPTIONS = [
   {
-    type: 'feature_guide', title: "Feature Guide", desc: "Interactive UI Explanations",
-    icon: <AutoAwesomeIcon sx={{ fontSize: 32 }} />, color: "#ec4899", grad: "linear-gradient(135deg, #be185d 0%, #ec4899 100%)"
-  },
-  {
     type: 'sop', title: "SOP", desc: "Standard Operating Procedure",
     icon: <MenuBookIcon sx={{ fontSize: 32 }} />, color: "#3b82f6", grad: "linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)"
   },
   {
     type: 'policy', title: "Policy", desc: "Governance & Regulations",
     icon: <PolicyIcon sx={{ fontSize: 32 }} />, color: "#ef4444", grad: "linear-gradient(135deg, #991b1b 0%, #ef4444 100%)"
-  },
-  {
-    type: 'playbook', title: "Playbook", desc: "Strategic Action Plans",
-    icon: <PlaybookIcon sx={{ fontSize: 32 }} />, color: "#f59e0b", grad: "linear-gradient(135deg, #b45309 0%, #f59e0b 100%)"
   },
   {
     type: 'technical', title: "Technical Doc", desc: "System Architecture",
@@ -70,25 +62,15 @@ const WIKI_DOMAINS = [
 
 // Predefined templates for each type
 const WIKI_TEMPLATES: Record<string, any[]> = {
-  feature_guide: [
-    { id: `b-${Date.now()}-1`, type: 'TEXT', visibility: 'public', content: '# Feature Overview\nExplain what this feature does and why it exists.', variables: [] },
-    { id: `b-${Date.now()}-2`, type: 'TEXT', visibility: 'public', content: '## How it Works\nDetail the exact steps to use this feature.', variables: [] },
-    { id: `b-${Date.now()}-3`, type: 'TEXT', visibility: 'public', content: '## Pro Tips\nAny shortcuts or advanced workflows?', variables: [] }
-  ],
   sop: [
-    { id: `b-${Date.now()}-1`, type: 'TEXT', visibility: 'public', content: '# Objective\nState the objective of this SOP.', variables: [] },
-    { id: `b-${Date.now()}-2`, type: 'TEXT', visibility: 'public', content: '## Prerequisites\nList what is needed before starting.', variables: [] },
-    { id: `b-${Date.now()}-3`, type: 'TEXT', visibility: 'public', content: '## Step-by-Step Instructions\n1. First step\n2. Second step', variables: [] }
+    { id: `b-${Date.now()}-1`, type: 'TEXT', visibility: 'public', content: '# Step 1: Open AI Studio\n- [ ] Navigate to Gemini AI Studio or ChatGPT.\n- [ ] Select the latest model.', variables: [] },
+    { id: `b-${Date.now()}-2`, type: 'PROMPT_BUILDER', visibility: 'public', content: 'Act as an expert copywriter for {{location}}. Write an article about {{topic}}.', variables: [{name: 'location', label: 'Target Location'}, {name: 'topic', label: 'Article Topic'}] },
+    { id: `b-${Date.now()}-3`, type: 'TEXT', visibility: 'public', content: '# Step 3: Review & Paste\n- [ ] Copy the AI response.\n- [ ] Paste it into the target document.', variables: [] }
   ],
   policy: [
     { id: `b-${Date.now()}-1`, type: 'TEXT', visibility: 'public', content: '# Policy Overview\nDescribe the scope and purpose of the policy.', variables: [] },
     { id: `b-${Date.now()}-2`, type: 'TEXT', visibility: 'public', content: '## Guidelines\nDetail the rules and regulations.', variables: [] },
     { id: `b-${Date.now()}-3`, type: 'TEXT', visibility: 'internal_staff', content: '## Enforcement\nExplain how this policy is enforced internally.', variables: [] }
-  ],
-  playbook: [
-    { id: `b-${Date.now()}-1`, type: 'TEXT', visibility: 'public', content: '# Playbook Strategy\nHigh-level strategy.', variables: [] },
-    { id: `b-${Date.now()}-2`, type: 'TEXT', visibility: 'public', content: '## Scenarios\nWhat to do when X happens.', variables: [] },
-    { id: `b-${Date.now()}-3`, type: 'PROMPT_BUILDER', visibility: 'internal_staff', content: 'Act as a senior analyst. Based on this playbook scenario: {{scenario}}, how should the team react?', variables: [{name: 'scenario', label: 'Enter Scenario'}] }
   ],
   technical: [
     { id: `b-${Date.now()}-1`, type: 'TEXT', visibility: 'public', content: '# Architecture Overview\nSystem context.', variables: [] },
