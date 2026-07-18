@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { 
   Box, Typography, Button, IconButton, TextField, 
   FormControl, InputLabel, Select, MenuItem, Switch, FormControlLabel,
-  Dialog, Chip, DialogTitle, DialogContent, DialogActions, Collapse, Paper
+  Dialog, Chip, DialogTitle, DialogContent, DialogActions, Collapse, Paper, Tooltip, alpha
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import EditIcon from '@mui/icons-material/Edit';
@@ -17,6 +17,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import CloseIcon from '@mui/icons-material/Close';
+import CheckIcon from '@mui/icons-material/Check';
 
 import WikiBlockBuilder from './WikiBlockBuilder';
 import WikiReader from './WikiReader';
@@ -45,6 +46,16 @@ const WIKI_DOMAINS = [
     ]
   }
 ];
+
+const WIKI_BLOCK_DEFINITIONS = {
+  HEADER: { label: 'Header / Section', color: '#3b82f6' },
+  TEXT: { label: 'Rich Text', color: '#64748b' },
+  CALLOUT: { label: 'Notice / Callout', color: '#f59e0b' },
+  CHECKLIST: { label: 'Interactive Checklist', color: '#10b981' },
+  CODE_SNIPPET: { label: 'Code Snippet', color: '#8b5cf6' },
+  PROMPT_BUILDER: { label: 'AI Prompt Builder', color: '#f43f5e' },
+  MEDIA: { label: 'Media / Image', color: '#ec4899' },
+};
 
 export default function WikiEditor({
   doc,
@@ -115,13 +126,32 @@ export default function WikiEditor({
     return items;
   }, [editForm]);
 
-  const addBlock = () => {
+  const addSpecificBlock = (type: string) => {
     const newId = `block-${Date.now()}`;
+    let initialData: any = { id: newId, type, visibility: 'public', content: '' };
+    if (type === 'PROMPT_BUILDER') {
+      initialData.variables = [];
+      initialData.promptTemplate = '';
+    } else if (type === 'CHECKLIST') {
+      initialData.checklistItems = [{ id: `item-${Date.now()}`, text: '', isChecked: false }];
+    } else if (type === 'CALLOUT') {
+      initialData.calloutType = 'info';
+    } else if (type === 'CODE_SNIPPET') {
+      initialData.codeLanguage = 'javascript';
+    } else if (type === 'MEDIA') {
+      initialData.mediaUrl = '';
+    }
+    
     setEditForm({
       ...editForm,
-      blocks: [...editForm.blocks, { id: newId, type: 'TEXT', visibility: 'public', content: '', variables: [] }]
+      blocks: [...editForm.blocks, initialData]
     });
     setExpandedBlockId(newId);
+    
+    // Scroll to bottom
+    setTimeout(() => {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }, 100);
   };
 
   return (
@@ -163,120 +193,207 @@ export default function WikiEditor({
         <Box sx={{ flex: 1, overflowY: 'auto', p: { xs: 2, sm: 4, md: 6 }, display: 'flex', flexDirection: 'column', gap: 4, bgcolor: '#f8fafc' }}>
             
             {/* Document Identity Block */}
-            <Paper elevation={0} sx={{
-              borderRadius: '24px', overflow: 'hidden', border: identityExpanded ? '2px solid #3b82f6' : '1px solid #e2e8f0',
-              boxShadow: identityExpanded ? '0 12px 40px rgba(59, 130, 246, 0.15)' : '0 4px 20px rgba(0,0,0,0.02)',
-              transition: 'all 0.3s ease', bgcolor: '#fff'
-            }}>
-              {/* Header */}
-              <Box 
-                onClick={() => setIdentityExpanded(!identityExpanded)}
-                sx={{ 
-                  p: 2, px: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
-                  cursor: 'pointer', bgcolor: identityExpanded ? '#f8fafc' : '#fff',
-                  borderBottom: identityExpanded ? '1px solid #e2e8f0' : 'none',
-                  '&:hover': { bgcolor: '#f8fafc' }
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Box sx={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {editForm.title && editForm.slug && editForm.category ? (
-                      <CheckCircleIcon sx={{ color: '#10b981', fontSize: 24 }} />
-                    ) : (
-                      <InfoOutlinedIcon sx={{ color: '#cbd5e1', fontSize: 24 }} />
-                    )}
-                  </Box>
-                  <Box>
-                    <Typography sx={{ fontWeight: 800, color: '#0f172a', fontSize: '1.05rem', letterSpacing: '-0.01em' }}>
-                      Document Identity
-                    </Typography>
-                    <Typography sx={{ color: '#64748b', fontSize: '0.8rem' }}>
-                      {editForm.title || 'Set title, slug, and routing'}
-                    </Typography>
-                  </Box>
-                </Box>
-                <IconButton size="small" sx={{ transform: identityExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s' }}>
-                  <ExpandMoreIcon />
-                </IconButton>
-              </Box>
+            <Box sx={{ perspective: '1000px', mb: 2 }}>
+              <Box sx={{
+                position: 'relative',
+                transition: 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+                transformStyle: 'preserve-3d',
+                transform: identityExpanded ? 'rotateX(-180deg)' : 'none',
+              }}>
+                {/* FRONT FACE (Overview) */}
+                <Box sx={{
+                  backfaceVisibility: 'hidden',
+                  position: identityExpanded ? 'absolute' : 'relative',
+                  width: '100%',
+                  minHeight: 160,
+                  borderRadius: '24px',
+                  border: `1px solid ${editForm.title && editForm.slug && editForm.category ? 'rgba(15, 23, 42, 0.1)' : '#e2e8f0'}`,
+                  background: editForm.title && editForm.slug && editForm.category 
+                    ? `linear-gradient(135deg, #0f172a 0%, #1e293b 100%)` 
+                    : `linear-gradient(135deg, #fff 0%, #f8fafc 100%)`,
+                  boxShadow: editForm.title && editForm.slug && editForm.category 
+                    ? '0 12px 32px rgba(15, 23, 42, 0.25)' 
+                    : '0 4px 20px rgba(0,0,0,0.02)',
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  display: 'flex', flexDirection: 'column',
+                  '&:hover': { transform: 'translateY(-2px)', boxShadow: editForm.title && editForm.slug && editForm.category ? '0 16px 40px rgba(15, 23, 42, 0.3)' : '0 8px 24px rgba(0,0,0,0.06)' },
+                  transition: 'all 0.3s ease'
+                }} onClick={() => setIdentityExpanded(true)}>
+                  {/* Premium pattern overlay */}
+                  {editForm.title && editForm.slug && editForm.category && (
+                    <Box sx={{
+                      position: 'absolute', top: 0, right: 0, bottom: 0, left: 0,
+                      background: 'radial-gradient(circle at top right, rgba(59, 130, 246, 0.15) 0%, transparent 60%)',
+                      pointerEvents: 'none'
+                    }} />
+                  )}
+                  
+                  <Box sx={{ p: 4, display: 'flex', flexDirection: 'column', height: '100%', flex: 1, position: 'relative', zIndex: 1 }}>
+                    {/* Top row: Badges */}
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                        <Chip label="DOCUMENT CONFIGURATION" size="small" sx={{ height: 24, fontSize: '0.7rem', fontWeight: 800, letterSpacing: 1, bgcolor: editForm.title && editForm.slug && editForm.category ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', borderRadius: '8px' }} />
+                        {editForm.category && <Chip label={WIKI_DOMAINS.find(d => d.id === editForm.category)?.title || editForm.category} size="small" sx={{ height: 24, fontSize: '0.7rem', fontWeight: 700, bgcolor: editForm.title && editForm.slug && editForm.category ? 'rgba(255,255,255,0.1)' : '#f1f5f9', color: editForm.title && editForm.slug && editForm.category ? '#cbd5e1' : '#64748b', borderRadius: '8px' }} />}
+                        {editForm.tags?.[0] && <Chip label={WIKI_DOMAINS.find(d => d.id === editForm.category)?.subcategories?.find(s => s.id === editForm.tags[0])?.title || editForm.tags[0]} size="small" sx={{ height: 24, fontSize: '0.7rem', fontWeight: 700, bgcolor: editForm.title && editForm.slug && editForm.category ? 'rgba(255,255,255,0.1)' : '#f1f5f9', color: editForm.title && editForm.slug && editForm.category ? '#cbd5e1' : '#64748b', borderRadius: '8px' }} />}
+                      </Box>
+                      <Box sx={{ 
+                        width: 36, height: 36, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        bgcolor: editForm.title && editForm.slug && editForm.category ? 'rgba(16, 185, 129, 0.15)' : 'rgba(241, 245, 249, 1)',
+                        color: editForm.title && editForm.slug && editForm.category ? '#10b981' : '#cbd5e1',
+                        transition: 'all 0.3s ease'
+                      }}>
+                        {editForm.title && editForm.slug && editForm.category ? <CheckCircleIcon /> : <InfoOutlinedIcon />}
+                      </Box>
+                    </Box>
 
-              {/* Content */}
-              <Collapse in={identityExpanded}>
-                <Box sx={{ p: 3, display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
-                  <TextField 
-                    label="Title" variant="outlined" 
-                    value={editForm.title} onChange={e => setEditForm({...editForm, title: e.target.value})}
-                    sx={{ '& fieldset': { borderColor: '#cbd5e1' }, '& .MuiInputBase-root': { color: '#0f172a', bgcolor: '#fff' }, '& .MuiFormLabel-root': { color: '#64748b' } }}
-                  />
-                  <TextField 
-                    label="Unique Slug" variant="outlined" 
-                    value={editForm.slug} onChange={e => setEditForm({...editForm, slug: e.target.value})}
-                    sx={{ '& fieldset': { borderColor: '#cbd5e1' }, '& .MuiInputBase-root': { color: '#0f172a', bgcolor: '#fff' }, '& .MuiFormLabel-root': { color: '#64748b' } }}
-                  />
-                  <FormControl sx={{ '& fieldset': { borderColor: '#cbd5e1' } }}>
-                    <InputLabel sx={{ color: '#64748b' }}>Domain (Category)</InputLabel>
-                    <Select 
-                      value={editForm.category} label="Domain (Category)"
-                      onChange={e => setEditForm({...editForm, category: e.target.value as string, tags: []})}
-                      sx={{ color: '#0f172a', bgcolor: '#fff' }}
-                    >
-                      {WIKI_DOMAINS.map(domain => (
-                        <MenuItem key={domain.id} value={domain.id}>{domain.title}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  <FormControl sx={{ '& fieldset': { borderColor: '#cbd5e1' } }}>
-                    <InputLabel sx={{ color: '#64748b' }}>Tag (Subcategory)</InputLabel>
-                    <Select 
-                      value={editForm.tags[0] || ''} label="Tag (Subcategory)"
-                      onChange={e => setEditForm({...editForm, tags: [e.target.value as string]})}
-                      sx={{ color: '#0f172a', bgcolor: '#fff' }}
-                    >
-                      {WIKI_DOMAINS.find(d => d.id === editForm.category)?.subcategories.map(sub => (
-                        <MenuItem key={sub.id} value={sub.id}>{sub.title}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  <FormControl sx={{ '& fieldset': { borderColor: '#cbd5e1' } }}>
-                    <InputLabel sx={{ color: '#64748b' }}>Link to UI Hotspot</InputLabel>
-                    <Select 
-                      value={editForm.hotspotId || ''} label="Link to UI Hotspot"
-                      onChange={e => setEditForm({...editForm, hotspotId: e.target.value as string})}
-                      sx={{ color: '#0f172a', bgcolor: '#fff' }}
-                    >
-                      <MenuItem value=""><em>None (Unlinked)</em></MenuItem>
-                      {registryHotspots
-                        .filter(h => h.category === editForm.category && h.subcategory === editForm.tags[0])
-                        .map(h => (
-                        <MenuItem key={h.id} value={h.id}>{h.label} ({h.id})</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  <FormControl sx={{ '& fieldset': { borderColor: '#cbd5e1' } }}>
-                    <InputLabel sx={{ color: '#64748b' }}>Parent Document (Optional)</InputLabel>
-                    <Select 
-                      value={editForm.parentId || ''} label="Parent Document (Optional)"
-                      onChange={e => setEditForm({...editForm, parentId: e.target.value as string})}
-                      sx={{ color: '#0f172a', bgcolor: '#fff' }}
-                    >
-                      <MenuItem value=""><em>None (Top Level)</em></MenuItem>
-                      {wikiDocs
-                        .filter(d => d.id !== doc?.id) // Prevent self-nesting
-                        .map(d => (
-                        <MenuItem key={d.id} value={d.id}>{d.title}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <FormControlLabel 
-                      control={<Switch checked={editForm.isPublic} onChange={e => setEditForm({...editForm, isPublic: e.target.checked})} sx={{ '& .MuiSwitch-switchBase.Mui-checked': { color: '#10b981' }, '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#10b981' } }} />} 
-                      label={<Typography sx={{ fontWeight: 600 }}>Is Public Document?</Typography>} 
-                      sx={{ color: '#0f172a' }}
-                    />
+                    {/* Middle: Title */}
+                    <Typography sx={{ 
+                      fontWeight: 900, 
+                      fontSize: { xs: '1.5rem', md: '1.8rem' }, 
+                      color: editForm.title && editForm.slug && editForm.category ? '#fff' : '#94a3b8',
+                      letterSpacing: '-0.03em',
+                      lineHeight: 1.2,
+                      mb: 1,
+                      flex: 1,
+                      display: 'flex', alignItems: 'center'
+                    }}>
+                      {editForm.title || 'Tap to configure Document Identity'}
+                    </Typography>
+
+                    {/* Bottom row: Meta info */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, pt: 2, borderTop: `1px solid ${editForm.title && editForm.slug && editForm.category ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'}` }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: editForm.title && editForm.slug && editForm.category ? '#94a3b8' : '#64748b' }}>
+                        <SwapHorizIcon sx={{ fontSize: 18 }} />
+                        <Typography sx={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                          {editForm.slug ? `/wiki/${editForm.category || 'domain'}/${editForm.slug}` : 'URL routing pending...'}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: editForm.isPublic ? '#10b981' : (editForm.title && editForm.slug && editForm.category ? '#f59e0b' : '#64748b') }}>
+                        <VisibilityIcon sx={{ fontSize: 18 }} />
+                        <Typography sx={{ fontSize: '0.85rem', fontWeight: 600 }}>{editForm.isPublic ? 'Publicly Visible' : 'Internal / Draft'}</Typography>
+                      </Box>
+                    </Box>
                   </Box>
                 </Box>
-              </Collapse>
-            </Paper>
+
+                {/* BACK FACE (Editor) */}
+                <Box sx={{
+                  backfaceVisibility: 'hidden',
+                  transform: 'rotateX(180deg)',
+                  position: identityExpanded ? 'relative' : 'absolute',
+                  width: '100%', top: 0,
+                  borderRadius: '24px',
+                  border: `2px solid rgba(59, 130, 246, 0.5)`,
+                  background: `linear-gradient(135deg, #fff 0%, #f8fafc 100%)`,
+                  boxShadow: `0 16px 48px rgba(59, 130, 246, 0.15)`,
+                  overflow: 'hidden',
+                }}>
+                  {/* Back header */}
+                  <Box sx={{
+                    display: 'flex', alignItems: 'center', gap: 2,
+                    px: 3, py: 2,
+                    borderBottom: `1px solid rgba(0,0,0,0.06)`,
+                    background: 'rgba(59, 130, 246, 0.05)',
+                  }}>
+                    <Box sx={{ width: 32, height: 32, borderRadius: '10px', bgcolor: 'rgba(59, 130, 246, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid rgba(59, 130, 246, 0.2)` }}>
+                      <InfoOutlinedIcon sx={{ fontSize: 20, color: '#3b82f6' }} />
+                    </Box>
+                    <Typography sx={{ fontWeight: 800, color: '#0f172a', fontSize: '1.1rem', flex: 1 }}>
+                      Editing Document Identity
+                    </Typography>
+                    <Tooltip title="Done editing">
+                      <IconButton
+                        size="medium"
+                        onClick={(e) => { e.stopPropagation(); setIdentityExpanded(false); }}
+                        sx={{
+                          bgcolor: '#3b82f6', color: '#fff',
+                          boxShadow: `0 4px 12px rgba(59, 130, 246, 0.3)`,
+                          '&:hover': { bgcolor: 'rgba(59, 130, 246, 0.9)', transform: 'scale(1.05)' },
+                        }}
+                      >
+                        <CheckIcon sx={{ fontSize: 20, fontWeight: 900 }} />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+
+                  {/* Fields */}
+                  <Box sx={{ p: 3, display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
+                    <TextField 
+                      label="Title" variant="outlined" 
+                      value={editForm.title} onChange={e => setEditForm({...editForm, title: e.target.value})}
+                      sx={{ '& fieldset': { borderColor: '#cbd5e1' }, '& .MuiInputBase-root': { color: '#0f172a', bgcolor: '#fff' }, '& .MuiFormLabel-root': { color: '#64748b' } }}
+                    />
+                    <TextField 
+                      label="Unique Slug" variant="outlined" 
+                      value={editForm.slug} onChange={e => setEditForm({...editForm, slug: e.target.value})}
+                      sx={{ '& fieldset': { borderColor: '#cbd5e1' }, '& .MuiInputBase-root': { color: '#0f172a', bgcolor: '#fff' }, '& .MuiFormLabel-root': { color: '#64748b' } }}
+                    />
+                    <FormControl sx={{ '& fieldset': { borderColor: '#cbd5e1' } }}>
+                      <InputLabel sx={{ color: '#64748b' }}>Domain (Category)</InputLabel>
+                      <Select 
+                        value={editForm.category} label="Domain (Category)"
+                        onChange={e => setEditForm({...editForm, category: e.target.value as string, tags: []})}
+                        sx={{ color: '#0f172a', bgcolor: '#fff' }}
+                      >
+                        {WIKI_DOMAINS.map(domain => (
+                          <MenuItem key={domain.id} value={domain.id}>{domain.title}</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <FormControl sx={{ '& fieldset': { borderColor: '#cbd5e1' } }}>
+                      <InputLabel sx={{ color: '#64748b' }}>Tag (Subcategory)</InputLabel>
+                      <Select 
+                        value={editForm.tags[0] || ''} label="Tag (Subcategory)"
+                        onChange={e => setEditForm({...editForm, tags: [e.target.value as string]})}
+                        sx={{ color: '#0f172a', bgcolor: '#fff' }}
+                      >
+                        {WIKI_DOMAINS.find(d => d.id === editForm.category)?.subcategories.map(sub => (
+                          <MenuItem key={sub.id} value={sub.id}>{sub.title}</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <FormControl sx={{ '& fieldset': { borderColor: '#cbd5e1' } }}>
+                      <InputLabel sx={{ color: '#64748b' }}>Link to UI Hotspot</InputLabel>
+                      <Select 
+                        value={editForm.hotspotId || ''} label="Link to UI Hotspot"
+                        onChange={e => setEditForm({...editForm, hotspotId: e.target.value as string})}
+                        sx={{ color: '#0f172a', bgcolor: '#fff' }}
+                      >
+                        <MenuItem value=""><em>None (Unlinked)</em></MenuItem>
+                        {registryHotspots
+                          .filter(h => h.category === editForm.category && h.subcategory === editForm.tags[0])
+                          .map(h => (
+                          <MenuItem key={h.id} value={h.id}>{h.label} ({h.id})</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <FormControl sx={{ '& fieldset': { borderColor: '#cbd5e1' } }}>
+                      <InputLabel sx={{ color: '#64748b' }}>Parent Document (Optional)</InputLabel>
+                      <Select 
+                        value={editForm.parentId || ''} label="Parent Document (Optional)"
+                        onChange={e => setEditForm({...editForm, parentId: e.target.value as string})}
+                        sx={{ color: '#0f172a', bgcolor: '#fff' }}
+                      >
+                        <MenuItem value=""><em>None (Top Level)</em></MenuItem>
+                        {wikiDocs
+                          .filter(d => d.id !== doc?.id) // Prevent self-nesting
+                          .map(d => (
+                          <MenuItem key={d.id} value={d.id}>{d.title}</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <FormControlLabel 
+                        control={<Switch checked={editForm.isPublic} onChange={e => setEditForm({...editForm, isPublic: e.target.checked})} sx={{ '& .MuiSwitch-switchBase.Mui-checked': { color: '#10b981' }, '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#10b981' } }} />} 
+                        label={<Typography sx={{ fontWeight: 600 }}>Is Public Document?</Typography>} 
+                        sx={{ color: '#0f172a' }}
+                      />
+                    </Box>
+                  </Box>
+                </Box>
+              </Box>
+            </Box>
 
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mt: 2 }}>
               <Box>
@@ -292,9 +409,6 @@ export default function WikiEditor({
                 >
                   {reorderUnlocked ? 'Lock Reorder' : 'Unlock Reorder'}
                 </Button>
-                <Button startIcon={<AddIcon />} variant="contained" onClick={addBlock} sx={{ bgcolor: '#3b82f6', '&:hover': { bgcolor: '#2563eb' }, borderRadius: '16px', fontWeight: 800, boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)' }}>
-                  Add Block
-                </Button>
               </Box>
             </Box>
 
@@ -307,6 +421,39 @@ export default function WikiEditor({
               reorderUnlocked={reorderUnlocked}
               getBlockFillStats={getBlockFillStats}
             />
+
+            {/* ΓöÇΓöÇΓöÇ ADD BLOCK BAR ΓöÇΓöÇΓöÇ */}
+            <Box sx={{
+              mt: 4, p: 3, borderRadius: '24px',
+              background: 'rgba(255,255,255,0.8)',
+              border: '1px dashed rgba(0,0,0,0.15)',
+              backdropFilter: 'blur(12px)',
+            }}>
+              <Typography sx={{ color: '#0f172a', fontWeight: 800, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.1em', mb: 2 }}>
+                + Add Architecture Block
+              </Typography>
+              <Box sx={{
+                display: 'flex', gap: 1.5, overflowX: 'auto', pb: 1,
+                '&::-webkit-scrollbar': { display: 'none' },
+              }}>
+                {Object.entries(WIKI_BLOCK_DEFINITIONS).map(([key, def]) => (
+                  <Chip
+                    key={key}
+                    label={def.label}
+                    onClick={() => addSpecificBlock(key)}
+                    sx={{
+                      flexShrink: 0, cursor: 'pointer',
+                      bgcolor: alpha(def.color, 0.1), color: def.color,
+                      border: `1px solid ${alpha(def.color, 0.3)}`,
+                      fontWeight: 800, fontSize: '0.85rem', px: 1, py: 2.5, borderRadius: '12px',
+                      boxShadow: `0 2px 8px ${alpha(def.color, 0.1)}`,
+                      '&:hover': { bgcolor: alpha(def.color, 0.2), borderColor: alpha(def.color, 0.6), transform: 'translateY(-2px)', boxShadow: `0 6px 16px ${alpha(def.color, 0.2)}` },
+                      transition: 'all 0.2s',
+                    }}
+                  />
+                ))}
+              </Box>
+            </Box>
         </Box>
 
         {/* Action Items Drawer */}
