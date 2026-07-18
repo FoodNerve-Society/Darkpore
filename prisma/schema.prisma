@@ -63,6 +63,7 @@ model User {
   followedInitiatives  SubgroupFollower[]
   pitchReviews         PitchReview[]
   communityPosts       CommunityPost[]
+  omniWikiDocs         OmniWikiDoc[]
 }
 
 // ════════════════════════════════════════════════════════
@@ -645,4 +646,34 @@ model Message {
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+}
+
+// ════════════════════════════════════════════════════════
+// OMNI-WIKI MODELS
+// ════════════════════════════════════════════════════════
+
+model OmniWikiDoc {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  title        String
+  category     String
+  
+  // Document-Level Access Control
+  isPublic     Boolean  @default(false)
+  allowedRoles String   @default("[]") // JSON Array: ["internal_staff", "admin"]
+  allowedUsers String   @default("[]") // JSON Array: ["uid1", "uid2"]
+
+  // The Content
+  blocks       String   @default("[]") // JSON stringified array of WikiBlock objects
+  
+  // Metadata
+  hotspotId    String?  @unique
+  tags         String   @default("[]") // JSON stringified array of tags
+  authorId     String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  author       User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([category])
 }

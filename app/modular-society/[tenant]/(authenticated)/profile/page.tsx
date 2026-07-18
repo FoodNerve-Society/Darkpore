@@ -21,8 +21,11 @@ import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import ShieldIcon from '@mui/icons-material/Shield';
 import BoltIcon from '@mui/icons-material/Bolt';
 import DownloadIcon from '@mui/icons-material/Download';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
 import { auth } from '@/lib/firebase/client';
 import { signOut } from 'firebase/auth';
+import { useWiki } from '@/app/components/providers/WikiProvider';
+import { getAllVisibleWikiDocs } from '@/lib/actions/wiki';
 import AdminOnboardingModal from '../components/AdminOnboardingModal';
 import ExecutiveCard from '../components/ExecutiveCard';
 import useExportAsImage from '@/hooks/useExportAsImage';
@@ -34,8 +37,20 @@ import useExportAsImage from '@/hooks/useExportAsImage';
 export default function ProfilePage() {
   const { profile, activeOrg, switchOrg } = useSociety();
   const router = useRouter();
+  const { openWiki } = useWiki();
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const [isCardsModalOpen, setIsCardsModalOpen] = useState(false);
+  const [wikiDocs, setWikiDocs] = useState<any[]>([]);
+
+  React.useEffect(() => {
+    if (profile) {
+      getAllVisibleWikiDocs(profile.roles || [], profile.uid || 'guest', profile.isAdmin || false).then(res => {
+        if (res.success && res.data) {
+          setWikiDocs(res.data);
+        }
+      });
+    }
+  }, [profile]);
 
   const cardRef1 = React.useRef<HTMLDivElement>(null);
   const cardRef2 = React.useRef<HTMLDivElement>(null);
@@ -639,6 +654,72 @@ export default function ProfilePage() {
             })}
           </Stack>
         </Box>
+      </Box>
+
+      {/* ─── OMNI-WIKI DASHBOARD ─── */}
+      <Box sx={{ mb: 4 }}>
+         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+           <Typography sx={{ fontWeight: 800, fontSize: '1.1rem', color: '#0f172a' }}>
+             SOPs & Playbooks
+           </Typography>
+           <Box sx={{ display: 'flex', gap: 2 }}>
+             <Button size="small" variant="text" onClick={() => router.push(`/modular-society/${activeOrg?.slug || 'darkpore'}/profile/wiki`)} sx={{ fontWeight: 700, color: '#64748b' }}>
+               Open Full Hub
+             </Button>
+             {profile.isAdmin && (
+               <Button size="small" variant="text" onClick={() => router.push(`/modular-society/${activeOrg?.slug || 'darkpore'}/profile/wiki/new`)} sx={{ fontWeight: 700, color: '#3b82f6' }}>
+                 + New Document
+               </Button>
+             )}
+           </Box>
+         </Box>
+
+         {wikiDocs.length === 0 ? (
+           <Typography sx={{ color: 'text.secondary', fontSize: '0.9rem', fontStyle: 'italic', bgcolor: 'rgba(0,0,0,0.02)', p: 3, borderRadius: '16px' }}>
+             No playbooks available for your clearance level.
+           </Typography>
+         ) : (
+           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+             {wikiDocs.map(doc => (
+                <Box
+                  key={doc.id}
+                  onClick={() => router.push(`/modular-society/${activeOrg?.slug || 'darkpore'}/profile/wiki/${doc.slug}`)}
+                  sx={{
+                    bgcolor: '#0f172a',
+                    borderRadius: '20px',
+                    p: 3,
+                    display: 'flex', alignItems: 'center', gap: 3,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    boxShadow: '0 12px 32px rgba(15,23,42,0.15)',
+                    '&:hover': {
+                       transform: 'translateY(-2px)',
+                       boxShadow: '0 16px 40px rgba(15,23,42,0.2)',
+                       bgcolor: '#1e293b',
+                    }
+                  }}
+                >
+                  <Box sx={{ p: 2, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '14px', color: '#10b981' }}>
+                    <MenuBookIcon sx={{ fontSize: 32 }} />
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                      <Typography sx={{ fontWeight: 800, fontSize: '1.1rem', color: '#fff' }}>{doc.title}</Typography>
+                      {doc.isPublic ? (
+                         <Chip label="Public" size="small" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 800, bgcolor: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa' }} />
+                      ) : (
+                         <Chip label="Restricted" size="small" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 800, bgcolor: 'rgba(239, 68, 68, 0.2)', color: '#f87171' }} />
+                      )}
+                    </Box>
+                    <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem' }}>
+                      Category: <span style={{ textTransform: 'capitalize' }}>{doc.category}</span>
+                    </Typography>
+                  </Box>
+                  <ArrowForwardIcon sx={{ color: 'rgba(255,255,255,0.3)', fontSize: 24 }} />
+                </Box>
+             ))}
+           </Box>
+         )}
       </Box>
 
       {/* ─── ACCOUNT SETTINGS ─── */}
