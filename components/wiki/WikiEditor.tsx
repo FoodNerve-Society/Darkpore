@@ -221,7 +221,8 @@ export default function WikiEditor({
                   cursor: 'pointer',
                   display: 'flex', flexDirection: 'column',
                   '&:hover': { transform: 'translateY(-2px)', boxShadow: editForm.title && editForm.slug && editForm.category ? '0 16px 40px rgba(15, 23, 42, 0.3)' : '0 8px 24px rgba(0,0,0,0.06)' },
-                  transition: 'all 0.3s ease'
+                  transition: 'all 0.3s ease',
+                  pointerEvents: identityExpanded ? 'none' : 'auto',
                 }} onClick={() => setIdentityExpanded(true)}>
                   {/* Premium pattern overlay */}
                   {editForm.title && editForm.slug && editForm.category && (
@@ -291,6 +292,7 @@ export default function WikiEditor({
                   background: `linear-gradient(135deg, #fff 0%, #f8fafc 100%)`,
                   boxShadow: `0 16px 48px rgba(59, 130, 246, 0.15)`,
                   overflow: 'hidden',
+                  pointerEvents: identityExpanded ? 'auto' : 'none',
                 }}>
                   {/* Back header */}
                   <Box sx={{
@@ -322,11 +324,23 @@ export default function WikiEditor({
 
                   {/* Fields */}
                   <Box sx={{ p: 3, display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
-                    <PremiumTextField 
-                      label="Title" 
-                      value={editForm.title} onChange={e => setEditForm({...editForm, title: e.target.value})}
-                      colorTheme="#3b82f6"
-                    />
+                    <Box sx={{ gridColumn: '1 / -1' }}>
+                      <PremiumTextField 
+                        label="Title" 
+                        value={editForm.title} onChange={e => setEditForm({...editForm, title: e.target.value})}
+                        colorTheme="#3b82f6"
+                      />
+                    </Box>
+                    <Box sx={{ gridColumn: '1 / -1' }}>
+                      <PremiumTextField 
+                        label="Short Description / Summary" 
+                        value={editForm.description || ''} 
+                        onChange={e => setEditForm({...editForm, description: e.target.value})}
+                        colorTheme="#3b82f6"
+                        multiline
+                        rows={2}
+                      />
+                    </Box>
                     <PremiumTextField 
                       label="Unique Slug" 
                       value={editForm.slug} onChange={e => setEditForm({...editForm, slug: e.target.value})}
@@ -340,10 +354,35 @@ export default function WikiEditor({
                       colorTheme="#3b82f6"
                       disableClearable
                       renderOption={(props, option: any) => (
-                        <Box component="li" {...props} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{option.label}</Typography>
+                        <Box component="li" {...props} sx={{ 
+                          display: 'flex', 
+                          flexDirection: 'column', 
+                          alignItems: 'flex-start !important',
+                          p: '12px 16px !important',
+                          mb: '8px !important',
+                          borderRadius: '14px !important',
+                          border: '1px solid rgba(255, 255, 255, 0.6)',
+                          background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.2) 100%)',
+                          backdropFilter: 'blur(10px)',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                          '&:active': { transform: 'scale(0.97)' },
+                          '&[aria-selected="true"]': {
+                              background: `linear-gradient(135deg, #3b82f6 0%, rgba(59,130,246,0.8) 100%)`,
+                              borderColor: 'rgba(59,130,246,0.5)',
+                              boxShadow: `0 8px 24px rgba(59,130,246,0.4)`,
+                              '& .label-text, & .desc-text': { color: '#ffffff' },
+                          },
+                          '&.Mui-focused:not([aria-selected="true"])': {
+                              background: `linear-gradient(145deg, rgba(255,255,255,0.9), rgba(255,255,255,0.6))`,
+                              boxShadow: '0 8px 20px rgba(0,0,0,0.06)',
+                              transform: 'translateY(-2px)',
+                              borderColor: 'rgba(255,255,255,0.9)',
+                          }
+                        }}>
+                          <Typography className="label-text" variant="body2" sx={{ fontFamily: 'inherit', fontWeight: 600, color: '#334155', letterSpacing: '-0.01em', fontSize: '0.95rem', transition: 'color 0.2s ease' }}>{option.label}</Typography>
                           {option.description && (
-                            <Typography variant="caption" sx={{ color: 'text.secondary', mt: 0.5, lineHeight: 1.2 }}>
+                            <Typography className="desc-text" variant="caption" sx={{ fontFamily: 'inherit', color: '#64748b', mt: 0.5, lineHeight: 1.3, fontWeight: 500, transition: 'color 0.2s ease' }}>
                               {option.description}
                             </Typography>
                           )}
@@ -358,10 +397,35 @@ export default function WikiEditor({
                       colorTheme="#3b82f6"
                       disableClearable
                       renderOption={(props, option: any) => (
-                        <Box component="li" {...props} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>{option.label}</Typography>
+                        <Box component="li" {...props} sx={{ 
+                          display: 'flex', 
+                          flexDirection: 'column', 
+                          alignItems: 'flex-start !important',
+                          p: '12px 16px !important',
+                          mb: '8px !important',
+                          borderRadius: '14px !important',
+                          border: '1px solid rgba(255, 255, 255, 0.6)',
+                          background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.2) 100%)',
+                          backdropFilter: 'blur(10px)',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                          '&:active': { transform: 'scale(0.97)' },
+                          '&[aria-selected="true"]': {
+                              background: `linear-gradient(135deg, #3b82f6 0%, rgba(59,130,246,0.8) 100%)`,
+                              borderColor: 'rgba(59,130,246,0.5)',
+                              boxShadow: `0 8px 24px rgba(59,130,246,0.4)`,
+                              '& .label-text, & .desc-text': { color: '#ffffff' },
+                          },
+                          '&.Mui-focused:not([aria-selected="true"])': {
+                              background: `linear-gradient(145deg, rgba(255,255,255,0.9), rgba(255,255,255,0.6))`,
+                              boxShadow: '0 8px 20px rgba(0,0,0,0.06)',
+                              transform: 'translateY(-2px)',
+                              borderColor: 'rgba(255,255,255,0.9)',
+                          }
+                        }}>
+                          <Typography className="label-text" variant="body2" sx={{ fontFamily: 'inherit', fontWeight: 600, color: '#334155', letterSpacing: '-0.01em', fontSize: '0.95rem', transition: 'color 0.2s ease' }}>{option.label}</Typography>
                           {option.description && (
-                            <Typography variant="caption" sx={{ color: 'text.secondary', mt: 0.5, lineHeight: 1.2 }}>
+                            <Typography className="desc-text" variant="caption" sx={{ fontFamily: 'inherit', color: '#64748b', mt: 0.5, lineHeight: 1.3, fontWeight: 500, transition: 'color 0.2s ease' }}>
                               {option.description}
                             </Typography>
                           )}
@@ -390,13 +454,28 @@ export default function WikiEditor({
                       colorTheme="#3b82f6"
                       disableClearable
                     />
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <PremiumSwitch
-                        checked={editForm.isPublic}
-                        onChange={e => setEditForm({...editForm, isPublic: e.target.checked})}
-                        colorTheme="#10b981"
-                        label="Is Public Document?"
-                      />
+                    <Box sx={{ gridColumn: '1 / -1', mt: 1 }}>
+                      <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: 1, mb: 2 }}>Document Settings</Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 4, bgcolor: 'rgba(255,255,255,0.6)', p: 3, borderRadius: '16px', border: '1px solid rgba(0,0,0,0.04)' }}>
+                        <PremiumSwitch
+                          checked={editForm.isPublic}
+                          onChange={e => setEditForm({...editForm, isPublic: e.target.checked})}
+                          colorTheme="#10b981"
+                          label="Publicly Visible"
+                        />
+                        <PremiumSwitch
+                          checked={editForm.isFeatured || false}
+                          onChange={e => setEditForm({...editForm, isFeatured: e.target.checked})}
+                          colorTheme="#f59e0b"
+                          label="Featured / Pinned"
+                        />
+                        <PremiumSwitch
+                          checked={editForm.allowComments !== false}
+                          onChange={e => setEditForm({...editForm, allowComments: e.target.checked})}
+                          colorTheme="#3b82f6"
+                          label="Allow Discussions"
+                        />
+                      </Box>
                     </Box>
                   </Box>
                 </Box>
