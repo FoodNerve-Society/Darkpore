@@ -1,31 +1,56 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   Box, Container, Typography, Button, Chip, IconButton, Paper, TextField, 
   FormControl, InputLabel, Select, MenuItem, Switch, FormControlLabel, Divider,
-  Dialog, DialogTitle, DialogContent, DialogActions
+  Dialog, DialogTitle, DialogContent, DialogActions, Tooltip, Collapse, alpha
 } from '@mui/material';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { useSociety } from '@/context/SocietyContext';
-import { getAllVisibleWikiDocs, getWikiDoc, createOrUpdateWikiDoc, WikiBlock, WikiDocInput, getRegistryHotspots, createRegistryHotspot, deleteRegistryHotspot } from '@/lib/actions/wiki';
+import { getAllVisibleWikiDocs, getWikiDoc, createOrUpdateWikiDoc, WikiBlock, WikiDocInput, getRegistryHotspots, createRegistryHotspot } from '@/lib/actions/wiki';
 import FlipContainer from '../../components/shared/FlipContainer';
 import WikiReader from '@/components/wiki/WikiReader';
 import WikiStudioDashboard from '../../components/forms/WikiStudioDashboard';
+
+// DND Kit
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 // Icons
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import DocIcon from '@mui/icons-material/Description';
-import SecurityIcon from '@mui/icons-material/Security';
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import CloseIcon from '@mui/icons-material/Close';
 
 // ── Shared Paper Styles ──────────────────────────────────
 const sharedPaperSx = {
@@ -42,8 +67,6 @@ const sharedPaperSx = {
   display: 'flex',
   flexDirection: 'column',
 };
-
-// Removed PromptBuilderBlock as it is now in WikiReader
 
 const WIKI_DOMAINS = [
   {
@@ -69,6 +92,30 @@ const WIKI_DOMAINS = [
     ]
   }
 ];
+
+// ----------------------------------------------------------------------
+// SORTABLE WRAPPER
+// ----------------------------------------------------------------------
+function SortableBlockWrapper({ id, reorderUnlocked, children }: { id: string, reorderUnlocked: boolean, children: (attributes: any, listeners: any, setNodeRef: any, style: any, isDragging: boolean) => React.ReactNode }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id, disabled: !reorderUnlocked });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : 1,
+    position: 'relative' as const,
+  };
+
+  return <>{children(attributes, listeners, setNodeRef, style, isDragging)}</>;
+}
+
 
 export default function WikiDashboardPage() {
   const { profile } = useSociety();
@@ -119,6 +166,17 @@ export default function WikiDashboardPage() {
     slug: '', title: '', category: 'operations', isPublic: false, allowedRoles: [], allowedUsers: [], blocks: [], tags: [], authorId: '', hotspotId: '', parentId: ''
   });
 
+  // Editor UI State
+  const [expandedBlockId, setExpandedBlockId] = useState<string | null>(null);
+  const [reorderUnlocked, setReorderUnlocked] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [isActionItemsMinimized, setIsActionItemsMinimized] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
   const loadDashboard = async () => {
     if (profile) {
       const res = await getAllVisibleWikiDocs(profile.roles || [], profile.uid || 'guest', profile.isAdmin || false);
@@ -133,11 +191,9 @@ export default function WikiDashboardPage() {
     loadHotspots().then(() => {
       const qsHotspot = searchParams.get('hotspot');
       if (qsHotspot && profile?.isAdmin) {
-        // Pre-fill
         setNewHotspotId(qsHotspot);
         setNewHotspotLabel(qsHotspot.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
         setShowHotspotModal(true);
-        // Clear the param so we don't reopen it endlessly on re-renders
         router.replace(`/profile/wiki`);
       }
     });
@@ -179,7 +235,7 @@ export default function WikiDashboardPage() {
         hotspotId: res.data.hotspotId || '',
         parentId: res.data.parentId || ''
       });
-      setViewMode('reader'); // Default to reader as requested
+      setViewMode('reader');
     } else {
       setDoc(null);
       setEditForm({
@@ -202,49 +258,34 @@ export default function WikiDashboardPage() {
     setLoading(false);
   };
 
-  if (!profile) return null;
+  // --- Block Builder Helpers ---
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = editForm.blocks.findIndex(item => item.id === active.id);
+      const newIndex = editForm.blocks.findIndex(item => item.id === over.id);
+      setEditForm({ ...editForm, blocks: arrayMove(editForm.blocks, oldIndex, newIndex) });
+    }
+  }, [editForm]);
 
-  const userRoles = profile?.roles || ['guest'];
-  const isAdmin = profile?.isAdmin || false;
-  const uid = profile?.uid || 'guest';
-
-  // Helper to check if current user can see a block
-  const canSeeBlock = (block: WikiBlock) => {
-    if (isAdmin) return true;
-    if (block.visibility === 'public') return true;
-    if (block.visibility === 'internal_staff' && userRoles.includes('internal_staff')) return true;
-    if (block.visibility === 'admin' && userRoles.includes('admin')) return true;
-    if (block.visibility === 'whitelist_only' && block.whitelistUsers?.includes(uid)) return true;
-    return false;
-  };
-
-  const hasAccess = () => {
-    if (!doc) return false;
-    if (isAdmin) return true;
-    if (doc.isPublic) return true;
-    if (doc.allowedRoles.some((r: string) => userRoles.includes(r as any))) return true;
-    if (doc.allowedUsers.includes(uid)) return true;
-    return false;
-  };
-
-  // --- Editor Helpers ---
   const addBlock = () => {
+    const newId = `block-${Date.now()}`;
     setEditForm({
       ...editForm,
-      blocks: [...editForm.blocks, { id: `block-${Date.now()}`, type: 'TEXT', visibility: 'public', content: '', variables: [] }]
+      blocks: [...editForm.blocks, { id: newId, type: 'TEXT', visibility: 'public', content: '', variables: [] }]
     });
+    setExpandedBlockId(newId);
   };
 
-  const updateBlock = (index: number, updates: Partial<WikiBlock>) => {
-    const newBlocks = [...editForm.blocks];
-    newBlocks[index] = { ...newBlocks[index], ...updates };
+  const updateBlock = (id: string, updates: Partial<WikiBlock>) => {
+    const newBlocks = editForm.blocks.map(b => b.id === id ? { ...b, ...updates } : b);
     setEditForm({ ...editForm, blocks: newBlocks });
   };
 
-  const removeBlock = (index: number) => {
-    const newBlocks = [...editForm.blocks];
-    newBlocks.splice(index, 1);
+  const removeBlock = (id: string) => {
+    const newBlocks = editForm.blocks.filter(b => b.id !== id);
     setEditForm({ ...editForm, blocks: newBlocks });
+    if (expandedBlockId === id) setExpandedBlockId(null);
   };
 
   const moveBlock = (index: number, direction: 'up' | 'down') => {
@@ -266,9 +307,67 @@ export default function WikiDashboardPage() {
       tags: taxonomy.subcategory ? [taxonomy.subcategory] : [],
       isPublic: taxonomy.clearance === 'public',
       allowedRoles: taxonomy.clearance === 'public' ? [] : [taxonomy.clearance],
-      blocks: templateBlocks
+      blocks: templateBlocks.map((b: any) => ({ ...b, id: `block-${Date.now()}-${Math.random()}` }))
     });
+    if (templateBlocks.length > 0) {
+      setExpandedBlockId(templateBlocks[0].id);
+    }
     setViewMode('editor');
+  };
+
+  // --- Completion Stats ---
+  const getBlockFillStats = (b: WikiBlock) => {
+    let total = 1;
+    let filled = 0;
+    if (b.type === 'TEXT') {
+      if (b.content && b.content.trim().length > 0) filled = 1;
+    } else if (b.type === 'PROMPT_BUILDER') {
+      total = 1 + (b.variables?.length || 0);
+      if (b.content && b.content.trim().length > 0) filled++;
+      b.variables?.forEach(v => { if (v.name && v.label) filled++; });
+    }
+    return { filled, total, percent: Math.round((filled / total) * 100) };
+  };
+
+  const actionItems = useMemo(() => {
+    const items: Array<{ id: string, text: string }> = [];
+    if (viewMode !== 'editor') return items;
+    
+    if (!editForm.title?.trim()) items.push({ id: 'doc-title', text: 'Document Title is missing' });
+    if (!editForm.slug?.trim()) items.push({ id: 'doc-slug', text: 'Document Slug is missing' });
+    
+    editForm.blocks.forEach((b, index) => {
+      const stats = getBlockFillStats(b);
+      if (stats.filled < stats.total) {
+        items.push({ id: b.id, text: `Block ${index + 1} (${b.type}) is incomplete` });
+      }
+    });
+    
+    return items;
+  }, [editForm, viewMode]);
+
+  if (!profile) return null;
+
+  const userRoles = profile?.roles || ['guest'];
+  const isAdmin = profile?.isAdmin || false;
+  const uid = profile?.uid || 'guest';
+
+  const canSeeBlock = (block: WikiBlock) => {
+    if (isAdmin) return true;
+    if (block.visibility === 'public') return true;
+    if (block.visibility === 'internal_staff' && userRoles.includes('internal_staff')) return true;
+    if (block.visibility === 'admin' && userRoles.includes('admin')) return true;
+    if (block.visibility === 'whitelist_only' && block.whitelistUsers?.includes(uid)) return true;
+    return false;
+  };
+
+  const hasAccess = () => {
+    if (!doc) return false;
+    if (isAdmin) return true;
+    if (doc.isPublic) return true;
+    if (doc.allowedRoles.some((r: string) => userRoles.includes(r as any))) return true;
+    if (doc.allowedUsers.includes(uid)) return true;
+    return false;
   };
 
   // ========================================================================
@@ -278,7 +377,6 @@ export default function WikiDashboardPage() {
     <Paper elevation={0} sx={{ ...sharedPaperSx, bgcolor: '#f8fafc', p: 0 }}>
       <Container maxWidth="lg" sx={{ py: { xs: 4, md: 6 }, display: 'flex', flexDirection: 'column', gap: 4 }}>
         
-        {/* HEADER */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Box>
             <Typography sx={{ fontWeight: 900, fontSize: { xs: '2rem', md: '2.5rem' }, color: '#0f172a', letterSpacing: '-0.02em', mb: 1 }}>
@@ -306,7 +404,6 @@ export default function WikiDashboardPage() {
           )}
         </Box>
 
-        {/* DOCUMENTS LIST */}
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' }, gap: 3 }}>
           {wikiDocs.length === 0 ? (
             <Box sx={{ gridColumn: '1 / -1', textAlign: 'center', py: 10, bgcolor: 'rgba(0,0,0,0.02)', borderRadius: '24px' }}>
@@ -359,7 +456,6 @@ export default function WikiDashboardPage() {
           )}
         </Box>
 
-        {/* FLOATING BACK BUTTON */}
         <Box sx={{ position: 'fixed', bottom: { xs: 24, md: 32 }, left: '50%', transform: 'translateX(-50%)', zIndex: 100 }}>
           <Button
             onClick={() => router.push(`/profile`)}
@@ -396,9 +492,8 @@ export default function WikiDashboardPage() {
   // BACK CONTENT: Reader / Editor
   // ========================================================================
   const BackContent = (
-    <Paper elevation={0} sx={{ ...sharedPaperSx, bgcolor: viewMode === 'editor' ? '#0f172a' : '#ffffff', p: 0 }}>
+    <Paper elevation={0} sx={{ ...sharedPaperSx, bgcolor: '#ffffff', p: 0 }}>
       {viewMode === 'reader' ? (
-        // --- READER ---
         <WikiReader 
           doc={doc}
           loading={loading}
@@ -411,7 +506,6 @@ export default function WikiDashboardPage() {
               setActiveDocSlug(slug);
               loadDoc(slug);
             } else {
-              // Navigate to root (Dashboard)
               setIsFlipped(false);
             }
           }}
@@ -420,7 +514,6 @@ export default function WikiDashboardPage() {
           }
         />
       ) : viewMode === 'lobby' ? (
-        // --- LOBBY ---
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
           <Box sx={{ p: 2, display: 'flex', alignItems: 'center' }}>
             <IconButton onClick={() => setIsFlipped(false)} sx={{ mr: 1, color: '#64748b' }}><ArrowBackIcon /></IconButton>
@@ -429,75 +522,90 @@ export default function WikiDashboardPage() {
           <WikiStudioDashboard docs={wikiDocs} onStartFresh={handleStartFresh} userName={profile.displayName || profile.uid} />
         </Box>
       ) : (
-        // --- EDITOR ---
-        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', color: '#fff' }}>
-           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 3, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', color: '#0f172a', position: 'relative' }}>
+          
+          {/* Editor Header */}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: { xs: 2, md: 3 }, borderBottom: '1px solid rgba(0,0,0,0.08)', bgcolor: '#fff', zIndex: 10 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <IconButton onClick={() => { if(doc) setViewMode('reader'); else setViewMode('lobby'); }} sx={{ mr: 1, color: '#fff' }}><ArrowBackIcon /></IconButton>
-              <EditIcon sx={{ color: '#60a5fa' }} />
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase' }}>
-                Wiki Studio {loading && <span style={{ opacity: 0.5, fontSize: '0.8rem', marginLeft: 8 }}>Saving...</span>}
+              <IconButton onClick={() => { if(doc) setViewMode('reader'); else setViewMode('lobby'); }} sx={{ mr: 1, color: '#64748b' }}><ArrowBackIcon /></IconButton>
+              <EditIcon sx={{ color: '#10b981' }} />
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: '#0f172a' }}>
+                Studio Builder {loading && <span style={{ opacity: 0.5, fontSize: '0.8rem', marginLeft: 8 }}>Saving...</span>}
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Button 
+                onClick={() => setShowPreviewModal(true)}
+                variant="outlined"
+                startIcon={<VisibilityIcon />}
+                sx={{ color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.3)', borderRadius: '20px', fontWeight: 800, display: { xs: 'none', sm: 'inline-flex' } }}
+              >
+                Preview
+              </Button>
               <Button 
                 onClick={handleSave} 
                 disabled={loading} 
                 variant="contained" 
                 startIcon={<SaveIcon />}
-                sx={{ bgcolor: '#2563eb', '&:hover': { bgcolor: '#1d4ed8' }, borderRadius: '20px', fontWeight: 800 }}
+                sx={{ bgcolor: '#10b981', '&:hover': { bgcolor: '#059669' }, borderRadius: '20px', fontWeight: 800, boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)' }}
               >
-                Save Changes
+                Save
               </Button>
             </Box>
           </Box>
 
-          <Box sx={{ flex: 1, overflowY: 'auto', p: { xs: 2, sm: 6 }, display: 'flex', flexDirection: 'column', gap: 4, maxWidth: '900px', mx: 'auto', width: '100%' }}>
-             {/* Settings Panel */}
-             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, bgcolor: 'rgba(255,255,255,0.03)', p: 4, borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                <Typography variant="h6" sx={{ fontWeight: 800 }}>Document Settings</Typography>
-                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
-                  <TextField 
-                    label="Title" variant="outlined" 
-                    value={editForm.title} onChange={e => setEditForm({...editForm, title: e.target.value})}
-                    sx={{ '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' }, '& .MuiInputBase-root': { color: '#fff' }, '& .MuiFormLabel-root': { color: 'rgba(255,255,255,0.7)' } }}
-                  />
-                  <TextField 
-                    label="Unique Slug" variant="outlined" 
-                    value={editForm.slug} onChange={e => setEditForm({...editForm, slug: e.target.value})}
-                    sx={{ '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' }, '& .MuiInputBase-root': { color: '#fff' }, '& .MuiFormLabel-root': { color: 'rgba(255,255,255,0.7)' } }}
-                  />
-                  <FormControl sx={{ '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' } }}>
-                    <InputLabel sx={{ color: 'rgba(255,255,255,0.7)' }}>Domain (Category)</InputLabel>
-                    <Select 
-                      value={editForm.category} label="Domain (Category)"
-                      onChange={e => setEditForm({...editForm, category: e.target.value as string, tags: []})}
-                      sx={{ color: '#fff' }}
-                    >
-                      {WIKI_DOMAINS.map(domain => (
-                        <MenuItem key={domain.id} value={domain.id}>{domain.title}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  <FormControl sx={{ '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' } }}>
-                    <InputLabel sx={{ color: 'rgba(255,255,255,0.7)' }}>Tag (Subcategory)</InputLabel>
-                    <Select 
-                      value={editForm.tags[0] || ''} label="Tag (Subcategory)"
-                      onChange={e => setEditForm({...editForm, tags: [e.target.value as string]})}
-                      sx={{ color: '#fff' }}
-                    >
-                      {WIKI_DOMAINS.find(d => d.id === editForm.category)?.subcategories.map(sub => (
-                        <MenuItem key={sub.id} value={sub.id}>{sub.title}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    <FormControl sx={{ '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' } }}>
-                      <InputLabel sx={{ color: 'rgba(255,255,255,0.7)' }}>Link to UI Hotspot</InputLabel>
+          <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+            
+            {/* Main Editor Column */}
+            <Box sx={{ flex: 1, overflowY: 'auto', p: { xs: 2, sm: 4, md: 6 }, display: 'flex', flexDirection: 'column', gap: 4, bgcolor: '#f8fafc' }}>
+               
+               {/* Document Identity Block */}
+               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, bgcolor: '#ffffff', p: 4, borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 8px 32px rgba(0,0,0,0.03)' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                    <InfoOutlinedIcon sx={{ color: '#64748b', fontSize: 20 }} />
+                    <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Document Identity</Typography>
+                  </Box>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
+                    <TextField 
+                      label="Title" variant="outlined" 
+                      value={editForm.title} onChange={e => setEditForm({...editForm, title: e.target.value})}
+                      sx={{ '& fieldset': { borderColor: '#cbd5e1' }, '& .MuiInputBase-root': { color: '#0f172a', bgcolor: '#fff' }, '& .MuiFormLabel-root': { color: '#64748b' } }}
+                    />
+                    <TextField 
+                      label="Unique Slug" variant="outlined" 
+                      value={editForm.slug} onChange={e => setEditForm({...editForm, slug: e.target.value})}
+                      sx={{ '& fieldset': { borderColor: '#cbd5e1' }, '& .MuiInputBase-root': { color: '#0f172a', bgcolor: '#fff' }, '& .MuiFormLabel-root': { color: '#64748b' } }}
+                    />
+                    <FormControl sx={{ '& fieldset': { borderColor: '#cbd5e1' } }}>
+                      <InputLabel sx={{ color: '#64748b' }}>Domain (Category)</InputLabel>
+                      <Select 
+                        value={editForm.category} label="Domain (Category)"
+                        onChange={e => setEditForm({...editForm, category: e.target.value as string, tags: []})}
+                        sx={{ color: '#0f172a', bgcolor: '#fff' }}
+                      >
+                        {WIKI_DOMAINS.map(domain => (
+                          <MenuItem key={domain.id} value={domain.id}>{domain.title}</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <FormControl sx={{ '& fieldset': { borderColor: '#cbd5e1' } }}>
+                      <InputLabel sx={{ color: '#64748b' }}>Tag (Subcategory)</InputLabel>
+                      <Select 
+                        value={editForm.tags[0] || ''} label="Tag (Subcategory)"
+                        onChange={e => setEditForm({...editForm, tags: [e.target.value as string]})}
+                        sx={{ color: '#0f172a', bgcolor: '#fff' }}
+                      >
+                        {WIKI_DOMAINS.find(d => d.id === editForm.category)?.subcategories.map(sub => (
+                          <MenuItem key={sub.id} value={sub.id}>{sub.title}</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <FormControl sx={{ '& fieldset': { borderColor: '#cbd5e1' } }}>
+                      <InputLabel sx={{ color: '#64748b' }}>Link to UI Hotspot</InputLabel>
                       <Select 
                         value={editForm.hotspotId || ''} label="Link to UI Hotspot"
                         onChange={e => setEditForm({...editForm, hotspotId: e.target.value as string})}
-                        sx={{ color: '#fff' }}
+                        sx={{ color: '#0f172a', bgcolor: '#fff' }}
                       >
                         <MenuItem value=""><em>None (Unlinked)</em></MenuItem>
                         {registryHotspots
@@ -507,148 +615,262 @@ export default function WikiDashboardPage() {
                         ))}
                       </Select>
                     </FormControl>
-                    <Button 
-                      size="small" 
-                      onClick={() => setShowHotspotModal(true)} 
-                      sx={{ alignSelf: 'flex-start', color: '#60a5fa', fontSize: '0.75rem', p: 0 }}
-                    >
-                      + Register New Hotspot
-                    </Button>
-                  </Box>
-                  <FormControl sx={{ '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' } }}>
-                    <InputLabel sx={{ color: 'rgba(255,255,255,0.7)' }}>Parent Document (Optional)</InputLabel>
-                    <Select 
-                      value={editForm.parentId || ''} label="Parent Document (Optional)"
-                      onChange={e => setEditForm({...editForm, parentId: e.target.value as string})}
-                      sx={{ color: '#fff' }}
-                    >
-                      <MenuItem value=""><em>None (Top Level)</em></MenuItem>
-                      {wikiDocs
-                        .filter(d => d.id !== doc?.id) // Prevent self-nesting
-                        .map(d => (
-                        <MenuItem key={d.id} value={d.id}>{d.title}</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <FormControlLabel 
-                      control={<Switch checked={editForm.isPublic} onChange={e => setEditForm({...editForm, isPublic: e.target.checked})} sx={{ '& .MuiSwitch-switchBase.Mui-checked': { color: '#3b82f6' }, '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#3b82f6' } }} />} 
-                      label="Is Public Document?" 
-                      sx={{ color: 'rgba(255,255,255,0.8)' }}
-                    />
-                  </Box>
-                </Box>
-             </Box>
-
-             <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} />
-
-             {/* Blocks Editor */}
-             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="h6" sx={{ fontWeight: 800 }}>Content Blocks</Typography>
-                <Button startIcon={<AddIcon />} variant="outlined" onClick={addBlock} sx={{ color: '#fff', borderColor: 'rgba(255,255,255,0.3)', borderRadius: '20px', fontWeight: 700 }}>
-                  Add Block
-                </Button>
-             </Box>
-
-             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-               {editForm.blocks.map((block, index) => (
-                 <Box key={block.id} sx={{ bgcolor: 'rgba(255,255,255,0.03)', p: 4, borderRadius: '24px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-                      <Typography variant="subtitle2" sx={{ color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', fontWeight: 800 }}>Block {index + 1}</Typography>
-                      <Box sx={{ display: 'flex', gap: 1 }}>
-                        <IconButton size="small" onClick={() => moveBlock(index, 'up')} sx={{ color: 'rgba(255,255,255,0.5)' }}><ArrowUpwardIcon fontSize="small" /></IconButton>
-                        <IconButton size="small" onClick={() => moveBlock(index, 'down')} sx={{ color: 'rgba(255,255,255,0.5)' }}><ArrowDownwardIcon fontSize="small" /></IconButton>
-                        <IconButton size="small" onClick={() => removeBlock(index)} sx={{ color: '#ef4444' }}><DeleteIcon fontSize="small" /></IconButton>
-                      </Box>
-                    </Box>
-                    
-                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3, mb: 3 }}>
-                      <FormControl sx={{ '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' } }}>
-                        <InputLabel sx={{ color: 'rgba(255,255,255,0.7)' }}>Type</InputLabel>
-                        <Select value={block.type} label="Type" onChange={e => updateBlock(index, { type: e.target.value as any })} sx={{ color: '#fff' }}>
-                          <MenuItem value="TEXT">Text</MenuItem>
-                          <MenuItem value="PROMPT_BUILDER">Prompt Builder</MenuItem>
-                        </Select>
-                      </FormControl>
-                      <FormControl sx={{ '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' } }}>
-                        <InputLabel sx={{ color: 'rgba(255,255,255,0.7)' }}>Visibility</InputLabel>
-                        <Select value={block.visibility} label="Visibility" onChange={e => updateBlock(index, { visibility: e.target.value as any })} sx={{ color: '#fff' }}>
-                          <MenuItem value="public">Public</MenuItem>
-                          <MenuItem value="internal_staff">Internal Staff</MenuItem>
-                          <MenuItem value="admin">Admin Only</MenuItem>
-                          <MenuItem value="whitelist_only">Whitelist Only</MenuItem>
-                        </Select>
-                      </FormControl>
-                    </Box>
-
-                    {block.type === 'PROMPT_BUILDER' && (
-                      <Box sx={{ mb: 3, bgcolor: 'rgba(0,0,0,0.2)', p: 3, borderRadius: '16px' }}>
-                        <Typography variant="subtitle2" sx={{ color: '#60a5fa', mb: 1, display: 'block', fontWeight: 700 }}>Prompt Variables</Typography>
-                        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', mb: 3, display: 'block' }}>
-                          Add curly braces {"{{variable_name}}"} in your prompt, then define them below.
-                        </Typography>
-                        
-                        {block.variables?.map((v, vIndex) => (
-                          <Box key={vIndex} sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                            <TextField 
-                              size="small" label="Variable Name (no braces)" value={v.name} 
-                              onChange={e => {
-                                const newVars = [...(block.variables || [])];
-                                newVars[vIndex].name = e.target.value;
-                                updateBlock(index, { variables: newVars });
-                              }}
-                              sx={{ flex: 1, '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' }, '& .MuiInputBase-root': { color: '#fff' }, '& .MuiFormLabel-root': { color: 'rgba(255,255,255,0.5)' } }}
-                            />
-                            <TextField 
-                              size="small" label="Input Label" value={v.label} 
-                              onChange={e => {
-                                const newVars = [...(block.variables || [])];
-                                newVars[vIndex].label = e.target.value;
-                                updateBlock(index, { variables: newVars });
-                              }}
-                              sx={{ flex: 1, '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' }, '& .MuiInputBase-root': { color: '#fff' }, '& .MuiFormLabel-root': { color: 'rgba(255,255,255,0.5)' } }}
-                            />
-                            <IconButton 
-                              color="error" 
-                              onClick={() => {
-                                const newVars = [...(block.variables || [])];
-                                newVars.splice(vIndex, 1);
-                                updateBlock(index, { variables: newVars });
-                              }}
-                            >
-                              <DeleteIcon />
-                            </IconButton>
-                          </Box>
+                    <FormControl sx={{ '& fieldset': { borderColor: '#cbd5e1' } }}>
+                      <InputLabel sx={{ color: '#64748b' }}>Parent Document (Optional)</InputLabel>
+                      <Select 
+                        value={editForm.parentId || ''} label="Parent Document (Optional)"
+                        onChange={e => setEditForm({...editForm, parentId: e.target.value as string})}
+                        sx={{ color: '#0f172a', bgcolor: '#fff' }}
+                      >
+                        <MenuItem value=""><em>None (Top Level)</em></MenuItem>
+                        {wikiDocs
+                          .filter(d => d.id !== doc?.id) // Prevent self-nesting
+                          .map(d => (
+                          <MenuItem key={d.id} value={d.id}>{d.title}</MenuItem>
                         ))}
-                        <Button 
-                          size="small" 
-                          variant="outlined" 
-                          onClick={() => {
-                            const newVars = [...(block.variables || []), { name: 'new_var', label: 'New Variable' }];
-                            updateBlock(index, { variables: newVars });
-                          }}
-                          sx={{ color: '#60a5fa', borderColor: 'rgba(96, 165, 250, 0.3)' }}
-                        >
-                          + Add Variable
-                        </Button>
-                      </Box>
-                    )}
+                      </Select>
+                    </FormControl>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <FormControlLabel 
+                        control={<Switch checked={editForm.isPublic} onChange={e => setEditForm({...editForm, isPublic: e.target.checked})} sx={{ '& .MuiSwitch-switchBase.Mui-checked': { color: '#10b981' }, '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#10b981' } }} />} 
+                        label={<Typography sx={{ fontWeight: 600 }}>Is Public Document?</Typography>} 
+                        sx={{ color: '#0f172a' }}
+                      />
+                    </Box>
+                  </Box>
+               </Box>
 
-                    <TextField 
-                      multiline fullWidth minRows={6}
-                      label={block.type === 'PROMPT_BUILDER' ? "Prompt Template" : "Content (Markdown)"}
-                      value={block.content}
-                      onChange={e => updateBlock(index, { content: e.target.value })}
-                      sx={{ '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' }, '& .MuiInputBase-root': { color: '#fff', fontFamily: 'monospace' }, '& .MuiFormLabel-root': { color: 'rgba(255,255,255,0.7)' } }}
-                    />
+               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mt: 2 }}>
+                 <Box>
+                   <Typography variant="h5" sx={{ fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em' }}>Architecture Blocks</Typography>
+                   <Typography sx={{ color: '#64748b', fontSize: '0.9rem' }}>Build your step-by-step SOP or context document.</Typography>
                  </Box>
-               ))}
-               {editForm.blocks.length === 0 && (
-                 <Typography sx={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', my: 6, fontStyle: 'italic' }}>
-                   No blocks added yet. Click "Add Block" to start.
-                 </Typography>
-               )}
-             </Box>
+                 <Box sx={{ display: 'flex', gap: 2 }}>
+                   <Button 
+                     size="small" 
+                     onClick={() => setReorderUnlocked(!reorderUnlocked)} 
+                     startIcon={<SwapHorizIcon />}
+                     sx={{ color: reorderUnlocked ? '#ef4444' : '#64748b', bgcolor: reorderUnlocked ? 'rgba(239, 68, 68, 0.1)' : 'transparent', fontWeight: 700, borderRadius: 2 }}
+                   >
+                     {reorderUnlocked ? 'Lock Reorder' : 'Unlock Reorder'}
+                   </Button>
+                   <Button startIcon={<AddIcon />} variant="contained" onClick={addBlock} sx={{ bgcolor: '#3b82f6', '&:hover': { bgcolor: '#2563eb' }, borderRadius: '16px', fontWeight: 800, boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)' }}>
+                     Add Block
+                   </Button>
+                 </Box>
+               </Box>
+
+               {/* Sortable Blocks */}
+               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                 <SortableContext items={editForm.blocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
+                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                     {editForm.blocks.map((block, index) => {
+                       const isExpanded = expandedBlockId === block.id;
+                       const stats = getBlockFillStats(block);
+                       const isComplete = stats.filled === stats.total;
+
+                       return (
+                         <SortableBlockWrapper key={block.id} id={block.id} reorderUnlocked={reorderUnlocked}>
+                           {(attributes, listeners, setNodeRef, style, isDragging) => (
+                             <Box ref={setNodeRef} style={style}>
+                               <Paper elevation={0} sx={{
+                                 borderRadius: '24px', overflow: 'hidden', border: isExpanded ? '2px solid #3b82f6' : '1px solid #e2e8f0',
+                                 boxShadow: isExpanded ? '0 12px 40px rgba(59, 130, 246, 0.15)' : '0 4px 20px rgba(0,0,0,0.02)',
+                                 transition: 'all 0.3s ease', bgcolor: '#fff', opacity: isDragging ? 0.8 : 1
+                               }}>
+                                 {/* Card Header (Always visible) */}
+                                 <Box 
+                                   onClick={() => !reorderUnlocked && setExpandedBlockId(isExpanded ? null : block.id)}
+                                   sx={{ 
+                                     p: 2, px: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
+                                     cursor: reorderUnlocked ? 'default' : 'pointer', bgcolor: isExpanded ? '#f8fafc' : '#fff',
+                                     borderBottom: isExpanded ? '1px solid #e2e8f0' : 'none',
+                                     '&:hover': { bgcolor: !reorderUnlocked ? '#f8fafc' : undefined }
+                                   }}
+                                 >
+                                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                     {reorderUnlocked && (
+                                       <Box {...attributes} {...listeners} sx={{ cursor: 'grab', color: '#94a3b8', display: 'flex' }}>
+                                         <DragIndicatorIcon />
+                                       </Box>
+                                     )}
+                                     
+                                     {/* Progress Indicator */}
+                                     <Box sx={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                       {isComplete ? (
+                                         <CheckCircleIcon sx={{ color: '#10b981', fontSize: 24 }} />
+                                       ) : (
+                                         <RadioButtonUncheckedIcon sx={{ color: '#cbd5e1', fontSize: 24 }} />
+                                       )}
+                                     </Box>
+
+                                     <Box>
+                                       <Typography sx={{ fontWeight: 800, color: '#0f172a', fontSize: '1.05rem' }}>
+                                         {block.type === 'PROMPT_BUILDER' ? 'Prompt Builder' : 'Text Block'}
+                                       </Typography>
+                                       <Typography sx={{ color: '#64748b', fontSize: '0.8rem' }}>
+                                         Step {index + 1}
+                                       </Typography>
+                                     </Box>
+                                   </Box>
+
+                                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                     {!reorderUnlocked && (
+                                       <IconButton size="small" onClick={(e) => { e.stopPropagation(); removeBlock(block.id); }} sx={{ color: '#ef4444' }}>
+                                         <DeleteIcon fontSize="small" />
+                                       </IconButton>
+                                     )}
+                                     <IconButton size="small" sx={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s' }}>
+                                       <ExpandMoreIcon />
+                                     </IconButton>
+                                   </Box>
+                                 </Box>
+
+                                 {/* Expandable Content */}
+                                 <Collapse in={isExpanded}>
+                                   <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
+                                        <FormControl sx={{ '& fieldset': { borderColor: '#cbd5e1' } }}>
+                                          <InputLabel sx={{ color: '#64748b' }}>Type</InputLabel>
+                                          <Select value={block.type} label="Type" onChange={e => updateBlock(block.id, { type: e.target.value as any })} sx={{ color: '#0f172a' }}>
+                                            <MenuItem value="TEXT">Text Markdown</MenuItem>
+                                            <MenuItem value="PROMPT_BUILDER">Prompt Builder</MenuItem>
+                                          </Select>
+                                        </FormControl>
+                                        <FormControl sx={{ '& fieldset': { borderColor: '#cbd5e1' } }}>
+                                          <InputLabel sx={{ color: '#64748b' }}>Visibility</InputLabel>
+                                          <Select value={block.visibility} label="Visibility" onChange={e => updateBlock(block.id, { visibility: e.target.value as any })} sx={{ color: '#0f172a' }}>
+                                            <MenuItem value="public">Public</MenuItem>
+                                            <MenuItem value="internal_staff">Internal Staff</MenuItem>
+                                            <MenuItem value="admin">Admin Only</MenuItem>
+                                            <MenuItem value="whitelist_only">Whitelist Only</MenuItem>
+                                          </Select>
+                                        </FormControl>
+                                      </Box>
+
+                                      {block.type === 'PROMPT_BUILDER' && (
+                                        <Box sx={{ bgcolor: '#f1f5f9', p: 3, borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
+                                          <Typography variant="subtitle2" sx={{ color: '#3b82f6', mb: 1, display: 'block', fontWeight: 800 }}>Prompt Variables</Typography>
+                                          <Typography variant="caption" sx={{ color: '#64748b', mb: 3, display: 'block' }}>
+                                            Add curly braces {"{{variable_name}}"} in your prompt, then define them below.
+                                          </Typography>
+                                          
+                                          {(block.variables || []).map((v, vIndex) => (
+                                            <Box key={vIndex} sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                                              <TextField 
+                                                size="small" label="Variable Name (no braces)" value={v.name} 
+                                                onChange={e => {
+                                                  const newVars = [...(block.variables || [])];
+                                                  newVars[vIndex].name = e.target.value;
+                                                  updateBlock(block.id, { variables: newVars });
+                                                }}
+                                                sx={{ flex: 1, '& fieldset': { borderColor: '#cbd5e1' }, '& .MuiInputBase-root': { color: '#0f172a', bgcolor: '#fff' }, '& .MuiFormLabel-root': { color: '#64748b' } }}
+                                              />
+                                              <TextField 
+                                                size="small" label="Input Label" value={v.label} 
+                                                onChange={e => {
+                                                  const newVars = [...(block.variables || [])];
+                                                  newVars[vIndex].label = e.target.value;
+                                                  updateBlock(block.id, { variables: newVars });
+                                                }}
+                                                sx={{ flex: 1, '& fieldset': { borderColor: '#cbd5e1' }, '& .MuiInputBase-root': { color: '#0f172a', bgcolor: '#fff' }, '& .MuiFormLabel-root': { color: '#64748b' } }}
+                                              />
+                                              <IconButton 
+                                                color="error" 
+                                                onClick={() => {
+                                                  const newVars = [...(block.variables || [])];
+                                                  newVars.splice(vIndex, 1);
+                                                  updateBlock(block.id, { variables: newVars });
+                                                }}
+                                              >
+                                                <DeleteIcon />
+                                              </IconButton>
+                                            </Box>
+                                          ))}
+                                          <Button 
+                                            size="small" 
+                                            variant="outlined" 
+                                            onClick={() => {
+                                              const newVars = [...(block.variables || []), { name: 'new_var', label: 'New Variable' }];
+                                              updateBlock(block.id, { variables: newVars });
+                                            }}
+                                            sx={{ color: '#3b82f6', borderColor: 'rgba(59, 130, 246, 0.3)', bgcolor: '#fff', borderRadius: 2, fontWeight: 700 }}
+                                          >
+                                            + Add Variable
+                                          </Button>
+                                        </Box>
+                                      )}
+
+                                      <TextField 
+                                        multiline fullWidth minRows={6}
+                                        label={block.type === 'PROMPT_BUILDER' ? "Prompt Template" : "Content (Markdown Supported)"}
+                                        value={block.content}
+                                        onChange={e => updateBlock(block.id, { content: e.target.value })}
+                                        sx={{ '& fieldset': { borderColor: '#cbd5e1' }, '& .MuiInputBase-root': { color: '#0f172a', fontFamily: 'monospace', bgcolor: '#f8fafc' }, '& .MuiFormLabel-root': { color: '#64748b' } }}
+                                      />
+                                   </Box>
+                                 </Collapse>
+                               </Paper>
+                             </Box>
+                           )}
+                         </SortableBlockWrapper>
+                       );
+                     })}
+                     
+                     {editForm.blocks.length === 0 && (
+                       <Typography sx={{ color: '#94a3b8', textAlign: 'center', my: 6, fontStyle: 'italic' }}>
+                         No blocks added yet. Click "Add Block" to start building your template.
+                       </Typography>
+                     )}
+                   </Box>
+                 </SortableContext>
+               </DndContext>
+            </Box>
+
+            {/* Action Items Drawer */}
+            <Box sx={{ 
+              width: isActionItemsMinimized ? 60 : 320, 
+              borderLeft: '1px solid rgba(0,0,0,0.08)', bgcolor: '#ffffff',
+              transition: 'width 0.3s ease', display: 'flex', flexDirection: 'column' 
+            }}>
+              <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: isActionItemsMinimized ? 'center' : 'space-between', borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+                {!isActionItemsMinimized && (
+                  <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Action Items
+                  </Typography>
+                )}
+                <IconButton size="small" onClick={() => setIsActionItemsMinimized(!isActionItemsMinimized)} sx={{ color: '#64748b' }}>
+                  {isActionItemsMinimized ? <KeyboardArrowRightIcon sx={{ transform: 'rotate(180deg)' }} /> : <KeyboardArrowRightIcon />}
+                </IconButton>
+              </Box>
+
+              {!isActionItemsMinimized && (
+                <Box sx={{ p: 2, flex: 1, overflowY: 'auto' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                    <Typography sx={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Missing Elements</Typography>
+                    <Chip label={actionItems.length} size="small" sx={{ bgcolor: actionItems.length > 0 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)', color: actionItems.length > 0 ? '#ef4444' : '#10b981', fontWeight: 800 }} />
+                  </Box>
+
+                  {actionItems.length === 0 ? (
+                    <Box sx={{ p: 3, textAlign: 'center', bgcolor: 'rgba(16, 185, 129, 0.05)', borderRadius: '16px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                      <CheckCircleIcon sx={{ color: '#10b981', fontSize: 32, mb: 1 }} />
+                      <Typography sx={{ color: '#10b981', fontWeight: 700, fontSize: '0.9rem' }}>All Good!</Typography>
+                      <Typography sx={{ color: '#64748b', fontSize: '0.8rem', mt: 0.5 }}>Your document is fully configured.</Typography>
+                    </Box>
+                  ) : (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      {actionItems.map((item) => (
+                        <Box key={item.id} sx={{ p: 1.5, bgcolor: 'rgba(239, 68, 68, 0.05)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)', display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                          <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#ef4444', mt: 1, flexShrink: 0 }} />
+                          <Typography sx={{ fontSize: '0.8rem', color: '#0f172a', fontWeight: 500, lineHeight: 1.4 }}>{item.text}</Typography>
+                        </Box>
+                      ))}
+                    </Box>
+                  )}
+                </Box>
+              )}
+            </Box>
+
           </Box>
         </Box>
       )}
@@ -663,6 +885,7 @@ export default function WikiDashboardPage() {
         backContent={BackContent}
       />
 
+      {/* Hotspot Modal */}
       <Dialog open={showHotspotModal} onClose={() => setShowHotspotModal(false)} PaperProps={{ sx: { bgcolor: '#1e293b', color: '#fff', borderRadius: 4, p: 2, minWidth: 400 } }}>
         <DialogTitle sx={{ fontWeight: 800 }}>Register New Hotspot</DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 2 }}>
@@ -684,6 +907,36 @@ export default function WikiDashboardPage() {
           <Button onClick={() => setShowHotspotModal(false)} sx={{ color: 'rgba(255,255,255,0.5)' }}>Cancel</Button>
           <Button onClick={handleCreateHotspot} variant="contained" sx={{ bgcolor: '#3b82f6', '&:hover': { bgcolor: '#2563eb' } }}>Register</Button>
         </DialogActions>
+      </Dialog>
+
+      {/* Live Preview Modal */}
+      <Dialog 
+        open={showPreviewModal} 
+        onClose={() => setShowPreviewModal(false)} 
+        maxWidth="lg" 
+        fullWidth 
+        PaperProps={{ sx: { height: '90vh', borderRadius: '24px', overflow: 'hidden', bgcolor: '#f8fafc' } }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2, borderBottom: '1px solid rgba(0,0,0,0.05)', bgcolor: '#fff', zIndex: 10 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <VisibilityIcon sx={{ color: '#10b981' }} />
+            <Typography sx={{ fontWeight: 800, color: '#0f172a', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Live Reader Preview</Typography>
+          </Box>
+          <IconButton onClick={() => setShowPreviewModal(false)}>
+            <CloseIcon />
+          </IconButton>
+        </Box>
+        <Box sx={{ flex: 1, overflowY: 'auto' }}>
+          <WikiReader 
+            doc={editForm} 
+            loading={false} 
+            isAdmin={true} 
+            hasAccess={true} 
+            canSeeBlock={() => true} 
+            onEdit={() => setShowPreviewModal(false)} 
+            onNavigate={() => {}} 
+          />
+        </Box>
       </Dialog>
     </>
   );
