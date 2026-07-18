@@ -3,12 +3,14 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Box, Container, Typography, Button, Chip, IconButton, Paper, TextField, 
-  FormControl, InputLabel, Select, MenuItem, Switch, FormControlLabel, Divider 
+  FormControl, InputLabel, Select, MenuItem, Switch, FormControlLabel, Divider,
+  Dialog, DialogTitle, DialogContent, DialogActions
 } from '@mui/material';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { useSociety } from '@/context/SocietyContext';
-import { getAllVisibleWikiDocs, getWikiDoc, createOrUpdateWikiDoc, WikiBlock, WikiDocInput } from '@/lib/actions/wiki';
+import { getAllVisibleWikiDocs, getWikiDoc, createOrUpdateWikiDoc, WikiBlock, WikiDocInput, getRegistryHotspots, createRegistryHotspot, deleteRegistryHotspot } from '@/lib/actions/wiki';
 import FlipContainer from '../../components/shared/FlipContainer';
+import WikiReader from '@/components/wiki/WikiReader';
 
 // Icons
 import MenuBookIcon from '@mui/icons-material/MenuBook';
@@ -40,65 +42,43 @@ const sharedPaperSx = {
   flexDirection: 'column',
 };
 
-// --- Prompt Builder Component ---
-function PromptBuilderBlock({ block }: { block: WikiBlock }) {
-  const [inputs, setInputs] = useState<Record<string, string>>({});
-  
-  const handleCopy = () => {
-    let finalPrompt = block.content;
-    if (block.variables) {
-      block.variables.forEach(v => {
-        const val = inputs[v.name] || `[${v.label}]`;
-        finalPrompt = finalPrompt.replace(new RegExp(`{{${v.name}}}`, 'g'), val);
-      });
-    }
-    navigator.clipboard.writeText(finalPrompt);
-    alert('Prompt copied to clipboard!');
-  };
+// Removed PromptBuilderBlock as it is now in WikiReader
 
-  return (
-    <Box sx={{ bgcolor: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '12px', p: 3, mb: 3 }}>
-      <Typography variant="overline" sx={{ color: '#60a5fa', fontWeight: 700, mb: 2, display: 'block' }}>Prompt Builder</Typography>
-      
-      {block.variables && block.variables.length > 0 && (
-        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 2, mb: 3 }}>
-          {block.variables.map(v => (
-            <TextField 
-              key={v.name}
-              label={v.label}
-              variant="outlined"
-              size="small"
-              value={inputs[v.name] || ''}
-              onChange={(e) => setInputs({ ...inputs, [v.name]: e.target.value })}
-              InputProps={{ sx: { color: '#0f172a' } }} 
-              InputLabelProps={{ sx: { color: 'rgba(15,23,42,0.7)' } }}
-              sx={{ '& fieldset': { borderColor: 'rgba(15,23,42,0.2)' } }}
-            />
-          ))}
-        </Box>
-      )}
-
-      <Box sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.05)', borderRadius: '8px', mb: 2 }}>
-        <Typography sx={{ color: 'rgba(15,23,42,0.8)', fontFamily: 'monospace', fontSize: '0.85rem', whiteSpace: 'pre-wrap' }}>
-          {block.content}
-        </Typography>
-      </Box>
-
-      <Button variant="contained" startIcon={<ContentCopyIcon />} onClick={handleCopy} sx={{ bgcolor: '#3b82f6', '&:hover': { bgcolor: '#2563eb' } }}>
-        Copy Final Prompt
-      </Button>
-    </Box>
-  );
-}
-
-export default function WikiDashboardPage() {
+  export default function WikiDashboardPage() {
   const { profile } = useSociety();
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const tenant = params.tenant as string;
   
   // Dashboard State
   const [wikiDocs, setWikiDocs] = useState<any[]>([]);
+  
+  // Hotspot Registry State
+  const [registryHotspots, setRegistryHotspots] = useState<any[]>([]);
+  const [showHotspotModal, setShowHotspotModal] = useState(false);
+  const [newHotspotId, setNewHotspotId] = useState('');
+  const [newHotspotLabel, setNewHotspotLabel] = useState('');
+
+  const loadHotspots = async () => {
+    const res = await getRegistryHotspots();
+    if (res.success && res.data) {
+      setRegistryHotspots(res.data);
+    }
+  };
+
+  const handleCreateHotspot = async () => {
+    if (!newHotspotId || !newHotspotLabel) return;
+    const res = await createRegistryHotspot(newHotspotId, newHotspotLabel);
+    if (res.success) {
+      await loadHotspots();
+      setNewHotspotId('');
+      setNewHotspotLabel('');
+      setShowHotspotModal(false);
+    } else {
+      alert("Error: " + res.error);
+    }
+  };
   
   // SPA Flip State
   const [isFlipped, setIsFlipped] = useState(false);
@@ -110,7 +90,7 @@ export default function WikiDashboardPage() {
   const [loading, setLoading] = useState(false);
   
   const [editForm, setEditForm] = useState<WikiDocInput>({
-    slug: '', title: '', category: 'operations', isPublic: false, allowedRoles: [], allowedUsers: [], blocks: [], tags: [], authorId: ''
+    slug: '', title: '', category: 'operations', isPublic: false, allowedRoles: [], allowedUsers: [], blocks: [], tags: [], authorId: '', hotspotId: ''
   });
 
   const loadDashboard = async () => {
@@ -124,7 +104,18 @@ export default function WikiDashboardPage() {
 
   useEffect(() => {
     loadDashboard();
-  }, [profile]);
+    loadHotspots().then(() => {
+      const qsHotspot = searchParams.get('hotspot');
+      if (qsHotspot && profile?.isAdmin) {
+        // Pre-fill
+        setNewHotspotId(qsHotspot);
+        setNewHotspotLabel(qsHotspot.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
+        setShowHotspotModal(true);
+        // Clear the param so we don't reopen it endlessly on re-renders
+        router.replace(`/modular-society/${tenant}/profile/wiki`);
+      }
+    });
+  }, [profile, searchParams]);
 
   useEffect(() => {
     if (isFlipped) {
@@ -134,7 +125,7 @@ export default function WikiDashboardPage() {
          setDoc(null);
          setViewMode('editor');
          setEditForm({
-           slug: '', title: '', category: 'operations', isPublic: false, allowedRoles: ['internal_staff'], allowedUsers: [], blocks: [], tags: [], authorId: profile?.uid || ''
+           slug: '', title: '', category: 'operations', isPublic: false, allowedRoles: ['internal_staff'], allowedUsers: [], blocks: [], tags: [], authorId: profile?.uid || '', hotspotId: ''
          });
       }
     } else {
@@ -158,13 +149,14 @@ export default function WikiDashboardPage() {
         allowedUsers: res.data.allowedUsers,
         blocks: res.data.blocks,
         tags: res.data.tags, 
-        authorId: res.data.authorId
+        authorId: res.data.authorId,
+        hotspotId: res.data.hotspotId || ''
       });
       setViewMode('reader'); // Default to reader as requested
     } else {
       setDoc(null);
       setEditForm({
-        slug: slug, title: '', category: 'operations', isPublic: false, allowedRoles: ['internal_staff'], allowedUsers: [], blocks: [], tags: [], authorId: profile?.uid || ''
+        slug: slug, title: '', category: 'operations', isPublic: false, allowedRoles: ['internal_staff'], allowedUsers: [], blocks: [], tags: [], authorId: profile?.uid || '', hotspotId: ''
       });
       setViewMode('editor');
     }
@@ -368,85 +360,17 @@ export default function WikiDashboardPage() {
     <Paper elevation={0} sx={{ ...sharedPaperSx, bgcolor: viewMode === 'editor' ? '#0f172a' : '#ffffff', p: 0 }}>
       {viewMode === 'reader' ? (
         // --- READER ---
-        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 3, borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <IconButton onClick={() => setIsFlipped(false)} sx={{ mr: 1 }}><ArrowBackIcon /></IconButton>
-              <DocIcon sx={{ color: '#10b981' }} />
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', color: '#0f172a' }}>
-                Omni-Wiki Reader {loading && <span style={{ opacity: 0.5, fontSize: '0.8rem', marginLeft: 8 }}>Loading...</span>}
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              {isAdmin && doc && (
-                <Button 
-                  onClick={() => setViewMode('editor')} 
-                  startIcon={<EditIcon />}
-                  sx={{ color: '#3b82f6', fontWeight: 700 }}
-                >
-                  Edit SOP
-                </Button>
-              )}
-            </Box>
-          </Box>
-
-          <Box sx={{ flex: 1, overflowY: 'auto', p: { xs: 2, sm: 6 } }}>
-            {!doc && !loading ? (
-              <Box sx={{ textAlign: 'center', mt: 10 }}>
-                 <Typography sx={{ color: 'text.secondary', mb: 3 }}>Document not found.</Typography>
-                 {isAdmin && (
-                    <Button variant="outlined" onClick={() => setViewMode('editor')} sx={{ borderRadius: '20px' }}>
-                       Create Document
-                    </Button>
-                 )}
-              </Box>
-            ) : !hasAccess() && !loading ? (
-              <Box sx={{ textAlign: 'center', mt: 10 }}>
-                <SecurityIcon sx={{ color: '#ef4444', fontSize: 60, opacity: 0.5, mb: 2 }} />
-                <Typography variant="h6" sx={{ fontWeight: 700 }}>Access Denied</Typography>
-                <Typography sx={{ color: 'text.secondary', fontSize: '0.9rem' }}>Clearance level insufficient.</Typography>
-              </Box>
-            ) : doc ? (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, maxWidth: '800px', mx: 'auto' }}>
-                <Typography variant="h3" sx={{ fontWeight: 900, color: '#0f172a' }}>{doc.title}</Typography>
-                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                   <Chip label={doc.category} size="small" sx={{ bgcolor: 'rgba(16, 185, 129, 0.1)', color: '#059669', fontWeight: 700 }} />
-                   {doc.isPublic ? (
-                     <Chip label="Public" size="small" sx={{ bgcolor: 'rgba(59, 130, 246, 0.1)', color: '#2563eb', fontWeight: 700 }} />
-                   ) : (
-                     <Chip label="Restricted" size="small" sx={{ bgcolor: 'rgba(239, 68, 68, 0.1)', color: '#dc2626', fontWeight: 700 }} />
-                   )}
-                </Box>
-                
-                <Divider sx={{ my: 2 }} />
-
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  {doc.blocks.filter(canSeeBlock).map((block: WikiBlock, index: number) => (
-                    <Box key={block.id}>
-                      {isAdmin && (
-                        <Typography variant="caption" sx={{ color: '#f59e0b', mb: 1, display: 'block', fontWeight: 700 }}>
-                          [Admin View] Block {index + 1} - Visibility: {block.visibility}
-                        </Typography>
-                      )}
-                      {block.type === 'TEXT' && (
-                        <Typography sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.8, color: '#334155', fontSize: '1.05rem' }}>
-                          {block.content}
-                        </Typography>
-                      )}
-                      {block.type === 'PROMPT_BUILDER' && (
-                        <PromptBuilderBlock block={block} />
-                      )}
-                    </Box>
-                  ))}
-                  
-                  {doc.blocks.filter(canSeeBlock).length === 0 && (
-                     <Typography sx={{ color: 'text.disabled', fontStyle: 'italic' }}>No visible steps available in this SOP.</Typography>
-                  )}
-                </Box>
-              </Box>
-            ) : null}
-          </Box>
-        </Box>
+        <WikiReader 
+          doc={doc}
+          loading={loading}
+          isAdmin={isAdmin}
+          hasAccess={hasAccess()}
+          canSeeBlock={canSeeBlock}
+          onEdit={() => setViewMode('editor')}
+          headerContent={
+            <IconButton onClick={() => setIsFlipped(false)} sx={{ mr: 1 }}><ArrowBackIcon /></IconButton>
+          }
+        />
       ) : (
         // --- EDITOR ---
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', color: '#fff' }}>
@@ -498,6 +422,28 @@ export default function WikiDashboardPage() {
                       <MenuItem value="academy">Academy</MenuItem>
                     </Select>
                   </FormControl>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <FormControl sx={{ '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' } }}>
+                      <InputLabel sx={{ color: 'rgba(255,255,255,0.7)' }}>Link to UI Hotspot</InputLabel>
+                      <Select 
+                        value={editForm.hotspotId || ''} label="Link to UI Hotspot"
+                        onChange={e => setEditForm({...editForm, hotspotId: e.target.value as string})}
+                        sx={{ color: '#fff' }}
+                      >
+                        <MenuItem value=""><em>None (Unlinked)</em></MenuItem>
+                        {registryHotspots.map(h => (
+                          <MenuItem key={h.id} value={h.id}>{h.label} ({h.id})</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <Button 
+                      size="small" 
+                      onClick={() => setShowHotspotModal(true)} 
+                      sx={{ alignSelf: 'flex-start', color: '#60a5fa', fontSize: '0.75rem', p: 0 }}
+                    >
+                      + Register New Hotspot
+                    </Button>
+                  </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
                     <FormControlLabel 
                       control={<Switch checked={editForm.isPublic} onChange={e => setEditForm({...editForm, isPublic: e.target.checked})} sx={{ '& .MuiSwitch-switchBase.Mui-checked': { color: '#3b82f6' }, '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#3b82f6' } }} />} 
@@ -624,10 +570,35 @@ export default function WikiDashboardPage() {
   );
 
   return (
-    <FlipContainer 
-      isFlipped={isFlipped}
-      frontContent={FrontContent}
-      backContent={BackContent}
-    />
+    <>
+      <FlipContainer 
+        isFlipped={isFlipped}
+        frontContent={FrontContent}
+        backContent={BackContent}
+      />
+
+      <Dialog open={showHotspotModal} onClose={() => setShowHotspotModal(false)} PaperProps={{ sx: { bgcolor: '#1e293b', color: '#fff', borderRadius: 4, p: 2, minWidth: 400 } }}>
+        <DialogTitle sx={{ fontWeight: 800 }}>Register New Hotspot</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 2 }}>
+          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', mt: 1 }}>
+            Register a Hotspot ID that a developer has placed in the codebase (e.g., "dashboard-header").
+          </Typography>
+          <TextField 
+            label="Hotspot ID (e.g. trade_btn)" 
+            value={newHotspotId} onChange={e => setNewHotspotId(e.target.value)}
+            sx={{ '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' }, '& .MuiInputBase-root': { color: '#fff' }, '& .MuiFormLabel-root': { color: 'rgba(255,255,255,0.7)' } }}
+          />
+          <TextField 
+            label="Human Readable Label" 
+            value={newHotspotLabel} onChange={e => setNewHotspotLabel(e.target.value)}
+            sx={{ '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' }, '& .MuiInputBase-root': { color: '#fff' }, '& .MuiFormLabel-root': { color: 'rgba(255,255,255,0.7)' } }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowHotspotModal(false)} sx={{ color: 'rgba(255,255,255,0.5)' }}>Cancel</Button>
+          <Button onClick={handleCreateHotspot} variant="contained" sx={{ bgcolor: '#3b82f6', '&:hover': { bgcolor: '#2563eb' } }}>Register</Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 }

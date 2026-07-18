@@ -23,10 +23,21 @@ export interface WikiDocInput {
   blocks: WikiBlock[];
   tags: string[];
   authorId: string;
+  hotspotId?: string | null;
 }
 
 export async function createOrUpdateWikiDoc(data: WikiDocInput) {
   try {
+    const finalHotspotId = (!data.hotspotId || data.hotspotId === 'NONE') ? null : data.hotspotId;
+
+    if (finalHotspotId) {
+      // Clear this hotspot from any other document to prevent unique constraint violation
+      await prisma.omniWikiDoc.updateMany({
+        where: { hotspotId: finalHotspotId, slug: { not: data.slug } },
+        data: { hotspotId: null },
+      });
+    }
+
     const doc = await prisma.omniWikiDoc.upsert({
       where: { slug: data.slug },
       update: {
@@ -37,6 +48,7 @@ export async function createOrUpdateWikiDoc(data: WikiDocInput) {
         allowedUsers: JSON.stringify(data.allowedUsers),
         blocks: JSON.stringify(data.blocks),
         tags: JSON.stringify(data.tags),
+        hotspotId: finalHotspotId,
       },
       create: {
         slug: data.slug,
@@ -48,6 +60,7 @@ export async function createOrUpdateWikiDoc(data: WikiDocInput) {
         blocks: JSON.stringify(data.blocks),
         tags: JSON.stringify(data.tags),
         authorId: data.authorId,
+        hotspotId: finalHotspotId,
       },
     });
 
@@ -129,5 +142,73 @@ export async function getAllVisibleWikiDocs(userRoles: string[], userId: string,
   } catch (error: any) {
     console.error('Error fetching wiki docs:', error);
     return { success: false, error: error.message };
+  }
+}
+
+export async function getHotspotMappings() {
+  try {
+    const docs = await prisma.omniWikiDoc.findMany({
+      where: { hotspotId: { not: null } },
+      select: { slug: true, hotspotId: true },
+    });
+    const mappings: Record<string, string> = {};
+    docs.forEach(doc => {
+      if (doc.hotspotId) {
+        mappings[doc.hotspotId] = doc.slug;
+      }
+    });
+    return { success: true, data: mappings };
+  } catch (error: any) {
+    console.error('Error fetching hotspot mappings:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// ============================================================================
+// WIKI HOTSPOT REGISTRY ACTIONS
+// ============================================================================
+
+export async function getRegistryHotspots() {
+  try {
+    const hotspots = await prisma.wikiHotspotRegistry.findMany({
+      orderBy: { createdAt: 'desc' }
+    });
+    return { success: true, data: hotspots };
+  } catch (error) {
+    console.error('Error fetching registry hotspots:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+export async function createRegistryHotspot(id: string, label: string, description?: string) {
+  try {
+    const newHotspot = await prisma.wikiHotspotRegistry.create({
+      data: {
+        id,
+        label,
+        description
+      }
+    });
+    return { success: true, data: newHotspot };
+  } catch (error) {
+    console.error('Error creating registry hotspot:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+export async function deleteRegistryHotspot(id: string) {
+  try {
+    await prisma.wikiHotspotRegistry.delete({
+      where: { id }
+    });
+    // Also clear mappings
+    await prisma.omniWikiDoc.updateMany({
+      where: { hotspotId: id },
+      data: { hotspotId: null }
+    });
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting registry hotspot:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }

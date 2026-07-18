@@ -22,6 +22,7 @@ import AdminOnboardingModal from './components/AdminOnboardingModal';
 import OnboardingWizard from '@/components/OnboardingWizard';
 import MiniAuthModal from './components/MiniAuthModal';
 import UpdatesFeed from './components/UpdatesFeed';
+import { WikiOverlayProvider } from '@/context/WikiOverlayContext';
 
 const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
   const { user, profile, loading, needsOnboarding, isUpdatesOpen, setUpdatesOpen } = useSociety();
@@ -126,9 +127,10 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
   const activeTheme = getActiveTheme(pathname);
 
   return (
-    <Box sx={{ display: 'flex', height: '100dvh', flexDirection: isMobile ? 'column' : 'row', position: 'relative', bgcolor: '#f8fafc', overflow: 'hidden' }}>
+    <WikiOverlayProvider>
+      <Box sx={{ display: 'flex', height: '100dvh', flexDirection: isMobile ? 'column' : 'row', position: 'relative', bgcolor: '#f8fafc', overflow: 'hidden' }}>
 
-      {/* --- DYNAMIC BACKGROUND LAYER (Fixed behind everything) --- */}
+        {/* --- DYNAMIC BACKGROUND LAYER (Fixed behind everything) --- */}
       <Box sx={{
         position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
         opacity: 1,
@@ -291,7 +293,8 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
           tenant={tenant}
         />
       )}
-    </Box>
+      </Box>
+    </WikiOverlayProvider>
   );
 };
 

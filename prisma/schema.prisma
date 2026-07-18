@@ -677,3 +677,11 @@ model OmniWikiDoc {
 
   @@index([category])
 }
+
+model WikiHotspotRegistry {
+  id          String   @id // The exact Hotspot ID used by the developer
+  label       String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
