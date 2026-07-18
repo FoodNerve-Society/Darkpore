@@ -181,8 +181,8 @@ export default function WikiDashboardPage() {
   const canSeeBlock = (block: WikiBlock) => {
     if (isAdmin) return true;
     if (block.visibility === 'public') return true;
-    if (block.visibility === 'internal_staff' && userRoles.includes('internal_staff')) return true;
-    if (block.visibility === 'admin' && userRoles.includes('admin')) return true;
+    if (block.visibility === 'internal_staff' && userRoles.includes('internal_staff' as any)) return true;
+    if (block.visibility === 'admin' && userRoles.includes('admin' as any)) return true;
     if (block.visibility === 'whitelist_only' && block.whitelistUsers?.includes(uid)) return true;
     return false;
   };
@@ -265,7 +265,7 @@ export default function WikiDashboardPage() {
       />
 
       {/* Hotspot Modal */}
-      <Dialog open={showHotspotModal} onClose={() => setShowHotspotModal(false)} PaperProps={{ sx: { bgcolor: '#1e293b', color: '#fff', borderRadius: 4, p: 2, minWidth: 400 } }}>
+      <Dialog open={showHotspotModal} onClose={() => setShowHotspotModal(false)} sx={{ '& .MuiDialog-paper': { bgcolor: '#1e293b', color: '#fff', borderRadius: 4, p: 2, minWidth: 400 } }}>
         <DialogTitle sx={{ fontWeight: 800 }}>Register New Hotspot</DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 2 }}>
           <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', mt: 1 }}>

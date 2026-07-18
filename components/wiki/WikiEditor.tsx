@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { 
   Box, Typography, Button, IconButton, TextField, 
   FormControl, InputLabel, Select, MenuItem, Switch, FormControlLabel,
-  Dialog, Chip, DialogTitle, DialogContent, DialogActions
+  Dialog, Chip, DialogTitle, DialogContent, DialogActions, Collapse, Paper
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import EditIcon from '@mui/icons-material/Edit';
@@ -13,8 +13,9 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import AddIcon from '@mui/icons-material/Add';
-import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import CloseIcon from '@mui/icons-material/Close';
 
 import WikiBlockBuilder from './WikiBlockBuilder';
@@ -68,6 +69,7 @@ export default function WikiEditor({
   const [reorderUnlocked, setReorderUnlocked] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [isActionItemsMinimized, setIsActionItemsMinimized] = useState(false);
+  const [identityExpanded, setIdentityExpanded] = useState(true);
 
   const getBlockFillStats = (b: any) => {
     let total = 1;
@@ -146,85 +148,120 @@ export default function WikiEditor({
         <Box sx={{ flex: 1, overflowY: 'auto', p: { xs: 2, sm: 4, md: 6 }, display: 'flex', flexDirection: 'column', gap: 4, bgcolor: '#f8fafc' }}>
             
             {/* Document Identity Block */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, bgcolor: '#ffffff', p: 4, borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 8px 32px rgba(0,0,0,0.03)' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <InfoOutlinedIcon sx={{ color: '#64748b', fontSize: 20 }} />
-                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Document Identity</Typography>
-              </Box>
-              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
-                <TextField 
-                  label="Title" variant="outlined" 
-                  value={editForm.title} onChange={e => setEditForm({...editForm, title: e.target.value})}
-                  sx={{ '& fieldset': { borderColor: '#cbd5e1' }, '& .MuiInputBase-root': { color: '#0f172a', bgcolor: '#fff' }, '& .MuiFormLabel-root': { color: '#64748b' } }}
-                />
-                <TextField 
-                  label="Unique Slug" variant="outlined" 
-                  value={editForm.slug} onChange={e => setEditForm({...editForm, slug: e.target.value})}
-                  sx={{ '& fieldset': { borderColor: '#cbd5e1' }, '& .MuiInputBase-root': { color: '#0f172a', bgcolor: '#fff' }, '& .MuiFormLabel-root': { color: '#64748b' } }}
-                />
-                <FormControl sx={{ '& fieldset': { borderColor: '#cbd5e1' } }}>
-                  <InputLabel sx={{ color: '#64748b' }}>Domain (Category)</InputLabel>
-                  <Select 
-                    value={editForm.category} label="Domain (Category)"
-                    onChange={e => setEditForm({...editForm, category: e.target.value as string, tags: []})}
-                    sx={{ color: '#0f172a', bgcolor: '#fff' }}
-                  >
-                    {WIKI_DOMAINS.map(domain => (
-                      <MenuItem key={domain.id} value={domain.id}>{domain.title}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <FormControl sx={{ '& fieldset': { borderColor: '#cbd5e1' } }}>
-                  <InputLabel sx={{ color: '#64748b' }}>Tag (Subcategory)</InputLabel>
-                  <Select 
-                    value={editForm.tags[0] || ''} label="Tag (Subcategory)"
-                    onChange={e => setEditForm({...editForm, tags: [e.target.value as string]})}
-                    sx={{ color: '#0f172a', bgcolor: '#fff' }}
-                  >
-                    {WIKI_DOMAINS.find(d => d.id === editForm.category)?.subcategories.map(sub => (
-                      <MenuItem key={sub.id} value={sub.id}>{sub.title}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <FormControl sx={{ '& fieldset': { borderColor: '#cbd5e1' } }}>
-                  <InputLabel sx={{ color: '#64748b' }}>Link to UI Hotspot</InputLabel>
-                  <Select 
-                    value={editForm.hotspotId || ''} label="Link to UI Hotspot"
-                    onChange={e => setEditForm({...editForm, hotspotId: e.target.value as string})}
-                    sx={{ color: '#0f172a', bgcolor: '#fff' }}
-                  >
-                    <MenuItem value=""><em>None (Unlinked)</em></MenuItem>
-                    {registryHotspots
-                      .filter(h => h.category === editForm.category && h.subcategory === editForm.tags[0])
-                      .map(h => (
-                      <MenuItem key={h.id} value={h.id}>{h.label} ({h.id})</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <FormControl sx={{ '& fieldset': { borderColor: '#cbd5e1' } }}>
-                  <InputLabel sx={{ color: '#64748b' }}>Parent Document (Optional)</InputLabel>
-                  <Select 
-                    value={editForm.parentId || ''} label="Parent Document (Optional)"
-                    onChange={e => setEditForm({...editForm, parentId: e.target.value as string})}
-                    sx={{ color: '#0f172a', bgcolor: '#fff' }}
-                  >
-                    <MenuItem value=""><em>None (Top Level)</em></MenuItem>
-                    {wikiDocs
-                      .filter(d => d.id !== doc?.id) // Prevent self-nesting
-                      .map(d => (
-                      <MenuItem key={d.id} value={d.id}>{d.title}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <FormControlLabel 
-                    control={<Switch checked={editForm.isPublic} onChange={e => setEditForm({...editForm, isPublic: e.target.checked})} sx={{ '& .MuiSwitch-switchBase.Mui-checked': { color: '#10b981' }, '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#10b981' } }} />} 
-                    label={<Typography sx={{ fontWeight: 600 }}>Is Public Document?</Typography>} 
-                    sx={{ color: '#0f172a' }}
-                  />
+            <Paper elevation={0} sx={{
+              borderRadius: '24px', overflow: 'hidden', border: identityExpanded ? '2px solid #3b82f6' : '1px solid #e2e8f0',
+              boxShadow: identityExpanded ? '0 12px 40px rgba(59, 130, 246, 0.15)' : '0 4px 20px rgba(0,0,0,0.02)',
+              transition: 'all 0.3s ease', bgcolor: '#fff'
+            }}>
+              {/* Header */}
+              <Box 
+                onClick={() => setIdentityExpanded(!identityExpanded)}
+                sx={{ 
+                  p: 2, px: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
+                  cursor: 'pointer', bgcolor: identityExpanded ? '#f8fafc' : '#fff',
+                  borderBottom: identityExpanded ? '1px solid #e2e8f0' : 'none',
+                  '&:hover': { bgcolor: '#f8fafc' }
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Box sx={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {editForm.title && editForm.slug && editForm.category ? (
+                      <CheckCircleIcon sx={{ color: '#10b981', fontSize: 24 }} />
+                    ) : (
+                      <InfoOutlinedIcon sx={{ color: '#cbd5e1', fontSize: 24 }} />
+                    )}
+                  </Box>
+                  <Box>
+                    <Typography sx={{ fontWeight: 800, color: '#0f172a', fontSize: '1.05rem', letterSpacing: '-0.01em' }}>
+                      Document Identity
+                    </Typography>
+                    <Typography sx={{ color: '#64748b', fontSize: '0.8rem' }}>
+                      {editForm.title || 'Set title, slug, and routing'}
+                    </Typography>
+                  </Box>
                 </Box>
+                <IconButton size="small" sx={{ transform: identityExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s' }}>
+                  <ExpandMoreIcon />
+                </IconButton>
               </Box>
-            </Box>
+
+              {/* Content */}
+              <Collapse in={identityExpanded}>
+                <Box sx={{ p: 3, display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
+                  <TextField 
+                    label="Title" variant="outlined" 
+                    value={editForm.title} onChange={e => setEditForm({...editForm, title: e.target.value})}
+                    sx={{ '& fieldset': { borderColor: '#cbd5e1' }, '& .MuiInputBase-root': { color: '#0f172a', bgcolor: '#fff' }, '& .MuiFormLabel-root': { color: '#64748b' } }}
+                  />
+                  <TextField 
+                    label="Unique Slug" variant="outlined" 
+                    value={editForm.slug} onChange={e => setEditForm({...editForm, slug: e.target.value})}
+                    sx={{ '& fieldset': { borderColor: '#cbd5e1' }, '& .MuiInputBase-root': { color: '#0f172a', bgcolor: '#fff' }, '& .MuiFormLabel-root': { color: '#64748b' } }}
+                  />
+                  <FormControl sx={{ '& fieldset': { borderColor: '#cbd5e1' } }}>
+                    <InputLabel sx={{ color: '#64748b' }}>Domain (Category)</InputLabel>
+                    <Select 
+                      value={editForm.category} label="Domain (Category)"
+                      onChange={e => setEditForm({...editForm, category: e.target.value as string, tags: []})}
+                      sx={{ color: '#0f172a', bgcolor: '#fff' }}
+                    >
+                      {WIKI_DOMAINS.map(domain => (
+                        <MenuItem key={domain.id} value={domain.id}>{domain.title}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <FormControl sx={{ '& fieldset': { borderColor: '#cbd5e1' } }}>
+                    <InputLabel sx={{ color: '#64748b' }}>Tag (Subcategory)</InputLabel>
+                    <Select 
+                      value={editForm.tags[0] || ''} label="Tag (Subcategory)"
+                      onChange={e => setEditForm({...editForm, tags: [e.target.value as string]})}
+                      sx={{ color: '#0f172a', bgcolor: '#fff' }}
+                    >
+                      {WIKI_DOMAINS.find(d => d.id === editForm.category)?.subcategories.map(sub => (
+                        <MenuItem key={sub.id} value={sub.id}>{sub.title}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <FormControl sx={{ '& fieldset': { borderColor: '#cbd5e1' } }}>
+                    <InputLabel sx={{ color: '#64748b' }}>Link to UI Hotspot</InputLabel>
+                    <Select 
+                      value={editForm.hotspotId || ''} label="Link to UI Hotspot"
+                      onChange={e => setEditForm({...editForm, hotspotId: e.target.value as string})}
+                      sx={{ color: '#0f172a', bgcolor: '#fff' }}
+                    >
+                      <MenuItem value=""><em>None (Unlinked)</em></MenuItem>
+                      {registryHotspots
+                        .filter(h => h.category === editForm.category && h.subcategory === editForm.tags[0])
+                        .map(h => (
+                        <MenuItem key={h.id} value={h.id}>{h.label} ({h.id})</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <FormControl sx={{ '& fieldset': { borderColor: '#cbd5e1' } }}>
+                    <InputLabel sx={{ color: '#64748b' }}>Parent Document (Optional)</InputLabel>
+                    <Select 
+                      value={editForm.parentId || ''} label="Parent Document (Optional)"
+                      onChange={e => setEditForm({...editForm, parentId: e.target.value as string})}
+                      sx={{ color: '#0f172a', bgcolor: '#fff' }}
+                    >
+                      <MenuItem value=""><em>None (Top Level)</em></MenuItem>
+                      {wikiDocs
+                        .filter(d => d.id !== doc?.id) // Prevent self-nesting
+                        .map(d => (
+                        <MenuItem key={d.id} value={d.id}>{d.title}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <FormControlLabel 
+                      control={<Switch checked={editForm.isPublic} onChange={e => setEditForm({...editForm, isPublic: e.target.checked})} sx={{ '& .MuiSwitch-switchBase.Mui-checked': { color: '#10b981' }, '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { backgroundColor: '#10b981' } }} />} 
+                      label={<Typography sx={{ fontWeight: 600 }}>Is Public Document?</Typography>} 
+                      sx={{ color: '#0f172a' }}
+                    />
+                  </Box>
+                </Box>
+              </Collapse>
+            </Paper>
 
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mt: 2 }}>
               <Box>
@@ -309,7 +346,7 @@ export default function WikiEditor({
         onClose={() => setShowPreviewModal(false)} 
         maxWidth="lg" 
         fullWidth 
-        PaperProps={{ sx: { height: '90vh', borderRadius: '24px', overflow: 'hidden', bgcolor: '#f8fafc' } }}
+        sx={{ '& .MuiDialog-paper': { height: '90vh', borderRadius: '24px', overflow: 'hidden', bgcolor: '#f8fafc' } }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2, borderBottom: '1px solid rgba(0,0,0,0.05)', bgcolor: '#fff', zIndex: 10 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
