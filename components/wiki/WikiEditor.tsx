@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { 
   Box, Typography, Button, IconButton, TextField, 
   FormControl, InputLabel, Select, MenuItem, Switch, FormControlLabel,
-  Dialog, Chip, DialogTitle, DialogContent, DialogActions, Collapse, Paper, Tooltip, alpha
+  Dialog, Chip, DialogTitle, DialogContent, DialogActions, Collapse, Paper, Tooltip, alpha, Avatar, Drawer
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import EditIcon from '@mui/icons-material/Edit';
@@ -18,6 +18,19 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import CloseIcon from '@mui/icons-material/Close';
 import CheckIcon from '@mui/icons-material/Check';
+import BusinessIcon from '@mui/icons-material/Business';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import VerticalSplitIcon from '@mui/icons-material/VerticalSplit';
+import OpenInFullIcon from '@mui/icons-material/OpenInFull';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import { keyframes } from '@mui/system';
+import { useSociety } from '@/context/SocietyContext';
+
+const slideUpFade = keyframes`
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
+`;
 
 import WikiBlockBuilder from './WikiBlockBuilder';
 import WikiReader from './WikiReader';
@@ -85,6 +98,11 @@ export default function WikiEditor({
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [isActionItemsMinimized, setIsActionItemsMinimized] = useState(false);
   const [identityExpanded, setIdentityExpanded] = useState(true);
+  const [showSidePreview, setShowSidePreview] = useState(false);
+  
+  const { profile } = useSociety();
+  const [postingAs, setPostingAs] = useState<'personal'|'organization'>('personal');
+  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(profile?.organizations?.[0]?.id || null);
 
   const getBlockFillStats = (b: any) => {
     let total = 1;
@@ -159,35 +177,104 @@ export default function WikiEditor({
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', color: '#0f172a', position: 'relative' }}>
+    <Box sx={{ 
+      display: 'flex', flexDirection: 'column', height: '100%', color: '#0f172a', position: 'relative',
+      marginRight: showSidePreview ? { xs: 0, lg: '45vw' } : 0,
+      transition: 'margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+    }}>
       
       {/* Editor Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: { xs: 2, md: 3 }, borderBottom: '1px solid rgba(0,0,0,0.08)', bgcolor: '#fff', zIndex: 10 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <IconButton onClick={onCancel} sx={{ mr: 1, color: '#64748b' }}><ArrowBackIcon /></IconButton>
-          <EditIcon sx={{ color: '#10b981' }} />
-          <Typography variant="subtitle2" sx={{ fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: '#0f172a' }}>
-            Studio Builder {loading && <span style={{ opacity: 0.5, fontSize: '0.8rem', marginLeft: 8 }}>Saving...</span>}
-          </Typography>
-        </Box>
+        
+        {/* Left Side: Back Button & Context Title */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Button 
-            onClick={() => setShowPreviewModal(true)}
-            variant="outlined"
-            startIcon={<VisibilityIcon />}
-            sx={{ color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.3)', borderRadius: '20px', fontWeight: 800, display: { xs: 'none', sm: 'inline-flex' } }}
-          >
-            Preview
-          </Button>
-          <Button 
-            onClick={onSave} 
-            disabled={loading} 
-            variant="contained" 
-            startIcon={<SaveIcon />}
-            sx={{ bgcolor: '#10b981', '&:hover': { bgcolor: '#059669' }, borderRadius: '20px', fontWeight: 800, boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)' }}
-          >
-            Save
-          </Button>
+          <Tooltip title="Cancel & Return">
+            <IconButton 
+              onClick={onCancel} 
+              sx={{ 
+                width: 36, height: 36, bgcolor: 'rgba(0,0,0,0.03)', 
+                '&:hover': { bgcolor: 'rgba(0,0,0,0.06)' } 
+              }}
+            >
+              <ArrowBackIcon sx={{ fontSize: 18 }} />
+            </IconButton>
+          </Tooltip>
+          <Box>
+            <Typography sx={{ fontWeight: 900, fontSize: '1.1rem', letterSpacing: '-0.01em', display: 'flex', alignItems: 'center', gap: 1 }}>
+              <span style={{ opacity: 0.5 }}>Studio</span>
+              <span style={{ opacity: 0.5 }}>/</span>
+              {doc ? `Edit ${doc.title || 'Wiki'}` : 'Create Wiki'}
+              {loading && <span style={{ opacity: 0.5, fontSize: '0.8rem', marginLeft: 8 }}>Saving...</span>}
+            </Typography>
+            <Typography sx={{ fontSize: '0.72rem', color: 'text.disabled', fontWeight: 600, mt: 0.2 }}>
+              Publishing as {postingAs === 'personal' ? (profile?.displayName || 'Unknown') : (profile?.organizations?.find((o: any) => o.id === selectedOrgId)?.name || 'Organization')}
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* Middle/Right: Posting As Switcher */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Tooltip title="Post as Personal">
+            <IconButton 
+              onClick={() => setPostingAs('personal')}
+              sx={{ 
+                bgcolor: postingAs === 'personal' ? 'rgba(0,0,0,0.04)' : 'transparent', 
+                width: 36, height: 36, border: postingAs === 'personal' ? '1px solid rgba(0,0,0,0.08)' : '1px solid transparent',
+                transition: 'all 0.2s', '&:hover': { bgcolor: 'rgba(0,0,0,0.06)' }
+              }}
+            >
+              <Avatar src={profile?.avatarUrl} sx={{ width: 24, height: 24 }} />
+            </IconButton>
+          </Tooltip>
+
+          {profile?.organizations && profile.organizations.length > 0 && (
+            <Tooltip title="Post as Organization">
+              <IconButton 
+                onClick={() => setPostingAs('organization')}
+                sx={{ 
+                  bgcolor: postingAs === 'organization' ? 'rgba(0,0,0,0.04)' : 'transparent', 
+                  width: 36, height: 36, border: postingAs === 'organization' ? '1px solid rgba(0,0,0,0.08)' : '1px solid transparent',
+                  transition: 'all 0.2s', '&:hover': { bgcolor: 'rgba(0,0,0,0.06)' }
+                }}
+              >
+                <BusinessIcon sx={{ color: postingAs === 'organization' ? '#0f172a' : '#94a3b8', fontSize: 20 }} />
+              </IconButton>
+            </Tooltip>
+          )}
+
+          {postingAs === 'organization' && profile?.organizations && profile.organizations.length > 0 && (
+            <Select
+              size="small"
+              value={selectedOrgId || ''}
+              onChange={(e) => setSelectedOrgId(e.target.value)}
+              renderValue={(selected) => {
+                const org = profile.organizations?.find((o: any) => o.id === selected);
+                if (!org) return null;
+                return (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Avatar src={org.logoUrl} sx={{ width: 20, height: 20 }} />
+                    <Typography sx={{ display: { xs: 'none', sm: 'block' }, fontWeight: 700, fontSize: '0.85rem' }}>
+                      {org.name}
+                    </Typography>
+                  </Box>
+                );
+              }}
+              sx={{
+                ml: 0.5, height: 36, minWidth: { xs: 60, sm: 140 }, borderRadius: '12px', bgcolor: 'rgba(0,0,0,0.02)',
+                '& .MuiOutlinedInput-notchedOutline': { border: '1px solid rgba(0,0,0,0.08)' },
+                '&:hover .MuiOutlinedInput-notchedOutline': { border: '1px solid rgba(0,0,0,0.15)' },
+                '& .MuiSelect-select': { py: 0, display: 'flex', alignItems: 'center', gap: 1, fontWeight: 700, fontSize: '0.85rem' }
+              }}
+            >
+              {profile.organizations.map((org: any) => (
+                <MenuItem key={org.id} value={org.id} sx={{ fontWeight: 600, fontSize: '0.85rem', display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                  <Avatar src={org.logoUrl} sx={{ width: 20, height: 20 }} />
+                  {org.name}
+                </MenuItem>
+              ))}
+            </Select>
+          )}
+
         </Box>
       </Box>
 
@@ -526,81 +613,247 @@ export default function WikiEditor({
             </Box>
         </Box>
 
-        {/* Action Items Drawer */}
-        <Box sx={{ 
-          width: isActionItemsMinimized ? 60 : 320, 
-          borderLeft: '1px solid rgba(0,0,0,0.08)', bgcolor: '#ffffff',
-          transition: 'width 0.3s ease', display: 'flex', flexDirection: 'column' 
-        }}>
-          <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: isActionItemsMinimized ? 'center' : 'space-between', borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
-            {!isActionItemsMinimized && (
-              <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Action Items
-              </Typography>
-            )}
-            <IconButton size="small" onClick={() => setIsActionItemsMinimized(!isActionItemsMinimized)} sx={{ color: '#64748b' }}>
-              {isActionItemsMinimized ? <KeyboardArrowRightIcon sx={{ transform: 'rotate(180deg)' }} /> : <KeyboardArrowRightIcon />}
-            </IconButton>
-          </Box>
-
-          {!isActionItemsMinimized && (
-            <Box sx={{ p: 2, flex: 1, overflowY: 'auto' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Typography sx={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Missing Elements</Typography>
-                <Chip label={actionItems.length} size="small" sx={{ bgcolor: actionItems.length > 0 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)', color: actionItems.length > 0 ? '#ef4444' : '#10b981', fontWeight: 800 }} />
-              </Box>
-
-              {actionItems.length === 0 ? (
-                <Box sx={{ p: 3, textAlign: 'center', bgcolor: 'rgba(16, 185, 129, 0.05)', borderRadius: '16px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-                  <CheckCircleIcon sx={{ color: '#10b981', fontSize: 32, mb: 1 }} />
-                  <Typography sx={{ color: '#10b981', fontWeight: 700, fontSize: '0.9rem' }}>All Good!</Typography>
-                  <Typography sx={{ color: '#64748b', fontSize: '0.8rem', mt: 0.5 }}>Your document is fully configured.</Typography>
-                </Box>
-              ) : (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                  {actionItems.map((item) => (
-                    <Box key={item.id} sx={{ p: 1.5, bgcolor: 'rgba(239, 68, 68, 0.05)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)', display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                      <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#ef4444', mt: 1, flexShrink: 0 }} />
-                      <Typography sx={{ fontSize: '0.8rem', color: '#0f172a', fontWeight: 500, lineHeight: 1.4 }}>{item.text}</Typography>
-                    </Box>
-                  ))}
-                </Box>
-              )}
-            </Box>
-          )}
-        </Box>
-
       </Box>
 
-      {/* Live Preview Modal */}
+      {/* FLOATING ACTION ITEMS CHECKLIST */}
+      {actionItems.length > 0 && (
+        <Box sx={{
+          position: 'fixed',
+          bottom: { xs: 80, md: 80 },
+          left: { xs: 20, md: 40 },
+          zIndex: 1000,
+          width: { xs: 'calc(100% - 40px)', sm: 340 },
+          background: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(20px)',
+          borderRadius: '24px',
+          border: '1px solid rgba(0,0,0,0.08)',
+          boxShadow: '0 12px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.04)',
+          overflow: 'hidden',
+          animation: `${slideUpFade} 0.4s cubic-bezier(0.16, 1, 0.3, 1)`,
+        }}>
+          {/* Header */}
+          <Box sx={{ 
+            px: 3, py: 2, 
+            background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+            color: '#fff',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <AutoAwesomeIcon sx={{ color: '#fbbf24', fontSize: 18 }} />
+              <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', letterSpacing: '0.05em' }}>
+                Action Items
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Chip 
+                label={`${actionItems.length} left`}
+                size="small"
+                sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: '#fff', fontWeight: 800, fontSize: '0.7rem', height: 22 }}
+              />
+              <IconButton 
+                size="small" 
+                onClick={() => setIsActionItemsMinimized(!isActionItemsMinimized)}
+                sx={{ color: '#fff', p: 0.5, '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}
+              >
+                {isActionItemsMinimized ? <KeyboardArrowUpIcon fontSize="small" /> : <KeyboardArrowDownIcon fontSize="small" />}
+              </IconButton>
+            </Box>
+          </Box>
+          
+          {/* List */}
+          <Box sx={{ 
+            p: isActionItemsMinimized ? 0 : 2, 
+            maxHeight: isActionItemsMinimized ? 0 : '300px', 
+            overflowY: 'auto',
+            opacity: isActionItemsMinimized ? 0 : 1,
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            display: isActionItemsMinimized ? 'none' : 'block' // Ensure it doesn't take space/clicks when hidden
+          }}>
+            {actionItems.map((item, i) => (
+              <Box 
+                key={`${item.id}-${i}`}
+                onClick={() => {
+                  setExpandedBlockId(item.id);
+                  const el = document.getElementById(`block-${item.id}`);
+                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }}
+                sx={{
+                  display: 'flex', alignItems: 'flex-start', gap: 1.5,
+                  p: 1.5, borderRadius: '12px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  '&:hover': { bgcolor: 'rgba(0,0,0,0.03)' }
+                }}
+              >
+                <Box sx={{ 
+                  width: 20, height: 20, borderRadius: '50%', 
+                  border: '2px solid rgba(0,0,0,0.15)', mt: 0.2, flexShrink: 0 
+                }} />
+                <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', lineHeight: 1.4 }}>
+                  {item.text}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      )}
+
+      {/* FIXED BOTTOM ACTION BAR */}
+      <Box sx={{ 
+        position: 'fixed', bottom: 0, left: 0, right: showSidePreview ? { xs: 0, lg: '45vw' } : 0, zIndex: 100,
+        bgcolor: '#fff', borderTop: '1px solid rgba(0,0,0,0.08)',
+        p: 2, display: 'flex', justifyContent: 'flex-end', alignItems: 'center',
+        transition: 'right 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+      }}>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button
+            onClick={() => setShowSidePreview(!showSidePreview)}
+            startIcon={<VerticalSplitIcon sx={{ color: '#8b5cf6' }} />}
+            sx={{
+              borderColor: 'rgba(139,92,246,0.3)', color: showSidePreview ? '#8b5cf6' : '#64748b', bgcolor: showSidePreview ? 'rgba(139,92,246,0.1)' : 'transparent',
+              fontWeight: 800, borderRadius: '12px', px: 2,
+              '&:hover': { bgcolor: 'rgba(139,92,246,0.1)', borderColor: '#8b5cf6', color: '#8b5cf6' },
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            }}
+          >
+            Split View
+          </Button>
+          <Button
+            onClick={() => setShowPreviewModal(true)}
+            startIcon={<OpenInFullIcon sx={{ color: '#8b5cf6', fontSize: 18 }} />}
+            sx={{
+              borderColor: 'rgba(139,92,246,0.3)', color: '#64748b', bgcolor: 'rgba(139,92,246,0.05)',
+              fontWeight: 800, borderRadius: '12px', px: 2,
+              '&:hover': { bgcolor: 'rgba(139,92,246,0.1)', borderColor: '#8b5cf6', color: '#0f172a', transform: 'translateY(-2px)' },
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            }}
+          >
+            Full Preview
+          </Button>
+          <Button
+            onClick={() => {
+              setEditForm({ ...editForm, isPublic: false });
+              setTimeout(onSave, 100);
+            }}
+            disabled={loading}
+            sx={{
+              bgcolor: 'rgba(245, 158, 11, 0.1)', color: '#d97706', fontWeight: 800, borderRadius: '12px', px: 3,
+              '&:hover': { bgcolor: 'rgba(245, 158, 11, 0.2)', color: '#b45309' }
+            }}
+          >
+            {loading ? 'Saving...' : 'Save Draft'}
+          </Button>
+          <Button 
+            variant="contained" 
+            onClick={() => {
+              setEditForm({ ...editForm, isPublic: true });
+              setTimeout(onSave, 100);
+            }} 
+            disabled={loading} 
+            sx={{ 
+              bgcolor: '#10b981', fontWeight: 800, px: 4, borderRadius: '12px',
+              '&:hover': { bgcolor: '#059669' }
+            }}
+          >
+            {loading ? 'Publishing...' : 'Publish'}
+          </Button>
+        </Box>
+      </Box>
+
+      {/* PREMIUM PREVIEW DIALOG */}
       <Dialog 
         open={showPreviewModal} 
         onClose={() => setShowPreviewModal(false)} 
-        maxWidth="lg" 
-        fullWidth 
-        sx={{ '& .MuiDialog-paper': { height: '90vh', borderRadius: '24px', overflow: 'hidden', bgcolor: '#f8fafc' } }}
+        maxWidth={false}
+        sx={{ 
+          backdropFilter: 'blur(12px)',
+          backgroundColor: 'rgba(0,0,0,0.2)',
+          '& .MuiDialog-paper': { 
+            width: '85vw',
+            height: '85vh',
+            maxHeight: '85vh',
+            bgcolor: '#f8fafc',
+            borderRadius: '24px',
+            overflow: 'hidden',
+            boxShadow: '0 24px 64px rgba(0,0,0,0.2)',
+            position: 'relative'
+          } 
+        }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2, borderBottom: '1px solid rgba(0,0,0,0.05)', bgcolor: '#fff', zIndex: 10 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <VisibilityIcon sx={{ color: '#10b981' }} />
-            <Typography sx={{ fontWeight: 800, color: '#0f172a', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Live Reader Preview</Typography>
-          </Box>
-          <IconButton onClick={() => setShowPreviewModal(false)}>
-            <CloseIcon />
+        {/* Floating Glassy Pill Header */}
+        <Box sx={{ 
+          position: 'absolute', top: 24, right: 24, zIndex: 10,
+          display: 'flex', alignItems: 'center', gap: 1.5,
+          p: 1, pr: 1.5, pl: 2,
+          background: 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,250,252,0.8) 100%)',
+          backdropFilter: 'blur(16px)',
+          borderRadius: '100px',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
+          border: '1px solid rgba(255,255,255,0.5)'
+        }}>
+          <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: 1 }}>
+            <AutoAwesomeIcon sx={{ color: '#10b981', fontSize: 16 }} /> Live Preview
+          </Typography>
+          <Box sx={{ width: '1px', height: 16, bgcolor: 'rgba(0,0,0,0.1)' }} />
+          <IconButton onClick={() => setShowPreviewModal(false)} size="small" sx={{ bgcolor: 'rgba(0,0,0,0.04)', color: '#0f172a', '&:hover': { bgcolor: 'rgba(239,68,68,0.1)', color: '#ef4444' } }}>
+            <CloseIcon fontSize="small" />
           </IconButton>
         </Box>
-        <Box sx={{ flex: 1, overflowY: 'auto' }}>
-          <WikiReader 
-            doc={editForm} 
-            loading={false} 
-            isAdmin={true} 
-            hasAccess={true} 
-            canSeeBlock={() => true} 
-            onEdit={() => setShowPreviewModal(false)} 
-            onNavigate={() => {}} 
-          />
+
+        <Box sx={{ flex: 1, overflowY: 'auto', p: { xs: 3, md: 6, lg: 8 }, display: 'flex', justifyContent: 'center', bgcolor: '#fff' }}>
+          <Box sx={{ width: '100%', maxWidth: 800, pt: 8 }}>
+            <WikiReader 
+              doc={editForm} 
+              loading={false} 
+              isAdmin={true} 
+              hasAccess={true} 
+              canSeeBlock={() => true} 
+              onEdit={() => setShowPreviewModal(false)} 
+              onNavigate={() => {}} 
+            />
+          </Box>
         </Box>
       </Dialog>
+
+      {/* Side-by-Side Persistent Preview Drawer */}
+      <Drawer
+        anchor="right"
+        open={showSidePreview}
+        variant="persistent"
+        PaperProps={{
+          sx: {
+            width: { xs: '100%', lg: '45vw' },
+            boxShadow: '-8px 0 32px rgba(0,0,0,0.05)',
+            borderLeft: '1px solid rgba(0,0,0,0.08)',
+            bgcolor: '#f8fafc',
+            zIndex: 90
+          }
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2, borderBottom: '1px solid rgba(0,0,0,0.05)', bgcolor: '#fff', position: 'sticky', top: 0, zIndex: 10 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <AutoAwesomeIcon sx={{ color: '#10b981', fontSize: 18 }} />
+            <Typography sx={{ fontWeight: 800, color: '#0f172a', letterSpacing: '0.05em', textTransform: 'uppercase', fontSize: '0.9rem' }}>Live Split Preview</Typography>
+          </Box>
+          <IconButton onClick={() => setShowSidePreview(false)} size="small" sx={{ bgcolor: 'rgba(0,0,0,0.04)', '&:hover': { bgcolor: 'rgba(239,68,68,0.1)', color: '#ef4444' } }}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Box>
+        <Box sx={{ flex: 1, overflowY: 'auto', p: { xs: 2, md: 4 }, display: 'flex', justifyContent: 'center' }}>
+          <Box sx={{ width: '100%', maxWidth: 700, pb: 12 }}>
+            <WikiReader 
+              doc={editForm} 
+              loading={false} 
+              isAdmin={true} 
+              hasAccess={true} 
+              canSeeBlock={() => true} 
+              onEdit={() => setShowSidePreview(false)} 
+              onNavigate={() => {}} 
+            />
+          </Box>
+        </Box>
+      </Drawer>
+
     </Box>
   );
 }
