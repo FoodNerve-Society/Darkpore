@@ -257,7 +257,12 @@ export function WikiOverlayProvider({ children }: { children: React.ReactNode })
           }
         }}
       >
-        <DialogTitle sx={{ fontWeight: 900, letterSpacing: '-0.02em', fontSize: '1.5rem' }}>Register Hotspot</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 900, letterSpacing: '-0.02em', fontSize: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          Register Hotspot
+          <IconButton onClick={() => setShowRegisterModal(false)} size="small" sx={{ color: 'rgba(15, 23, 42, 0.4)', '&:hover': { color: '#0f172a', bgcolor: 'rgba(15, 23, 42, 0.05)' } }}>
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 2 }}>
           <Typography variant="body2" sx={{ color: 'rgba(15, 23, 42, 0.6)', mt: 1, mb: 1, fontWeight: 500 }}>
             Register a Hotspot ID that a developer has placed in the codebase.
@@ -310,9 +315,8 @@ export function WikiOverlayProvider({ children }: { children: React.ReactNode })
           )}
 
         </DialogContent>
-        <DialogActions sx={{ p: 3, pt: 1 }}>
-          <Button onClick={() => setShowRegisterModal(false)} sx={{ color: 'rgba(15, 23, 42, 0.6)', fontWeight: 700 }}>Cancel</Button>
-          <Button onClick={handleCreateHotspot} variant="contained" sx={{ bgcolor: '#0f172a', color: '#fff', borderRadius: 3, px: 3, py: 1, fontWeight: 800, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', '&:hover': { bgcolor: '#1e293b', transform: 'translateY(-2px)', boxShadow: '0 8px 16px rgba(0,0,0,0.2)' }, transition: 'all 0.2s ease' }}>Register & Go to Studio</Button>
+        <DialogActions sx={{ p: 3, pt: 1, justifyContent: 'flex-end' }}>
+          <Button onClick={handleCreateHotspot} variant="contained" sx={{ bgcolor: '#0f172a', color: '#fff', borderRadius: 3, px: 4, py: 1, fontWeight: 800, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', '&:hover': { bgcolor: '#1e293b', transform: 'translateY(-2px)', boxShadow: '0 8px 16px rgba(0,0,0,0.2)' }, transition: 'all 0.2s ease' }}>Register</Button>
         </DialogActions>
       </Dialog>
 

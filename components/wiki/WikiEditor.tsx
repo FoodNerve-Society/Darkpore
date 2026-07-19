@@ -97,7 +97,7 @@ export default function WikiEditor({
   const [reorderUnlocked, setReorderUnlocked] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [isActionItemsMinimized, setIsActionItemsMinimized] = useState(false);
-  const [identityExpanded, setIdentityExpanded] = useState(true);
+  const [identityExpanded, setIdentityExpanded] = useState(false);
   const [showSidePreview, setShowSidePreview] = useState(false);
   
   const { profile } = useSociety();
@@ -732,7 +732,8 @@ export default function WikiEditor({
           </Button>
           <Button
             onClick={() => {
-              setEditForm({ ...editForm, isPublic: false });
+              const newTags = Array.from(new Set([...editForm.tags, "STATUS_DRAFT"]));
+              setEditForm({ ...editForm, tags: newTags });
               setTimeout(onSave, 100);
             }}
             disabled={loading}
@@ -746,7 +747,8 @@ export default function WikiEditor({
           <Button 
             variant="contained" 
             onClick={() => {
-              setEditForm({ ...editForm, isPublic: true });
+              const newTags = editForm.tags.filter((t: string) => t !== "STATUS_DRAFT");
+              setEditForm({ ...editForm, tags: newTags });
               setTimeout(onSave, 100);
             }} 
             disabled={loading} 

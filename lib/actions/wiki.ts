@@ -164,17 +164,22 @@ export async function getAllVisibleWikiDocs(userRoles: string[], userId: string,
 
     // Filter documents strictly based on visibility logic (done in-memory to safely parse JSON arrays)
     const visibleDocs = docs.filter(doc => {
-      if (isAdmin) return true; // Admins see everything
-      if (doc.isPublic) return true; // Public docs
+      const tags = JSON.parse(doc.tags) as string[];
+      
+      // If it's a draft, ONLY the author can see it.
+      if (tags.includes("STATUS_DRAFT")) {
+        return doc.authorId === userId;
+      }
 
-      const allowedRoles = JSON.parse(doc.allowedRoles) as string[];
+      if (isAdmin) return true; // Admins see everything published
+      if (doc.isPublic) return true; // Public docs (Everyone authenticated)
+
+      // Internal Staff (whitelist) logic:
       const allowedUsers = JSON.parse(doc.allowedUsers) as string[];
-
-      // Check if user has an allowed role
-      if (allowedRoles.some(role => userRoles.includes(role))) return true;
-
-      // Check if user is specifically whitelisted
       if (allowedUsers.includes(userId)) return true;
+      
+      // The author can always see their own published docs
+      if (doc.authorId === userId) return true;
 
       return false;
     });
