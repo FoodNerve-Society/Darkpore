@@ -266,20 +266,19 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
         slotProps={{
           paper: {
             sx: { 
-              borderRadius: 4, 
               p: 0, 
-              overflow: 'hidden',
-              bgcolor: 'rgba(255,255,255,0.95)',
-              boxShadow: '0 24px 64px rgba(0,0,0,0.15)',
-              border: '1px solid rgba(255,255,255,0.4)',
-              maxWidth: 800,
-              width: '100%'
+              overflow: 'visible',
+              bgcolor: 'transparent',
+              boxShadow: 'none',
+              maxWidth: 850,
+              width: '100%',
+              m: { xs: 2, md: 4 }
             }
           },
           backdrop: {
             sx: {
-              backdropFilter: 'blur(20px)',
-              backgroundColor: 'rgba(255, 255, 255, 0.15)',
+              backdropFilter: 'blur(30px)',
+              backgroundColor: 'rgba(255, 255, 255, 0.4)',
             }
           }
         }}

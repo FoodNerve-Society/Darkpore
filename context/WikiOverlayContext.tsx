@@ -7,6 +7,8 @@ import { useSociety } from './SocietyContext';
 import WikiReader from '@/components/wiki/WikiReader';
 import CloseIcon from '@mui/icons-material/Close';
 import { useRouter } from 'next/navigation';
+import PremiumTextField from '@/components/PremiumTextField';
+import PremiumAutocomplete from '@/components/PremiumAutocomplete';
 
 const WIKI_DOMAINS = [
   {
@@ -38,7 +40,7 @@ interface WikiOverlayContextType {
   openWikiBySlug: (slug: string) => void;
   openWikiByHotspot: (hotspotId: string) => void;
   closeWiki: () => void;
-  openRegisterModal: (id: string) => void;
+  openRegisterModal: (id: string, defaultLabel?: string) => void;
 }
 
 const WikiOverlayContext = createContext<WikiOverlayContextType>({
@@ -70,12 +72,40 @@ export function WikiOverlayProvider({ children }: { children: React.ReactNode })
   const [registerLabel, setRegisterLabel] = useState('');
   const [registerCategory, setRegisterCategory] = useState('');
   const [registerSubcategory, setRegisterSubcategory] = useState('');
+  const [isCategoryLocked, setIsCategoryLocked] = useState(false);
 
-  const openRegisterModal = (id: string) => {
+  const openRegisterModal = (id: string, defaultLabel?: string) => {
     setRegisterId(id);
-    setRegisterLabel(id.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
-    setRegisterCategory('');
-    setRegisterSubcategory('');
+    setRegisterLabel(defaultLabel || id.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
+    
+    // Auto-detect based on window.location
+    let autoCat = '';
+    let autoSub = '';
+    
+    if (typeof window !== 'undefined') {
+      const host = window.location.hostname;
+      if (host.includes('.org') || host.includes('society')) {
+        autoCat = 'platform_features';
+        autoSub = 'society';
+      } else if (host.includes('foodnerve.com') || host.includes('innovations')) {
+        autoCat = 'platform_features';
+        autoSub = 'innovations';
+      } else if (host.includes('darkpore.com') || host.includes('workspace')) {
+        autoCat = 'platform_features';
+        autoSub = 'workspace';
+      }
+    }
+
+    if (autoCat && autoSub) {
+      setRegisterCategory(autoCat);
+      setRegisterSubcategory(autoSub);
+      setIsCategoryLocked(true);
+    } else {
+      setRegisterCategory('');
+      setRegisterSubcategory('');
+      setIsCategoryLocked(false);
+    }
+    
     setShowRegisterModal(true);
   };
 
@@ -202,60 +232,87 @@ export function WikiOverlayProvider({ children }: { children: React.ReactNode })
         />
       </Drawer>
 
-      <Dialog open={showRegisterModal} onClose={() => setShowRegisterModal(false)} PaperProps={{ sx: { bgcolor: '#1e293b', color: '#fff', borderRadius: 4, p: 2, minWidth: 400, zIndex: 9999 } }}>
-        <DialogTitle sx={{ fontWeight: 800 }}>Quick Register Hotspot</DialogTitle>
+      <Dialog 
+        open={showRegisterModal} 
+        onClose={() => setShowRegisterModal(false)}
+        slotProps={{
+          paper: {
+            sx: { 
+              bgcolor: 'rgba(255, 255, 255, 0.8)', 
+              color: '#0f172a', 
+              borderRadius: 4, 
+              p: 2, 
+              minWidth: 400, 
+              zIndex: 9999,
+              backdropFilter: 'blur(32px) saturate(200%)',
+              border: '1px solid rgba(255,255,255,1)',
+              boxShadow: '0 24px 64px rgba(0,0,0,0.1), inset 0 2px 4px rgba(255,255,255,1)',
+            }
+          },
+          backdrop: {
+            sx: {
+              backdropFilter: 'blur(8px)',
+              backgroundColor: 'rgba(255, 255, 255, 0.3)',
+            }
+          }
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 900, letterSpacing: '-0.02em', fontSize: '1.5rem' }}>Register Hotspot</DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 2 }}>
-          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', mt: 1 }}>
+          <Typography variant="body2" sx={{ color: 'rgba(15, 23, 42, 0.6)', mt: 1, mb: 1, fontWeight: 500 }}>
             Register a Hotspot ID that a developer has placed in the codebase.
           </Typography>
-          <TextField 
+          
+          <PremiumTextField 
+            colorTheme="#0f172a"
             label="Hotspot ID (e.g. trade_btn)" 
             value={registerId} onChange={e => setRegisterId(e.target.value)}
-            sx={{ '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' }, '& .MuiInputBase-root': { color: '#fff' }, '& .MuiFormLabel-root': { color: 'rgba(255,255,255,0.7)' } }}
           />
-          <TextField 
+          <PremiumTextField 
+            colorTheme="#0f172a"
             label="Human Readable Label" 
             value={registerLabel} onChange={e => setRegisterLabel(e.target.value)}
-            sx={{ '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' }, '& .MuiInputBase-root': { color: '#fff' }, '& .MuiFormLabel-root': { color: 'rgba(255,255,255,0.7)' } }}
           />
           
-          <FormControl fullWidth sx={{ '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' }, '& .MuiInputBase-root': { color: '#fff' }, '& .MuiFormLabel-root': { color: 'rgba(255,255,255,0.7)' }, '& .MuiSvgIcon-root': { color: 'rgba(255,255,255,0.7)' } }}>
-            <InputLabel>Domain (Category)</InputLabel>
-            <Select
-              value={registerCategory}
-              label="Domain (Category)"
-              onChange={e => {
-                setRegisterCategory(e.target.value as string);
-                setRegisterSubcategory('');
-              }}
-              MenuProps={{ PaperProps: { sx: { bgcolor: '#1e293b', color: '#fff' } } }}
-            >
-              {WIKI_DOMAINS.map(domain => (
-                <MenuItem key={domain.id} value={domain.id}>{domain.title}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          {isCategoryLocked ? (
+            <PremiumTextField
+              disabled
+              colorTheme="#0f172a"
+              label="Domain & Tag (Auto-detected)"
+              value={`${WIKI_DOMAINS.find(d => d.id === registerCategory)?.title || registerCategory} / ${WIKI_DOMAINS.find(d => d.id === registerCategory)?.subcategories.find(s => s.id === registerSubcategory)?.title || registerSubcategory}`}
+              onChange={() => {}}
+            />
+          ) : (
+            <>
+              <PremiumAutocomplete
+                colorTheme="#0f172a"
+                label="Domain (Category)"
+                options={WIKI_DOMAINS}
+                getOptionLabel={(option) => typeof option === 'string' ? option : option.title}
+                value={WIKI_DOMAINS.find(d => d.id === registerCategory) || null}
+                onChange={(e, newValue: any) => {
+                  setRegisterCategory(newValue ? newValue.id : '');
+                  setRegisterSubcategory('');
+                }}
+              />
 
-          {registerCategory && (
-            <FormControl fullWidth sx={{ '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' }, '& .MuiInputBase-root': { color: '#fff' }, '& .MuiFormLabel-root': { color: 'rgba(255,255,255,0.7)' }, '& .MuiSvgIcon-root': { color: 'rgba(255,255,255,0.7)' } }}>
-              <InputLabel>Tag (Subcategory)</InputLabel>
-              <Select
-                value={registerSubcategory}
-                label="Tag (Subcategory)"
-                onChange={e => setRegisterSubcategory(e.target.value as string)}
-                MenuProps={{ PaperProps: { sx: { bgcolor: '#1e293b', color: '#fff' } } }}
-              >
-                {WIKI_DOMAINS.find(d => d.id === registerCategory)?.subcategories.map(sub => (
-                  <MenuItem key={sub.id} value={sub.id}>{sub.title}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+              {registerCategory && (
+                <PremiumAutocomplete
+                  colorTheme="#0f172a"
+                  label="Tag (Subcategory)"
+                  options={WIKI_DOMAINS.find(d => d.id === registerCategory)?.subcategories || []}
+                  getOptionLabel={(option) => typeof option === 'string' ? option : option.title}
+                  value={WIKI_DOMAINS.find(d => d.id === registerCategory)?.subcategories.find(sub => sub.id === registerSubcategory) || null}
+                  onChange={(e, newValue: any) => setRegisterSubcategory(newValue ? newValue.id : '')}
+                />
+              )}
+            </>
           )}
 
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowRegisterModal(false)} sx={{ color: 'rgba(255,255,255,0.5)' }}>Cancel</Button>
-          <Button onClick={handleCreateHotspot} variant="contained" sx={{ bgcolor: '#3b82f6', '&:hover': { bgcolor: '#2563eb' } }}>Register & Go to Studio</Button>
+        <DialogActions sx={{ p: 3, pt: 1 }}>
+          <Button onClick={() => setShowRegisterModal(false)} sx={{ color: 'rgba(15, 23, 42, 0.6)', fontWeight: 700 }}>Cancel</Button>
+          <Button onClick={handleCreateHotspot} variant="contained" sx={{ bgcolor: '#0f172a', color: '#fff', borderRadius: 3, px: 3, py: 1, fontWeight: 800, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', '&:hover': { bgcolor: '#1e293b', transform: 'translateY(-2px)', boxShadow: '0 8px 16px rgba(0,0,0,0.2)' }, transition: 'all 0.2s ease' }}>Register & Go to Studio</Button>
         </DialogActions>
       </Dialog>
 

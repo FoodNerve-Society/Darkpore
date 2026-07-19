@@ -833,19 +833,21 @@ export default function WikiEditor({
         }}
       >
         {/* Floating Pill Header (Absolute Position) */}
-        <Box sx={{ position: 'absolute', top: 24, right: 24, zIndex: 100 }}>
+        <Box sx={{ position: 'absolute', top: 24, right: { xs: 16, md: 24 }, zIndex: 100, display: 'flex', justifyContent: 'flex-end', width: 'auto' }}>
           <Box sx={{ 
             display: 'inline-flex', alignItems: 'center', gap: 2, 
             background: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(20px)',
             px: 2, py: 1, borderRadius: '100px', border: '1px solid rgba(0,0,0,0.08)',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.08)'
+            boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+            width: 'fit-content',
+            flexShrink: 0
           }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#0f172a' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#0f172a', flexShrink: 0 }}>
               <AutoAwesomeIcon sx={{ color: '#8b5cf6', fontSize: 20 }} />
               <Typography sx={{ fontWeight: 800, letterSpacing: '0.05em', fontSize: '0.9rem', whiteSpace: 'nowrap' }}>SPLIT PREVIEW</Typography>
             </Box>
             <Box sx={{ width: 1, height: 24, bgcolor: 'rgba(0,0,0,0.1)', flexShrink: 0 }} />
-            <IconButton onClick={() => setShowSidePreview(false)} size="small" sx={{ bgcolor: 'rgba(0,0,0,0.04)', '&:hover': { bgcolor: 'rgba(239,68,68,0.1)', color: '#ef4444' } }}>
+            <IconButton onClick={() => setShowSidePreview(false)} size="small" sx={{ bgcolor: 'rgba(0,0,0,0.04)', '&:hover': { bgcolor: 'rgba(239,68,68,0.1)', color: '#ef4444' }, flexShrink: 0 }}>
               <CloseIcon fontSize="small" />
             </IconButton>
           </Box>
