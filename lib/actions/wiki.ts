@@ -237,8 +237,15 @@ export async function getRegistryHotspots() {
 
 export async function createRegistryHotspot(id: string, label: string, category?: string, subcategory?: string, description?: string) {
   try {
-    const newHotspot = await prisma.wikiHotspotRegistry.create({
-      data: {
+    const newHotspot = await prisma.wikiHotspotRegistry.upsert({
+      where: { id },
+      update: {
+        label,
+        category,
+        subcategory,
+        description
+      },
+      create: {
         id,
         label,
         category,

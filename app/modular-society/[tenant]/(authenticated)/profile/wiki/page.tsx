@@ -3,8 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Box, Typography, Button, IconButton, Paper,
-  Dialog, DialogTitle, DialogContent, DialogActions, TextField
+  Dialog, DialogTitle, DialogContent, DialogActions, TextField,
+  Avatar, Tooltip, Select, MenuItem
 } from '@mui/material';
+import BusinessIcon from '@mui/icons-material/Business';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { useSociety } from '@/context/SocietyContext';
 import { getAllVisibleWikiDocs, getWikiDoc, createOrUpdateWikiDoc, WikiBlock, WikiDocInput, getRegistryHotspots, createRegistryHotspot } from '@/lib/actions/wiki';
@@ -37,6 +39,15 @@ export default function WikiDashboardPage() {
   const searchParams = useSearchParams();
   const tenant = params.tenant as string;
   
+  const [postingAs, setPostingAs] = useState<'personal'|'organization'>('personal');
+  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (profile?.organizations?.length > 0 && !selectedOrgId) {
+      setSelectedOrgId(profile.organizations[0].id);
+    }
+  }, [profile, selectedOrgId]);
+
   // Dashboard State
   const [wikiDocs, setWikiDocs] = useState<any[]>([]);
   
@@ -150,7 +161,8 @@ export default function WikiDashboardPage() {
 
   const handleSave = async () => {
     setLoading(true);
-    const res = await createOrUpdateWikiDoc({ ...editForm, authorId: profile?.uid || 'unknown' });
+    const authorId = postingAs === 'organization' ? (selectedOrgId || profile?.uid) : profile?.uid;
+    const res = await createOrUpdateWikiDoc({ ...editForm, authorId: authorId || 'unknown' });
     if (res.success) {
       await loadDoc(editForm.slug);
       setViewMode('reader');
@@ -189,10 +201,17 @@ export default function WikiDashboardPage() {
 
   const hasAccess = () => {
     if (!doc) return false;
-    if (isAdmin) return true;
-    if (doc.isPublic) return true;
-    if (doc.allowedRoles.some((r: string) => userRoles.includes(r as any))) return true;
-    if (doc.allowedUsers.includes(uid)) return true;
+    
+    // Drafts are ONLY visible to the author
+    if (doc.tags?.includes("STATUS_DRAFT")) {
+      return doc.authorId === uid;
+    }
+    
+    if (isAdmin) return true; // Admins see everything published
+    if (doc.isPublic) return true; // Public docs (Everyone authenticated)
+    if (doc.allowedUsers.includes(uid)) return true; // Whitelist
+    if (doc.authorId === uid) return true; // Author always sees their own doc
+    
     return false;
   };
 
@@ -213,6 +232,58 @@ export default function WikiDashboardPage() {
 
   const BackContent = (
     <Paper elevation={0} sx={{ ...sharedPaperSx, bgcolor: '#ffffff', p: 0 }}>
+      {viewMode !== 'reader' && (
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: { xs: 2, md: 3 }, borderBottom: '1px solid rgba(0,0,0,0.08)', bgcolor: '#fff', zIndex: 10, flexShrink: 0 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Tooltip title={viewMode === 'lobby' ? "Close Studio" : "Cancel & Return"}>
+              <IconButton 
+                onClick={() => {
+                  if (viewMode === 'lobby') setIsFlipped(false);
+                  else if (doc) setViewMode('reader');
+                  else setViewMode('lobby');
+                }} 
+                sx={{ width: 36, height: 36, bgcolor: 'rgba(0,0,0,0.03)', '&:hover': { bgcolor: 'rgba(0,0,0,0.06)' } }}
+              >
+                <ArrowBackIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Tooltip>
+            <Box>
+              <Typography sx={{ fontWeight: 900, fontSize: '1.1rem', letterSpacing: '-0.01em', display: 'flex', alignItems: 'center', gap: 1 }}>
+                <span style={{ opacity: 0.5 }}>Studio</span>
+                <span style={{ opacity: 0.5 }}>/</span>
+                {viewMode === 'lobby' ? 'Select Template' : doc ? `Edit ${doc.title || 'Wiki'}` : 'Create Wiki'}
+                {loading && <span style={{ opacity: 0.5, fontSize: '0.8rem', marginLeft: 8 }}>Saving...</span>}
+              </Typography>
+              <Typography sx={{ fontSize: '0.72rem', color: 'text.disabled', fontWeight: 600, mt: 0.2 }}>
+                Publishing as {postingAs === 'personal' ? (profile?.displayName || 'Unknown') : (profile?.organizations?.find((o: any) => o.id === selectedOrgId)?.name || 'Organization')}
+              </Typography>
+            </Box>
+          </Box>
+
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Tooltip title="Post as Personal">
+              <IconButton onClick={() => setPostingAs('personal')} sx={{ bgcolor: postingAs === 'personal' ? 'rgba(0,0,0,0.04)' : 'transparent', width: 36, height: 36, border: postingAs === 'personal' ? '1px solid rgba(0,0,0,0.08)' : '1px solid transparent', transition: 'all 0.2s', '&:hover': { bgcolor: 'rgba(0,0,0,0.06)' } }}>
+                <Avatar src={profile?.avatarUrl} sx={{ width: 24, height: 24 }} />
+              </IconButton>
+            </Tooltip>
+            {profile?.organizations && profile.organizations.length > 0 && (
+              <Tooltip title="Post as Organization">
+                <IconButton onClick={() => setPostingAs('organization')} sx={{ bgcolor: postingAs === 'organization' ? 'rgba(0,0,0,0.04)' : 'transparent', width: 36, height: 36, border: postingAs === 'organization' ? '1px solid rgba(0,0,0,0.08)' : '1px solid transparent', transition: 'all 0.2s', '&:hover': { bgcolor: 'rgba(0,0,0,0.06)' } }}>
+                  <BusinessIcon sx={{ color: postingAs === 'organization' ? '#0f172a' : '#94a3b8', fontSize: 20 }} />
+                </IconButton>
+              </Tooltip>
+            )}
+            {postingAs === 'organization' && profile?.organizations && profile.organizations.length > 0 && (
+              <Select size="small" value={selectedOrgId || ''} onChange={(e) => setSelectedOrgId(e.target.value as string)} renderValue={(selected) => { const org = profile.organizations?.find((o: any) => o.id === selected); if (!org) return null; return (<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Avatar src={org.logoUrl} sx={{ width: 20, height: 20 }} /><Typography sx={{ display: { xs: 'none', sm: 'block' }, fontWeight: 700, fontSize: '0.85rem' }}>{org.name}</Typography></Box>); }} sx={{ ml: 0.5, height: 36, minWidth: { xs: 60, sm: 140 }, borderRadius: '12px', bgcolor: 'rgba(0,0,0,0.02)', '& .MuiOutlinedInput-notchedOutline': { border: '1px solid rgba(0,0,0,0.08)' }, '&:hover .MuiOutlinedInput-notchedOutline': { border: '1px solid rgba(0,0,0,0.15)' }, '& .MuiSelect-select': { py: 0, display: 'flex', alignItems: 'center', gap: 1, fontWeight: 700, fontSize: '0.85rem' } }}>
+                {profile.organizations.map((org: any) => (
+                  <MenuItem key={org.id} value={org.id} sx={{ fontWeight: 600, fontSize: '0.85rem', display: 'flex', gap: 1.5, alignItems: 'center' }}><Avatar src={org.logoUrl} sx={{ width: 20, height: 20 }} />{org.name}</MenuItem>
+                ))}
+              </Select>
+            )}
+          </Box>
+        </Box>
+      )}
+
       {viewMode === 'reader' ? (
         <WikiReader 
           doc={doc}
@@ -234,11 +305,7 @@ export default function WikiDashboardPage() {
           }
         />
       ) : viewMode === 'lobby' ? (
-        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-          <Box sx={{ p: 2, display: 'flex', alignItems: 'center' }}>
-            <IconButton onClick={() => setIsFlipped(false)} sx={{ mr: 1, color: '#64748b' }}><ArrowBackIcon /></IconButton>
-            <Typography sx={{ fontWeight: 700, color: '#64748b' }}>Cancel</Typography>
-          </Box>
+        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
           <WikiStudioDashboard docs={wikiDocs} onStartFresh={handleStartFresh} userName={profile.displayName || profile.uid} />
         </Box>
       ) : (

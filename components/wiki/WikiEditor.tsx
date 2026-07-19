@@ -101,8 +101,6 @@ export default function WikiEditor({
   const [showSidePreview, setShowSidePreview] = useState(false);
   
   const { profile } = useSociety();
-  const [postingAs, setPostingAs] = useState<'personal'|'organization'>('personal');
-  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(profile?.organizations?.[0]?.id || null);
 
   const getBlockFillStats = (b: any) => {
     let total = 1;
@@ -183,100 +181,7 @@ export default function WikiEditor({
       transition: 'margin-right 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
     }}>
       
-      {/* Editor Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: { xs: 2, md: 3 }, borderBottom: '1px solid rgba(0,0,0,0.08)', bgcolor: '#fff', zIndex: 10 }}>
-        
-        {/* Left Side: Back Button & Context Title */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Tooltip title="Cancel & Return">
-            <IconButton 
-              onClick={onCancel} 
-              sx={{ 
-                width: 36, height: 36, bgcolor: 'rgba(0,0,0,0.03)', 
-                '&:hover': { bgcolor: 'rgba(0,0,0,0.06)' } 
-              }}
-            >
-              <ArrowBackIcon sx={{ fontSize: 18 }} />
-            </IconButton>
-          </Tooltip>
-          <Box>
-            <Typography sx={{ fontWeight: 900, fontSize: '1.1rem', letterSpacing: '-0.01em', display: 'flex', alignItems: 'center', gap: 1 }}>
-              <span style={{ opacity: 0.5 }}>Studio</span>
-              <span style={{ opacity: 0.5 }}>/</span>
-              {doc ? `Edit ${doc.title || 'Wiki'}` : 'Create Wiki'}
-              {loading && <span style={{ opacity: 0.5, fontSize: '0.8rem', marginLeft: 8 }}>Saving...</span>}
-            </Typography>
-            <Typography sx={{ fontSize: '0.72rem', color: 'text.disabled', fontWeight: 600, mt: 0.2 }}>
-              Publishing as {postingAs === 'personal' ? (profile?.displayName || 'Unknown') : (profile?.organizations?.find((o: any) => o.id === selectedOrgId)?.name || 'Organization')}
-            </Typography>
-          </Box>
-        </Box>
 
-        {/* Middle/Right: Posting As Switcher */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Tooltip title="Post as Personal">
-            <IconButton 
-              onClick={() => setPostingAs('personal')}
-              sx={{ 
-                bgcolor: postingAs === 'personal' ? 'rgba(0,0,0,0.04)' : 'transparent', 
-                width: 36, height: 36, border: postingAs === 'personal' ? '1px solid rgba(0,0,0,0.08)' : '1px solid transparent',
-                transition: 'all 0.2s', '&:hover': { bgcolor: 'rgba(0,0,0,0.06)' }
-              }}
-            >
-              <Avatar src={profile?.avatarUrl} sx={{ width: 24, height: 24 }} />
-            </IconButton>
-          </Tooltip>
-
-          {profile?.organizations && profile.organizations.length > 0 && (
-            <Tooltip title="Post as Organization">
-              <IconButton 
-                onClick={() => setPostingAs('organization')}
-                sx={{ 
-                  bgcolor: postingAs === 'organization' ? 'rgba(0,0,0,0.04)' : 'transparent', 
-                  width: 36, height: 36, border: postingAs === 'organization' ? '1px solid rgba(0,0,0,0.08)' : '1px solid transparent',
-                  transition: 'all 0.2s', '&:hover': { bgcolor: 'rgba(0,0,0,0.06)' }
-                }}
-              >
-                <BusinessIcon sx={{ color: postingAs === 'organization' ? '#0f172a' : '#94a3b8', fontSize: 20 }} />
-              </IconButton>
-            </Tooltip>
-          )}
-
-          {postingAs === 'organization' && profile?.organizations && profile.organizations.length > 0 && (
-            <Select
-              size="small"
-              value={selectedOrgId || ''}
-              onChange={(e) => setSelectedOrgId(e.target.value)}
-              renderValue={(selected) => {
-                const org = profile.organizations?.find((o: any) => o.id === selected);
-                if (!org) return null;
-                return (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Avatar src={org.logoUrl} sx={{ width: 20, height: 20 }} />
-                    <Typography sx={{ display: { xs: 'none', sm: 'block' }, fontWeight: 700, fontSize: '0.85rem' }}>
-                      {org.name}
-                    </Typography>
-                  </Box>
-                );
-              }}
-              sx={{
-                ml: 0.5, height: 36, minWidth: { xs: 60, sm: 140 }, borderRadius: '12px', bgcolor: 'rgba(0,0,0,0.02)',
-                '& .MuiOutlinedInput-notchedOutline': { border: '1px solid rgba(0,0,0,0.08)' },
-                '&:hover .MuiOutlinedInput-notchedOutline': { border: '1px solid rgba(0,0,0,0.15)' },
-                '& .MuiSelect-select': { py: 0, display: 'flex', alignItems: 'center', gap: 1, fontWeight: 700, fontSize: '0.85rem' }
-              }}
-            >
-              {profile.organizations.map((org: any) => (
-                <MenuItem key={org.id} value={org.id} sx={{ fontWeight: 600, fontSize: '0.85rem', display: 'flex', gap: 1.5, alignItems: 'center' }}>
-                  <Avatar src={org.logoUrl} sx={{ width: 20, height: 20 }} />
-                  {org.name}
-                </MenuItem>
-              ))}
-            </Select>
-          )}
-
-        </Box>
-      </Box>
 
       <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         

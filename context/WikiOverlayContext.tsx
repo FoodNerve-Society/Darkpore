@@ -188,10 +188,17 @@ export function WikiOverlayProvider({ children }: { children: React.ReactNode })
 
   const hasAccess = () => {
     if (!doc) return false;
-    if (isAdmin) return true;
-    if (doc.isPublic) return true;
-    if (doc.allowedRoles.some((r: string) => userRoles.includes(r as any))) return true;
-    if (doc.allowedUsers.includes(uid)) return true;
+    
+    // Drafts are ONLY visible to the author
+    if (doc.tags?.includes("STATUS_DRAFT")) {
+      return doc.authorId === uid;
+    }
+    
+    if (isAdmin) return true; // Admins see everything published
+    if (doc.isPublic) return true; // Public docs (Everyone authenticated)
+    if (doc.allowedUsers.includes(uid)) return true; // Whitelist
+    if (doc.authorId === uid) return true; // Author always sees their own doc
+    
     return false;
   };
 
