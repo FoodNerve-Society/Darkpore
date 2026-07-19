@@ -172,7 +172,17 @@ export default function WikiDashboardPage() {
     setLoading(false);
   };
 
-  const handleStartFresh = (type: string, taxonomy: any, templateBlocks: any[] = []) => {
+  const handleStartFresh = (type: string, taxonomy: any, templateBlocks: any[] = [], fullPayload?: any) => {
+    if (fullPayload) {
+      setEditForm({
+        ...editForm,
+        ...fullPayload,
+        blocks: (fullPayload.blocks || []).map((b: any) => ({ ...b, id: b.id || `block-${Date.now()}-${Math.random()}` }))
+      });
+      setViewMode('editor');
+      return;
+    }
+
     setEditForm({
       ...editForm,
       category: taxonomy.category || 'operations',

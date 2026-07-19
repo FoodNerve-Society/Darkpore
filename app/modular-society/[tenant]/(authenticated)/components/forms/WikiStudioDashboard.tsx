@@ -91,7 +91,7 @@ export default function WikiStudioDashboard({
   userName
 }: {
   docs?: any[];
-  onStartFresh: (type: string, taxonomy: any, templateBlocks?: any[]) => void;
+  onStartFresh: (type: string, taxonomy: any, templateBlocks?: any[], fullPayload?: any) => void;
   userName?: string;
 }) {
   const [expandedStartType, setExpandedStartType] = useState<string | null>(null);
@@ -169,12 +169,17 @@ export default function WikiStudioDashboard({
     if (!fastPayloadText.trim()) return;
     try {
       const parsed = JSON.parse(fastPayloadText);
-      if (!parsed || !Array.isArray(parsed)) {
-        throw new Error("Payload must be a JSON array of WikiBlock objects.");
-      }
+      if (!parsed) throw new Error("Invalid JSON payload.");
       
-      // Fast ingest assumes we just want to load blocks instantly for an SOP in 'operations'
-      onStartFresh('sop', { category: 'operations', subcategory: '', clearance: 'public' }, parsed);
+      if (Array.isArray(parsed)) {
+        // Legacy: Array of blocks
+        onStartFresh('sop', { category: 'operations', subcategory: '', clearance: 'public' }, parsed);
+      } else if (typeof parsed === 'object') {
+        // Full Document Payload
+        onStartFresh('custom', {}, [], parsed);
+      } else {
+        throw new Error("Payload must be a JSON array or object.");
+      }
     } catch (e: any) {
       setFastIngestError(e.message || "Invalid JSON payload.");
     }
@@ -214,10 +219,10 @@ export default function WikiStudioDashboard({
         if (fastPayloadText.trim()) {
           try {
             parsedPreview = JSON.parse(fastPayloadText);
-            parseStatus = (Array.isArray(parsedPreview)) ? 'valid' : 'invalid';
+            parseStatus = (Array.isArray(parsedPreview) || (parsedPreview && typeof parsedPreview === 'object')) ? 'valid' : 'invalid';
           } catch { parseStatus = 'invalid'; }
         }
-        const blockCount = Array.isArray(parsedPreview) ? parsedPreview.length : 0;
+        const blockCount = Array.isArray(parsedPreview) ? parsedPreview.length : (parsedPreview?.blocks ? parsedPreview.blocks.length : 0);
 
         return (
           <Box sx={{ mb: 5 }}>
