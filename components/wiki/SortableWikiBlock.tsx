@@ -347,8 +347,30 @@ export default function SortableWikiBlock({
               )}
 
               {block.type === 'CHECKLIST' && (
-                <Box sx={{ bgcolor: alpha(color, 0.03), p: 3, borderRadius: '16px', border: `1px dashed ${alpha(color, 0.2)}` }}>
-                  <Typography variant="subtitle2" sx={{ color: color, mb: 2, display: 'block', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Checklist Items</Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <PremiumTextField 
+                    label="Checklist Title / Context" value={block.content || ''} onChange={e => onUpdate(block.id, { content: e.target.value })}
+                    colorTheme={color} placeholder="e.g. CRITICAL: Verify the AI output for Step 3"
+                  />
+                  
+                  <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                    <Typography sx={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748b' }}>Type:</Typography>
+                    {['regular', 'important'].map(t => (
+                      <Chip 
+                        key={t} label={t.toUpperCase()}
+                        onClick={() => onUpdate(block.id, { checklistType: t as any })}
+                        sx={{ 
+                          fontWeight: 800, fontSize: '0.75rem', borderRadius: '8px', cursor: 'pointer',
+                          bgcolor: block.checklistType === t || (!block.checklistType && t === 'regular') ? alpha(color, 0.2) : alpha('#94a3b8', 0.1),
+                          color: block.checklistType === t || (!block.checklistType && t === 'regular') ? color : '#64748b',
+                          border: `1px solid ${block.checklistType === t || (!block.checklistType && t === 'regular') ? color : 'transparent'}`
+                        }} 
+                      />
+                    ))}
+                  </Box>
+
+                  <Box sx={{ bgcolor: alpha(color, 0.03), p: 3, borderRadius: '16px', border: `1px dashed ${alpha(color, 0.2)}` }}>
+                    <Typography variant="subtitle2" sx={{ color: color, mb: 2, display: 'block', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Checklist Items</Typography>
                   {(block.checklistItems || []).map((item: any, iIndex: number) => (
                     <Box key={item.id} sx={{ display: 'flex', gap: 1.5, mb: 1.5, alignItems: 'center', p: 1, pr: 2, bgcolor: '#fff', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.05)', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
                       <DragIndicatorIcon sx={{ color: 'rgba(0,0,0,0.2)' }} />
@@ -379,6 +401,7 @@ export default function SortableWikiBlock({
                     }}>
                       + Add Item
                     </PremiumButton>
+                  </Box>
                   </Box>
                 </Box>
               )}

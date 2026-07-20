@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 
 export interface WikiBlock {
   id: string;
-  type: 'TEXT' | 'MEDIA' | 'PROMPT_BUILDER' | 'HEADER' | 'CALLOUT' | 'CHECKLIST' | 'CODE_SNIPPET';
+  type: 'TEXT' | 'MEDIA' | 'PROMPT_BUILDER' | 'HEADER' | 'CALLOUT' | 'CHECKLIST' | 'CODE_SNIPPET' | 'SCRATCHPAD';
   visibility: 'public' | 'internal_staff' | 'admin' | 'whitelist_only';
   whitelistUsers?: string[];
   content: string;
@@ -24,6 +24,7 @@ export interface WikiBlock {
   calloutType?: 'info' | 'warning' | 'danger';
   
   // Checklist Block
+  checklistType?: 'regular' | 'important';
   checklistItems?: { id: string; text: string; checked: boolean }[];
   
   // Code Snippet Block

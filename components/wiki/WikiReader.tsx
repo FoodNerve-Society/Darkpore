@@ -13,6 +13,7 @@ import FolderIcon from '@mui/icons-material/Folder';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import CloudSyncIcon from '@mui/icons-material/CloudSync';
 import Tooltip from '@mui/material/Tooltip';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 
 // --- Text Block Component with Checklists ---
 function TextBlock({ content }: { content: string }) {
