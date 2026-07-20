@@ -695,6 +695,7 @@ model UserWikiState {
   checkboxes   String @default("{}")
   promptInputs String @default("{}")
   scratchpads  String @default("{}")
+  scrollPosition Int  @default(0)
   
   updatedAt DateTime @updatedAt
   

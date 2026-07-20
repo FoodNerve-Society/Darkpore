@@ -222,10 +222,14 @@ export default function WikiReader({ doc, loading, isAdmin, hasAccess, canSeeBlo
   const [checkboxes, setCheckboxes] = useState<Record<string, boolean>>({});
   const [promptInputs, setPromptInputs] = useState<Record<string, string>>({});
   const [scratchpads, setScratchpads] = useState<Record<string, string>>({});
+  const [scrollPosition, setScrollPosition] = useState<number>(0);
   
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+
+  const scrollRef = React.useRef<HTMLElement>(null);
+  const scrollTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (doc?.slug) {
@@ -242,26 +246,49 @@ export default function WikiReader({ doc, loading, isAdmin, hasAccess, canSeeBlo
     if (doc?.id && profile?.uid) {
       const localKey = `wiki_state_${doc.id}_${profile.uid}`;
       const cached = localStorage.getItem(localKey);
+      let localLastModified = 0;
+      
       if (cached) {
         try {
           const parsed = JSON.parse(cached);
+          localLastModified = parsed.lastModified || 0;
           setCheckboxes(parsed.checkboxes || {});
           setPromptInputs(parsed.promptInputs || {});
           setScratchpads(parsed.scratchpads || {});
+          setScrollPosition(parsed.scrollPosition || 0);
+          if (parsed.scrollPosition && scrollRef.current) {
+            scrollRef.current.scrollTop = parsed.scrollPosition;
+          }
         } catch(e) {}
       }
 
       getUserWikiState(doc.id, profile.uid).then(res => {
         if (res.success && res.data) {
-          setCheckboxes(res.data.checkboxes || {});
-          setPromptInputs(res.data.promptInputs || {});
-          setScratchpads(res.data.scratchpads || {});
-          setLastSaved(new Date(res.data.updatedAt));
-          localStorage.setItem(localKey, JSON.stringify({
-            checkboxes: res.data.checkboxes,
-            promptInputs: res.data.promptInputs,
-            scratchpads: res.data.scratchpads
-          }));
+          const dbLastModified = new Date(res.data.updatedAt).getTime();
+          
+          if (dbLastModified >= localLastModified) {
+            // DB is newer or perfectly in sync, use DB data
+            setCheckboxes(res.data.checkboxes || {});
+            setPromptInputs(res.data.promptInputs || {});
+            setScratchpads(res.data.scratchpads || {});
+            setScrollPosition(res.data.scrollPosition || 0);
+            if (res.data.scrollPosition && scrollRef.current) {
+              scrollRef.current.scrollTop = res.data.scrollPosition;
+            }
+            setLastSaved(new Date(res.data.updatedAt));
+            localStorage.setItem(localKey, JSON.stringify({
+              checkboxes: res.data.checkboxes,
+              promptInputs: res.data.promptInputs,
+              scratchpads: res.data.scratchpads,
+              scrollPosition: res.data.scrollPosition,
+              lastModified: dbLastModified
+            }));
+            setHasUnsavedChanges(false);
+          } else {
+            // Local is newer, keep local data but log when it was last saved to DB
+            setLastSaved(new Date(res.data.updatedAt));
+            setHasUnsavedChanges(true);
+          }
         }
       });
     }
@@ -270,15 +297,27 @@ export default function WikiReader({ doc, loading, isAdmin, hasAccess, canSeeBlo
   // Auto-save to local storage
   useEffect(() => {
     if (doc?.id && profile?.uid) {
-      const stateToCache = { checkboxes, promptInputs, scratchpads };
+      const stateToCache = { 
+        checkboxes, promptInputs, scratchpads, scrollPosition,
+        lastModified: hasUnsavedChanges ? Date.now() : (lastSaved ? lastSaved.getTime() : 0)
+      };
       localStorage.setItem(`wiki_state_${doc.id}_${profile.uid}`, JSON.stringify(stateToCache));
     }
-  }, [checkboxes, promptInputs, scratchpads, doc?.id, profile?.uid]);
+  }, [checkboxes, promptInputs, scratchpads, scrollPosition, hasUnsavedChanges, lastSaved, doc?.id, profile?.uid]);
+
+  const handleScroll = (e: React.UIEvent<HTMLElement>) => {
+    const top = (e.target as HTMLElement).scrollTop;
+    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+    scrollTimeoutRef.current = setTimeout(() => {
+      setScrollPosition(top);
+      setHasUnsavedChanges(true);
+    }, 500);
+  };
 
   const handleSaveToCloud = async () => {
     if (!doc?.id || !profile?.uid) return;
     setIsSaving(true);
-    const res = await saveUserWikiState(doc.id, profile.uid, { checkboxes, promptInputs, scratchpads });
+    const res = await saveUserWikiState(doc.id, profile.uid, { checkboxes, promptInputs, scratchpads, scrollPosition });
     setIsSaving(false);
     if (res.success) {
       setHasUnsavedChanges(false);
@@ -294,6 +333,7 @@ export default function WikiReader({ doc, loading, isAdmin, hasAccess, canSeeBlo
     setCheckboxes({});
     setPromptInputs({});
     setScratchpads({});
+    setScrollPosition(0);
     setHasUnsavedChanges(false);
     localStorage.removeItem(`wiki_state_${doc.id}_${profile.uid}`);
     await resetUserWikiState(doc.id, profile.uid);
@@ -345,13 +385,17 @@ export default function WikiReader({ doc, loading, isAdmin, hasAccess, canSeeBlo
                 startIcon={<CloudSyncIcon />}
                 sx={{ borderRadius: '12px', textTransform: 'none', fontWeight: 700, px: 2, boxShadow: 'none' }}
               >
-                {isSaving ? 'Saving...' : 'Save to Cloud'}
+                {isSaving ? 'Saving...' : 'Save'}
               </Button>
           </Box>
         </Box>
       )}
 
-      <Box sx={{ flex: 1, overflowY: 'auto', p: { xs: 2, sm: 6 }, pt: headerContent ? { xs: 6, sm: 8 } : { xs: 2, sm: 6 } }}>
+      <Box 
+        ref={scrollRef}
+        onScroll={handleScroll}
+        sx={{ flex: 1, overflowY: 'auto', p: { xs: 2, sm: 6 }, pt: headerContent ? { xs: 6, sm: 8 } : { xs: 2, sm: 6 } }}
+      >
         {!doc && !loading ? (
           <Box sx={{ textAlign: 'center', mt: 10 }}>
              <Typography sx={{ color: 'text.secondary', mb: 3 }}>Document not found.</Typography>
@@ -475,11 +519,6 @@ export default function WikiReader({ doc, loading, isAdmin, hasAccess, canSeeBlo
                 ))}
               </Stepper>
               
-              {doc.blocks.filter(canSeeBlock).length === 0 && (
-                 <Typography sx={{ color: 'text.disabled', fontStyle: 'italic', pl: 2 }}>No visible steps available in this SOP.</Typography>
-              )}
-            </Box>
-            
               {doc.blocks.filter(canSeeBlock).length === 0 && (
                  <Typography sx={{ color: 'text.disabled', fontStyle: 'italic', pl: 2 }}>No visible steps available in this SOP.</Typography>
               )}

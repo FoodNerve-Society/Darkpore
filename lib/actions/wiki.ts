@@ -285,6 +285,7 @@ export type UserWikiStatePayload = {
   checkboxes?: Record<string, boolean>;
   promptInputs?: Record<string, string>;
   scratchpads?: Record<string, string>;
+  scrollPosition?: number;
 };
 
 export async function getUserWikiState(wikiDocId: string, userId: string) {
@@ -333,6 +334,7 @@ export async function saveUserWikiState(wikiDocId: string, userId: string, state
         checkboxes: JSON.stringify(nextCheckboxes),
         promptInputs: JSON.stringify(nextPrompts),
         scratchpads: JSON.stringify(nextScratchpads),
+        ...(stateUpdate.scrollPosition !== undefined && { scrollPosition: stateUpdate.scrollPosition })
       },
       create: {
         wikiDocId,
@@ -340,6 +342,7 @@ export async function saveUserWikiState(wikiDocId: string, userId: string, state
         checkboxes: JSON.stringify(nextCheckboxes),
         promptInputs: JSON.stringify(nextPrompts),
         scratchpads: JSON.stringify(nextScratchpads),
+        scrollPosition: stateUpdate.scrollPosition || 0
       }
     });
 

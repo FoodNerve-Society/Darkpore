@@ -609,12 +609,12 @@ export default function WikiEditor({
         </Box>
       )}
 
-      {/* FIXED BOTTOM ACTION BAR */}
+      {/* BOTTOM ACTION BAR */}
       <Box sx={{ 
-        position: 'fixed', bottom: 0, left: 0, right: showSidePreview ? { xs: 0, lg: '45vw' } : 0, zIndex: 100,
+        position: 'sticky', bottom: 0,
         bgcolor: '#fff', borderTop: '1px solid rgba(0,0,0,0.08)',
         p: 2, display: 'flex', justifyContent: 'flex-end', alignItems: 'center',
-        transition: 'right 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+        zIndex: 10
       }}>
         <Box sx={{ display: 'flex', gap: 2 }}>
           <Button
