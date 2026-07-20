@@ -493,10 +493,10 @@ export default function SortableWikiBlock({
                 </Box>
               )}
 
-              {block.type === 'TEXT' && (
+              {(block.type === 'TEXT' || block.type === 'SCRATCHPAD') && (
                 <PremiumMarkdownEditor
                   fullWidth minRows={6}
-                  label="Content (Markdown Supported)"
+                  label={block.type === 'SCRATCHPAD' ? "Default Template / Instructions" : "Content (Markdown Supported)"}
                   value={block.content}
                   onChange={(e: any) => onUpdate(block.id, { content: e.target.value })}
                   colorTheme={color}

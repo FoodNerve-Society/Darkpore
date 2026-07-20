@@ -15,6 +15,23 @@ import CloudSyncIcon from '@mui/icons-material/CloudSync';
 import Tooltip from '@mui/material/Tooltip';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 
+// Helper to parse basic inline markdown (**bold**, *italic*)
+function renderInlineMarkdown(text: string) {
+  const boldParts = text.split(/(\*\*.*?\*\*)/g);
+  return boldParts.map((part, index) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={index} style={{ fontWeight: 800 }}>{part.slice(2, -2)}</strong>;
+    }
+    const italicParts = part.split(/(\*.*?\*)/g);
+    return italicParts.map((subPart, subIndex) => {
+      if (subPart.startsWith('*') && subPart.endsWith('*') && subPart.length > 2) {
+        return <em key={`${index}-${subIndex}`}>{subPart.slice(1, -1)}</em>;
+      }
+      return subPart;
+    });
+  });
+}
+
 // --- Text Block Component with Checklists ---
 function TextBlock({ content }: { content: string }) {
   const lines = content.split('\n');
@@ -34,8 +51,14 @@ function TextBlock({ content }: { content: string }) {
         if (trimmed.startsWith('## ')) {
           return <Typography key={i} variant="h6" sx={{ fontWeight: 700, mt: 2, mb: 1, color: '#1e293b' }}>{trimmed.replace('## ', '')}</Typography>;
         }
+        if (trimmed.startsWith('### ')) {
+          return <Typography key={i} variant="subtitle1" sx={{ fontWeight: 800, mt: 1.5, mb: 1, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{trimmed.replace('### ', '')}</Typography>;
+        }
+        if (trimmed.match(/^[0-9]+\.\s/)) { // Numbered lists
+          return <Typography key={i} sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.7, color: '#334155', fontSize: '1.05rem', ml: 2, display: 'list-item', listStyleType: 'decimal' }}>{renderInlineMarkdown(trimmed.replace(/^[0-9]+\.\s/, ''))}</Typography>;
+        }
         if (!trimmed) return <Box key={i} sx={{ height: 8 }} />;
-        return <Typography key={i} sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.7, color: '#334155', fontSize: '1.05rem' }}>{line}</Typography>;
+        return <Typography key={i} sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.7, color: '#334155', fontSize: '1.05rem' }}>{renderInlineMarkdown(line)}</Typography>;
       })}
     </Box>
   );
@@ -176,11 +199,11 @@ function ScratchpadBlock({
   return (
     <Box sx={{ mb: 3 }}>
       <Typography variant="overline" sx={{ color: '#14b8a6', fontWeight: 700, mb: 1, display: 'block' }}>Scratchpad</Typography>
-      <Box sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.02)', borderRadius: '8px', mb: 2 }}>
-        <Typography sx={{ color: 'rgba(15,23,42,0.8)', fontFamily: 'monospace', fontSize: '0.85rem', whiteSpace: 'pre-wrap' }}>
-          {block.content}
-        </Typography>
-      </Box>
+      {block.content && (
+        <Box sx={{ p: 2, bgcolor: 'rgba(20, 184, 166, 0.05)', border: '1px solid rgba(20, 184, 166, 0.2)', borderRadius: '12px', mb: 2 }}>
+          <TextBlock content={block.content} />
+        </Box>
+      )}
       <TextField
         multiline
         minRows={5}
