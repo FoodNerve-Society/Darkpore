@@ -276,3 +276,92 @@ export async function deleteRegistryHotspot(id: string) {
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
+
+// ============================================================================
+// USER WIKI STATE ACTIONS
+// ============================================================================
+
+export type UserWikiStatePayload = {
+  checkboxes?: Record<string, boolean>;
+  promptInputs?: Record<string, string>;
+  scratchpads?: Record<string, string>;
+};
+
+export async function getUserWikiState(wikiDocId: string, userId: string) {
+  try {
+    const state = await prisma.userWikiState.findUnique({
+      where: {
+        wikiDocId_userId: { wikiDocId, userId }
+      }
+    });
+    
+    if (!state) return { success: true, data: null };
+    
+    return {
+      success: true,
+      data: {
+        ...state,
+        checkboxes: JSON.parse(state.checkboxes) as Record<string, boolean>,
+        promptInputs: JSON.parse(state.promptInputs) as Record<string, string>,
+        scratchpads: JSON.parse(state.scratchpads) as Record<string, string>,
+      }
+    };
+  } catch (error: any) {
+    console.error('Error fetching UserWikiState:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function saveUserWikiState(wikiDocId: string, userId: string, stateUpdate: UserWikiStatePayload) {
+  try {
+    // We first fetch the existing state so we can merge partial updates
+    const existing = await prisma.userWikiState.findUnique({
+      where: { wikiDocId_userId: { wikiDocId, userId } }
+    });
+
+    const currentCheckboxes = existing ? JSON.parse(existing.checkboxes) : {};
+    const currentPrompts = existing ? JSON.parse(existing.promptInputs) : {};
+    const currentScratchpads = existing ? JSON.parse(existing.scratchpads) : {};
+
+    const nextCheckboxes = stateUpdate.checkboxes ? { ...currentCheckboxes, ...stateUpdate.checkboxes } : currentCheckboxes;
+    const nextPrompts = stateUpdate.promptInputs ? { ...currentPrompts, ...stateUpdate.promptInputs } : currentPrompts;
+    const nextScratchpads = stateUpdate.scratchpads ? { ...currentScratchpads, ...stateUpdate.scratchpads } : currentScratchpads;
+
+    const upserted = await prisma.userWikiState.upsert({
+      where: { wikiDocId_userId: { wikiDocId, userId } },
+      update: {
+        checkboxes: JSON.stringify(nextCheckboxes),
+        promptInputs: JSON.stringify(nextPrompts),
+        scratchpads: JSON.stringify(nextScratchpads),
+      },
+      create: {
+        wikiDocId,
+        userId,
+        checkboxes: JSON.stringify(nextCheckboxes),
+        promptInputs: JSON.stringify(nextPrompts),
+        scratchpads: JSON.stringify(nextScratchpads),
+      }
+    });
+
+    return { success: true, data: upserted };
+  } catch (error: any) {
+    console.error('Error saving UserWikiState:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function resetUserWikiState(wikiDocId: string, userId: string) {
+  try {
+    await prisma.userWikiState.delete({
+      where: { wikiDocId_userId: { wikiDocId, userId } }
+    });
+    return { success: true };
+  } catch (error: any) {
+    if (error.code === 'P2025') {
+      // Record to delete does not exist, which is fine
+      return { success: true };
+    }
+    console.error('Error resetting UserWikiState:', error);
+    return { success: false, error: error.message };
+  }
+}

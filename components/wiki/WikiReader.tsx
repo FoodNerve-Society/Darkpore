@@ -2,13 +2,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, Button, TextField, Chip, Divider, IconButton, Stepper, Step, StepLabel, StepContent, Breadcrumbs, Link, Checkbox, FormControlLabel, Paper, Alert } from '@mui/material';
-import { WikiBlock, getWikiHierarchy } from '@/lib/actions/wiki';
+import { WikiBlock, getWikiHierarchy, getUserWikiState, saveUserWikiState, resetUserWikiState, UserWikiStatePayload } from '@/lib/actions/wiki';
+import { useSociety } from '@/context/SocietyContext';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import SecurityIcon from '@mui/icons-material/Security';
 import DocIcon from '@mui/icons-material/Description';
 import EditIcon from '@mui/icons-material/Edit';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import FolderIcon from '@mui/icons-material/Folder';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import CloudSyncIcon from '@mui/icons-material/CloudSync';
+import Tooltip from '@mui/material/Tooltip';
 
 // --- Text Block Component with Checklists ---
 function TextBlock({ content }: { content: string }) {
@@ -70,8 +74,8 @@ function CodeSnippetBlock({ block }: { block: WikiBlock }) {
 }
 
 // --- Checklist Block Component ---
-function ChecklistBlock({ block }: { block: WikiBlock }) {
-  const [items, setItems] = useState(block.checklistItems || []);
+function ChecklistBlock({ block, value, onChange }: { block: WikiBlock, value: Record<string, boolean>, onChange: (val: Record<string, boolean>) => void }) {
+  const items = block.checklistItems || [];
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
       {items.map((item, idx) => (
@@ -79,16 +83,14 @@ function ChecklistBlock({ block }: { block: WikiBlock }) {
           key={item.id} 
           control={
             <Checkbox 
-              checked={item.checked} 
+              checked={!!value[item.id]} 
               onChange={(e) => {
-                const newItems = [...items];
-                newItems[idx].checked = e.target.checked;
-                setItems(newItems);
+                onChange({ ...value, [item.id]: e.target.checked });
               }}
               sx={{ '& .MuiSvgIcon-root': { fontSize: 24 } }} 
             />
           } 
-          label={<Typography sx={{ fontSize: '1.05rem', color: '#334155', textDecoration: item.checked ? 'line-through' : 'none', opacity: item.checked ? 0.6 : 1, transition: 'all 0.2s' }}>{item.text}</Typography>} 
+          label={<Typography sx={{ fontSize: '1.05rem', color: '#334155', textDecoration: value[item.id] ? 'line-through' : 'none', opacity: value[item.id] ? 0.6 : 1, transition: 'all 0.2s' }}>{item.text}</Typography>} 
         />
       ))}
     </Box>
@@ -113,14 +115,12 @@ function MediaBlock({ block }: { block: WikiBlock }) {
 
 
 // --- Prompt Builder Component ---
-function PromptBuilderBlock({ block }: { block: WikiBlock }) {
-  const [inputs, setInputs] = useState<Record<string, string>>({});
-  
+function PromptBuilderBlock({ block, value, onChange }: { block: WikiBlock, value: Record<string, string>, onChange: (val: Record<string, string>) => void }) {
   const handleCopy = () => {
     let finalPrompt = block.content;
     if (block.variables) {
       block.variables.forEach(v => {
-        const val = inputs[v.name] || `[${v.label}]`;
+        const val = value[v.name] || `[${v.label}]`;
         finalPrompt = finalPrompt.replace(new RegExp(`{{${v.name}}}`, 'g'), val);
       });
     }
@@ -140,8 +140,8 @@ function PromptBuilderBlock({ block }: { block: WikiBlock }) {
               label={v.label}
               variant="outlined"
               size="small"
-              value={inputs[v.name] || ''}
-              onChange={(e) => setInputs({ ...inputs, [v.name]: e.target.value })}
+              value={value[v.name] || ''}
+              onChange={(e) => onChange({ ...value, [v.name]: e.target.value })}
               InputProps={{ sx: { color: '#0f172a' } }} 
               InputLabelProps={{ sx: { color: 'rgba(15,23,42,0.7)' } }}
               sx={{ '& fieldset': { borderColor: 'rgba(15,23,42,0.2)' } }}
@@ -162,7 +162,47 @@ function PromptBuilderBlock({ block }: { block: WikiBlock }) {
     </Box>
   );
 }
-
+// --- Scratchpad Block Component ---
+function ScratchpadBlock({ 
+  block, 
+  value, 
+  onChange 
+}: { 
+  block: WikiBlock; 
+  value: string; 
+  onChange: (val: string) => void; 
+}) {
+  return (
+    <Box sx={{ mb: 3 }}>
+      <Typography variant="overline" sx={{ color: '#14b8a6', fontWeight: 700, mb: 1, display: 'block' }}>Scratchpad</Typography>
+      <Box sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.02)', borderRadius: '8px', mb: 2 }}>
+        <Typography sx={{ color: 'rgba(15,23,42,0.8)', fontFamily: 'monospace', fontSize: '0.85rem', whiteSpace: 'pre-wrap' }}>
+          {block.content}
+        </Typography>
+      </Box>
+      <TextField
+        multiline
+        minRows={5}
+        fullWidth
+        placeholder="Start typing your notes here..."
+        value={value || ''}
+        onChange={(e) => onChange(e.target.value)}
+        sx={{
+          '& .MuiOutlinedInput-root': {
+            bgcolor: '#0f172a',
+            color: '#f8fafc',
+            fontFamily: 'monospace',
+            fontSize: '0.95rem',
+            borderRadius: '12px',
+            '& fieldset': { borderColor: 'rgba(255,255,255,0.1)' },
+            '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.2)' },
+            '&.Mui-focused fieldset': { borderColor: '#14b8a6' },
+          }
+        }}
+      />
+    </Box>
+  );
+}
 interface WikiReaderProps {
   doc: any;
   loading: boolean;
@@ -175,7 +215,17 @@ interface WikiReaderProps {
 }
 
 export default function WikiReader({ doc, loading, isAdmin, hasAccess, canSeeBlock, onEdit, onNavigate, headerContent }: WikiReaderProps) {
+  const { profile } = useSociety();
   const [breadcrumbs, setBreadcrumbs] = useState<any[]>([]);
+  
+  // Stateful IDE properties
+  const [checkboxes, setCheckboxes] = useState<Record<string, boolean>>({});
+  const [promptInputs, setPromptInputs] = useState<Record<string, string>>({});
+  const [scratchpads, setScratchpads] = useState<Record<string, string>>({});
+  
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
   useEffect(() => {
     if (doc?.slug) {
@@ -186,11 +236,118 @@ export default function WikiReader({ doc, loading, isAdmin, hasAccess, canSeeBlo
       });
     }
   }, [doc?.slug]);
+
+  // Load from DB or localStorage on mount
+  useEffect(() => {
+    if (doc?.id && profile?.uid) {
+      const localKey = `wiki_state_${doc.id}_${profile.uid}`;
+      const cached = localStorage.getItem(localKey);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          setCheckboxes(parsed.checkboxes || {});
+          setPromptInputs(parsed.promptInputs || {});
+          setScratchpads(parsed.scratchpads || {});
+        } catch(e) {}
+      }
+
+      getUserWikiState(doc.id, profile.uid).then(res => {
+        if (res.success && res.data) {
+          setCheckboxes(res.data.checkboxes || {});
+          setPromptInputs(res.data.promptInputs || {});
+          setScratchpads(res.data.scratchpads || {});
+          setLastSaved(new Date(res.data.updatedAt));
+          localStorage.setItem(localKey, JSON.stringify({
+            checkboxes: res.data.checkboxes,
+            promptInputs: res.data.promptInputs,
+            scratchpads: res.data.scratchpads
+          }));
+        }
+      });
+    }
+  }, [doc?.id, profile?.uid]);
+
+  // Auto-save to local storage
+  useEffect(() => {
+    if (doc?.id && profile?.uid) {
+      const stateToCache = { checkboxes, promptInputs, scratchpads };
+      localStorage.setItem(`wiki_state_${doc.id}_${profile.uid}`, JSON.stringify(stateToCache));
+    }
+  }, [checkboxes, promptInputs, scratchpads, doc?.id, profile?.uid]);
+
+  const handleSaveToCloud = async () => {
+    if (!doc?.id || !profile?.uid) return;
+    setIsSaving(true);
+    const res = await saveUserWikiState(doc.id, profile.uid, { checkboxes, promptInputs, scratchpads });
+    setIsSaving(false);
+    if (res.success) {
+      setHasUnsavedChanges(false);
+      setLastSaved(new Date());
+    } else {
+      alert('Failed to save progress to cloud.');
+    }
+  };
+
+  const handleResetWorkspace = async () => {
+    if (!doc?.id || !profile?.uid) return;
+    if (!confirm('Are you sure you want to clear your local progress? This cannot be undone.')) return;
+    setCheckboxes({});
+    setPromptInputs({});
+    setScratchpads({});
+    setHasUnsavedChanges(false);
+    localStorage.removeItem(`wiki_state_${doc.id}_${profile.uid}`);
+    await resetUserWikiState(doc.id, profile.uid);
+  };
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: '#ffffff', position: 'relative' }}>
       {headerContent && (
         <Box sx={{ p: 2, position: 'absolute', top: 0, left: 0, zIndex: 10 }}>
           {headerContent}
+        </Box>
+      )}
+
+      {/* STICKY WORKSPACE NAVBAR */}
+      {doc && hasAccess && !loading && (
+        <Box sx={{ 
+          position: 'sticky', top: 0, zIndex: 20, 
+          bgcolor: 'rgba(255, 255, 255, 0.85)', 
+          backdropFilter: 'blur(16px)',
+          borderBottom: '1px solid rgba(0,0,0,0.08)',
+          px: { xs: 2, md: 4 }, py: 1.5,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+        }}>
+          {/* Left side spacer to keep center balanced */}
+          <Box sx={{ flex: 1, display: { xs: 'none', sm: 'block' } }} />
+          
+          {/* Center */}
+          <Box sx={{ flex: 2, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <Typography sx={{ fontWeight: 800, color: '#0f172a', fontSize: '1rem', letterSpacing: '-0.02em' }}>{doc.title}</Typography>
+            <Typography sx={{ fontSize: '0.75rem', color: hasUnsavedChanges ? '#f59e0b' : '#10b981', fontWeight: 600 }}>
+              {hasUnsavedChanges ? 'Unsaved local changes' : (lastSaved ? `Saved to cloud at ${lastSaved.toLocaleTimeString()}` : 'No cloud saves yet')}
+            </Typography>
+          </Box>
+
+          {/* Right */}
+          <Box sx={{ flex: 1, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+              <Tooltip title="Reset Workspace to Default">
+                <IconButton 
+                  color="error"
+                  onClick={handleResetWorkspace}
+                  sx={{ bgcolor: 'rgba(239, 68, 68, 0.1)', '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.2)' } }}
+                >
+                  <RestartAltIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Button 
+                variant="contained" 
+                disabled={!hasUnsavedChanges || isSaving}
+                onClick={handleSaveToCloud}
+                startIcon={<CloudSyncIcon />}
+                sx={{ borderRadius: '12px', textTransform: 'none', fontWeight: 700, px: 2, boxShadow: 'none' }}
+              >
+                {isSaving ? 'Saving...' : 'Save to Cloud'}
+              </Button>
+          </Box>
         </Box>
       )}
 
@@ -307,10 +464,11 @@ export default function WikiReader({ doc, loading, isAdmin, hasAccess, canSeeBlo
                       {block.type === 'TEXT' && <TextBlock content={block.content} />}
                       {block.type === 'HEADER' && <HeaderBlock block={block} />}
                       {block.type === 'CALLOUT' && <CalloutBlock block={block} />}
-                      {block.type === 'CHECKLIST' && <ChecklistBlock block={block} />}
+                      {block.type === 'CHECKLIST' && <ChecklistBlock block={block} value={checkboxes} onChange={(v) => { setCheckboxes(v); setHasUnsavedChanges(true); }} />}
                       {block.type === 'CODE_SNIPPET' && <CodeSnippetBlock block={block} />}
                       {block.type === 'MEDIA' && <MediaBlock block={block} />}
-                      {block.type === 'PROMPT_BUILDER' && <PromptBuilderBlock block={block} />}
+                      {block.type === 'PROMPT_BUILDER' && <PromptBuilderBlock block={block} value={promptInputs} onChange={(v) => { setPromptInputs(v); setHasUnsavedChanges(true); }} />}
+                      {block.type === 'SCRATCHPAD' && <ScratchpadBlock block={block} value={scratchpads[block.id]} onChange={(v) => { setScratchpads({ ...scratchpads, [block.id]: v }); setHasUnsavedChanges(true); }} />}
                       
                     </StepContent>
                   </Step>
@@ -321,7 +479,11 @@ export default function WikiReader({ doc, loading, isAdmin, hasAccess, canSeeBlo
                  <Typography sx={{ color: 'text.disabled', fontStyle: 'italic', pl: 2 }}>No visible steps available in this SOP.</Typography>
               )}
             </Box>
-
+            
+              {doc.blocks.filter(canSeeBlock).length === 0 && (
+                 <Typography sx={{ color: 'text.disabled', fontStyle: 'italic', pl: 2 }}>No visible steps available in this SOP.</Typography>
+              )}
+            </Box>
           </Box>
         ) : null}
       </Box>

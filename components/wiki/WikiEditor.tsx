@@ -72,6 +72,7 @@ const WIKI_BLOCK_DEFINITIONS = {
   CODE_SNIPPET: { label: 'Code Snippet', color: '#8b5cf6' },
   PROMPT_BUILDER: { label: 'AI Prompt Builder', color: '#f43f5e' },
   MEDIA: { label: 'Media / Image', color: '#ec4899' },
+  SCRATCHPAD: { label: 'User Scratchpad', color: '#14b8a6' },
 };
 
 export default function WikiEditor({
@@ -126,6 +127,8 @@ export default function WikiEditor({
       }
     } else if (b.type === 'MEDIA') {
       if (b.mediaUrl || b.mediaFile) filled = 1;
+    } else if (b.type === 'SCRATCHPAD') {
+      if (b.content && b.content.trim().length > 0) filled = 1;
     }
     return { filled, total, percent: Math.round((filled / total) * 100) };
   };
@@ -160,6 +163,9 @@ export default function WikiEditor({
       initialData.codeLanguage = 'javascript';
     } else if (type === 'MEDIA') {
       initialData.mediaUrl = '';
+    } else if (type === 'SCRATCHPAD') {
+      initialData.visibility = 'internal_staff';
+      initialData.content = '### My Scratchpad\n\nNotes go here...';
     }
     
     setEditForm({
@@ -740,24 +746,29 @@ export default function WikiEditor({
         }}
       >
         {/* Floating Pill Header (Absolute Position) */}
-        <Box sx={{ position: 'absolute', top: 24, right: { xs: 16, md: 24 }, zIndex: 100, display: 'flex', justifyContent: 'flex-end', width: 'auto' }}>
-          <Box sx={{ 
-            display: 'inline-flex', alignItems: 'center', gap: 2, 
-            background: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(20px)',
-            px: 2, py: 1, borderRadius: '100px', border: '1px solid rgba(0,0,0,0.08)',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
-            width: 'fit-content',
-            flexShrink: 0
-          }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#0f172a', flexShrink: 0 }}>
-              <AutoAwesomeIcon sx={{ color: '#8b5cf6', fontSize: 20 }} />
-              <Typography sx={{ fontWeight: 800, letterSpacing: '0.05em', fontSize: '0.9rem', whiteSpace: 'nowrap' }}>SPLIT PREVIEW</Typography>
-            </Box>
-            <Box sx={{ width: 1, height: 24, bgcolor: 'rgba(0,0,0,0.1)', flexShrink: 0 }} />
-            <IconButton onClick={() => setShowSidePreview(false)} size="small" sx={{ bgcolor: 'rgba(0,0,0,0.04)', '&:hover': { bgcolor: 'rgba(239,68,68,0.1)', color: '#ef4444' }, flexShrink: 0 }}>
-              <CloseIcon fontSize="small" />
-            </IconButton>
+        <Box sx={{ 
+          position: 'absolute', 
+          top: 24, 
+          right: { xs: 16, md: 24 }, 
+          zIndex: 100, 
+          display: 'inline-flex', 
+          alignItems: 'center', 
+          gap: 2, 
+          background: 'rgba(255, 255, 255, 0.95)', 
+          backdropFilter: 'blur(20px)',
+          px: 2, py: 1, 
+          borderRadius: '100px', 
+          border: '1px solid rgba(0,0,0,0.08)',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.08)'
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#0f172a' }}>
+            <AutoAwesomeIcon sx={{ color: '#8b5cf6', fontSize: 20 }} />
+            <Typography sx={{ fontWeight: 800, letterSpacing: '0.05em', fontSize: '0.9rem', whiteSpace: 'nowrap' }}>SPLIT PREVIEW</Typography>
           </Box>
+          <Box sx={{ width: 1, height: 24, bgcolor: 'rgba(0,0,0,0.1)' }} />
+          <IconButton onClick={() => setShowSidePreview(false)} size="small" sx={{ bgcolor: 'rgba(0,0,0,0.04)', '&:hover': { bgcolor: 'rgba(239,68,68,0.1)', color: '#ef4444' } }}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
         </Box>
 
         <Box sx={{ flex: 1, overflowY: 'auto', p: { xs: 2, md: 4 }, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>

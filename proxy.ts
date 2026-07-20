@@ -45,6 +45,16 @@ export default function middleware(request: NextRequest) {
       },
     });
   }
+  
+  // Bypass routing for universal Profile pages so they map to the unified modular-society architecture
+  if (url.pathname.startsWith('/profile')) {
+    rewriteUrl.pathname = `/modular-society/${tenant_id}${url.pathname}`;
+    return NextResponse.rewrite(rewriteUrl.toString(), {
+      request: {
+        headers: requestHeaders,
+      },
+    });
+  }
 
   // Bypass API routes completely
   if (url.pathname.startsWith('/api')) {

@@ -64,6 +64,9 @@ model User {
   pitchReviews         PitchReview[]
   communityPosts       CommunityPost[]
   omniWikiDocs         OmniWikiDoc[]
+  wikiStates           UserWikiState[]
+
+  @@index([email])
 }
 
 // ════════════════════════════════════════════════════════
@@ -677,8 +680,28 @@ model OmniWikiDoc {
   author       User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   parent       OmniWikiDoc?  @relation("WikiHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
   children     OmniWikiDoc[] @relation("WikiHierarchy")
+  
+  userStates   UserWikiState[]
 
   @@index([category])
+}
+
+model UserWikiState {
+  id        String   @id @default(cuid())
+  wikiDocId String
+  userId    String
+  
+  // Stored block state (JSON strings)
+  checkboxes   String @default("{}")
+  promptInputs String @default("{}")
+  scratchpads  String @default("{}")
+  
+  updatedAt DateTime @updatedAt
+  
+  wikiDoc OmniWikiDoc @relation(fields: [wikiDocId], references: [id], onDelete: Cascade)
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([wikiDocId, userId])
 }
 
 model WikiHotspotRegistry {
