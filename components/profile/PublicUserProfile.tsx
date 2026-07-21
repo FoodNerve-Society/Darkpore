@@ -9,9 +9,9 @@ import EditIcon from '@mui/icons-material/Edit';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import BusinessIcon from '@mui/icons-material/Business';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
-import FlipContainer from '../../../components/shared/FlipContainer';
+import FlipContainer from '@/components/shared/FlipContainer';
 
-export default function PublicUserProfile({ username, tenant }: { username: string, tenant: string }) {
+export default function PublicUserProfile({ username, tenant, onFlipRequest }: { username: string, tenant: string, onFlipRequest?: () => void }) {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -103,7 +103,13 @@ export default function PublicUserProfile({ username, tenant }: { username: stri
               <Button 
                 variant="outlined" 
                 startIcon={<EditIcon />}
-                onClick={() => router.push(`/modular-society/${tenant}/profile`)}
+                onClick={() => {
+                  if (onFlipRequest) {
+                    onFlipRequest();
+                  } else {
+                    router.push(`/modular-society/${tenant}/profile`);
+                  }
+                }}
                 sx={{ mb: 4, borderRadius: '12px', fontWeight: 600, borderColor: '#cbd5e1', color: '#475569', '&:hover': { bgcolor: '#f1f5f9' } }}
               >
                 Edit Profile Settings

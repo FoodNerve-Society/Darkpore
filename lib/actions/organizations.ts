@@ -65,7 +65,7 @@ export async function getPublicOrganization(slug: string) {
                 },
                 tradeListings: {
                     where: { status: 'active' },
-                    orderBy: { createdAt: 'desc' }
+                    orderBy: { postedAt: 'desc' }
                 }
             }
         });

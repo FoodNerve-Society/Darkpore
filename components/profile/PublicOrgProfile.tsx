@@ -10,9 +10,9 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import BusinessIcon from '@mui/icons-material/Business';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import WorkIcon from '@mui/icons-material/Work';
-import FlipContainer from '../../../components/shared/FlipContainer';
+import FlipContainer from '@/components/shared/FlipContainer';
 
-export default function PublicOrgProfile({ slug, tenant }: { slug: string, tenant: string }) {
+export default function PublicOrgProfile({ slug, tenant, onFlipRequest }: { slug: string, tenant: string, onFlipRequest?: () => void }) {
   const router = useRouter();
   const [org, setOrg] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -103,7 +103,13 @@ export default function PublicOrgProfile({ slug, tenant }: { slug: string, tenan
             {isAdmin && (
               <Button 
                 variant="contained" 
-                onClick={() => router.push(`/modular-society/${tenant}/org/${slug}/manage`)}
+                onClick={() => {
+                  if (onFlipRequest) {
+                    onFlipRequest();
+                  } else {
+                    router.push(`/modular-society/${tenant}/org/${slug}/manage`);
+                  }
+                }}
                 sx={{ bgcolor: '#0f172a', color: '#fff', fontWeight: 700, borderRadius: '12px', px: 4, py: 1, '&:hover': { bgcolor: '#1e293b' } }}
               >
                 Manage Organization
@@ -141,7 +147,7 @@ export default function PublicOrgProfile({ slug, tenant }: { slug: string, tenan
           {activeTab === 'people' && (
             <Grid container spacing={3}>
               {org.members?.map((member: any) => (
-                <Grid item xs={12} sm={6} md={4} key={member.id}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }} key={member.id}>
                   <Box 
                     onClick={() => router.push(`/modular-society/${tenant}/@u-${member.user.username}`)}
                     sx={{ 
@@ -168,7 +174,7 @@ export default function PublicOrgProfile({ slug, tenant }: { slug: string, tenan
                 </Grid>
               ))}
               {(!org.members || org.members.length === 0) && (
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                   <Box sx={{ p: 4, textAlign: 'center', bgcolor: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
                     <Typography sx={{ color: '#64748b', fontWeight: 500 }}>No public members listed.</Typography>
                   </Box>
