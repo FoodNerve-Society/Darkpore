@@ -6,6 +6,7 @@ import FlipContainer from '@/app/modular-society/[tenant]/(authenticated)/compon
 import PublicOrgProfile from './PublicOrgProfile';
 import OrgManageBackstage from './OrgManageBackstage';
 import CreateOrgBackstage from './CreateOrgBackstage';
+import JoinOrgBackstage from './JoinOrgBackstage';
 import BusinessIcon from '@mui/icons-material/Business';
 import AddIcon from '@mui/icons-material/Add';
 import VerifiedIcon from '@mui/icons-material/Verified';
@@ -23,7 +24,21 @@ interface Props {
 
 export default function OrgCommandContainer({ tenant, slug, isActive, isCollapsed, onActivate }: Props) {
   const [isFlipped, setIsFlipped] = useState(false);
+  const [noOrgAction, setNoOrgAction] = useState<'join' | 'create'>('join');
   const { profile, activeOrg } = useSociety();
+
+  const handleManageOpen = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsFlipped(true);
+    if (isCollapsed) onActivate();
+  };
+
+  const handleDirectAction = (e: React.MouseEvent, action: 'join' | 'create') => {
+    e.stopPropagation();
+    setNoOrgAction(action);
+    setIsFlipped(true);
+    if (isCollapsed) onActivate();
+  };
 
   if (isCollapsed) {
     // ─── HAS AN ORG ───
@@ -128,7 +143,13 @@ export default function OrgCommandContainer({ tenant, slug, isActive, isCollapse
               </Box>
             )}
 
-            <Box sx={{ bgcolor: '#ffffff08', borderRadius: '10px', border: '1px solid #ffffff0a', p: 1.2 }}>
+            <Box 
+              onClick={handleManageOpen}
+              sx={{ 
+                bgcolor: '#ffffff08', borderRadius: '10px', border: '1px solid #ffffff0a', p: 1.2,
+                cursor: 'pointer', transition: 'all 0.2s', '&:hover': { bgcolor: '#ffffff12', transform: 'scale(1.02)' }
+              }}
+            >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.3 }}>
                 <BusinessIcon sx={{ fontSize: 11, color: '#94a3b8' }} />
                 <Typography sx={{ fontSize: '0.55rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
@@ -166,7 +187,7 @@ export default function OrgCommandContainer({ tenant, slug, isActive, isCollapse
           p: { xs: 1.5, md: 2 },
         }}
       >
-        {/* Pulsing plus */}
+        {/* Pulsing icon */}
         <Box sx={{
           width: { xs: 36, md: 48 }, height: { xs: 36, md: 48 },
           borderRadius: '50%',
@@ -180,28 +201,32 @@ export default function OrgCommandContainer({ tenant, slug, isActive, isCollapse
             '50%': { borderColor: '#3b82f680', transform: 'scale(1.06)' },
           },
         }}>
-          <AddIcon sx={{ fontSize: { xs: 20, md: 24 }, color: '#3b82f6' }} />
+          <GroupsIcon sx={{ fontSize: { xs: 20, md: 24 }, color: '#3b82f6' }} />
         </Box>
 
         {/* Label */}
         <Box sx={{ textAlign: { xs: 'left', md: 'center' } }}>
           <Typography sx={{ fontWeight: 800, fontSize: { xs: '0.8rem', md: '0.82rem' }, color: '#e2e8f0' }}>
-            Create Org
+            Join Org
           </Typography>
           <Typography sx={{ fontSize: '0.6rem', color: '#64748b', display: { xs: 'none', md: 'block' } }}>
-            Build your empire
+            Find your team
           </Typography>
         </Box>
 
         {/* Rocket — desktop bottom only */}
         <Box sx={{ display: { xs: 'none', md: 'flex' }, mt: 'auto', width: '100%' }}>
-          <Box sx={{
-            bgcolor: '#ffffff08', borderRadius: '10px', border: '1px solid #ffffff0a',
-            p: 1.2, display: 'flex', alignItems: 'center', gap: 0.8, width: '100%',
-          }}>
+          <Box 
+            onClick={(e) => handleDirectAction(e, 'create')}
+            sx={{
+              bgcolor: '#ffffff08', borderRadius: '10px', border: '1px solid #ffffff0a',
+              p: 1.2, display: 'flex', alignItems: 'center', gap: 0.8, width: '100%',
+              cursor: 'pointer', transition: 'all 0.2s', '&:hover': { bgcolor: '#ffffff12', transform: 'scale(1.02)' }
+            }}
+          >
             <RocketLaunchIcon sx={{ fontSize: 13, color: '#3b82f6' }} />
             <Typography sx={{ fontSize: '0.6rem', color: '#94a3b8', fontWeight: 600 }}>
-              Tap to start
+              Tap to create
             </Typography>
           </Box>
         </Box>
@@ -220,11 +245,16 @@ export default function OrgCommandContainer({ tenant, slug, isActive, isCollapse
       frontContent={
         !slug ? (
           <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: '#f8fafc', borderRadius: '24px', border: '2px dashed #cbd5e1', p: 4, textAlign: 'center' }}>
-            <BusinessIcon sx={{ fontSize: 48, color: '#94a3b8', mb: 2 }} />
-            <Typography variant="h5" sx={{ fontWeight: 800, color: '#0f172a', mb: 1 }}>Build Your Empire</Typography>
-            <Typography sx={{ color: '#64748b', mb: 4, maxWidth: 300 }}>You are not currently acting on behalf of an organization.</Typography>
-            <Button variant="contained" startIcon={<AddIcon />} onClick={() => setIsFlipped(true)} sx={{ bgcolor: '#3b82f6', borderRadius: '12px', fontWeight: 700 }}>
-              Create Organization
+            <GroupsIcon sx={{ fontSize: 64, color: '#3b82f6', mb: 2 }} />
+            <Typography variant="h4" sx={{ fontWeight: 900, color: '#0f172a', mb: 1 }}>Unlock the Power of Teams</Typography>
+            <Typography sx={{ color: '#64748b', mb: 4, maxWidth: 400, fontSize: '1.1rem' }}>
+              Join an organization to collaborate with peers, unlock executive features, and build your reputation faster.
+            </Typography>
+            <Button variant="contained" size="large" onClick={() => { setNoOrgAction('join'); setIsFlipped(true); }} sx={{ bgcolor: '#3b82f6', borderRadius: '16px', fontWeight: 800, px: 6, py: 1.5, fontSize: '1.1rem', mb: 3 }}>
+              Join an Organization
+            </Button>
+            <Button variant="text" onClick={() => { setNoOrgAction('create'); setIsFlipped(true); }} sx={{ color: '#64748b', fontWeight: 700, '&:hover': { color: '#0f172a' } }}>
+              Or create a new organization
             </Button>
           </Box>
         ) : (
@@ -234,7 +264,9 @@ export default function OrgCommandContainer({ tenant, slug, isActive, isCollapse
       backContent={
         <Paper elevation={0} sx={{ height: '100%', overflowY: 'auto', bgcolor: '#ffffff', borderRadius: 4, boxShadow: { xs: '0 8px 32px rgba(0,0,0,0.06)', md: '0 10px 40px rgba(0,0,0,0.04)' }, position: 'relative' }}>
           {!slug ? (
-            <CreateOrgBackstage onClose={() => setIsFlipped(false)} />
+            noOrgAction === 'join' 
+              ? <JoinOrgBackstage onClose={() => setIsFlipped(false)} onCreateOrg={() => setNoOrgAction('create')} />
+              : <CreateOrgBackstage onClose={() => setIsFlipped(false)} />
           ) : (
             <OrgManageBackstage onClose={() => setIsFlipped(false)} />
           )}

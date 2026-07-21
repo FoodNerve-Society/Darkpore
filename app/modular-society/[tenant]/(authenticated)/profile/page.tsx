@@ -36,7 +36,12 @@ export default function CommandCenterLayout() {
             if (activeView === 'split') setActiveView('user');
           }}
           sx={{ 
-            flex: activeView === 'split' ? 1 : (activeView === 'user' ? 8 : 2),
+            flex: activeView === 'split' 
+              ? 1 
+              : (activeView === 'user' 
+                  ? { xs: 9, md: 8 } 
+                  : { xs: 1, md: 2 }
+                ),
             transition: 'flex 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
             minHeight: 0,
             minWidth: 0,
@@ -60,7 +65,12 @@ export default function CommandCenterLayout() {
             if (activeView === 'split') setActiveView('org');
           }}
           sx={{ 
-            flex: activeView === 'split' ? 1 : (activeView === 'org' ? 8 : 2),
+            flex: activeView === 'split' 
+              ? 1 
+              : (activeView === 'org' 
+                  ? { xs: 9, md: 8 } 
+                  : { xs: 1, md: 2 }
+                ),
             transition: 'flex 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
             minHeight: 0,
             minWidth: 0,

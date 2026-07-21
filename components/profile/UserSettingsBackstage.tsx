@@ -35,7 +35,7 @@ import useExportAsImage from '@/hooks/useExportAsImage';
 // PROFILE MAIN PAGE — PREMIUM REDESIGN
 // ============================================================
 
-export default function UserSettingsBackstage({ onClose }: { onClose?: () => void }) {
+export default function UserSettingsBackstage({ onClose }: { onClose?: (blockId?: string) => void }) {
   const { profile, activeOrg, switchOrg } = useSociety();
   const router = useRouter();
   const params = useParams();
@@ -163,7 +163,7 @@ export default function UserSettingsBackstage({ onClose }: { onClose?: () => voi
       <Box>
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
           {onClose && (
-            <Button variant="outlined" startIcon={<EditIcon />} onClick={onClose} sx={{ borderRadius: '12px', fontWeight: 700 }}>
+            <Button variant="outlined" startIcon={<EditIcon />} onClick={() => onClose('edit-profile')} sx={{ borderRadius: '12px', fontWeight: 700 }}>
               Edit Profile
             </Button>
           )}
@@ -359,7 +359,7 @@ export default function UserSettingsBackstage({ onClose }: { onClose?: () => voi
                   if (profile.isAdmin) {
                     setIsCardsModalOpen(true);
                   } else {
-                    setEditModalOpen(true);
+                    if (onClose) onClose('identity-cards');
                   }
                 }}
                 sx={{
@@ -519,6 +519,7 @@ export default function UserSettingsBackstage({ onClose }: { onClose?: () => voi
         <Stack direction="row" spacing={1.5} sx={{ mt: 2 }}>
           <Button
             variant="contained" fullWidth
+            onClick={() => onClose && onClose('wallet')}
             sx={{
               borderRadius: '14px', py: 1.4, fontWeight: 800, fontSize: '0.9rem',
               bgcolor: '#1e293b', color: '#fff', textTransform: 'none',
@@ -530,7 +531,7 @@ export default function UserSettingsBackstage({ onClose }: { onClose?: () => voi
           </Button>
           <Button
             variant="outlined" fullWidth
-            disabled={profile.wallet.withdrawableNP === 0}
+            onClick={() => onClose && onClose('wallet')}
             sx={{
               borderRadius: '14px', py: 1.4, fontWeight: 800, fontSize: '0.9rem',
               borderColor: 'rgba(0,0,0,0.12)', color: 'text.primary', textTransform: 'none',
@@ -595,9 +596,14 @@ export default function UserSettingsBackstage({ onClose }: { onClose?: () => voi
 
       {/* ─── GATEKEEPER QUESTS (Timeline) ─── */}
       <Box>
-        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 3 }}>
-          <Typography sx={{ fontSize: '1.3rem' }}>🎯</Typography>
-          <Typography sx={{ fontWeight: 800, fontSize: '1.1rem' }}>Gatekeeper Quests</Typography>
+        <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between" sx={{ mb: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography sx={{ fontSize: '1.3rem' }}>🎯</Typography>
+            <Typography sx={{ fontWeight: 800, fontSize: '1.1rem' }}>Gatekeeper Quests</Typography>
+          </Box>
+          <Button size="small" variant="text" onClick={() => onClose && onClose('quests')} sx={{ fontWeight: 700, color: '#3b82f6' }}>
+             Manage
+          </Button>
         </Stack>
 
         <Box sx={{ position: 'relative', pl: 4 }}>
@@ -768,7 +774,7 @@ export default function UserSettingsBackstage({ onClose }: { onClose?: () => voi
           {settingsItems.map((item, i) => (
             <React.Fragment key={item.label}>
               <Box
-                onClick={item.action}
+                onClick={() => onClose ? onClose(item.label === 'Edit Profile Details & Cards' ? 'edit-profile' : item.label === 'Notification Preferences' ? 'notifications' : 'security') : item.action()}
                 sx={{
                   p: 2.5, display: 'flex', alignItems: 'center', gap: 2,
                   cursor: 'pointer',

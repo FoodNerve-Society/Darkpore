@@ -18,7 +18,28 @@ interface Props {
 
 export default function UserCommandContainer({ tenant, username, isActive, isCollapsed, onActivate }: Props) {
   const [isFlipped, setIsFlipped] = useState(false);
+  const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
   const { profile } = useSociety();
+
+  const handleFlip = (blockId?: string) => {
+    if (blockId) setActiveBlockId(blockId);
+    setIsFlipped(true);
+  };
+
+  const handleUnflip = () => {
+    setIsFlipped(false);
+    setTimeout(() => setActiveBlockId(null), 300); // clear after flip animation
+  };
+
+  const handleDirectBlockOpen = (e: React.MouseEvent, blockId: string) => {
+    e.stopPropagation();
+    setActiveBlockId(blockId);
+    setIsFlipped(true);
+    // If we are collapsed, we need to activate first
+    if (isCollapsed) {
+      onActivate();
+    }
+  };
 
   if (isCollapsed) {
     const rank = profile ? calculateRank(profile) : 1;
@@ -122,7 +143,10 @@ export default function UserCommandContainer({ tenant, username, isActive, isCol
         {/* ─── PROGRESS + WALLET — Desktop only ─── */}
         <Box sx={{ display: { xs: 'none', md: 'flex' }, flexDirection: 'column', gap: 1, width: '100%', mt: 'auto' }}>
           {/* Progress */}
-          <Box>
+          <Box 
+            onClick={(e) => handleDirectBlockOpen(e, 'quests')}
+            sx={{ cursor: 'pointer', '&:hover': { opacity: 0.8 }, p: 0.5, borderRadius: 1 }}
+          >
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.3 }}>
               <Typography sx={{ fontSize: '0.55rem', color: '#64748b' }}>Rank Progress</Typography>
               <Typography sx={{ fontSize: '0.55rem', color: '#94a3b8', fontWeight: 600 }}>
@@ -140,7 +164,13 @@ export default function UserCommandContainer({ tenant, username, isActive, isCol
           </Box>
 
           {/* Wallet */}
-          <Box sx={{ bgcolor: '#ffffff08', borderRadius: '10px', border: '1px solid #ffffff0a', p: 1.2 }}>
+          <Box 
+            onClick={(e) => handleDirectBlockOpen(e, 'wallet')}
+            sx={{ 
+              bgcolor: '#ffffff08', borderRadius: '10px', border: '1px solid #ffffff0a', p: 1.2,
+              cursor: 'pointer', transition: 'all 0.2s', '&:hover': { bgcolor: '#ffffff12', transform: 'scale(1.02)' }
+            }}
+          >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.3 }}>
               <AccountBalanceWalletIcon sx={{ fontSize: 11, color: '#94a3b8' }} />
               <Typography sx={{ fontSize: '0.55rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
@@ -153,7 +183,13 @@ export default function UserCommandContainer({ tenant, username, isActive, isCol
           </Box>
 
           {/* Gatekeeper dots */}
-          <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+          <Box 
+            onClick={(e) => handleDirectBlockOpen(e, 'edit-profile')}
+            sx={{ 
+              display: 'flex', gap: 0.5, justifyContent: 'center', cursor: 'pointer',
+              p: 0.5, borderRadius: 1, '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' }
+            }}
+          >
             {[
               { ok: hasProfile, label: 'Profile' },
               { ok: hasKYC, label: 'KYC' },
@@ -174,7 +210,10 @@ export default function UserCommandContainer({ tenant, username, isActive, isCol
         </Box>
 
         {/* ─── NP badge — Mobile only (compact) ─── */}
-        <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+        <Box 
+          onClick={(e) => handleDirectBlockOpen(e, 'wallet')}
+          sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center', gap: 0.5, flexShrink: 0, cursor: 'pointer' }}
+        >
           <AccountBalanceWalletIcon sx={{ fontSize: 13, color: '#94a3b8' }} />
           <Typography sx={{ fontSize: '0.75rem', fontWeight: 800 }}>
             {totalNP.toLocaleString()}
@@ -190,12 +229,12 @@ export default function UserCommandContainer({ tenant, username, isActive, isCol
       isFlipped={isFlipped}
       frontContent={
         <Paper elevation={0} sx={{ height: '100%', overflowY: 'auto', bgcolor: '#ffffff', borderRadius: 4, boxShadow: { xs: '0 8px 32px rgba(0,0,0,0.06)', md: '0 10px 40px rgba(0,0,0,0.04)' }, position: 'relative' }}>
-          <UserSettingsBackstage onClose={() => setIsFlipped(true)} />
+          <UserSettingsBackstage onClose={handleFlip} />
         </Paper>
       }
       backContent={
         <Paper elevation={0} sx={{ height: '100%', overflowY: 'auto', bgcolor: '#ffffff', borderRadius: 4, boxShadow: { xs: '0 8px 32px rgba(0,0,0,0.06)', md: '0 10px 40px rgba(0,0,0,0.04)' }, position: 'relative' }}>
-          <EditProfileBackstage onClose={() => setIsFlipped(false)} />
+          <EditProfileBackstage onClose={handleUnflip} initialBlockId={activeBlockId} />
         </Paper>
       }
     />
