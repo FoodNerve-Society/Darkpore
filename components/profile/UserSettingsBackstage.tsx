@@ -163,8 +163,8 @@ export default function UserSettingsBackstage({ onClose }: { onClose?: () => voi
       <Box>
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
           {onClose && (
-            <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={onClose} sx={{ borderRadius: '12px', fontWeight: 700 }}>
-              Back to Profile
+            <Button variant="outlined" startIcon={<EditIcon />} onClick={onClose} sx={{ borderRadius: '12px', fontWeight: 700 }}>
+              Edit Profile
             </Button>
           )}
         </Box>

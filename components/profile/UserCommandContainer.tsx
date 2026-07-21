@@ -1,9 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Box, Typography, Paper } from '@mui/material';
 import FlipContainer from '@/app/modular-society/[tenant]/(authenticated)/components/shared/FlipContainer';
-import PublicUserProfile from './PublicUserProfile';
+import EditProfileBackstage from './EditProfileBackstage';
 import UserSettingsBackstage from './UserSettingsBackstage';
 import PersonIcon from '@mui/icons-material/Person';
 
@@ -16,6 +16,8 @@ interface Props {
 }
 
 export default function UserCommandContainer({ tenant, username, isActive, isCollapsed, onActivate }: Props) {
+  const [isFlipped, setIsFlipped] = useState(false);
+
   if (isCollapsed) {
     return (
       <Box
@@ -47,7 +49,7 @@ export default function UserCommandContainer({ tenant, username, isActive, isCol
             opacity: 0.8
           }}
         >
-          Profile Settings
+          My Profile
         </Typography>
       </Box>
     );
@@ -55,11 +57,15 @@ export default function UserCommandContainer({ tenant, username, isActive, isCol
 
   return (
     <FlipContainer
-      isFlipped={isActive}
-      frontContent={<PublicUserProfile username={username} tenant={tenant} onFlipRequest={onActivate} />}
+      isFlipped={isFlipped}
+      frontContent={
+        <Paper elevation={0} sx={{ height: '100%', overflowY: 'auto', bgcolor: '#ffffff', borderRadius: 4, boxShadow: { xs: '0 8px 32px rgba(0,0,0,0.06)', md: '0 10px 40px rgba(0,0,0,0.04)' }, position: 'relative' }}>
+          <UserSettingsBackstage onClose={() => setIsFlipped(true)} />
+        </Paper>
+      }
       backContent={
         <Paper elevation={0} sx={{ height: '100%', overflowY: 'auto', bgcolor: '#ffffff', borderRadius: 4, boxShadow: { xs: '0 8px 32px rgba(0,0,0,0.06)', md: '0 10px 40px rgba(0,0,0,0.04)' }, position: 'relative' }}>
-          <UserSettingsBackstage onClose={() => onActivate()} />
+          <EditProfileBackstage onClose={() => setIsFlipped(false)} />
         </Paper>
       }
     />

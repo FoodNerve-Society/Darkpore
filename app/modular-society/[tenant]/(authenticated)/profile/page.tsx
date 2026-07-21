@@ -14,6 +14,9 @@ export default function CommandCenterLayout() {
   
   const [activeView, setActiveView] = useState<'split' | 'user' | 'org'>('split');
 
+  const isOrgEmpty = !activeOrg;
+  const effectiveView = isOrgEmpty ? 'user' : activeView;
+
   if (!profile) return <Box sx={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center' }}><CircularProgress sx={{ color: '#3b82f6' }} /></Box>;
 
   return (
@@ -23,7 +26,7 @@ export default function CommandCenterLayout() {
         {/* USER CONTAINER */}
         <Box 
           sx={{ 
-            flex: activeView === 'split' ? 1 : (activeView === 'user' ? 9 : 0.5),
+            flex: effectiveView === 'split' ? 1 : (effectiveView === 'user' ? 9 : 0.5),
             transition: 'flex 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
             minHeight: 0,
             minWidth: 0,
@@ -35,16 +38,16 @@ export default function CommandCenterLayout() {
           <UserCommandContainer 
             tenant={tenant}
             username={profile.username || profile.id || profile.uid} 
-            isActive={activeView === 'user'} 
-            isCollapsed={activeView === 'org'}
-            onActivate={() => setActiveView(activeView === 'user' ? 'split' : 'user')} 
+            isActive={effectiveView === 'user'} 
+            isCollapsed={effectiveView === 'org'}
+            onActivate={() => setActiveView(effectiveView === 'user' ? (isOrgEmpty ? 'user' : 'split') : 'user')} 
           />
         </Box>
 
         {/* ORG CONTAINER */}
         <Box 
           sx={{ 
-            flex: activeView === 'split' ? 1 : (activeView === 'org' ? 9 : 0.5),
+            flex: effectiveView === 'split' ? 1 : (effectiveView === 'org' ? 9 : 0.5),
             transition: 'flex 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
             minHeight: 0,
             minWidth: 0,
@@ -56,9 +59,12 @@ export default function CommandCenterLayout() {
           <OrgCommandContainer 
             tenant={tenant}
             slug={activeOrg?.slug || null} 
-            isActive={activeView === 'org'} 
-            isCollapsed={activeView === 'user'}
-            onActivate={() => setActiveView(activeView === 'org' ? 'split' : 'org')} 
+            isActive={effectiveView === 'org'} 
+            isCollapsed={effectiveView === 'user'}
+            onActivate={() => {
+              if (isOrgEmpty) return; // Cannot open if no org
+              setActiveView(effectiveView === 'org' ? 'split' : 'org');
+            }} 
           />
         </Box>
 
