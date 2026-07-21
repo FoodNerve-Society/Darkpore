@@ -14,6 +14,11 @@ import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import CloudSyncIcon from '@mui/icons-material/CloudSync';
 import Tooltip from '@mui/material/Tooltip';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import PremiumTextField from '../PremiumTextField';
+import PremiumMarkdownEditor from '../PremiumMarkdownEditor';
+import PremiumButton from '../PremiumButton';
 
 // Helper to parse basic inline markdown (**bold**, *italic*)
 function renderInlineMarkdown(text: string) {
@@ -100,22 +105,60 @@ function CodeSnippetBlock({ block }: { block: WikiBlock }) {
 // --- Checklist Block Component ---
 function ChecklistBlock({ block, value, onChange }: { block: WikiBlock, value: Record<string, boolean>, onChange: (val: Record<string, boolean>) => void }) {
   const items = block.checklistItems || [];
+  const isImportant = block.checklistType === 'important';
+  
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 1 }}>
       {items.map((item, idx) => (
-        <FormControlLabel 
+        <Box 
           key={item.id} 
-          control={
+          onClick={() => onChange({ ...value, [item.id]: !value[item.id] })}
+          sx={{ 
+            display: 'flex', alignItems: 'flex-start', p: 2, borderRadius: '16px', cursor: 'pointer',
+            border: '1px solid',
+            borderColor: value[item.id] 
+                ? (isImportant ? 'rgba(245, 158, 11, 0.3)' : 'rgba(16, 185, 129, 0.3)') 
+                : (isImportant ? 'rgba(245, 158, 11, 0.4)' : 'rgba(0,0,0,0.08)'),
+            bgcolor: value[item.id] 
+                ? (isImportant ? 'rgba(245, 158, 11, 0.05)' : 'rgba(16, 185, 129, 0.05)') 
+                : (isImportant ? 'rgba(245, 158, 11, 0.02)' : '#fff'),
+            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+            boxShadow: value[item.id] ? 'none' : '0 2px 8px rgba(0,0,0,0.02)',
+            '&:hover': { 
+                borderColor: isImportant ? 'rgba(245, 158, 11, 0.6)' : 'rgba(16, 185, 129, 0.4)',
+                bgcolor: isImportant ? 'rgba(245, 158, 11, 0.08)' : 'rgba(16, 185, 129, 0.08)'
+            }
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mr: 2, mt: 0.2 }}>
             <Checkbox 
               checked={!!value[item.id]} 
-              onChange={(e) => {
-                onChange({ ...value, [item.id]: e.target.checked });
-              }}
-              sx={{ '& .MuiSvgIcon-root': { fontSize: 24 } }} 
+              onChange={(e) => onChange({ ...value, [item.id]: e.target.checked })}
+              sx={{ 
+                  p: 0, 
+                  '&.Mui-checked': { color: isImportant ? '#f59e0b' : '#10b981' },
+                  '& .MuiSvgIcon-root': { fontSize: 26 }
+              }} 
             />
-          } 
-          label={<Typography sx={{ fontSize: '1.05rem', color: '#334155', textDecoration: value[item.id] ? 'line-through' : 'none', opacity: value[item.id] ? 0.6 : 1, transition: 'all 0.2s' }}>{item.text}</Typography>} 
-        />
+          </Box>
+          <Box sx={{ flex: 1 }}>
+            {isImportant && !value[item.id] && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5, color: '#f59e0b' }}>
+                    <WarningAmberIcon sx={{ fontSize: 16 }} />
+                    <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Important Action</Typography>
+                </Box>
+            )}
+            <Typography sx={{ 
+                fontSize: '1rem', 
+                color: value[item.id] ? '#94a3b8' : '#1e293b', 
+                textDecoration: value[item.id] ? 'line-through' : 'none', 
+                fontWeight: value[item.id] ? 400 : 600,
+                transition: 'all 0.2s'
+            }}>
+              {item.text}
+            </Typography>
+          </Box>
+        </Box>
       ))}
     </Box>
   );
@@ -159,16 +202,12 @@ function PromptBuilderBlock({ block, value, onChange }: { block: WikiBlock, valu
       {block.variables && block.variables.length > 0 && (
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 2, mb: 3 }}>
           {block.variables.map(v => (
-            <TextField 
+            <PremiumTextField 
               key={v.name}
               label={v.label}
-              variant="outlined"
-              size="small"
               value={value[v.name] || ''}
-              onChange={(e) => onChange({ ...value, [v.name]: e.target.value })}
-              InputProps={{ sx: { color: '#0f172a' } }} 
-              InputLabelProps={{ sx: { color: 'rgba(15,23,42,0.7)' } }}
-              sx={{ '& fieldset': { borderColor: 'rgba(15,23,42,0.2)' } }}
+              onChange={(e: any) => onChange({ ...value, [v.name]: e.target.value })}
+              colorTheme="#60a5fa"
             />
           ))}
         </Box>
@@ -180,9 +219,9 @@ function PromptBuilderBlock({ block, value, onChange }: { block: WikiBlock, valu
         </Typography>
       </Box>
 
-      <Button variant="contained" startIcon={<ContentCopyIcon />} onClick={handleCopy} sx={{ bgcolor: '#3b82f6', '&:hover': { bgcolor: '#2563eb' } }}>
+      <PremiumButton baseColor="#3b82f6" startIcon={<ContentCopyIcon />} onClick={handleCopy}>
         Copy Final Prompt
-      </Button>
+      </PremiumButton>
     </Box>
   );
 }
@@ -204,25 +243,13 @@ function ScratchpadBlock({
           <TextBlock content={block.content} />
         </Box>
       )}
-      <TextField
-        multiline
+      <PremiumMarkdownEditor
+        colorTheme="#14b8a6"
         minRows={5}
         fullWidth
         placeholder="Start typing your notes here..."
         value={value || ''}
-        onChange={(e) => onChange(e.target.value)}
-        sx={{
-          '& .MuiOutlinedInput-root': {
-            bgcolor: '#0f172a',
-            color: '#f8fafc',
-            fontFamily: 'monospace',
-            fontSize: '0.95rem',
-            borderRadius: '12px',
-            '& fieldset': { borderColor: 'rgba(255,255,255,0.1)' },
-            '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.2)' },
-            '&.Mui-focused fieldset': { borderColor: '#14b8a6' },
-          }
-        }}
+        onChange={(e: any) => onChange(e.target.value)}
       />
     </Box>
   );
@@ -393,6 +420,16 @@ export default function WikiReader({ doc, loading, isAdmin, hasAccess, canSeeBlo
 
           {/* Right */}
           <Box sx={{ flex: 1, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+              {hasUnsavedChanges && (
+              <PremiumButton 
+                baseColor="#10b981" 
+                startIcon={<CloudSyncIcon />} 
+                onClick={handleSaveToCloud}
+                disabled={isSaving}
+              >
+                {isSaving ? 'Saving...' : 'Save'}
+              </PremiumButton>
+            )}
               <Tooltip title="Reset Workspace to Default">
                 <IconButton 
                   color="error"
@@ -402,15 +439,6 @@ export default function WikiReader({ doc, loading, isAdmin, hasAccess, canSeeBlo
                   <RestartAltIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
-              <Button 
-                variant="contained" 
-                disabled={!hasUnsavedChanges || isSaving}
-                onClick={handleSaveToCloud}
-                startIcon={<CloudSyncIcon />}
-                sx={{ borderRadius: '12px', textTransform: 'none', fontWeight: 700, px: 2, boxShadow: 'none' }}
-              >
-                {isSaving ? 'Saving...' : 'Save'}
-              </Button>
           </Box>
         </Box>
       )}
@@ -512,36 +540,29 @@ export default function WikiReader({ doc, loading, isAdmin, hasAccess, canSeeBlo
               </Box>
             )}
 
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <Stepper orientation="vertical" nonLinear activeStep={-1} sx={{ mt: 2 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
                 {doc.blocks.filter(canSeeBlock).map((block: WikiBlock, index: number) => (
-                  <Step key={block.id} active={true} expanded={true}>
-                    <StepLabel>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#0f172a' }}>
-                        Step {index + 1}
-                      </Typography>
-                    </StepLabel>
-                    <StepContent sx={{ borderLeft: '2px solid rgba(16, 185, 129, 0.3)', ml: '12px', pl: 3 }}>
-                      {isAdmin && (
-                        <Typography variant="caption" sx={{ color: '#f59e0b', mb: 1, display: 'block', fontWeight: 700 }}>
-                          [Admin View] Visibility: {block.visibility}
-                        </Typography>
-                      )}
-                      
-                      {/* Dynamic Renderer Mapping */}
-                      {block.type === 'TEXT' && <TextBlock content={block.content} />}
-                      {block.type === 'HEADER' && <HeaderBlock block={block} />}
-                      {block.type === 'CALLOUT' && <CalloutBlock block={block} />}
-                      {block.type === 'CHECKLIST' && <ChecklistBlock block={block} value={checkboxes} onChange={(v) => { setCheckboxes(v); setHasUnsavedChanges(true); }} />}
-                      {block.type === 'CODE_SNIPPET' && <CodeSnippetBlock block={block} />}
-                      {block.type === 'MEDIA' && <MediaBlock block={block} />}
-                      {block.type === 'PROMPT_BUILDER' && <PromptBuilderBlock block={block} value={promptInputs} onChange={(v) => { setPromptInputs(v); setHasUnsavedChanges(true); }} />}
-                      {block.type === 'SCRATCHPAD' && <ScratchpadBlock block={block} value={scratchpads[block.id]} onChange={(v) => { setScratchpads({ ...scratchpads, [block.id]: v }); setHasUnsavedChanges(true); }} />}
-                      
-                    </StepContent>
-                  </Step>
+                  <Box key={block.id} sx={{ mb: 1, position: 'relative' }}>
+                    {isAdmin && (
+                      <Tooltip title={`[Admin View] Visibility: ${block.visibility}`}>
+                        <IconButton size="small" sx={{ position: 'absolute', top: -10, right: -10, zIndex: 10, color: '#f59e0b', bgcolor: 'rgba(245, 158, 11, 0.1)', '&:hover': { bgcolor: 'rgba(245, 158, 11, 0.2)' } }}>
+                           <AdminPanelSettingsIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                    
+                    {/* Dynamic Renderer Mapping */}
+                    {block.type === 'TEXT' && <TextBlock content={block.content} />}
+                    {block.type === 'HEADER' && <HeaderBlock block={block} />}
+                    {block.type === 'CALLOUT' && <CalloutBlock block={block} />}
+                    {block.type === 'CHECKLIST' && <ChecklistBlock block={block} value={checkboxes} onChange={(v) => { setCheckboxes(v); setHasUnsavedChanges(true); }} />}
+                    {block.type === 'CODE_SNIPPET' && <CodeSnippetBlock block={block} />}
+                    {block.type === 'MEDIA' && <MediaBlock block={block} />}
+                    {block.type === 'PROMPT_BUILDER' && <PromptBuilderBlock block={block} value={promptInputs} onChange={(v) => { setPromptInputs(v); setHasUnsavedChanges(true); }} />}
+                    {block.type === 'SCRATCHPAD' && <ScratchpadBlock block={block} value={scratchpads[block.id]} onChange={(v) => { setScratchpads({ ...scratchpads, [block.id]: v }); setHasUnsavedChanges(true); }} />}
+                    
+                  </Box>
                 ))}
-              </Stepper>
               
               {doc.blocks.filter(canSeeBlock).length === 0 && (
                  <Typography sx={{ color: 'text.disabled', fontStyle: 'italic', pl: 2 }}>No visible steps available in this SOP.</Typography>
