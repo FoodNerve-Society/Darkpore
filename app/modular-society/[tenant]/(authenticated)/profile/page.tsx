@@ -3,7 +3,7 @@
 
 import React, { useState } from 'react';
 import { Box, Container, Typography, Card, CardContent, Stack, Button, Avatar, Chip, Divider, LinearProgress, Switch, FormControlLabel, Select, MenuItem, Paper, IconButton, alpha, Dialog } from '@mui/material';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { useSociety, RANK_NAMES, RANK_COLORS, calculateRank, type RankLevel } from '@/context/SocietyContext';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
@@ -13,6 +13,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import BusinessIcon from '@mui/icons-material/Business';
 import PersonIcon from '@mui/icons-material/Person';
+import IosShareIcon from '@mui/icons-material/IosShare';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -37,6 +38,7 @@ import useExportAsImage from '@/hooks/useExportAsImage';
 export default function ProfilePage() {
   const { profile, activeOrg, switchOrg } = useSociety();
   const router = useRouter();
+  const params = useParams();
   const { openWiki } = useWiki();
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const [isCardsModalOpen, setIsCardsModalOpen] = useState(false);
@@ -223,14 +225,36 @@ export default function ProfilePage() {
 
               {/* Name + Role + Bio */}
               <Box sx={{ flex: 1, pt: 1 }}>
-                <Typography sx={{
-                  color: '#fff', fontWeight: 800,
-                  fontSize: { xs: '1.8rem', md: '2.4rem' },
-                  lineHeight: 1.2, mb: 1,
-                  letterSpacing: '-0.02em'
-                }}>
-                  {fullName}
-                </Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2, mb: 1 }}>
+                  <Typography sx={{
+                    color: '#fff', fontWeight: 800,
+                    fontSize: { xs: '1.8rem', md: '2.4rem' },
+                    lineHeight: 1.2,
+                    letterSpacing: '-0.02em'
+                  }}>
+                    {fullName}
+                  </Typography>
+                  {profile.username && (
+                    <Button
+                      variant="outlined"
+                      startIcon={<IosShareIcon />}
+                      onClick={() => {
+                        const url = `${window.location.origin}/modular-society/${params.tenant || 'darkpore'}/@u-${profile.username}`;
+                        navigator.clipboard.writeText(url);
+                        alert('Public Profile Link Copied!');
+                      }}
+                      sx={{ 
+                        color: 'rgba(255,255,255,0.9)', 
+                        borderColor: 'rgba(255,255,255,0.2)', 
+                        borderRadius: '12px', 
+                        fontWeight: 600,
+                        '&:hover': { bgcolor: 'rgba(255,255,255,0.1)', borderColor: 'rgba(255,255,255,0.4)' }
+                      }}
+                    >
+                      Share Profile
+                    </Button>
+                  )}
+                </Box>
                 <Stack direction="row" spacing={1} sx={{ mb: 3, flexWrap: 'wrap', gap: 1 }}>
                   {profile.roles.map(r => (
                     <Chip

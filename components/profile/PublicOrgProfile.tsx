@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Box, Typography, Avatar, Chip, CircularProgress, Container, Button, Paper, Grid } from '@mui/material';
 import { useParams, useRouter } from 'next/navigation';
 import { getPublicOrganization } from '@/lib/actions/organizations';
+import { getCurrentSessionUser } from '@/lib/actions/users';
 import VerifiedIcon from '@mui/icons-material/Verified';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import BusinessIcon from '@mui/icons-material/Business';
@@ -16,14 +17,28 @@ export default function PublicOrgProfile({ slug, tenant }: { slug: string, tenan
   const [org, setOrg] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'people' | 'jobs'>('people');
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    if (slug) {
-      getPublicOrganization(slug).then(res => {
-        if (res.success) setOrg(res.data);
-        setLoading(false);
-      });
+    async function load() {
+      if (!slug) return;
+      const orgRes = await getPublicOrganization(slug);
+      if (orgRes.success) {
+        setOrg(orgRes.data);
+        
+        // Check admin status
+        const userRes = await getCurrentSessionUser();
+        if (userRes.success && userRes.data) {
+          const currentUserId = userRes.data.id;
+          const memberRecord = orgRes.data.members?.find((m: any) => m.userId === currentUserId);
+          if (memberRecord && (memberRecord.role === 'admin' || memberRecord.role === 'owner')) {
+            setIsAdmin(true);
+          }
+        }
+      }
+      setLoading(false);
     }
+    load();
   }, [slug]);
 
   if (loading) return <Box sx={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center' }}><CircularProgress sx={{ color: '#3b82f6' }} /></Box>;
@@ -79,11 +94,21 @@ export default function PublicOrgProfile({ slug, tenant }: { slug: string, tenan
               {org.isPlatformOwner ? 'Platform Core' : (org.rank >= 4 ? 'Verified Partner' : 'Community Entity')}
             </Typography>
 
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'center' }}>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'center', mb: isAdmin ? 3 : 0 }}>
               {(org.state || org.country) && (
                 <Chip icon={<LocationOnIcon sx={{ fontSize: 16 }} />} label={`${org.state ? org.state + ', ' : ''}${org.country || ''}`} size="small" sx={{ bgcolor: 'rgba(15, 23, 42, 0.05)', fontWeight: 600 }} />
               )}
             </Box>
+
+            {isAdmin && (
+              <Button 
+                variant="contained" 
+                onClick={() => router.push(`/modular-society/${tenant}/org/${slug}/manage`)}
+                sx={{ bgcolor: '#0f172a', color: '#fff', fontWeight: 700, borderRadius: '12px', px: 4, py: 1, '&:hover': { bgcolor: '#1e293b' } }}
+              >
+                Manage Organization
+              </Button>
+            )}
           </Paper>
 
           {/* TAB NAVIGATION */}

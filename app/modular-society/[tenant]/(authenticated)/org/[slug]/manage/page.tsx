@@ -60,18 +60,29 @@ export default async function OrgManagementDashboard({ params }: { params: { slu
   return (
     <Box sx={{ p: { xs: 2, md: 4 }, bgcolor: '#f8fafc', minHeight: '100vh' }}>
       {/* HEADER */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, mb: 4 }}>
-        <Avatar src={org.logoUrl || ''} variant="rounded" sx={{ width: 64, height: 64, borderRadius: '16px', bgcolor: '#e2e8f0' }}>
-            <BusinessIcon sx={{ fontSize: 32, color: '#94a3b8' }} />
-        </Avatar>
-        <Box>
-          <Typography variant="h4" sx={{ fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 1 }}>
-            {org.name} <Chip label="Backstage Admin" size="small" sx={{ bgcolor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', fontWeight: 700, borderRadius: '8px' }} />
-          </Typography>
-          <Typography sx={{ color: '#64748b', fontWeight: 500 }}>
-            Management Dashboard
-          </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 4, flexWrap: 'wrap', gap: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+          <Avatar src={org.logoUrl || ''} variant="rounded" sx={{ width: 64, height: 64, borderRadius: '16px', bgcolor: '#e2e8f0' }}>
+              <BusinessIcon sx={{ fontSize: 32, color: '#94a3b8' }} />
+          </Avatar>
+          <Box>
+            <Typography variant="h4" sx={{ fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 1 }}>
+              {org.name} <Chip label="Backstage Admin" size="small" sx={{ bgcolor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', fontWeight: 700, borderRadius: '8px' }} />
+            </Typography>
+            <Typography sx={{ color: '#64748b', fontWeight: 500 }}>
+              Management Dashboard
+            </Typography>
+          </Box>
         </Box>
+        
+        <Button 
+          variant="outlined" 
+          component="a"
+          href={`/modular-society/${params.tenant}/@o-${org.slug}`}
+          sx={{ fontWeight: 700, borderRadius: '12px', borderColor: '#cbd5e1', color: '#0f172a', '&:hover': { bgcolor: '#f1f5f9', borderColor: '#94a3b8' } }}
+        >
+          View Public Profile
+        </Button>
       </Box>
 
       <Grid container spacing={3}>

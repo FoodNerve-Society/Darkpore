@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Avatar, Chip, CircularProgress, Container, Button, Paper } from '@mui/material';
+import { Box, Typography, Avatar, Chip, CircularProgress, Container, Button, Paper, IconButton } from '@mui/material';
 import { useParams, useRouter } from 'next/navigation';
-import { getPublicUser } from '@/lib/actions/users';
+import { getPublicUser, getCurrentSessionUser } from '@/lib/actions/users';
 import VerifiedIcon from '@mui/icons-material/Verified';
+import EditIcon from '@mui/icons-material/Edit';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import BusinessIcon from '@mui/icons-material/Business';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
@@ -14,14 +15,26 @@ export default function PublicUserProfile({ username, tenant }: { username: stri
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isSelf, setIsSelf] = useState(false);
 
   useEffect(() => {
-    if (username) {
-      getPublicUser(username).then(res => {
-        if (res.success) setUser(res.data);
-        setLoading(false);
-      });
+    async function load() {
+      if (!username) return;
+      const userRes = await getPublicUser(username);
+      if (userRes.success) {
+        setUser(userRes.data);
+        
+        // Check if viewing own profile
+        const sessionRes = await getCurrentSessionUser();
+        if (sessionRes.success && sessionRes.data) {
+          if (sessionRes.data.username === username) {
+            setIsSelf(true);
+          }
+        }
+      }
+      setLoading(false);
     }
+    load();
   }, [username]);
 
   if (loading) return <Box sx={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center' }}><CircularProgress sx={{ color: '#3b82f6' }} /></Box>;
@@ -86,6 +99,17 @@ export default function PublicUserProfile({ username, tenant }: { username: stri
               </Typography>
             )}
 
+            {isSelf && (
+              <Button 
+                variant="outlined" 
+                startIcon={<EditIcon />}
+                onClick={() => router.push(`/modular-society/${tenant}/profile`)}
+                sx={{ mb: 4, borderRadius: '12px', fontWeight: 600, borderColor: '#cbd5e1', color: '#475569', '&:hover': { bgcolor: '#f1f5f9' } }}
+              >
+                Edit Profile Settings
+              </Button>
+            )}
+
             {/* ORGANIZATIONAL AFFILIATIONS */}
             {user.organizationMemberships?.length > 0 && (
               <Box sx={{ width: '100%', mt: 4, pt: 4, borderTop: '1px solid rgba(15, 23, 42, 0.08)' }}>
@@ -122,15 +146,17 @@ export default function PublicUserProfile({ username, tenant }: { username: stri
             )}
 
             {/* CALL TO ACTION */}
-            <Box sx={{ mt: 6, p: 3, bgcolor: '#0f172a', borderRadius: '16px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-               <Box sx={{ textAlign: 'left' }}>
-                 <Typography sx={{ color: '#fff', fontWeight: 700, mb: 0.5 }}>Connect with {user.firstName || user.name.split(' ')[0]}</Typography>
-                 <Typography sx={{ color: '#94a3b8', fontSize: '0.85rem' }}>Join the Food Nerve ecosystem to view their full portfolio and send messages.</Typography>
-               </Box>
-               <Button variant="contained" startIcon={<LockOpenIcon />} sx={{ bgcolor: '#3b82f6', fontWeight: 700, borderRadius: '12px', '&:hover': { bgcolor: '#2563eb' } }}>
-                 Unlock Access
-               </Button>
-            </Box>
+            {!isSelf && (
+              <Box sx={{ mt: 6, p: 3, bgcolor: '#0f172a', borderRadius: '16px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                 <Box sx={{ textAlign: 'left' }}>
+                   <Typography sx={{ color: '#fff', fontWeight: 700, mb: 0.5 }}>Connect with {user.firstName || user.name.split(' ')[0]}</Typography>
+                   <Typography sx={{ color: '#94a3b8', fontSize: '0.85rem' }}>Join the Food Nerve ecosystem to view their full portfolio and send messages.</Typography>
+                 </Box>
+                 <Button variant="contained" startIcon={<LockOpenIcon />} sx={{ bgcolor: '#3b82f6', fontWeight: 700, borderRadius: '12px', '&:hover': { bgcolor: '#2563eb' } }}>
+                   Unlock Access
+                 </Button>
+              </Box>
+            )}
 
           </Paper>
         </Container>
