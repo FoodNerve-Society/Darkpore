@@ -143,23 +143,96 @@ export default function OrgCommandContainer({ tenant, slug, isActive, isCollapse
               </Box>
             )}
 
-            <Box 
-              onClick={handleManageOpen}
+          {/* ─── CLEAR CTA IN THE MIDDLE (HERO CARD STYLE) ─── */}
+          <Box 
+            onClick={handleManageOpen}
+            sx={{ 
+              display: { xs: 'none', md: 'flex' },
+              alignItems: 'center',
+              background: 'rgba(18, 24, 20, 0.92)',
+              backdropFilter: 'blur(20px)',
+              borderRadius: '22px',
+              boxShadow: `0 6px 28px rgba(59,130,246, 0.18), 0 1.5px 4px rgba(0,0,0,0.08)`,
+              border: `1px solid rgba(59,130,246, 0.12)`,
+              px: 1.5,
+              py: 1.5,
+              my: 'auto', // Pushes to vertical middle
+              cursor: 'pointer',
+              width: '100%',
+              transition: 'box-shadow 0.3s ease, border 0.3s ease, transform 0.3s',
+              '&:hover': {
+                boxShadow: `0 12px 40px rgba(59,130,246, 0.28), 0 2px 6px rgba(0,0,0,0.1)`,
+                border: `1px solid rgba(59,130,246, 0.25)`,
+                transform: 'translateY(-2px)'
+              }
+            }}
+          >
+            <Avatar 
+              variant="rounded"
               sx={{ 
-                bgcolor: '#ffffff08', borderRadius: '10px', border: '1px solid #ffffff0a', p: 1.2,
-                cursor: 'pointer', transition: 'all 0.2s', '&:hover': { bgcolor: '#ffffff12', transform: 'scale(1.02)' }
-              }}
+                  width: 38, height: 38, mr: 1.5, borderRadius: '13px',
+                  border: `2px solid rgba(59,130,246, 0.4)`,
+                  boxShadow: `0 0 12px rgba(59,130,246, 0.2)`,
+                  bgcolor: 'rgba(59,130,246, 0.1)'
+              }} 
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.3 }}>
-                <BusinessIcon sx={{ fontSize: 11, color: '#94a3b8' }} />
-                <Typography sx={{ fontSize: '0.55rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  Organization
+              <BusinessIcon sx={{ color: '#3b82f6', fontSize: 20 }} />
+            </Avatar>
+            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 0.3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Typography sx={{ 
+                  fontSize: '0.55rem', fontWeight: 800, color: '#fff', 
+                  background: 'linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%)',
+                  px: 1, py: 0.3, borderRadius: '6px', textTransform: 'uppercase', letterSpacing: '0.8px'
+                }}>
+                  DASHBOARD
                 </Typography>
               </Box>
-              <Typography sx={{ fontSize: '0.6rem', color: '#64748b', lineHeight: 1.3 }}>
-                Tap to manage dashboard
+              <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.95)' }}>
+                Manage Org
               </Typography>
             </Box>
+          </Box>
+        </Box>
+
+        {/* ─── CLEAR CTA IN THE MIDDLE (MOBILE) ─── */}
+        <Box 
+          onClick={handleManageOpen}
+          sx={{ 
+            display: { xs: 'flex', md: 'none' },
+            alignItems: 'center',
+            background: 'rgba(18, 24, 20, 0.92)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: '16px',
+            boxShadow: `0 4px 16px rgba(59,130,246, 0.15), 0 1px 3px rgba(0,0,0,0.08)`,
+            border: `1px solid rgba(59,130,246, 0.12)`,
+            px: 1.2,
+            py: 0.8,
+            mx: 'auto', // Pushes to horizontal middle
+            cursor: 'pointer',
+          }}
+        >
+          <Avatar 
+            variant="rounded"
+            sx={{ 
+                width: 28, height: 28, mr: 1, borderRadius: '8px',
+                border: `1px solid rgba(59,130,246, 0.4)`,
+                bgcolor: 'rgba(59,130,246, 0.1)'
+            }} 
+          >
+            <BusinessIcon sx={{ color: '#3b82f6', fontSize: 16 }} />
+          </Avatar>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.1 }}>
+            <Typography sx={{ 
+              fontSize: '0.5rem', fontWeight: 800, color: '#fff', 
+              background: 'linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%)',
+              px: 0.6, py: 0.1, borderRadius: '4px', textTransform: 'uppercase', letterSpacing: '0.5px', width: 'fit-content'
+            }}>
+              DASHBOARD
+            </Typography>
+            <Typography sx={{ fontSize: '0.65rem', fontWeight: 700, color: 'rgba(255,255,255,0.95)' }}>
+              Manage
+            </Typography>
           </Box>
         </Box>
       );
@@ -214,27 +287,97 @@ export default function OrgCommandContainer({ tenant, slug, isActive, isCollapse
           </Typography>
         </Box>
 
-        {/* Rocket — desktop bottom only */}
-        <Box sx={{ display: { xs: 'none', md: 'flex' }, mt: 'auto', width: '100%' }}>
-          <Box 
-            onClick={(e) => handleDirectAction(e, 'create')}
-            sx={{
-              bgcolor: '#ffffff08', borderRadius: '10px', border: '1px solid #ffffff0a',
-              p: 1.2, display: 'flex', alignItems: 'center', gap: 0.8, width: '100%',
-              cursor: 'pointer', transition: 'all 0.2s', '&:hover': { bgcolor: '#ffffff12', transform: 'scale(1.02)' }
-            }}
+        {/* ─── CLEAR CTA IN THE MIDDLE (HERO CARD STYLE) — DESKTOP ─── */}
+        <Box 
+          onClick={(e) => handleDirectAction(e, 'join')}
+          sx={{ 
+            display: { xs: 'none', md: 'flex' },
+            alignItems: 'center',
+            background: 'rgba(18, 24, 20, 0.92)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: '22px',
+            boxShadow: `0 6px 28px rgba(16,185,129, 0.18), 0 1.5px 4px rgba(0,0,0,0.08)`,
+            border: `1px solid rgba(16,185,129, 0.12)`,
+            px: 1.5,
+            py: 1.5,
+            my: 'auto', // Pushes to vertical middle
+            cursor: 'pointer',
+            width: '100%',
+            transition: 'box-shadow 0.3s ease, border 0.3s ease, transform 0.3s',
+            '&:hover': {
+              boxShadow: `0 12px 40px rgba(16,185,129, 0.28), 0 2px 6px rgba(0,0,0,0.1)`,
+              border: `1px solid rgba(16,185,129, 0.25)`,
+              transform: 'translateY(-2px)'
+            }
+          }}
+        >
+          <Avatar 
+            variant="rounded"
+            sx={{ 
+                width: 38, height: 38, mr: 1.5, borderRadius: '13px',
+                border: `2px solid rgba(16,185,129, 0.4)`,
+                boxShadow: `0 0 12px rgba(16,185,129, 0.2)`,
+                bgcolor: 'rgba(16,185,129, 0.1)'
+            }} 
           >
-            <RocketLaunchIcon sx={{ fontSize: 13, color: '#3b82f6' }} />
-            <Typography sx={{ fontSize: '0.6rem', color: '#94a3b8', fontWeight: 600 }}>
-              Tap to create
+            <GroupsIcon sx={{ color: '#10b981', fontSize: 20 }} />
+          </Avatar>
+          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 0.3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Typography sx={{ 
+                fontSize: '0.55rem', fontWeight: 800, color: '#fff', 
+                background: 'linear-gradient(135deg, #10b981 0%, #047857 100%)',
+                px: 1, py: 0.3, borderRadius: '6px', textTransform: 'uppercase', letterSpacing: '0.8px'
+              }}>
+                JOIN
+              </Typography>
+            </Box>
+            <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.95)' }}>
+              Find an Org
             </Typography>
           </Box>
         </Box>
 
-        {/* Arrow hint — mobile only */}
-        <Typography sx={{ display: { xs: 'block', md: 'none' }, fontSize: '0.8rem', color: '#3b82f6', ml: 'auto', flexShrink: 0 }}>
-          →
-        </Typography>
+        {/* ─── CLEAR CTA IN THE MIDDLE (HERO CARD STYLE) — MOBILE ─── */}
+        <Box 
+          onClick={(e) => handleDirectAction(e, 'join')}
+          sx={{ 
+            display: { xs: 'flex', md: 'none' },
+            alignItems: 'center',
+            background: 'rgba(18, 24, 20, 0.92)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: '16px',
+            boxShadow: `0 4px 16px rgba(16,185,129, 0.15), 0 1px 3px rgba(0,0,0,0.08)`,
+            border: `1px solid rgba(16,185,129, 0.12)`,
+            px: 1.2,
+            py: 0.8,
+            mx: 'auto', // Pushes to horizontal middle
+            cursor: 'pointer',
+          }}
+        >
+          <Avatar 
+            variant="rounded"
+            sx={{ 
+                width: 28, height: 28, mr: 1, borderRadius: '8px',
+                border: `1px solid rgba(16,185,129, 0.4)`,
+                bgcolor: 'rgba(16,185,129, 0.1)'
+            }} 
+          >
+            <GroupsIcon sx={{ color: '#10b981', fontSize: 16 }} />
+          </Avatar>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.1 }}>
+            <Typography sx={{ 
+              fontSize: '0.5rem', fontWeight: 800, color: '#fff', 
+              background: 'linear-gradient(135deg, #10b981 0%, #047857 100%)',
+              px: 0.6, py: 0.1, borderRadius: '4px', textTransform: 'uppercase', letterSpacing: '0.5px', width: 'fit-content'
+            }}>
+              JOIN
+            </Typography>
+            <Typography sx={{ fontSize: '0.65rem', fontWeight: 700, color: 'rgba(255,255,255,0.95)' }}>
+              Find Org
+            </Typography>
+          </Box>
+        </Box>
       </Box>
     );
   }

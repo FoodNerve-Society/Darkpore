@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Box, Typography, Paper, Avatar, LinearProgress } from '@mui/material';
+import { Box, Typography, Paper, Avatar, LinearProgress, Button } from '@mui/material';
+import SettingsIcon from '@mui/icons-material/Settings';
 import FlipContainer from '@/app/modular-society/[tenant]/(authenticated)/components/shared/FlipContainer';
 import EditProfileBackstage from './EditProfileBackstage';
 import UserSettingsBackstage from './UserSettingsBackstage';
@@ -124,24 +125,82 @@ export default function UserCommandContainer({ tenant, username, isActive, isCol
           </Typography>
         </Box>
 
-        {/* ─── RANK PILL ─── */}
-        <Box sx={{
-          display: 'flex', alignItems: 'center', gap: 0.6,
-          bgcolor: `${rankColor}18`,
-          border: `1px solid ${rankColor}30`,
-          borderRadius: '10px',
-          px: 1.2, py: 0.5,
-          alignSelf: { md: 'center' },
-          mb: { xs: 0, md: 1 },
-        }}>
-          <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: rankColor, boxShadow: `0 0 6px ${rankColor}` }} />
-          <Typography sx={{ fontSize: '0.62rem', fontWeight: 700, color: rankColor, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            {rankName}
-          </Typography>
-        </Box>
+        {/* ─── DESKTOP (Vertical) ─── */}
+        <Box sx={{ display: { xs: 'none', md: 'flex' }, flexDirection: 'column', alignItems: 'center', height: '100%', gap: 3 }}>
+          {/* Avatar and basic info */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+            <Avatar 
+              src={profile?.avatarUrl} 
+              sx={{ width: 64, height: 64, border: '2px solid #3b82f6', boxShadow: '0 0 20px rgba(59,130,246,0.2)' }}
+            />
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: '#e2e8f0', lineHeight: 1.2 }}>
+                {profile?.displayName || 'Unknown Agent'}
+              </Typography>
+              <Typography sx={{ fontSize: '0.7rem', color: '#64748b' }}>
+                @{username}
+              </Typography>
+            </Box>
+            <Box sx={{ px: 1.5, py: 0.3, borderRadius: '12px', bgcolor: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)' }}>
+              <Typography sx={{ fontSize: '0.65rem', color: '#f59e0b', fontWeight: 700 }}>
+                {rankName}
+              </Typography>
+            </Box>
+          </Box>
 
-        {/* ─── PROGRESS + WALLET — Desktop only ─── */}
-        <Box sx={{ display: { xs: 'none', md: 'flex' }, flexDirection: 'column', gap: 1, width: '100%', mt: 'auto' }}>
+          {/* ─── CLEAR CTA IN THE MIDDLE (HERO CARD STYLE) ─── */}
+          <Box 
+            onClick={(e) => handleDirectBlockOpen(e, 'edit-profile')} 
+            sx={{ 
+              display: { xs: 'none', md: 'flex' },
+              alignItems: 'center',
+              background: 'rgba(18, 24, 20, 0.92)',
+              backdropFilter: 'blur(20px)',
+              borderRadius: '22px',
+              boxShadow: `0 6px 28px rgba(59,130,246, 0.18), 0 1.5px 4px rgba(0,0,0,0.08)`,
+              border: `1px solid rgba(59,130,246, 0.12)`,
+              px: 1.5,
+              py: 1.5,
+              my: 'auto', // Pushes to the vertical middle
+              cursor: 'pointer',
+              width: '100%',
+              transition: 'box-shadow 0.3s ease, border 0.3s ease, transform 0.3s',
+              '&:hover': {
+                boxShadow: `0 12px 40px rgba(59,130,246, 0.28), 0 2px 6px rgba(0,0,0,0.1)`,
+                border: `1px solid rgba(59,130,246, 0.25)`,
+                transform: 'translateY(-2px)'
+              }
+            }}
+          >
+            <Avatar 
+              variant="rounded"
+              sx={{ 
+                  width: 38, height: 38, mr: 1.5, borderRadius: '13px',
+                  border: `2px solid rgba(59,130,246, 0.4)`,
+                  boxShadow: `0 0 12px rgba(59,130,246, 0.2)`,
+                  bgcolor: 'rgba(59,130,246, 0.1)'
+              }} 
+            >
+              <SettingsIcon sx={{ color: '#3b82f6', fontSize: 20 }} />
+            </Avatar>
+            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 0.3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Typography sx={{ 
+                  fontSize: '0.55rem', fontWeight: 800, color: '#fff', 
+                  background: 'linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%)',
+                  px: 1, py: 0.3, borderRadius: '6px', textTransform: 'uppercase', letterSpacing: '0.8px'
+                }}>
+                  ACTION
+                </Typography>
+              </Box>
+              <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.95)' }}>
+                Manage Profile
+              </Typography>
+            </Box>
+          </Box>
+
+          {/* ─── PROGRESS + WALLET — Desktop only ─── */}
+          <Box sx={{ display: { xs: 'none', md: 'flex' }, flexDirection: 'column', gap: 1, width: '100%' }}>
           {/* Progress */}
           <Box 
             onClick={(e) => handleDirectBlockOpen(e, 'quests')}
@@ -209,6 +268,47 @@ export default function UserCommandContainer({ tenant, username, isActive, isCol
           </Box>
         </Box>
 
+        {/* ─── CLEAR CTA IN THE MIDDLE (MOBILE) ─── */}
+        <Box 
+          onClick={(e) => handleDirectBlockOpen(e, 'edit-profile')} 
+          sx={{ 
+            display: { xs: 'flex', md: 'none' },
+            alignItems: 'center',
+            background: 'rgba(18, 24, 20, 0.92)',
+            backdropFilter: 'blur(20px)',
+            borderRadius: '16px',
+            boxShadow: `0 4px 16px rgba(59,130,246, 0.15), 0 1px 3px rgba(0,0,0,0.08)`,
+            border: `1px solid rgba(59,130,246, 0.12)`,
+            px: 1.2,
+            py: 0.8,
+            mx: 'auto', // Pushes to the horizontal middle
+            cursor: 'pointer',
+          }}
+        >
+          <Avatar 
+            variant="rounded"
+            sx={{ 
+                width: 28, height: 28, mr: 1, borderRadius: '8px',
+                border: `1px solid rgba(59,130,246, 0.4)`,
+                bgcolor: 'rgba(59,130,246, 0.1)'
+            }} 
+          >
+            <SettingsIcon sx={{ color: '#3b82f6', fontSize: 16 }} />
+          </Avatar>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.1 }}>
+            <Typography sx={{ 
+              fontSize: '0.5rem', fontWeight: 800, color: '#fff', 
+              background: 'linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%)',
+              px: 0.6, py: 0.1, borderRadius: '4px', textTransform: 'uppercase', letterSpacing: '0.5px', width: 'fit-content'
+            }}>
+              ACTION
+            </Typography>
+            <Typography sx={{ fontSize: '0.65rem', fontWeight: 700, color: 'rgba(255,255,255,0.95)' }}>
+              Manage
+            </Typography>
+          </Box>
+        </Box>
+
         {/* ─── NP badge — Mobile only (compact) ─── */}
         <Box 
           onClick={(e) => handleDirectBlockOpen(e, 'wallet')}
@@ -218,7 +318,6 @@ export default function UserCommandContainer({ tenant, username, isActive, isCol
           <Typography sx={{ fontSize: '0.75rem', fontWeight: 800 }}>
             {totalNP.toLocaleString()}
           </Typography>
-          <Typography sx={{ fontSize: '0.55rem', color: '#64748b', fontWeight: 600 }}>NP</Typography>
         </Box>
       </Box>
     );

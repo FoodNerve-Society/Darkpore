@@ -84,13 +84,7 @@ export default function CommandCenterLayout() {
             slug={activeOrg?.slug || null} 
             isActive={activeView === 'org'} 
             isCollapsed={activeView === 'user'}
-            onActivate={() => {
-              if (isOrgEmpty && activeView === 'user') {
-                setActiveView('split');
-              } else {
-                setActiveView(activeView === 'org' ? 'split' : 'org');
-              }
-            }} 
+            onActivate={() => setActiveView(activeView === 'org' ? 'split' : 'org')} 
           />
         </Box>
 
