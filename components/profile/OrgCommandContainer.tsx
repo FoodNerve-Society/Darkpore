@@ -235,6 +235,7 @@ export default function OrgCommandContainer({ tenant, slug, isActive, isCollapse
             </Typography>
           </Box>
         </Box>
+      </Box>
       );
     }
 

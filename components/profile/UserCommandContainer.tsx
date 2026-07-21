@@ -267,6 +267,7 @@ export default function UserCommandContainer({ tenant, username, isActive, isCol
             ))}
           </Box>
         </Box>
+        </Box>
 
         {/* ─── CLEAR CTA IN THE MIDDLE (MOBILE) ─── */}
         <Box 
