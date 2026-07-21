@@ -16,6 +16,7 @@ import Tooltip from '@mui/material/Tooltip';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PremiumTextField from '../PremiumTextField';
 import PremiumMarkdownEditor from '../PremiumMarkdownEditor';
 import PremiumButton from '../PremiumButton';
@@ -90,13 +91,18 @@ function CalloutBlock({ block }: { block: WikiBlock }) {
 // --- Code Snippet Block Component ---
 function CodeSnippetBlock({ block }: { block: WikiBlock }) {
   return (
-    <Box sx={{ position: 'relative', bgcolor: '#0f172a', borderRadius: '12px', overflow: 'hidden', mb: 2 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, py: 1, bgcolor: 'rgba(255,255,255,0.1)' }}>
-        <Typography sx={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase' }}>{block.codeLanguage || 'text'}</Typography>
-        <IconButton size="small" onClick={() => { navigator.clipboard.writeText(block.content); alert('Code copied!'); }} sx={{ color: '#94a3b8' }}><ContentCopyIcon fontSize="small" /></IconButton>
+    <Box sx={{ position: 'relative', bgcolor: '#0f172a', borderRadius: '16px', overflow: 'hidden', mb: 2, boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.1)' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, py: 1.5, bgcolor: '#1e293b', borderBottom: '1px solid #334155' }}>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+            <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#ef4444' }} />
+            <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#f59e0b' }} />
+            <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#10b981' }} />
+        </Box>
+        <Typography sx={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{block.codeLanguage || 'text'}</Typography>
+        <IconButton size="small" onClick={() => { navigator.clipboard.writeText(block.content); alert('Code copied!'); }} sx={{ color: '#94a3b8', '&:hover': { color: '#fff', bgcolor: 'rgba(255,255,255,0.1)' } }}><ContentCopyIcon fontSize="small" /></IconButton>
       </Box>
-      <Box sx={{ p: 2, overflowX: 'auto' }}>
-        <Typography component="pre" sx={{ color: '#f8fafc', fontFamily: 'monospace', fontSize: '0.9rem', m: 0 }}>{block.content}</Typography>
+      <Box sx={{ p: 2.5, overflowX: 'auto' }}>
+        <Typography component="pre" sx={{ color: '#e2e8f0', fontFamily: '"JetBrains Mono", monospace', fontSize: '0.85rem', m: 0, lineHeight: 1.6 }}>{block.content}</Typography>
       </Box>
     </Box>
   );
@@ -108,58 +114,53 @@ function ChecklistBlock({ block, value, onChange }: { block: WikiBlock, value: R
   const isImportant = block.checklistType === 'important';
   
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 1 }}>
-      {items.map((item, idx) => (
-        <Box 
-          key={item.id} 
-          onClick={() => onChange({ ...value, [item.id]: !value[item.id] })}
-          sx={{ 
-            display: 'flex', alignItems: 'flex-start', p: 2, borderRadius: '16px', cursor: 'pointer',
-            border: '1px solid',
-            borderColor: value[item.id] 
-                ? (isImportant ? 'rgba(245, 158, 11, 0.3)' : 'rgba(16, 185, 129, 0.3)') 
-                : (isImportant ? 'rgba(245, 158, 11, 0.4)' : 'rgba(0,0,0,0.08)'),
-            bgcolor: value[item.id] 
-                ? (isImportant ? 'rgba(245, 158, 11, 0.05)' : 'rgba(16, 185, 129, 0.05)') 
-                : (isImportant ? 'rgba(245, 158, 11, 0.02)' : '#fff'),
-            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-            boxShadow: value[item.id] ? 'none' : '0 2px 8px rgba(0,0,0,0.02)',
-            '&:hover': { 
-                borderColor: isImportant ? 'rgba(245, 158, 11, 0.6)' : 'rgba(16, 185, 129, 0.4)',
-                bgcolor: isImportant ? 'rgba(245, 158, 11, 0.08)' : 'rgba(16, 185, 129, 0.08)'
-            }
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mr: 2, mt: 0.2 }}>
-            <Checkbox 
-              checked={!!value[item.id]} 
-              onChange={(e) => onChange({ ...value, [item.id]: e.target.checked })}
-              sx={{ 
-                  p: 0, 
-                  '&.Mui-checked': { color: isImportant ? '#f59e0b' : '#10b981' },
-                  '& .MuiSvgIcon-root': { fontSize: 26 }
-              }} 
-            />
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mb: 1, p: 1, border: '1px solid rgba(0,0,0,0.08)', borderRadius: '16px', bgcolor: 'rgba(0,0,0,0.02)' }}>
+      {items.map((item, idx) => {
+        const isChecked = !!value[item.id];
+        return (
+          <Box 
+            key={item.id} 
+            onClick={() => onChange({ ...value, [item.id]: !isChecked })}
+            sx={{ 
+              display: 'flex', alignItems: 'flex-start', p: 1.5, borderRadius: '12px', cursor: 'pointer',
+              bgcolor: isChecked 
+                  ? (isImportant ? 'rgba(245, 158, 11, 0.05)' : 'rgba(16, 185, 129, 0.05)') 
+                  : (isImportant ? 'rgba(245, 158, 11, 0.05)' : '#fff'),
+              border: isImportant && !isChecked ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid transparent',
+              boxShadow: isImportant && !isChecked ? '0 0 12px rgba(245, 158, 11, 0.4)' : 'none',
+              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:hover': { 
+                  bgcolor: isImportant ? 'rgba(245, 158, 11, 0.08)' : 'rgba(0,0,0,0.04)'
+              }
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mr: 2, mt: 0.2 }}>
+              <Box sx={{ 
+                  width: 24, height: 24, borderRadius: '8px', 
+                  border: '2px solid',
+                  borderColor: isChecked ? (isImportant ? '#f59e0b' : '#10b981') : (isImportant ? '#f59e0b' : '#cbd5e1'),
+                  bgcolor: isChecked ? (isImportant ? '#f59e0b' : '#10b981') : 'transparent',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 0.2s'
+              }}>
+                 {isChecked && <svg width="14" height="10" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 5L5 9L13 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+              </Box>
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <Typography sx={{ 
+                  fontSize: '1.05rem', 
+                  color: isChecked ? '#94a3b8' : (isImportant ? '#b45309' : '#1e293b'), 
+                  textDecoration: isChecked ? 'line-through' : 'none', 
+                  fontWeight: isChecked ? 400 : 600,
+                  transition: 'all 0.2s',
+                  lineHeight: 1.5
+              }}>
+                {item.text}
+              </Typography>
+            </Box>
           </Box>
-          <Box sx={{ flex: 1 }}>
-            {isImportant && !value[item.id] && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5, color: '#f59e0b' }}>
-                    <WarningAmberIcon sx={{ fontSize: 16 }} />
-                    <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Important Action</Typography>
-                </Box>
-            )}
-            <Typography sx={{ 
-                fontSize: '1rem', 
-                color: value[item.id] ? '#94a3b8' : '#1e293b', 
-                textDecoration: value[item.id] ? 'line-through' : 'none', 
-                fontWeight: value[item.id] ? 400 : 600,
-                transition: 'all 0.2s'
-            }}>
-              {item.text}
-            </Typography>
-          </Box>
-        </Box>
-      ))}
+        );
+      })}
     </Box>
   );
 }
@@ -183,6 +184,9 @@ function MediaBlock({ block }: { block: WikiBlock }) {
 
 // --- Prompt Builder Component ---
 function PromptBuilderBlock({ block, value, onChange }: { block: WikiBlock, value: Record<string, string>, onChange: (val: Record<string, string>) => void }) {
+  const [isCopied, setIsCopied] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
   const handleCopy = () => {
     let finalPrompt = block.content;
     if (block.variables) {
@@ -192,36 +196,73 @@ function PromptBuilderBlock({ block, value, onChange }: { block: WikiBlock, valu
       });
     }
     navigator.clipboard.writeText(finalPrompt);
-    alert('Prompt copied to clipboard!');
+    setIsCopied(true);
+    setIsCollapsed(true);
+    setTimeout(() => setIsCopied(false), 3000);
   };
 
-  return (
-    <Box sx={{ bgcolor: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '12px', p: 3, mb: 3 }}>
-      <Typography variant="overline" sx={{ color: '#60a5fa', fontWeight: 700, mb: 2, display: 'block' }}>Prompt Builder</Typography>
-      
-      {block.variables && block.variables.length > 0 && (
-        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 2, mb: 3 }}>
-          {block.variables.map(v => (
-            <PremiumTextField 
-              key={v.name}
-              label={v.label}
-              value={value[v.name] || ''}
-              onChange={(e: any) => onChange({ ...value, [v.name]: e.target.value })}
-              colorTheme="#60a5fa"
-            />
-          ))}
+  if (isCollapsed) {
+    return (
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2, bgcolor: 'rgba(59, 130, 246, 0.05)', borderRadius: '16px', mb: 3, border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CheckCircleIcon sx={{ color: '#3b82f6' }} />
+                <Typography sx={{ color: '#3b82f6', fontWeight: 600 }}>Prompt Copied & Ready</Typography>
+            </Box>
+            <Button size="small" onClick={() => setIsCollapsed(false)} sx={{ textTransform: 'none', fontWeight: 600, borderRadius: '8px' }}>Expand Editor</Button>
         </Box>
-      )}
+    );
+  }
 
-      <Box sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.05)', borderRadius: '8px', mb: 2 }}>
-        <Typography sx={{ color: 'rgba(15,23,42,0.8)', fontFamily: 'monospace', fontSize: '0.85rem', whiteSpace: 'pre-wrap' }}>
-          {block.content}
-        </Typography>
+  return (
+    <Box sx={{ position: 'relative', bgcolor: '#0f172a', borderRadius: '16px', overflow: 'hidden', mb: 3, boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.1)' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, py: 1.5, bgcolor: '#1e293b', borderBottom: '1px solid #334155' }}>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+            <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#ef4444' }} />
+            <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#f59e0b' }} />
+            <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#10b981' }} />
+        </Box>
+        <Typography sx={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Prompt Builder</Typography>
+        <Box sx={{ width: 44 }} /> {/* Spacer to center the title */}
       </Box>
 
-      <PremiumButton baseColor="#3b82f6" startIcon={<ContentCopyIcon />} onClick={handleCopy}>
-        Copy Final Prompt
-      </PremiumButton>
+      <Box sx={{ p: 3 }}>
+        {block.variables && block.variables.length > 0 && (
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 2, mb: 3 }}>
+            {block.variables.map(v => (
+              <Box key={v.name} sx={{ '& .MuiInputBase-root': { bgcolor: 'rgba(255,255,255,0.05)', color: '#f8fafc', borderColor: 'rgba(255,255,255,0.1)' }, '& .MuiInputLabel-root': { color: '#94a3b8' } }}>
+                <PremiumTextField 
+                  label={v.label}
+                  value={value[v.name] || ''}
+                  onChange={(e: any) => onChange({ ...value, [v.name]: e.target.value })}
+                  colorTheme="#3b82f6"
+                />
+              </Box>
+            ))}
+          </Box>
+        )}
+
+        <Box sx={{ p: 2.5, bgcolor: 'rgba(0,0,0,0.3)', borderRadius: '12px', mb: 3, border: '1px solid rgba(255,255,255,0.05)' }}>
+          <Typography sx={{ color: '#e2e8f0', fontFamily: '"JetBrains Mono", monospace', fontSize: '0.85rem', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+            {block.content}
+          </Typography>
+        </Box>
+        
+        <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+            <Button 
+              onClick={handleCopy}
+              sx={{ 
+                bgcolor: '#3b82f6', color: '#fff', borderRadius: '16px', py: 1.5, px: 4, 
+                fontWeight: 700, textTransform: 'none',
+                boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+                transition: 'all 0.2s',
+                '&:hover': { bgcolor: '#2563eb', transform: 'translateY(-2px)', boxShadow: '0 6px 16px rgba(59, 130, 246, 0.4)' }
+              }}
+            >
+              <ContentCopyIcon sx={{ mr: 1, fontSize: 18 }} />
+              {isCopied ? 'Copied!' : 'Copy Executable Prompt'}
+            </Button>
+        </Box>
+      </Box>
     </Box>
   );
 }
@@ -543,8 +584,8 @@ export default function WikiReader({ doc, loading, isAdmin, hasAccess, canSeeBlo
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
                 {doc.blocks.filter(canSeeBlock).map((block: WikiBlock, index: number) => (
                   <Box key={block.id} sx={{ mb: 1, position: 'relative' }}>
-                    {isAdmin && (
-                      <Tooltip title={`[Admin View] Visibility: ${block.visibility}`}>
+                    {isAdmin && block.visibility !== (doc.isPublic ? 'public' : 'internal_staff') && (
+                      <Tooltip title={`[Admin View] Block Visibility: ${block.visibility}`}>
                         <IconButton size="small" sx={{ position: 'absolute', top: -10, right: -10, zIndex: 10, color: '#f59e0b', bgcolor: 'rgba(245, 158, 11, 0.1)', '&:hover': { bgcolor: 'rgba(245, 158, 11, 0.2)' } }}>
                            <AdminPanelSettingsIcon fontSize="small" />
                         </IconButton>
