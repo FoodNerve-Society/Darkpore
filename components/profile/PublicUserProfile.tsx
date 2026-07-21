@@ -9,7 +9,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import BusinessIcon from '@mui/icons-material/Business';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
-import FlipContainer from '@/components/shared/FlipContainer';
+import FlipContainer from '@/app/modular-society/[tenant]/(authenticated)/components/shared/FlipContainer';
 
 export default function PublicUserProfile({ username, tenant, onFlipRequest }: { username: string, tenant: string, onFlipRequest?: () => void }) {
   const router = useRouter();
@@ -37,12 +37,12 @@ export default function PublicUserProfile({ username, tenant, onFlipRequest }: {
     load();
   }, [username]);
 
-  if (loading) return <Box sx={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center' }}><CircularProgress sx={{ color: '#3b82f6' }} /></Box>;
-  if (!user) return <Box sx={{ p: 4, textAlign: 'center' }}><Typography variant="h5">User not found</Typography></Box>;
+  if (loading) return <Box sx={{ display: 'flex', height: '100%', bgcolor: '#f8fafc', borderRadius: '24px', alignItems: 'center', justifyContent: 'center' }}><CircularProgress sx={{ color: '#3b82f6' }} /></Box>;
+  if (!user) return <Box sx={{ p: 4, height: '100%', bgcolor: '#f8fafc', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Typography variant="h5" color="text.secondary">User not found</Typography></Box>;
 
   return (
-    <FlipContainer>
-      <Box sx={{ minHeight: '100vh', bgcolor: '#f8fafc', pb: 10 }}>
+    <>
+      <Paper elevation={0} sx={{ height: '100%', overflowY: 'auto', bgcolor: '#ffffff', borderRadius: 4, boxShadow: { xs: '0 8px 32px rgba(0,0,0,0.06)', md: '0 10px 40px rgba(0,0,0,0.04)' }, pb: 10, position: 'relative' }}>
         {/* HERO BANNER */}
         <Box sx={{ 
           height: 240, 
@@ -166,7 +166,7 @@ export default function PublicUserProfile({ username, tenant, onFlipRequest }: {
 
           </Paper>
         </Container>
-      </Box>
-    </FlipContainer>
+      </Paper>
+    </>
   );
 }

@@ -246,7 +246,7 @@ export default function MiniAuthModal({ pathname }: MiniAuthModalProps) {
               <Box sx={{ display: 'inline-flex', p: 1.5, borderRadius: '50%', background: 'rgba(217, 119, 6, 0.1)', mb: 2 }}>
                  <AdminPanelSettingsTwoToneIcon sx={{ fontSize: 32, color: '#d97706' }} />
               </Box>
-              <Typography variant="h5" fontWeight={800} fontFamily="var(--font-playfair)" color="#0f172a" gutterBottom>
+              <Typography variant="h5" sx={{ fontWeight: 800, fontFamily: "var(--font-playfair)", color: "#0f172a" }} gutterBottom>
                 Admin Portal
               </Typography>
               <Typography variant="body2" sx={{ color: '#475569', fontWeight: 500 }}>

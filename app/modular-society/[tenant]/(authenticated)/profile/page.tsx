@@ -17,8 +17,8 @@ export default function CommandCenterLayout() {
   if (!profile) return <Box sx={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center' }}><CircularProgress sx={{ color: '#3b82f6' }} /></Box>;
 
   return (
-    <Box sx={{ height: '100vh', overflow: 'hidden', bgcolor: '#0f172a', p: { xs: 1, md: 2 } }}>
-      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2, height: '100%' }}>
+    <Box sx={{ p: { xs: 2, md: 4 }, pt: { xs: 2, md: 4 }, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3, flex: 1, minHeight: 0 }}>
         
         {/* USER CONTAINER */}
         <Box 
@@ -27,11 +27,14 @@ export default function CommandCenterLayout() {
             transition: 'flex 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
             minHeight: 0,
             minWidth: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%'
           }}
         >
           <UserCommandContainer 
             tenant={tenant}
-            username={profile.username || profile.uid} 
+            username={profile.username || profile.id || profile.uid} 
             isActive={activeView === 'user'} 
             isCollapsed={activeView === 'org'}
             onActivate={() => setActiveView(activeView === 'user' ? 'split' : 'user')} 
@@ -45,6 +48,9 @@ export default function CommandCenterLayout() {
             transition: 'flex 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
             minHeight: 0,
             minWidth: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%'
           }}
         >
           <OrgCommandContainer 

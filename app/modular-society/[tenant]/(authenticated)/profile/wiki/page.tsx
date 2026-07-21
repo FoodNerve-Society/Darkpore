@@ -203,8 +203,8 @@ export default function WikiDashboardPage() {
   const canSeeBlock = (block: WikiBlock) => {
     if (isAdmin) return true;
     if (block.visibility === 'public') return true;
-    if (block.visibility === 'internal_staff' && userRoles.includes('internal_staff' as any)) return true;
-    if (block.visibility === 'admin' && userRoles.includes('admin' as any)) return true;
+    if (block.visibility === 'internal_staff' && (userRoles as string[]).includes('internal_staff')) return true;
+    if (block.visibility === 'admin' && (userRoles as string[]).includes('admin')) return true;
     if (block.visibility === 'whitelist_only' && block.whitelistUsers?.includes(uid)) return true;
     return false;
   };

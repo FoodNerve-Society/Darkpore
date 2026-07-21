@@ -2,14 +2,20 @@
 
 import { prisma } from '@/lib/db/client';
 import { cookies } from 'next/headers';
-import { getFirebaseUser } from '@/lib/auth/firebase-admin';
+import { adminAuth } from '@/lib/firebase/admin';
 
 export async function getPublicUser(username: string) {
     try {
-        const user = await prisma.user.findUnique({
-            where: { username },
+        const user = await prisma.user.findFirst({
+            where: {
+                OR: [
+                    { username },
+                    { firebaseUid: username },
+                    { id: username }
+                ]
+            },
             include: {
-                organizationMemberships: {
+                organizationMembers: {
                     include: {
                         organization: {
                             select: { id: true, name: true, slug: true, logoUrl: true, rank: true, verified: true, isPlatformOwner: true }
@@ -32,11 +38,11 @@ export async function getPublicUser(username: string) {
 
 export async function getCurrentSessionUser() {
     try {
-        const cookieStore = cookies();
+        const cookieStore = await cookies();
         const sessionCookie = cookieStore.get('session')?.value;
         if (!sessionCookie) return { success: false, error: 'No session' };
 
-        const decodedToken = await getFirebaseUser(sessionCookie);
+        const decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true);
         if (!decodedToken) return { success: false, error: 'Invalid session' };
 
         const user = await prisma.user.findUnique({

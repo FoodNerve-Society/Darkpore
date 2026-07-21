@@ -180,8 +180,8 @@ export function WikiOverlayProvider({ children }: { children: React.ReactNode })
   const canSeeBlock = (block: WikiBlock) => {
     if (isAdmin) return true;
     if (block.visibility === 'public') return true;
-    if (block.visibility === 'internal_staff' && userRoles.includes('internal_staff')) return true;
-    if (block.visibility === 'admin' && userRoles.includes('admin')) return true;
+    if (block.visibility === 'internal_staff' && (userRoles as string[]).includes('internal_staff')) return true;
+    if (block.visibility === 'admin' && (userRoles as string[]).includes('admin')) return true;
     if (block.visibility === 'whitelist_only' && block.whitelistUsers?.includes(uid)) return true;
     return false;
   };
@@ -215,8 +215,8 @@ export function WikiOverlayProvider({ children }: { children: React.ReactNode })
         anchor={isMobile ? 'bottom' : 'right'}
         open={isOpen}
         onClose={closeWiki}
-        PaperProps={{
-          sx: {
+        sx={{
+          '& .MuiDrawer-paper': {
             width: { xs: '100%', sm: 600, md: 800 },
             height: { xs: '90vh', sm: '100%' },
             borderRadius: { xs: '24px 24px 0 0', sm: 0 },

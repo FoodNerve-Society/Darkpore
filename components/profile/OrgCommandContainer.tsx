@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Box, Typography, Button } from '@mui/material';
-import FlipContainer from '@/components/shared/FlipContainer';
+import { Box, Typography, Button, Paper } from '@mui/material';
+import FlipContainer from '@/app/modular-society/[tenant]/(authenticated)/components/shared/FlipContainer';
 import PublicOrgProfile from './PublicOrgProfile';
 import OrgManageBackstage from './OrgManageBackstage';
 import BusinessIcon from '@mui/icons-material/Business';
@@ -72,9 +72,9 @@ export default function OrgCommandContainer({ tenant, slug, isActive, isCollapse
       isFlipped={isActive}
       frontContent={<PublicOrgProfile slug={slug} tenant={tenant} onFlipRequest={onActivate} />}
       backContent={
-        <Box sx={{ height: '100%', overflowY: 'auto', bgcolor: '#f8fafc', borderRadius: '24px', position: 'relative' }}>
+        <Paper elevation={0} sx={{ height: '100%', overflowY: 'auto', bgcolor: '#ffffff', borderRadius: 4, boxShadow: { xs: '0 8px 32px rgba(0,0,0,0.06)', md: '0 10px 40px rgba(0,0,0,0.04)' }, position: 'relative' }}>
           <OrgManageBackstage onClose={() => onActivate()} />
-        </Box>
+        </Paper>
       }
     />
   );

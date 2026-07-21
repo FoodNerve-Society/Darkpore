@@ -53,8 +53,10 @@ function PromptBuilderBlock({ block }: { block: WikiBlock }) {
               size="small"
               value={inputs[v.name] || ''}
               onChange={(e) => setInputs({ ...inputs, [v.name]: e.target.value })}
-              InputProps={{ sx: { color: '#fff' } }} 
-              InputLabelProps={{ sx: { color: 'rgba(255,255,255,0.7)' } }}
+              slotProps={{
+                input: { sx: { color: '#fff' } } as any,
+                inputLabel: { sx: { color: 'rgba(255,255,255,0.7)' } } as any
+              }}
               sx={{ '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' } }}
             />
           ))}
@@ -110,8 +112,8 @@ export function WikiDrawer() {
   const canSeeBlock = (block: WikiBlock) => {
     if (isAdmin) return true;
     if (block.visibility === 'public') return true;
-    if (block.visibility === 'internal_staff' && userRoles.includes('internal_staff')) return true;
-    if (block.visibility === 'admin' && userRoles.includes('admin')) return true;
+    if (block.visibility === 'internal_staff' && (userRoles as string[]).includes('internal_staff')) return true;
+    if (block.visibility === 'admin' && (userRoles as string[]).includes('admin')) return true;
     if (block.visibility === 'whitelist_only' && block.whitelistUsers?.includes(uid)) return true;
     return false;
   };
@@ -121,7 +123,7 @@ export function WikiDrawer() {
     if (!doc) return false;
     if (isAdmin) return true;
     if (doc.isPublic) return true;
-    if (doc.allowedRoles.some((r: string) => userRoles.includes(r as any))) return true;
+    if (doc.allowedRoles.some((r: string) => (userRoles as string[]).includes(r))) return true;
     if (doc.allowedUsers.includes(uid)) return true;
     return false;
   };
