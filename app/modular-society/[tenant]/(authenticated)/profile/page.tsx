@@ -13,9 +13,16 @@ export default function CommandCenterLayout() {
   const tenant = params.tenant as string;
   
   const [activeView, setActiveView] = useState<'split' | 'user' | 'org'>('split');
+  const [hasInitialized, setHasInitialized] = useState(false);
+
+  useEffect(() => {
+    if (profile && !hasInitialized) {
+      setActiveView('split');
+      setHasInitialized(true);
+    }
+  }, [profile, activeOrg, hasInitialized]);
 
   const isOrgEmpty = !activeOrg;
-  const effectiveView = isOrgEmpty ? 'user' : activeView;
 
   if (!profile) return <Box sx={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center' }}><CircularProgress sx={{ color: '#3b82f6' }} /></Box>;
 
@@ -25,8 +32,11 @@ export default function CommandCenterLayout() {
         
         {/* USER CONTAINER */}
         <Box 
+          onClickCapture={() => {
+            if (activeView === 'split') setActiveView('user');
+          }}
           sx={{ 
-            flex: effectiveView === 'split' ? 1 : (effectiveView === 'user' ? 9 : 0.5),
+            flex: activeView === 'split' ? 1 : (activeView === 'user' ? 8 : 2),
             transition: 'flex 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
             minHeight: 0,
             minWidth: 0,
@@ -38,16 +48,19 @@ export default function CommandCenterLayout() {
           <UserCommandContainer 
             tenant={tenant}
             username={profile.username || profile.id || profile.uid} 
-            isActive={effectiveView === 'user'} 
-            isCollapsed={effectiveView === 'org'}
-            onActivate={() => setActiveView(effectiveView === 'user' ? (isOrgEmpty ? 'user' : 'split') : 'user')} 
+            isActive={activeView === 'user'} 
+            isCollapsed={activeView === 'org'}
+            onActivate={() => setActiveView(activeView === 'user' ? 'split' : 'user')} 
           />
         </Box>
 
         {/* ORG CONTAINER */}
         <Box 
+          onClickCapture={() => {
+            if (activeView === 'split') setActiveView('org');
+          }}
           sx={{ 
-            flex: effectiveView === 'split' ? 1 : (effectiveView === 'org' ? 9 : 0.5),
+            flex: activeView === 'split' ? 1 : (activeView === 'org' ? 8 : 2),
             transition: 'flex 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
             minHeight: 0,
             minWidth: 0,
@@ -59,11 +72,14 @@ export default function CommandCenterLayout() {
           <OrgCommandContainer 
             tenant={tenant}
             slug={activeOrg?.slug || null} 
-            isActive={effectiveView === 'org'} 
-            isCollapsed={effectiveView === 'user'}
+            isActive={activeView === 'org'} 
+            isCollapsed={activeView === 'user'}
             onActivate={() => {
-              if (isOrgEmpty) return; // Cannot open if no org
-              setActiveView(effectiveView === 'org' ? 'split' : 'org');
+              if (isOrgEmpty && activeView === 'user') {
+                setActiveView('split');
+              } else {
+                setActiveView(activeView === 'org' ? 'split' : 'org');
+              }
             }} 
           />
         </Box>
