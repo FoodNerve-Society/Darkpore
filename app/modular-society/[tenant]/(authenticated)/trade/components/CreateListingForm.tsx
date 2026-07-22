@@ -123,6 +123,8 @@ export default function CreateListingForm({
   const isVolunteer = initialSelections?.primary === "volunteer" || draftData?.category === "volunteer" || draftData?.compType === "volunteer";
 
   // Form State
+  const [publishModalStatus, setPublishModalStatus] = useState<'draft' | 'active' | null>(null);
+  const [modalPostingAs, setModalPostingAs] = useState<'personal' | 'organization'>(postingAs);
   const [title, setTitle] = useState("");
   const [draftLocation, setDraftLocation] = useState("");
   const [draftOrg, setDraftOrg] = useState<any>(null);
@@ -879,7 +881,7 @@ export default function CreateListingForm({
       );
   }
 
-  const handleSubmit = async (status: 'draft' | 'active') => {
+  const handlePreSubmit = (status: 'draft' | 'active') => {
     setError(null);
     setSuccessMsg(null);
 
@@ -909,6 +911,19 @@ export default function CreateListingForm({
         }
     }
 
+        // Set defaults for the modal depending on existing form data
+    if (isMyOrg || isFoodNerve || isExternal) {
+       setModalPostingAs('organization');
+    } else {
+       setModalPostingAs('personal');
+    }
+    
+    setPublishModalStatus(status);
+  };
+
+  const handleFinalSubmit = async () => {
+    if (!publishModalStatus) return;
+    const status = publishModalStatus;
     setIsSubmitting(true);
     
     // Upload Logo if a local file was selected
@@ -936,40 +951,36 @@ export default function CreateListingForm({
       if (selectedCity) locationString = `${selectedCity.name}, ${locationString}`;
     }
 
-    // Determine the organizationId
+    // Determine the organizationId based on the modal selection
     let organizationId = selectedEntityId;
-    if (isMyOrg || isFoodNerve) {
-        organizationId = selectedEntityId; // User selected an org from dropdown
-    } else if (isExternal) {
-        organizationId = null; // We will handle creating external org in the server action if organizationId is not passed, but we pass metadata
+    let finalIsExternal = isExternal;
+    
+    if (modalPostingAs === 'personal') {
+        organizationId = null;
+        finalIsExternal = false;
+    } else {
+        if (isMyOrg || isFoodNerve) {
+            organizationId = selectedEntityId; // User selected an org from dropdown
+        } else if (isExternal) {
+            organizationId = null; // We will handle creating external org in the server action if organizationId is not passed, but we pass metadata
+        } else if (activeOrg?.id) {
+            // Default to active org if they switched from personal to org in the modal but hadn't set one up
+            organizationId = activeOrg.id;
+        }
     }
 
     const metadata = {
-      sector: sector?.replace('  ↳ ', '') || '',
-      jobFunction,
-      compType: compTypeString,
-      useEscrow,
-      duration,
-      currency,
-      minSalary: minSalary ? parseFloat(minSalary) : undefined,
-      maxSalary: maxSalary ? parseFloat(maxSalary) : undefined,
-      startDate,
-      endDate,
-      npAmount: npAmount ? parseInt(npAmount) : undefined,
-      commitment: primarySelection,
-      workModel: secondarySelection,
-      hiringEntity: tertiary,
       // External organization data
-      isExternal,
-      externalEntityName: isExternal ? externalEntityName : undefined,
-      externalEntityId: (isExternal && externalEntityId) ? externalEntityId : undefined,
-      externalEntityShortName: isExternal ? externalEntityShortName : undefined,
-      externalCountry: isExternal ? (externalCountry?.name || fastIngestData?.organizationCountry) : undefined,
-      externalState: isExternal ? (externalState?.name || fastIngestData?.organizationState) : undefined,
-      externalLga: isExternal ? (externalLga?.name || fastIngestData?.organizationLga) : undefined,
-      externalEntityLogoUrl: isExternal ? finalLogoUrl : undefined,
-      organizationChallenges: isExternal ? orgChallenges.map(c => c.id) : undefined,
-      organizationSubcategories: isExternal ? orgSubcategories.map(s => s.id) : undefined,
+      isExternal: finalIsExternal,
+      externalEntityName: finalIsExternal ? externalEntityName : undefined,
+      externalEntityId: (finalIsExternal && externalEntityId) ? externalEntityId : undefined,
+      externalEntityShortName: finalIsExternal ? externalEntityShortName : undefined,
+      externalCountry: finalIsExternal ? (externalCountry?.name || fastIngestData?.organizationCountry) : undefined,
+      externalState: finalIsExternal ? (externalState?.name || fastIngestData?.organizationState) : undefined,
+      externalLga: finalIsExternal ? (externalLga?.name || fastIngestData?.organizationLga) : undefined,
+      externalEntityLogoUrl: finalIsExternal ? finalLogoUrl : undefined,
+      organizationChallenges: finalIsExternal ? orgChallenges.map(c => c.id) : undefined,
+      organizationSubcategories: finalIsExternal ? orgSubcategories.map(s => s.id) : undefined,
       jobChallenges: jobChallenges.map(c => c.id),
       jobSubcategories: jobSubcategories.map(s => s.id),
       // CTA Setup
@@ -1929,7 +1940,7 @@ export default function CreateListingForm({
             Preview
           </Button>
           <Button
-            onClick={() => handleSubmit('draft')}
+            onClick={() => handlePreSubmit('draft')}
             disabled={isSubmitting}
             sx={{
               bgcolor: 'rgba(245, 158, 11, 0.1)',
@@ -1947,7 +1958,7 @@ export default function CreateListingForm({
           </Button>
           <Button 
             variant="contained" 
-            onClick={() => handleSubmit('active')} 
+            onClick={() => handlePreSubmit('active')} 
             disabled={isSubmitting} 
             sx={{ 
               bgcolor: EMERALD, 
@@ -2068,6 +2079,85 @@ export default function CreateListingForm({
           </Box>
         </Box>
       )}
+
+      {/* Confirmation Modal */}
+      <Modal open={!!publishModalStatus} onClose={() => !isSubmitting && setPublishModalStatus(null)}>
+        <Box sx={{
+          position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+          width: { xs: '90%', sm: 400 }, bgcolor: '#fff', borderRadius: '24px', boxShadow: 24, p: 4,
+          display: 'flex', flexDirection: 'column', gap: 3
+        }}>
+          <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>
+            Confirm Submission
+          </Typography>
+          
+          <Box>
+            <Typography sx={{ color: '#64748b', fontSize: '0.9rem', mb: 1 }}>
+              You are about to {publishModalStatus === 'draft' ? 'save a draft' : 'publish this listing'}.
+            </Typography>
+            <Typography sx={{ color: '#0f172a', fontWeight: 600, fontSize: '0.95rem' }}>
+              Who are you posting this as?
+            </Typography>
+          </Box>
+
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box 
+              onClick={() => setModalPostingAs('personal')}
+              sx={{ 
+                flex: 1, p: 2, borderRadius: '16px', border: '2px solid', 
+                borderColor: modalPostingAs === 'personal' ? EMERALD : 'rgba(0,0,0,0.08)',
+                bgcolor: modalPostingAs === 'personal' ? alpha(EMERALD, 0.05) : 'transparent',
+                cursor: 'pointer', textAlign: 'center', transition: 'all 0.2s'
+              }}
+            >
+              <Typography sx={{ fontWeight: 700, color: modalPostingAs === 'personal' ? EMERALD : '#64748b' }}>Myself</Typography>
+              <Typography sx={{ fontSize: '0.75rem', color: '#94a3b8' }}>{profile?.name || 'Personal Account'}</Typography>
+            </Box>
+            <Box 
+              onClick={() => {
+                if (activeOrg || isExternal || isFoodNerve || isMyOrg) {
+                  setModalPostingAs('organization');
+                } else {
+                  alert("You must be part of an organization to select this.");
+                }
+              }}
+              sx={{ 
+                flex: 1, p: 2, borderRadius: '16px', border: '2px solid', 
+                borderColor: modalPostingAs === 'organization' ? EMERALD : 'rgba(0,0,0,0.08)',
+                bgcolor: modalPostingAs === 'organization' ? alpha(EMERALD, 0.05) : 'transparent',
+                cursor: 'pointer', textAlign: 'center', transition: 'all 0.2s',
+                opacity: (activeOrg || isExternal || isFoodNerve || isMyOrg) ? 1 : 0.5
+              }}
+            >
+              <Typography sx={{ fontWeight: 700, color: modalPostingAs === 'organization' ? EMERALD : '#64748b' }}>Organization</Typography>
+              <Typography sx={{ fontSize: '0.75rem', color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {activeOrg?.name || externalEntityName || 'Entity'}
+              </Typography>
+            </Box>
+          </Box>
+
+          <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+            <Button 
+              variant="outlined" 
+              fullWidth 
+              onClick={() => setPublishModalStatus(null)}
+              disabled={isSubmitting}
+              sx={{ borderRadius: '12px', fontWeight: 700, py: 1.5, borderColor: '#cbd5e1', color: '#475569' }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="contained" 
+              fullWidth 
+              onClick={handleFinalSubmit}
+              disabled={isSubmitting}
+              sx={{ borderRadius: '12px', fontWeight: 700, py: 1.5, bgcolor: EMERALD, color: '#fff', '&:hover': { bgcolor: EMERALD_DARK } }}
+            >
+              {isSubmitting ? 'Processing...' : (publishModalStatus === 'draft' ? 'Save Draft' : 'Publish')}
+            </Button>
+          </Box>
+        </Box>
+      </Modal>
 
     </Box>
   );
