@@ -803,8 +803,92 @@ export default function ListingStudioDashboard({
           );
         })}
       </Box>
+      {/* ================================================================ */}
+      {/* 3. BOTTOM SIDE-BY-SIDE GRID: DRAFTS & GOVERNANCE QUEUE           */}
+      {/* ================================================================ */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' }, gap: 4, alignItems: 'start', mt: 4 }}>
+        {/* LEFT COLUMN: YOUR ACTIVE DRAFTS */}
+        <Box>
+          <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', mb: 2, letterSpacing: '0.05em' }}>
+            Your Personal Drafts
+          </Typography>
 
+          {drafts.length === 0 ? (
+            <Box sx={{ 
+              p: 3, borderRadius: '20px', border: '2px dashed rgba(0,0,0,0.06)', 
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              bgcolor: 'rgba(255,255,255,0.4)', backdropFilter: 'blur(10px)', minHeight: 140
+            }}>
+              <Typography sx={{ fontWeight: 700, color: '#94a3b8', mb: 0.5, fontSize: '0.9rem' }}>No active personal drafts</Typography>
+              <Typography variant="body2" sx={{ color: '#cbd5e1', fontSize: '0.78rem' }}>Select a format above to start a new listing.</Typography>
+            </Box>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {drafts.map((draft) => {
+                const opt = LISTING_OPTIONS.find(o => o.type === draft.category) || LISTING_OPTIONS[0];
+                return (
+                  <Paper key={draft.id} elevation={0} sx={{
+                    p: 2.5, borderRadius: '20px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+                    background: 'linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.4) 100%)',
+                    backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.8)',
+                    boxShadow: '0 4px 24px rgba(0,0,0,0.03)',
+                    transition: 'transform 0.2s, box-shadow 0.2s',
+                    '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 8px 32px rgba(0,0,0,0.06)' },
+                    flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 2, sm: 0 }
+                  }}>
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', width: '100%' }}>
+                      <Box sx={{ 
+                        width: 44, height: 44, borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: opt.grad, color: '#fff', flexShrink: 0, boxShadow: `0 4px 12px ${alpha(opt.color, 0.3)}`
+                      }}>
+                        {opt.icon}
+                      </Box>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                          <Chip label={opt.title} size="small" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 800, bgcolor: alpha(opt.color, 0.1), color: opt.color }} />
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#FF416C', animation: 'pulseGlow 2s infinite' }} />
+                            <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, color: '#FF416C', letterSpacing: '0.05em' }}>IN PROGRESS</Typography>
+                          </Box>
+                        </Box>
+                        <Typography sx={{ fontWeight: 800, color: '#1e293b', fontSize: '0.98rem', lineHeight: 1.3, mb: 0.5, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                          {draft.title || 'Untitled Listing'}
+                        </Typography>
+                        <Typography sx={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600 }}>
+                          Last edited {draft.lastEdited || 'recently'}
+                        </Typography>
+                      </Box>
 
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, alignSelf: { xs: 'flex-end', sm: 'center' } }}>
+                        <IconButton onClick={() => onDeleteDraft(draft.id)} sx={{ color: '#ef4444', bgcolor: 'rgba(239, 68, 68, 0.05)', '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.1)' } }}>
+                          <DeleteOutlineIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
+                        <Button
+                          variant="contained"
+                          onClick={() => onEditDraft(draft.id)}
+                          endIcon={<ArrowForwardArrow />}
+                          sx={{
+                            bgcolor: '#1e293b', color: '#fff', borderRadius: '12px', fontWeight: 700, px: 2, py: 0.8, fontSize: '0.8rem', textTransform: 'none',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                            '&:hover': { bgcolor: '#0f172a' }
+                          }}
+                        >
+                          Resume
+                        </Button>
+                      </Box>
+                    </Box>
+                  </Paper>
+                );
+              })}
+            </Box>
+          )}
+        </Box>
+
+        {/* RIGHT COLUMN: ORGANIZATION SUBMISSIONS & GOVERNANCE QUEUE */}
+        <Box>
+          <OrgListingsStudioGovernance onEditDraft={onEditDraft} />
+        </Box>
+      </Box>
 
     </Box>
   );
