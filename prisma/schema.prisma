@@ -98,6 +98,10 @@ model Organization {
   members        OrganizationMember[]
   communityGroup CommunityGroup?
   tradeListings  TradeListing[]
+  learnContent   LearnContent[]
+  meetEvents     MeetEvent[]
+  campaigns      Campaign[]
+  wikiDocs       OmniWikiDoc[]
 }
 
 model OrganizationMember {
@@ -193,6 +197,9 @@ model Campaign {
   organizerId String
   organizer   User   @relation(fields: [organizerId], references: [id], onDelete: Cascade)
 
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
   initiativeId String?          @unique
   pitch        InitiativePitch? @relation(fields: [initiativeId], references: [id], onDelete: SetNull)
 }
@@ -218,17 +225,23 @@ model MeetEvent {
   maxAttendees  Int
   hostName      String
   hostAvatarUrl String?
+  hostUserId    String?
   description   String
   imageUrl      String?
   isVirtual     Boolean  @default(false)
+  status        String   @default("published") // 'published' | 'pending_org_review' | 'rejected'
   createdAt     DateTime @default(now())
+
+  // Relations
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
 }
 
 model LearnContent {
   id              String   @id @default(cuid())
   slug            String   @unique @default(cuid())
   type            String   @default("article") // 'livestream' | 'class' | 'video' | 'article' | 'report'
-  status          String   @default("published") // 'draft' | 'published' | 'archived'
+  status          String   @default("published") // 'draft' | 'published' | 'archived' | 'pending_org_review' | 'rejected'
   bottleneckTags  String   @default("[]") // JSON array of challenge tags (e.g. '["post-harvest-loss", "cold-chain"]')
   category        String?
   subcategory     String?
@@ -250,6 +263,9 @@ model LearnContent {
   updatedAt       DateTime @default(now()) @updatedAt
 
   // Relations
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
   article    LearnArticle?
   video      LearnVideo?
   class      LearnClass?
@@ -257,6 +273,7 @@ model LearnContent {
   report     LearnReport?
 
   @@index([authorId, status])
+  @@index([organizationId, status])
   @@index([type, status])
   @@index([targetDate])
 }
@@ -661,6 +678,7 @@ model OmniWikiDoc {
   slug         String   @unique
   title        String
   category     String
+  status       String   @default("published") // 'published' | 'pending_org_review' | 'rejected' | 'draft'
   
   // Document-Level Access Control
   isPublic     Boolean  @default(false)
@@ -675,16 +693,19 @@ model OmniWikiDoc {
   hotspotId    String?  @unique
   tags         String   @default("[]") // JSON stringified array of tags
   authorId     String
+  organizationId String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  author       User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  author       User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   parent       OmniWikiDoc?  @relation("WikiHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
   children     OmniWikiDoc[] @relation("WikiHierarchy")
   
   userStates   UserWikiState[]
 
   @@index([category])
+  @@index([organizationId])
 }
 
 model UserWikiState {

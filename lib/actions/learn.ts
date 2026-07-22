@@ -21,6 +21,7 @@ export type CreateLearnContentPayload = {
   authorId?: string;
   authorName?: string;
   authorAvatarUrl?: string;
+  organizationId?: string | null;
   // Specific fields depending on type:
   articleBlocks?: ArticleBlockPayload[];
   videoUrl?: string;
@@ -35,6 +36,12 @@ export type CreateLearnContentPayload = {
 
 export async function createLearnContent(data: CreateLearnContentPayload, isDraft = false) {
   let finalSlug = data.slug.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+
+  let targetStatus = isDraft ? 'draft' : 'published';
+  if (!isDraft && data.organizationId && data.authorId) {
+    const { determineInitialContentStatus } = await import('./org-approval');
+    targetStatus = await determineInitialContentStatus(data.authorId, data.organizationId);
+  }
   
   // 1. Uniqueness check loop (only if new)
   if (!data.id) {
@@ -66,7 +73,7 @@ export async function createLearnContent(data: CreateLearnContentPayload, isDraf
           title: data.title,
           description: data.description,
           type: data.type,
-          status: isDraft ? 'draft' : 'published',
+          status: targetStatus,
           bottleneckTags: JSON.stringify(data.bottleneckTags),
           category: data.category || null,
           subcategory: data.subcategory || null,
@@ -75,6 +82,7 @@ export async function createLearnContent(data: CreateLearnContentPayload, isDraf
           authorId: data.authorId,
           authorName: data.authorName,
           authorAvatarUrl: data.authorAvatarUrl,
+          organizationId: data.organizationId || null,
         },
       });
     } else {
@@ -84,7 +92,7 @@ export async function createLearnContent(data: CreateLearnContentPayload, isDraf
           description: data.description,
           slug: finalSlug,
           type: data.type,
-          status: isDraft ? 'draft' : 'published',
+          status: targetStatus,
           bottleneckTags: JSON.stringify(data.bottleneckTags),
           category: data.category || null,
           subcategory: data.subcategory || null,
@@ -93,6 +101,7 @@ export async function createLearnContent(data: CreateLearnContentPayload, isDraf
           authorId: data.authorId,
           authorName: data.authorName,
           authorAvatarUrl: data.authorAvatarUrl,
+          organizationId: data.organizationId || null,
         },
       });
     }

@@ -124,6 +124,15 @@ export async function createTradeListing(data: CreateTradeListingPayload) {
     }
 
 
+    let initialStatus = data.status || 'draft';
+    if (!isDraft && finalOrganizationId && data.postedById) {
+      const { determineInitialContentStatus } = await import('./org-approval');
+      const calculatedStatus = await determineInitialContentStatus(data.postedById, finalOrganizationId);
+      if (calculatedStatus === 'pending_org_review') {
+        initialStatus = 'pending_org_review';
+      }
+    }
+
     const listingData = {
       category: data.category || 'jobs',
       title: data.title,
@@ -135,7 +144,7 @@ export async function createTradeListing(data: CreateTradeListingPayload) {
       postedById: data.postedById,
       imageUrl: data.imageUrl,
       nervePointsCost: data.nervePointsCost || 0,
-      status: data.status || 'draft',
+      status: initialStatus,
       organizationId: finalOrganizationId,
       expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
       

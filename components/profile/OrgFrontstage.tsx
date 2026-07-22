@@ -207,7 +207,7 @@ export default function OrgFrontstage({ tenant, slug, onFlipRequest }: Props) {
         </Grid>
 
         {/* QUICK ACTIONS & HIGHLIGHTS */}
-        <Paper elevation={0} sx={{ p: { xs: 2, sm: 3 }, borderRadius: '18px', border: '1px solid #e2e8f0', bgcolor: '#fff' }}>
+        <Paper elevation={0} sx={{ p: { xs: 2, sm: 3 }, borderRadius: '18px', border: '1px solid #e2e8f0', bgcolor: '#fff', mb: 3 }}>
           <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a', mb: 1.5, fontSize: { xs: '0.95rem', md: '1.1rem' }, display: 'flex', alignItems: 'center', gap: 1 }}>
             <DynamicFeedIcon sx={{ color: '#3b82f6', fontSize: { xs: 20, md: 24 } }} /> Executive Frontstage Overview
           </Typography>
@@ -235,7 +235,177 @@ export default function OrgFrontstage({ tenant, slug, onFlipRequest }: Props) {
             </Button>
           </Box>
         </Paper>
+
+        {/* ORGANIZATIONAL GOVERNANCE & APPROVAL QUEUE */}
+        <PendingApprovalSection organizationId={activeOrg?.id} userRole={role} userId={profile?.uid} />
       </Box>
     </Paper>
   );
 }
+
+function PendingApprovalSection({ organizationId, userRole, userId }: { organizationId?: string; userRole: string; userId?: string }) {
+  const [pendingItems, setPendingItems] = React.useState<any[]>([]);
+  const [userSubmissions, setUserSubmissions] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const isAdminOrOwner = userRole === 'owner' || userRole === 'admin';
+
+  const loadItems = React.useCallback(async () => {
+    if (!organizationId) return;
+    setLoading(true);
+    try {
+      const { getPendingOrgContent, getOrgSubmissionsForUser } = await import('@/lib/actions/org-approval');
+      if (isAdminOrOwner) {
+        const items = await getPendingOrgContent(organizationId);
+        setPendingItems(items);
+      }
+      if (userId) {
+        const submissions = await getOrgSubmissionsForUser(userId, organizationId);
+        setUserSubmissions(submissions);
+      }
+    } catch (err) {
+      console.error('Failed loading governance items:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [organizationId, isAdminOrOwner, userId]);
+
+  React.useEffect(() => {
+    loadItems();
+  }, [loadItems]);
+
+  const handleApprove = async (id: string, type: any) => {
+    const { approveOrgContent } = await import('@/lib/actions/org-approval');
+    await approveOrgContent(id, type, userId || '');
+    loadItems();
+  };
+
+  const handleReject = async (id: string, type: any) => {
+    const { rejectOrgContent } = await import('@/lib/actions/org-approval');
+    await rejectOrgContent(id, type, userId || '');
+    loadItems();
+  };
+
+  if (!organizationId) return null;
+
+  return (
+    <Box sx={{ mt: 1 }}>
+      {/* ADMIN APPROVAL QUEUE */}
+      {isAdminOrOwner && (
+        <Paper elevation={0} sx={{ p: { xs: 2, sm: 3 }, borderRadius: '18px', border: '1px solid #e2e8f0', bgcolor: '#fff', mb: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+            <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a', fontSize: { xs: '0.95rem', md: '1.1rem' }, display: 'flex', alignItems: 'center', gap: 1 }}>
+              🛡️ Pending Org Approvals
+            </Typography>
+            <Chip
+              label={`${pendingItems.length} Pending`}
+              size="small"
+              color={pendingItems.length > 0 ? 'warning' : 'default'}
+              sx={{ fontWeight: 700, borderRadius: '8px' }}
+            />
+          </Box>
+
+          {loading ? (
+            <Typography sx={{ color: '#94a3b8', fontSize: '0.85rem' }}>Loading pending approvals...</Typography>
+          ) : pendingItems.length === 0 ? (
+            <Box sx={{ p: 2.5, textAlign: 'center', bgcolor: '#f8fafc', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
+              <Typography sx={{ color: '#64748b', fontSize: '0.85rem', fontWeight: 600 }}>
+                ✅ All clear! No pending submissions requiring your review.
+              </Typography>
+            </Box>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              {pendingItems.map((item) => (
+                <Paper key={item.id} elevation={0} sx={{ p: 2, borderRadius: '12px', border: '1px solid #f1f5f9', bgcolor: '#f8fafc', display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'stretch', sm: 'center' }, justifyContent: 'space-between', gap: 1.5 }}>
+                  <Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                      <Chip label={item.type.toUpperCase()} size="small" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 800, bgcolor: '#e2e8f0', color: '#334155' }} />
+                      <Typography sx={{ fontWeight: 800, color: '#0f172a', fontSize: '0.9rem' }}>{item.title}</Typography>
+                    </Box>
+                    <Typography sx={{ fontSize: '0.75rem', color: '#64748b' }}>
+                      Submitted by <strong>{item.authorName}</strong> on {new Date(item.createdAt).toLocaleDateString()}
+                    </Typography>
+                  </Box>
+
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={() => handleApprove(item.id, item.type)}
+                      sx={{ bgcolor: '#10b981', color: '#fff', borderRadius: '8px', fontWeight: 700, textTransform: 'none', px: 2, '&:hover': { bgcolor: '#059669' } }}
+                    >
+                      Approve
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      color="error"
+                      onClick={() => handleReject(item.id, item.type)}
+                      sx={{ borderRadius: '8px', fontWeight: 700, textTransform: 'none', px: 2 }}
+                    >
+                      Reject
+                    </Button>
+                  </Box>
+                </Paper>
+              ))}
+            </Box>
+          )}
+        </Paper>
+      )}
+
+      {/* MY ORG SUBMISSIONS (FOR EMPLOYEE/ALL USERS) */}
+      <Paper elevation={0} sx={{ p: { xs: 2, sm: 3 }, borderRadius: '18px', border: '1px solid #e2e8f0', bgcolor: '#fff' }}>
+        <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a', mb: 2, fontSize: { xs: '0.95rem', md: '1.1rem' }, display: 'flex', alignItems: 'center', gap: 1 }}>
+          📋 My Organization Submissions
+        </Typography>
+
+        {loading ? (
+          <Typography sx={{ color: '#94a3b8', fontSize: '0.85rem' }}>Loading submissions...</Typography>
+        ) : userSubmissions.length === 0 ? (
+          <Box sx={{ p: 2.5, textAlign: 'center', bgcolor: '#f8fafc', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
+            <Typography sx={{ color: '#64748b', fontSize: '0.85rem', fontWeight: 500 }}>
+              You haven't submitted any content under this organization yet.
+            </Typography>
+          </Box>
+        ) : (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            {userSubmissions.map((sub) => (
+              <Paper key={sub.id} elevation={0} sx={{ p: 2, borderRadius: '12px', border: '1px solid #f1f5f9', bgcolor: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                    <Chip label={sub.type.toUpperCase()} size="small" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 800, bgcolor: '#e2e8f0' }} />
+                    <Typography sx={{ fontWeight: 700, color: '#0f172a', fontSize: '0.88rem' }}>{sub.title}</Typography>
+                  </Box>
+                  <Typography sx={{ fontSize: '0.72rem', color: '#64748b' }}>
+                    Submitted {new Date(sub.createdAt).toLocaleDateString()}
+                  </Typography>
+                </Box>
+
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  {sub.status === 'pending_org_review' && (
+                    <Chip label="Pending Review" size="small" sx={{ bgcolor: '#fef3c7', color: '#d97706', fontWeight: 700, borderRadius: '8px' }} />
+                  )}
+                  {sub.status === 'published' && (
+                    <Chip label="Published" size="small" sx={{ bgcolor: '#d1fae5', color: '#059669', fontWeight: 700, borderRadius: '8px' }} />
+                  )}
+                  {sub.status === 'rejected' && (
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      color="error"
+                      component="a"
+                      href={sub.editUrl}
+                      sx={{ borderRadius: '8px', fontWeight: 700, textTransform: 'none', fontSize: '0.75rem' }}
+                    >
+                      Rejected — Edit in Studio ✏️
+                    </Button>
+                  )}
+                </Box>
+              </Paper>
+            ))}
+          </Box>
+        )}
+      </Paper>
+    </Box>
+  );
+}
+
