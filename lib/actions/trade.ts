@@ -399,3 +399,112 @@ export async function searchExternalOrganizations(query: string, userId?: string
     return [];
   }
 }
+
+/**
+ * Fetches organization trade listings for governance and approval management in the Trade Studio.
+ */
+export async function getOrgTradeListings(organizationId: string, userId?: string) {
+  try {
+    const listings = await prisma.tradeListing.findMany({
+      where: {
+        organizationId,
+        status: { in: ['pending_org_review', 'rejected', 'active', 'draft'] }
+      },
+      include: {
+        postedBy: {
+          select: { id: true, name: true, avatarUrl: true, email: true }
+        },
+        organization: {
+          select: { id: true, name: true, logoUrl: true, verified: true }
+        }
+      },
+      orderBy: { postedAt: 'desc' }
+    });
+
+    const pending = listings.filter(l => l.status === 'pending_org_review');
+    const rejected = listings.filter(l => l.status === 'rejected');
+    const active = listings.filter(l => l.status === 'active');
+    const drafts = listings.filter(l => l.status === 'draft');
+
+    return {
+      success: true,
+      pending,
+      rejected,
+      active,
+      drafts,
+      all: listings
+    };
+  } catch (error: any) {
+    console.error('Failed to fetch org trade listings:', error);
+    return { success: false, error: error?.message || 'Failed to fetch org trade listings.' };
+  }
+}
+
+/**
+ * Culls back / revokes an active organization listing, setting status back to 'rejected' or 'pending_org_review'.
+ */
+export async function cullBackTradeListing(listingId: string, userId: string, targetStatus: 'rejected' | 'pending_org_review' = 'rejected') {
+  try {
+    const listing = await prisma.tradeListing.findUnique({
+      where: { id: listingId },
+      include: { organization: true }
+    });
+
+    if (!listing) return { success: false, error: 'Listing not found.' };
+
+    // Verify user permission (Admin/Owner of org OR original author)
+    if (listing.organizationId) {
+      const membership = await prisma.organizationMember.findUnique({
+        where: {
+          userId_organizationId: {
+            userId,
+            organizationId: listing.organizationId
+          }
+        }
+      });
+
+      const isOrgAdmin = membership?.role === 'owner' || membership?.role === 'admin';
+      const isAuthor = listing.postedById === userId;
+
+      if (!isOrgAdmin && !isAuthor) {
+        return { success: false, error: 'Unauthorized to cull back this listing.' };
+      }
+    }
+
+    const updated = await prisma.tradeListing.update({
+      where: { id: listingId },
+      data: { status: targetStatus }
+    });
+
+    return { success: true, listing: updated };
+  } catch (error: any) {
+    console.error('Failed to cull back listing:', error);
+    return { success: false, error: error?.message || 'Failed to cull back listing.' };
+  }
+}
+
+/**
+ * Fetches a single trade listing by ID for form editing/hydration.
+ */
+export async function getTradeListingById(listingId: string) {
+  try {
+    const listing = await prisma.tradeListing.findUnique({
+      where: { id: listingId },
+      include: {
+        organization: true,
+        postedBy: {
+          select: { id: true, name: true, avatarUrl: true, email: true }
+        }
+      }
+    });
+
+    if (!listing) return { success: false, error: 'Listing not found.' };
+
+    return { success: true, listing };
+  } catch (error: any) {
+    console.error('Failed to fetch listing by ID:', error);
+    return { success: false, error: error?.message || 'Failed to fetch listing.' };
+  }
+}
+
+
