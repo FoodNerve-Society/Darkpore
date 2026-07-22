@@ -833,9 +833,14 @@ export default function ListingStudioDashboard({
       </Box>
 
       {/* ================================================================ */}
+      {/* ORGANIZATION LISTINGS & GOVERNANCE SECTION                     */}
+      {/* ================================================================ */}
+      <OrgListingsStudioGovernance onEditDraft={onEditDraft} />
+
+      {/* ================================================================ */}
       {/* YOUR DRAFTS SECTION                                              */}
       {/* ================================================================ */}
-      <Box sx={{ mt: 2 }}>
+      <Box sx={{ mt: 4 }}>
         <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', mb: 2, letterSpacing: '0.05em' }}>
           Your Drafts
         </Typography>
@@ -914,3 +919,178 @@ export default function ListingStudioDashboard({
     </Box>
   );
 }
+
+function OrgListingsStudioGovernance({ onEditDraft }: { onEditDraft: (id: string) => void }) {
+  const { profile, activeOrg } = useSociety();
+  const [orgData, setOrgData] = React.useState<{ pending: any[]; rejected: any[]; active: any[]; drafts: any[] }>({
+    pending: [],
+    rejected: [],
+    active: [],
+    drafts: []
+  });
+  const [loading, setLoading] = React.useState(false);
+  const [activeTab, setActiveTab] = React.useState<'pending' | 'active' | 'rejected'>('pending');
+
+  const isOrgMember = Boolean(activeOrg?.id);
+  const isOrgAdmin = activeOrg?.role === 'owner' || activeOrg?.role === 'admin';
+
+  const loadOrgListings = React.useCallback(async () => {
+    if (!activeOrg?.id) return;
+    setLoading(true);
+    try {
+      const { getOrgTradeListings } = await import('@/lib/actions/trade');
+      const res = await getOrgTradeListings(activeOrg.id, profile?.uid);
+      if (res.success) {
+        setOrgData({
+          pending: res.pending || [],
+          rejected: res.rejected || [],
+          active: res.active || [],
+          drafts: res.drafts || []
+        });
+      }
+    } catch (err) {
+      console.error('Failed loading org studio listings:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [activeOrg?.id, profile?.uid]);
+
+  React.useEffect(() => {
+    loadOrgListings();
+  }, [loadOrgListings]);
+
+  const handleApprove = async (listingId: string) => {
+    const { approveOrgContent } = await import('@/lib/actions/org-approval');
+    await approveOrgContent(listingId, 'trade', profile?.uid || '');
+    loadOrgListings();
+  };
+
+  const handleReject = async (listingId: string) => {
+    const { rejectOrgContent } = await import('@/lib/actions/org-approval');
+    await rejectOrgContent(listingId, 'trade', profile?.uid || '');
+    loadOrgListings();
+  };
+
+  const handleCullBack = async (listingId: string) => {
+    const { cullBackTradeListing } = await import('@/lib/actions/trade');
+    await cullBackTradeListing(listingId, profile?.uid || '', 'rejected');
+    loadOrgListings();
+  };
+
+  if (!isOrgMember) return null;
+
+  const currentItems = activeTab === 'pending' ? orgData.pending : activeTab === 'active' ? orgData.active : orgData.rejected;
+
+  return (
+    <Box sx={{ mt: 4 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, flexWrap: 'wrap', gap: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.9rem' }}>
+            🏢 {activeOrg?.name} — Governance & Submissions
+          </Typography>
+          {activeOrg?.verified && <Chip label="Verified Org" size="small" sx={{ bgcolor: '#d1fae5', color: '#059669', fontWeight: 800, height: 20, fontSize: '0.65rem' }} />}
+        </Box>
+
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          {[
+            { id: 'pending', label: `Pending (${orgData.pending.length})`, badgeColor: '#f59e0b' },
+            { id: 'active', label: `Active (${orgData.active.length})`, badgeColor: '#10b981' },
+            { id: 'rejected', label: `Rejected (${orgData.rejected.length})`, badgeColor: '#ef4444' },
+          ].map((tab) => (
+            <Chip
+              key={tab.id}
+              label={tab.label}
+              onClick={() => setActiveTab(tab.id as any)}
+              sx={{
+                fontWeight: 800,
+                cursor: 'pointer',
+                borderRadius: '10px',
+                bgcolor: activeTab === tab.id ? tab.badgeColor : '#f1f5f9',
+                color: activeTab === tab.id ? '#fff' : '#475569',
+                '&:hover': { bgcolor: activeTab === tab.id ? tab.badgeColor : '#e2e8f0' }
+              }}
+            />
+          ))}
+        </Box>
+      </Box>
+
+      {loading ? (
+        <Typography sx={{ color: '#94a3b8', fontSize: '0.85rem' }}>Loading organization listings...</Typography>
+      ) : currentItems.length === 0 ? (
+        <Box sx={{ p: 3, textAlign: 'center', bgcolor: 'rgba(255,255,255,0.6)', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
+          <Typography sx={{ color: '#64748b', fontSize: '0.88rem', fontWeight: 600 }}>
+            {activeTab === 'pending' && '✅ No listings currently pending approval.'}
+            {activeTab === 'active' && 'No active organization listings.'}
+            {activeTab === 'rejected' && 'No rejected organization listings.'}
+          </Typography>
+        </Box>
+      ) : (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          {currentItems.map((item) => (
+            <Paper key={item.id} elevation={0} sx={{ p: 2.5, borderRadius: '16px', border: '1px solid #e2e8f0', bgcolor: '#fff', display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'stretch', sm: 'center' }, justifyContent: 'space-between', gap: 2 }}>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                  <Chip label={item.category.toUpperCase()} size="small" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 800, bgcolor: '#f1f5f9' }} />
+                  <Typography sx={{ fontWeight: 800, color: '#0f172a', fontSize: '0.98rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {item.title}
+                  </Typography>
+                </Box>
+                <Typography sx={{ fontSize: '0.78rem', color: '#64748b' }}>
+                  Posted by <strong>{item.postedBy?.name || 'Employee'}</strong> • {new Date(item.postedAt).toLocaleDateString()}
+                </Typography>
+              </Box>
+
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {activeTab === 'pending' && isOrgAdmin && (
+                  <>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={() => handleApprove(item.id)}
+                      sx={{ bgcolor: '#10b981', color: '#fff', borderRadius: '10px', fontWeight: 700, textTransform: 'none', px: 2, '&:hover': { bgcolor: '#059669' } }}
+                    >
+                      Approve Listing
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      color="error"
+                      onClick={() => handleReject(item.id)}
+                      sx={{ borderRadius: '10px', fontWeight: 700, textTransform: 'none', px: 2 }}
+                    >
+                      Reject
+                    </Button>
+                  </>
+                )}
+
+                {activeTab === 'active' && (isOrgAdmin || item.postedById === profile?.uid) && (
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    color="warning"
+                    onClick={() => handleCullBack(item.id)}
+                    sx={{ borderRadius: '10px', fontWeight: 700, textTransform: 'none', px: 2, borderColor: '#f59e0b', color: '#d97706' }}
+                  >
+                    Cull Back (Revoke) ↩️
+                  </Button>
+                )}
+
+                {activeTab === 'rejected' && (
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={() => onEditDraft(item.id)}
+                    sx={{ bgcolor: '#0f172a', color: '#fff', borderRadius: '10px', fontWeight: 700, textTransform: 'none', px: 2 }}
+                  >
+                    Edit & Resubmit ✏️
+                  </Button>
+                )}
+              </Box>
+            </Paper>
+          ))}
+        </Box>
+      )}
+    </Box>
+  );
+}
+
