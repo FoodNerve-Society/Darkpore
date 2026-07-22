@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Box, Typography, Button, Paper, Avatar } from '@mui/material';
 import FlipContainer from '@/app/modular-society/[tenant]/(authenticated)/components/shared/FlipContainer';
 import PublicOrgProfile from './PublicOrgProfile';
+import OrgFrontstage from './OrgFrontstage';
 import OrgManageBackstage from './OrgManageBackstage';
 import CreateOrgBackstage from './CreateOrgBackstage';
 import JoinOrgBackstage from './JoinOrgBackstage';
@@ -27,6 +28,8 @@ export default function OrgCommandContainer({ tenant, slug, isActive, isCollapse
   const [noOrgAction, setNoOrgAction] = useState<'join' | 'create'>('join');
   const { profile, activeOrg } = useSociety();
 
+  const currentSlug = activeOrg?.slug || slug || null;
+
   const handleManageOpen = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsFlipped(true);
@@ -42,7 +45,7 @@ export default function OrgCommandContainer({ tenant, slug, isActive, isCollapse
 
   if (isCollapsed) {
     // ─── HAS AN ORG ───
-    if (slug && activeOrg) {
+    if (activeOrg && currentSlug) {
       const orgName = activeOrg.name || slug;
       const orgRole = activeOrg.role || 'member';
       const isVerified = activeOrg.verified || false;
@@ -387,7 +390,7 @@ export default function OrgCommandContainer({ tenant, slug, isActive, isCollapse
     <FlipContainer
       isFlipped={isFlipped}
       frontContent={
-        !slug ? (
+        !currentSlug ? (
           <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: '#f8fafc', borderRadius: '24px', border: '2px dashed #cbd5e1', p: 4, textAlign: 'center' }}>
             <GroupsIcon sx={{ fontSize: 64, color: '#3b82f6', mb: 2 }} />
             <Typography variant="h4" sx={{ fontWeight: 900, color: '#0f172a', mb: 1 }}>Unlock the Power of Teams</Typography>
@@ -402,12 +405,12 @@ export default function OrgCommandContainer({ tenant, slug, isActive, isCollapse
             </Button>
           </Box>
         ) : (
-          <PublicOrgProfile slug={slug} tenant={tenant} onFlipRequest={() => setIsFlipped(true)} />
+          <OrgFrontstage slug={currentSlug} tenant={tenant} onFlipRequest={() => setIsFlipped(true)} />
         )
       }
       backContent={
         <Paper elevation={0} sx={{ height: '100%', overflowY: 'auto', bgcolor: '#ffffff', borderRadius: 4, boxShadow: { xs: '0 8px 32px rgba(0,0,0,0.06)', md: '0 10px 40px rgba(0,0,0,0.04)' }, position: 'relative' }}>
-          {!slug ? (
+          {!currentSlug ? (
             noOrgAction === 'join' 
               ? <JoinOrgBackstage onClose={() => setIsFlipped(false)} onCreateOrg={() => setNoOrgAction('create')} />
               : <CreateOrgBackstage onClose={() => setIsFlipped(false)} />
