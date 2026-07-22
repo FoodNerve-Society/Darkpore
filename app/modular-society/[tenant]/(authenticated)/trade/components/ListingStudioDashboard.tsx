@@ -304,12 +304,12 @@ export default function ListingStudioDashboard({
               <Box sx={{ position: 'relative' }}>
                 {/* Header Bar with 1-Tap Paste Button */}
                 <Box sx={{ 
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  px: 2.5, py: 1.5, 
+                  display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', gap: 1.5,
+                  px: { xs: 1.5, sm: 2.5 }, py: 1.5, 
                   borderBottom: '1px solid rgba(255,255,255,0.06)',
                   background: 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, transparent 100%)',
                 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, width: { xs: '100%', sm: 'auto' }, justifyContent: { xs: 'space-between', sm: 'flex-start' } }}>
                     <Box sx={{ display: 'flex', gap: 0.6 }}>
                       <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: parseStatus === 'invalid' ? '#ef4444' : 'rgba(255,255,255,0.15)' }} />
                       <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: parseStatus === 'valid' ? '#22c55e' : 'rgba(255,255,255,0.15)' }} />
@@ -320,7 +320,7 @@ export default function ListingStudioDashboard({
                     </Typography>
                   </Box>
 
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, width: { xs: '100%', sm: 'auto' }, overflowX: 'auto', pb: { xs: 0.5, sm: 0 }, '&::-webkit-scrollbar': { display: 'none' } }}>
                     <Button
                       size="small"
                       startIcon={<ContentPasteIcon sx={{ fontSize: 16 }} />}
@@ -373,8 +373,8 @@ export default function ListingStudioDashboard({
 
               {/* Action Bar */}
               <Box sx={{ 
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                px: 2.5, py: 1.5,
+                display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', gap: 1.5,
+                px: { xs: 1.5, sm: 2.5 }, py: 1.5,
                 borderTop: '1px solid rgba(255,255,255,0.04)',
                 background: 'rgba(0,0,0,0.2)',
               }}>
@@ -806,7 +806,16 @@ export default function ListingStudioDashboard({
       {/* ================================================================ */}
       {/* 3. BOTTOM SIDE-BY-SIDE GRID: DRAFTS & GOVERNANCE QUEUE           */}
       {/* ================================================================ */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' }, gap: 4, alignItems: 'start', mt: 4 }}>
+      <Paper elevation={0} sx={{ 
+        p: { xs: 2, sm: 3, md: 4 }, 
+        mt: 4, 
+        borderRadius: '24px', 
+        background: 'linear-gradient(145deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.2) 100%)', 
+        backdropFilter: 'blur(20px)',
+        border: '1px solid rgba(255,255,255,0.5)',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.04)'
+      }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' }, gap: 4, alignItems: 'start' }}>
         {/* LEFT COLUMN: YOUR ACTIVE DRAFTS */}
         <Box>
           <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', mb: 2, letterSpacing: '0.05em' }}>
@@ -889,6 +898,7 @@ export default function ListingStudioDashboard({
           <OrgListingsStudioGovernance onEditDraft={onEditDraft} />
         </Box>
       </Box>
+      </Paper>
 
     </Box>
   );
