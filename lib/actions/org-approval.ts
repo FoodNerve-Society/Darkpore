@@ -306,7 +306,11 @@ export async function approveOrgContent(
     if (contentType === 'trade' || contentType === 'job') {
       await prisma.tradeListing.update({
         where: { id: contentId },
+<<<<<<< HEAD
         data: { status: 'active' }, // trade listing active status
+=======
+        data: { status: 'active' },
+>>>>>>> main
       });
     } else if (contentType === 'learn') {
       await prisma.learnContent.update({
