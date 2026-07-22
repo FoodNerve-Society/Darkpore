@@ -25,9 +25,12 @@ export default function OrgSwitcherPills({
         alignItems: 'center',
         gap: 1,
         overflowX: 'auto',
-        pb: 1.5,
-        pt: 0.5,
-        px: 0.5,
+        p: 0.8,
+        bgcolor: 'rgba(15, 23, 42, 0.95)',
+        backdropFilter: 'blur(20px)',
+        borderRadius: '18px',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
         scrollbarWidth: 'none',
         '&::-webkit-scrollbar': { display: 'none' },
       }}
@@ -43,8 +46,8 @@ export default function OrgSwitcherPills({
               <Avatar
                 src={org.logoUrl || undefined}
                 sx={{
-                  width: 24,
-                  height: 24,
+                  width: 26,
+                  height: 26,
                   fontSize: 12,
                   fontWeight: 800,
                   bgcolor: isActive ? '#fff' : '#1e293b',
@@ -55,23 +58,29 @@ export default function OrgSwitcherPills({
               </Avatar>
             }
             label={
-              <Typography sx={{ fontSize: '0.75rem', fontWeight: isActive ? 800 : 600 }}>
+              <Typography sx={{ fontSize: '0.78rem', fontWeight: isActive ? 800 : 600 }}>
                 {orgName}
               </Typography>
             }
             onClick={() => onSwitch(org.id)}
             sx={{
-              height: 36,
-              px: 1,
-              borderRadius: '20px',
-              bgcolor: isActive ? '#3b82f6' : 'rgba(255, 255, 255, 0.9)',
-              color: isActive ? '#ffffff' : '#0f172a',
-              border: isActive ? '1px solid #3b82f6' : '1px solid #cbd5e1',
-              boxShadow: isActive ? '0 4px 14px rgba(59, 130, 246, 0.3)' : 'none',
+              height: 38,
+              px: 0.8,
+              borderRadius: '14px',
+              background: isActive
+                ? 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)'
+                : 'rgba(255, 255, 255, 0.06)',
+              color: '#ffffff',
+              border: isActive
+                ? '1px solid rgba(255, 255, 255, 0.3)'
+                : '1px solid rgba(255, 255, 255, 0.08)',
+              boxShadow: isActive ? '0 4px 16px rgba(59, 130, 246, 0.4)' : 'none',
               cursor: 'pointer',
-              transition: 'all 0.2s ease',
+              transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
               '&:hover': {
-                bgcolor: isActive ? '#2563eb' : '#f1f5f9',
+                background: isActive
+                  ? 'linear-gradient(135deg, #2563eb 0%, #1e40af 100%)'
+                  : 'rgba(255, 255, 255, 0.12)',
               },
             }}
           />
@@ -80,23 +89,24 @@ export default function OrgSwitcherPills({
 
       {/* JOIN / CREATE NEW ORG PILL */}
       <Chip
-        icon={<AddIcon sx={{ fontSize: '16px !important', color: '#3b82f6' }} />}
+        icon={<AddIcon sx={{ fontSize: '16px !important', color: '#10b981' }} />}
         label={
-          <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: '#3b82f6' }}>
-            Join / Create
+          <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: '#10b981' }}>
+            + Join / Create
           </Typography>
         }
         onClick={onJoinOrg}
-        variant="outlined"
         sx={{
-          height: 36,
-          px: 1,
-          borderRadius: '20px',
-          borderColor: '#3b82f6',
-          bgcolor: 'rgba(59, 130, 246, 0.08)',
+          height: 38,
+          px: 0.8,
+          borderRadius: '14px',
+          bgcolor: 'rgba(16, 185, 129, 0.12)',
+          border: '1px solid rgba(16, 185, 129, 0.3)',
+          color: '#10b981',
           cursor: 'pointer',
+          transition: 'all 0.2s ease',
           '&:hover': {
-            bgcolor: 'rgba(59, 130, 246, 0.15)',
+            bgcolor: 'rgba(16, 185, 129, 0.25)',
           },
         }}
       />

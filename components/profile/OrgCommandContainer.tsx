@@ -160,43 +160,78 @@ export default function OrgCommandContainer({ tenant, isActive, isCollapsed, onA
             </Box>
           </Box>
 
-          {/* ─── MOBILE STRIP VIEW (ACTIVE ORG AVATAR + BADGE) ─── */}
+          {/* ─── MOBILE DETAILED STRIP CARD ─── */}
           <Box
             onClick={onActivate}
             sx={{
               display: { xs: 'flex', md: 'none' },
               height: '100%',
+              width: '100%',
               alignItems: 'center',
-              justifyContent: 'center',
+              justifyContent: 'space-between',
+              bgcolor: 'rgba(255, 255, 255, 0.05)',
+              backdropFilter: 'blur(16px)',
+              borderRadius: '16px',
+              border: '1px solid rgba(59, 130, 246, 0.4)',
+              px: 1.5,
+              py: 1,
               cursor: 'pointer',
             }}
           >
-            <Badge
-              badgeContent={organizations.length > 1 ? `+${organizations.length - 1}` : 0}
-              color="primary"
-              sx={{
-                '& .MuiBadge-badge': {
-                  bgcolor: '#3b82f6',
-                  color: '#fff',
-                  fontWeight: 800,
-                  fontSize: '0.65rem',
-                },
-              }}
-            >
-              <Avatar
-                src={currentActiveOrg?.logoUrl || undefined}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, minWidth: 0, flex: 1 }}>
+              <Badge
+                badgeContent={organizations.length > 1 ? `+${organizations.length - 1}` : 0}
+                color="primary"
                 sx={{
-                  width: 38,
-                  height: 38,
-                  bgcolor: '#1e3a5f',
-                  fontSize: 14,
-                  fontWeight: 800,
-                  border: '2px solid #3b82f6',
+                  '& .MuiBadge-badge': {
+                    bgcolor: '#3b82f6',
+                    color: '#fff',
+                    fontWeight: 800,
+                    fontSize: '0.6rem',
+                  },
                 }}
               >
-                {(currentActiveOrg?.name || 'O').charAt(0).toUpperCase()}
-              </Avatar>
-            </Badge>
+                <Avatar
+                  src={currentActiveOrg?.logoUrl || undefined}
+                  sx={{
+                    width: 36,
+                    height: 36,
+                    bgcolor: '#1e3a5f',
+                    fontSize: 14,
+                    fontWeight: 800,
+                    border: '2px solid #3b82f6',
+                    flexShrink: 0,
+                  }}
+                >
+                  {(currentActiveOrg?.name || 'O').charAt(0).toUpperCase()}
+                </Avatar>
+              </Badge>
+
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <Typography
+                    sx={{
+                      fontWeight: 800,
+                      fontSize: '0.82rem',
+                      color: '#f8fafc',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {currentActiveOrg?.name || 'Organization'}
+                  </Typography>
+                  {currentActiveOrg?.verified && (
+                    <Typography sx={{ fontSize: '0.65rem', color: '#10b981', fontWeight: 800 }}>✓</Typography>
+                  )}
+                </Box>
+                <Typography sx={{ fontSize: '0.68rem', color: '#94a3b8', textTransform: 'capitalize', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {currentActiveOrg?.role || 'Member'} • {currentActiveOrg?.department || 'General'}
+                </Typography>
+              </Box>
+            </Box>
+
+            <Typography sx={{ fontSize: '0.85rem', color: '#3b82f6', fontWeight: 800, ml: 1 }}>→</Typography>
           </Box>
         </Box>
       );
