@@ -928,7 +928,7 @@ export default function CreateListingForm({
     
     // Upload Logo if a local file was selected
     let finalLogoUrl = "";
-    if (isExternal && externalEntityLogoFile) {
+    if (finalIsExternal && externalEntityLogoFile) {
         const result = await uploadFile(externalEntityLogoFile);
         if (result?.publicUrl || result?.secure_url) {
             finalLogoUrl = result.publicUrl || result.secure_url;
@@ -2084,34 +2084,62 @@ export default function CreateListingForm({
       <Modal open={!!publishModalStatus} onClose={() => !isSubmitting && setPublishModalStatus(null)}>
         <Box sx={{
           position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-          width: { xs: '90%', sm: 400 }, bgcolor: '#fff', borderRadius: '24px', boxShadow: 24, p: 4,
-          display: 'flex', flexDirection: 'column', gap: 3
+          width: { xs: '90%', sm: 440 }, 
+          bgcolor: 'rgba(255, 255, 255, 0.75)', 
+          backdropFilter: 'blur(32px) saturate(1.4)',
+          WebkitBackdropFilter: 'blur(32px) saturate(1.4)',
+          borderRadius: '28px', 
+          boxShadow: '0 40px 80px -16px rgba(0,0,0,0.15), 0 0 0 1px rgba(255,255,255,0.4) inset, 0 4px 12px rgba(255,255,255,0.2) inset', 
+          p: 4,
+          display: 'flex', flexDirection: 'column', gap: 3.5,
+          outline: 'none'
         }}>
-          <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>
-            Confirm Submission
-          </Typography>
           
-          <Box>
-            <Typography sx={{ color: '#64748b', fontSize: '0.9rem', mb: 1 }}>
-              You are about to {publishModalStatus === 'draft' ? 'save a draft' : 'publish this listing'}.
+          {/* Header */}
+          <Box sx={{ textAlign: 'center', mb: 1 }}>
+            <Box sx={{ 
+              width: 56, height: 56, borderRadius: '20px', 
+              background: `linear-gradient(135deg, ${alpha(EMERALD, 0.15)} 0%, ${alpha(EMERALD, 0.05)} 100%)`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto', mb: 2,
+              boxShadow: `0 8px 16px ${alpha(EMERALD, 0.1)}, 0 0 0 1px ${alpha(EMERALD, 0.1)} inset`
+            }}>
+              <Box sx={{ 
+                width: 24, height: 24, borderRadius: '50%', 
+                bgcolor: EMERALD, boxShadow: `0 4px 12px ${alpha(EMERALD, 0.4)}`
+              }} />
+            </Box>
+            <Typography variant="h5" sx={{ fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em', mb: 0.5 }}>
+              Confirm Identity
             </Typography>
-            <Typography sx={{ color: '#0f172a', fontWeight: 600, fontSize: '0.95rem' }}>
-              Who are you posting this as?
+            <Typography sx={{ color: '#475569', fontSize: '0.95rem', fontWeight: 500 }}>
+              You are about to {publishModalStatus === 'draft' ? 'save a draft' : 'publish this listing'}. Who are you posting this as?
             </Typography>
           </Box>
 
+          {/* Selection Cards */}
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Box 
               onClick={() => setModalPostingAs('personal')}
               sx={{ 
-                flex: 1, p: 2, borderRadius: '16px', border: '2px solid', 
-                borderColor: modalPostingAs === 'personal' ? EMERALD : 'rgba(0,0,0,0.08)',
-                bgcolor: modalPostingAs === 'personal' ? alpha(EMERALD, 0.05) : 'transparent',
-                cursor: 'pointer', textAlign: 'center', transition: 'all 0.2s'
+                flex: 1, p: 2.5, borderRadius: '20px', 
+                border: '2px solid', 
+                borderColor: modalPostingAs === 'personal' ? EMERALD : 'rgba(255,255,255,0.4)',
+                bgcolor: modalPostingAs === 'personal' ? alpha(EMERALD, 0.04) : 'rgba(255,255,255,0.4)',
+                cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: modalPostingAs === 'personal' ? `0 12px 24px -8px ${alpha(EMERALD, 0.25)}` : '0 4px 12px rgba(0,0,0,0.02)',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  borderColor: modalPostingAs === 'personal' ? EMERALD : 'rgba(255,255,255,0.8)',
+                  bgcolor: modalPostingAs === 'personal' ? alpha(EMERALD, 0.04) : 'rgba(255,255,255,0.6)',
+                }
               }}
             >
-              <Typography sx={{ fontWeight: 700, color: modalPostingAs === 'personal' ? EMERALD : '#64748b' }}>Myself</Typography>
-              <Typography sx={{ fontSize: '0.75rem', color: '#94a3b8' }}>{profile?.name || 'Personal Account'}</Typography>
+              <Typography sx={{ fontWeight: 800, color: modalPostingAs === 'personal' ? EMERALD : '#334155', mb: 0.5, fontSize: '1.05rem' }}>Myself</Typography>
+              <Typography sx={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500, textAlign: 'center' }}>
+                {profile?.name || 'Personal Account'}
+              </Typography>
             </Box>
             <Box 
               onClick={() => {
@@ -2122,27 +2150,46 @@ export default function CreateListingForm({
                 }
               }}
               sx={{ 
-                flex: 1, p: 2, borderRadius: '16px', border: '2px solid', 
-                borderColor: modalPostingAs === 'organization' ? EMERALD : 'rgba(0,0,0,0.08)',
-                bgcolor: modalPostingAs === 'organization' ? alpha(EMERALD, 0.05) : 'transparent',
-                cursor: 'pointer', textAlign: 'center', transition: 'all 0.2s',
-                opacity: (activeOrg || isExternal || isFoodNerve || isMyOrg) ? 1 : 0.5
+                flex: 1, p: 2.5, borderRadius: '20px', 
+                border: '2px solid', 
+                borderColor: modalPostingAs === 'organization' ? EMERALD : 'rgba(255,255,255,0.4)',
+                bgcolor: modalPostingAs === 'organization' ? alpha(EMERALD, 0.04) : 'rgba(255,255,255,0.4)',
+                cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: modalPostingAs === 'organization' ? `0 12px 24px -8px ${alpha(EMERALD, 0.25)}` : '0 4px 12px rgba(0,0,0,0.02)',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                opacity: (activeOrg || isExternal || isFoodNerve || isMyOrg) ? 1 : 0.4,
+                '&:hover': {
+                  transform: (activeOrg || isExternal || isFoodNerve || isMyOrg) ? 'translateY(-2px)' : 'none',
+                  borderColor: modalPostingAs === 'organization' ? EMERALD : (activeOrg || isExternal || isFoodNerve || isMyOrg) ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.4)',
+                  bgcolor: modalPostingAs === 'organization' ? alpha(EMERALD, 0.04) : (activeOrg || isExternal || isFoodNerve || isMyOrg) ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.4)',
+                }
               }}
             >
-              <Typography sx={{ fontWeight: 700, color: modalPostingAs === 'organization' ? EMERALD : '#64748b' }}>Organization</Typography>
-              <Typography sx={{ fontSize: '0.75rem', color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {activeOrg?.name || externalEntityName || 'Entity'}
+              <Typography sx={{ fontWeight: 800, color: modalPostingAs === 'organization' ? EMERALD : '#334155', mb: 0.5, fontSize: '1.05rem' }}>Organization</Typography>
+              <Typography sx={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500, textAlign: 'center', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {(() => {
+                  if (isExternal && externalEntityName) return externalEntityName;
+                  if (isFoodNerve) return foodNerveOrgs.find((o: any) => o.id === selectedEntityId)?.name || 'FoodNerve Entity';
+                  if (isMyOrg) return profile?.organizations?.find((o: any) => o.id === selectedEntityId)?.name || 'Your Organization';
+                  return activeOrg?.name || 'Entity';
+                })()}
               </Typography>
             </Box>
           </Box>
 
-          <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+          {/* Action Buttons */}
+          <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
             <Button 
               variant="outlined" 
               fullWidth 
               onClick={() => setPublishModalStatus(null)}
               disabled={isSubmitting}
-              sx={{ borderRadius: '12px', fontWeight: 700, py: 1.5, borderColor: '#cbd5e1', color: '#475569' }}
+              sx={{ 
+                borderRadius: '16px', fontWeight: 700, py: 1.5, 
+                borderColor: 'rgba(15, 23, 42, 0.1)', color: '#475569',
+                bgcolor: 'rgba(255,255,255,0.5)',
+                '&:hover': { bgcolor: 'rgba(255,255,255,0.8)', borderColor: 'rgba(15, 23, 42, 0.2)' }
+              }}
             >
               Cancel
             </Button>
@@ -2151,9 +2198,19 @@ export default function CreateListingForm({
               fullWidth 
               onClick={handleFinalSubmit}
               disabled={isSubmitting}
-              sx={{ borderRadius: '12px', fontWeight: 700, py: 1.5, bgcolor: EMERALD, color: '#fff', '&:hover': { bgcolor: EMERALD_DARK } }}
+              sx={{ 
+                borderRadius: '16px', fontWeight: 700, py: 1.5, 
+                bgcolor: EMERALD, color: '#fff', 
+                boxShadow: `0 8px 24px -8px ${alpha(EMERALD, 0.5)}`,
+                transition: 'all 0.2s',
+                '&:hover': { 
+                  bgcolor: EMERALD_DARK,
+                  boxShadow: `0 12px 28px -8px ${alpha(EMERALD, 0.6)}`,
+                  transform: 'translateY(-1px)'
+                } 
+              }}
             >
-              {isSubmitting ? 'Processing...' : (publishModalStatus === 'draft' ? 'Save Draft' : 'Publish')}
+              {isSubmitting ? 'Processing...' : (publishModalStatus === 'draft' ? 'Confirm Draft' : 'Confirm Publish')}
             </Button>
           </Box>
         </Box>

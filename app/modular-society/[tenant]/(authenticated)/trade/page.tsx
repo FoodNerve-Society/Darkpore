@@ -32,6 +32,7 @@ import FlipContainer from "../components/shared/FlipContainer";
 import CreateListingForm from "./components/CreateListingForm";
 import ListingStudioDashboard from "./components/ListingStudioDashboard";
 import { getUserDrafts, deleteTradeListing, getTradeListings } from "@/lib/actions/trade";
+import PremiumAutocomplete from "@/components/PremiumAutocomplete";
 
 // ── Colors ────────────────────────────────────────────────
 const EMERALD = "#10b981";
