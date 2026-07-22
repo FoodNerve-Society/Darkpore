@@ -2,10 +2,6 @@
 
 import React from 'react';
 import { Box, Typography, Paper, Avatar, Chip, Button, Grid } from '@mui/material';
-<<<<<<< HEAD
-import BusinessIcon from '@mui/icons-material/Business';
-=======
->>>>>>> main
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import GroupsIcon from '@mui/icons-material/Groups';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
@@ -411,7 +407,3 @@ function PendingApprovalSection({ organizationId, userRole, userId }: { organiza
     </Box>
   );
 }
-<<<<<<< HEAD
-
-=======
->>>>>>> main
