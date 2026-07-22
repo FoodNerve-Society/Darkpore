@@ -19,7 +19,8 @@ import {
   Tooltip,
   Alert,
   Select,
-  MenuItem
+  MenuItem,
+  Avatar
 } from "@mui/material";
 
 import { useRouter, useParams } from "next/navigation";
@@ -91,6 +92,8 @@ const glassCard = {
   },
 };
 
+import BusinessIcon from "@mui/icons-material/Business";
+
 interface CreateListingFormProps {
   initialCategory?: string;
   initialSelections?: { primary: string, secondary: string, tertiary?: string } | null;
@@ -100,6 +103,8 @@ interface CreateListingFormProps {
   postingAs?: 'personal' | 'organization';
   selectedOrgId?: string | null;
   fastIngestData?: any;
+  onPostingAsChange?: (postingAs: 'personal' | 'organization') => void;
+  onOrgIdChange?: (orgId: string | null) => void;
 }
 
 export default function CreateListingForm({ 
@@ -110,7 +115,9 @@ export default function CreateListingForm({
   onSuccess,
   postingAs = 'personal',
   selectedOrgId = null,
-  fastIngestData = null
+  fastIngestData = null,
+  onPostingAsChange,
+  onOrgIdChange
 }: CreateListingFormProps) {
   const { profile, activeOrg } = useSociety();
   const router = useRouter();
@@ -144,7 +151,15 @@ export default function CreateListingForm({
   const secondarySelection = initialSelections?.secondary || draftData?.workModel || fastIngestData?.workModel || 'onsite';
   const isRemote = secondarySelection === 'remote';
 
-  const [selectedEntityId, setSelectedEntityId] = useState<string | null>(null);
+  const [selectedEntityId, setSelectedEntityId] = useState<string | null>(selectedOrgId || null);
+
+  // Sync internal state with external props from page header
+  useEffect(() => {
+    setModalPostingAs(postingAs);
+    if (selectedOrgId) {
+      setSelectedEntityId(selectedOrgId);
+    }
+  }, [postingAs, selectedOrgId]);
 
   // Fast Ingest Action Items Tracker
   const [isActionItemsMinimized, setIsActionItemsMinimized] = useState(false);
@@ -925,6 +940,25 @@ export default function CreateListingForm({
     if (!publishModalStatus) return;
     const status = publishModalStatus;
     setIsSubmitting(true);
+
+    // Determine the organizationId & finalIsExternal based on the modal selection
+    let organizationId: string | null = null;
+    let finalIsExternal = isExternal;
+    
+    if (modalPostingAs === 'personal') {
+        organizationId = null;
+        finalIsExternal = false;
+    } else {
+        if (selectedEntityId) {
+            organizationId = selectedEntityId;
+        } else if (profile?.organizations && profile.organizations.length > 0) {
+            organizationId = profile.organizations[0].id;
+        } else if (activeOrg?.id) {
+            organizationId = activeOrg.id;
+        } else if (isExternal) {
+            organizationId = null;
+        }
+    }
     
     // Upload Logo if a local file was selected
     let finalLogoUrl = "";
@@ -938,7 +972,7 @@ export default function CreateListingForm({
             setIsSubmitting(false);
             return;
         }
-    } else if (isExternal) {
+    } else if (finalIsExternal) {
         finalLogoUrl = externalEntityLogoUrl;
     }
 
@@ -949,24 +983,6 @@ export default function CreateListingForm({
       locationString = `${selectedCountry.name}`;
       if (selectedState) locationString = `${selectedState.name}, ${locationString}`;
       if (selectedCity) locationString = `${selectedCity.name}, ${locationString}`;
-    }
-
-    // Determine the organizationId based on the modal selection
-    let organizationId = selectedEntityId;
-    let finalIsExternal = isExternal;
-    
-    if (modalPostingAs === 'personal') {
-        organizationId = null;
-        finalIsExternal = false;
-    } else {
-        if (isMyOrg || isFoodNerve) {
-            organizationId = selectedEntityId; // User selected an org from dropdown
-        } else if (isExternal) {
-            organizationId = null; // We will handle creating external org in the server action if organizationId is not passed, but we pass metadata
-        } else if (activeOrg?.id) {
-            // Default to active org if they switched from personal to org in the modal but hadn't set one up
-            organizationId = activeOrg.id;
-        }
     }
 
     const metadata = {
@@ -993,34 +1009,44 @@ export default function CreateListingForm({
       customQuestions: applicationMethod === 'native' ? JSON.stringify(customQuestions) : undefined,
     };
 
-    const res = await createTradeListing({ 
-      id: draftData?.id,
-      category: initialCategory, 
-      title, 
-      description, 
-      priceOrAsk: isVolunteer ? (npAmount || "0") : `${currency} ${minSalary} - ${maxSalary}`, 
-      location: locationString, 
-      lga: selectedCity?.name || "", 
-      postedById: profile?.uid || "anon", 
-      organizationId,
-      nervePointsCost: 0,
-      status,
-      expiresAt: deadline || undefined,
-      metadata
-    });
-    
-    setIsSubmitting(false);
-    if (res.success) {
-      if (status === 'draft') {
-        setSuccessMsg("Draft saved successfully.");
-        scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    try {
+      const res = await createTradeListing({ 
+        id: draftData?.id,
+        category: initialCategory, 
+        title, 
+        description, 
+        priceOrAsk: isVolunteer ? (npAmount || "0") : `${currency} ${minSalary} - ${maxSalary}`, 
+        location: locationString, 
+        lga: selectedCity?.name || "", 
+        postedById: profile?.uid || "anon", 
+        organizationId,
+        nervePointsCost: 0,
+        status,
+        expiresAt: deadline || undefined,
+        metadata
+      });
+      
+      if (res.success) {
+        setPublishModalStatus(null); // Close the modal
+        if (status === 'draft') {
+          setSuccessMsg("Draft saved successfully.");
+          scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+          setSubmitted(true);
+          onSuccess();
+        }
       } else {
-        setSubmitted(true);
-        onSuccess();
+        setPublishModalStatus(null); // Close the modal on error too
+        setError(res.error || "Failed to publish listing.");
+        scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
       }
-    } else {
-      setError(res.error || "Failed to publish listing.");
+    } catch (err: any) {
+      console.error("[handleFinalSubmit] Error:", err);
+      setPublishModalStatus(null);
+      setError(err?.message || "An unexpected error occurred. Please try again.");
       scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -2082,138 +2108,220 @@ export default function CreateListingForm({
 
       {/* Confirmation Modal */}
       <Modal open={!!publishModalStatus} onClose={() => !isSubmitting && setPublishModalStatus(null)}>
-        <Box sx={{
-          position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-          width: { xs: '90%', sm: 440 }, 
-          bgcolor: 'rgba(255, 255, 255, 0.75)', 
-          backdropFilter: 'blur(32px) saturate(1.4)',
-          WebkitBackdropFilter: 'blur(32px) saturate(1.4)',
-          borderRadius: '28px', 
-          boxShadow: '0 40px 80px -16px rgba(0,0,0,0.15), 0 0 0 1px rgba(255,255,255,0.4) inset, 0 4px 12px rgba(255,255,255,0.2) inset', 
-          p: 4,
-          display: 'flex', flexDirection: 'column', gap: 3.5,
-          outline: 'none'
-        }}>
+        {(() => {
+          const isDraftModal = publishModalStatus === 'draft';
+          const modalAccentColor = isDraftModal ? '#f59e0b' : EMERALD;
           
-          {/* Header */}
-          <Box sx={{ textAlign: 'center', mb: 1 }}>
-            <Box sx={{ 
-              width: 56, height: 56, borderRadius: '20px', 
-              background: `linear-gradient(135deg, ${alpha(EMERALD, 0.15)} 0%, ${alpha(EMERALD, 0.05)} 100%)`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              margin: '0 auto', mb: 2,
-              boxShadow: `0 8px 16px ${alpha(EMERALD, 0.1)}, 0 0 0 1px ${alpha(EMERALD, 0.1)} inset`
+          return (
+            <Box sx={{
+              position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+              width: { xs: '90%', sm: 440 }, 
+              bgcolor: 'rgba(255, 255, 255, 0.85)', 
+              backdropFilter: 'blur(32px) saturate(1.4)',
+              WebkitBackdropFilter: 'blur(32px) saturate(1.4)',
+              borderRadius: '28px', 
+              boxShadow: `0 40px 80px -16px ${alpha(modalAccentColor, 0.2)}, 0 0 0 1px rgba(255,255,255,0.6) inset, 0 4px 12px rgba(255,255,255,0.3) inset`, 
+              p: 4,
+              display: 'flex', flexDirection: 'column', gap: 3.5,
+              outline: 'none'
             }}>
-              <Box sx={{ 
-                width: 24, height: 24, borderRadius: '50%', 
-                bgcolor: EMERALD, boxShadow: `0 4px 12px ${alpha(EMERALD, 0.4)}`
-              }} />
-            </Box>
-            <Typography variant="h5" sx={{ fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em', mb: 0.5 }}>
-              Confirm Identity
-            </Typography>
-            <Typography sx={{ color: '#475569', fontSize: '0.95rem', fontWeight: 500 }}>
-              You are about to {publishModalStatus === 'draft' ? 'save a draft' : 'publish this listing'}. Who are you posting this as?
-            </Typography>
-          </Box>
+              
+              {/* Header */}
+              <Box sx={{ textAlign: 'center', mb: 1 }}>
+                <Box sx={{ 
+                  width: 56, height: 56, borderRadius: '20px', 
+                  background: `linear-gradient(135deg, ${alpha(modalAccentColor, 0.2)} 0%, ${alpha(modalAccentColor, 0.05)} 100%)`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  margin: '0 auto', mb: 2,
+                  boxShadow: `0 8px 16px ${alpha(modalAccentColor, 0.15)}, 0 0 0 1px ${alpha(modalAccentColor, 0.15)} inset`
+                }}>
+                  <Box sx={{ 
+                    width: 24, height: 24, borderRadius: '50%', 
+                    bgcolor: modalAccentColor, boxShadow: `0 4px 12px ${alpha(modalAccentColor, 0.5)}`
+                  }} />
+                </Box>
+                <Typography variant="h5" sx={{ fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em', mb: 0.5 }}>
+                  {isDraftModal ? 'Save Draft' : 'Publish Listing'}
+                </Typography>
+                <Typography sx={{ color: '#475569', fontSize: '0.95rem', fontWeight: 500 }}>
+                  Select the identity under which this listing should be {isDraftModal ? 'saved as a draft' : 'published live'}:
+                </Typography>
+              </Box>
 
-          {/* Selection Cards */}
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <Box 
-              onClick={() => setModalPostingAs('personal')}
-              sx={{ 
-                flex: 1, p: 2.5, borderRadius: '20px', 
-                border: '2px solid', 
-                borderColor: modalPostingAs === 'personal' ? EMERALD : 'rgba(255,255,255,0.4)',
-                bgcolor: modalPostingAs === 'personal' ? alpha(EMERALD, 0.04) : 'rgba(255,255,255,0.4)',
-                cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                boxShadow: modalPostingAs === 'personal' ? `0 12px 24px -8px ${alpha(EMERALD, 0.25)}` : '0 4px 12px rgba(0,0,0,0.02)',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                '&:hover': {
-                  transform: 'translateY(-2px)',
-                  borderColor: modalPostingAs === 'personal' ? EMERALD : 'rgba(255,255,255,0.8)',
-                  bgcolor: modalPostingAs === 'personal' ? alpha(EMERALD, 0.04) : 'rgba(255,255,255,0.6)',
-                }
-              }}
-            >
-              <Typography sx={{ fontWeight: 800, color: modalPostingAs === 'personal' ? EMERALD : '#334155', mb: 0.5, fontSize: '1.05rem' }}>Myself</Typography>
-              <Typography sx={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500, textAlign: 'center' }}>
-                {profile?.name || 'Personal Account'}
-              </Typography>
-            </Box>
-            <Box 
-              onClick={() => {
-                if (activeOrg || isExternal || isFoodNerve || isMyOrg) {
-                  setModalPostingAs('organization');
-                } else {
-                  alert("You must be part of an organization to select this.");
-                }
-              }}
-              sx={{ 
-                flex: 1, p: 2.5, borderRadius: '20px', 
-                border: '2px solid', 
-                borderColor: modalPostingAs === 'organization' ? EMERALD : 'rgba(255,255,255,0.4)',
-                bgcolor: modalPostingAs === 'organization' ? alpha(EMERALD, 0.04) : 'rgba(255,255,255,0.4)',
-                cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                boxShadow: modalPostingAs === 'organization' ? `0 12px 24px -8px ${alpha(EMERALD, 0.25)}` : '0 4px 12px rgba(0,0,0,0.02)',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                opacity: (activeOrg || isExternal || isFoodNerve || isMyOrg) ? 1 : 0.4,
-                '&:hover': {
-                  transform: (activeOrg || isExternal || isFoodNerve || isMyOrg) ? 'translateY(-2px)' : 'none',
-                  borderColor: modalPostingAs === 'organization' ? EMERALD : (activeOrg || isExternal || isFoodNerve || isMyOrg) ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.4)',
-                  bgcolor: modalPostingAs === 'organization' ? alpha(EMERALD, 0.04) : (activeOrg || isExternal || isFoodNerve || isMyOrg) ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.4)',
-                }
-              }}
-            >
-              <Typography sx={{ fontWeight: 800, color: modalPostingAs === 'organization' ? EMERALD : '#334155', mb: 0.5, fontSize: '1.05rem' }}>Organization</Typography>
-              <Typography sx={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500, textAlign: 'center', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {(() => {
-                  if (isExternal && externalEntityName) return externalEntityName;
-                  if (isFoodNerve) return foodNerveOrgs.find((o: any) => o.id === selectedEntityId)?.name || 'FoodNerve Entity';
-                  if (isMyOrg) return profile?.organizations?.find((o: any) => o.id === selectedEntityId)?.name || 'Your Organization';
-                  return activeOrg?.name || 'Entity';
-                })()}
-              </Typography>
-            </Box>
-          </Box>
+              {/* Selection Cards */}
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Box 
+                  onClick={() => {
+                    setModalPostingAs('personal');
+                    if (onPostingAsChange) onPostingAsChange('personal');
+                  }}
+                  sx={{ 
+                    flex: 1, p: 2.5, borderRadius: '20px', 
+                    border: '2px solid', 
+                    borderColor: modalPostingAs === 'personal' ? modalAccentColor : 'rgba(255,255,255,0.6)',
+                    bgcolor: modalPostingAs === 'personal' ? alpha(modalAccentColor, 0.06) : 'rgba(255,255,255,0.4)',
+                    cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: modalPostingAs === 'personal' ? `0 12px 24px -8px ${alpha(modalAccentColor, 0.3)}` : '0 4px 12px rgba(0,0,0,0.02)',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      borderColor: modalPostingAs === 'personal' ? modalAccentColor : 'rgba(255,255,255,0.8)',
+                      bgcolor: modalPostingAs === 'personal' ? alpha(modalAccentColor, 0.06) : 'rgba(255,255,255,0.6)',
+                    }
+                  }}
+                >
+                  <Avatar 
+                    src={profile?.avatarUrl} 
+                    sx={{ 
+                      width: 44, height: 44, mb: 1, 
+                      border: `2px solid ${modalPostingAs === 'personal' ? modalAccentColor : 'rgba(0,0,0,0.08)'}`,
+                      bgcolor: alpha(modalAccentColor, 0.1), color: modalAccentColor, fontWeight: 800
+                    }}
+                  >
+                    {(profile?.displayName || profile?.name || 'P').charAt(0)}
+                  </Avatar>
+                  <Typography sx={{ fontWeight: 800, color: modalPostingAs === 'personal' ? modalAccentColor : '#334155', mb: 0.5, fontSize: '1.05rem' }}>Myself</Typography>
+                  <Typography sx={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500, textAlign: 'center' }}>
+                    {profile?.displayName || profile?.name || 'Personal Account'}
+                  </Typography>
+                </Box>
+                <Box 
+                  onClick={() => {
+                    const userHasOrgs = (profile?.organizations && profile.organizations.length > 0) || activeOrg || isExternal || isFoodNerve || isMyOrg;
+                    if (userHasOrgs) {
+                      setModalPostingAs('organization');
+                      if (onPostingAsChange) onPostingAsChange('organization');
+                      const targetOrgId = selectedEntityId || profile?.organizations?.[0]?.id || activeOrg?.id;
+                      if (targetOrgId) {
+                        if (!selectedEntityId) setSelectedEntityId(targetOrgId);
+                        if (onOrgIdChange) onOrgIdChange(targetOrgId);
+                      }
+                    } else {
+                      alert("You must be part of an organization to select this.");
+                    }
+                  }}
+                  sx={{ 
+                    flex: 1, p: 2.5, borderRadius: '20px', 
+                    border: '2px solid', 
+                    borderColor: modalPostingAs === 'organization' ? modalAccentColor : 'rgba(255,255,255,0.6)',
+                    bgcolor: modalPostingAs === 'organization' ? alpha(modalAccentColor, 0.06) : 'rgba(255,255,255,0.4)',
+                    cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: modalPostingAs === 'organization' ? `0 12px 24px -8px ${alpha(modalAccentColor, 0.3)}` : '0 4px 12px rgba(0,0,0,0.02)',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    opacity: ((profile?.organizations && profile.organizations.length > 0) || activeOrg || isExternal || isFoodNerve || isMyOrg) ? 1 : 0.4,
+                    '&:hover': {
+                      transform: ((profile?.organizations && profile.organizations.length > 0) || activeOrg || isExternal || isFoodNerve || isMyOrg) ? 'translateY(-2px)' : 'none',
+                      borderColor: modalPostingAs === 'organization' ? modalAccentColor : ((profile?.organizations && profile.organizations.length > 0) || activeOrg || isExternal || isFoodNerve || isMyOrg) ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.4)',
+                      bgcolor: modalPostingAs === 'organization' ? alpha(modalAccentColor, 0.06) : ((profile?.organizations && profile.organizations.length > 0) || activeOrg || isExternal || isFoodNerve || isMyOrg) ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.4)',
+                    }
+                  }}
+                >
+                  {(() => {
+                    const matchedUserOrg = selectedEntityId ? profile?.organizations?.find((o: any) => o.id === selectedEntityId) : null;
+                    const matchedFNOrg = selectedEntityId ? foodNerveOrgs?.find((o: any) => o.id === selectedEntityId) : null;
+                    const logo = matchedUserOrg?.logoUrl || matchedFNOrg?.logoUrl || (isExternal ? externalEntityLogoUrl : profile?.organizations?.[0]?.logoUrl || activeOrg?.logoUrl);
+                    const name = matchedUserOrg?.name || matchedFNOrg?.name || (isExternal ? externalEntityName : profile?.organizations?.[0]?.name || activeOrg?.name || 'O');
+                    return (
+                      <Avatar 
+                        src={logo} 
+                        sx={{ 
+                          width: 44, height: 44, mb: 1, 
+                          border: `2px solid ${modalPostingAs === 'organization' ? modalAccentColor : 'rgba(0,0,0,0.08)'}`,
+                          bgcolor: '#fff', color: '#64748b', fontWeight: 800
+                        }}
+                      >
+                        {logo ? null : (name ? name.charAt(0) : <BusinessIcon sx={{ color: '#64748b' }} />)}
+                      </Avatar>
+                    );
+                  })()}
+                  <Typography sx={{ fontWeight: 800, color: modalPostingAs === 'organization' ? modalAccentColor : '#334155', mb: 0.5, fontSize: '1.05rem' }}>Organization</Typography>
+                  <Typography sx={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500, textAlign: 'center', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {(() => {
+                      if (selectedEntityId) {
+                        const userOrg = profile?.organizations?.find((o: any) => o.id === selectedEntityId);
+                        if (userOrg) return userOrg.name;
+                        const fnOrg = foodNerveOrgs?.find((o: any) => o.id === selectedEntityId);
+                        if (fnOrg) return fnOrg.name;
+                      }
+                      if (isExternal && externalEntityName) return externalEntityName;
+                      if (profile?.organizations && profile.organizations.length > 0) return profile.organizations[0].name;
+                      return activeOrg?.name || 'Entity';
+                    })()}
+                  </Typography>
+                </Box>
+              </Box>
 
-          {/* Action Buttons */}
-          <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
-            <Button 
-              variant="outlined" 
-              fullWidth 
-              onClick={() => setPublishModalStatus(null)}
-              disabled={isSubmitting}
-              sx={{ 
-                borderRadius: '16px', fontWeight: 700, py: 1.5, 
-                borderColor: 'rgba(15, 23, 42, 0.1)', color: '#475569',
-                bgcolor: 'rgba(255,255,255,0.5)',
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.8)', borderColor: 'rgba(15, 23, 42, 0.2)' }
-              }}
-            >
-              Cancel
-            </Button>
-            <Button 
-              variant="contained" 
-              fullWidth 
-              onClick={handleFinalSubmit}
-              disabled={isSubmitting}
-              sx={{ 
-                borderRadius: '16px', fontWeight: 700, py: 1.5, 
-                bgcolor: EMERALD, color: '#fff', 
-                boxShadow: `0 8px 24px -8px ${alpha(EMERALD, 0.5)}`,
-                transition: 'all 0.2s',
-                '&:hover': { 
-                  bgcolor: EMERALD_DARK,
-                  boxShadow: `0 12px 28px -8px ${alpha(EMERALD, 0.6)}`,
-                  transform: 'translateY(-1px)'
-                } 
-              }}
-            >
-              {isSubmitting ? 'Processing...' : (publishModalStatus === 'draft' ? 'Confirm Draft' : 'Confirm Publish')}
-            </Button>
-          </Box>
-        </Box>
+              {/* Organization Selector inside Modal for Multi-Org Users */}
+              {modalPostingAs === 'organization' && profile?.organizations && profile.organizations.length > 0 && (
+                <Box sx={{ 
+                  p: 2, borderRadius: '16px', 
+                  bgcolor: 'rgba(255,255,255,0.4)', 
+                  border: '1px solid rgba(255,255,255,0.6)',
+                  backdropFilter: 'blur(10px)'
+                }}>
+                  <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', mb: 1 }}>
+                    Posting Organization:
+                  </Typography>
+                  <PremiumAutocomplete
+                    colorTheme={modalAccentColor}
+                    label="Select Organization"
+                    options={profile.organizations}
+                    getOptionLabel={(opt: any) => opt.name || ''}
+                    value={profile.organizations.find((o: any) => o.id === selectedEntityId) || profile.organizations[0] || null}
+                    onChange={(e, val) => {
+                      const newOrgId = val ? val.id : null;
+                      setSelectedEntityId(newOrgId);
+                      if (onOrgIdChange) onOrgIdChange(newOrgId);
+                    }}
+                    renderOption={(props: any, opt: any) => (
+                      <Box component="li" {...props} sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                        <Avatar src={opt.logoUrl} sx={{ width: 22, height: 22 }} />
+                        <Typography sx={{ fontWeight: 600, fontSize: '0.85rem' }}>{opt.name}</Typography>
+                      </Box>
+                    )}
+                  />
+                </Box>
+              )}
+
+              {/* Action Buttons */}
+              <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
+                <Button 
+                  variant="outlined" 
+                  fullWidth 
+                  onClick={() => setPublishModalStatus(null)}
+                  disabled={isSubmitting}
+                  sx={{ 
+                    borderRadius: '16px', fontWeight: 700, py: 1.5, 
+                    borderColor: 'rgba(15, 23, 42, 0.1)', color: '#475569',
+                    bgcolor: 'rgba(255,255,255,0.5)',
+                    '&:hover': { bgcolor: 'rgba(255,255,255,0.8)', borderColor: 'rgba(15, 23, 42, 0.2)' }
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  variant="contained" 
+                  fullWidth 
+                  onClick={handleFinalSubmit}
+                  disabled={isSubmitting}
+                  sx={{ 
+                    borderRadius: '16px', fontWeight: 700, py: 1.5, 
+                    bgcolor: modalAccentColor, color: '#fff', 
+                    boxShadow: `0 8px 24px -8px ${alpha(modalAccentColor, 0.5)}`,
+                    transition: 'all 0.2s',
+                    '&:hover': { 
+                      bgcolor: alpha(modalAccentColor, 0.9),
+                      boxShadow: `0 12px 28px -8px ${alpha(modalAccentColor, 0.6)}`,
+                      transform: 'translateY(-1px)'
+                    } 
+                  }}
+                >
+                  {isSubmitting ? 'Processing...' : (isDraftModal ? 'Confirm Draft' : 'Confirm Publish')}
+                </Button>
+              </Box>
+            </Box>
+          );
+        })()}
       </Modal>
 
     </Box>
