@@ -10,55 +10,42 @@ const askQuestion = (query) => new Promise((resolve) => rl.question(query, resol
 
 async function deploy() {
   console.log("=========================================");
-  console.log("   PRODUCTION DEPLOYMENT SCRIPT");
+  console.log("   PRODUCTION DEPLOYMENT PIPELINE");
   console.log("=========================================");
 
   try {
-    // 1. Database Update (Prompt)
-    console.log("\n[1/3] Database Schema Check...");
-    const answer = await askQuestion("Did you make any changes to schema.prisma that need to be pushed to Turso? (y/N): ");
-    
-    if (answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes') {
-      console.log("Running push_schema.js...");
-      // Execute the push_schema script. If it fails, execSync throws and stops deployment!
-      execSync('node push_schema.js', { stdio: 'inherit' });
-      console.log("✅ Database schema pushed successfully.");
-    } else {
-      console.log("⏭️ Skipping database push.");
-    }
+    // 1. Sync Turso Database Schema
+    console.log("\n[1/4] Syncing Turso Production Database Schema...");
+    execSync('node push_schema.js', { stdio: 'inherit' });
+    console.log("✅ Live database schema synced cleanly with Prisma.");
 
-    // Close readline so the script can eventually exit
+    // 2. TypeScript Compilation Check
+    console.log("\n[2/4] Verifying TypeScript Compilation...");
+    execSync('npx tsc --noEmit', { stdio: 'inherit' });
+    console.log("✅ TypeScript check passed cleanly (0 errors).");
+
+    // Close readline
     rl.close();
 
-    // 2. Check working directory status
+    // 3. Commit local changes if any
     const status = execSync('git status --porcelain').toString();
     if (status.trim().length > 0) {
-      console.log("\nUncommitted changes detected. Committing to dev before deployment...");
+      console.log("\nUncommitted changes detected. Committing...");
       execSync('git add .');
       const timestamp = new Date().toISOString();
       execSync(`git commit -m "chore(pre-deploy): state saved at ${timestamp} [skip ci]"`);
-      execSync('git push -u origin dev');
+      execSync('git push origin main');
     }
 
-    // 3. Git Operations
-    console.log("\n[2/3] Merging 'dev' into 'main'...");
-    
-    // Ensure we are on dev branch and it is up to date
+    // 4. Git Synchronization between main & dev
+    console.log("\n[3/4] Synchronizing 'main' and 'dev' branches...");
     execSync('git checkout dev', { stdio: 'ignore' });
     execSync('git pull origin dev', { stdio: 'ignore' });
+    execSync('git merge main -m "chore: sync main into dev"', { stdio: 'ignore' });
+    execSync('git push origin dev', { stdio: 'ignore' });
 
-    // Checkout main and merge dev
     execSync('git checkout main', { stdio: 'ignore' });
-    execSync('git pull origin main', { stdio: 'ignore' });
-    execSync('git merge dev -m "chore: merge dev into main for deployment"', { stdio: 'inherit' });
-
-    // 4. Deploy (Push to main triggers Vercel)
-    console.log("\n[3/3] Pushing to GitHub to trigger Vercel deployment...");
     execSync('git push origin main', { stdio: 'inherit' });
-
-    // Switch back to dev for continued work
-    console.log("\nSwitching back to 'dev' branch...");
-    execSync('git checkout dev', { stdio: 'ignore' });
 
     console.log("\n=========================================");
     console.log("   DEPLOYMENT TRIGGERED SUCCESSFULLY! 🚀");
@@ -70,11 +57,6 @@ async function deploy() {
     console.error("\n❌ Deployment failed:", error.message);
     if (error.stdout) console.error(error.stdout.toString());
     if (error.stderr) console.error(error.stderr.toString());
-    
-    // Try to recover back to dev
-    try {
-      execSync('git checkout dev', { stdio: 'ignore' });
-    } catch(e) {}
   }
 }
 
