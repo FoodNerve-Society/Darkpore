@@ -8,6 +8,8 @@ import EditProfileBackstage from './EditProfileBackstage';
 import UserSettingsBackstage from './UserSettingsBackstage';
 import { useSociety, RANK_NAMES, RANK_COLORS, calculateRank, type RankLevel } from '@/context/SocietyContext';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import NotificationsIcon from '@mui/icons-material/Notifications';
 
 interface Props {
   tenant: string;
@@ -148,55 +150,155 @@ export default function UserCommandContainer({ tenant, username, isActive, isCol
             </Box>
           </Box>
 
-          {/* ─── CLEAR CTA IN THE MIDDLE (HERO CARD STYLE) ─── */}
-          <Box 
-            onClick={(e) => handleDirectBlockOpen(e, 'edit-profile')} 
-            sx={{ 
-              display: { xs: 'none', md: 'flex' },
-              alignItems: 'center',
-              background: 'rgba(18, 24, 20, 0.92)',
-              backdropFilter: 'blur(20px)',
-              borderRadius: '22px',
-              boxShadow: `0 6px 28px rgba(59,130,246, 0.18), 0 1.5px 4px rgba(0,0,0,0.08)`,
-              border: `1px solid rgba(59,130,246, 0.12)`,
-              px: 1.5,
-              py: 1.5,
-              my: 'auto', // Pushes to the vertical middle
-              cursor: 'pointer',
-              width: '100%',
-              transition: 'box-shadow 0.3s ease, border 0.3s ease, transform 0.3s',
-              '&:hover': {
-                boxShadow: `0 12px 40px rgba(59,130,246, 0.28), 0 2px 6px rgba(0,0,0,0.1)`,
-                border: `1px solid rgba(59,130,246, 0.25)`,
-                transform: 'translateY(-2px)'
-              }
-            }}
-          >
-            <Avatar 
-              variant="rounded"
+          {/* ─── CTAs IN THE MIDDLE (HERO CARD STYLE) ─── */}
+          <Box sx={{ display: { xs: 'none', md: 'flex' }, flexDirection: 'column', gap: 1.5, width: '100%', my: 'auto' }}>
+            
+            {/* 1. Upgrade Rank (if rank < 5) */}
+            {rank < 5 && (
+              <Box 
+                onClick={(e) => handleDirectBlockOpen(e, 'quests')} 
+                sx={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  background: 'rgba(18, 24, 20, 0.92)',
+                  backdropFilter: 'blur(20px)',
+                  borderRadius: '22px',
+                  boxShadow: `0 6px 28px rgba(245,158,11, 0.18), 0 1.5px 4px rgba(0,0,0,0.08)`,
+                  border: `1px solid rgba(245,158,11, 0.12)`,
+                  px: 1.5, py: 1.5,
+                  cursor: 'pointer', width: '100%',
+                  transition: 'all 0.3s',
+                  '&:hover': {
+                    boxShadow: `0 12px 40px rgba(245,158,11, 0.28), 0 2px 6px rgba(0,0,0,0.1)`,
+                    border: `1px solid rgba(245,158,11, 0.25)`,
+                    transform: 'translateY(-2px)'
+                  }
+                }}
+              >
+                <Avatar 
+                  variant="rounded"
+                  sx={{ 
+                      width: 38, height: 38, mr: 1.5, borderRadius: '13px',
+                      border: `2px solid rgba(245,158,11, 0.4)`,
+                      boxShadow: `0 0 12px rgba(245,158,11, 0.2)`,
+                      bgcolor: 'rgba(245,158,11, 0.1)'
+                  }} 
+                >
+                  <EmojiEventsIcon sx={{ color: '#f59e0b', fontSize: 20 }} />
+                </Avatar>
+                <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 0.3 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Typography sx={{ 
+                      fontSize: '0.55rem', fontWeight: 800, color: '#fff', 
+                      background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                      px: 1, py: 0.3, borderRadius: '6px', textTransform: 'uppercase', letterSpacing: '0.8px'
+                    }}>
+                      QUESTS
+                    </Typography>
+                  </Box>
+                  <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.95)' }}>
+                    Upgrade Rank
+                  </Typography>
+                </Box>
+              </Box>
+            )}
+
+            {/* 2. Profile Activity */}
+            <Box 
+              onClick={(e) => handleDirectBlockOpen(e, 'wallet')} 
               sx={{ 
-                  width: 38, height: 38, mr: 1.5, borderRadius: '13px',
-                  border: `2px solid rgba(59,130,246, 0.4)`,
-                  boxShadow: `0 0 12px rgba(59,130,246, 0.2)`,
-                  bgcolor: 'rgba(59,130,246, 0.1)'
-              }} 
+                display: 'flex',
+                alignItems: 'center',
+                background: 'rgba(18, 24, 20, 0.92)',
+                backdropFilter: 'blur(20px)',
+                borderRadius: '22px',
+                boxShadow: `0 6px 28px rgba(16,185,129, 0.18), 0 1.5px 4px rgba(0,0,0,0.08)`,
+                border: `1px solid rgba(16,185,129, 0.12)`,
+                px: 1.5, py: 1.5,
+                cursor: 'pointer', width: '100%',
+                transition: 'all 0.3s',
+                '&:hover': {
+                  boxShadow: `0 12px 40px rgba(16,185,129, 0.28), 0 2px 6px rgba(0,0,0,0.1)`,
+                  border: `1px solid rgba(16,185,129, 0.25)`,
+                  transform: 'translateY(-2px)'
+                }
+              }}
             >
-              <SettingsIcon sx={{ color: '#3b82f6', fontSize: 20 }} />
-            </Avatar>
-            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 0.3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Typography sx={{ 
-                  fontSize: '0.55rem', fontWeight: 800, color: '#fff', 
-                  background: 'linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%)',
-                  px: 1, py: 0.3, borderRadius: '6px', textTransform: 'uppercase', letterSpacing: '0.8px'
-                }}>
-                  ACTION
+              <Avatar 
+                variant="rounded"
+                sx={{ 
+                    width: 38, height: 38, mr: 1.5, borderRadius: '13px',
+                    border: `2px solid rgba(16,185,129, 0.4)`,
+                    boxShadow: `0 0 12px rgba(16,185,129, 0.2)`,
+                    bgcolor: 'rgba(16,185,129, 0.1)'
+                }} 
+              >
+                <NotificationsIcon sx={{ color: '#10b981', fontSize: 20 }} />
+              </Avatar>
+              <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 0.3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Typography sx={{ 
+                    fontSize: '0.55rem', fontWeight: 800, color: '#fff', 
+                    background: 'linear-gradient(135deg, #10b981 0%, #047857 100%)',
+                    px: 1, py: 0.3, borderRadius: '6px', textTransform: 'uppercase', letterSpacing: '0.8px'
+                  }}>
+                    UPDATES
+                  </Typography>
+                </Box>
+                <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.95)' }}>
+                  Profile Activity
                 </Typography>
               </Box>
-              <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.95)' }}>
-                Manage Profile
-              </Typography>
             </Box>
+
+            {/* 3. Manage Profile */}
+            <Box 
+              onClick={(e) => handleDirectBlockOpen(e, 'edit-profile')} 
+              sx={{ 
+                display: 'flex',
+                alignItems: 'center',
+                background: 'rgba(18, 24, 20, 0.92)',
+                backdropFilter: 'blur(20px)',
+                borderRadius: '22px',
+                boxShadow: `0 6px 28px rgba(59,130,246, 0.18), 0 1.5px 4px rgba(0,0,0,0.08)`,
+                border: `1px solid rgba(59,130,246, 0.12)`,
+                px: 1.5, py: 1.5,
+                cursor: 'pointer', width: '100%',
+                transition: 'all 0.3s',
+                '&:hover': {
+                  boxShadow: `0 12px 40px rgba(59,130,246, 0.28), 0 2px 6px rgba(0,0,0,0.1)`,
+                  border: `1px solid rgba(59,130,246, 0.25)`,
+                  transform: 'translateY(-2px)'
+                }
+              }}
+            >
+              <Avatar 
+                variant="rounded"
+                sx={{ 
+                    width: 38, height: 38, mr: 1.5, borderRadius: '13px',
+                    border: `2px solid rgba(59,130,246, 0.4)`,
+                    boxShadow: `0 0 12px rgba(59,130,246, 0.2)`,
+                    bgcolor: 'rgba(59,130,246, 0.1)'
+                }} 
+              >
+                <SettingsIcon sx={{ color: '#3b82f6', fontSize: 20 }} />
+              </Avatar>
+              <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 0.3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Typography sx={{ 
+                    fontSize: '0.55rem', fontWeight: 800, color: '#fff', 
+                    background: 'linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%)',
+                    px: 1, py: 0.3, borderRadius: '6px', textTransform: 'uppercase', letterSpacing: '0.8px'
+                  }}>
+                    ACTION
+                  </Typography>
+                </Box>
+                <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.95)' }}>
+                  Manage Profile
+                </Typography>
+              </Box>
+            </Box>
+
           </Box>
 
           {/* ─── PROGRESS + WALLET — Desktop only ─── */}
@@ -269,45 +371,87 @@ export default function UserCommandContainer({ tenant, username, isActive, isCol
         </Box>
         </Box>
 
-        {/* ─── CLEAR CTA IN THE MIDDLE (MOBILE) ─── */}
-        <Box 
-          onClick={(e) => handleDirectBlockOpen(e, 'edit-profile')} 
-          sx={{ 
-            display: { xs: 'flex', md: 'none' },
-            alignItems: 'center',
-            background: 'rgba(18, 24, 20, 0.92)',
-            backdropFilter: 'blur(20px)',
-            borderRadius: '16px',
-            boxShadow: `0 4px 16px rgba(59,130,246, 0.15), 0 1px 3px rgba(0,0,0,0.08)`,
-            border: `1px solid rgba(59,130,246, 0.12)`,
-            px: 1.2,
-            py: 0.8,
-            mx: 'auto', // Pushes to the horizontal middle
-            cursor: 'pointer',
-          }}
-        >
-          <Avatar 
-            variant="rounded"
+        {/* ─── CTAs IN THE MIDDLE (MOBILE) ─── */}
+        <Box sx={{ display: { xs: 'flex', md: 'none' }, gap: 1, mx: 'auto' }}>
+          
+          {/* Rank/Quests CTA */}
+          {rank < 5 && (
+            <Box 
+              onClick={(e) => handleDirectBlockOpen(e, 'quests')} 
+              sx={{ 
+                display: 'flex',
+                alignItems: 'center',
+                background: 'rgba(18, 24, 20, 0.92)',
+                backdropFilter: 'blur(20px)',
+                borderRadius: '16px',
+                boxShadow: `0 4px 16px rgba(245,158,11, 0.15), 0 1px 3px rgba(0,0,0,0.08)`,
+                border: `1px solid rgba(245,158,11, 0.12)`,
+                px: 1.2, py: 0.8, cursor: 'pointer',
+              }}
+            >
+              <Avatar 
+                variant="rounded"
+                sx={{ 
+                    width: 28, height: 28, mr: 1, borderRadius: '8px',
+                    border: `1px solid rgba(245,158,11, 0.4)`,
+                    bgcolor: 'rgba(245,158,11, 0.1)'
+                }} 
+              >
+                <EmojiEventsIcon sx={{ color: '#f59e0b', fontSize: 16 }} />
+              </Avatar>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.1 }}>
+                <Typography sx={{ 
+                  fontSize: '0.5rem', fontWeight: 800, color: '#fff', 
+                  background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                  px: 0.6, py: 0.1, borderRadius: '4px', textTransform: 'uppercase', letterSpacing: '0.5px', width: 'fit-content'
+                }}>
+                  QUESTS
+                </Typography>
+                <Typography sx={{ fontSize: '0.65rem', fontWeight: 700, color: 'rgba(255,255,255,0.95)' }}>
+                  Upgrade
+                </Typography>
+              </Box>
+            </Box>
+          )}
+
+          {/* Manage Profile CTA */}
+          <Box 
+            onClick={(e) => handleDirectBlockOpen(e, 'edit-profile')} 
             sx={{ 
-                width: 28, height: 28, mr: 1, borderRadius: '8px',
-                border: `1px solid rgba(59,130,246, 0.4)`,
-                bgcolor: 'rgba(59,130,246, 0.1)'
-            }} 
+              display: 'flex',
+              alignItems: 'center',
+              background: 'rgba(18, 24, 20, 0.92)',
+              backdropFilter: 'blur(20px)',
+              borderRadius: '16px',
+              boxShadow: `0 4px 16px rgba(59,130,246, 0.15), 0 1px 3px rgba(0,0,0,0.08)`,
+              border: `1px solid rgba(59,130,246, 0.12)`,
+              px: 1.2, py: 0.8, cursor: 'pointer',
+            }}
           >
-            <SettingsIcon sx={{ color: '#3b82f6', fontSize: 16 }} />
-          </Avatar>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.1 }}>
-            <Typography sx={{ 
-              fontSize: '0.5rem', fontWeight: 800, color: '#fff', 
-              background: 'linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%)',
-              px: 0.6, py: 0.1, borderRadius: '4px', textTransform: 'uppercase', letterSpacing: '0.5px', width: 'fit-content'
-            }}>
-              ACTION
-            </Typography>
-            <Typography sx={{ fontSize: '0.65rem', fontWeight: 700, color: 'rgba(255,255,255,0.95)' }}>
-              Manage
-            </Typography>
+            <Avatar 
+              variant="rounded"
+              sx={{ 
+                  width: 28, height: 28, mr: 1, borderRadius: '8px',
+                  border: `1px solid rgba(59,130,246, 0.4)`,
+                  bgcolor: 'rgba(59,130,246, 0.1)'
+              }} 
+            >
+              <SettingsIcon sx={{ color: '#3b82f6', fontSize: 16 }} />
+            </Avatar>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.1 }}>
+              <Typography sx={{ 
+                fontSize: '0.5rem', fontWeight: 800, color: '#fff', 
+                background: 'linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%)',
+                px: 0.6, py: 0.1, borderRadius: '4px', textTransform: 'uppercase', letterSpacing: '0.5px', width: 'fit-content'
+              }}>
+                ACTION
+              </Typography>
+              <Typography sx={{ fontSize: '0.65rem', fontWeight: 700, color: 'rgba(255,255,255,0.95)' }}>
+                Manage
+              </Typography>
+            </Box>
           </Box>
+
         </Box>
 
         {/* ─── NP badge — Mobile only (compact) ─── */}
