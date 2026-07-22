@@ -483,3 +483,28 @@ export async function cullBackTradeListing(listingId: string, userId: string, ta
   }
 }
 
+/**
+ * Fetches a single trade listing by ID for form editing/hydration.
+ */
+export async function getTradeListingById(listingId: string) {
+  try {
+    const listing = await prisma.tradeListing.findUnique({
+      where: { id: listingId },
+      include: {
+        organization: true,
+        postedBy: {
+          select: { id: true, name: true, avatarUrl: true, email: true }
+        }
+      }
+    });
+
+    if (!listing) return { success: false, error: 'Listing not found.' };
+
+    return { success: true, listing };
+  } catch (error: any) {
+    console.error('Failed to fetch listing by ID:', error);
+    return { success: false, error: error?.message || 'Failed to fetch listing.' };
+  }
+}
+
+

@@ -322,6 +322,35 @@ export default function TradePage() {
   // Dashboard / Form State
   const [drafts, setDrafts] = useState<any[]>([]);
   const [feedListings, setFeedListings] = useState<any[]>(MOCK_LISTINGS);
+  const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
+  const [editingListingData, setEditingListingData] = useState<any>(null);
+  const [createCategory, setCreateCategory] = useState<string>('');
+  const [createSelections, setCreateSelections] = useState<{ primary: string, secondary: string, tertiary?: string } | null>(null);
+  const [fastIngestPayload, setFastIngestPayload] = useState<any>(null);
+  const [sessionKey, setSessionKey] = useState(0);
+
+  const handleEditListing = async (id: string) => {
+    const localDraft = drafts.find((d: any) => d.id === id);
+    if (localDraft) {
+      setEditingListingData(localDraft);
+      if (localDraft.organizationId) {
+        setPostingAs('organization');
+        setSelectedOrgId(localDraft.organizationId);
+      }
+      setSelectedDraftId(id);
+    } else {
+      const { getTradeListingById } = await import('@/lib/actions/trade');
+      const res = await getTradeListingById(id);
+      if (res.success && res.listing) {
+        setEditingListingData(res.listing);
+        if (res.listing.organizationId) {
+          setPostingAs('organization');
+          setSelectedOrgId(res.listing.organizationId);
+        }
+        setSelectedDraftId(id);
+      }
+    }
+  };
 
   const fetchListings = () => {
     const userId = profile?.uid || profile?.id;
@@ -346,11 +375,6 @@ export default function TradePage() {
   useEffect(() => {
     fetchListings();
   }, [profile?.uid, profile?.id]);
-  const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
-  const [createCategory, setCreateCategory] = useState<string>('');
-  const [createSelections, setCreateSelections] = useState<{ primary: string, secondary: string, tertiary?: string } | null>(null);
-  const [fastIngestPayload, setFastIngestPayload] = useState<any>(null);
-  const [sessionKey, setSessionKey] = useState(0);
   
   const [activeTab, setActiveTab] = useState("All Listings");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -433,7 +457,7 @@ export default function TradePage() {
                 {drafts.slice(0, 3).map((draft: any) => (
                   <Box 
                     key={draft.id}
-                    onClick={() => { setIsFlipped(true); setSelectedDraftId(draft.id); }}
+                    onClick={() => { setIsFlipped(true); handleEditListing(draft.id); }}
                     sx={{ 
                       display: 'flex', alignItems: 'center', gap: 1, p: 1, borderRadius: '8px', 
                       cursor: 'pointer', bgcolor: 'rgba(255,255,255,0.5)',
@@ -457,96 +481,29 @@ export default function TradePage() {
         </Paper>
       </Box>
 
-      {/* Filter Segmented Menu */}
-      <Box sx={{ 
-        px: { xs: 2, md: 4 }, 
-        mb: isScrolled ? 2 : 4, 
-        display: 'flex', alignItems: 'center',
-        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
-      }}>
-        <IconButton 
-          onClick={() => setSearchOpen(!searchOpen)}
-          sx={{ 
-            mr: 1, width: 44, height: 44, flexShrink: 0,
-            color: searchOpen ? EMERALD : 'text.secondary',
-            bgcolor: searchOpen ? alpha(EMERALD, 0.15) : 'transparent',
-            '&:hover': { color: EMERALD, transform: 'scale(1.05)', bgcolor: alpha(EMERALD, 0.2) }
-          }}
-        >
-          {searchOpen ? <CloseIcon /> : <SearchIcon />}
-        </IconButton>
-
-        <Box sx={{ flex: 1, overflowX: "auto", display: 'flex', alignItems: 'center', gap: 0.5, py: 2, px: 1, scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' } }}>
-          {FILTERS.map((filter, index) => {
-            const isActive = activeTab === filter;
-            const isFirst = index === 0;
-            const isLast = index === FILTERS.length - 1;
-            
-            return (
-              <Box
-                key={filter}
-                ref={(el) => { tabRefs.current.set(filter, el as HTMLDivElement | null); }}
-                onClick={() => setActiveTab(filter)}
-                sx={{
-                  px: isActive ? 4 : 3, py: 1.25, position: 'relative', zIndex: 2,
-                  color: isActive ? 'white' : EMERALD,
-                  cursor: 'pointer', whiteSpace: 'nowrap', fontWeight: 700, fontSize: '0.85rem',
-                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                  borderRadius: isActive 
-                    ? '999px !important' 
-                    : (isFirst 
-                        ? '999px 12px 12px 999px !important' 
-                        : isLast 
-                            ? '12px 999px 999px 12px !important' 
-                            : '12px !important'),
-                  background: isActive 
-                      ? `linear-gradient(135deg, ${EMERALD} 0%, ${EMERALD_DARK} 100%)` 
-                      : alpha(EMERALD, 0.08),
-                  boxShadow: isActive ? `0 4px 12px ${alpha(EMERALD, 0.3)}` : 'none',
-                  '&:hover': { 
-                      color: isActive ? 'white' : EMERALD_DARK,
-                      background: isActive ? `linear-gradient(135deg, ${EMERALD} 0%, ${EMERALD_DARK} 100%)` : alpha(EMERALD, 0.15),
-                  }
-                }}
-              >
-                {filter}
-              </Box>
-            );
-          })}
+      {/* Navigation Pills */}
+      <Box sx={{ px: { xs: 2, md: 4 }, mb: 3 }}>
+        <Box sx={{ display: "flex", gap: 1, overflowX: "auto", pb: 1, borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
+          {FILTERS.map((tab) => (
+            <Chip
+              key={tab}
+              label={tab}
+              onClick={() => setActiveTab(tab)}
+              sx={{
+                fontWeight: 800,
+                bgcolor: activeTab === tab ? EMERALD : 'rgba(0,0,0,0.03)',
+                color: activeTab === tab ? '#fff' : '#64748b',
+                borderRadius: '12px',
+                '&:hover': { bgcolor: activeTab === tab ? EMERALD_DARK : 'rgba(0,0,0,0.06)' },
+              }}
+            />
+          ))}
         </Box>
       </Box>
 
-      <Box 
-        sx={{ flex: 1, overflowY: 'auto' }}
-        onScroll={(e) => {
-          const target = e.target as HTMLDivElement;
-          if (target.scrollTop > 30) {
-            if (!isScrolled) setIsScrolled(true);
-          } else {
-            if (isScrolled) setIsScrolled(false);
-          }
-        }}
-      >
-        {activeTab === "All Listings" ? (
-          <>
-            <HorizontalScrollRow title="Urgent Flash Sales" emoji="🚨" items={feedListings.filter(l => l.category === "flash-sale")} />
-            <HorizontalScrollRow title="Paid Opportunities" emoji="💰" items={feedListings.filter(l => l.category === "jobs" && l.metadata?.commitment !== 'volunteer' && l.metadata?.commitment !== 'internship')} />
-            <HorizontalScrollRow title="Internships" emoji="🎓" items={feedListings.filter(l => l.category === "jobs" && l.metadata?.commitment === 'internship')} />
-            <HorizontalScrollRow title="Volunteer & Earn NP" emoji="🤝" items={feedListings.filter(l => l.category === "volunteer" || (l.category === "jobs" && l.metadata?.commitment === 'volunteer'))} />
-            <HorizontalScrollRow title="Community Group-Buys" emoji="🛒" items={feedListings.filter(l => l.category === "group-buy")} />
-            <HorizontalScrollRow title="Barter & Swaps" emoji="♻️" items={feedListings.filter(l => l.category === "swap")} />
-            <Box sx={{ height: { xs: 80, md: 24 } }} />
-          </>
-        ) : (
-          <>
-            {activeTab === "Flash Sales" && <GridScrollRow items={feedListings.filter(l => l.category === "flash-sale")} />}
-            {activeTab === "Paid Jobs" && <GridScrollRow items={feedListings.filter(l => l.category === "jobs" && l.metadata?.commitment !== 'volunteer' && l.metadata?.commitment !== 'internship')} />}
-            {activeTab === "Internships" && <GridScrollRow items={feedListings.filter(l => l.category === "jobs" && l.metadata?.commitment === 'internship')} />}
-            {activeTab === "Volunteer (NP)" && <GridScrollRow items={feedListings.filter(l => l.category === "volunteer" || (l.category === "jobs" && l.metadata?.commitment === 'volunteer'))} />}
-            {activeTab === "Group-Buy" && <GridScrollRow items={feedListings.filter(l => l.category === "group-buy")} />}
-            {activeTab === "Swaps" && <GridScrollRow items={feedListings.filter(l => l.category === "swap")} />}
-          </>
-        )}
+      {/* Main Feed Content */}
+      <Box sx={{ px: { xs: 2, md: 4 }, pb: 4 }}>
+        <GridScrollRow items={feedListings} onDraftClick={(id) => { setIsFlipped(true); handleEditListing(id); }} />
       </Box>
     </Paper>
   );
@@ -590,6 +547,7 @@ export default function TradePage() {
               } else {
                 setCreateCategory('');
                 setSelectedDraftId(null);
+                setEditingListingData(null);
               }
             }}
             sx={{
@@ -702,10 +660,11 @@ export default function TradePage() {
               if (selections) setCreateSelections(selections);
               setFastIngestPayload(ingestData || null);
               setSelectedDraftId('new');
+              setEditingListingData(null);
               setSessionKey(prev => prev + 1);
             }}
             onEditDraft={(draftId) => {
-              setSelectedDraftId(draftId);
+              handleEditListing(draftId);
             }}
             onDeleteDraft={async (draftId) => {
               const userId = profile?.uid || profile?.id;
@@ -720,14 +679,15 @@ export default function TradePage() {
         ) : (
           <CreateListingForm 
             key={sessionKey}
-            draftData={selectedDraftId !== 'new' ? drafts.find((d: any) => d.id === selectedDraftId) : undefined}
-            initialCategory={selectedDraftId !== 'new' ? drafts.find((d: any) => d.id === selectedDraftId)?.category : createCategory}
-            initialSelections={selectedDraftId !== 'new' ? drafts.find((d: any) => d.id === selectedDraftId)?.metadata?.selections : createSelections}
+            draftData={selectedDraftId !== 'new' ? (editingListingData || drafts.find((d: any) => d.id === selectedDraftId)) : undefined}
+            initialCategory={selectedDraftId !== 'new' ? (editingListingData?.category || drafts.find((d: any) => d.id === selectedDraftId)?.category) : createCategory}
+            initialSelections={selectedDraftId !== 'new' ? (editingListingData?.metadata?.selections || drafts.find((d: any) => d.id === selectedDraftId)?.metadata?.selections) : createSelections}
             onCancel={() => {
               setCreateCategory('');
               setCreateSelections(null);
               setFastIngestPayload(null);
               setSelectedDraftId(null);
+              setEditingListingData(null);
             }}
             onSuccess={() => {
               setIsFlipped(false);
