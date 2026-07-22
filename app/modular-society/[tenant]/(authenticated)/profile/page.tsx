@@ -52,7 +52,7 @@ export default function CommandCenterLayout() {
         >
           <UserCommandContainer 
             tenant={tenant}
-            username={profile.username || profile.id || profile.uid} 
+            username={profile.username || profile.uid} 
             isActive={activeView === 'user'} 
             isCollapsed={activeView === 'org'}
             onActivate={() => setActiveView(activeView === 'user' ? 'split' : 'user')} 

@@ -3,11 +3,11 @@ import { Box, Typography } from '@mui/material';
 import PublicUserProfile from '@/components/profile/PublicUserProfile';
 import PublicOrgProfile from '@/components/profile/PublicOrgProfile';
 
-export default function HandleRoute({ params }: { params: { tenant: string, handle: string } }) {
-  const { tenant, handle } = params;
+export default async function HandleRoute({ params }: { params: Promise<{ tenant: string, handle: string }> }) {
+  const { tenant, handle } = await params;
 
   // Next.js params encode '@' as '%40'
-  const decodedHandle = decodeURIComponent(handle);
+  const decodedHandle = decodeURIComponent(handle || '');
 
   if (decodedHandle.startsWith('@u-')) {
     const username = decodedHandle.slice(3);

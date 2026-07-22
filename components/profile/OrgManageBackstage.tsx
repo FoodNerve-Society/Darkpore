@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Paper, Grid, Avatar, Chip, Button, CircularProgress } from '@mui/material';
+import { Box, Typography, Paper, Grid, Avatar, Chip, Button, CircularProgress, alpha } from '@mui/material';
 import BusinessIcon from '@mui/icons-material/Business';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import ArticleIcon from '@mui/icons-material/Article';
@@ -194,6 +194,95 @@ export default function OrgManageBackstage({ onClose }: { onClose?: () => void }
                   ))}
                 </tbody>
               </table>
+            </Box>
+          </Paper>
+        </Grid>
+
+        {/* ROW 3: ORG ACTIVITY & AUDIT LOG */}
+        <Grid size={{ xs: 12 }}>
+          <Paper elevation={0} sx={{ p: { xs: 3, md: 4 }, borderRadius: '24px', border: '1px solid #e2e8f0', mt: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>
+                  Organization Activity & Updates
+                </Typography>
+                <Typography sx={{ fontSize: '0.85rem', color: '#64748b' }}>
+                  Real-time audit log of team actions, verification milestones, and system updates
+                </Typography>
+              </Box>
+              <Chip label="Live Feed" color="success" size="small" sx={{ fontWeight: 700, borderRadius: '8px' }} />
+            </Box>
+
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {[
+                {
+                  title: 'New Team Member Onboarded',
+                  desc: 'Member added to organization workspace with Default Member permissions.',
+                  time: '1 hour ago',
+                  tag: 'ROSTER',
+                  color: '#3b82f6',
+                },
+                {
+                  title: 'CAC Corporate Documents Submitted',
+                  desc: 'Corporate Registration filing submitted for Rank 4 verification review.',
+                  time: 'Yesterday at 11:15',
+                  tag: 'COMPLIANCE',
+                  color: '#f59e0b',
+                },
+                {
+                  title: 'Ecosystem Grant Application Initiated',
+                  desc: 'Agricultural Logistics Expansion proposal drafted under Society Grants.',
+                  time: '4 days ago',
+                  tag: 'PROPOSALS',
+                  color: '#10b981',
+                },
+                {
+                  title: 'Tax Clearance Certificate Verified',
+                  desc: 'Institutional tax compliance document verified by FoodNerve Admin.',
+                  time: '1 week ago',
+                  tag: 'VERIFICATION',
+                  color: '#8b5cf6',
+                },
+              ].map((act, i) => (
+                <Paper
+                  key={i}
+                  elevation={0}
+                  sx={{
+                    p: 2,
+                    bgcolor: '#f8fafc',
+                    borderRadius: '14px',
+                    border: '1px solid #f1f5f9',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                      <Typography sx={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>
+                        {act.title}
+                      </Typography>
+                      <Chip
+                        label={act.tag}
+                        size="small"
+                        sx={{
+                          fontSize: '0.6rem',
+                          fontWeight: 800,
+                          bgcolor: alpha(act.color, 0.1),
+                          color: act.color,
+                          borderRadius: '6px',
+                        }}
+                      />
+                    </Box>
+                    <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
+                      {act.desc}
+                    </Typography>
+                  </Box>
+                  <Typography sx={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                    {act.time}
+                  </Typography>
+                </Paper>
+              ))}
             </Box>
           </Paper>
         </Grid>

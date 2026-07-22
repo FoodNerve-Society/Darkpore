@@ -383,8 +383,8 @@ export function SocietyProvider({ children }: { children: React.ReactNode }) {
 
   const needsOnboarding = user !== null && (!profile || !profile.landingPage || !profile.tabOrder || profile.tabOrder.length === 0);
 
-  // Organization context switcher
-  const activeOrg = profile?.organizations?.find(o => o.id === profile.activeOrgId) || null;
+  // Organization context switcher (defaults to first org if activeOrgId is not set)
+  const activeOrg = profile?.organizations?.find(o => o.id === profile.activeOrgId) || profile?.organizations?.[0] || null;
 
   const switchOrg = (orgId: string | null) => {
     if (!profile) return;

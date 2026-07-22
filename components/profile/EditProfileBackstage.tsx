@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Button, Collapse, alpha } from '@mui/material';
+import { Box, Typography, Button, Collapse, alpha, Paper } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import EditIcon from '@mui/icons-material/Edit';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
@@ -186,15 +186,85 @@ export default function EditProfileBackstage({ onClose, initialBlockId }: Props)
         <ActionBlock
           id="notifications"
           icon={<NotificationsActiveIcon />}
-          title="Notification Preferences"
-          subtitle="Configure how and when you receive alerts"
-          color="#8b5cf6"
+          title="Profile Activity & Updates"
+          subtitle="Real-time timeline of account achievements, security logs, and updates"
+          color="#10b981"
           isExpanded={activeBlock === 'notifications'}
           onToggle={() => toggleBlock('notifications')}
         >
-          <Box sx={{ textAlign: 'center', py: 4 }}>
-            <Typography sx={{ color: '#64748b', mb: 2 }}>Notification toggles loaded here.</Typography>
-            <Button variant="contained" sx={{ bgcolor: '#8b5cf6', borderRadius: '12px', fontWeight: 700 }}>Save Preferences</Button>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, py: 1 }}>
+            {[
+              {
+                title: 'Level 1 Gatekeeper Verification Completed',
+                subtitle: '+150 NP Reputation XP Credited to Wallet',
+                time: '2 hours ago',
+                badge: 'XP EARNED',
+                color: '#10b981',
+              },
+              {
+                title: 'Security Alert: Password Updated',
+                subtitle: 'Account authentication parameters updated successfully',
+                time: 'Yesterday at 14:32',
+                badge: 'SECURITY',
+                color: '#3b82f6',
+              },
+              {
+                title: 'Organization Linkage Confirmed',
+                subtitle: 'Linked to active organization workspace',
+                time: '3 days ago',
+                badge: 'NETWORK',
+                color: '#8b5cf6',
+              },
+              {
+                title: 'Executive Identity Card Exported',
+                subtitle: 'Downloaded high-res digital credentials card',
+                time: '5 days ago',
+                badge: 'CREDENTIALS',
+                color: '#f59e0b',
+              },
+            ].map((item, idx) => (
+              <Paper
+                key={idx}
+                elevation={0}
+                sx={{
+                  p: 2,
+                  bgcolor: '#f8fafc',
+                  borderRadius: '14px',
+                  border: '1px solid rgba(0,0,0,0.06)',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  justifyContent: 'space-between',
+                  gap: 2,
+                }}
+              >
+                <Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                    <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: '#0f172a' }}>
+                      {item.title}
+                    </Typography>
+                    <Typography
+                      sx={{
+                        fontSize: '0.55rem',
+                        fontWeight: 800,
+                        px: 1,
+                        py: 0.2,
+                        borderRadius: '6px',
+                        bgcolor: alpha(item.color, 0.1),
+                        color: item.color,
+                      }}
+                    >
+                      {item.badge}
+                    </Typography>
+                  </Box>
+                  <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
+                    {item.subtitle}
+                  </Typography>
+                </Box>
+                <Typography sx={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                  {item.time}
+                </Typography>
+              </Paper>
+            ))}
           </Box>
         </ActionBlock>
       </Box>

@@ -9,7 +9,7 @@ export async function getPublicUser(username: string) {
         const user = await prisma.user.findFirst({
             where: {
                 OR: [
-                    { username },
+                    { username: { equals: username, mode: 'insensitive' } },
                     { firebaseUid: username },
                     { id: username }
                 ]
