@@ -481,29 +481,96 @@ export default function TradePage() {
         </Paper>
       </Box>
 
-      {/* Navigation Pills */}
-      <Box sx={{ px: { xs: 2, md: 4 }, mb: 3 }}>
-        <Box sx={{ display: "flex", gap: 1, overflowX: "auto", pb: 1, borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
-          {FILTERS.map((tab) => (
-            <Chip
-              key={tab}
-              label={tab}
-              onClick={() => setActiveTab(tab)}
-              sx={{
-                fontWeight: 800,
-                bgcolor: activeTab === tab ? EMERALD : 'rgba(0,0,0,0.03)',
-                color: activeTab === tab ? '#fff' : '#64748b',
-                borderRadius: '12px',
-                '&:hover': { bgcolor: activeTab === tab ? EMERALD_DARK : 'rgba(0,0,0,0.06)' },
-              }}
-            />
-          ))}
+      {/* Filter Segmented Menu */}
+      <Box sx={{ 
+        px: { xs: 2, md: 4 }, 
+        mb: isScrolled ? 2 : 4, 
+        display: 'flex', alignItems: 'center',
+        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+      }}>
+        <IconButton 
+          onClick={() => setSearchOpen(!searchOpen)}
+          sx={{ 
+            mr: 1, width: 44, height: 44, flexShrink: 0,
+            color: searchOpen ? EMERALD : 'text.secondary',
+            bgcolor: searchOpen ? alpha(EMERALD, 0.15) : 'transparent',
+            '&:hover': { color: EMERALD, transform: 'scale(1.05)', bgcolor: alpha(EMERALD, 0.2) }
+          }}
+        >
+          {searchOpen ? <CloseIcon /> : <SearchIcon />}
+        </IconButton>
+
+        <Box sx={{ flex: 1, overflowX: "auto", display: 'flex', alignItems: 'center', gap: 0.5, py: 2, px: 1, scrollbarWidth: 'none', '&::-webkit-scrollbar': { display: 'none' } }}>
+          {FILTERS.map((filter, index) => {
+            const isActive = activeTab === filter;
+            const isFirst = index === 0;
+            const isLast = index === FILTERS.length - 1;
+            
+            return (
+              <Box
+                key={filter}
+                ref={(el) => { tabRefs.current.set(filter, el as HTMLDivElement | null); }}
+                onClick={() => setActiveTab(filter)}
+                sx={{
+                  px: isActive ? 4 : 3, py: 1.25, position: 'relative', zIndex: 2,
+                  color: isActive ? 'white' : EMERALD,
+                  cursor: 'pointer', whiteSpace: 'nowrap', fontWeight: 700, fontSize: '0.85rem',
+                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                  borderRadius: isActive 
+                    ? '999px !important' 
+                    : (isFirst 
+                        ? '999px 12px 12px 999px !important' 
+                        : isLast 
+                            ? '12px 999px 999px 12px !important' 
+                            : '12px !important'),
+                  background: isActive 
+                      ? `linear-gradient(135deg, ${EMERALD} 0%, ${EMERALD_DARK} 100%)` 
+                      : alpha(EMERALD, 0.08),
+                  boxShadow: isActive ? `0 4px 12px ${alpha(EMERALD, 0.3)}` : 'none',
+                  '&:hover': { 
+                      color: isActive ? 'white' : EMERALD_DARK,
+                      background: isActive ? `linear-gradient(135deg, ${EMERALD} 0%, ${EMERALD_DARK} 100%)` : alpha(EMERALD, 0.15),
+                  }
+                }}
+              >
+                {filter}
+              </Box>
+            );
+          })}
         </Box>
       </Box>
 
-      {/* Main Feed Content */}
-      <Box sx={{ px: { xs: 2, md: 4 }, pb: 4 }}>
-        <GridScrollRow items={feedListings} onDraftClick={(id) => { setIsFlipped(true); handleEditListing(id); }} />
+      <Box 
+        sx={{ flex: 1, overflowY: 'auto' }}
+        onScroll={(e) => {
+          const target = e.target as HTMLDivElement;
+          if (target.scrollTop > 30) {
+            if (!isScrolled) setIsScrolled(true);
+          } else {
+            if (isScrolled) setIsScrolled(false);
+          }
+        }}
+      >
+        {activeTab === "All Listings" ? (
+          <>
+            <HorizontalScrollRow title="Urgent Flash Sales" emoji="🚨" items={feedListings.filter(l => l.category === "flash-sale")} onDraftClick={(id) => { setIsFlipped(true); handleEditListing(id); }} />
+            <HorizontalScrollRow title="Paid Opportunities" emoji="💰" items={feedListings.filter(l => l.category === "jobs" && l.metadata?.commitment !== 'volunteer' && l.metadata?.commitment !== 'internship')} onDraftClick={(id) => { setIsFlipped(true); handleEditListing(id); }} />
+            <HorizontalScrollRow title="Internships" emoji="🎓" items={feedListings.filter(l => l.category === "jobs" && l.metadata?.commitment === 'internship')} onDraftClick={(id) => { setIsFlipped(true); handleEditListing(id); }} />
+            <HorizontalScrollRow title="Volunteer & Earn NP" emoji="🤝" items={feedListings.filter(l => l.category === "volunteer" || (l.category === "jobs" && l.metadata?.commitment === 'volunteer'))} onDraftClick={(id) => { setIsFlipped(true); handleEditListing(id); }} />
+            <HorizontalScrollRow title="Community Group-Buys" emoji="🛒" items={feedListings.filter(l => l.category === "group-buy")} onDraftClick={(id) => { setIsFlipped(true); handleEditListing(id); }} />
+            <HorizontalScrollRow title="Barter & Swaps" emoji="♻️" items={feedListings.filter(l => l.category === "swap")} onDraftClick={(id) => { setIsFlipped(true); handleEditListing(id); }} />
+            <Box sx={{ height: { xs: 80, md: 24 } }} />
+          </>
+        ) : (
+          <>
+            {activeTab === "Flash Sales" && <GridScrollRow items={feedListings.filter(l => l.category === "flash-sale")} onDraftClick={(id) => { setIsFlipped(true); handleEditListing(id); }} />}
+            {activeTab === "Paid Jobs" && <GridScrollRow items={feedListings.filter(l => l.category === "jobs" && l.metadata?.commitment !== 'volunteer' && l.metadata?.commitment !== 'internship')} onDraftClick={(id) => { setIsFlipped(true); handleEditListing(id); }} />}
+            {activeTab === "Internships" && <GridScrollRow items={feedListings.filter(l => l.category === "jobs" && l.metadata?.commitment === 'internship')} onDraftClick={(id) => { setIsFlipped(true); handleEditListing(id); }} />}
+            {activeTab === "Volunteer (NP)" && <GridScrollRow items={feedListings.filter(l => l.category === "volunteer" || (l.category === "jobs" && l.metadata?.commitment === 'volunteer'))} onDraftClick={(id) => { setIsFlipped(true); handleEditListing(id); }} />}
+            {activeTab === "Group-Buy" && <GridScrollRow items={feedListings.filter(l => l.category === "group-buy")} onDraftClick={(id) => { setIsFlipped(true); handleEditListing(id); }} />}
+            {activeTab === "Swaps" && <GridScrollRow items={feedListings.filter(l => l.category === "swap")} onDraftClick={(id) => { setIsFlipped(true); handleEditListing(id); }} />}
+          </>
+        )}
       </Box>
     </Paper>
   );
