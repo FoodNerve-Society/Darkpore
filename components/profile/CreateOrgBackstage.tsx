@@ -12,7 +12,7 @@ export default function CreateOrgBackstage({ onClose }: Props) {
   return (
     <Box sx={{ p: 4, height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-        <Typography variant="h5" fontWeight={800}>
+        <Typography variant="h5" sx={{ fontWeight: 800 }}>
           Create Organization
         </Typography>
         {onClose && (
