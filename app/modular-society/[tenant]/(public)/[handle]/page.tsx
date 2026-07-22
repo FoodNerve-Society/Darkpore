@@ -3,8 +3,10 @@ import { Box, Typography } from '@mui/material';
 import PublicUserProfile from '@/components/profile/PublicUserProfile';
 import PublicOrgProfile from '@/components/profile/PublicOrgProfile';
 
-export default function HandleRoute({ params }: { params: { tenant: string, handle: string } }) {
-  const { tenant, handle } = params;
+export default async function HandleRoute({ params }: { params: Promise<{ tenant: string, handle: string }> | { tenant: string, handle: string } }) {
+  const resolvedParams = await params;
+  const tenant = resolvedParams?.tenant || '';
+  const handle = resolvedParams?.handle || '';
 
   // Next.js params encode '@' as '%40'
   const decodedHandle = decodeURIComponent(handle);
