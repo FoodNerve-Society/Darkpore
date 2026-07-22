@@ -28,8 +28,38 @@ const flowAnimation = keyframes`
   100% { background-position: 0% 50%; }
 `;
 
+const pulseAnimation = keyframes`
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(255, 255, 255, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+`;
+
 export default function CommandCenterHero({ headline, subheadline, globalAlerts = [] }: CommandCenterHeroProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
+
+  const getTimeStatus = (alert: any) => {
+    if (!alert) return null;
+    const now = new Date().getTime();
+    const start = alert.startDate ? new Date(alert.startDate).getTime() : null;
+    const end = alert.endDate ? new Date(alert.endDate).getTime() : null;
+
+    if (start && start <= now && (!end || end > now)) {
+      return { label: 'HAPPENING NOW', color: '#ef4444', pulse: true };
+    } else if (start && start > now) {
+      const diffMs = start - now;
+      const diffHrs = Math.round(diffMs / (1000 * 60 * 60));
+      if (diffHrs < 24) return { label: `STARTS IN ${Math.max(1, diffHrs)}H`, color: '#f59e0b', pulse: false };
+      const diffDays = Math.round(diffHrs / 24);
+      return { label: `STARTS IN ${diffDays}D`, color: '#f59e0b', pulse: false };
+    } else if (!start && end && end > now) {
+      const diffMs = end - now;
+      const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+      return { label: `DEADLINE IN ${Math.max(1, diffDays)}D`, color: '#eab308', pulse: false };
+    }
+    return null;
+  };
+
+  const statusObj = getTimeStatus(globalAlerts[currentSlide]);
 
   const renderHeadline = () => {
     if (headline.startsWith('Explore')) {
@@ -107,10 +137,38 @@ export default function CommandCenterHero({ headline, subheadline, globalAlerts 
             boxShadow: '0 20px 40px -10px rgba(0,0,0,0.05)'
           }}>
             <Box sx={{ p: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 10, position: 'absolute', top: 0, left: 0, right: 0 }}>
-              <Box sx={{ bgcolor: '#ffffff', px: 2, py: 1, borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-                <Typography sx={{ fontWeight: 900, color: '#10b981', letterSpacing: '0.1em', textTransform: 'uppercase', fontSize: '0.75rem' }}>
-                  {globalAlerts[currentSlide]?.categoryLabel || 'GLOBAL UPDATES'}
-                </Typography>
+              <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                <Box sx={{ bgcolor: '#ffffff', px: 2.5, py: 1, borderRadius: '10px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                  <Typography sx={{ fontWeight: 900, color: '#0f172a', letterSpacing: '0.1em', textTransform: 'uppercase', fontSize: '0.75rem' }}>
+                    {globalAlerts[currentSlide]?.categoryLabel || 'GLOBAL UPDATES'}
+                  </Typography>
+                </Box>
+                
+                <AnimatePresence mode="wait">
+                  {statusObj && (
+                    <Box 
+                      component={motion.div}
+                      key={statusObj.label}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      sx={{ 
+                        bgcolor: statusObj.color, 
+                        px: 2, py: 1, 
+                        borderRadius: '10px', 
+                        boxShadow: `0 4px 15px ${statusObj.color}60`,
+                        display: 'flex', alignItems: 'center', gap: 1,
+                      }}
+                    >
+                      {statusObj.pulse && (
+                        <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'white', animation: `${pulseAnimation} 2s infinite` }} />
+                      )}
+                      <Typography sx={{ fontWeight: 900, color: 'white', letterSpacing: '0.05em', textTransform: 'uppercase', fontSize: '0.75rem' }}>
+                        {statusObj.label}
+                      </Typography>
+                    </Box>
+                  )}
+                </AnimatePresence>
               </Box>
             </Box>
             

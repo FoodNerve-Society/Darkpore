@@ -50,3 +50,28 @@ export async function getFoodNerveOrganizations(userId?: string, role?: string) 
         return { success: false, error: e.message };
     }
 }
+
+export async function getPublicOrganization(slug: string) {
+    try {
+        const org = await prisma.organization.findUnique({
+            where: { slug },
+            include: {
+                members: {
+                    include: {
+                        user: {
+                            select: { id: true, firebaseUid: true, name: true, avatarUrl: true, rank: true, specialization: true }
+                        }
+                    }
+                },
+                tradeListings: {
+                    where: { status: 'active' },
+                    orderBy: { postedAt: 'desc' }
+                }
+            }
+        });
+        if (!org) return { success: false, error: 'Organization not found' };
+        return { success: true, data: org };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}

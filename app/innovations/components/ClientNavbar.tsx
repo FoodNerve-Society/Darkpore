@@ -31,7 +31,7 @@ export default function ClientNavbar({ tenantName, orgDomain }: { tenantName: st
 
   // Extract the current challenge or top route from the URL
   const pathSegments = pathname.split('/').filter(Boolean);
-  const knownTopRoutes = ['challenges', 'projects', 'learn'];
+  const knownTopRoutes = ['challenges', 'projects', 'learn', 'categories', 'careers', 'people'];
   const currentChallenge = pathSegments.length > 0 && !knownTopRoutes.includes(pathSegments[0])
     ? pathSegments[0]
     : null;
@@ -83,34 +83,37 @@ export default function ClientNavbar({ tenantName, orgDomain }: { tenantName: st
         bgcolor: 'rgba(255, 255, 255, 0.75)',
         backdropFilter: 'blur(20px)',
         borderRadius: '24px',
-        px: { xs: 1.5, md: 2.5 },
+        pr: { xs: 1.5, md: 2.5 },
+        pl: 0, // No left padding so the logo forms the edge
         py: 1,
         border: '1px solid rgba(255, 255, 255, 0.3)',
         boxShadow: scrolled ? '0 12px 32px rgba(0,0,0,0.08)' : '0 8px 32px rgba(0, 0, 0, 0.05)',
         transition: 'all 0.4s cubic-bezier(0.2, 0, 0, 1)',
         gap: 2,
+        position: 'relative' // Needed for absolute positioning the logo
       }}>
         
-        {/* Brand Identity */}
-        <Box sx={{ position: 'relative', width: scrolled ? '60px' : '85px', height: '100%', display: 'flex', transition: 'width 0.3s ease' }}>
-          <Link href="/" passHref style={{ textDecoration: 'none', position: 'absolute', top: scrolled ? -12 : -12, left: 0, transition: 'top 0.3s ease' }}>
+        {/* Spacer to push content right so it doesn't overlap the absolute positioned logo */}
+        <Box sx={{ width: scrolled ? '30px' : '40px', transition: 'width 0.3s ease', flexShrink: 0 }} />
+
+        {/* Brand Identity - Perfectly centered vertically and on the left edge */}
+        <Link href="/" passHref style={{ textDecoration: 'none', position: 'absolute', top: '50%', left: 0, transform: 'translate(-50%, -50%)', zIndex: 10 }}>
             <Box sx={{
                 bgcolor: '#f1f8e9', /* Static brand color */
-                px: scrolled ? 1.5 : 1.8, 
-                pt: scrolled ? 2.5 : 3.5, 
-                pb: scrolled ? 0.8 : 1.2,
+                px: scrolled ? 1.5 : 2, 
+                py: scrolled ? 2.5 : 3.5,
                 display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-end',
-                boxShadow: scrolled ? '0 6px 20px rgba(0, 0, 0, 0.1)' : '0 10px 30px rgba(0, 0, 0, 0.05)',
-                borderRadius: 0, 
-                minHeight: scrolled ? '60px' : '85px',
+                boxShadow: scrolled ? '4px 4px 20px rgba(0, 0, 0, 0.1)' : '6px 6px 30px rgba(0, 0, 0, 0.15)',
+                borderRadius: 0, // No border radius
+                minHeight: scrolled ? '80px' : '110px',
+                width: scrolled ? '60px' : '80px',
                 transition: 'all 0.4s cubic-bezier(0.2, 0, 0, 1)'
             }}>
-                <Typography variant="h6" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, fontSize: scrolled ? '0.65rem' : '0.9rem', color: '#1b5e20', lineHeight: 1, letterSpacing: '-0.02em', textAlign: 'left', transition: 'all 0.4s ease' }}>
+                <Typography variant="h6" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, fontSize: scrolled ? '0.75rem' : '1rem', color: '#1b5e20', lineHeight: 1, letterSpacing: '-0.02em', textAlign: 'left', transition: 'all 0.4s ease' }}>
                     {logoPart1}{logoPart2 && <><br />{logoPart2}</>}
                 </Typography>
             </Box>
-          </Link>
-        </Box>
+        </Link>
 
         {/* Category context indicator */}
         {activeCategory && (

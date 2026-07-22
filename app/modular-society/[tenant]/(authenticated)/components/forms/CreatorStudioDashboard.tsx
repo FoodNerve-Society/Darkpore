@@ -15,6 +15,7 @@ import {
   ContentPaste as ContentPasteIcon
 } from '@mui/icons-material';
 import { keyframes } from '@mui/system';
+import WikiHotspot from '@/components/wiki/WikiHotspot';
 
 const ACCENT = "#f59e0b";
 const ACCENT_DARK = "#d97706";
@@ -463,11 +464,9 @@ export default function CreatorStudioDashboard({
       {/* ================================================================ */}
       {/* START FRESH SECTION                                              */}
       {/* ================================================================ */}
-
       <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', mb: 2, letterSpacing: '0.05em' }}>
         Start Fresh
       </Typography>
-
       <Box sx={{
         display: 'flex', 
         gap: expandedStartType ? 0 : 3, 
@@ -516,13 +515,18 @@ export default function CreatorStudioDashboard({
                   <Box sx={{ position: 'absolute', right: -20, bottom: -20, opacity: 0.12, transform: 'scale(4)', pointerEvents: 'none', color: '#fff' }}>
                     {opt.icon}
                   </Box>
-                  <Box className="sf-icon" sx={{
-                    p: { xs: 1, sm: 1.5 }, borderRadius: { xs: '12px', sm: '18px' }, bgcolor: 'rgba(255,255,255,0.18)',
-                    color: '#fff', width: 'fit-content',
-                    backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.25)',
-                    transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                  }}>
-                    {opt.icon}
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <Box className="sf-icon" sx={{
+                      p: { xs: 1, sm: 1.5 }, borderRadius: { xs: '12px', sm: '18px' }, bgcolor: 'rgba(255,255,255,0.18)',
+                      color: '#fff', width: 'fit-content',
+                      backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.25)',
+                      transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                    }}>
+                      {opt.icon}
+                    </Box>
+                    <Box sx={{ position: 'relative', zIndex: 10 }}>
+                      <WikiHotspot id={`learn-start-fresh-${opt.type}`} label={opt.title} />
+                    </Box>
                   </Box>
                   <Box sx={{ position: 'relative', zIndex: 1, mt: { xs: 0, sm: 1 } }}>
                     <Typography sx={{ fontWeight: 900, fontSize: { xs: '0.85rem', sm: '1.2rem' }, mb: 0.25, color: '#fff', letterSpacing: '-0.02em' }}>

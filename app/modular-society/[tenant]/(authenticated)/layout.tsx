@@ -22,6 +22,7 @@ import AdminOnboardingModal from './components/AdminOnboardingModal';
 import OnboardingWizard from '@/components/OnboardingWizard';
 import MiniAuthModal from './components/MiniAuthModal';
 import UpdatesFeed from './components/UpdatesFeed';
+import { WikiOverlayProvider } from '@/context/WikiOverlayContext';
 
 const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
   const { user, profile, loading, needsOnboarding, isUpdatesOpen, setUpdatesOpen } = useSociety();
@@ -126,9 +127,10 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
   const activeTheme = getActiveTheme(pathname);
 
   return (
-    <Box sx={{ display: 'flex', height: '100dvh', flexDirection: isMobile ? 'column' : 'row', position: 'relative', bgcolor: '#f8fafc', overflow: 'hidden' }}>
+    <WikiOverlayProvider>
+      <Box sx={{ display: 'flex', height: '100dvh', flexDirection: isMobile ? 'column' : 'row', position: 'relative', bgcolor: '#f8fafc', overflow: 'hidden' }}>
 
-      {/* --- DYNAMIC BACKGROUND LAYER (Fixed behind everything) --- */}
+        {/* --- DYNAMIC BACKGROUND LAYER (Fixed behind everything) --- */}
       <Box sx={{
         position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
         opacity: 1,
@@ -264,20 +266,19 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
         slotProps={{
           paper: {
             sx: { 
-              borderRadius: 4, 
               p: 0, 
-              overflow: 'hidden',
-              bgcolor: 'rgba(255,255,255,0.95)',
-              boxShadow: '0 24px 64px rgba(0,0,0,0.15)',
-              border: '1px solid rgba(255,255,255,0.4)',
-              maxWidth: 800,
-              width: '100%'
+              overflow: 'visible',
+              bgcolor: 'transparent',
+              boxShadow: 'none',
+              maxWidth: 850,
+              width: '100%',
+              m: { xs: 2, md: 4 }
             }
           },
           backdrop: {
             sx: {
-              backdropFilter: 'blur(20px)',
-              backgroundColor: 'rgba(255, 255, 255, 0.15)',
+              backdropFilter: 'blur(30px)',
+              backgroundColor: 'rgba(255, 255, 255, 0.4)',
             }
           }
         }}
@@ -291,7 +292,8 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
           tenant={tenant}
         />
       )}
-    </Box>
+      </Box>
+    </WikiOverlayProvider>
   );
 };
 

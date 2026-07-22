@@ -73,6 +73,7 @@ export interface Organization {
 
 export interface SocietyProfile {
   uid: string;
+  username?: string;
   displayName?: string;
   firstName?: string;
   lastName?: string;
@@ -271,6 +272,7 @@ export function SocietyProvider({ children }: { children: React.ReactNode }) {
             const prismaUser = data.user;
             const mappedProfile: SocietyProfile = {
               uid: prismaUser.id,
+              username: prismaUser.username,
               displayName: prismaUser.name,
               firstName: prismaUser.firstName || undefined,
               lastName: prismaUser.lastName || undefined,
