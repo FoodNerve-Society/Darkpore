@@ -81,7 +81,6 @@ export default function CommandCenterLayout() {
         >
           <OrgCommandContainer 
             tenant={tenant}
-            slug={activeOrg?.slug || null} 
             isActive={activeView === 'org'} 
             isCollapsed={activeView === 'user'}
             onActivate={() => setActiveView(activeView === 'org' ? 'split' : 'org')} 
