@@ -37,85 +37,67 @@ export default function ABToggleBar({ currentView }: { currentView: string }) {
         border: '1px solid rgba(255, 255, 255, 0.15)',
       }}
     >
-      <Tooltip title="Switch to Variant A: Command Center Engine" arrow placement="top">
+      <Typography
+        sx={{
+          fontSize: '0.65rem',
+          fontWeight: 900,
+          color: 'rgba(255, 255, 255, 0.7)',
+          letterSpacing: '0.1em',
+          pl: 1.5,
+          pr: 0.5,
+          userSelect: 'none',
+        }}
+      >
+        TYPE:
+      </Typography>
+
+      <Tooltip title="Variant A: Command Engine" arrow placement="top">
         <Box
           onClick={() => handleToggle('a')}
           sx={{
+            width: 32,
+            height: 32,
+            borderRadius: '50%',
+            cursor: 'pointer',
+            bgcolor: isA ? '#ffffff' : 'rgba(255,255,255,0.1)',
+            color: isA ? '#0f172a' : 'rgba(255,255,255,0.7)',
             display: 'flex',
             alignItems: 'center',
-            gap: 1,
-            px: 1.8,
-            py: 0.7,
-            borderRadius: '999px',
-            cursor: 'pointer',
-            bgcolor: isA ? '#ffffff' : 'transparent',
-            color: isA ? '#0f172a' : 'rgba(255,255,255,0.6)',
+            justifyContent: 'center',
+            fontSize: '0.8rem',
+            fontWeight: 900,
             boxShadow: isA ? '0 4px 14px rgba(0,0,0,0.25)' : 'none',
             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             userSelect: 'none',
-            '&:hover': { color: isA ? '#0f172a' : '#ffffff' },
+            '&:hover': { bgcolor: isA ? '#ffffff' : 'rgba(255,255,255,0.25)', color: isA ? '#0f172a' : '#ffffff' },
           }}
         >
-          <Box
-            sx={{
-              width: 20,
-              height: 20,
-              borderRadius: '50%',
-              bgcolor: isA ? '#0f172a' : 'rgba(255,255,255,0.15)',
-              color: isA ? '#ffffff' : 'inherit',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '0.65rem',
-              fontWeight: 900,
-            }}
-          >
-            A
-          </Box>
-          <Typography sx={{ fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.04em' }}>
-            COMMAND
-          </Typography>
+          A
         </Box>
       </Tooltip>
 
-      <Tooltip title="Switch to Variant B: Editorial Magazine" arrow placement="top">
+      <Tooltip title="Variant B: Editorial Magazine" arrow placement="top">
         <Box
           onClick={() => handleToggle('b')}
           sx={{
+            width: 32,
+            height: 32,
+            borderRadius: '50%',
+            cursor: 'pointer',
+            bgcolor: !isA ? '#16a34a' : 'rgba(255,255,255,0.1)',
+            color: !isA ? '#ffffff' : 'rgba(255,255,255,0.7)',
             display: 'flex',
             alignItems: 'center',
-            gap: 1,
-            px: 1.8,
-            py: 0.7,
-            borderRadius: '999px',
-            cursor: 'pointer',
-            bgcolor: !isA ? '#16a34a' : 'transparent',
-            color: !isA ? '#ffffff' : 'rgba(255,255,255,0.6)',
+            justifyContent: 'center',
+            fontSize: '0.8rem',
+            fontWeight: 900,
             boxShadow: !isA ? '0 4px 14px rgba(22, 163, 74, 0.4)' : 'none',
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
             userSelect: 'none',
-            '&:hover': { color: '#ffffff' },
+            '&:hover': { bgcolor: !isA ? '#16a34a' : 'rgba(255,255,255,0.25)', color: '#ffffff' },
           }}
         >
-          <Box
-            sx={{
-              width: 20,
-              height: 20,
-              borderRadius: '50%',
-              bgcolor: !isA ? '#ffffff' : 'rgba(255,255,255,0.15)',
-              color: !isA ? '#16a34a' : 'inherit',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '0.65rem',
-              fontWeight: 900,
-            }}
-          >
-            B
-          </Box>
-          <Typography sx={{ fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.04em' }}>
-            EDITORIAL
-          </Typography>
+          B
         </Box>
       </Tooltip>
     </Box>
