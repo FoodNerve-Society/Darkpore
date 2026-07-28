@@ -137,18 +137,20 @@ export default function EditorialMagazineHero({
               </Box>
             )}
 
-            {/* Top Category Tag */}
+            {/* Top Category / Type Tag */}
             <Box sx={{ position: 'relative', zIndex: 1, mb: 2 }}>
               <Chip
-                label={mainStory.categoryLabel || 'FEATURED STORY'}
+                label={`ARTICLE • ${mainStory.categoryLabel || 'SAVINGS'}`}
                 sx={{
                   bgcolor: 'rgba(255, 255, 255, 0.2)',
                   color: '#ffffff',
                   fontWeight: 900,
-                  fontSize: '0.75rem',
-                  letterSpacing: '0.1em',
+                  fontSize: '0.72rem',
+                  letterSpacing: '0.08em',
                   backdropFilter: 'blur(10px)',
-                  borderRadius: '6px',
+                  borderRadius: '999px',
+                  px: 1.2,
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
                 }}
               />
             </Box>
