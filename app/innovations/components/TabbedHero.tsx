@@ -18,7 +18,15 @@ export interface EcosystemItem {
   thumbnailUrl: string;
   link: string;
   authorOrOperator: string;
+  authorAvatarUrl?: string;
+  categoryLabel?: string;
   metaInfo: string; // date added, read time, or traction metric
+  readCount?: string;
+  isLive?: boolean;
+  locationOrSalary?: string;
+  companyLogo?: string;
+  era?: string;
+  organizationName?: string;
 }
 
 export interface TabCategory {

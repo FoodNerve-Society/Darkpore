@@ -32,6 +32,7 @@ import FlipContainer from "../components/shared/FlipContainer";
 import CreateListingForm from "./components/CreateListingForm";
 import ListingStudioDashboard from "./components/ListingStudioDashboard";
 import { getUserDrafts, deleteTradeListing, getTradeListings } from "@/lib/actions/trade";
+import PremiumAutocomplete from "@/components/PremiumAutocomplete";
 
 // ── Colors ────────────────────────────────────────────────
 const EMERALD = "#10b981";
@@ -674,40 +675,22 @@ export default function TradePage() {
           )}
 
           {postingAs === 'organization' && profile?.organizations && profile.organizations.length > 0 && (
-            <Select
-              size="small"
-              value={selectedOrgId || profile.organizations[0]?.id || ''}
-              onChange={(e) => setSelectedOrgId(e.target.value)}
-              renderValue={(selected) => {
-                const org = profile.organizations?.find((o: any) => o.id === selected);
-                if (!org) return null;
-                return (
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Avatar src={org.logoUrl} sx={{ width: 20, height: 20 }} />
-                    <Typography sx={{ display: { xs: 'none', sm: 'block' }, fontWeight: 700, fontSize: '0.85rem' }}>
-                      {org.name}
-                    </Typography>
+            <Box sx={{ ml: 1, width: 240 }}>
+              <PremiumAutocomplete
+                colorTheme="#10b981"
+                label="Select Organization"
+                options={profile.organizations}
+                getOptionLabel={(opt: any) => opt.name || ''}
+                value={profile.organizations.find((o: any) => o.id === selectedOrgId) || profile.organizations[0] || null}
+                onChange={(e, val) => setSelectedOrgId(val ? val.id : null)}
+                renderOption={(props: any, opt: any) => (
+                  <Box component="li" {...props} sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                    <Avatar src={opt.logoUrl} sx={{ width: 24, height: 24 }} />
+                    <Typography sx={{ fontWeight: 600, fontSize: '0.85rem' }}>{opt.name}</Typography>
                   </Box>
-                );
-              }}
-              sx={{
-                ml: 0.5,
-                height: 36,
-                minWidth: { xs: 60, sm: 140 },
-                borderRadius: '12px',
-                bgcolor: 'rgba(0,0,0,0.02)',
-                '& .MuiOutlinedInput-notchedOutline': { border: '1px solid rgba(0,0,0,0.08)' },
-                '&:hover .MuiOutlinedInput-notchedOutline': { border: '1px solid rgba(0,0,0,0.15)' },
-                '& .MuiSelect-select': { py: 0, display: 'flex', alignItems: 'center', gap: 1, fontWeight: 700, fontSize: '0.85rem' }
-              }}
-            >
-              {profile.organizations.map((org: any) => (
-                <MenuItem key={org.id} value={org.id} sx={{ fontWeight: 600, fontSize: '0.85rem', display: 'flex', gap: 1.5, alignItems: 'center' }}>
-                  <Avatar src={org.logoUrl} sx={{ width: 20, height: 20 }} />
-                  {org.name}
-                </MenuItem>
-              ))}
-            </Select>
+                )}
+              />
+            </Box>
           )}
         </Box>
       </Box>
@@ -762,6 +745,8 @@ export default function TradePage() {
             }}
             postingAs={postingAs}
             selectedOrgId={selectedOrgId || (profile?.organizations?.[0]?.id ?? null)}
+            onPostingAsChange={(val) => setPostingAs(val)}
+            onOrgIdChange={(val) => setSelectedOrgId(val)}
             fastIngestData={selectedDraftId === 'new' ? fastIngestPayload : undefined}
           />
         )}

@@ -18,19 +18,72 @@ export default function Swimlane({ lane }: { lane: any }) {
     if (scrollRef.current) scrollRef.current.scrollBy({ left: 400, behavior: 'smooth' });
   };
 
-  // Generate mock items based on the newCount
-  const mockItems: EcosystemItem[] = Array.from({ length: Math.max(1, lane.newCount) }).map((_, i) => ({
-    id: `mock-${lane.id}-${i}`,
-    title: `Mock ${lane.title} Item #${i + 1}`,
-    type: lane.title.includes('Articles') ? 'Intelligence' : lane.title.includes('Jobs') ? 'Jobs' : 'Innovations',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=600',
-    tags: ['Ecosystem', 'New'],
-    link: '#',
-    description: 'This is a mock description for the UI to represent the data correctly.',
-    date: '2026-07-17',
-    authorOrOperator: 'Food Nerve',
-    metaInfo: 'New'
-  }));
+  // Generate mock items based on the lane type if real items aren't provided
+  const itemsToDisplay: EcosystemItem[] = lane.items && lane.items.length > 0 ? lane.items : Array.from({ length: Math.max(1, lane.newCount) }).map((_, i) => {
+    const isArticle = lane.title.includes('Articles') || lane.title.includes('Top Stories');
+    const isLivestream = lane.title.includes('Livestreams');
+    const isJob = lane.title.includes('Jobs') || lane.title.includes('Internships');
+    const isOpportunity = lane.title.includes('Opportunities') || lane.title.includes('Volunteering');
+
+    let itemType: any = 'Intelligence';
+    if (isLivestream) itemType = 'Activities';
+    else if (isJob) itemType = 'Jobs';
+    else if (isOpportunity) itemType = 'Opportunities';
+
+    const sampleArticleTitles = [
+      'Can community savings groups transform food security?',
+      'Why Nigeria loses so many tomatoes before they reach the market',
+      'How insecurity is reshaping food trade across the Sahel',
+      'Could one egg a day transform child nutrition in rural communities?',
+      'Why fertilizer remains unaffordable for smallholder farmers',
+      'Cold storage infrastructure: Solving post-harvest losses',
+    ];
+
+    const sampleJobTitles = [
+      'Cold-Chain Logistics Operator',
+      'Senior Agronomist & Soil Specialist',
+      'Food Supply Chain Data Analyst',
+      'Community Farm Manager',
+      'Agricultural Equipment Technician',
+      'Post-Harvest Research Fellow',
+    ];
+
+    const sampleLivestreamTitles = [
+      'What This Week’s Three Stories Reveal About the Future of Food',
+      'Masterclass: Scaling Solar Cold Rooms Across West Africa',
+      'Financing AgTech Startups: VC Insights & Direct Grants',
+      'Reducing Food Waste in Open Air Markets',
+    ];
+
+    const sampleAuthors = ['Amaka Okafor', 'Chinedu Eze', 'Dr. Tobi Adeyemi', 'Fatima Bello', 'Kelechi Iheanacho'];
+    const sampleOrgs = ['FoodNerve Operations', 'AgroTech Global', 'GreenField Hub', 'Sahel Food Systems', 'FarmTrust Cooperative'];
+
+    const title = isJob 
+      ? sampleJobTitles[i % sampleJobTitles.length]
+      : isLivestream
+      ? sampleLivestreamTitles[i % sampleLivestreamTitles.length]
+      : sampleArticleTitles[i % sampleArticleTitles.length];
+
+    const sampleEras = ['Present', 'Past', 'Future'];
+
+    return {
+      id: `mock-${lane.id}-${i}`,
+      title,
+      type: itemType,
+      thumbnailUrl: isLivestream 
+        ? 'https://images.unsplash.com/photo-1591696205602-2f950c417cb9?auto=format&fit=crop&q=80&w=800'
+        : 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?auto=format&fit=crop&q=80&w=800',
+      link: isJob ? '/careers' : '/learn',
+      authorOrOperator: sampleAuthors[i % sampleAuthors.length],
+      organizationName: sampleOrgs[i % sampleOrgs.length],
+      authorAvatarUrl: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200`,
+      categoryLabel: isJob ? (i % 2 === 0 ? 'FULL-TIME' : 'REMOTE') : isLivestream ? 'LIVESTREAM' : 'SAVINGS',
+      era: sampleEras[i % sampleEras.length],
+      metaInfo: isJob ? 'Closing in 5 days' : isLivestream ? 'Wed • 7:00 PM WAT' : `${(i + 4) * 2} min read`,
+      readCount: `${(i + 2) * 1.4}k reads`,
+      locationOrSalary: isJob ? `📍 Lagos, NG • 💰 $${(i + 1) * 800}/mo` : undefined,
+    };
+  });
 
   return (
     <Box id={lane.id} sx={{ mb: { xs: 4, md: 8 } }}>
@@ -70,21 +123,28 @@ export default function Swimlane({ lane }: { lane: any }) {
         </Box>
         
         {/* Edge-Bleed Scroll Area (Right side only) */}
-        <Box sx={{ position: 'relative', width: '100%', mr: 'calc(-50vw + 50%)', py: 5, my: -5 }}>
+        <Box sx={{ position: 'relative', width: '100%', mr: 'calc(-50vw + 50%)', py: 6, my: -6 }}>
           <Box 
             ref={scrollRef}
             sx={{ 
               display: 'flex', 
               gap: 3, 
               overflowX: 'auto', 
+              pt: 3,
               pb: 5,
               scrollSnapType: 'x mandatory',
               '&::-webkit-scrollbar': { display: 'none' },
             }}
           >
-            {mockItems.map((item) => (
-              <Box key={item.id} sx={{ minWidth: { xs: '200px', sm: '280px' }, scrollSnapAlign: 'start' }}>
-                <EcosystemCard item={item} themeColor={lane.color} hideTags={true} />
+            {itemsToDisplay.map((item, index) => (
+              <Box key={item.id} sx={{ minWidth: { xs: '260px', sm: '320px' }, scrollSnapAlign: 'start', pt: 1.5 }}>
+                <EcosystemCard 
+                  item={item} 
+                  themeColor={lane.color} 
+                  hideTags={false} 
+                  isFirst={index === 0}
+                  isLast={index === itemsToDisplay.length - 1}
+                />
               </Box>
             ))}
 
