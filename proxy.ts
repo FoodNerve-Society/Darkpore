@@ -86,22 +86,30 @@ export default function middleware(request: NextRequest) {
   if (hostname.startsWith('society.')) {
     // Extract tenant_id from something like "society.foodnerve.com" -> "foodnerve"
     const parts = hostname.split('.');
-    const tenant = parts[1] || 'foodnerve';
+    const tenant = parts[1] && parts[1] !== 'localhost' ? parts[1] : 'foodnerve';
     rewriteUrl.pathname = `/modular-society/${tenant}${url.pathname}`;
   } else if (
     hostname.includes('darkpore.com') || 
-    hostname === 'localhost' || 
     hostname.includes('darkpore.localhost')
   ) {
     rewriteUrl.pathname = `/darkpore${url.pathname}`;
   } else if (
     hostname.includes('.org') // Matches .org (prod) AND .org.localhost (dev)
   ) {
-    rewriteUrl.pathname = `/modular-society/org${url.pathname}`;
+    const tenant = (tenant_id && tenant_id !== 'org' && tenant_id !== 'www') ? tenant_id : 'foodnerve';
+    rewriteUrl.pathname = `/modular-society/${tenant}${url.pathname}`;
   } else if (
     hostname.includes('.net') // Matches .net (prod) AND .net.localhost (dev)
   ) {
     rewriteUrl.pathname = `/innovation-center${url.pathname}`;
+  } else if (hostname === 'localhost') {
+    const societyPaths = ['/trade', '/learn', '/meet', '/support', '/org', '/profile', '/updates', '/explore', '/about', '/login'];
+    const isSocietyPath = societyPaths.some(p => url.pathname === p || url.pathname.startsWith(p + '/'));
+    if (isSocietyPath) {
+      rewriteUrl.pathname = `/modular-society/foodnerve${url.pathname}`;
+    } else {
+      rewriteUrl.pathname = `/darkpore${url.pathname}`;
+    }
   } else {
     // Default covers .com (prod) AND .com.localhost (dev)
     rewriteUrl.pathname = `/innovations${url.pathname}`;

@@ -18,7 +18,15 @@ import { getChallengeUpdatesBySubcategories } from '@/lib/actions/db';
 import PremiumButton from '@/components/PremiumButton';
 import { prisma } from '@/lib/db/client';
 
-export default async function InnovationsHomepage() {
+// Version B (Editorial Magazine) Imports & A/B Toggle
+import EditorialMagazineHero, { EditorialStoryItem } from './components/EditorialMagazineHero';
+import EditorialGrid from './components/EditorialGrid';
+import TopicExplorerRow from './components/TopicExplorerRow';
+import ABToggleBar from './components/ABToggleBar';
+
+export default async function InnovationsHomepage(props: { searchParams?: Promise<{ view?: string }> }) {
+  const resolvedSearchParams = props.searchParams ? await props.searchParams : {};
+  const currentView = (resolvedSearchParams.view || 'a').toLowerCase(); // Default to Variant A (Command Center)
   const headersList = await headers();
   const rawTenantId = headersList.get('x-tenant-id') || 'food';
   const tenantId = rawTenantId.includes('energy') ? 'energy' : 'food'; // Normalized
@@ -399,54 +407,128 @@ export default async function InnovationsHomepage() {
     };
   });
 
+  // ── HYBRID RANKING HIERARCHY FOR EDITORIAL HERO (VERSION B) ───────
+  let editorialFeaturedStory: EditorialStoryItem | null = null;
+  let editorialTopStories: EditorialStoryItem[] = [];
+
+  try {
+    const publishedArticles = await prisma.learnContent.findMany({
+      where: { status: 'published' },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+      include: {
+        article: {
+          include: {
+            blocks: { orderBy: { orderIndex: 'asc' } }
+          }
+        }
+      }
+    });
+
+    if (publishedArticles.length > 0) {
+      const scoredArticles = publishedArticles.map((lc: any) => {
+        const firstImgBlock = lc.article?.blocks?.find((b: any) => b.type === 'image' && b.payload?.url);
+        const imgUrl = lc.thumbnailUrl || firstImgBlock?.payload?.url || 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?auto=format&fit=crop&q=80&w=1200';
+
+        const likes = lc.likes || 0;
+        const views = lc.views || 0;
+        const isVerifiedBonus = lc.isVerified ? 500 : 0;
+        const isHighImportance = lc.timeframe === 'high' || lc.category === 'featured';
+
+        // Ranking score formula: Admin High Priority (10000) > Verified (500) + Likes*3 + Views
+        const score = (likes * 3) + views + isVerifiedBonus + (isHighImportance ? 10000 : 0);
+
+        return {
+          id: lc.id,
+          title: lc.title,
+          summary: lc.description,
+          imageUrl: imgUrl,
+          authorName: lc.authorName || 'FoodNerve Editorial',
+          authorAvatarUrl: lc.authorAvatarUrl || '/images/default-avatar.png',
+          readTime: lc.article?.readTime || '6 min read',
+          categoryLabel: (lc.subcategory || lc.category || 'ANALYSIS').toUpperCase(),
+          link: `/innovations/${lc.challengeId || 'global'}/${lc.subcategory || 'general'}/learn/article/${lc.slug}`,
+          score,
+          createdAt: lc.createdAt
+        };
+      });
+
+      // Sort by score descending
+      scoredArticles.sort((a, b) => b.score - a.score);
+
+      editorialFeaturedStory = scoredArticles[0];
+      editorialTopStories = scoredArticles.slice(1, 5);
+    }
+  } catch (e) {
+    console.warn("SERVER LOG - Failed to fetch editorial ranked stories from DB.", e);
+  }
+
   return (
     <Box sx={{ bgcolor: '#050505', minHeight: '100vh' }}>
       
-      {/* ═══════════════════════════════════════════════════════════
-          SECTION 1: THE COMMAND CENTER HERO (Replacing TabbedHero)
-      ═══════════════════════════════════════════════════════════ */}
-      <Box sx={{ bgcolor: '#ffffff' }}>
-        <CommandCenterHero 
-          headline={homepageConfig.heroHeadline}
-          subheadline={homepageConfig.heroSubheadline}
-          globalAlerts={marqueeItems}
-        />
-      </Box>
+      {currentView === 'b' ? (
+        /* ═══════════════════════════════════════════════════════════
+            VARIANT B: THE EDITORIAL MAGAZINE HOMEPAGE (New Layout)
+        ═══════════════════════════════════════════════════════════ */
+        <>
+          <EditorialMagazineHero 
+            featuredStory={editorialFeaturedStory}
+            topStories={editorialTopStories}
+          />
+          <EditorialGrid />
+          <TopicExplorerRow />
+        </>
+      ) : (
+        /* ═══════════════════════════════════════════════════════════
+            VARIANT A: THE COMMAND CENTER HOMEPAGE (Current Layout)
+        ═══════════════════════════════════════════════════════════ */
+        <>
+          <Box sx={{ bgcolor: '#ffffff' }}>
+            <CommandCenterHero 
+              headline={homepageConfig.heroHeadline}
+              subheadline={homepageConfig.heroSubheadline}
+              globalAlerts={marqueeItems}
+            />
+          </Box>
 
-      {/* ═══════════════════════════════════════════════════════════
-          SECTION 1.5: THE NEW HORIZONTAL SWIMLANES
-      ═══════════════════════════════════════════════════════════ */}
-      <Box sx={{ bgcolor: '#ffffff', py: 8 }}>
-        {[
-          { id: 'lane-articles', title: 'Latest Articles', color: '#3b82f6', newCount: 12 },
-          { id: 'lane-livestreams', title: 'Livestreams', color: '#f59e0b', newCount: 3 },
-          { id: 'lane-jobs', title: 'Jobs & Internships', color: '#10b981', newCount: 8 },
-          { id: 'lane-volunteering', title: 'Volunteering', color: '#ec4899', newCount: 2 },
-          { id: 'lane-opportunities', title: 'Opportunities', color: '#8b5cf6', newCount: 8 }
-        ].map((lane) => (
-          <Swimlane key={lane.id} lane={lane} />
-        ))}
-      </Box>
-
-      {/* ═══════════════════════════════════════════════════════════
-          SECTION 1: THE CINEMATIC HERO (Legacy / Commented Out)
-          Full viewport, animated, glowing orbs, stats cards
-      ═══════════════════════════════════════════════════════════ */}
-      {/* 
-      <CinematicHero 
-        tenantName={tenant.name}
-        headline={homepageConfig.heroHeadline}
-        subheadline={homepageConfig.heroSubheadline}
-        stats={{
-          activeSolutions: learnContentCount,
-          communitySize: userCount
-        }}
-        slideshowItems={slideshowItems}
-      />
-      */}
+          <Box sx={{ bgcolor: '#ffffff', py: 8 }}>
+            {[
+              { 
+                id: 'lane-top-stories', 
+                title: 'Top Stories', 
+                color: '#dc2626', 
+                newCount: 5,
+                items: (editorialTopStories && editorialTopStories.length > 0)
+                  ? [editorialFeaturedStory, ...editorialTopStories].filter(Boolean).map((s: any) => ({
+                      id: s.id,
+                      type: 'Intelligence',
+                      title: s.title,
+                      thumbnailUrl: s.imageUrl || 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?auto=format&fit=crop&q=80&w=1200',
+                      link: s.link,
+                      authorOrOperator: s.authorName || 'FoodNerve Editorial',
+                      authorAvatarUrl: s.authorAvatarUrl,
+                      categoryLabel: s.categoryLabel || 'TOP STORY',
+                      metaInfo: s.readTime || '5 min read',
+                    }))
+                  : undefined
+              },
+              { id: 'lane-articles', title: 'Latest Articles', color: '#3b82f6', newCount: 12 },
+              { id: 'lane-livestreams', title: 'Livestreams', color: '#f59e0b', newCount: 3 },
+              { id: 'lane-jobs', title: 'Jobs & Internships', color: '#10b981', newCount: 8 },
+              { id: 'lane-volunteering', title: 'Volunteering', color: '#ec4899', newCount: 2 },
+              { id: 'lane-opportunities', title: 'Opportunities', color: '#8b5cf6', newCount: 8 }
+            ].map((lane) => (
+              <Swimlane key={lane.id} lane={lane} />
+            ))}
+          </Box>
+        </>
+      )}
 
       {/* RADAR INDEX OVERVIEW SECTION */}
       <RadarIndexOverview />
+
+      {/* LIVE A/B TESTING TOGGLE BAR (FLOATING AT BOTTOM RIGHT) */}
+      <ABToggleBar currentView={currentView} />
 
 
       {/* ═══════════════════════════════════════════════════════════
