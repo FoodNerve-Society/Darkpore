@@ -736,3 +736,33 @@ model WikiHotspotRegistry {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+// ════════════════════════════════════════════════════════
+// CALENDAR AGGREGATION TABLE
+// ════════════════════════════════════════════════════════
+
+model CalendarEvent {
+  id               String    @id @default(cuid())
+  
+  // --- Source Reference ---
+  sourceType       String    // 'job' | 'livestream' | 'meetEvent' | 'campaign' | 'learnContent'
+  sourceId         String    // The ID of the original record in its source table
+
+  // --- Denormalized Display Data ---
+  title            String
+  date             DateTime  // The primary deadline / scheduled time
+  endDate          DateTime? // Optional end date
+  link             String    // Deep link to source content
+  imageUrl         String?
+  category         String?
+  organizationName String?
+
+  // --- Metadata ---
+  status           String    @default("upcoming") // 'upcoming' | 'live' | 'expired'
+  createdAt        DateTime  @default(now())
+
+  @@unique([sourceType, sourceId])
+  @@index([date])
+  @@index([status, date])
+  @@index([sourceType, date])
+}
