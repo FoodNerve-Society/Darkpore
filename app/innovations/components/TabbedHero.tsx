@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Box, Typography, Container, Button, Chip, Stack } from '@mui/material';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -22,6 +22,7 @@ export interface EcosystemItem {
   categoryLabel?: string;
   metaInfo: string; // date added, read time, or traction metric
   readCount?: string;
+  tags?: string[];
   isLive?: boolean;
   locationOrSalary?: string;
   companyLogo?: string;
@@ -472,6 +473,7 @@ export default function TabbedHero({ headline, subheadline, categories, globalAl
   const [activeSubPillar, setActiveSubPillar] = useState<'All' | EcosystemType>('All');
   const [slideDirection, setSlideDirection] = useState<number>(0);
   const [heroAnimationDone, setHeroAnimationDone] = useState(false);
+  const [activeTickerIndex, setActiveTickerIndex] = useState(0);
 
   const activeCatData = categories.find(c => c.id === activeCategory) || categories[0];
   const themeColor = activeCatData?.themeColor || '#166534'; // Earthy green default
@@ -526,6 +528,10 @@ export default function TabbedHero({ headline, subheadline, categories, globalAl
       
       return result;
   }, [activeCatData, activeSubPillar]);
+
+  const advanceToNextCard = useCallback(() => {
+    setActiveTickerIndex((prev) => (prev + 1) % Math.max(1, filteredItems.length));
+  }, [filteredItems.length]);
 
   // Map Pillar Types to distinct colors
   const getBadgeColor = (type: EcosystemType) => {
@@ -686,8 +692,15 @@ export default function TabbedHero({ headline, subheadline, categories, globalAl
                                                 No {activeSubPillar !== 'All' ? activeSubPillar.toLowerCase() : 'items'} found in this category.
                                             </Typography>
                                         ) : (
-                                            filteredItems.slice(0, 6).map(item => (
-                                                <EcosystemCard key={item.id} item={item} themeColor={themeColor} />
+                                            filteredItems.slice(0, 6).map((item, idx) => (
+                                                <EcosystemCard 
+                                                    key={item.id} 
+                                                    item={item} 
+                                                    themeColor={themeColor}
+                                                    tickerIndex={idx}
+                                                    activeTickerIndex={activeTickerIndex}
+                                                    onTickerComplete={advanceToNextCard}
+                                                />
                                             ))
                                         )}
                             </Box>

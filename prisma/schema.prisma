@@ -745,14 +745,17 @@ model CalendarEvent {
   id               String    @id @default(cuid())
   
   // --- Source Reference ---
-  sourceType       String    // 'job' | 'livestream' | 'meetEvent' | 'campaign' | 'learnContent'
+  sourceType       String    // 'job' | 'listing' | 'livestream' | 'article' | 'video' | 'class' | 'meetEvent' | 'campaign'
   sourceId         String    // The ID of the original record in its source table
+  slug             String?   // Human-readable slug for slug-based routes (e.g. articles)
+
+  // --- Date Specificity ---
+  dateType         String    @default("START_TIME") // 'DEADLINE' | 'START_TIME' | 'PUBLISH_DATE' | 'DATE_RANGE'
+  date             DateTime  // The primary deadline / scheduled time / release date
+  endDate          DateTime? // Optional end date (for ranges or expiration windows)
 
   // --- Denormalized Display Data ---
   title            String
-  date             DateTime  // The primary deadline / scheduled time
-  endDate          DateTime? // Optional end date
-  link             String    // Deep link to source content
   imageUrl         String?
   category         String?
   organizationName String?
@@ -766,3 +769,4 @@ model CalendarEvent {
   @@index([status, date])
   @@index([sourceType, date])
 }
+

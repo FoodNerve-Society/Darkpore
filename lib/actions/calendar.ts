@@ -1,6 +1,7 @@
 'use server';
 
 import { getCalendarEvents } from '@/lib/calendar-sync';
+import { getCalendarEventRoute } from '@/lib/calendar-routes';
 
 export async function fetchCalendarEvents(options?: {
   startDate?: string;
@@ -22,6 +23,7 @@ export async function fetchCalendarEvents(options?: {
       success: true,
       events: events.map((e) => ({
         ...e,
+        link: getCalendarEventRoute({ sourceType: e.sourceType, sourceId: e.sourceId, slug: e.slug }),
         date: e.date.toISOString(),
         endDate: e.endDate ? e.endDate.toISOString() : null,
         createdAt: e.createdAt.toISOString(),
