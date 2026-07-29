@@ -138,7 +138,7 @@ export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHe
 
             {/* Center: Greeting & Date Display */}
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-              <Typography sx={{ fontWeight: 900, color: '#0f172a', fontSize: { xs: '1.2rem', md: '1.6rem' }, lineHeight: 1.1, letterSpacing: '-0.02em', textAlign: 'center' }}>
+              <Typography sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 800, color: '#0f172a', fontSize: { xs: '1.4rem', md: '1.8rem' }, lineHeight: 1.1, letterSpacing: '-0.02em', textAlign: 'center' }}>
                 {(() => {
                   const hour = new Date().getHours();
                   if (hour < 12) return 'GOOD MORNING';
@@ -148,7 +148,7 @@ export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHe
               </Typography>
               
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.5, flexWrap: 'wrap', justifyContent: 'center' }}>
-                <Typography sx={{ fontWeight: 600, color: '#64748b', fontSize: '0.85rem', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                <Typography sx={{ fontFamily: 'var(--font-ysabeau-infant)', fontWeight: 700, color: '#64748b', fontSize: '0.85rem', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                   {currentDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                 </Typography>
                 
@@ -171,7 +171,7 @@ export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHe
                       {statusObj.pulse && (
                         <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: statusObj.color, animation: `${pulseAnimation} 2s infinite` }} />
                       )}
-                      <Typography sx={{ fontWeight: 800, color: statusObj.color, letterSpacing: '0.05em', textTransform: 'uppercase', fontSize: '0.65rem' }}>
+                      <Typography sx={{ fontFamily: 'var(--font-ysabeau-infant)', fontWeight: 700, color: statusObj.color, letterSpacing: '0.05em', textTransform: 'uppercase', fontSize: '0.65rem' }}>
                         {statusObj.label}
                       </Typography>
                     </Box>
@@ -216,7 +216,7 @@ export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHe
               overflow: 'hidden', 
               bgcolor: '#ffffff', 
               border: '1px solid rgba(255,255,255,0.8)',
-              minHeight: { xs: '350px', md: '450px' },
+              minHeight: { xs: '450px', md: '550px' },
               display: 'flex',
               flexDirection: 'column',
               boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.02)',
@@ -263,7 +263,7 @@ export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHe
 
                       {/* Overlay Content */}
                       <Box sx={{ position: 'relative', zIndex: 1, maxWidth: { xs: '100%', md: '80%' }, mb: 4 }}>
-                        <Typography variant="h3" sx={{ fontWeight: 900, mb: 3, fontSize: { xs: '1.8rem', md: '2.5rem' }, lineHeight: 1.1, color: '#ffffff', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
+                        <Typography variant="h3" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 800, mb: 3, fontSize: { xs: '2rem', md: '2.8rem' }, lineHeight: 1.1, color: '#ffffff', textShadow: '0 2px 10px rgba(0,0,0,0.5)', letterSpacing: '-0.02em' }}>
                           {alert?.title}
                         </Typography>
                         {alert?.link && (
@@ -273,9 +273,10 @@ export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHe
                             href={alert.link}
                             endIcon={<ArrowForwardIcon />}
                             sx={{ 
+                              fontFamily: 'var(--font-quicksand)',
                               bgcolor: '#ffffff', 
                               color: '#0f172a', 
-                              fontWeight: 800, 
+                              fontWeight: 700, 
                               borderRadius: '999px',
                               px: 4, py: 1.5,
                               '&:hover': { bgcolor: '#f1f5f9' }
@@ -293,8 +294,8 @@ export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHe
                   <Box sx={{ width: 72, height: 72, borderRadius: '24px', bgcolor: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 3, boxShadow: '0 15px 35px -5px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,1)', border: '1px solid rgba(0,0,0,0.04)', transform: 'rotate(-5deg)' }}>
                     <CalendarMonthIcon sx={{ fontSize: 36, color: '#94a3b8' }} />
                   </Box>
-                  <Typography sx={{ color: '#0f172a', fontSize: '1.4rem', fontWeight: 900, mb: 1.5, letterSpacing: '-0.02em' }}>No Scheduled Events</Typography>
-                  <Typography sx={{ color: '#64748b', fontSize: '0.95rem', fontWeight: 500, maxWidth: 300, lineHeight: 1.6 }}>Your briefing is clear for today. Kick back, or explore the ecosystem.</Typography>
+                  <Typography sx={{ fontFamily: 'var(--font-dosis)', color: '#0f172a', fontSize: '1.8rem', fontWeight: 800, mb: 1.5, letterSpacing: '-0.02em' }}>No Scheduled Events</Typography>
+                  <Typography sx={{ fontFamily: 'var(--font-ysabeau-infant)', color: '#64748b', fontSize: '1rem', fontWeight: 700, maxWidth: 300, lineHeight: 1.6 }}>Your briefing is clear for today. Kick back, or explore the ecosystem.</Typography>
                 </Box>
               )}
               
@@ -321,15 +322,10 @@ export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHe
           </Box>
         </Box>
 
-        {/* RIGHT: Ecosystem Categories (2x2 Grid on mobile, vertical list on desktop) */}
-          <Box sx={{ 
-            display: 'grid', 
-            gridTemplateColumns: { xs: 'repeat(2, 1fr)', lg: '1fr' }, 
-            gap: { xs: 1.5, sm: 2 }, 
-            pb: { xs: 2, lg: 0 },
-            // On very small screens, keep it 2 columns but tightly packed
-          }}>
-            <Typography sx={{ display: { xs: 'none', lg: 'block' }, fontWeight: 800, color: '#64748b', letterSpacing: '0.1em', textTransform: 'uppercase', fontSize: '0.85rem', pl: 1, mb: 1 }}>
+        {/* RIGHT: Ecosystem Categories & Quick Actions */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, flexShrink: 0, pb: { xs: 2, lg: 0 } }}>
+            {/* Header */}
+            <Typography sx={{ display: { xs: 'none', lg: 'block' }, fontFamily: 'var(--font-ysabeau-infant)', fontWeight: 700, color: '#64748b', letterSpacing: '0.1em', textTransform: 'uppercase', fontSize: '0.85rem', pl: 1, mb: 1 }}>
               Ecosystem Categories
             </Typography>
             {CATEGORIES.map((cat, idx) => (
@@ -344,9 +340,7 @@ export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHe
                 sx={{
                   textDecoration: 'none',
                   display: 'flex',
-                  flexDirection: { xs: 'column', sm: 'row' },
-                  alignItems: { xs: 'flex-start', sm: 'center' },
-                  justifyContent: { xs: 'center', sm: 'space-between' },
+                  alignItems: 'center',
                   p: { xs: 1.5, sm: 2.5 },
                   borderRadius: '20px',
                   background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
@@ -363,31 +357,29 @@ export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHe
                   }
                 }}
               >
-                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, gap: { xs: 1.5, sm: 2.5 } }}>
-                  <Box sx={{ width: { xs: 44, sm: 52 }, height: { xs: 44, sm: 52 }, borderRadius: '16px', bgcolor: `${cat.color}10`, color: cat.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: { xs: '1.25rem', sm: '1.5rem' }, boxShadow: `inset 0 0 0 1px ${cat.color}20`, flexShrink: 0 }}>
+                <Box sx={{ width: { xs: 44, sm: 52 }, height: { xs: 44, sm: 52 }, borderRadius: '16px', bgcolor: `${cat.color}10`, color: cat.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: { xs: '1.25rem', sm: '1.5rem' }, boxShadow: `inset 0 0 0 1px ${cat.color}20`, flexShrink: 0 }}>
                     {cat.icon}
-                  </Box>
-                  <Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                      <Typography sx={{ fontWeight: 800, fontSize: { xs: '0.95rem', sm: '1.15rem' }, color: '#0f172a', lineHeight: 1.2 }}>
-                        {cat.label}
-                      </Typography>
-                      {cat.isLive && (
-                        <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#ef4444', animation: `${pulseAnimation} 1.5s infinite` }} />
-                      )}
-                      {cat.newCount > 0 && !cat.isLive && (
-                        <Box sx={{ bgcolor: `${cat.color}15`, color: cat.color, px: 0.8, py: 0.2, borderRadius: '4px', fontSize: '0.65rem', fontWeight: 800 }}>
-                          +{cat.newCount} New
-                        </Box>
-                      )}
-                    </Box>
-                    <Typography sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.85rem' }, color: '#64748b', mt: 0.5 }}>
-                      {cat.count} listings total
+                </Box>
+                {/* Text Details */}
+                <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1, ml: 2, overflow: 'hidden' }}>
+                  <Typography sx={{ fontFamily: 'var(--font-ysabeau-infant)', fontWeight: 700, fontSize: { xs: '0.95rem', sm: '1.15rem' }, color: '#0f172a', lineHeight: 1.2 }}>
+                    {cat.label}
+                  </Typography>
+                  
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                    {cat.newCount > 0 && (
+                      <Box sx={{ bgcolor: `${cat.color}15`, color: cat.color, px: 0.8, py: 0.2, borderRadius: '4px', fontSize: '0.65rem', fontWeight: 700, fontFamily: 'var(--font-ysabeau-infant)' }}>
+                        +{cat.newCount} NEW
+                      </Box>
+                    )}
+                    
+                    <Typography sx={{ fontFamily: 'var(--font-ysabeau-infant)', fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.85rem' }, color: '#64748b' }}>
+                      {cat.count} active
                     </Typography>
                   </Box>
                 </Box>
-                <Box sx={{ position: { xs: 'absolute', sm: 'static' }, top: 16, right: 16, width: { xs: 24, sm: 32 }, height: { xs: 24, sm: 32 }, borderRadius: '50%', bgcolor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s ease', '.category-card:hover &': { bgcolor: `${cat.color}15`, color: cat.color } }}>
-                  <ArrowForwardIosIcon sx={{ color: '#94a3b8', fontSize: { xs: '0.7rem', sm: '0.9rem' }, ml: 0.5 }} />
+                <Box sx={{ width: { xs: 24, sm: 32 }, height: { xs: 24, sm: 32 }, borderRadius: '50%', bgcolor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s ease' }}>
+                  <ArrowForwardIosIcon sx={{ color: '#94a3b8', fontSize: { xs: '0.7rem', sm: '0.9rem' } }} />
                 </Box>
               </Box>
             ))}
@@ -397,14 +389,12 @@ export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHe
               component="a"
               href="http://foodnerve.org"
               sx={{
-                gridColumn: { xs: '1 / -1', lg: 'auto' }, // Span full width on mobile
                 textDecoration: 'none',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 p: { xs: 2, sm: 2.5 },
                 borderRadius: '20px',
-                // Premium soft moving gradient
                 background: 'linear-gradient(270deg, #f0fdf4, #ccfbf1, #f0fdf4, #ecfeff)',
                 backgroundSize: '300% 300%',
                 animation: 'gradientMove 12s ease infinite',
@@ -423,18 +413,6 @@ export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHe
                 '&:hover': {
                   transform: { lg: 'translateX(-8px) scale(1.02)' },
                   boxShadow: '-15px 15px 30px rgba(16, 185, 129, 0.25)',
-                  '&::after': { transform: 'translateX(100%)' }
-                },
-                '&::after': {
-                  content: '""',
-                  position: 'absolute',
-                  top: 0,
-                  left: '-100%',
-                  width: '50%',
-                  height: '100%',
-                  background: 'linear-gradient(to right, transparent, rgba(255,255,255,0.4), transparent)',
-                  transform: 'skewX(-20deg)',
-                  transition: 'transform 0.6s ease'
                 }
               }}
             >
@@ -442,11 +420,12 @@ export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHe
                 <Box sx={{ width: { xs: 44, sm: 52 }, height: { xs: 44, sm: 52 }, borderRadius: '16px', bgcolor: '#ffffff', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: { xs: '1.25rem', sm: '1.5rem' }, boxShadow: '0 4px 12px rgba(16,185,129,0.1)', flexShrink: 0 }}>
                   🌍
                 </Box>
-                <Box>
-                  <Typography sx={{ fontWeight: 900, fontSize: { xs: '1rem', sm: '1.15rem' }, color: '#064e3b', lineHeight: 1.2 }}>
-                    Join the Society
+                {/* Text Details */}
+                <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1, ml: 2 }}>
+                  <Typography sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 800, fontSize: { xs: '1.1rem', sm: '1.3rem' }, color: '#064e3b', lineHeight: 1.2, letterSpacing: '-0.02em' }}>
+                    Premium Gateway to Society
                   </Typography>
-                  <Typography sx={{ fontWeight: 700, fontSize: { xs: '0.75rem', sm: '0.85rem' }, color: '#059669', mt: 0.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <Typography sx={{ fontFamily: 'var(--font-ysabeau-infant)', fontWeight: 700, fontSize: { xs: '0.75rem', sm: '0.85rem' }, color: '#059669', mt: 0.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <Box component="span" sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#10b981', display: 'inline-block', animation: `${pulseAnimation} 2s infinite` }} />
                     14,204 Operators in
                   </Typography>
