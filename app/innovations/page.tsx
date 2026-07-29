@@ -44,119 +44,33 @@ export default async function InnovationsHomepage(props: { searchParams?: Promis
     });
   });
 
-  let rawUpdates: any[] = [];
+  // Fetch Today's Calendar Events for the Hero Slider
+  let marqueeItems: any[] = [];
   try {
-    // 1. Fetch Upcoming Learn Content
-    const upcomingEvents = await prisma.learnContent.findMany({
-      where: {
-        subcategory: { in: allSubcatIds },
-        targetDate: { gte: new Date() }
-      },
-      orderBy: { targetDate: 'asc' },
-      take: 10
+    const { fetchCalendarEvents } = await import('@/lib/actions/calendar');
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+
+    const result = await fetchCalendarEvents({
+      startDate: todayStart.toISOString(),
+      endDate: todayEnd.toISOString(),
+      limit: 10
     });
 
-    const learnUpdates = upcomingEvents.map(event => ({
-      title: event.title,
-      startDate: event.targetDate,
-      endDate: null,
-      section: event.type === 'livestream' || event.type === 'class' ? 'livestreams' : 'innovations',
-      importance: 'high',
-      challengeTitle: subcatToChallengeMap[event.subcategory || '']?.title || 'Global Alert',
-      challengeId: subcatToChallengeMap[event.subcategory || '']?.id || 'global',
-      link: `/innovations/${subcatToChallengeMap[event.subcategory || '']?.id || 'global'}/${event.subcategory}/learn/article/${event.slug}`,
-      imageUrl: event.thumbnailUrl || '/images/default-thumbnail.jpg'
-    }));
-
-    // 2. Fetch Recent Jobs/Volunteer (within last 10 days)
-    const tenDaysAgo = new Date();
-    tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
-    const recentJobs = await prisma.tradeListing.findMany({
-      where: {
-        category: { in: ['jobs', 'volunteer'] },
-        status: 'active',
-        postedAt: { gte: tenDaysAgo }
-      },
-      orderBy: { postedAt: 'desc' },
-      take: 10
-    });
-
-    const jobUpdates = recentJobs.map((job: any) => {
-      const isVolunteer = job.category === 'volunteer' || (job.category === 'jobs' && job.metadata?.commitment === 'volunteer');
-      const isInternship = job.category === 'jobs' && job.metadata?.commitment === 'internship';
-      const label = isVolunteer ? 'VOLUNTEER' : isInternship ? 'INTERNSHIP' : 'JOB';
-      return {
-        title: `${label}: ${job.title}`,
-        startDate: job.startDate || job.postedAt,
-        endDate: job.endDate || job.expiresAt || null,
-        section: 'jobs',
-        importance: 'high',
-        challengeTitle: 'Talent & Ops',
-        challengeId: 'global',
-        link: `/innovations/careers/${job.id}`,
-        imageUrl: job.imageUrl || '/images/default-thumbnail.jpg'
-      };
-    });
-
-    // 3. Combine and Sort by Date
-    rawUpdates = [...learnUpdates, ...jobUpdates].sort((a, b) => {
-      const dateA = a.startDate ? new Date(a.startDate).getTime() : 0;
-      const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
-      // Jobs are usually past (postedAt) while events are future (targetDate).
-      // If we sort by absolute difference from now, the most relevant ones appear first.
-      const now = new Date().getTime();
-      return Math.abs(dateA - now) - Math.abs(dateB - now);
-    });
-
-    // TEMPORARY MOCK DATA FOR UI TESTING
-    const nowMs = new Date().getTime();
-    const mockAlerts = [
-      {
-        title: "LIVE: Ecosystem Founders AMA with the Minister of Agriculture",
-        categoryLabel: "LIVESTREAMS",
-        startDate: new Date(nowMs - 1000 * 3600), // started 1 hour ago
-        endDate: new Date(nowMs + 1000 * 3600 * 2), // ends in 2 hours
-        link: "#",
-        imageUrl: "https://images.unsplash.com/photo-1591696205602-2f950c417cb9?auto=format&fit=crop&q=80&w=800", // Government/Agri imagery
-        challengeId: "global"
-      },
-      {
-        title: "Webinar: Next-Gen Cold Storage Logistics Masterclass",
-        categoryLabel: "LIVESTREAMS",
-        startDate: new Date(nowMs + 1000 * 3600 * 5), // starts in 5 hours
-        endDate: null,
-        link: "#",
-        imageUrl: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=800", // Warehouse/Logistics
-        challengeId: "global"
-      },
-      {
-        title: "Flash Sale: Bulk Fertilizer Procurement (50% Off)",
-        categoryLabel: "OPPORTUNITIES",
-        startDate: new Date(nowMs + 1000 * 60 * 45), // starts in 45 minutes
-        endDate: null,
-        link: "#",
-        imageUrl: "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&q=80&w=800", // Farming/Fertilizer
-        challengeId: "global"
-      },
-      {
-        title: "Call for Applications: 2026 Food Security Grants",
-        categoryLabel: "OPPORTUNITIES",
-        startDate: null,
-        endDate: new Date(nowMs + 1000 * 3600 * 48), // ends in 2 days
-        link: "#",
-        imageUrl: "https://images.unsplash.com/photo-1507561561941-863114ce960e?auto=format&fit=crop&q=80&w=800", // Funding/Money/Agri
-        challengeId: "global"
-      }
-    ] as any;
-
-    rawUpdates = [...mockAlerts, ...rawUpdates];
-
+    if (result.success && result.events) {
+      marqueeItems = result.events.map(evt => ({
+        ...evt,
+        categoryLabel: evt.sourceType === 'job' ? 'DEADLINE' : evt.sourceType === 'livestream' ? 'LIVESTREAM' : evt.category?.toUpperCase() || 'EVENT',
+        startDate: evt.date,
+        endDate: evt.endDate,
+        imageUrl: evt.imageUrl || "https://images.unsplash.com/photo-1591696205602-2f950c417cb9?auto=format&fit=crop&q=80&w=800", // Fallback imagery
+      }));
+    }
   } catch (e) {
-    console.warn("SERVER LOG - Database connection failed, falling back to mock data.", e);
+    console.warn("SERVER LOG - Failed to fetch today's calendar events.", e);
   }
-  
-  // Limit to exactly 5 items max so the expanding stack doesn't push page content down infinitely
-  let marqueeItems = rawUpdates.slice(0, 5);
 
   // We no longer inject fake/mocked data if marqueeItems is empty.
   // The frontend component handles the empty array gracefully by rendering a STANDBY state.
@@ -192,7 +106,7 @@ export default async function InnovationsHomepage(props: { searchParams?: Promis
         author: lc.authorName || 'Society Architect',
         dateAdded: lc.createdAt,
         readTime: lc.type === 'video' || lc.type === 'livestream' ? 'Watch' : '5 min read',
-        link: `/innovations/${lc.challengeId || 'global'}/${lc.subcategory || 'general'}/learn/article/${lc.slug}`
+        link: `/${lc.challengeId || 'global'}/${lc.subcategory || 'general'}/learn/article/${lc.slug}`
       };
     });
 
@@ -202,7 +116,7 @@ export default async function InnovationsHomepage(props: { searchParams?: Promis
       recentIntelligence = mockData.map(m => ({
         ...m,
         type: m.type === 'pdf' ? 'class' : m.type,
-        link: `/innovations/${m.challengeId || 'global'}/${(m as any).subcategory || 'general'}/learn/article/${m.slug}`
+        link: `/${m.challengeId || 'global'}/${(m as any).subcategory || 'general'}/learn/article/${m.slug}`
       }));
     }
   } catch (e) {
@@ -211,7 +125,7 @@ export default async function InnovationsHomepage(props: { searchParams?: Promis
     recentIntelligence = mockData.map(m => ({
       ...m,
       type: m.type === 'pdf' ? 'class' : m.type,
-      link: `/innovations/${m.challengeId || 'global'}/${(m as any).subcategory || 'general'}/learn/article/${m.slug}`
+      link: `/${m.challengeId || 'global'}/${(m as any).subcategory || 'general'}/learn/article/${m.slug}`
     }));
   }
 
@@ -256,7 +170,7 @@ export default async function InnovationsHomepage(props: { searchParams?: Promis
       return {
         image: imageUrl,
         title: lc.title,
-        link: `/innovations/${challengeId}/${subcatId}/learn/article/${lc.slug}`,
+        link: `/${challengeId}/${subcatId}/learn/article/${lc.slug}`,
         updatedAt: lc.updatedAt,
         createdAt: lc.createdAt
       };
@@ -345,7 +259,7 @@ export default async function InnovationsHomepage(props: { searchParams?: Promis
           imageUrl: l.imageUrl || '/images/default-thumbnail.jpg',
           author: l.postedBy?.name || l.organization?.name || 'FoodNerve Network',
           metric: isVolunteer ? `${l.npReward || l.metadata?.npAmount || 'Earn'} NP` : l.priceOrAsk,
-          link: `/innovations/careers/${l.id}`
+          link: `/careers/${l.id}`
         };
       });
   } catch (e) {
@@ -438,6 +352,33 @@ export default async function InnovationsHomepage(props: { searchParams?: Promis
         // Ranking score formula: Admin High Priority (10000) > Verified (500) + Likes*3 + Views
         const score = (likes * 3) + views + isVerifiedBonus + (isHighImportance ? 10000 : 0);
 
+        let tags: string[] = [];
+        try {
+          if (lc.article?.blocks && lc.article.blocks.length > 0) {
+            tags = lc.article.blocks.map((b: any) => {
+              try {
+                const payload = typeof b.content === 'string' ? JSON.parse(b.content) : b.content;
+                let textVal = '';
+                if (b.blockType === 'subheading') textVal = payload?.text;
+                else if (b.blockType === 'exec_summary') textVal = payload?.point1 || payload?.point2;
+                else if (b.blockType === 'highlight_card') textVal = payload?.caption || payload?.label;
+                else if (b.blockType === 'core_interactive') textVal = payload?.heading;
+                else if (b.blockType === 'myth_fact') textVal = payload?.pairs?.[0]?.myth || payload?.pairs?.[0]?.fact;
+                else if (b.blockType === 'pull_quote') textVal = payload?.quote;
+                else if (b.blockType === 'live_poll') textVal = payload?.question;
+                else if (b.blockType === 'strategic_directive') textVal = payload?.urgencyLevel || payload?.point1;
+
+                if (typeof textVal === 'string' && textVal.trim().length > 0) {
+                  const clean = textVal.replace(/<[^>]*>?/gm, '').trim();
+                  return clean.length > 45 ? clean.substring(0, 42) + '...' : clean;
+                }
+              } catch (err) {}
+              // Do not fallback to block name, so we don't just see "IMAGE"
+              return null;
+            }).filter((t: any) => t && t.length > 3);
+          }
+        } catch(e) {}
+
         return {
           id: lc.id,
           title: lc.title,
@@ -447,9 +388,10 @@ export default async function InnovationsHomepage(props: { searchParams?: Promis
           authorAvatarUrl: lc.authorAvatarUrl || '/images/default-avatar.png',
           readTime: lc.article?.readTime || '6 min read',
           categoryLabel: (lc.subcategory || lc.category || 'ANALYSIS').toUpperCase(),
-          link: `/innovations/${lc.challengeId || 'global'}/${lc.subcategory || 'general'}/learn/article/${lc.slug}`,
+          link: `/learn/article/${lc.slug}`,
           score,
-          createdAt: lc.createdAt
+          createdAt: lc.createdAt,
+          tags
         };
       });
 
@@ -485,8 +427,6 @@ export default async function InnovationsHomepage(props: { searchParams?: Promis
         <>
           <Box sx={{ bgcolor: '#ffffff' }}>
             <CommandCenterHero 
-              headline={homepageConfig.heroHeadline}
-              subheadline={homepageConfig.heroSubheadline}
               globalAlerts={marqueeItems}
             />
           </Box>
@@ -509,17 +449,39 @@ export default async function InnovationsHomepage(props: { searchParams?: Promis
                       authorAvatarUrl: s.authorAvatarUrl,
                       categoryLabel: s.categoryLabel || 'TOP STORY',
                       metaInfo: s.readTime || '5 min read',
+                      tags: s.tags,
                     }))
                   : undefined
               },
               { id: 'lane-articles', title: 'Latest Articles', color: '#3b82f6', newCount: 12 },
               { id: 'lane-livestreams', title: 'Livestreams', color: '#f59e0b', newCount: 3 },
-              { id: 'lane-jobs', title: 'Jobs & Internships', color: '#10b981', newCount: 8 },
-              { id: 'lane-volunteering', title: 'Volunteering', color: '#ec4899', newCount: 2 },
-              { id: 'lane-opportunities', title: 'Opportunities', color: '#8b5cf6', newCount: 8 }
-            ].map((lane) => (
-              <Swimlane key={lane.id} lane={lane} />
-            ))}
+              { id: 'lane-jobs', title: 'Careers & Opportunities', color: '#10b981', newCount: 18 },
+              { id: 'lane-missions', title: 'Missions', color: '#ec4899', newCount: 2 }
+            ].map((lane) => {
+              if (lane.id === 'lane-top-stories') {
+                return <Swimlane key={lane.id} lane={lane} />;
+              }
+              // Generate consolidated items for careers
+              if (lane.id === 'lane-jobs') {
+                const combinedItems = [
+                  { id: 'job1', type: 'Jobs', title: 'Chief Agronomist', authorOrOperator: 'Olam Agri', companyLogo: '/logos/olam.png', locationOrSalary: 'Lagos, Nigeria', metaInfo: 'Actively Hiring', link: '/careers/job1' },
+                  { id: 'int1', type: 'Internships', title: 'Data Analyst Intern', authorOrOperator: 'FoodNerve', companyLogo: '/logos/fn.png', locationOrSalary: 'Remote', metaInfo: 'Ends Friday', link: '/careers/int1' },
+                  { id: 'vol1', type: 'Volunteering', title: 'Community Outreach Lead', authorOrOperator: 'Green Belt', companyLogo: '/logos/green.png', locationOrSalary: 'Kano, Nigeria', metaInfo: 'Urgent', link: '/careers/vol1' },
+                  { id: 'opp1', type: 'Opportunities', title: 'Agri-Tech Startup Grant ($50k)', authorOrOperator: 'Tony Elumelu Foundation', companyLogo: '/logos/tef.png', locationOrSalary: 'Africa', metaInfo: 'Deadline: Oct 1', link: '/careers/opp1' }
+                ];
+                return <Swimlane key={lane.id} lane={{ ...lane, items: combinedItems }} />;
+              }
+              // Generate basic items for missions
+              if (lane.id === 'lane-missions') {
+                const missionItems = [
+                  { id: 'm1', type: 'Missions', title: 'Zero Post-Harvest Loss by 2030', authorOrOperator: 'FoodNerve Society', metaInfo: 'Active Mission', thumbnailUrl: 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?auto=format&fit=crop&q=80&w=800', progress: 45, link: '/projects/m1' },
+                  { id: 'm2', type: 'Missions', title: '1 Million Solar Chillers Deployed', authorOrOperator: 'FoodNerve Systems', metaInfo: 'Fundraising Phase', thumbnailUrl: 'https://images.unsplash.com/photo-1591696205602-2f950c417cb9?auto=format&fit=crop&q=80&w=800', progress: 12, link: '/projects/m2' },
+                  { id: 'm3', type: 'Missions', title: 'Digitize 50,000 Smallholder Farmers', authorOrOperator: 'Ministry of Agriculture', metaInfo: 'Execution Phase', thumbnailUrl: 'https://images.unsplash.com/photo-1574943320219-553eb213f72d?auto=format&fit=crop&q=80&w=800', progress: 80, link: '/projects/m3' }
+                ];
+                return <Swimlane key={lane.id} lane={{ ...lane, items: missionItems }} />;
+              }
+              return <Swimlane key={lane.id} lane={lane} />;
+            })}
           </Box>
         </>
       )}

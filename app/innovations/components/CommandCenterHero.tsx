@@ -1,25 +1,23 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Container, Button, IconButton, keyframes } from '@mui/material';
+import { Box, Typography, Container, Button, IconButton, keyframes, alpha } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import Link from 'next/link';
 
 interface CommandCenterHeroProps {
-  headline: string;
-  subheadline: string;
   globalAlerts?: any[];
 }
 
 const CATEGORIES = [
   { id: 'lane-articles', label: 'Articles', icon: '📝', color: '#3b82f6', count: 142, newCount: 12 },
-  { id: 'lane-livestreams', label: 'Livestreams', icon: '🎥', color: '#f59e0b', count: 24, newCount: 3 },
+  { id: 'lane-livestreams', label: 'Livestreams', icon: '🎥', color: '#f59e0b', count: 24, newCount: 3, isLive: true },
   { id: 'lane-jobs', label: 'Jobs & Internships', icon: '💼', color: '#10b981', count: 110, newCount: 8 },
-  { id: 'lane-volunteering', label: 'Volunteering', icon: '🤝', color: '#ec4899', count: 15, newCount: 2 },
-  { id: 'lane-opportunities', label: 'Opportunities', icon: '🚀', color: '#8b5cf6', count: 53, newCount: 8 },
+  { id: 'lane-missions', label: 'Missions', icon: '🎯', color: '#ec4899', count: 15, newCount: 2 },
 ];
 
 const flowAnimation = keyframes`
@@ -29,13 +27,62 @@ const flowAnimation = keyframes`
 `;
 
 const pulseAnimation = keyframes`
-  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7); }
-  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(255, 255, 255, 0); }
-  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 `;
 
-export default function CommandCenterHero({ headline, subheadline, globalAlerts = [] }: CommandCenterHeroProps) {
+export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHeroProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [dailyAlerts, setDailyAlerts] = useState<any[]>(globalAlerts || []);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    let isToday = false;
+    const now = new Date();
+    if (currentDate.getDate() === now.getDate() && currentDate.getMonth() === now.getMonth() && currentDate.getFullYear() === now.getFullYear()) {
+      isToday = true;
+    }
+
+    if (isToday && globalAlerts.length > 0) {
+      setDailyAlerts(globalAlerts);
+      setCurrentSlide(0);
+      return;
+    }
+
+    const fetchEvents = async () => {
+      setIsLoading(true);
+      try {
+        const start = new Date(currentDate);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(currentDate);
+        end.setHours(23, 59, 59, 999);
+        
+        const res = await fetch(`/api/calendar?startDate=${start.toISOString()}&endDate=${end.toISOString()}&limit=10`);
+        if (res.ok) {
+           const data = await res.json();
+           if (data.events) {
+              const mapped = data.events.map((evt: any) => ({
+                ...evt,
+                categoryLabel: evt.sourceType === 'job' ? 'DEADLINE' : evt.sourceType === 'livestream' ? 'LIVESTREAM' : evt.category?.toUpperCase() || 'EVENT',
+                startDate: evt.date,
+                endDate: evt.endDate,
+                imageUrl: evt.imageUrl || "https://images.unsplash.com/photo-1591696205602-2f950c417cb9?auto=format&fit=crop&q=80&w=800",
+              }));
+              setDailyAlerts(mapped);
+              setCurrentSlide(0);
+           }
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchEvents();
+  }, [currentDate, globalAlerts]);
 
   const getTimeStatus = (alert: any) => {
     if (!alert) return null;
@@ -59,111 +106,72 @@ export default function CommandCenterHero({ headline, subheadline, globalAlerts 
     return null;
   };
 
-  const statusObj = getTimeStatus(globalAlerts[currentSlide]);
-
-  const renderHeadline = () => {
-    if (headline.startsWith('Explore')) {
-      const rest = headline.substring(7);
-      return (
-        <>
-          <Box component="span" sx={{ 
-            background: 'linear-gradient(270deg, #10b981, #3b82f6, #10b981)', 
-            backgroundSize: '200% 200%', 
-            animation: `${flowAnimation} 4s ease infinite`, 
-            WebkitBackgroundClip: 'text', 
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-            color: 'transparent',
-            display: 'inline',
-            paddingRight: '0.1em',
-            marginRight: '-0.1em'
-          }}>
-            Explore
-          </Box>
-          {rest}
-        </>
-      );
-    }
-    return headline;
-  };
-
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % Math.max(1, globalAlerts.length));
-  };
-
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + Math.max(1, globalAlerts.length)) % Math.max(1, globalAlerts.length));
-  };
-
-  useEffect(() => {
-    if (globalAlerts.length <= 1) return;
-    const interval = setInterval(() => {
-      nextSlide();
-    }, 6000);
-    return () => clearInterval(interval);
-  }, [globalAlerts.length]);
+  const statusObj = getTimeStatus(dailyAlerts[currentSlide]);
 
   return (
     <Box sx={{ minHeight: '80vh', bgcolor: '#ffffff', color: '#0f172a', pt: { xs: 12, md: 16 }, pb: 8, position: 'relative', overflow: 'hidden' }}>
-      
       {/* Background ambient glow */}
       <Box sx={{ position: 'absolute', top: '-20%', left: '50%', transform: 'translateX(-50%)', width: '100%', height: '100%', background: 'radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, transparent 50%)', zIndex: 0, pointerEvents: 'none' }} />
 
       <Container maxWidth="xl" sx={{ position: 'relative', zIndex: 1 }}>
         
-        {/* 1. TOP TEXT */}
-        <Box sx={{ textAlign: 'center', mb: { xs: 6, md: 10 }, maxWidth: '800px', mx: 'auto' }}>
-          <Typography variant="h1" sx={{ fontWeight: 900, fontSize: { xs: '2.5rem', sm: '3.5rem', md: '5rem' }, letterSpacing: '-0.05em', lineHeight: 1.05, mb: 3, color: '#0f172a' }}>
-            {renderHeadline()}
-          </Typography>
-          <Typography variant="body1" sx={{ color: '#475569', fontSize: { xs: '0.95rem', md: '1.15rem' }, fontWeight: 500, lineHeight: 1.6, maxWidth: '650px', mx: 'auto' }}>
-            {subheadline}
-          </Typography>
-        </Box>
-
-        {/* 2. SPLIT LAYOUT */}
+        {/* SPLIT LAYOUT */}
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '8fr 4fr' }, gap: 4, alignItems: 'stretch' }}>
           
-          {/* LEFT: Wide Slideshow */}
-          <Box sx={{ 
-            position: 'relative', 
-            borderRadius: '24px', 
-            overflow: 'hidden', 
-            bgcolor: '#f8fafc', 
-            border: '1px solid #e2e8f0',
-            minHeight: { xs: '350px', md: '450px' },
-            display: 'flex',
-            flexDirection: 'column',
-            boxShadow: '0 20px 40px -10px rgba(0,0,0,0.05)'
-          }}>
-            <Box sx={{ p: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 10, position: 'absolute', top: 0, left: 0, right: 0 }}>
-              <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-                <Box sx={{ bgcolor: '#ffffff', px: 2.5, py: 1, borderRadius: '10px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-                  <Typography sx={{ fontWeight: 900, color: '#0f172a', letterSpacing: '0.1em', textTransform: 'uppercase', fontSize: '0.75rem' }}>
-                    {globalAlerts[currentSlide]?.categoryLabel || 'GLOBAL UPDATES'}
-                  </Typography>
-                </Box>
+          {/* LEFT: Controls & Wide Slideshow */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            
+          {/* Header Area */}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4, px: 1 }}>
+            
+            {/* Left: Previous Icon */}
+            <IconButton 
+              onClick={() => {
+                const prev = new Date(currentDate);
+                prev.setDate(prev.getDate() - 1);
+                setCurrentDate(prev);
+              }}
+              sx={{ color: '#64748b', bgcolor: '#ffffff', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.04)', '&:hover': { color: '#0f172a', bgcolor: '#f8fafc' }, width: 44, height: 44 }}
+            >
+              <ArrowBackIcon fontSize="small" />
+            </IconButton>
+
+            {/* Center: Greeting & Date Display */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+              <Typography sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 800, color: '#0f172a', fontSize: { xs: '1.4rem', md: '1.8rem' }, lineHeight: 1.1, letterSpacing: '-0.02em', textAlign: 'center' }}>
+                {(() => {
+                  const hour = new Date().getHours();
+                  if (hour < 12) return 'GOOD MORNING';
+                  if (hour < 18) return 'GOOD AFTERNOON';
+                  return 'GOOD EVENING';
+                })()}
+              </Typography>
+              
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.5, flexWrap: 'wrap', justifyContent: 'center' }}>
+                <Typography sx={{ fontFamily: 'var(--font-ysabeau-infant)', fontWeight: 700, color: '#64748b', fontSize: '0.85rem', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                  {currentDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                </Typography>
                 
                 <AnimatePresence mode="wait">
-                  {statusObj && (
+                  {statusObj && dailyAlerts.length > 0 && (
                     <Box 
                       component={motion.div}
                       key={statusObj.label}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.9 }}
                       sx={{ 
-                        bgcolor: statusObj.color, 
-                        px: 2, py: 1, 
-                        borderRadius: '10px', 
-                        boxShadow: `0 4px 15px ${statusObj.color}60`,
+                        bgcolor: alpha(statusObj.color, 0.1), 
+                        px: 1.5, py: 0.5, 
+                        borderRadius: '8px', 
                         display: 'flex', alignItems: 'center', gap: 1,
+                        border: `1px solid ${alpha(statusObj.color, 0.2)}`
                       }}
                     >
                       {statusObj.pulse && (
-                        <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'white', animation: `${pulseAnimation} 2s infinite` }} />
+                        <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: statusObj.color, animation: `${pulseAnimation} 2s infinite` }} />
                       )}
-                      <Typography sx={{ fontWeight: 900, color: 'white', letterSpacing: '0.05em', textTransform: 'uppercase', fontSize: '0.75rem' }}>
+                      <Typography sx={{ fontFamily: 'var(--font-ysabeau-infant)', fontWeight: 700, color: statusObj.color, letterSpacing: '0.05em', textTransform: 'uppercase', fontSize: '0.65rem' }}>
                         {statusObj.label}
                       </Typography>
                     </Box>
@@ -171,24 +179,70 @@ export default function CommandCenterHero({ headline, subheadline, globalAlerts 
                 </AnimatePresence>
               </Box>
             </Box>
-            
+
+            {/* Right: Premium Controls */}
+            <Box sx={{ 
+              display: 'flex', alignItems: 'center', gap: 1, 
+              bgcolor: '#ffffff', p: 0.5, borderRadius: '999px', 
+              boxShadow: '0 4px 15px rgba(0,0,0,0.05)', 
+              border: '1px solid rgba(0,0,0,0.04)' 
+            }}>
+              <IconButton 
+                onClick={() => {
+                  const next = new Date(currentDate);
+                  next.setDate(next.getDate() + 1);
+                  setCurrentDate(next);
+                }}
+                sx={{ color: '#64748b', '&:hover': { color: '#0f172a', bgcolor: '#f1f5f9' }, width: 36, height: 36 }}
+              >
+                <ArrowForwardIcon fontSize="small" />
+              </IconButton>
+              
+              <Box sx={{ width: '1px', height: 20, bgcolor: 'rgba(0,0,0,0.08)', mx: 0.5 }} />
+              
+              <IconButton 
+                component={Link} 
+                href="/calendar"
+                sx={{ color: '#10b981', '&:hover': { bgcolor: 'rgba(16,185,129,0.1)' }, width: 36, height: 36 }}
+              >
+                <CalendarMonthIcon fontSize="small" />
+              </IconButton>
+            </Box>
+          </Box>
+
+            <Box sx={{ 
+              position: 'relative', 
+              borderRadius: '28px', 
+              overflow: 'hidden', 
+              bgcolor: '#ffffff', 
+              border: '1px solid rgba(255,255,255,0.8)',
+              minHeight: { xs: '450px', md: '550px' },
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.02)',
+              flexGrow: 1
+            }}>
             <Box sx={{ position: 'relative', flexGrow: 1, overflow: 'hidden' }}>
-              {globalAlerts.length > 0 ? (
+              {isLoading ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', flexDirection: 'column', gap: 2 }}>
+                  <Typography sx={{ color: '#64748b', fontWeight: 600 }}>Loading {currentDate.toLocaleDateString()} events...</Typography>
+                </Box>
+              ) : dailyAlerts.length > 0 ? (
                 <Box
                   component={motion.div}
-                  animate={{ x: `-${(currentSlide * 100) / Math.max(1, globalAlerts.length)}%` }}
+                  animate={{ x: `-${(currentSlide * 100) / Math.max(1, dailyAlerts.length)}%` }}
                   transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                   sx={{ 
                     display: 'flex', 
                     height: '100%', 
-                    width: `${globalAlerts.length * 100}%` 
+                    width: `${dailyAlerts.length * 100}%` 
                   }}
                 >
-                  {globalAlerts.map((alert, idx) => (
+                  {dailyAlerts.map((alert, idx) => (
                     <Box
                       key={idx}
                       sx={{ 
-                        width: `${100 / globalAlerts.length}%`, 
+                        width: `${100 / dailyAlerts.length}%`, 
                         height: '100%', 
                         position: 'relative', 
                         display: 'flex', 
@@ -209,7 +263,7 @@ export default function CommandCenterHero({ headline, subheadline, globalAlerts 
 
                       {/* Overlay Content */}
                       <Box sx={{ position: 'relative', zIndex: 1, maxWidth: { xs: '100%', md: '80%' }, mb: 4 }}>
-                        <Typography variant="h3" sx={{ fontWeight: 900, mb: 3, fontSize: { xs: '1.8rem', md: '2.5rem' }, lineHeight: 1.1, color: '#ffffff', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
+                        <Typography variant="h3" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 800, mb: 3, fontSize: { xs: '2rem', md: '2.8rem' }, lineHeight: 1.1, color: '#ffffff', textShadow: '0 2px 10px rgba(0,0,0,0.5)', letterSpacing: '-0.02em' }}>
                           {alert?.title}
                         </Typography>
                         {alert?.link && (
@@ -219,9 +273,10 @@ export default function CommandCenterHero({ headline, subheadline, globalAlerts 
                             href={alert.link}
                             endIcon={<ArrowForwardIcon />}
                             sx={{ 
+                              fontFamily: 'var(--font-quicksand)',
                               bgcolor: '#ffffff', 
                               color: '#0f172a', 
-                              fontWeight: 800, 
+                              fontWeight: 700, 
                               borderRadius: '999px',
                               px: 4, py: 1.5,
                               '&:hover': { bgcolor: '#f1f5f9' }
@@ -235,15 +290,19 @@ export default function CommandCenterHero({ headline, subheadline, globalAlerts 
                   ))}
                 </Box>
               ) : (
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-                  <Typography sx={{ color: '#64748b' }}>No active alerts at this time.</Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', p: 4, textAlign: 'center', background: 'linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%)' }}>
+                  <Box sx={{ width: 72, height: 72, borderRadius: '24px', bgcolor: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 3, boxShadow: '0 15px 35px -5px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,1)', border: '1px solid rgba(0,0,0,0.04)', transform: 'rotate(-5deg)' }}>
+                    <CalendarMonthIcon sx={{ fontSize: 36, color: '#94a3b8' }} />
+                  </Box>
+                  <Typography sx={{ fontFamily: 'var(--font-dosis)', color: '#0f172a', fontSize: '1.8rem', fontWeight: 800, mb: 1.5, letterSpacing: '-0.02em' }}>No Scheduled Events</Typography>
+                  <Typography sx={{ fontFamily: 'var(--font-ysabeau-infant)', color: '#64748b', fontSize: '1rem', fontWeight: 700, maxWidth: 300, lineHeight: 1.6 }}>Your briefing is clear for today. Kick back, or explore the ecosystem.</Typography>
                 </Box>
               )}
               
               {/* Beaded line at bottom */}
-              {globalAlerts.length > 1 && (
+              {dailyAlerts.length > 1 && !isLoading && (
                 <Box sx={{ position: 'absolute', bottom: 20, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 1, zIndex: 10 }}>
-                  {globalAlerts.map((_, idx) => (
+                  {dailyAlerts.map((_, idx) => (
                     <Box 
                       key={idx} 
                       onClick={() => setCurrentSlide(idx)}
@@ -261,10 +320,12 @@ export default function CommandCenterHero({ headline, subheadline, globalAlerts 
               )}
             </Box>
           </Box>
+        </Box>
 
-          {/* RIGHT: Vertical Premium List (Hidden on mobile) */}
-          <Box sx={{ display: { xs: 'none', lg: 'flex' }, flexDirection: 'column', gap: 2 }}>
-            <Typography sx={{ fontWeight: 800, color: '#64748b', letterSpacing: '0.1em', textTransform: 'uppercase', fontSize: '0.85rem', pl: 1, mb: 1 }}>
+        {/* RIGHT: Ecosystem Categories & Quick Actions */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, flexShrink: 0, pb: { xs: 2, lg: 0 } }}>
+            {/* Header */}
+            <Typography sx={{ display: { xs: 'none', lg: 'block' }, fontFamily: 'var(--font-ysabeau-infant)', fontWeight: 700, color: '#64748b', letterSpacing: '0.1em', textTransform: 'uppercase', fontSize: '0.85rem', pl: 1, mb: 1 }}>
               Ecosystem Categories
             </Typography>
             {CATEGORIES.map((cat, idx) => (
@@ -280,46 +341,100 @@ export default function CommandCenterHero({ headline, subheadline, globalAlerts 
                   textDecoration: 'none',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'space-between',
-                  p: 2.5,
+                  p: { xs: 1.5, sm: 2.5 },
                   borderRadius: '20px',
                   background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
                   border: '1px solid rgba(0,0,0,0.03)',
                   boxShadow: '0 10px 30px -10px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8)',
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   cursor: 'pointer',
+                  flexShrink: 0,
+                  position: 'relative',
                   '&:hover': {
                     borderColor: `${cat.color}40`,
-                    transform: 'translateX(-8px) scale(1.02)',
+                    transform: { lg: 'translateX(-8px) scale(1.02)' },
                     boxShadow: `-15px 15px 30px ${cat.color}15, inset 0 1px 0 rgba(255,255,255,1)`
                   }
                 }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
-                  <Box sx={{ width: 52, height: 52, borderRadius: '16px', bgcolor: `${cat.color}10`, color: cat.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', boxShadow: `inset 0 0 0 1px ${cat.color}20` }}>
+                <Box sx={{ width: { xs: 44, sm: 52 }, height: { xs: 44, sm: 52 }, borderRadius: '16px', bgcolor: `${cat.color}10`, color: cat.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: { xs: '1.25rem', sm: '1.5rem' }, boxShadow: `inset 0 0 0 1px ${cat.color}20`, flexShrink: 0 }}>
                     {cat.icon}
-                  </Box>
-                  <Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                      <Typography sx={{ fontWeight: 800, fontSize: '1.15rem', color: '#0f172a', lineHeight: 1.2 }}>
-                        {cat.label}
-                      </Typography>
-                      {cat.newCount > 0 && (
-                        <Box sx={{ bgcolor: `${cat.color}15`, color: cat.color, px: 1, py: 0.25, borderRadius: '4px', fontSize: '0.7rem', fontWeight: 800 }}>
-                          +{cat.newCount} New
-                        </Box>
-                      )}
-                    </Box>
-                    <Typography sx={{ fontWeight: 600, fontSize: '0.85rem', color: '#64748b', mt: 0.5 }}>
-                      {cat.count} listings total
+                </Box>
+                {/* Text Details */}
+                <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1, ml: 2, overflow: 'hidden' }}>
+                  <Typography sx={{ fontFamily: 'var(--font-ysabeau-infant)', fontWeight: 700, fontSize: { xs: '0.95rem', sm: '1.15rem' }, color: '#0f172a', lineHeight: 1.2 }}>
+                    {cat.label}
+                  </Typography>
+                  
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                    {cat.newCount > 0 && (
+                      <Box sx={{ bgcolor: `${cat.color}15`, color: cat.color, px: 0.8, py: 0.2, borderRadius: '4px', fontSize: '0.65rem', fontWeight: 700, fontFamily: 'var(--font-ysabeau-infant)' }}>
+                        +{cat.newCount} NEW
+                      </Box>
+                    )}
+                    
+                    <Typography sx={{ fontFamily: 'var(--font-ysabeau-infant)', fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.85rem' }, color: '#64748b' }}>
+                      {cat.count} active
                     </Typography>
                   </Box>
                 </Box>
-                <Box sx={{ width: 32, height: 32, borderRadius: '50%', bgcolor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s ease', '.category-card:hover &': { bgcolor: `${cat.color}15`, color: cat.color } }}>
-                  <ArrowForwardIosIcon sx={{ color: '#94a3b8', fontSize: '0.9rem', ml: 0.5 }} />
+                <Box sx={{ width: { xs: 24, sm: 32 }, height: { xs: 24, sm: 32 }, borderRadius: '50%', bgcolor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s ease' }}>
+                  <ArrowForwardIosIcon sx={{ color: '#94a3b8', fontSize: { xs: '0.7rem', sm: '0.9rem' } }} />
                 </Box>
               </Box>
             ))}
+
+            {/* Premium Gateway to Society (Light/Elegant Redesign) */}
+            <Box
+              component="a"
+              href="http://foodnerve.org"
+              sx={{
+                textDecoration: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                p: { xs: 2, sm: 2.5 },
+                borderRadius: '20px',
+                background: 'linear-gradient(270deg, #f0fdf4, #ccfbf1, #f0fdf4, #ecfeff)',
+                backgroundSize: '300% 300%',
+                animation: 'gradientMove 12s ease infinite',
+                border: '1px solid rgba(16, 185, 129, 0.15)',
+                boxShadow: '0 10px 30px -10px rgba(16, 185, 129, 0.15), inset 0 1px 0 rgba(255,255,255,0.9)',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                cursor: 'pointer',
+                flexShrink: 0,
+                position: 'relative',
+                overflow: 'hidden',
+                '@keyframes gradientMove': {
+                  '0%': { backgroundPosition: '0% 50%' },
+                  '50%': { backgroundPosition: '100% 50%' },
+                  '100%': { backgroundPosition: '0% 50%' },
+                },
+                '&:hover': {
+                  transform: { lg: 'translateX(-8px) scale(1.02)' },
+                  boxShadow: '-15px 15px 30px rgba(16, 185, 129, 0.25)',
+                }
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 2, sm: 2.5 }, position: 'relative', zIndex: 1 }}>
+                <Box sx={{ width: { xs: 44, sm: 52 }, height: { xs: 44, sm: 52 }, borderRadius: '16px', bgcolor: '#ffffff', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: { xs: '1.25rem', sm: '1.5rem' }, boxShadow: '0 4px 12px rgba(16,185,129,0.1)', flexShrink: 0 }}>
+                  🌍
+                </Box>
+                {/* Text Details */}
+                <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1, ml: 2 }}>
+                  <Typography sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 800, fontSize: { xs: '1.1rem', sm: '1.3rem' }, color: '#064e3b', lineHeight: 1.2, letterSpacing: '-0.02em' }}>
+                    Premium Gateway to Society
+                  </Typography>
+                  <Typography sx={{ fontFamily: 'var(--font-ysabeau-infant)', fontWeight: 700, fontSize: { xs: '0.75rem', sm: '0.85rem' }, color: '#059669', mt: 0.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Box component="span" sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#10b981', display: 'inline-block', animation: `${pulseAnimation} 2s infinite` }} />
+                    14,204 Operators in
+                  </Typography>
+                </Box>
+              </Box>
+              <Box sx={{ width: { xs: 28, sm: 32 }, height: { xs: 28, sm: 32 }, borderRadius: '50%', bgcolor: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s ease', position: 'relative', zIndex: 1, boxShadow: '0 2px 8px rgba(16,185,129,0.1)' }}>
+                <ArrowForwardIcon sx={{ color: '#059669', fontSize: { xs: '0.9rem', sm: '1.1rem' } }} />
+              </Box>
+            </Box>
           </Box>
 
         </Box>

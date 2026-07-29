@@ -1,6 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/db/client';
+import { syncCalendarEvent, removeCalendarEvent } from '@/lib/calendar-sync';
 
 export type ArticleBlockPayload = {
   blockType: string;
@@ -203,6 +204,37 @@ export async function createLearnContent(data: CreateLearnContentPayload, isDraf
 
     return content;
   });
+
+  if (result.status === 'published') {
+    let orgName: string | undefined;
+    if (result.organizationId) {
+      const org = await prisma.organization.findUnique({
+        where: { id: result.organizationId },
+        select: { name: true }
+      });
+      orgName = org?.name;
+    }
+
+    let dateType: 'START_TIME' | 'PUBLISH_DATE' | 'DATE_RANGE' = 'PUBLISH_DATE';
+    if (result.type === 'livestream' || result.type === 'class') {
+      dateType = 'START_TIME';
+    }
+
+    await syncCalendarEvent({
+      sourceType: result.type,
+      sourceId: result.id,
+      slug: result.slug,
+      dateType,
+      title: result.title,
+      date: result.createdAt,
+      imageUrl: result.thumbnailUrl ?? undefined,
+      category: result.category ?? result.type,
+      organizationName: orgName,
+      status: 'upcoming',
+    });
+  } else {
+    await removeCalendarEvent(result.type, result.id);
+  }
 
   return { success: true, slug: result.slug, id: result.id };
 }

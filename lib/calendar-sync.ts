@@ -1,12 +1,15 @@
 import { prisma } from '@/lib/db/client';
 
+export type CalendarDateType = 'DEADLINE' | 'START_TIME' | 'PUBLISH_DATE' | 'DATE_RANGE';
+
 export interface CalendarEventSyncParams {
-  sourceType: 'job' | 'livestream' | 'meetEvent' | 'campaign' | 'learnContent';
+  sourceType: string; // 'job' | 'listing' | 'livestream' | 'article' | 'video' | 'class' | 'report' | 'meetEvent' | 'campaign'
   sourceId: string;
+  slug?: string;
+  dateType?: CalendarDateType;
   title: string;
   date: Date;
   endDate?: Date;
-  link: string;
   imageUrl?: string;
   category?: string;
   organizationName?: string;
@@ -29,23 +32,25 @@ export async function syncCalendarEvent(params: CalendarEventSyncParams) {
       create: {
         sourceType: params.sourceType,
         sourceId: params.sourceId,
+        slug: params.slug || null,
+        dateType: params.dateType || 'START_TIME',
         title: params.title,
         date: params.date,
-        endDate: params.endDate,
-        link: params.link,
-        imageUrl: params.imageUrl,
-        category: params.category,
-        organizationName: params.organizationName,
+        endDate: params.endDate || null,
+        imageUrl: params.imageUrl || null,
+        category: params.category || null,
+        organizationName: params.organizationName || null,
         status: params.status ?? 'upcoming',
       },
       update: {
+        slug: params.slug || null,
+        dateType: params.dateType || 'START_TIME',
         title: params.title,
         date: params.date,
-        endDate: params.endDate,
-        link: params.link,
-        imageUrl: params.imageUrl,
-        category: params.category,
-        organizationName: params.organizationName,
+        endDate: params.endDate || null,
+        imageUrl: params.imageUrl || null,
+        category: params.category || null,
+        organizationName: params.organizationName || null,
         ...(params.status && { status: params.status }),
       },
     });
@@ -96,6 +101,11 @@ export async function getCalendarEvents(options?: {
 
   if (options?.category) {
     where.category = options.category;
+  }
+
+  if (!prisma || !prisma.calendarEvent) {
+    console.warn("[CalendarSync] Prisma or calendarEvent model is undefined. Returning empty events.");
+    return [];
   }
 
   return prisma.calendarEvent.findMany({

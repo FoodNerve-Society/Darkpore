@@ -190,34 +190,40 @@ export async function createTradeListing(data: CreateTradeListingPayload) {
     }
 
     // --- Sync to Calendar ---
-    if (listing.status !== 'draft' && (listing.expiresAt || listing.endDate)) {
-      const eventDate = listing.expiresAt || listing.endDate;
-      if (eventDate) {
-        let orgName: string | undefined;
-        if (listing.organizationId) {
-          const org = await prisma.organization.findUnique({
-            where: { id: listing.organizationId },
-            select: { name: true }
-          });
-          orgName = org?.name;
-        }
+    const isJob = listing.category === 'jobs' || listing.category === 'volunteer';
+    const sourceType = isJob ? 'job' : 'listing';
+    const eventDate = listing.expiresAt || listing.endDate || listing.startDate;
 
-        await syncCalendarEvent({
-          sourceType: 'job',
-          sourceId: listing.id,
-          title: listing.title,
-          date: eventDate,
-          endDate: listing.endDate ?? undefined,
-          link: listing.category === 'jobs' || listing.category === 'volunteer'
-            ? `/innovations/careers/${listing.id}`
-            : `/innovations/trade/${listing.id}`,
-          imageUrl: listing.imageUrl ?? undefined,
-          category: listing.category,
-          organizationName: orgName,
+    if (listing.status !== 'draft' && eventDate) {
+      let orgName: string | undefined;
+      if (listing.organizationId) {
+        const org = await prisma.organization.findUnique({
+          where: { id: listing.organizationId },
+          select: { name: true }
         });
+        orgName = org?.name;
       }
+
+      let dateType: 'DEADLINE' | 'START_TIME' | 'DATE_RANGE' = 'DEADLINE';
+      if (listing.startDate && listing.endDate) {
+        dateType = 'DATE_RANGE';
+      } else if (listing.startDate) {
+        dateType = 'START_TIME';
+      }
+
+      await syncCalendarEvent({
+        sourceType,
+        sourceId: listing.id,
+        dateType,
+        title: listing.title,
+        date: eventDate,
+        endDate: listing.endDate ?? undefined,
+        imageUrl: listing.imageUrl ?? undefined,
+        category: listing.category,
+        organizationName: orgName,
+      });
     } else {
-      await removeCalendarEvent('job', listing.id);
+      await removeCalendarEvent(sourceType, listing.id);
     }
 
     return { success: true, listing };

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Box, Typography, Container, IconButton } from '@mui/material';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
@@ -10,6 +10,7 @@ import { EcosystemItem } from './TabbedHero';
 
 export default function Swimlane({ lane }: { lane: any }) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [activeTickerIndex, setActiveTickerIndex] = useState(0);
 
   const scrollLeft = () => {
     if (scrollRef.current) scrollRef.current.scrollBy({ left: -400, behavior: 'smooth' });
@@ -65,6 +66,14 @@ export default function Swimlane({ lane }: { lane: any }) {
       : sampleArticleTitles[i % sampleArticleTitles.length];
 
     const sampleEras = ['Present', 'Past', 'Future'];
+    const sampleBlockTags = [
+      ['🌾 Cold Storage Deficit', '📉 34% Post-Harvest Loss', '💡 Solar Chilling Unit', '📊 Field Data 2026'],
+      ['🥚 Rural Child Nutrition', '📈 1 Egg / Day Trial', '🤝 Community Savings', '🔍 Ogun State Findings'],
+      ['🚜 Fertilizer Price Spike', '💰 $420 / Ton Impact', '🛠️ Soil Micro-Dosing', '📌 Contract Farming'],
+      ['🚚 Sahel Trade Route', '⚠️ Border Bottlenecks', '🛰️ Satellite Tracking', '⚡ Fast-Track Logistics'],
+    ];
+
+    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') + `-${i + 1}a9x`;
 
     return {
       id: `mock-${lane.id}-${i}`,
@@ -73,28 +82,49 @@ export default function Swimlane({ lane }: { lane: any }) {
       thumbnailUrl: isLivestream 
         ? 'https://images.unsplash.com/photo-1591696205602-2f950c417cb9?auto=format&fit=crop&q=80&w=800'
         : 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?auto=format&fit=crop&q=80&w=800',
-      link: isJob ? '/careers' : '/learn',
+      link: isJob ? '/careers' : isLivestream ? '/calendar' : `/learn/article/${slug}`,
+      slug,
       authorOrOperator: sampleAuthors[i % sampleAuthors.length],
       organizationName: sampleOrgs[i % sampleOrgs.length],
       authorAvatarUrl: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200`,
       categoryLabel: isJob ? (i % 2 === 0 ? 'FULL-TIME' : 'REMOTE') : isLivestream ? 'LIVESTREAM' : 'SAVINGS',
       era: sampleEras[i % sampleEras.length],
-      metaInfo: isJob ? 'Closing in 5 days' : isLivestream ? 'Wed • 7:00 PM WAT' : `${(i + 4) * 2} min read`,
+      tags: sampleBlockTags[i % sampleBlockTags.length],
+      metaInfo: isJob ? 'Closing in 5 days' : isLivestream ? (i % 3 === 0 ? '🔴 Happening Now' : i % 3 === 1 ? 'Wed • 7:00 PM WAT' : '▶️ Replay Available') : `${(i + 4) * 2} min read`,
       readCount: `${(i + 2) * 1.4}k reads`,
       locationOrSalary: isJob ? `📍 Lagos, NG • 💰 $${(i + 1) * 800}/mo` : undefined,
     };
   });
 
+  // Event-driven sequencing: no timer, each card drives the next
+  const advanceToNextCard = useCallback(() => {
+    setActiveTickerIndex((prev) => (prev + 1) % Math.max(1, itemsToDisplay.length));
+  }, [itemsToDisplay.length]);
+
+  // Smoothly scroll the newly active card to center
+  useEffect(() => {
+    if (!scrollRef.current) return;
+    const container = scrollRef.current;
+    const child = container.children[activeTickerIndex] as HTMLElement | undefined;
+    if (!child) return;
+
+    const scrollTarget = child.offsetLeft - (container.clientWidth / 2) + (child.clientWidth / 2);
+    container.scrollTo({
+      left: Math.max(0, scrollTarget),
+      behavior: 'smooth',
+    });
+  }, [activeTickerIndex]);
+
   return (
-    <Box id={lane.id} sx={{ mb: { xs: 4, md: 8 } }}>
+    <Box id={lane.id} sx={{ mb: { xs: 2, md: 3 }, scrollMarginTop: '120px' }}>
       <Container maxWidth="xl" sx={{ px: { xs: 2, md: 6 } }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: { xs: 2, md: 3 } }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: { xs: 1.5, md: 2 } }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, md: 2 } }}>
             <Box sx={{ width: { xs: 8, md: 12 }, height: { xs: 8, md: 12 }, borderRadius: '50%', bgcolor: lane.color }} />
             <Link href={`/categories/${lane.id.replace('lane-', '')}`} style={{ textDecoration: 'none' }}>
               <Typography 
                 variant="h4" 
-                sx={{ fontWeight: 900, color: '#0f172a', fontSize: { xs: '1.25rem', md: '2.125rem' }, cursor: 'pointer', '&:hover': { opacity: 0.8 } }}
+                sx={{ fontWeight: 900, color: '#0f172a', fontSize: { xs: '1.05rem', md: '1.6rem' }, cursor: 'pointer', '&:hover': { opacity: 0.8 } }}
               >
                 {lane.title}
               </Typography>
@@ -122,28 +152,33 @@ export default function Swimlane({ lane }: { lane: any }) {
           </Box>          
         </Box>
         
-        {/* Edge-Bleed Scroll Area (Right side only) */}
-        <Box sx={{ position: 'relative', width: '100%', mr: 'calc(-50vw + 50%)', py: 6, my: -6 }}>
+        {/* Scroll container */}
+        <Box sx={{ position: 'relative', width: '100%', mr: 'calc(-50vw + 50%)', py: 4, my: -4 }}>
           <Box 
             ref={scrollRef}
             sx={{ 
               display: 'flex', 
               gap: 3, 
               overflowX: 'auto', 
-              pt: 3,
-              pb: 5,
-              scrollSnapType: 'x mandatory',
+              pt: 2,
+              pb: 6,
+              px: 2,
+              mx: -2,
+              scrollBehavior: 'smooth',
               '&::-webkit-scrollbar': { display: 'none' },
             }}
           >
-            {itemsToDisplay.map((item, index) => (
-              <Box key={item.id} sx={{ minWidth: { xs: '260px', sm: '320px' }, scrollSnapAlign: 'start', pt: 1.5 }}>
+            {itemsToDisplay.map((item, idx) => (
+              <Box key={item.id} sx={{ width: lane.id === 'lane-livestreams' ? { xs: 320, md: 480 } : lane.id === 'lane-top-stories' ? { xs: 260, md: 300 } : { xs: 280, md: 360 }, flexShrink: 0, pt: 1 }}>
                 <EcosystemCard 
                   item={item} 
                   themeColor={lane.color} 
-                  hideTags={false} 
-                  isFirst={index === 0}
-                  isLast={index === itemsToDisplay.length - 1}
+                  isFirst={idx === 0}
+                  isLast={idx === itemsToDisplay.length - 1}
+                  tickerIndex={idx}
+                  activeTickerIndex={activeTickerIndex}
+                  variant={lane.id === 'lane-top-stories' ? 'compact' : 'default'}
+                  onTickerComplete={advanceToNextCard}
                 />
               </Box>
             ))}
