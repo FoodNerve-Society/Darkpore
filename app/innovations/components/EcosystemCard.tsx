@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Box, Typography, Card, Chip, CardMedia, Avatar, Button, keyframes } from '@mui/material';
+import { Box, Typography, Card, Chip, CardMedia, Avatar, Button, keyframes, CircularProgress } from '@mui/material';
 import PlayCircleFilledIcon from '@mui/icons-material/PlayCircleFilled';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import WorkOutlinedIcon from '@mui/icons-material/WorkOutlined';
 import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
@@ -347,9 +348,32 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({
   // ════════════════════════════════════════════════════════════════════════
   if (isLivestream) {
     const getLiveBadgeProps = () => {
-      if (liveStatus === 'live') return { label: '🔴 LIVE NOW', bg: 'rgba(220, 38, 38, 0.92)', color: '#ffffff', pulse: true };
-      if (liveStatus === 'upcoming') return null; // Remove upcoming pill entirely
-      return { label: '▶️ REPLAY', bg: 'rgba(15, 23, 42, 0.92)', color: '#ffffff', pulse: false };
+      if (liveStatus === 'live') {
+        return { 
+          label: 'LIVE', 
+          color: '#ef4444', 
+          pulse: true, 
+          iconNode: <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#ef4444', mr: 0.75, animation: `${pulseAnimation} 1.5s infinite` }} /> 
+        };
+      }
+      if (liveStatus === 'upcoming') {
+        return { 
+          label: 'UPCOMING', 
+          color: '#ffffff', 
+          pulse: false, 
+          iconNode: <Box sx={{ display: 'flex', gap: 0.3, mr: 0.75, alignItems: 'center' }}>
+            {[0, 1, 2].map((i) => (
+              <Box key={i} sx={{ width: 3, height: 3, borderRadius: '50%', bgcolor: '#fff', animation: `${pulseAnimation} 1.5s infinite`, animationDelay: `${i * 0.2}s` }} />
+            ))}
+          </Box>
+        };
+      }
+      return { 
+        label: 'WATCH', 
+        color: '#ffffff', 
+        pulse: false, 
+        iconNode: <PlayArrowIcon sx={{ fontSize: '1rem', mr: 0.25, color: '#fff' }} /> 
+      };
     };
     const badgeProps = getLiveBadgeProps();
 
@@ -376,40 +400,22 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({
           p: 0,
         }}
       >
-        {/* COHESIVE TOP CAPSULE OVERLAY */}
+        {/* MINIMALIST TOP-LEFT TAG OVERLAY */}
         {badgeProps && (
           <Box
             sx={{
               position: 'absolute',
-              top: -8,
-              left: '50%',
-              transform: 'translateX(-50%)',
+              top: 16,
+              left: 16,
               zIndex: 25,
               display: 'flex',
               alignItems: 'center',
-              width: 'max-content',
             }}
           >
-            <Chip
-              label={badgeProps.label}
-              size="small"
-              icon={badgeProps.pulse ? <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#ffffff', ml: 1, animation: `${pulseAnimation} 1.5s infinite` }} /> : undefined}
-              sx={{
-                bgcolor: badgeProps.bg,
-                backdropFilter: 'blur(8px)',
-                WebkitBackdropFilter: 'blur(8px)',
-                color: badgeProps.color,
-                fontWeight: 900,
-                fontSize: '0.6rem',
-                height: 20,
-                px: 1,
-                borderRadius: '999px',
-                letterSpacing: '0.05em',
-                boxShadow: badgeProps.pulse ? '0 4px 20px rgba(220, 38, 38, 0.6)' : 'none',
-                border: 'none',
-                '& .MuiChip-icon': { color: 'inherit' }
-              }}
-            />
+            {badgeProps.iconNode}
+            <Typography sx={{ color: badgeProps.color, fontWeight: 900, fontSize: '0.7rem', letterSpacing: '0.08em' }}>
+              {badgeProps.label}
+            </Typography>
           </Box>
         )}
 
@@ -448,12 +454,7 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({
           
 
           
-          {/* Play Button Overlay centered on image */}
-          <Box sx={{ position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%, -50%)', opacity: isHovered ? 1 : 0, transition: 'all 0.3s', zIndex: 20 }}>
-              <Box sx={{ width: 64, height: 64, borderRadius: '50%', bgcolor: badgeProps?.pulse ? 'rgba(220,38,38,0.95)' : 'rgba(255,255,255,0.15)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 24px rgba(0,0,0,0.5)', transform: isHovered ? 'scale(1)' : 'scale(0.8)' }}>
-                <PlayCircleFilledIcon sx={{ fontSize: 36, color: '#ffffff' }} />
-              </Box>
-          </Box>
+          {/* Removed Play Button Overlay per user request */}
           
           {/* Bottom Area: Title, Presenter, CTA */}
           <Box sx={{ mt: 'auto' }}>
@@ -491,7 +492,7 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({
               fullWidth
               variant="contained"
               sx={{
-                bgcolor: badgeProps.pulse ? 'rgba(220,38,38,0.95)' : 'rgba(255,255,255,0.1)',
+                bgcolor: badgeProps?.pulse ? 'rgba(220,38,38,0.95)' : 'rgba(255,255,255,0.1)',
                 backdropFilter: 'blur(12px)',
                 WebkitBackdropFilter: 'blur(12px)',
                 color: '#ffffff',
@@ -500,12 +501,12 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({
                 borderRadius: '10px',
                 fontSize: '0.85rem',
                 textTransform: 'none',
-                border: badgeProps.pulse ? 'none' : '1px solid rgba(255,255,255,0.2)',
-                boxShadow: badgeProps.pulse ? '0 4px 16px rgba(220,38,38,0.4)' : 'none',
-                '&:hover': { bgcolor: badgeProps.pulse ? '#dc2626' : 'rgba(255,255,255,0.2)' },
+                border: badgeProps?.pulse ? 'none' : '1px solid rgba(255,255,255,0.2)',
+                boxShadow: badgeProps?.pulse ? '0 4px 16px rgba(220,38,38,0.4)' : 'none',
+                '&:hover': { bgcolor: badgeProps?.pulse ? '#dc2626' : 'rgba(255,255,255,0.2)' },
               }}
             >
-              {liveStatus === 'live' ? 'Join Broadcast' : liveStatus === 'upcoming' ? 'Set Reminder' : 'Watch Replay'}
+              {liveStatus === 'live' ? 'Join Now' : liveStatus === 'upcoming' ? 'Set Reminder' : 'Watch Replay'}
             </Button>
           </Box>
         </Box>
@@ -524,20 +525,20 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({
   // Dynamic Era color palette for subcategory & era pills
   const getSubcategoryBgColor = (eraStr: string) => {
     if (eraStr.includes('future') || eraStr.includes('next')) {
-      return 'rgba(147, 51, 234, 0.75)'; // Electric Purple for Future
+      return 'rgba(147, 51, 234, 0.45)'; // Electric Purple for Future
     } else if (eraStr.includes('past') || eraStr.includes('history')) {
-      return 'rgba(217, 119, 6, 0.75)'; // Warm Amber for Past
+      return 'rgba(217, 119, 6, 0.45)'; // Warm Amber for Past
     }
-    return 'rgba(22, 163, 74, 0.75)'; // Vibrant Emerald for Present
+    return 'rgba(22, 163, 74, 0.45)'; // Vibrant Emerald for Present
   };
 
   const getEraBgColor = (eraStr: string) => {
     if (eraStr.includes('future')) {
-      return 'rgba(58, 12, 89, 0.85)'; // Deep Indigo for Future
+      return 'rgba(58, 12, 89, 0.55)'; // Deep Indigo for Future
     } else if (eraStr.includes('past')) {
-      return 'rgba(67, 20, 7, 0.85)'; // Deep Terracotta for Past
+      return 'rgba(67, 20, 7, 0.55)'; // Deep Terracotta for Past
     }
-    return 'rgba(15, 23, 42, 0.85)'; // Slate Navy for Present
+    return 'rgba(15, 23, 42, 0.55)'; // Slate Navy for Present
   };
 
   const articleTargetUrl = (item.link && item.link !== '/learn') 

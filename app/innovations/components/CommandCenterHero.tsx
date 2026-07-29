@@ -15,7 +15,7 @@ interface CommandCenterHeroProps {
 
 const CATEGORIES = [
   { id: 'lane-articles', label: 'Articles', icon: '📝', color: '#3b82f6', count: 142, newCount: 12 },
-  { id: 'lane-livestreams', label: 'Livestreams', icon: '🎥', color: '#f59e0b', count: 24, newCount: 3 },
+  { id: 'lane-livestreams', label: 'Livestreams', icon: '🎥', color: '#f59e0b', count: 24, newCount: 3, isLive: true },
   { id: 'lane-jobs', label: 'Jobs & Internships', icon: '💼', color: '#10b981', count: 110, newCount: 8 },
   { id: 'lane-missions', label: 'Missions', icon: '🎯', color: '#ec4899', count: 15, newCount: 2 },
 ];
@@ -27,9 +27,9 @@ const flowAnimation = keyframes`
 `;
 
 const pulseAnimation = keyframes`
-  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7); }
-  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(255, 255, 255, 0); }
-  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 `;
 
 export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHeroProps) {
@@ -121,26 +121,35 @@ export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHe
           {/* LEFT: Controls & Wide Slideshow */}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             
-            {/* TOP CONTROLS: Full Width Premium Layout inside Left Column */}
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', px: {xs: 0, md: 1} }}>
-              
-              {/* Left: Prev Icon */}
-              <IconButton 
-                onClick={() => {
-                  const prev = new Date(currentDate);
-                  prev.setDate(prev.getDate() - 1);
-                  setCurrentDate(prev);
-                }}
-                sx={{ color: '#0f172a', bgcolor: 'rgba(0,0,0,0.03)', backdropFilter: 'blur(10px)', '&:hover': { bgcolor: 'rgba(0,0,0,0.08)' } }}
-                size="large"
-              >
-                <ArrowBackIcon />
-              </IconButton>
+          {/* Header Area */}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4, px: 1 }}>
+            
+            {/* Left: Previous Icon */}
+            <IconButton 
+              onClick={() => {
+                const prev = new Date(currentDate);
+                prev.setDate(prev.getDate() - 1);
+                setCurrentDate(prev);
+              }}
+              sx={{ color: '#64748b', bgcolor: '#ffffff', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.04)', '&:hover': { color: '#0f172a', bgcolor: '#f8fafc' }, width: 44, height: 44 }}
+            >
+              <ArrowBackIcon fontSize="small" />
+            </IconButton>
 
-              {/* Center: Date & Status */}
-              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                <Typography sx={{ fontWeight: 900, color: '#0f172a', letterSpacing: '0.05em', textTransform: 'uppercase', fontSize: {xs: '1.2rem', md: '1.6rem'} }}>
-                  {dailyAlerts.length > 0 ? (dailyAlerts[currentSlide]?.categoryLabel || currentDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase()) : currentDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase()}
+            {/* Center: Greeting & Date Display */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+              <Typography sx={{ fontWeight: 900, color: '#0f172a', fontSize: { xs: '1.2rem', md: '1.6rem' }, lineHeight: 1.1, letterSpacing: '-0.02em', textAlign: 'center' }}>
+                {(() => {
+                  const hour = new Date().getHours();
+                  if (hour < 12) return 'GOOD MORNING';
+                  if (hour < 18) return 'GOOD AFTERNOON';
+                  return 'GOOD EVENING';
+                })()}
+              </Typography>
+              
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.5, flexWrap: 'wrap', justifyContent: 'center' }}>
+                <Typography sx={{ fontWeight: 600, color: '#64748b', fontSize: '0.85rem', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                  {currentDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                 </Typography>
                 
                 <AnimatePresence mode="wait">
@@ -148,14 +157,15 @@ export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHe
                     <Box 
                       component={motion.div}
                       key={statusObj.label}
-                      initial={{ opacity: 0, y: -5 }}
-                      animate={{ opacity: 1, y: 0 }}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.9 }}
                       sx={{ 
                         bgcolor: alpha(statusObj.color, 0.1), 
                         px: 1.5, py: 0.5, 
-                        borderRadius: '6px', 
+                        borderRadius: '8px', 
                         display: 'flex', alignItems: 'center', gap: 1,
+                        border: `1px solid ${alpha(statusObj.color, 0.2)}`
                       }}
                     >
                       {statusObj.pulse && (
@@ -168,45 +178,48 @@ export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHe
                   )}
                 </AnimatePresence>
               </Box>
-
-              {/* Right: Next Icon & Calendar */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: {xs: 1, sm: 2} }}>
-                <IconButton 
-                  onClick={() => {
-                    const next = new Date(currentDate);
-                    next.setDate(next.getDate() + 1);
-                    setCurrentDate(next);
-                  }}
-                  sx={{ color: '#0f172a', bgcolor: 'rgba(0,0,0,0.03)', backdropFilter: 'blur(10px)', '&:hover': { bgcolor: 'rgba(0,0,0,0.08)' } }}
-                  size="large"
-                >
-                  <ArrowForwardIcon />
-                </IconButton>
-                
-                <Box sx={{ width: '2px', height: 24, bgcolor: 'rgba(0,0,0,0.1)' }} />
-
-                <IconButton 
-                  component={Link} 
-                  href="/calendar"
-                  sx={{ color: '#64748b', bgcolor: 'rgba(0,0,0,0.03)', backdropFilter: 'blur(10px)', '&:hover': { color: '#0f172a', bgcolor: 'rgba(0,0,0,0.08)' } }}
-                  size="large"
-                >
-                  <CalendarMonthIcon />
-                </IconButton>
-              </Box>
             </Box>
 
-            {/* Slideshow Container */}
+            {/* Right: Premium Controls */}
+            <Box sx={{ 
+              display: 'flex', alignItems: 'center', gap: 1, 
+              bgcolor: '#ffffff', p: 0.5, borderRadius: '999px', 
+              boxShadow: '0 4px 15px rgba(0,0,0,0.05)', 
+              border: '1px solid rgba(0,0,0,0.04)' 
+            }}>
+              <IconButton 
+                onClick={() => {
+                  const next = new Date(currentDate);
+                  next.setDate(next.getDate() + 1);
+                  setCurrentDate(next);
+                }}
+                sx={{ color: '#64748b', '&:hover': { color: '#0f172a', bgcolor: '#f1f5f9' }, width: 36, height: 36 }}
+              >
+                <ArrowForwardIcon fontSize="small" />
+              </IconButton>
+              
+              <Box sx={{ width: '1px', height: 20, bgcolor: 'rgba(0,0,0,0.08)', mx: 0.5 }} />
+              
+              <IconButton 
+                component={Link} 
+                href="/calendar"
+                sx={{ color: '#10b981', '&:hover': { bgcolor: 'rgba(16,185,129,0.1)' }, width: 36, height: 36 }}
+              >
+                <CalendarMonthIcon fontSize="small" />
+              </IconButton>
+            </Box>
+          </Box>
+
             <Box sx={{ 
               position: 'relative', 
-              borderRadius: '24px', 
+              borderRadius: '28px', 
               overflow: 'hidden', 
-              bgcolor: '#f8fafc', 
-              border: '1px solid #e2e8f0',
+              bgcolor: '#ffffff', 
+              border: '1px solid rgba(255,255,255,0.8)',
               minHeight: { xs: '350px', md: '450px' },
               display: 'flex',
               flexDirection: 'column',
-              boxShadow: '0 20px 40px -10px rgba(0,0,0,0.05)',
+              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.02)',
               flexGrow: 1
             }}>
             <Box sx={{ position: 'relative', flexGrow: 1, overflow: 'hidden' }}>
@@ -276,8 +289,12 @@ export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHe
                   ))}
                 </Box>
               ) : (
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', p: 4, textAlign: 'center' }}>
-                  <Typography sx={{ color: '#64748b', fontSize: '1.25rem', fontWeight: 600 }}>Nothing for today, check back tomorrow or so.</Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', p: 4, textAlign: 'center', background: 'linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%)' }}>
+                  <Box sx={{ width: 72, height: 72, borderRadius: '24px', bgcolor: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 3, boxShadow: '0 15px 35px -5px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,1)', border: '1px solid rgba(0,0,0,0.04)', transform: 'rotate(-5deg)' }}>
+                    <CalendarMonthIcon sx={{ fontSize: 36, color: '#94a3b8' }} />
+                  </Box>
+                  <Typography sx={{ color: '#0f172a', fontSize: '1.4rem', fontWeight: 900, mb: 1.5, letterSpacing: '-0.02em' }}>No Scheduled Events</Typography>
+                  <Typography sx={{ color: '#64748b', fontSize: '0.95rem', fontWeight: 500, maxWidth: 300, lineHeight: 1.6 }}>Your briefing is clear for today. Kick back, or explore the ecosystem.</Typography>
                 </Box>
               )}
               
@@ -355,7 +372,10 @@ export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHe
                       <Typography sx={{ fontWeight: 800, fontSize: { xs: '0.95rem', sm: '1.15rem' }, color: '#0f172a', lineHeight: 1.2 }}>
                         {cat.label}
                       </Typography>
-                      {cat.newCount > 0 && (
+                      {cat.isLive && (
+                        <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#ef4444', animation: `${pulseAnimation} 1.5s infinite` }} />
+                      )}
+                      {cat.newCount > 0 && !cat.isLive && (
                         <Box sx={{ bgcolor: `${cat.color}15`, color: cat.color, px: 0.8, py: 0.2, borderRadius: '4px', fontSize: '0.65rem', fontWeight: 800 }}>
                           +{cat.newCount} New
                         </Box>

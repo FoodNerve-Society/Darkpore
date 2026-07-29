@@ -82,7 +82,7 @@ export default function Swimlane({ lane }: { lane: any }) {
       thumbnailUrl: isLivestream 
         ? 'https://images.unsplash.com/photo-1591696205602-2f950c417cb9?auto=format&fit=crop&q=80&w=800'
         : 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?auto=format&fit=crop&q=80&w=800',
-      link: isJob ? '/careers' : `/learn/article/${slug}`,
+      link: isJob ? '/careers' : isLivestream ? '/calendar' : `/learn/article/${slug}`,
       slug,
       authorOrOperator: sampleAuthors[i % sampleAuthors.length],
       organizationName: sampleOrgs[i % sampleOrgs.length],
@@ -90,7 +90,7 @@ export default function Swimlane({ lane }: { lane: any }) {
       categoryLabel: isJob ? (i % 2 === 0 ? 'FULL-TIME' : 'REMOTE') : isLivestream ? 'LIVESTREAM' : 'SAVINGS',
       era: sampleEras[i % sampleEras.length],
       tags: sampleBlockTags[i % sampleBlockTags.length],
-      metaInfo: isJob ? 'Closing in 5 days' : isLivestream ? 'Wed • 7:00 PM WAT' : `${(i + 4) * 2} min read`,
+      metaInfo: isJob ? 'Closing in 5 days' : isLivestream ? (i % 3 === 0 ? '🔴 Happening Now' : i % 3 === 1 ? 'Wed • 7:00 PM WAT' : '▶️ Replay Available') : `${(i + 4) * 2} min read`,
       readCount: `${(i + 2) * 1.4}k reads`,
       locationOrSalary: isJob ? `📍 Lagos, NG • 💰 $${(i + 1) * 800}/mo` : undefined,
     };
@@ -153,15 +153,17 @@ export default function Swimlane({ lane }: { lane: any }) {
         </Box>
         
         {/* Scroll container */}
-        <Box sx={{ position: 'relative', width: '100%', mr: 'calc(-50vw + 50%)', py: 3, my: -3 }}>
+        <Box sx={{ position: 'relative', width: '100%', mr: 'calc(-50vw + 50%)', py: 4, my: -4 }}>
           <Box 
             ref={scrollRef}
             sx={{ 
               display: 'flex', 
-              gap: 2, 
+              gap: 3, 
               overflowX: 'auto', 
-              pt: 1,
-              pb: 3,
+              pt: 2,
+              pb: 6,
+              px: 2,
+              mx: -2,
               scrollBehavior: 'smooth',
               '&::-webkit-scrollbar': { display: 'none' },
             }}

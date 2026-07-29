@@ -106,7 +106,7 @@ export default async function InnovationsHomepage(props: { searchParams?: Promis
         author: lc.authorName || 'Society Architect',
         dateAdded: lc.createdAt,
         readTime: lc.type === 'video' || lc.type === 'livestream' ? 'Watch' : '5 min read',
-        link: `/innovations/${lc.challengeId || 'global'}/${lc.subcategory || 'general'}/learn/article/${lc.slug}`
+        link: `/${lc.challengeId || 'global'}/${lc.subcategory || 'general'}/learn/article/${lc.slug}`
       };
     });
 
@@ -116,7 +116,7 @@ export default async function InnovationsHomepage(props: { searchParams?: Promis
       recentIntelligence = mockData.map(m => ({
         ...m,
         type: m.type === 'pdf' ? 'class' : m.type,
-        link: `/innovations/${m.challengeId || 'global'}/${(m as any).subcategory || 'general'}/learn/article/${m.slug}`
+        link: `/${m.challengeId || 'global'}/${(m as any).subcategory || 'general'}/learn/article/${m.slug}`
       }));
     }
   } catch (e) {
@@ -125,7 +125,7 @@ export default async function InnovationsHomepage(props: { searchParams?: Promis
     recentIntelligence = mockData.map(m => ({
       ...m,
       type: m.type === 'pdf' ? 'class' : m.type,
-      link: `/innovations/${m.challengeId || 'global'}/${(m as any).subcategory || 'general'}/learn/article/${m.slug}`
+      link: `/${m.challengeId || 'global'}/${(m as any).subcategory || 'general'}/learn/article/${m.slug}`
     }));
   }
 
@@ -170,7 +170,7 @@ export default async function InnovationsHomepage(props: { searchParams?: Promis
       return {
         image: imageUrl,
         title: lc.title,
-        link: `/innovations/${challengeId}/${subcatId}/learn/article/${lc.slug}`,
+        link: `/${challengeId}/${subcatId}/learn/article/${lc.slug}`,
         updatedAt: lc.updatedAt,
         createdAt: lc.createdAt
       };
@@ -259,7 +259,7 @@ export default async function InnovationsHomepage(props: { searchParams?: Promis
           imageUrl: l.imageUrl || '/images/default-thumbnail.jpg',
           author: l.postedBy?.name || l.organization?.name || 'FoodNerve Network',
           metric: isVolunteer ? `${l.npReward || l.metadata?.npAmount || 'Earn'} NP` : l.priceOrAsk,
-          link: `/innovations/careers/${l.id}`
+          link: `/careers/${l.id}`
         };
       });
   } catch (e) {
@@ -464,19 +464,19 @@ export default async function InnovationsHomepage(props: { searchParams?: Promis
               // Generate consolidated items for careers
               if (lane.id === 'lane-jobs') {
                 const combinedItems = [
-                  { id: 'job1', type: 'Jobs', title: 'Chief Agronomist', authorOrOperator: 'Olam Agri', companyLogo: '/logos/olam.png', locationOrSalary: 'Lagos, Nigeria', metaInfo: 'Actively Hiring' },
-                  { id: 'int1', type: 'Internships', title: 'Data Analyst Intern', authorOrOperator: 'FoodNerve', companyLogo: '/logos/fn.png', locationOrSalary: 'Remote', metaInfo: 'Ends Friday' },
-                  { id: 'vol1', type: 'Volunteering', title: 'Community Outreach Lead', authorOrOperator: 'Green Belt', companyLogo: '/logos/green.png', locationOrSalary: 'Kano, Nigeria', metaInfo: 'Urgent' },
-                  { id: 'opp1', type: 'Opportunities', title: 'Agri-Tech Startup Grant ($50k)', authorOrOperator: 'Tony Elumelu Foundation', companyLogo: '/logos/tef.png', locationOrSalary: 'Africa', metaInfo: 'Deadline: Oct 1' }
+                  { id: 'job1', type: 'Jobs', title: 'Chief Agronomist', authorOrOperator: 'Olam Agri', companyLogo: '/logos/olam.png', locationOrSalary: 'Lagos, Nigeria', metaInfo: 'Actively Hiring', link: '/careers/job1' },
+                  { id: 'int1', type: 'Internships', title: 'Data Analyst Intern', authorOrOperator: 'FoodNerve', companyLogo: '/logos/fn.png', locationOrSalary: 'Remote', metaInfo: 'Ends Friday', link: '/careers/int1' },
+                  { id: 'vol1', type: 'Volunteering', title: 'Community Outreach Lead', authorOrOperator: 'Green Belt', companyLogo: '/logos/green.png', locationOrSalary: 'Kano, Nigeria', metaInfo: 'Urgent', link: '/careers/vol1' },
+                  { id: 'opp1', type: 'Opportunities', title: 'Agri-Tech Startup Grant ($50k)', authorOrOperator: 'Tony Elumelu Foundation', companyLogo: '/logos/tef.png', locationOrSalary: 'Africa', metaInfo: 'Deadline: Oct 1', link: '/careers/opp1' }
                 ];
                 return <Swimlane key={lane.id} lane={{ ...lane, items: combinedItems }} />;
               }
               // Generate basic items for missions
               if (lane.id === 'lane-missions') {
                 const missionItems = [
-                  { id: 'm1', type: 'Missions', title: 'Zero Post-Harvest Loss by 2030', authorOrOperator: 'FoodNerve Society', metaInfo: 'Active Mission', thumbnailUrl: 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?auto=format&fit=crop&q=80&w=800', progress: 45 },
-                  { id: 'm2', type: 'Missions', title: '1 Million Solar Chillers Deployed', authorOrOperator: 'FoodNerve Systems', metaInfo: 'Fundraising Phase', thumbnailUrl: 'https://images.unsplash.com/photo-1591696205602-2f950c417cb9?auto=format&fit=crop&q=80&w=800', progress: 12 },
-                  { id: 'm3', type: 'Missions', title: 'Digitize 50,000 Smallholder Farmers', authorOrOperator: 'Ministry of Agriculture', metaInfo: 'Execution Phase', thumbnailUrl: 'https://images.unsplash.com/photo-1574943320219-553eb213f72d?auto=format&fit=crop&q=80&w=800', progress: 80 }
+                  { id: 'm1', type: 'Missions', title: 'Zero Post-Harvest Loss by 2030', authorOrOperator: 'FoodNerve Society', metaInfo: 'Active Mission', thumbnailUrl: 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?auto=format&fit=crop&q=80&w=800', progress: 45, link: '/projects/m1' },
+                  { id: 'm2', type: 'Missions', title: '1 Million Solar Chillers Deployed', authorOrOperator: 'FoodNerve Systems', metaInfo: 'Fundraising Phase', thumbnailUrl: 'https://images.unsplash.com/photo-1591696205602-2f950c417cb9?auto=format&fit=crop&q=80&w=800', progress: 12, link: '/projects/m2' },
+                  { id: 'm3', type: 'Missions', title: 'Digitize 50,000 Smallholder Farmers', authorOrOperator: 'Ministry of Agriculture', metaInfo: 'Execution Phase', thumbnailUrl: 'https://images.unsplash.com/photo-1574943320219-553eb213f72d?auto=format&fit=crop&q=80&w=800', progress: 80, link: '/projects/m3' }
                 ];
                 return <Swimlane key={lane.id} lane={{ ...lane, items: missionItems }} />;
               }
