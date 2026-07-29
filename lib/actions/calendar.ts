@@ -1,0 +1,34 @@
+'use server';
+
+import { getCalendarEvents } from '@/lib/calendar-sync';
+
+export async function fetchCalendarEvents(options?: {
+  startDate?: string;
+  endDate?: string;
+  sourceType?: string;
+  category?: string;
+  limit?: number;
+}) {
+  try {
+    const events = await getCalendarEvents({
+      startDate: options?.startDate ? new Date(options.startDate) : undefined,
+      endDate: options?.endDate ? new Date(options.endDate) : undefined,
+      sourceType: options?.sourceType,
+      category: options?.category,
+      limit: options?.limit ?? 50,
+    });
+
+    return {
+      success: true,
+      events: events.map((e) => ({
+        ...e,
+        date: e.date.toISOString(),
+        endDate: e.endDate ? e.endDate.toISOString() : null,
+        createdAt: e.createdAt.toISOString(),
+      })),
+    };
+  } catch (error: any) {
+    console.error('Failed to fetch calendar events:', error);
+    return { success: false, error: error.message || 'Failed to fetch calendar events' };
+  }
+}

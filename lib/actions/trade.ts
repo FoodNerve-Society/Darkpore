@@ -1,6 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/db/client';
+import { syncCalendarEvent, removeCalendarEvent } from '@/lib/calendar-sync';
 
 export interface CreateTradeListingPayload {
   id?: string;
@@ -188,6 +189,37 @@ export async function createTradeListing(data: CreateTradeListingPayload) {
       });
     }
 
+    // --- Sync to Calendar ---
+    if (listing.status !== 'draft' && (listing.expiresAt || listing.endDate)) {
+      const eventDate = listing.expiresAt || listing.endDate;
+      if (eventDate) {
+        let orgName: string | undefined;
+        if (listing.organizationId) {
+          const org = await prisma.organization.findUnique({
+            where: { id: listing.organizationId },
+            select: { name: true }
+          });
+          orgName = org?.name;
+        }
+
+        await syncCalendarEvent({
+          sourceType: 'job',
+          sourceId: listing.id,
+          title: listing.title,
+          date: eventDate,
+          endDate: listing.endDate ?? undefined,
+          link: listing.category === 'jobs' || listing.category === 'volunteer'
+            ? `/innovations/careers/${listing.id}`
+            : `/innovations/trade/${listing.id}`,
+          imageUrl: listing.imageUrl ?? undefined,
+          category: listing.category,
+          organizationName: orgName,
+        });
+      }
+    } else {
+      await removeCalendarEvent('job', listing.id);
+    }
+
     return { success: true, listing };
   } catch (error: any) {
     console.error('Failed to create trade listing:', error);
@@ -227,6 +259,8 @@ export async function deleteTradeListing(listingId: string, userId: string) {
     });
     if (!listing) return { success: false, error: 'Not found' };
     if (listing.postedById !== userId) return { success: false, error: 'Unauthorized' };
+
+    await removeCalendarEvent('job', listingId);
 
     await prisma.tradeListing.delete({
       where: { id: listingId }
