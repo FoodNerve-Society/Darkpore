@@ -34,6 +34,12 @@ const marqueeOnce = keyframes`
   100% { transform: translateX(-50%); }
 `;
 
+const pulseAnimation = keyframes`
+  0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(220, 38, 38, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+`;
+
 export const EcosystemCard: React.FC<EcosystemCardProps> = ({
   item,
   themeColor,
@@ -92,6 +98,96 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({
   };
   const careerColor = getCareerColor(item.type || '');
 
+  const liveStatus = React.useMemo(() => {
+    if (item.metaInfo?.toLowerCase().includes('happening now') || item.metaInfo?.toLowerCase().includes('live')) return 'live';
+    if (item.metaInfo?.toLowerCase().includes('ended') || item.metaInfo?.toLowerCase().includes('past') || item.metaInfo?.toLowerCase().includes('replay')) return 'past';
+    return 'upcoming';
+  }, [item.metaInfo]);
+
+  const autoPills = React.useMemo(() => {
+    const defaultColors = [
+      { bg: '#f0fdf4', color: '#166534', border: '#bbf7d0' },
+      { bg: '#eff6ff', color: '#1e40af', border: '#bfdbfe' },
+      { bg: '#fdf2f8', color: '#be185d', border: '#fbcfe8' },
+      { bg: '#fef3c7', color: '#b45309', border: '#fde68a' },
+    ];
+    if (isJobOrOpportunity) {
+      return [
+        { icon: '📍', text: item.locationOrSalary || 'Remote', ...defaultColors[0] },
+        { icon: '💰', text: item.metaInfo || 'Actively Hiring', ...defaultColors[1] },
+        { icon: '→', text: 'Apply before deadline', ...defaultColors[3] }
+      ];
+    }
+    if (isLivestream) {
+      return [
+        { icon: liveStatus === 'live' ? '🔴' : '🗓️', text: liveStatus === 'live' ? 'LIVE NOW' : 'UPCOMING', ...defaultColors[3] },
+        { icon: '🎙️', text: `With ${item.authorOrOperator}`, ...defaultColors[1] },
+        { icon: '→', text: liveStatus === 'live' ? 'Join Broadcast' : 'Set Reminder', ...defaultColors[2] }
+      ];
+    }
+    if (isMission) {
+      return [
+        { icon: '🤝', text: `Partner: ${item.organizationName || 'FoodNerve'}`, ...defaultColors[0] },
+        { icon: '📈', text: `${item.progress || 0}% Funded`, ...defaultColors[1] },
+        { icon: '→', text: 'View Mission Impact', ...defaultColors[2] }
+      ];
+    }
+    if (item.tags && item.tags.length > 0) {
+      return item.tags.map((tag, idx) => ({
+        icon: '🏷️',
+        text: tag,
+        ...defaultColors[idx % defaultColors.length]
+      }));
+    }
+    return [
+      { icon: '⏱️', text: item.metaInfo || '5 min read', ...defaultColors[1] },
+      { icon: '🔥', text: 'Trending Analysis', ...defaultColors[3] },
+      { icon: '→', text: 'Read full analysis', ...defaultColors[0] }
+    ];
+  }, [isJobOrOpportunity, isLivestream, isMission, item, liveStatus]);
+
+  const renderTickerTape = () => (
+    <Box sx={{ overflow: 'hidden', width: '100%', position: 'relative', mb: 1.5, height: 26, flexShrink: 0 }}>
+      <Box
+        key={tickerKey}
+        onAnimationEnd={handleAnimationEnd}
+        sx={{
+          display: 'flex',
+          gap: '12px',
+          width: 'max-content',
+          animation: shouldPlay
+            ? `${marqueeOnce} ${Math.max(8, autoPills.length * 3)}s linear forwards`
+            : 'none',
+        }}
+      >
+        {[...autoPills, ...autoPills].map((p, idx) => (
+          <Box
+            key={idx}
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 0.5,
+              bgcolor: p.bg,
+              color: p.color,
+              border: `1px solid ${p.border}`,
+              px: 1.2,
+              py: 0.4,
+              borderRadius: '6px',
+              fontSize: '0.68rem',
+              fontWeight: 700,
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+              lineHeight: 1,
+            }}
+          >
+            <Box component="span" sx={{ fontSize: '0.75rem' }}>{p.icon}</Box>
+            {p.text}
+          </Box>
+        ))}
+      </Box>
+    </Box>
+  );
+
   // ════════════════════════════════════════════════════════════════════════
   // 1. EXECUTIVE PLACEMENT DOSSIER (Jobs, Internships, Opportunities)
   // ════════════════════════════════════════════════════════════════════════
@@ -99,7 +195,7 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({
     return (
       <Card
         variant="outlined"
-        onClick={() => router.push(item.link)}
+        onClick={() => router.push(item.link || '#')}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         sx={{
@@ -107,9 +203,9 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({
           bgcolor: '#ffffff',
           border: '1px solid #e2e8f0',
           borderRadius: cardBorderRadius,
-          boxShadow: isHovered ? `0 20px 45px -6px ${careerColor}25` : '0 6px 24px -4px rgba(0,0,0,0.04)',
-          transform: isHovered ? 'translateY(-4px)' : 'none',
-          transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+          boxShadow: isHovered ? `0 20px 40px -8px ${careerColor}30, 0 0 0 1px ${careerColor}40` : '0 4px 20px -4px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.05)',
+          transform: isHovered ? 'translateY(-6px)' : 'none',
+          transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
           cursor: 'pointer',
           p: { xs: 2.5, sm: 3 },
           display: 'flex',
@@ -118,37 +214,21 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({
           position: 'relative',
           overflow: 'hidden',
           mt: 1.5,
-          borderTop: `4px solid ${careerColor}`,
+          background: `linear-gradient(135deg, #ffffff 10%, ${careerColor}15 100%)`,
         }}
       >
         <Box>
           {/* Organization Avatar & Category Chip */}
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
+            <Box sx={{ p: 0.5, borderRadius: '14px', bgcolor: '#ffffff', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}>
               <Avatar
                 src={item.companyLogo || item.authorAvatarUrl}
-                sx={{
-                  width: 40,
-                  height: 40,
-                  bgcolor: `${themeColor || '#10b981'}15`,
-                  color: themeColor || '#10b981',
-                  fontWeight: 900,
-                  fontSize: '1rem',
-                  border: '1.5px solid #e2e8f0',
-                }}
+                sx={{ width: 44, height: 44, bgcolor: `${careerColor}15`, color: careerColor, fontWeight: 900, borderRadius: '10px' }}
               >
                 {item.authorOrOperator.charAt(0)}
               </Avatar>
-              <Box>
-                <Typography sx={{ fontWeight: 800, fontSize: '0.88rem', color: '#0f172a', lineHeight: 1.1 }}>
-                  {item.authorOrOperator}
-                </Typography>
-                <Typography sx={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>
-                  Verified Partner
-                </Typography>
-              </Box>
             </Box>
-
+            
             <Chip
               label={item.type?.toUpperCase()}
               size="small"
@@ -156,82 +236,43 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({
                 bgcolor: `${careerColor}15`,
                 color: careerColor,
                 fontWeight: 900,
-                fontSize: '0.68rem',
+                fontSize: '0.65rem',
                 height: 24,
-                borderRadius: '8px',
+                borderRadius: '6px',
                 letterSpacing: '0.05em',
+                boxShadow: `inset 0 0 0 1px ${careerColor}30`,
               }}
             />
           </Box>
+          
+          <Box sx={{ mb: 3, flex: 1 }}>
+            <Typography sx={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 700, mb: 0.5, letterSpacing: '0.02em' }}>
+              {item.authorOrOperator}
+            </Typography>
+            <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.25, fontSize: { xs: '1.1rem', sm: '1.25rem' }, mb: 2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+              {item.title}
+            </Typography>
 
-          {/* Job Title */}
-          <Typography
-            variant="h6"
-            sx={{
-              fontWeight: 900,
-              color: '#0f172a',
-              lineHeight: 1.25,
-              fontSize: { xs: '1.05rem', sm: '1.15rem' },
-              mb: 2,
-              letterSpacing: '-0.01em',
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-            }}
-          >
-            {item.title}
-          </Typography>
-
-          {/* Location & Compensation Pill */}
-          {item.locationOrSalary && (
-            <Box
-              sx={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 1,
-                bgcolor: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                px: 1.8,
-                py: 0.8,
-                borderRadius: '10px',
-                color: '#334155',
-                fontSize: '0.8rem',
-                fontWeight: 700,
-                mb: 2.5,
-              }}
-            >
-              <LocationOnOutlinedIcon sx={{ fontSize: 17, color: themeColor || '#10b981' }} />
-              {item.locationOrSalary}
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+               {item.locationOrSalary && (
+                 <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, bgcolor: '#ffffff', border: '1px solid #e2e8f0', px: 1.5, py: 0.5, borderRadius: '8px', color: '#475569', fontSize: '0.75rem', fontWeight: 700 }}>
+                   <LocationOnOutlinedIcon sx={{ fontSize: 14, color: careerColor }} /> {item.locationOrSalary}
+                 </Box>
+               )}
+               <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, bgcolor: '#ffffff', border: '1px solid #e2e8f0', px: 1.5, py: 0.5, borderRadius: '8px', color: '#475569', fontSize: '0.75rem', fontWeight: 700 }}>
+                 <AccessTimeOutlinedIcon sx={{ fontSize: 14, color: careerColor }} /> {item.metaInfo || 'Actively Hiring'}
+               </Box>
             </Box>
-          )}
+          </Box>
         </Box>
 
-        {/* Footer: Deadline & Apply Button */}
-        <Box sx={{ pt: 2, borderTop: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8' }}>
-            {item.metaInfo || 'Actively Hiring'}
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px dashed #cbd5e1', pt: 2.5, mt: 'auto' }}>
+          <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: careerColor }}>
+            View Details
           </Typography>
-
-          <Button
-            size="small"
-            variant="contained"
-            endIcon={<ArrowForwardIcon sx={{ fontSize: 14 }} />}
-            sx={{
-              bgcolor: careerColor,
-              color: '#ffffff',
-              fontWeight: 900,
-              fontSize: '0.78rem',
-              borderRadius: '10px',
-              px: 2.2,
-              py: 0.8,
-              textTransform: 'none',
-              boxShadow: `0 4px 14px ${careerColor}40`,
-              '&:hover': { opacity: 0.9, bgcolor: careerColor },
-            }}
-          >
-            Apply Now
-          </Button>
+          <Box sx={{ width: 32, height: 32, borderRadius: '50%', bgcolor: `${careerColor}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: careerColor, transition: 'all 0.3s', '.MuiCard-root:hover &': { bgcolor: careerColor, color: '#fff', transform: 'translateX(4px)' } }}>
+            <ArrowForwardIcon sx={{ fontSize: 16 }} />
+          </Box>
         </Box>
       </Card>
     );
@@ -305,13 +346,9 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({
   // 2. LIVE SUMMIT / BROADCAST EXPERIENCE CARD (Livestreams)
   // ════════════════════════════════════════════════════════════════════════
   if (isLivestream) {
-    let liveStatus = 'upcoming';
-    if (item.metaInfo?.toLowerCase().includes('happening now') || item.metaInfo?.toLowerCase().includes('live')) liveStatus = 'live';
-    else if (item.metaInfo?.toLowerCase().includes('ended') || item.metaInfo?.toLowerCase().includes('past') || item.metaInfo?.toLowerCase().includes('replay')) liveStatus = 'past';
-
     const getLiveBadgeProps = () => {
       if (liveStatus === 'live') return { label: '🔴 LIVE NOW', bg: 'rgba(220, 38, 38, 0.92)', color: '#ffffff', pulse: true };
-      if (liveStatus === 'upcoming') return { label: '🗓️ UPCOMING', bg: 'rgba(245, 158, 11, 0.92)', color: '#ffffff', pulse: false };
+      if (liveStatus === 'upcoming') return null; // Remove upcoming pill entirely
       return { label: '▶️ REPLAY', bg: 'rgba(15, 23, 42, 0.92)', color: '#ffffff', pulse: false };
     };
     const badgeProps = getLiveBadgeProps();
@@ -323,29 +360,65 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         sx={{
-          height: '100%',
-          bgcolor: 'transparent',
-          border: 'none',
-          boxShadow: 'none',
+          height: 'auto',
+          aspectRatio: '16/9',
+          bgcolor: '#000000',
+          border: '1px solid #1e293b',
+          borderRadius: cardBorderRadius,
+          boxShadow: isHovered ? (badgeProps?.pulse ? '0 20px 45px -6px rgba(220,38,38,0.3)' : '0 20px 45px -6px rgba(0,0,0,0.6)') : '0 6px 24px -4px rgba(0,0,0,0.4)',
+          transform: isHovered ? 'translateY(-4px)' : 'none',
+          transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+          cursor: 'pointer',
+          position: 'relative',
+          overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
-          overflow: 'visible',
-          position: 'relative',
           p: 0,
         }}
       >
+        {/* COHESIVE TOP CAPSULE OVERLAY */}
+        {badgeProps && (
+          <Box
+            sx={{
+              position: 'absolute',
+              top: -8,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 25,
+              display: 'flex',
+              alignItems: 'center',
+              width: 'max-content',
+            }}
+          >
+            <Chip
+              label={badgeProps.label}
+              size="small"
+              icon={badgeProps.pulse ? <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#ffffff', ml: 1, animation: `${pulseAnimation} 1.5s infinite` }} /> : undefined}
+              sx={{
+                bgcolor: badgeProps.bg,
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)',
+                color: badgeProps.color,
+                fontWeight: 900,
+                fontSize: '0.6rem',
+                height: 20,
+                px: 1,
+                borderRadius: '999px',
+                letterSpacing: '0.05em',
+                boxShadow: badgeProps.pulse ? '0 4px 20px rgba(220, 38, 38, 0.6)' : 'none',
+                border: 'none',
+                '& .MuiChip-icon': { color: 'inherit' }
+              }}
+            />
+          </Box>
+        )}
 
-        {/* Narrow Cover Image */}
+        {/* Full Bleed Image Cover */}
         <Box
           sx={{
-            position: 'relative',
-            width: '100%', // Changed to 100% since badge is now inside
-            mx: 'auto',
-            mt: 0, // removed top margin
-            pt: '56%', // slightly taller
-            bgcolor: '#0f172a',
-            borderRadius: '24px 24px 0 0',
-            overflow: 'hidden',
+            position: 'absolute',
+            inset: 0,
+            zIndex: 0,
           }}
         >
           <CardMedia
@@ -353,114 +426,88 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({
             image={item.thumbnailUrl || 'https://images.unsplash.com/photo-1591696205602-2f950c417cb9?auto=format&fit=crop&q=80&w=800'}
             alt={item.title}
             sx={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
               width: '100%',
               height: '100%',
               objectFit: 'cover',
-              transform: isHovered ? 'scale(1.06)' : 'scale(1)',
-              transition: 'transform 0.4s ease',
+              transform: isHovered ? 'scale(1.08)' : 'scale(1.02)', // default scale to avoid edge artifact
+              transition: 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+              filter: isHovered ? 'brightness(0.9) contrast(1.1)' : 'brightness(0.65) contrast(1.1)',
             }}
           />
-          <Box sx={{ position: 'absolute', inset: 0, bgcolor: 'rgba(15,23,42,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {badgeProps.pulse ? (
-              <Box sx={{ position: 'absolute', inset: 0, border: '4px solid rgba(220,38,38,0.5)', animation: `${pulseAnimation} 2s infinite` }} />
-            ) : null}
-            <PlayCircleFilledIcon sx={{ fontSize: 56, color: '#ffffff', opacity: 0.95, filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.4))' }} />
-          </Box>
-          
-          {/* Badge inside image space */}
-          <Box sx={{ position: 'absolute', top: 16, left: 16, zIndex: 25 }}>
-            <Chip
-              label={badgeProps.label}
-              size="small"
-              sx={{
-                bgcolor: badgeProps.bg,
-                backdropFilter: 'blur(16px)',
-                WebkitBackdropFilter: 'blur(16px)',
-                color: badgeProps.color,
-                fontWeight: 900,
-                fontSize: '0.68rem',
-                height: 26,
-                px: 2,
-                borderRadius: '8px',
-                letterSpacing: '0.08em',
-                boxShadow: badgeProps.pulse ? '0 4px 20px rgba(220, 38, 38, 0.4)' : 'none',
-              }}
-            />
-          </Box>
         </Box>
 
-        {/* Wider Text Area Container Base */}
-        <Box
-          sx={{
-            bgcolor: '#ffffff',
-            border: '1px solid #e2e8f0',
-            borderRadius: cardBorderRadius,
-            mt: isHovered ? '-24px' : '-14px',
-            position: 'relative',
-            zIndex: 2,
-            p: 2.5,
-            pt: 2.5,
-            display: 'flex',
-            flexDirection: 'column',
-            flex: 1,
-            justifyContent: 'space-between',
-            transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
-            boxShadow: isHovered ? '0 20px 45px -6px rgba(0,0,0,0.14)' : '0 6px 24px -4px rgba(0,0,0,0.04)',
-            transform: isHovered ? 'translateY(-4px)' : 'none',
-          }}
-        >
-          <Box>
+        {/* Cinematic Gradient Overlays */}
+        <Box sx={{ position: 'absolute', inset: 0, zIndex: 1, background: 'linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.1) 40%, rgba(0,0,0,0.85) 90%, #000000 100%)' }} />
+        
+        {badgeProps?.pulse && (
+           <Box sx={{ position: 'absolute', inset: 0, zIndex: 2, border: '2px solid rgba(220,38,38,0.3)', borderRadius: cardBorderRadius, animation: `${pulseAnimation} 2.5s infinite` }} />
+        )}
+
+        {/* Content Container */}
+        <Box sx={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', height: '100%', p: 2.5 }}>
+          
+
+          
+          {/* Play Button Overlay centered on image */}
+          <Box sx={{ position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%, -50%)', opacity: isHovered ? 1 : 0, transition: 'all 0.3s', zIndex: 20 }}>
+              <Box sx={{ width: 64, height: 64, borderRadius: '50%', bgcolor: badgeProps?.pulse ? 'rgba(220,38,38,0.95)' : 'rgba(255,255,255,0.15)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 24px rgba(0,0,0,0.5)', transform: isHovered ? 'scale(1)' : 'scale(0.8)' }}>
+                <PlayCircleFilledIcon sx={{ fontSize: 36, color: '#ffffff' }} />
+              </Box>
+          </Box>
+          
+          {/* Bottom Area: Title, Presenter, CTA */}
+          <Box sx={{ mt: 'auto' }}>
             <Typography
               variant="h6"
               sx={{
                 fontWeight: 900,
-                color: '#0f172a',
+                color: '#ffffff',
                 lineHeight: 1.25,
-                fontSize: { xs: '1rem', sm: '1.1rem' },
+                fontSize: { xs: '1.1rem', sm: '1.25rem' },
                 mb: 1.5,
                 display: '-webkit-box',
-                WebkitLineClamp: 2,
+                WebkitLineClamp: 3,
                 WebkitBoxOrient: 'vertical',
                 overflow: 'hidden',
+                textShadow: '0 2px 8px rgba(0,0,0,0.6)'
               }}
             >
               {item.title}
             </Typography>
 
-            {/* Presenter & Date */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mb: 2 }}>
-              <Avatar src={item.authorAvatarUrl} sx={{ width: 28, height: 28, border: '1px solid #e2e8f0' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+              <Avatar src={item.authorAvatarUrl} sx={{ width: 32, height: 32, border: '2px solid rgba(255,255,255,0.2)' }} />
               <Box>
-                <Typography sx={{ fontWeight: 800, fontSize: '0.78rem', color: '#0f172a', lineHeight: 1.1 }}>
-                  With {item.authorOrOperator}
+                <Typography sx={{ fontWeight: 800, fontSize: '0.8rem', color: '#e2e8f0', lineHeight: 1.1 }}>
+                  {item.authorOrOperator}
                 </Typography>
-                <Typography sx={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 600 }}>
+                <Typography sx={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 600 }}>
                   {item.metaInfo || 'Wed • 7:00 PM WAT'}
                 </Typography>
               </Box>
             </Box>
-          </Box>
 
-          <Button
-            fullWidth
-            variant="contained"
-            sx={{
-              bgcolor: '#16a34a',
-              color: '#ffffff',
-              fontWeight: 900,
-              py: 1,
-              borderRadius: '12px',
-              fontSize: '0.85rem',
-              textTransform: 'none',
-              boxShadow: '0 4px 16px rgba(22, 163, 74, 0.35)',
-              '&:hover': { bgcolor: '#15803d' },
-            }}
-          >
-            Register for Live
-          </Button>
+            <Button
+              fullWidth
+              variant="contained"
+              sx={{
+                bgcolor: badgeProps.pulse ? 'rgba(220,38,38,0.95)' : 'rgba(255,255,255,0.1)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+                color: '#ffffff',
+                fontWeight: 800,
+                py: 1,
+                borderRadius: '10px',
+                fontSize: '0.85rem',
+                textTransform: 'none',
+                border: badgeProps.pulse ? 'none' : '1px solid rgba(255,255,255,0.2)',
+                boxShadow: badgeProps.pulse ? '0 4px 16px rgba(220,38,38,0.4)' : 'none',
+                '&:hover': { bgcolor: badgeProps.pulse ? '#dc2626' : 'rgba(255,255,255,0.2)' },
+              }}
+            >
+              {liveStatus === 'live' ? 'Join Broadcast' : liveStatus === 'upcoming' ? 'Set Reminder' : 'Watch Replay'}
+            </Button>
+          </Box>
         </Box>
       </Card>
     );
@@ -492,29 +539,6 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({
     }
     return 'rgba(15, 23, 42, 0.85)'; // Slate Navy for Present
   };
-
-  let generatedPills = [
-    { icon: <AutoAwesomeIcon sx={{ fontSize: 13, color: '#16a34a' }} />, text: '3 Bottlenecks Isolated', bg: '#f0fdf4', color: '#166534', border: '#bbf7d0' },
-    { icon: <AnalyticsOutlinedIcon sx={{ fontSize: 14, color: '#3b82f6' }} />, text: 'Myth vs Fact Included', bg: '#eff6ff', color: '#1e40af', border: '#bfdbfe' },
-    { icon: '📊', text: 'Live Data Polls', bg: '#f8fafc', color: '#334155', border: '#e2e8f0' },
-    { icon: '💡', text: '4 Actionable Solutions', bg: '#fff7ed', color: '#9a3412', border: '#fed7aa' },
-  ];
-
-  if (item.tags && item.tags.length > 0) {
-    const colors = [
-      { bg: '#f0fdf4', color: '#166534', border: '#bbf7d0' },
-      { bg: '#eff6ff', color: '#1e40af', border: '#bfdbfe' },
-      { bg: '#fdf2f8', color: '#be185d', border: '#fbcfe8' },
-      { bg: '#fef3c7', color: '#b45309', border: '#fde68a' },
-    ];
-    generatedPills = item.tags.map((tag, idx) => ({
-      icon: '🏷️',
-      text: tag,
-      ...colors[idx % colors.length]
-    }));
-  }
-
-  const autoPills = generatedPills;
 
   const articleTargetUrl = (item.link && item.link !== '/learn') 
     ? item.link 
@@ -668,48 +692,7 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({
             {item.title}
           </Typography>
 
-          {/* TICKER TAPE — Each card scrolls its own pills once, then signals completion */}
-          <Box sx={{ overflow: 'hidden', width: '100%', position: 'relative', mb: 1.5, height: 26 }}>
-            <Box
-              key={tickerKey}
-              onAnimationEnd={handleAnimationEnd}
-              sx={{
-                display: 'flex',
-                gap: '12px',
-                width: 'max-content',
-                // Single pass: plays once, holds at end position
-                animation: shouldPlay
-                  ? `${marqueeOnce} ${Math.max(8, autoPills.length * 3)}s linear forwards`
-                  : 'none',
-              }}
-            >
-              {/* 2x duplication so -50% = exactly one full set scrolled through */}
-              {[...autoPills, ...autoPills].map((p, idx) => (
-                <Box
-                  key={idx}
-                  sx={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 0.5,
-                    bgcolor: p.bg,
-                    color: p.color,
-                    border: `1px solid ${p.border}`,
-                    px: 1.2,
-                    py: 0.4,
-                    borderRadius: '6px',
-                    fontSize: '0.68rem',
-                    fontWeight: 700,
-                    whiteSpace: 'nowrap',
-                    flexShrink: 0,
-                    lineHeight: 1,
-                  }}
-                >
-                  {p.icon}
-                  {p.text}
-                </Box>
-              ))}
-            </Box>
-          </Box>
+          {renderTickerTape()}
         </Box>
 
         {/* FOOTER: Smaller & Ultra-Premium Author Name & Organization Section */}

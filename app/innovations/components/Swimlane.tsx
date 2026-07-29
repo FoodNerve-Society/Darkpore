@@ -116,7 +116,7 @@ export default function Swimlane({ lane }: { lane: any }) {
   }, [activeTickerIndex]);
 
   return (
-    <Box id={lane.id} sx={{ mb: { xs: 3, md: 5 } }}>
+    <Box id={lane.id} sx={{ mb: { xs: 2, md: 3 }, scrollMarginTop: '120px' }}>
       <Container maxWidth="xl" sx={{ px: { xs: 2, md: 6 } }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: { xs: 1.5, md: 2 } }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, md: 2 } }}>
@@ -153,21 +153,21 @@ export default function Swimlane({ lane }: { lane: any }) {
         </Box>
         
         {/* Scroll container */}
-        <Box sx={{ position: 'relative', width: '100%', mr: 'calc(-50vw + 50%)', py: 6, my: -6 }}>
+        <Box sx={{ position: 'relative', width: '100%', mr: 'calc(-50vw + 50%)', py: 3, my: -3 }}>
           <Box 
             ref={scrollRef}
             sx={{ 
               display: 'flex', 
-              gap: 3, 
+              gap: 2, 
               overflowX: 'auto', 
-              pt: 3,
-              pb: 5,
+              pt: 1,
+              pb: 3,
               scrollBehavior: 'smooth',
               '&::-webkit-scrollbar': { display: 'none' },
             }}
           >
             {itemsToDisplay.map((item, idx) => (
-              <Box key={item.id} sx={{ width: lane.id === 'lane-top-stories' ? { xs: 260, md: 300 } : { xs: 280, md: 360 }, flexShrink: 0, pt: 1.5 }}>
+              <Box key={item.id} sx={{ width: lane.id === 'lane-livestreams' ? { xs: 320, md: 480 } : lane.id === 'lane-top-stories' ? { xs: 260, md: 300 } : { xs: 280, md: 360 }, flexShrink: 0, pt: 1 }}>
                 <EcosystemCard 
                   item={item} 
                   themeColor={lane.color} 

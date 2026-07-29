@@ -358,15 +358,22 @@ export default async function InnovationsHomepage(props: { searchParams?: Promis
             tags = lc.article.blocks.map((b: any) => {
               try {
                 const payload = typeof b.content === 'string' ? JSON.parse(b.content) : b.content;
-                const textVal = payload?.title || payload?.heading || payload?.myth || payload?.text || payload?.label || payload?.subheading;
+                let textVal = '';
+                if (b.blockType === 'subheading') textVal = payload?.text;
+                else if (b.blockType === 'exec_summary') textVal = payload?.point1 || payload?.point2;
+                else if (b.blockType === 'highlight_card') textVal = payload?.caption || payload?.label;
+                else if (b.blockType === 'core_interactive') textVal = payload?.heading;
+                else if (b.blockType === 'myth_fact') textVal = payload?.pairs?.[0]?.myth || payload?.pairs?.[0]?.fact;
+                else if (b.blockType === 'pull_quote') textVal = payload?.quote;
+                else if (b.blockType === 'live_poll') textVal = payload?.question;
+                else if (b.blockType === 'strategic_directive') textVal = payload?.urgencyLevel || payload?.point1;
+
                 if (typeof textVal === 'string' && textVal.trim().length > 0) {
                   const clean = textVal.replace(/<[^>]*>?/gm, '').trim();
                   return clean.length > 45 ? clean.substring(0, 42) + '...' : clean;
                 }
               } catch (err) {}
-              if (b.blockType) {
-                return b.blockType.replace(/_/g, ' ').toUpperCase();
-              }
+              // Do not fallback to block name, so we don't just see "IMAGE"
               return null;
             }).filter((t: any) => t && t.length > 3);
           }
@@ -445,7 +452,7 @@ export default async function InnovationsHomepage(props: { searchParams?: Promis
                       tags: s.tags,
                     }))
                   : undefined
-              { id: 'lane-top-stories', title: 'Top Stories', color: '#dc2626', newCount: 5, items: undefined /* keep as before */ },
+              },
               { id: 'lane-articles', title: 'Latest Articles', color: '#3b82f6', newCount: 12 },
               { id: 'lane-livestreams', title: 'Livestreams', color: '#f59e0b', newCount: 3 },
               { id: 'lane-jobs', title: 'Careers & Opportunities', color: '#10b981', newCount: 18 },

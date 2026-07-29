@@ -8,7 +8,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { CategoryTabMenu, Category } from './CategoryTabMenu';
 import { EcosystemCard } from './EcosystemCard';
 
-export type EcosystemType = 'Intelligence' | 'Innovations' | 'Community' | 'Activities' | 'Jobs' | 'Internships' | 'Volunteering' | 'Opportunities';
+export type EcosystemType = 'Intelligence' | 'Innovations' | 'Community' | 'Activities' | 'Jobs' | 'Internships' | 'Volunteering' | 'Opportunities' | 'Missions';
 
 export interface EcosystemItem {
   id: string;
@@ -28,6 +28,7 @@ export interface EcosystemItem {
   companyLogo?: string;
   era?: string;
   organizationName?: string;
+  progress?: number;
 }
 
 export interface TabCategory {
