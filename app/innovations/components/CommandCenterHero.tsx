@@ -108,10 +108,20 @@ export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHe
 
   const statusObj = getTimeStatus(dailyAlerts[currentSlide]);
 
+  const currentHour = new Date().getHours();
+  let bgTheme = { bgcolor: '#ffffff', glowColor: 'rgba(16, 185, 129, 0.08)' };
+  if (currentHour >= 6 && currentHour < 12) {
+    bgTheme = { bgcolor: '#fffbeb', glowColor: 'rgba(245, 158, 11, 0.15)' }; // Morning (warm)
+  } else if (currentHour >= 12 && currentHour < 18) {
+    bgTheme = { bgcolor: '#f0fdf4', glowColor: 'rgba(16, 185, 129, 0.08)' }; // Afternoon (fresh)
+  } else {
+    bgTheme = { bgcolor: '#f8fafc', glowColor: 'rgba(79, 70, 229, 0.12)' }; // Evening (cool dusk)
+  }
+
   return (
-    <Box sx={{ minHeight: '80vh', bgcolor: '#ffffff', color: '#0f172a', pt: { xs: 12, md: 16 }, pb: 8, position: 'relative', overflow: 'hidden' }}>
+    <Box sx={{ minHeight: '80vh', bgcolor: bgTheme.bgcolor, color: '#0f172a', pt: { xs: 12, md: 16 }, pb: 8, position: 'relative', overflow: 'hidden', transition: 'background-color 1s ease' }}>
       {/* Background ambient glow */}
-      <Box sx={{ position: 'absolute', top: '-20%', left: '50%', transform: 'translateX(-50%)', width: '100%', height: '100%', background: 'radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, transparent 50%)', zIndex: 0, pointerEvents: 'none' }} />
+      <Box sx={{ position: 'absolute', top: '-20%', left: '50%', transform: 'translateX(-50%)', width: '100%', height: '100%', background: `radial-gradient(circle, ${bgTheme.glowColor} 0%, transparent 50%)`, zIndex: 0, pointerEvents: 'none', transition: 'background 1s ease' }} />
 
       <Container maxWidth="xl" sx={{ position: 'relative', zIndex: 1 }}>
         
@@ -213,8 +223,17 @@ export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHe
               boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.02)',
               flexGrow: 1
             }}>
-            <Box sx={{ position: 'relative', flexGrow: 1, overflow: 'hidden' }}>
-              {isLoading ? (
+            <AnimatePresence mode="wait">
+              <Box 
+                component={motion.div}
+                key={currentDate.toISOString()}
+                initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.98, y: -10 }}
+                transition={{ duration: 0.3 }}
+                sx={{ position: 'relative', flexGrow: 1, overflow: 'hidden' }}
+              >
+                {isLoading ? (
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', flexDirection: 'column', gap: 2 }}>
                   <Typography sx={{ color: '#64748b', fontWeight: 600 }}>Loading {currentDate.toLocaleDateString()} events...</Typography>
                 </Box>
@@ -309,7 +328,8 @@ export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHe
                   ))}
                 </Box>
               )}
-            </Box>
+              </Box>
+            </AnimatePresence>
           </Box>
         </Box>
 
@@ -364,7 +384,7 @@ export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHe
                     )}
                   </Box>
                   <Typography sx={{ fontFamily: 'var(--font-ysabeau-infant)', fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.85rem' }, color: '#64748b', mt: 0.25 }}>
-                    {cat.count} active
+                    {cat.count} - total
                   </Typography>
                 </Box>
                 <Box sx={{ width: { xs: 24, sm: 32 }, height: { xs: 24, sm: 32 }, borderRadius: '50%', bgcolor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s ease' }}>

@@ -387,9 +387,11 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({
           height: '100%',
           minHeight: { xs: 360, sm: 420 },
           bgcolor: '#000000',
-          border: '1px solid #1e293b',
+          border: badgeProps?.pulse ? '1px solid rgba(239,68,68,0.6)' : '1px solid #1e293b',
           borderRadius: cardBorderRadius,
-          boxShadow: isHovered ? (badgeProps?.pulse ? '0 20px 45px -6px rgba(220,38,38,0.3)' : '0 20px 45px -6px rgba(0,0,0,0.6)') : '0 6px 24px -4px rgba(0,0,0,0.4)',
+          boxShadow: badgeProps?.pulse 
+            ? (isHovered ? '0 0 50px rgba(239,68,68,0.6)' : '0 0 30px rgba(239,68,68,0.3)')
+            : (isHovered ? '0 20px 45px -6px rgba(0,0,0,0.6)' : '0 6px 24px -4px rgba(0,0,0,0.4)'),
           transform: isHovered ? 'translateY(-4px)' : 'none',
           transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
           cursor: 'pointer',
@@ -410,6 +412,9 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({
               zIndex: 25,
               display: 'flex',
               alignItems: 'center',
+              bgcolor: 'rgba(0,0,0,0.5)',
+              px: 1.5, py: 0.5, borderRadius: '8px',
+              backdropFilter: 'blur(8px)',
             }}
           >
             {badgeProps.iconNode}
@@ -419,8 +424,8 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({
           </Box>
         )}
 
-        {/* Split Layout: Image Top (55%), Content Bottom (45%) */}
-        <Box sx={{ position: 'relative', height: '55%', overflow: 'hidden' }}>
+        {/* Split Layout: Image 16:9 Top, Content Bottom */}
+        <Box sx={{ position: 'relative', height: 'auto', aspectRatio: '16/9', overflow: 'hidden', flexShrink: 0 }}>
           <CardMedia
             component="img"
             image={item.thumbnailUrl || 'https://images.unsplash.com/photo-1591696205602-2f950c417cb9?auto=format&fit=crop&q=80&w=800'}
@@ -433,12 +438,35 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({
               transition: 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
             }}
           />
-          <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, #0f172a, transparent 50%)', zIndex: 1 }} />
         </Box>
 
         {/* Content Container */}
         <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 2.5, bgcolor: '#0f172a', zIndex: 2 }}>
-          {/* Bottom Area: Title, Presenter, CTA */}
+          {/* Button Floating Between Image and Text Area */}
+          <Button
+            fullWidth
+            variant="contained"
+            sx={{
+              mt: '-44px',
+              mb: 2,
+              position: 'relative',
+              zIndex: 10,
+              backdropFilter: 'blur(8px)',
+              bgcolor: badgeProps?.pulse ? '#dc2626' : 'rgba(255,255,255,0.15)',
+              color: '#ffffff',
+              fontWeight: 800,
+              py: 1.2,
+              borderRadius: '10px',
+              fontSize: '0.9rem',
+              textTransform: 'none',
+              boxShadow: badgeProps?.pulse ? '0 4px 16px rgba(220,38,38,0.4)' : '0 4px 12px rgba(0,0,0,0.5)',
+              '&:hover': { bgcolor: badgeProps?.pulse ? '#b91c1c' : 'rgba(255,255,255,0.25)' },
+            }}
+          >
+            {liveStatus === 'live' ? 'Join Livestream Now' : liveStatus === 'upcoming' ? 'Set Reminder' : 'Watch Replay'}
+          </Button>
+
+          {/* Bottom Area: Title, Presenter */}
           <Box sx={{ mt: 'auto' }}>
             <Typography
               variant="h6"
@@ -457,7 +485,7 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({
               {item.title}
             </Typography>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <Avatar src={item.authorAvatarUrl} sx={{ width: 32, height: 32, border: '2px solid rgba(255,255,255,0.1)' }} />
               <Box>
                 <Typography sx={{ fontWeight: 800, fontSize: '0.8rem', color: '#e2e8f0', lineHeight: 1.1 }}>
@@ -468,24 +496,6 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({
                 </Typography>
               </Box>
             </Box>
-
-            <Button
-              fullWidth
-              variant="contained"
-              sx={{
-                bgcolor: badgeProps?.pulse ? '#dc2626' : 'rgba(255,255,255,0.1)',
-                color: '#ffffff',
-                fontWeight: 800,
-                py: 1,
-                borderRadius: '10px',
-                fontSize: '0.85rem',
-                textTransform: 'none',
-                boxShadow: badgeProps?.pulse ? '0 4px 16px rgba(220,38,38,0.4)' : 'none',
-                '&:hover': { bgcolor: badgeProps?.pulse ? '#b91c1c' : 'rgba(255,255,255,0.15)' },
-              }}
-            >
-              {liveStatus === 'live' ? 'Join Now' : liveStatus === 'upcoming' ? 'Set Reminder' : 'Watch Replay'}
-            </Button>
           </Box>
         </Box>
       </Card>
