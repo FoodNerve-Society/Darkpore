@@ -384,12 +384,14 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         sx={{
-          height: 'auto',
-          aspectRatio: '16/9',
+          height: '100%',
+          minHeight: { xs: 360, sm: 420 },
           bgcolor: '#000000',
-          border: '1px solid #1e293b',
+          border: badgeProps?.pulse ? '1px solid rgba(239,68,68,0.6)' : '1px solid #1e293b',
           borderRadius: cardBorderRadius,
-          boxShadow: isHovered ? (badgeProps?.pulse ? '0 20px 45px -6px rgba(220,38,38,0.3)' : '0 20px 45px -6px rgba(0,0,0,0.6)') : '0 6px 24px -4px rgba(0,0,0,0.4)',
+          boxShadow: badgeProps?.pulse 
+            ? (isHovered ? '0 0 50px rgba(239,68,68,0.6)' : '0 0 30px rgba(239,68,68,0.3)')
+            : (isHovered ? '0 20px 45px -6px rgba(0,0,0,0.6)' : '0 6px 24px -4px rgba(0,0,0,0.4)'),
           transform: isHovered ? 'translateY(-4px)' : 'none',
           transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
           cursor: 'pointer',
@@ -410,6 +412,9 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({
               zIndex: 25,
               display: 'flex',
               alignItems: 'center',
+              bgcolor: 'rgba(0,0,0,0.5)',
+              px: 1.5, py: 0.5, borderRadius: '8px',
+              backdropFilter: 'blur(8px)',
             }}
           >
             {badgeProps.iconNode}
@@ -419,14 +424,8 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({
           </Box>
         )}
 
-        {/* Full Bleed Image Cover */}
-        <Box
-          sx={{
-            position: 'absolute',
-            inset: 0,
-            zIndex: 0,
-          }}
-        >
+        {/* Split Layout: Image 16:9 Top, Content Bottom */}
+        <Box sx={{ position: 'relative', height: 'auto', aspectRatio: '16/9', overflow: 'hidden', flexShrink: 0 }}>
           <CardMedia
             component="img"
             image={item.thumbnailUrl || 'https://images.unsplash.com/photo-1591696205602-2f950c417cb9?auto=format&fit=crop&q=80&w=800'}
@@ -435,28 +434,39 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({
               width: '100%',
               height: '100%',
               objectFit: 'cover',
-              transform: isHovered ? 'scale(1.08)' : 'scale(1.02)', // default scale to avoid edge artifact
+              transform: isHovered ? 'scale(1.08)' : 'scale(1.02)',
               transition: 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
-              filter: isHovered ? 'brightness(0.9) contrast(1.1)' : 'brightness(0.65) contrast(1.1)',
             }}
           />
         </Box>
 
-        {/* Cinematic Gradient Overlays */}
-        <Box sx={{ position: 'absolute', inset: 0, zIndex: 1, background: 'linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.1) 40%, rgba(0,0,0,0.85) 90%, #000000 100%)' }} />
-        
-        {badgeProps?.pulse && (
-           <Box sx={{ position: 'absolute', inset: 0, zIndex: 2, border: '2px solid rgba(220,38,38,0.3)', borderRadius: cardBorderRadius, animation: `${pulseAnimation} 2.5s infinite` }} />
-        )}
-
         {/* Content Container */}
-        <Box sx={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', height: '100%', p: 2.5 }}>
-          
+        <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 2.5, bgcolor: '#0f172a', zIndex: 2 }}>
+          {/* Button Floating Between Image and Text Area */}
+          <Button
+            fullWidth
+            variant="contained"
+            sx={{
+              mt: '-44px',
+              mb: 2,
+              position: 'relative',
+              zIndex: 10,
+              backdropFilter: 'blur(8px)',
+              bgcolor: badgeProps?.pulse ? '#dc2626' : 'rgba(255,255,255,0.15)',
+              color: '#ffffff',
+              fontWeight: 800,
+              py: 1.2,
+              borderRadius: '10px',
+              fontSize: '0.9rem',
+              textTransform: 'none',
+              boxShadow: badgeProps?.pulse ? '0 4px 16px rgba(220,38,38,0.4)' : '0 4px 12px rgba(0,0,0,0.5)',
+              '&:hover': { bgcolor: badgeProps?.pulse ? '#b91c1c' : 'rgba(255,255,255,0.25)' },
+            }}
+          >
+            {liveStatus === 'live' ? 'Join Livestream Now' : liveStatus === 'upcoming' ? 'Set Reminder' : 'Watch Replay'}
+          </Button>
 
-          
-          {/* Removed Play Button Overlay per user request */}
-          
-          {/* Bottom Area: Title, Presenter, CTA */}
+          {/* Bottom Area: Title, Presenter */}
           <Box sx={{ mt: 'auto' }}>
             <Typography
               variant="h6"
@@ -464,20 +474,19 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({
                 fontWeight: 900,
                 color: '#ffffff',
                 lineHeight: 1.25,
-                fontSize: { xs: '1.1rem', sm: '1.25rem' },
+                fontSize: { xs: '1.05rem', sm: '1.15rem' },
                 mb: 1.5,
                 display: '-webkit-box',
-                WebkitLineClamp: 3,
+                WebkitLineClamp: 2,
                 WebkitBoxOrient: 'vertical',
                 overflow: 'hidden',
-                textShadow: '0 2px 8px rgba(0,0,0,0.6)'
               }}
             >
               {item.title}
             </Typography>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-              <Avatar src={item.authorAvatarUrl} sx={{ width: 32, height: 32, border: '2px solid rgba(255,255,255,0.2)' }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Avatar src={item.authorAvatarUrl} sx={{ width: 32, height: 32, border: '2px solid rgba(255,255,255,0.1)' }} />
               <Box>
                 <Typography sx={{ fontWeight: 800, fontSize: '0.8rem', color: '#e2e8f0', lineHeight: 1.1 }}>
                   {item.authorOrOperator}
@@ -487,27 +496,6 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({
                 </Typography>
               </Box>
             </Box>
-
-            <Button
-              fullWidth
-              variant="contained"
-              sx={{
-                bgcolor: badgeProps?.pulse ? 'rgba(220,38,38,0.95)' : 'rgba(255,255,255,0.1)',
-                backdropFilter: 'blur(12px)',
-                WebkitBackdropFilter: 'blur(12px)',
-                color: '#ffffff',
-                fontWeight: 800,
-                py: 1,
-                borderRadius: '10px',
-                fontSize: '0.85rem',
-                textTransform: 'none',
-                border: badgeProps?.pulse ? 'none' : '1px solid rgba(255,255,255,0.2)',
-                boxShadow: badgeProps?.pulse ? '0 4px 16px rgba(220,38,38,0.4)' : 'none',
-                '&:hover': { bgcolor: badgeProps?.pulse ? '#dc2626' : 'rgba(255,255,255,0.2)' },
-              }}
-            >
-              {liveStatus === 'live' ? 'Join Now' : liveStatus === 'upcoming' ? 'Set Reminder' : 'Watch Replay'}
-            </Button>
           </Box>
         </Box>
       </Card>

@@ -20,10 +20,13 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
+import NextTopLoader from 'nextjs-toploader';
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${playfairDisplay.variable} ${eduNswActFoundation.variable} ${dosis.variable} ${quicksand.variable} ${ysabeauInfant.variable}`}>
       <body>
+        <NextTopLoader color="#10b981" showSpinner={false} />
         {children}
       </body>
     </html>

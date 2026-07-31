@@ -108,10 +108,20 @@ export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHe
 
   const statusObj = getTimeStatus(dailyAlerts[currentSlide]);
 
+  const currentHour = new Date().getHours();
+  let bgTheme = { bgcolor: '#ffffff', glowColor: 'rgba(16, 185, 129, 0.08)' };
+  if (currentHour >= 6 && currentHour < 12) {
+    bgTheme = { bgcolor: '#fffbeb', glowColor: 'rgba(245, 158, 11, 0.15)' }; // Morning (warm)
+  } else if (currentHour >= 12 && currentHour < 18) {
+    bgTheme = { bgcolor: '#f0fdf4', glowColor: 'rgba(16, 185, 129, 0.08)' }; // Afternoon (fresh)
+  } else {
+    bgTheme = { bgcolor: '#f8fafc', glowColor: 'rgba(79, 70, 229, 0.12)' }; // Evening (cool dusk)
+  }
+
   return (
-    <Box sx={{ minHeight: '80vh', bgcolor: '#ffffff', color: '#0f172a', pt: { xs: 12, md: 16 }, pb: 8, position: 'relative', overflow: 'hidden' }}>
+    <Box sx={{ minHeight: '80vh', bgcolor: bgTheme.bgcolor, color: '#0f172a', pt: { xs: 12, md: 16 }, pb: 8, position: 'relative', overflow: 'hidden', transition: 'background-color 1s ease' }}>
       {/* Background ambient glow */}
-      <Box sx={{ position: 'absolute', top: '-20%', left: '50%', transform: 'translateX(-50%)', width: '100%', height: '100%', background: 'radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, transparent 50%)', zIndex: 0, pointerEvents: 'none' }} />
+      <Box sx={{ position: 'absolute', top: '-20%', left: '50%', transform: 'translateX(-50%)', width: '100%', height: '100%', background: `radial-gradient(circle, ${bgTheme.glowColor} 0%, transparent 50%)`, zIndex: 0, pointerEvents: 'none', transition: 'background 1s ease' }} />
 
       <Container maxWidth="xl" sx={{ position: 'relative', zIndex: 1 }}>
         
@@ -119,93 +129,84 @@ export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHe
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '8fr 4fr' }, gap: 4, alignItems: 'stretch' }}>
           
           {/* LEFT: Controls & Wide Slideshow */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, position: 'relative' }}>
             
-          {/* Header Area */}
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4, px: 1 }}>
-            
-            {/* Left: Previous Icon */}
-            <IconButton 
-              onClick={() => {
-                const prev = new Date(currentDate);
-                prev.setDate(prev.getDate() - 1);
-                setCurrentDate(prev);
-              }}
-              sx={{ color: '#64748b', bgcolor: '#ffffff', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.04)', '&:hover': { color: '#0f172a', bgcolor: '#f8fafc' }, width: 44, height: 44 }}
-            >
-              <ArrowBackIcon fontSize="small" />
-            </IconButton>
-
-            {/* Center: Greeting & Date Display */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-              <Typography sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 800, color: '#0f172a', fontSize: { xs: '1.4rem', md: '1.8rem' }, lineHeight: 1.1, letterSpacing: '-0.02em', textAlign: 'center' }}>
+          {/* Header Area — Greeting Left, Controls Right */}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1 }}>
+            {/* Left: Greeting + Status */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Typography sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 700, color: '#0f172a', fontSize: { xs: '1.2rem', md: '1.6rem' }, letterSpacing: '-0.01em', whiteSpace: 'nowrap' }}>
                 {(() => {
                   const hour = new Date().getHours();
-                  if (hour < 12) return 'GOOD MORNING';
-                  if (hour < 18) return 'GOOD AFTERNOON';
-                  return 'GOOD EVENING';
+                  if (hour < 12) return 'Good Morning';
+                  if (hour < 18) return 'Good Afternoon';
+                  return 'Good Evening';
                 })()}
               </Typography>
               
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.5, flexWrap: 'wrap', justifyContent: 'center' }}>
-                <Typography sx={{ fontFamily: 'var(--font-ysabeau-infant)', fontWeight: 700, color: '#64748b', fontSize: '0.85rem', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                  {currentDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                </Typography>
-                
-                <AnimatePresence mode="wait">
-                  {statusObj && dailyAlerts.length > 0 && (
-                    <Box 
-                      component={motion.div}
-                      key={statusObj.label}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                      sx={{ 
-                        bgcolor: alpha(statusObj.color, 0.1), 
-                        px: 1.5, py: 0.5, 
-                        borderRadius: '8px', 
-                        display: 'flex', alignItems: 'center', gap: 1,
-                        border: `1px solid ${alpha(statusObj.color, 0.2)}`
-                      }}
-                    >
-                      {statusObj.pulse && (
-                        <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: statusObj.color, animation: `${pulseAnimation} 2s infinite` }} />
-                      )}
-                      <Typography sx={{ fontFamily: 'var(--font-ysabeau-infant)', fontWeight: 700, color: statusObj.color, letterSpacing: '0.05em', textTransform: 'uppercase', fontSize: '0.65rem' }}>
-                        {statusObj.label}
-                      </Typography>
-                    </Box>
-                  )}
-                </AnimatePresence>
-              </Box>
+              <AnimatePresence mode="wait">
+                {statusObj && dailyAlerts.length > 0 && (
+                  <Box 
+                    component={motion.div}
+                    key={statusObj.label}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    sx={{ 
+                      bgcolor: alpha(statusObj.color, 0.1), 
+                      px: 1.5, py: 0.5, 
+                      borderRadius: '999px', 
+                      display: 'flex', alignItems: 'center', gap: 0.75,
+                      border: `1px solid ${alpha(statusObj.color, 0.15)}`
+                    }}
+                  >
+                    {statusObj.pulse && (
+                      <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: statusObj.color, animation: `${pulseAnimation} 2s infinite` }} />
+                    )}
+                    <Typography sx={{ fontFamily: 'var(--font-ysabeau-infant)', fontWeight: 700, color: statusObj.color, letterSpacing: '0.05em', textTransform: 'uppercase', fontSize: '0.6rem' }}>
+                      {statusObj.label}
+                    </Typography>
+                  </Box>
+                )}
+              </AnimatePresence>
             </Box>
 
-            {/* Right: Premium Controls */}
-            <Box sx={{ 
-              display: 'flex', alignItems: 'center', gap: 1, 
-              bgcolor: '#ffffff', p: 0.5, borderRadius: '999px', 
-              boxShadow: '0 4px 15px rgba(0,0,0,0.05)', 
-              border: '1px solid rgba(0,0,0,0.04)' 
-            }}>
+            {/* Right: Date Navigation + Calendar */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <IconButton 
+                onClick={() => {
+                  const prev = new Date(currentDate);
+                  prev.setDate(prev.getDate() - 1);
+                  setCurrentDate(prev);
+                }}
+                sx={{ color: '#94a3b8', '&:hover': { color: '#0f172a', bgcolor: '#f1f5f9' }, width: 34, height: 34 }}
+              >
+                <ArrowBackIcon sx={{ fontSize: '1rem' }} />
+              </IconButton>
+              
+              <Typography sx={{ fontFamily: 'var(--font-ysabeau-infant)', fontWeight: 700, color: '#64748b', fontSize: { xs: '0.75rem', sm: '0.85rem' }, letterSpacing: '0.04em', textTransform: 'uppercase', whiteSpace: 'nowrap', mx: 0.5 }}>
+                {currentDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+              </Typography>
+              
               <IconButton 
                 onClick={() => {
                   const next = new Date(currentDate);
                   next.setDate(next.getDate() + 1);
                   setCurrentDate(next);
                 }}
-                sx={{ color: '#64748b', '&:hover': { color: '#0f172a', bgcolor: '#f1f5f9' }, width: 36, height: 36 }}
+                sx={{ color: '#94a3b8', '&:hover': { color: '#0f172a', bgcolor: '#f1f5f9' }, width: 34, height: 34 }}
               >
-                <ArrowForwardIcon fontSize="small" />
+                <ArrowForwardIcon sx={{ fontSize: '1rem' }} />
               </IconButton>
               
-              <Box sx={{ width: '1px', height: 20, bgcolor: 'rgba(0,0,0,0.08)', mx: 0.5 }} />
+              <Box sx={{ width: '1px', height: 18, bgcolor: 'rgba(0,0,0,0.08)', mx: 1 }} />
               
               <IconButton 
                 component={Link} 
                 href="/calendar"
-                sx={{ color: '#10b981', '&:hover': { bgcolor: 'rgba(16,185,129,0.1)' }, width: 36, height: 36 }}
+                sx={{ color: '#10b981', '&:hover': { bgcolor: 'rgba(16,185,129,0.08)' }, width: 34, height: 34 }}
               >
-                <CalendarMonthIcon fontSize="small" />
+                <CalendarMonthIcon sx={{ fontSize: '1.1rem' }} />
               </IconButton>
             </Box>
           </Box>
@@ -222,8 +223,17 @@ export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHe
               boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.02)',
               flexGrow: 1
             }}>
-            <Box sx={{ position: 'relative', flexGrow: 1, overflow: 'hidden' }}>
-              {isLoading ? (
+            <AnimatePresence mode="wait">
+              <Box 
+                component={motion.div}
+                key={currentDate.toISOString()}
+                initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.98, y: -10 }}
+                transition={{ duration: 0.3 }}
+                sx={{ position: 'relative', flexGrow: 1, overflow: 'hidden' }}
+              >
+                {isLoading ? (
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', flexDirection: 'column', gap: 2 }}>
                   <Typography sx={{ color: '#64748b', fontWeight: 600 }}>Loading {currentDate.toLocaleDateString()} events...</Typography>
                 </Box>
@@ -318,16 +328,14 @@ export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHe
                   ))}
                 </Box>
               )}
-            </Box>
+              </Box>
+            </AnimatePresence>
           </Box>
         </Box>
 
         {/* RIGHT: Ecosystem Categories & Quick Actions */}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, flexShrink: 0, pb: { xs: 2, lg: 0 } }}>
-            {/* Header */}
-            <Typography sx={{ display: { xs: 'none', lg: 'block' }, fontFamily: 'var(--font-ysabeau-infant)', fontWeight: 700, color: '#64748b', letterSpacing: '0.1em', textTransform: 'uppercase', fontSize: '0.85rem', pl: 1, mb: 1 }}>
-              Ecosystem Categories
-            </Typography>
+            {/* Header removed */}
             {CATEGORIES.map((cat, idx) => (
               <Box
                 component="a"
@@ -362,21 +370,22 @@ export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHe
                 </Box>
                 {/* Text Details */}
                 <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1, ml: 2, overflow: 'hidden' }}>
-                  <Typography sx={{ fontFamily: 'var(--font-ysabeau-infant)', fontWeight: 700, fontSize: { xs: '0.95rem', sm: '1.15rem' }, color: '#0f172a', lineHeight: 1.2 }}>
-                    {cat.label}
-                  </Typography>
-                  
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography sx={{ fontFamily: 'var(--font-ysabeau-infant)', fontWeight: 700, fontSize: { xs: '0.95rem', sm: '1.15rem' }, color: '#0f172a', lineHeight: 1.2 }}>
+                      {cat.label}
+                    </Typography>
                     {cat.newCount > 0 && (
-                      <Box sx={{ bgcolor: `${cat.color}15`, color: cat.color, px: 0.8, py: 0.2, borderRadius: '4px', fontSize: '0.65rem', fontWeight: 700, fontFamily: 'var(--font-ysabeau-infant)' }}>
+                      <Box sx={{ bgcolor: `${cat.color}15`, color: cat.color, px: 0.8, py: 0.2, borderRadius: '4px', fontSize: '0.6rem', fontWeight: 700, fontFamily: 'var(--font-ysabeau-infant)', whiteSpace: 'nowrap' }}>
                         +{cat.newCount} NEW
                       </Box>
                     )}
-                    
-                    <Typography sx={{ fontFamily: 'var(--font-ysabeau-infant)', fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.85rem' }, color: '#64748b' }}>
-                      {cat.count} active
-                    </Typography>
+                    {cat.isLive && (
+                      <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#ef4444', flexShrink: 0, animation: `${pulseAnimation} 1.5s infinite` }} />
+                    )}
                   </Box>
+                  <Typography sx={{ fontFamily: 'var(--font-ysabeau-infant)', fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.85rem' }, color: '#64748b', mt: 0.25 }}>
+                    {cat.count} - total
+                  </Typography>
                 </Box>
                 <Box sx={{ width: { xs: 24, sm: 32 }, height: { xs: 24, sm: 32 }, borderRadius: '50%', bgcolor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s ease' }}>
                   <ArrowForwardIosIcon sx={{ color: '#94a3b8', fontSize: { xs: '0.7rem', sm: '0.9rem' } }} />
@@ -423,7 +432,7 @@ export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHe
                 {/* Text Details */}
                 <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1, ml: 2 }}>
                   <Typography sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 800, fontSize: { xs: '1.1rem', sm: '1.3rem' }, color: '#064e3b', lineHeight: 1.2, letterSpacing: '-0.02em' }}>
-                    Premium Gateway to Society
+                    Join the Society
                   </Typography>
                   <Typography sx={{ fontFamily: 'var(--font-ysabeau-infant)', fontWeight: 700, fontSize: { xs: '0.75rem', sm: '0.85rem' }, color: '#059669', mt: 0.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <Box component="span" sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#10b981', display: 'inline-block', animation: `${pulseAnimation} 2s infinite` }} />
