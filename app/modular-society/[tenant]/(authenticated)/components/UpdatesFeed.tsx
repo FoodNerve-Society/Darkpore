@@ -7,9 +7,12 @@ import RssFeedIcon from '@mui/icons-material/RssFeed';
 import TuneIcon from '@mui/icons-material/Tune';
 import ControlPointIcon from '@mui/icons-material/ControlPoint';
 import { motion } from 'framer-motion';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import OpenInFullIcon from '@mui/icons-material/OpenInFull';
 
 import { usePathname } from 'next/navigation';
 import { getActiveTheme } from './navigation/NavThemes';
+import { useCalendarOverlay } from '@/context/CalendarOverlayContext';
 
 const availableNiches = [
   "Agro-Tech", "Food Processing", "Supply Chain", "Export Logistics", "Culinary Arts", 
@@ -19,11 +22,16 @@ const availableNiches = [
 export default function UpdatesFeed() {
   const pathname = usePathname();
   const activeTheme = getActiveTheme(pathname);
+  const { openCalendar } = useCalendarOverlay();
   const [selectedNiches, setSelectedNiches] = useState<string[]>([]);
   const [activeFilter, setActiveFilter] = useState('All');
   
   // Mock check for an empty feed. In a real scenario, this would check the fetched updates array.
   const hasUpdates = false; 
+
+  // Format today's date
+  const today = new Date();
+  const dateString = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
   const toggleNiche = (niche: string) => {
     setSelectedNiches(prev => 
@@ -55,6 +63,56 @@ export default function UpdatesFeed() {
           <TuneIcon fontSize="small" sx={{ color: activeTheme.main }} />
         </IconButton>
       </Box>
+
+      {/* Calendar Glance Card */}
+      <Card 
+        component={motion.div}
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        sx={{ 
+          borderRadius: 4, 
+          bgcolor: alpha(activeTheme.main, 0.05),
+          border: `1px solid ${alpha(activeTheme.main, 0.1)}`,
+          boxShadow: 'none',
+          overflow: 'visible'
+        }}
+      >
+        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ p: 1, bgcolor: activeTheme.main, borderRadius: 2, color: 'white', display: 'flex' }}>
+              <CalendarMonthIcon fontSize="small" />
+            </Box>
+            <Box>
+              <Typography variant="body2" sx={{ fontWeight: 800, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1 }}>
+                Today's Agenda
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+                {dateString}
+              </Typography>
+            </Box>
+          </Box>
+          
+          <Button 
+            size="small"
+            variant="outlined"
+            onClick={openCalendar}
+            endIcon={<OpenInFullIcon sx={{ fontSize: '14px !important' }} />}
+            sx={{ 
+              borderRadius: 8, 
+              fontWeight: 800,
+              borderColor: alpha(activeTheme.main, 0.3),
+              color: activeTheme.main,
+              '&:hover': { bgcolor: alpha(activeTheme.main, 0.1), borderColor: activeTheme.main }
+            }}
+          >
+            Expand
+          </Button>
+        </Box>
+        <Divider sx={{ borderColor: alpha(activeTheme.main, 0.1) }} />
+        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 2, overflowX: 'auto', '&::-webkit-scrollbar': { display: 'none' } }}>
+          <Chip label="No events scheduled for today" size="small" sx={{ bgcolor: 'rgba(0,0,0,0.05)', color: 'text.secondary', fontWeight: 600 }} />
+        </Box>
+      </Card>
 
       {/* Main Feed Area */}
       {!hasUpdates ? (

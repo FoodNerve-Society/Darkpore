@@ -229,12 +229,7 @@ export function SocietyProvider({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
 
-  // Auto-close updates drawer on navigation
-  useEffect(() => {
-    if (pathname !== '/updates' && isUpdatesOpen) {
-      setUpdatesOpen(false);
-    }
-  }, [pathname]);
+  // Auto-close updates drawer is handled by the authenticated layout directly to allow phantom redirects
 
   useEffect(() => {
     // DEV BYPASS REMOVED: We need real auth state and routing.

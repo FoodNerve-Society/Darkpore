@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 
-import React, { useEffect, useState, FC, ReactNode } from 'react';
+import React, { useEffect, useState, FC, ReactNode, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -23,6 +23,7 @@ import OnboardingWizard from '@/components/OnboardingWizard';
 import MiniAuthModal from './components/MiniAuthModal';
 import UpdatesFeed from './components/UpdatesFeed';
 import { WikiOverlayProvider } from '@/context/WikiOverlayContext';
+import { CalendarOverlayProvider } from '@/context/CalendarOverlayContext';
 
 const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
   const { user, profile, loading, needsOnboarding, isUpdatesOpen, setUpdatesOpen } = useSociety();
@@ -34,6 +35,8 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const [showUnauthModal, setShowUnauthModal] = useState(false);
+  const phantomRedirectRef = useRef(false);
+  const prevPathnameRef = useRef(pathname);
 
   // --- THE DEFINITIVE, RACE-CONDITION-FREE GATEKEEPER ---
   useEffect(() => {
@@ -67,10 +70,28 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
     // However, since we don't have a specific "root" in authenticated, we handle it if they happen to hit a generic redirect.
     // Actually, if they are exactly on an onboarding path or a path that doesn't exist, we force them to trade.
     // --- PHANTOM LANDING FOR UPDATES ---
-    if (pathname === '/updates') {
-      const targetTab = profile.lastActiveTab || 'trade';
-      setUpdatesOpen(true);
-      router.replace(`/${targetTab}`);
+    const normalizedPath = pathname.replace(/\/$/, '');
+    // If they still need onboarding, don't intercept yet so they can complete the wizard on a clean screen.
+    if (normalizedPath === '/updates' && !needsOnboarding) {
+      // Prioritize last active tab in session -> User's chosen primary feature from onboarding -> default to trade
+      let targetTab = profile.lastActiveTab || profile.landingPage || 'trade';
+      // Prevent infinite redirect loops if lastActiveTab somehow became 'updates'
+      if (targetTab === 'updates' || targetTab === '/updates') {
+        targetTab = profile.landingPage && profile.landingPage !== 'updates' ? profile.landingPage : 'trade';
+      }
+      // Strip leading slash if present in targetTab to ensure `/${targetTab}` is correct
+      if (targetTab.startsWith('/')) {
+        targetTab = targetTab.substring(1);
+      }
+      
+      phantomRedirectRef.current = true;
+      
+      // Delay the router transition slightly to ensure Next.js has finished 
+      // hydration and mounting, preventing the router from swallowing the event.
+      setTimeout(() => {
+        router.replace(`/${targetTab}`);
+      }, 10);
+      
       return;
     }
 
@@ -82,15 +103,31 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
       return;
     }
 
-  }, [loading, user, profile, pathname, router, setUpdatesOpen]);
+  }, [loading, user, profile, pathname, router]);
 
-  // --- AUTO-CLOSE UPDATES ON ROUTE CHANGE ---
+  // --- HANDLE PHANTOM REDIRECT COMPLETION & AUTO-CLOSE ---
   useEffect(() => {
-    // If the user navigates somewhere else (clicking a link in the updates feed), close the drawer.
-    if (pathname !== '/updates' && isUpdatesOpen) {
-      setUpdatesOpen(false);
+    const normalizedPath = pathname.replace(/\/$/, '');
+    const prevNormalized = prevPathnameRef.current.replace(/\/$/, '');
+    
+    // Only run this logic if the route actually changed
+    if (normalizedPath !== prevNormalized) {
+      if (normalizedPath !== '/updates') {
+        if (phantomRedirectRef.current) {
+          // We just arrived from the phantom redirect. 
+          // Open the drawer safely now that the route transition has finished!
+          phantomRedirectRef.current = false;
+          setUpdatesOpen(true);
+        } else if (isUpdatesOpen) {
+          // User naturally navigated to a new tab. Close the drawer.
+          setUpdatesOpen(false);
+        }
+      }
     }
-  }, [pathname]);
+    
+    // Update the ref for the next render check
+    prevPathnameRef.current = pathname;
+  }, [pathname, isUpdatesOpen, setUpdatesOpen]);
 
   // --- SCROLL LOCK FOR MOBILE UPDATES DRAWER ---
   useEffect(() => {
@@ -252,7 +289,11 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
               onComplete={() => window.location.reload()} 
               profile={profile}
             />
-            {children}
+            {pathname.replace(/\/$/, '') === '/updates' ? (
+              <LivelyLoadingScreen />
+            ) : (
+              children
+            )}
             <AdminOnboardingModal />
           </>
         )}
@@ -293,6 +334,7 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
         />
       )}
       </Box>
+      </CalendarOverlayProvider>
     </WikiOverlayProvider>
   );
 };
