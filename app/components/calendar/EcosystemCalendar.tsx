@@ -181,15 +181,23 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
 
     return (
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1, mb: 1 }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1, mb: 2 }}>
           {weekDates.map(d => {
             const isToday = d.toDateString() === new Date().toDateString();
+            const isSelected = d.toDateString() === currentDate.toDateString();
+            
             return (
-              <Box key={d.toISOString()} sx={{ textAlign: 'center', pb: 1, borderBottom: isToday ? `2px solid ${theme.palette.primary.main}` : '2px solid transparent' }}>
-                <Typography variant="caption" sx={{ fontFamily: 'var(--font-ysabeau-infant)', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', display: 'block', letterSpacing: '0.05em' }}>
+              <Box key={d.toISOString()} sx={{ 
+                textAlign: 'center', p: 1, borderRadius: 3,
+                bgcolor: isSelected ? theme.palette.primary.main : (isToday ? alpha(theme.palette.primary.main, 0.1) : 'transparent'),
+                color: isSelected ? 'white' : 'inherit',
+                boxShadow: isSelected ? `0 8px 24px ${alpha(theme.palette.primary.main, 0.3)}` : 'none',
+                transition: 'all 0.2s ease',
+              }}>
+                <Typography variant="caption" sx={{ fontFamily: 'var(--font-ysabeau-infant)', fontWeight: 800, color: isSelected ? 'rgba(255,255,255,0.8)' : '#94a3b8', textTransform: 'uppercase', display: 'block', letterSpacing: '0.05em' }}>
                   {dayNames[d.getDay()]}
                 </Typography>
-                <Typography variant="body1" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: isToday ? 900 : 700, color: isToday ? theme.palette.primary.main : '#334155', fontSize: '1.2rem' }}>
+                <Typography variant="body1" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: isSelected || isToday ? 900 : 700, color: isSelected ? '#ffffff' : (isToday ? theme.palette.primary.main : '#334155'), fontSize: '1.2rem' }}>
                   {d.getDate()}
                 </Typography>
               </Box>
@@ -201,15 +209,31 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
             const dayEvents = getEventsForDate(d);
             const isToday = d.toDateString() === new Date().toDateString();
             return (
-              <Box key={i} sx={{ bgcolor: isToday ? alpha(theme.palette.primary.main, 0.02) : 'transparent', borderRight: '1px dashed rgba(0,0,0,0.05)', p: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Box 
+                key={i} 
+                onClick={() => {
+                  setCurrentDate(d);
+                  setViewMode('day');
+                }}
+                sx={{ 
+                  bgcolor: isToday ? alpha(theme.palette.primary.main, 0.05) : 'rgba(255,255,255,0.4)', 
+                  borderRadius: 3, p: 1.5,
+                  border: isToday ? `1px solid ${alpha(theme.palette.primary.main, 0.4)}` : '1px solid rgba(0,0,0,0.03)',
+                  boxShadow: isToday ? `0 4px 12px ${alpha(theme.palette.primary.main, 0.1)}` : '0 2px 8px rgba(0,0,0,0.01)',
+                  backdropFilter: 'blur(8px)',
+                  transition: 'all 0.2s ease', cursor: 'pointer',
+                  '&:hover': { bgcolor: 'rgba(255,255,255,0.8)', transform: 'translateY(-2px)', boxShadow: '0 8px 24px rgba(0,0,0,0.04)' },
+                  display: 'flex', flexDirection: 'column', overflowY: 'hidden', gap: 1
+                }}
+              >
                 {dayEvents.map(event => {
                   const dotColor = getVisibilityColor(event.visibility);
                   return (
                     <Box key={event.id} sx={{ bgcolor: alpha(dotColor, 0.05), border: `1px solid ${alpha(dotColor, 0.2)}`, borderLeft: `3px solid ${dotColor}`, p: 1, borderRadius: 2 }}>
-                      <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 0.5, fontWeight: 600 }}>
+                      <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 0.25, fontWeight: 700, fontSize: '0.65rem' }}>
                         {new Date(event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 800, color: 'text.primary', lineHeight: 1.2 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 800, color: 'text.primary', lineHeight: 1.2, fontSize: '0.85rem' }}>
                         {event.title}
                       </Typography>
                     </Box>
@@ -223,19 +247,41 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
     );
   };
 
-  // --- RENDER DAY (AGENDA) VIEW ---
+  // --- RENDER DAY VIEW ---
   const renderDayView = () => {
     const dayEvents = getEventsForDate(currentDate);
+    const isToday = currentDate.toDateString() === new Date().toDateString();
     
     return (
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', overflowY: 'auto' }}>
-        <Typography variant="h6" sx={{ fontWeight: 900, mb: 3, color: 'text.primary' }}>
-          {currentDate.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
-        </Typography>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'stretch', overflowY: 'auto', pr: { xs: 0, md: 1 } }}>
         
-        <Box sx={{ width: '100%', maxWidth: 600, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {/* Header matching Week View style but bigger */}
+        <Box sx={{ 
+          textAlign: 'center', p: 2, borderRadius: 4, mb: 3, width: '100%',
+          bgcolor: theme.palette.primary.main,
+          color: 'white',
+          boxShadow: `0 8px 24px ${alpha(theme.palette.primary.main, 0.3)}`,
+        }}>
+          <Typography variant="subtitle2" sx={{ fontFamily: 'var(--font-ysabeau-infant)', fontWeight: 800, color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            {currentDate.toLocaleDateString(undefined, { weekday: 'long' })}
+          </Typography>
+          <Typography variant="h4" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: '#ffffff' }}>
+            {currentDate.getDate()} {currentDate.toLocaleDateString(undefined, { month: 'long' })}
+          </Typography>
+        </Box>
+
+        {/* The "Combined 5 strips" Container */}
+        <Box sx={{ 
+          width: '100%', flex: 1,
+          bgcolor: isToday ? alpha(theme.palette.primary.main, 0.05) : 'rgba(255,255,255,0.4)', 
+          borderRadius: 4, p: 3,
+          border: isToday ? `1px solid ${alpha(theme.palette.primary.main, 0.4)}` : '1px solid rgba(0,0,0,0.03)',
+          boxShadow: isToday ? `0 4px 12px ${alpha(theme.palette.primary.main, 0.1)}` : '0 4px 16px rgba(0,0,0,0.02)',
+          backdropFilter: 'blur(12px)',
+          display: 'flex', flexDirection: 'column', gap: 2,
+        }}>
           {dayEvents.length === 0 ? (
-            <Box sx={{ py: 8, textAlign: 'center' }}>
+            <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 600 }}>No events scheduled for this day.</Typography>
             </Box>
           ) : (
@@ -243,34 +289,26 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
               const dotColor = getVisibilityColor(event.visibility);
               return (
                 <Box key={event.id} sx={{ 
-                  display: 'flex', gap: 2, 
-                  bgcolor: 'rgba(255,255,255,0.7)', 
-                  backdropFilter: 'blur(12px)',
-                  p: 2.5, borderRadius: 4, 
-                  border: `1px solid rgba(255,255,255,0.5)`,
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.04)',
-                  transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                  '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 12px 48px rgba(0,0,0,0.06)' }
+                  bgcolor: alpha(dotColor, 0.05), border: `1px solid ${alpha(dotColor, 0.2)}`, 
+                  borderLeft: `4px solid ${dotColor}`, p: 2, borderRadius: 3,
+                  transition: 'all 0.2s ease',
+                  '&:hover': { bgcolor: alpha(dotColor, 0.08), transform: 'translateY(-2px)' }
                 }}>
-                  <Box sx={{ minWidth: 60, textAlign: 'right' }}>
-                    <Typography variant="body2" sx={{ fontFamily: 'var(--font-quicksand)', fontWeight: 900, color: '#475569', fontSize: '0.95rem' }}>
-                      {new Date(event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ width: 4, borderRadius: 4, bgcolor: dotColor, flexShrink: 0, boxShadow: `0 0 12px ${dotColor}` }} />
-                  <Box sx={{ flex: 1 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
-                      <Typography variant="subtitle1" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 800, color: '#0f172a', lineHeight: 1.2, fontSize: '1.2rem', letterSpacing: '-0.01em' }}>
-                        {event.title}
+                  <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 0.5, fontWeight: 800, fontSize: '0.75rem' }}>
+                    {new Date(event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 800, color: 'text.primary', lineHeight: 1.2, mb: 1 }}>
+                    {event.title}
+                  </Typography>
+                  
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                    <Box sx={{ bgcolor: alpha(dotColor, 0.1), color: dotColor, px: 1.5, py: 0.5, borderRadius: 2 }}>
+                      <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', fontSize: '0.65rem' }}>
+                        {getVisibilityLabel(event.visibility)}
                       </Typography>
-                      <Box sx={{ bgcolor: alpha(dotColor, 0.1), color: dotColor, px: 1, py: 0.25, borderRadius: 4 }}>
-                        <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', fontSize: '0.6rem' }}>
-                          {getVisibilityLabel(event.visibility)}
-                        </Typography>
-                      </Box>
                     </Box>
                     {event.category && (
-                      <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+                      <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, bgcolor: 'rgba(0,0,0,0.04)', px: 1.5, py: 0.5, borderRadius: 2 }}>
                         {event.category} {event.organizationName && `• ${event.organizationName}`}
                       </Typography>
                     )}
@@ -327,7 +365,7 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
           >
             <ToggleButton value="month">Month</ToggleButton>
             <ToggleButton value="week">Week</ToggleButton>
-            <ToggleButton value="day">Day View</ToggleButton>
+            <ToggleButton value="day">Day</ToggleButton>
           </ToggleButtonGroup>
 
           <Button 
