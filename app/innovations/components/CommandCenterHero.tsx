@@ -44,7 +44,7 @@ export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHe
 
   // Parse URL params for calendar on mount
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.pathname === '/calendar') {
+    if (typeof window !== 'undefined' && (window.location.pathname === '/calendar' || window.location.pathname === '/innovations/calendar')) {
       setIsCalendarOpen(true);
     }
   }, []);
@@ -52,12 +52,15 @@ export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHe
   const openCalendar = (e?: React.MouseEvent) => {
     if (e) e.preventDefault();
     setIsCalendarOpen(true);
-    window.history.pushState(null, '', '/calendar');
+    // When running locally under /innovations, use that path so reload works
+    const isLocalInnovations = typeof window !== 'undefined' && window.location.pathname.startsWith('/innovations');
+    window.history.pushState(null, '', isLocalInnovations ? '/innovations/calendar' : '/calendar');
   };
 
   const closeCalendar = () => {
     setIsCalendarOpen(false);
-    window.history.pushState(null, '', '/');
+    const isLocalInnovations = typeof window !== 'undefined' && window.location.pathname.startsWith('/innovations');
+    window.history.pushState(null, '', isLocalInnovations ? '/innovations' : '/');
   };
 
   useEffect(() => {

@@ -8,6 +8,7 @@ import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import { getCalendarEvents } from '@/app/actions/calendar';
 import { CalendarEvent } from '@prisma/client';
+import AddEventSidebar from './AddEventSidebar';
 
 export type ViewMode = 'month' | 'week' | 'day';
 
@@ -52,7 +53,8 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
   }, [tenantId, currentDate.getMonth()]); // Wait, if we change months we might need to load. Ideally we load a range.
 
   const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
-  const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
+  const firstDayOfMonthRaw = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
+  const firstDayOfMonth = firstDayOfMonthRaw === 0 ? 6 : firstDayOfMonthRaw - 1;
 
   const handlePrev = () => {
     const newDate = new Date(currentDate);
@@ -71,7 +73,7 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
   };
 
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
   // Helper to group events by specific date
   const getEventsForDate = (date: Date) => {
@@ -169,7 +171,8 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
 
   // --- RENDER WEEK VIEW ---
   const renderWeekView = () => {
-    const currentDayOfWeek = currentDate.getDay();
+    const currentDayOfWeekRaw = currentDate.getDay();
+    const currentDayOfWeek = currentDayOfWeekRaw === 0 ? 6 : currentDayOfWeekRaw - 1;
     const startOfWeek = new Date(currentDate);
     startOfWeek.setDate(currentDate.getDate() - currentDayOfWeek);
 
@@ -195,7 +198,7 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
                 transition: 'all 0.2s ease',
               }}>
                 <Typography variant="caption" sx={{ fontFamily: 'var(--font-ysabeau-infant)', fontWeight: 800, color: isSelected ? 'rgba(255,255,255,0.8)' : '#94a3b8', textTransform: 'uppercase', display: 'block', letterSpacing: '0.05em' }}>
-                  {dayNames[d.getDay()]}
+                  {dayNames[d.getDay() === 0 ? 6 : d.getDay() - 1]}
                 </Typography>
                 <Typography variant="body1" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: isSelected || isToday ? 900 : 700, color: isSelected ? '#ffffff' : (isToday ? theme.palette.primary.main : '#334155'), fontSize: '1.2rem' }}>
                   {d.getDate()}
@@ -387,56 +390,10 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
 
       {/* Add Event Form Split-Screen */}
       {isAddingEvent && (
-        <Box sx={{ 
-          width: '40%', minWidth: 320, 
-          bgcolor: 'rgba(255,255,255,0.7)', 
-          backdropFilter: 'blur(20px)', 
-          borderRadius: 4, 
-          p: 3, 
-          border: '1px solid rgba(255,255,255,0.8)', 
-          boxShadow: '-8px 0 32px rgba(0,0,0,0.03)',
-          display: 'flex',
-          flexDirection: 'column',
-          overflowY: 'auto'
-        }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Typography variant="h6" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: '#0f172a' }}>
-              Create New Event
-            </Typography>
-            <IconButton size="small" onClick={() => setIsAddingEvent(false)} sx={{ bgcolor: 'rgba(0,0,0,0.04)' }}>
-              <CloseIcon fontSize="small" />
-            </IconButton>
-          </Box>
-
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-            <TextField label="Event Title" placeholder="e.g. Monthly Investor Update" fullWidth size="small" />
-            
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField label="Date" type="date" fullWidth size="small" slotProps={{ inputLabel: { shrink: true } }} defaultValue={currentDate.toISOString().split('T')[0]} />
-              <TextField label="Time" type="time" fullWidth size="small" slotProps={{ inputLabel: { shrink: true } }} defaultValue="10:00" />
-            </Box>
-
-            <TextField select label="Visibility Level" fullWidth size="small" defaultValue="society">
-              <MenuItem value="society">Public Society</MenuItem>
-              <MenuItem value="organization">Organization Internal</MenuItem>
-              <MenuItem value="personal">Personal</MenuItem>
-            </TextField>
-
-            <TextField select label="Category" fullWidth size="small" defaultValue="livestream">
-              <MenuItem value="livestream">Livestream</MenuItem>
-              <MenuItem value="deadline">Deadline</MenuItem>
-              <MenuItem value="meetup">Meetup</MenuItem>
-            </TextField>
-
-            <TextField label="Link / Location" placeholder="Zoom link or physical address" fullWidth size="small" />
-            
-            <TextField label="Description" multiline rows={3} placeholder="Add some details..." fullWidth size="small" />
-
-            <Button variant="contained" size="large" sx={{ mt: 2, borderRadius: 2, fontWeight: 800 }}>
-              Publish Event
-            </Button>
-          </Box>
-        </Box>
+        <AddEventSidebar 
+          tenantId={tenantId} 
+          onClose={() => setIsAddingEvent(false)} 
+        />
       )}
 
     </Box>
