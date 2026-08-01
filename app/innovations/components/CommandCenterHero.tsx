@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Container, Button, IconButton, keyframes, alpha, Dialog, DialogContent } from '@mui/material';
+import { Box, Typography, Container, Button, IconButton, keyframes, alpha, Dialog, DialogContent, useTheme } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -40,6 +40,7 @@ export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHe
   const [dailyAlerts, setDailyAlerts] = useState<any[]>(globalAlerts || []);
   const [isLoading, setIsLoading] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const theme = useTheme();
 
   // Parse URL params for calendar on mount
   useEffect(() => {
@@ -499,7 +500,7 @@ export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHe
         <DialogContent sx={{ p: { xs: 2, md: 4 }, display: 'flex', flexDirection: 'column' }}>
           <Box sx={{ mb: 2, pl: 1 }}>
             <Typography variant="h4" sx={{ fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <span style={{ fontSize: '1.2em' }}>🌍</span> Ecosystem Calendar
+              <CalendarMonthIcon sx={{ color: theme.palette.primary.main, fontSize: 32 }} /> Ecosystem Calendar
             </Typography>
             <Typography variant="body1" sx={{ color: '#64748b', fontWeight: 500, mt: 0.5 }}>
               Explore deadlines, livestreams, and events across the network.

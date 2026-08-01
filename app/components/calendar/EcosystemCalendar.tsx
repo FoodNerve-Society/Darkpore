@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, IconButton, Button, alpha, useTheme, ToggleButtonGroup, ToggleButton } from '@mui/material';
+import { Box, Typography, IconButton, Button, alpha, useTheme, ToggleButtonGroup, ToggleButton, TextField, MenuItem } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import AddIcon from '@mui/icons-material/Add';
+import CloseIcon from '@mui/icons-material/Close';
 import { getCalendarEvents } from '@/app/actions/calendar';
 import { CalendarEvent } from '@prisma/client';
 
@@ -24,6 +25,7 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
   
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAddingEvent, setIsAddingEvent] = useState(false);
 
   // Sync state to URL without full navigation
   useEffect(() => {
@@ -283,10 +285,18 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
   };
 
   return (
-    <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ width: '100%', height: '100%', display: 'flex', gap: 3, overflow: 'hidden' }}>
       
-      {/* Calendar Toolbar */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      {/* Calendar Area */}
+      <Box sx={{ 
+        flex: isAddingEvent ? '0 0 60%' : 1,
+        transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)', 
+        display: 'flex', 
+        flexDirection: 'column',
+        height: '100%'
+      }}>
+        {/* Calendar Toolbar */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Typography variant="h5" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: '#0f172a', minWidth: 150, letterSpacing: '-0.02em', fontSize: '1.6rem' }}>
             {viewMode === 'day' 
@@ -308,33 +318,21 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
             onChange={(_, val) => val && setViewMode(val)}
             size="small"
             sx={{
-              bgcolor: 'rgba(0,0,0,0.04)',
-              p: 0.5,
-              borderRadius: 3,
+              bgcolor: 'rgba(0,0,0,0.04)', p: 0.5, borderRadius: 3,
               '& .MuiToggleButton-root': {
-                border: 'none',
-                borderRadius: 2,
-                px: 2,
-                py: 0.5,
-                fontWeight: 700,
-                textTransform: 'none',
-                color: 'text.secondary',
-                '&.Mui-selected': {
-                  bgcolor: 'white',
-                  color: 'text.primary',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-                  '&:hover': { bgcolor: 'white' }
-                }
+                border: 'none', borderRadius: 2, px: 2, py: 0.5, fontWeight: 700, textTransform: 'none', color: 'text.secondary',
+                '&.Mui-selected': { bgcolor: 'white', color: 'text.primary', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', '&:hover': { bgcolor: 'white' } }
               }
             }}
           >
             <ToggleButton value="month">Month</ToggleButton>
             <ToggleButton value="week">Week</ToggleButton>
-            <ToggleButton value="day">Agenda</ToggleButton>
+            <ToggleButton value="day">Day View</ToggleButton>
           </ToggleButtonGroup>
 
           <Button 
             variant="contained" 
+            onClick={() => setIsAddingEvent(!isAddingEvent)}
             startIcon={<AddIcon />}
             sx={{ borderRadius: 8, fontWeight: 800, textTransform: 'none', px: 3, boxShadow: 'none' }}
           >
@@ -347,6 +345,61 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
       {viewMode === 'month' && renderMonthView()}
       {viewMode === 'week' && renderWeekView()}
       {viewMode === 'day' && renderDayView()}
+      </Box>
+
+      {/* Add Event Form Split-Screen */}
+      {isAddingEvent && (
+        <Box sx={{ 
+          width: '40%', minWidth: 320, 
+          bgcolor: 'rgba(255,255,255,0.7)', 
+          backdropFilter: 'blur(20px)', 
+          borderRadius: 4, 
+          p: 3, 
+          border: '1px solid rgba(255,255,255,0.8)', 
+          boxShadow: '-8px 0 32px rgba(0,0,0,0.03)',
+          display: 'flex',
+          flexDirection: 'column',
+          overflowY: 'auto'
+        }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Typography variant="h6" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: '#0f172a' }}>
+              Create New Event
+            </Typography>
+            <IconButton size="small" onClick={() => setIsAddingEvent(false)} sx={{ bgcolor: 'rgba(0,0,0,0.04)' }}>
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Box>
+
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+            <TextField label="Event Title" placeholder="e.g. Monthly Investor Update" fullWidth size="small" />
+            
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <TextField label="Date" type="date" fullWidth size="small" slotProps={{ inputLabel: { shrink: true } }} defaultValue={currentDate.toISOString().split('T')[0]} />
+              <TextField label="Time" type="time" fullWidth size="small" slotProps={{ inputLabel: { shrink: true } }} defaultValue="10:00" />
+            </Box>
+
+            <TextField select label="Visibility Level" fullWidth size="small" defaultValue="society">
+              <MenuItem value="society">Public Society</MenuItem>
+              <MenuItem value="organization">Organization Internal</MenuItem>
+              <MenuItem value="personal">Personal</MenuItem>
+            </TextField>
+
+            <TextField select label="Category" fullWidth size="small" defaultValue="livestream">
+              <MenuItem value="livestream">Livestream</MenuItem>
+              <MenuItem value="deadline">Deadline</MenuItem>
+              <MenuItem value="meetup">Meetup</MenuItem>
+            </TextField>
+
+            <TextField label="Link / Location" placeholder="Zoom link or physical address" fullWidth size="small" />
+            
+            <TextField label="Description" multiline rows={3} placeholder="Add some details..." fullWidth size="small" />
+
+            <Button variant="contained" size="large" sx={{ mt: 2, borderRadius: 2, fontWeight: 800 }}>
+              Publish Event
+            </Button>
+          </Box>
+        </Box>
+      )}
 
     </Box>
   );
