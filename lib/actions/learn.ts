@@ -33,6 +33,7 @@ export type CreateLearnContentPayload = {
   reportPdfUrl?: string;
   reportPages?: number;
   thumbnailUrl?: string;
+  targetDate?: string;
 };
 
 export async function createLearnContent(data: CreateLearnContentPayload, isDraft = false) {
@@ -84,6 +85,7 @@ export async function createLearnContent(data: CreateLearnContentPayload, isDraf
           authorName: data.authorName,
           authorAvatarUrl: data.authorAvatarUrl,
           organizationId: data.organizationId || null,
+          targetDate: data.targetDate ? new Date(data.targetDate) : null,
         },
       });
     } else {
@@ -103,6 +105,7 @@ export async function createLearnContent(data: CreateLearnContentPayload, isDraf
           authorName: data.authorName,
           authorAvatarUrl: data.authorAvatarUrl,
           organizationId: data.organizationId || null,
+          targetDate: data.targetDate ? new Date(data.targetDate) : null,
         },
       });
     }

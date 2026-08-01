@@ -578,6 +578,17 @@ export default function CreateLearnContentForm({
       setSelectedSubcategory(initialDraftData.subcategory || '');
       setSelectedTimeframe(initialDraftData.timeframe as any || '');
       
+      if (initialDraftData.targetDate) {
+        try {
+          // Format the ISO string to YYYY-MM-DDThh:mm for datetime-local input
+          const d = new Date(initialDraftData.targetDate);
+          const formatted = d.toISOString().slice(0, 16);
+          setTargetDate(formatted);
+        } catch (e) {
+          console.error('Invalid targetDate format', e);
+        }
+      }
+      
       const sourceBlocks = initialDraftData.articleBlocks || initialDraftData.article?.blocks;
       if (sourceBlocks) {
         // Sort blocks by orderIndex just in case
@@ -602,6 +613,7 @@ export default function CreateLearnContentForm({
   const [classModules, setClassModules] = useState<number>(1);
   const [reportPdfUrl, setReportPdfUrl] = useState('');
   const [reportPages, setReportPages] = useState<number>(1);
+  const [targetDate, setTargetDate] = useState<string>('');
 
   // Blocks fields (For Articles)
   const [blocks, setBlocks] = useState<Array<{ id: string, type: BlockType, content: Record<string, any>, role?: string, sopDesc?: string, sopHint?: string }>>([]);
@@ -957,6 +969,7 @@ export default function CreateLearnContentForm({
         classDuration: type === 'class' ? duration : undefined,
         reportPdfUrl: type === 'report' ? reportPdfUrl : undefined,
         reportPages: type === 'report' ? reportPages : undefined,
+        targetDate: targetDate || undefined,
       };
 
       const result = await createLearnContent(payload, !isPublish);
@@ -1083,6 +1096,22 @@ export default function CreateLearnContentForm({
                     </Box>
                   );
                 })()}
+
+                {/* TARGET DATE FIELD (OPTIONAL SCHEDULE) */}
+                <Box sx={{ mb: 4, width: { xs: '100%', md: '50%' } }}>
+                  <PremiumTextField
+                    colorTheme={activeThemeColor}
+                    label="Scheduled Publish Date (Optional)"
+                    type="datetime-local"
+                    fullWidth
+                    slotProps={{ inputLabel: { shrink: true } }}
+                    value={targetDate}
+                    onChange={(e) => setTargetDate(e.target.value)}
+                  />
+                  <Typography variant="caption" sx={{ color: 'text.secondary', ml: 1 }}>
+                    Leave blank to publish immediately or keep as an unscheduled draft.
+                  </Typography>
+                </Box>
 
                 {/* ΓöÇΓöÇΓöÇ EMPTY STATE: SOP FRAMEWORK PREVIEW ΓöÇΓöÇΓöÇ */}
                 {blocks.length === 0 && selectedTimeframe && (() => {
@@ -1792,6 +1821,22 @@ export default function CreateLearnContentForm({
             ) : (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 <Typography variant="h5" sx={{ fontWeight: 900 }}>Media Details</Typography>
+                
+                <Box sx={{ mb: 2, width: { xs: '100%', md: '50%' } }}>
+                  <PremiumTextField
+                    colorTheme={activeThemeColor}
+                    label="Scheduled Publish Date (Optional)"
+                    type="datetime-local"
+                    fullWidth
+                    slotProps={{ inputLabel: { shrink: true } }}
+                    value={targetDate}
+                    onChange={(e) => setTargetDate(e.target.value)}
+                  />
+                  <Typography variant="caption" sx={{ color: 'text.secondary', ml: 1 }}>
+                    Leave blank to publish immediately or keep as an unscheduled draft.
+                  </Typography>
+                </Box>
+
                 {(type === 'video' || type === 'livestream') && (
                   <PremiumTextField colorTheme={activeThemeColor} label="URL" value={videoUrl} onChange={e => setVideoUrl(e.target.value)} fullWidth />
                 )}

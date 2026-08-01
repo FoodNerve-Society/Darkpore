@@ -6,10 +6,11 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined';
 import { useSociety, checkGatekeeper } from '@/context/SocietyContext';
 import { useRouter } from 'next/navigation';
 import PremiumButton from '@/components/PremiumButton';
+import { scheduleCalendarEvent } from '@/app/actions/calendar';
 
 interface AddEventSidebarProps {
   onClose: () => void;
@@ -50,7 +51,7 @@ export default function AddEventSidebar({ onClose, tenantId }: AddEventSidebarPr
           <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
             You need to be logged into Society OS to schedule events and drafts.
           </Typography>
-          <PremiumButton variant="filled" baseColor="primary" onClick={() => router.push('/join')}>
+          <PremiumButton variant="filled" baseColor={theme.palette.primary.main} onClick={() => router.push('/join')}>
             Start Upgrading Now
           </PremiumButton>
         </Box>
@@ -92,7 +93,7 @@ export default function AddEventSidebar({ onClose, tenantId }: AddEventSidebarPr
           <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
             Only authenticated Rank 4 members can add public events to the Society.
           </Typography>
-          <PremiumButton variant="outlined" baseColor="error" onClick={() => router.push(gatekeeper.upgradeRoute || '/profile')}>
+          <PremiumButton variant="outlined" baseColor={theme.palette.error.main} onClick={() => router.push((gatekeeper as any).upgradeRoute || '/profile')}>
             Start Upgrading Now
           </PremiumButton>
         </Box>
@@ -115,30 +116,23 @@ export default function AddEventSidebar({ onClose, tenantId }: AddEventSidebarPr
     setIsSubmitting(true);
     
     try {
-      // Create scheduled draft / event logic via API or Server Action
-      // We will create the unified endpoint in lib/actions/calendar.ts
-      const res = await fetch('/api/calendar/schedule', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          targetScope,
-          eventType,
-          title,
-          date,
-          time,
-          challengeId,
-          subcategoryId,
-          eraId,
-          tenantId
-        })
+      const result = await scheduleCalendarEvent({
+        targetScope,
+        eventType,
+        title,
+        date,
+        time,
+        challengeId,
+        subcategoryId,
+        eraId,
+        tenantId
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        setDraftId(data.draftId); // Might be null if it's a general personal event
+      if (result.success) {
+        setDraftId(result.draftId);
         setIsSuccess(true);
       } else {
-        throw new Error('Failed to schedule event');
+        throw new Error(result.error || 'Failed to schedule event');
       }
     } catch (err) {
       console.error(err);
@@ -153,7 +147,7 @@ export default function AddEventSidebar({ onClose, tenantId }: AddEventSidebarPr
       <Box sx={sidebarStyles}>
         <Header onClose={onClose} />
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', p: 3 }}>
-          <CheckCircleOutlineIcon sx={{ fontSize: 60, color: 'success.main', mb: 2 }} />
+          <CheckCircleOutlinedIcon sx={{ fontSize: 60, color: 'success.main', mb: 2 }} />
           <Typography variant="h5" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 800, mb: 1 }}>
             {eventType === 'general' ? 'Event Scheduled!' : 'Draft Created!'}
           </Typography>
