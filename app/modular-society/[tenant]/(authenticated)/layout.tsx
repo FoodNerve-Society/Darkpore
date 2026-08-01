@@ -46,12 +46,10 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
     }
 
     // State B: Auth is confirmed, and there is NO user.
-    // Instead of instantly showing the modal (which causes flashes during IndexedDB restores),
-    // we debounce it slightly.
     if (!user) {
       const timer = setTimeout(() => {
         setShowUnauthModal(true);
-      }, 500); // Wait 500ms before declaring them definitely logged out
+      }, 500); 
       return () => clearTimeout(timer);
     }
 
@@ -59,35 +57,23 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
     setShowUnauthModal(false);
 
     // State D (The Race Condition): The user is confirmed, but their DB profile is still loading.
-    // We wait patiently for the profile to exist before making any logic decisions.
     if (!profile) {
       return;
     }
 
-    // State C: We have a user AND their profile. Now we can safely run routing logic.
-    // If the user navigates directly to a base authenticated route or logs in without a specific destination,
-    // we route them to their last active tab, or default to trade.
-    // However, since we don't have a specific "root" in authenticated, we handle it if they happen to hit a generic redirect.
-    // Actually, if they are exactly on an onboarding path or a path that doesn't exist, we force them to trade.
     // --- PHANTOM LANDING FOR UPDATES ---
     const normalizedPath = pathname.replace(/\/$/, '');
-    // If they still need onboarding, don't intercept yet so they can complete the wizard on a clean screen.
     if (normalizedPath === '/updates' && !needsOnboarding) {
-      // Prioritize last active tab in session -> User's chosen primary feature from onboarding -> default to trade
       let targetTab = profile.lastActiveTab || profile.landingPage || 'trade';
-      // Prevent infinite redirect loops if lastActiveTab somehow became 'updates'
       if (targetTab === 'updates' || targetTab === '/updates') {
         targetTab = profile.landingPage && profile.landingPage !== 'updates' ? profile.landingPage : 'trade';
       }
-      // Strip leading slash if present in targetTab to ensure `/${targetTab}` is correct
       if (targetTab.startsWith('/')) {
         targetTab = targetTab.substring(1);
       }
       
       phantomRedirectRef.current = true;
       
-      // Delay the router transition slightly to ensure Next.js has finished 
-      // hydration and mounting, preventing the router from swallowing the event.
       setTimeout(() => {
         router.replace(`/${targetTab}`);
       }, 10);
@@ -95,8 +81,7 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
       return;
     }
 
-    const isBaseAuthPath = pathname === '/dashboard'; // We deleted this, but just in case they have a bookmark
-    
+    const isBaseAuthPath = pathname === '/dashboard'; 
     if (isBaseAuthPath) {
       const targetTab = profile.lastActiveTab || 'trade';
       router.replace(`/${targetTab}`);
@@ -110,22 +95,17 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
     const normalizedPath = pathname.replace(/\/$/, '');
     const prevNormalized = prevPathnameRef.current.replace(/\/$/, '');
     
-    // Only run this logic if the route actually changed
     if (normalizedPath !== prevNormalized) {
       if (normalizedPath !== '/updates') {
         if (phantomRedirectRef.current) {
-          // We just arrived from the phantom redirect. 
-          // Open the drawer safely now that the route transition has finished!
           phantomRedirectRef.current = false;
           setUpdatesOpen(true);
         } else if (isUpdatesOpen) {
-          // User naturally navigated to a new tab. Close the drawer.
           setUpdatesOpen(false);
         }
       }
     }
     
-    // Update the ref for the next render check
     prevPathnameRef.current = pathname;
   }, [pathname, isUpdatesOpen, setUpdatesOpen]);
 
@@ -143,10 +123,7 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
   }, [isMobile, isUpdatesOpen]);
 
   // --- UNAUTHENTICATED LOGIC ---
-  // The user must manually click to redirect. No auto-timer.
-
   const handleSignOut = async () => {
-    // If Dev Bypass is active, just route out
     if (process.env.NODE_ENV === 'development') {
         router.push('/join');
         return;
@@ -155,19 +132,18 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
     router.push('/join');
   };
 
-  // Only show the definitive loading screen if we are actively checking auth or fetching a profile for an existing user.
   if (loading || (user && !profile)) {
     return <LivelyLoadingScreen />;
   }
 
-  // If we reach here, we either have a fully loaded user+profile, OR we have NO user (so showUnauthModal is true)
   const activeTheme = getActiveTheme(pathname);
 
   return (
     <WikiOverlayProvider>
+      <CalendarOverlayProvider>
       <Box sx={{ display: 'flex', height: '100dvh', flexDirection: isMobile ? 'column' : 'row', position: 'relative', bgcolor: '#f8fafc', overflow: 'hidden' }}>
 
-        {/* --- DYNAMIC BACKGROUND LAYER (Fixed behind everything) --- */}
+        {/* --- DYNAMIC BACKGROUND LAYER --- */}
       <Box sx={{
         position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
         opacity: 1,
@@ -185,24 +161,16 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
         />
       )}
       
-      {/* Desktop Updates Panel (Hidden underneath, revealed when main page shifts right) */}
+      {/* Desktop Updates Panel */}
       {!isMobile && (
         <Box
           component={motion.div}
-          animate={isUpdatesOpen ? {
-            x: 60,
-            scale: 1,
-            opacity: 1,
-          } : {
-            x: 20,
-            scale: 0.92,
-            opacity: 0,
-          }}
+          animate={isUpdatesOpen ? { x: 60, scale: 1, opacity: 1 } : { x: 20, scale: 0.92, opacity: 0 }}
           transition={{ type: 'spring', damping: 25, stiffness: 180 }}
           sx={{
             position: 'absolute',
             top: 0, 
-            left: 280, // Positioned right next to the 280px sidebar
+            left: 280, 
             width: 360,
             height: '100vh',
             zIndex: 5,
@@ -216,7 +184,7 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
             <Typography variant="h5" fontWeight={800}>Updates</Typography>
             <IconButton onClick={() => setUpdatesOpen(false)}>
-              <LockOutlinedIcon sx={{ fontSize: 20 }} /> {/* Temp close icon */}
+              <LockOutlinedIcon sx={{ fontSize: 20 }} /> 
             </IconButton>
           </Box>
           <Typography variant="body2" color="text.secondary" mb={3}>Your activity feed and notifications will appear here.</Typography>
@@ -233,7 +201,7 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
         animate={(!isMobile && isUpdatesOpen) ? {
           scale: 0.95,
           x: 360,
-          marginRight: 360, // Shrinks the flex width so x:360 doesn't shove it off screen
+          marginRight: 360,
           opacity: 0.8,
         } : {
           scale: 1,
@@ -249,8 +217,7 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
           flexDirection: 'column', 
           position: 'relative', 
           zIndex: 10,
-          // height: '100dvh', removed height constraint to let flex: 1 govern it
-          overflowY: 'visible', // Allow page card shadow to bleed out seamlessly
+          overflowY: 'visible', 
           overflowX: 'visible',
           boxSizing: 'border-box'
         }}
