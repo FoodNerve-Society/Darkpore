@@ -1,13 +1,15 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Container, Button, IconButton, keyframes, alpha } from '@mui/material';
+import { Box, Typography, Container, Button, IconButton, keyframes, alpha, Dialog, DialogContent } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import CloseIcon from '@mui/icons-material/Close';
 import Link from 'next/link';
+import EcosystemCalendar from '@/app/components/calendar/EcosystemCalendar';
 
 interface CommandCenterHeroProps {
   globalAlerts?: any[];
@@ -37,6 +39,25 @@ export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHe
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [dailyAlerts, setDailyAlerts] = useState<any[]>(globalAlerts || []);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+
+  // Parse URL params for calendar on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.pathname === '/calendar') {
+      setIsCalendarOpen(true);
+    }
+  }, []);
+
+  const openCalendar = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    setIsCalendarOpen(true);
+    window.history.pushState(null, '', '/calendar');
+  };
+
+  const closeCalendar = () => {
+    setIsCalendarOpen(false);
+    window.history.pushState(null, '', '/');
+  };
 
   useEffect(() => {
     let isToday = false;
@@ -202,8 +223,7 @@ export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHe
               <Box sx={{ width: '1px', height: 18, bgcolor: 'rgba(0,0,0,0.08)', mx: 1 }} />
               
               <IconButton 
-                component={Link} 
-                href="/calendar"
+                onClick={openCalendar}
                 sx={{ color: '#10b981', '&:hover': { bgcolor: 'rgba(16,185,129,0.08)' }, width: 34, height: 34 }}
               >
                 <CalendarMonthIcon sx={{ fontSize: '1.1rem' }} />
@@ -448,6 +468,46 @@ export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHe
 
         </Box>
       </Container>
+
+      {/* CALENDAR MODAL */}
+      <Dialog 
+        open={isCalendarOpen} 
+        onClose={closeCalendar}
+        maxWidth="lg"
+        slotProps={{
+          paper: {
+            sx: {
+              width: '90vw', height: '90vh', maxWidth: 'none', maxHeight: 'none',
+              borderRadius: 6, bgcolor: 'rgba(255, 255, 255, 0.75)', backdropFilter: 'blur(32px)',
+              boxShadow: '0 24px 64px rgba(0,0,0,0.15)', border: '1px solid rgba(255,255,255,0.5)', overflow: 'hidden'
+            }
+          },
+          backdrop: { sx: { backdropFilter: 'blur(4px)', backgroundColor: alpha('#000', 0.4) } }
+        }}
+      >
+        <IconButton 
+          onClick={closeCalendar}
+          sx={{ 
+            position: 'absolute', right: 16, top: 16, zIndex: 10,
+            bgcolor: 'rgba(0,0,0,0.05)', '&:hover': { bgcolor: 'rgba(0,0,0,0.1)', transform: 'rotate(90deg)' },
+            transition: 'all 0.2s ease'
+          }}
+        >
+          <CloseIcon />
+        </IconButton>
+
+        <DialogContent sx={{ p: { xs: 2, md: 4 }, display: 'flex', flexDirection: 'column' }}>
+          <Box sx={{ mb: 2, pl: 1 }}>
+            <Typography variant="h4" sx={{ fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <span style={{ fontSize: '1.2em' }}>🌍</span> Ecosystem Calendar
+            </Typography>
+            <Typography variant="body1" sx={{ color: '#64748b', fontWeight: 500, mt: 0.5 }}>
+              Explore deadlines, livestreams, and events across the network.
+            </Typography>
+          </Box>
+          <EcosystemCalendar tenantId="foodnerve" initialView="month" initialDate={currentDate} />
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 }
