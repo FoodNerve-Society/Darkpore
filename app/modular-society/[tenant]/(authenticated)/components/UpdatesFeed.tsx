@@ -1,176 +1,318 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Box, Typography, Card, CardContent, Button, Chip, Divider, IconButton, Avatar, TextField, alpha } from '@mui/material';
-import FilterListIcon from '@mui/icons-material/FilterList';
-import RssFeedIcon from '@mui/icons-material/RssFeed';
+import { Box, Typography, Button, IconButton, alpha } from '@mui/material';
 import TuneIcon from '@mui/icons-material/Tune';
-import ControlPointIcon from '@mui/icons-material/ControlPoint';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
-import OpenInFullIcon from '@mui/icons-material/OpenInFull';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
+import PeopleIcon from '@mui/icons-material/People';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 import { usePathname } from 'next/navigation';
 import { getActiveTheme } from './navigation/NavThemes';
 import { useCalendarOverlay } from '@/context/CalendarOverlayContext';
 
-const availableNiches = [
-  "Agro-Tech", "Food Processing", "Supply Chain", "Export Logistics", "Culinary Arts", 
-  "Restaurant Management", "Vertical Farming", "B2B Distribution", "Food Science", "Packaging"
+// --- MOCK DATA FOR VISUAL PROTOTYPING ---
+type FeedItemType = 'trade' | 'learn' | 'system' | 'network';
+
+interface MockFeedItem {
+  id: string;
+  type: FeedItemType;
+  title: string;
+  snippet: string;
+  time: string;
+}
+
+const mockUpdates: MockFeedItem[] = [
+  { id: '1', type: 'trade', title: 'Bulk Cassava Deal', snippet: '50 Tons @ ₦450k', time: '2m' },
+  { id: '2', type: 'system', title: 'Escrow Released', snippet: '₦2.0M cleared for logistics', time: '1h' },
+  { id: '3', type: 'learn', title: 'Vertical Farming', snippet: 'Masterclass live now', time: '3h' },
+  { id: '4', type: 'network', title: 'New Coop Member', snippet: 'John Doe joined syndicate', time: '5h' },
+  { id: '5', type: 'trade', title: 'Price Alert: Cocoa', snippet: 'Spot price dropped by 2%', time: '6h' }
 ];
 
 export default function UpdatesFeed() {
   const pathname = usePathname();
   const activeTheme = getActiveTheme(pathname);
   const { openCalendar } = useCalendarOverlay();
-  const [selectedNiches, setSelectedNiches] = useState<string[]>([]);
   const [activeFilter, setActiveFilter] = useState('All');
-  
-  // Mock check for an empty feed. In a real scenario, this would check the fetched updates array.
-  const hasUpdates = false; 
+  const [isAgendaExpanded, setIsAgendaExpanded] = useState(false);
 
   // Format today's date
   const today = new Date();
-  const dateString = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  const dateString = today.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
-  const toggleNiche = (niche: string) => {
-    setSelectedNiches(prev => 
-      prev.includes(niche) ? prev.filter(n => n !== niche) : [...prev, niche]
+  const renderFeedCard = (item: MockFeedItem, index: number) => {
+    let Icon = NotificationsActiveIcon;
+    let cardColor = activeTheme.main;
+
+    if (item.type === 'trade') cardColor = '#10b981'; // Emerald
+    if (item.type === 'learn') cardColor = '#8b5cf6'; // Violet
+    if (item.type === 'system') cardColor = '#f59e0b'; // Amber
+    if (item.type === 'network') cardColor = '#3b82f6'; // Blue
+
+    if (item.type === 'trade') Icon = TrendingUpIcon;
+    if (item.type === 'learn') Icon = PlayArrowIcon;
+    if (item.type === 'network') Icon = PeopleIcon;
+
+    return (
+      <Box 
+        key={item.id}
+        component={motion.div}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: 'spring', damping: 20, delay: index * 0.05 }}
+        sx={{
+          p: 1.5,
+          mb: 1.5,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2,
+          bgcolor: 'rgba(255,255,255,0.7)',
+          backdropFilter: 'blur(24px) saturate(200%)',
+          borderRadius: 4,
+          border: '1px solid rgba(255,255,255,0.8)',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.02), inset 0 1px 0 rgba(255,255,255,1)',
+          cursor: 'pointer',
+          position: 'relative',
+          overflow: 'hidden',
+          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:hover': {
+            bgcolor: 'rgba(255,255,255,0.95)',
+            transform: 'translateY(-2px)',
+            boxShadow: '0 12px 24px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,1)',
+            '& .action-arrow': {
+              opacity: 1,
+              transform: 'translateX(0)'
+            }
+          }
+        }}
+      >
+        {/* Glowing Icon Ring */}
+        <Box sx={{ 
+          width: 42, 
+          height: 42, 
+          borderRadius: '50%', 
+          background: `linear-gradient(135deg, ${cardColor}, ${alpha(cardColor, 0.6)})`,
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          color: 'white',
+          boxShadow: `0 4px 12px ${alpha(cardColor, 0.3)}`,
+          flexShrink: 0
+        }}>
+          <Icon sx={{ fontSize: 20 }} />
+        </Box>
+
+        {/* Dense Content */}
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 0.25 }}>
+            <Typography variant="body2" sx={{ fontWeight: 800, color: 'text.primary', noWrap: true, fontSize: '0.875rem' }}>
+              {item.title}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, fontSize: '0.7rem' }}>
+              {item.time}
+            </Typography>
+          </Box>
+          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500, noWrap: true, display: 'block', fontSize: '0.75rem' }}>
+            {item.snippet}
+          </Typography>
+        </Box>
+
+        {/* Hover Micro-Action */}
+        <Box 
+          className="action-arrow"
+          sx={{ 
+            opacity: 0, 
+            transform: 'translateX(-10px)',
+            transition: 'all 0.2s ease',
+            color: alpha(activeTheme.main, 0.5),
+            display: 'flex',
+            alignItems: 'center'
+          }}
+        >
+          <ChevronRightIcon fontSize="small" />
+        </Box>
+      </Box>
     );
   };
 
   return (
-    <Box sx={{ maxWidth: '800px', mx: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
+    <Box sx={{ maxWidth: '400px', width: '100%', mx: 'auto', display: 'flex', flexDirection: 'column', gap: 3, pt: 1 }}>
       
-      {/* Top Filter & Command Bar */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, overflowX: 'auto', pb: 1, '&::-webkit-scrollbar': { display: 'none' } }}>
-          {['All', 'Following', 'Trade', 'Learn', 'Meet'].map(filter => (
-            <Chip 
-              key={filter} 
-              label={filter} 
+      {/* Top Segmented Control (Filters) & Settings */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box sx={{ 
+          display: 'inline-flex', 
+          bgcolor: 'rgba(0,0,0,0.04)', 
+          borderRadius: 8, 
+          p: 0.5 
+        }}>
+          {['All', 'Trade', 'Learn'].map(filter => (
+            <Box 
+              key={filter}
               onClick={() => setActiveFilter(filter)}
               sx={{ 
-                fontWeight: activeFilter === filter ? 800 : 500,
-                bgcolor: activeFilter === filter ? activeTheme.main : alpha(activeTheme.main, 0.08),
-                color: activeFilter === filter ? 'white' : 'text.primary',
-                '&:hover': { bgcolor: activeFilter === filter ? activeTheme.main : alpha(activeTheme.main, 0.15) }
-              }} 
-            />
+                px: 2, py: 0.5, borderRadius: 8, cursor: 'pointer',
+                bgcolor: activeFilter === filter ? 'white' : 'transparent',
+                color: activeFilter === filter ? activeTheme.main : 'text.secondary',
+                fontWeight: activeFilter === filter ? 800 : 600,
+                fontSize: '0.75rem',
+                boxShadow: activeFilter === filter ? '0 2px 8px rgba(0,0,0,0.05)' : 'none',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              {filter}
+            </Box>
           ))}
         </Box>
-        <IconButton size="small" sx={{ border: `1px solid ${alpha(activeTheme.main, 0.15)}` }}>
-          <TuneIcon fontSize="small" sx={{ color: activeTheme.main }} />
+        <IconButton size="small" sx={{ color: 'text.secondary', '&:hover': { color: activeTheme.main, bgcolor: alpha(activeTheme.main, 0.05) } }}>
+          <TuneIcon sx={{ fontSize: 18 }} />
         </IconButton>
       </Box>
 
-      {/* Calendar Glance Card */}
-      <Card 
+      {/* Premium Agenda Widget */}
+      <Box 
         component={motion.div}
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        sx={{ 
-          borderRadius: 4, 
-          bgcolor: alpha(activeTheme.main, 0.05),
-          border: `1px solid ${alpha(activeTheme.main, 0.1)}`,
-          boxShadow: 'none',
-          overflow: 'visible'
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        sx={{
+          borderRadius: 5,
+          position: 'relative',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          background: `linear-gradient(135deg, ${activeTheme.main}, ${alpha(activeTheme.main, 0.8)})`,
+          color: 'white',
+          boxShadow: `0 12px 32px ${alpha(activeTheme.main, 0.3)}`,
+          border: '1px solid rgba(255,255,255,0.2)'
         }}
       >
-        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Box sx={{ p: 1, bgcolor: activeTheme.main, borderRadius: 2, color: 'white', display: 'flex' }}>
-              <CalendarMonthIcon fontSize="small" />
+        {/* Glow effect behind */}
+        <Box sx={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, bgcolor: 'rgba(255,255,255,0.2)', borderRadius: '50%', filter: 'blur(20px)' }} />
+
+        {/* Header / Clickable area to expand */}
+        <Box 
+          onClick={() => setIsAgendaExpanded(!isAgendaExpanded)}
+          sx={{ 
+            p: 2.5, 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            cursor: 'pointer',
+            zIndex: 1 
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', bgcolor: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', borderRadius: 3, minWidth: 48, minHeight: 48, border: '1px solid rgba(255,255,255,0.3)' }}>
+              <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', fontSize: '0.65rem', opacity: 0.9 }}>
+                {today.toLocaleDateString('en-US', { month: 'short' })}
+              </Typography>
+              <Typography variant="body1" sx={{ fontWeight: 900, lineHeight: 1 }}>
+                {today.toLocaleDateString('en-US', { day: 'numeric' })}
+              </Typography>
             </Box>
             <Box>
-              <Typography variant="body2" sx={{ fontWeight: 800, color: 'text.primary', textTransform: 'uppercase', letterSpacing: 1 }}>
+              <Typography variant="body2" sx={{ fontWeight: 800, letterSpacing: 0.5 }}>
                 Today's Agenda
               </Typography>
-              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
-                {dateString}
+              <Typography variant="caption" sx={{ opacity: 0.8, fontWeight: 500 }}>
+                2 upcoming events
               </Typography>
             </Box>
           </Box>
           
-          <Button 
+          <IconButton 
             size="small"
-            variant="outlined"
-            onClick={openCalendar}
-            endIcon={<OpenInFullIcon sx={{ fontSize: '14px !important' }} />}
             sx={{ 
-              borderRadius: 8, 
-              fontWeight: 800,
-              borderColor: alpha(activeTheme.main, 0.3),
-              color: activeTheme.main,
-              '&:hover': { bgcolor: alpha(activeTheme.main, 0.1), borderColor: activeTheme.main }
+              color: 'white',
+              bgcolor: 'rgba(255,255,255,0.1)',
+              transform: isAgendaExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+              transition: 'transform 0.3s ease',
+              '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' }
             }}
           >
-            Expand
-          </Button>
+            <ExpandMoreIcon />
+          </IconButton>
         </Box>
-        <Divider sx={{ borderColor: alpha(activeTheme.main, 0.1) }} />
-        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 2, overflowX: 'auto', '&::-webkit-scrollbar': { display: 'none' } }}>
-          <Chip label="No events scheduled for today" size="small" sx={{ bgcolor: 'rgba(0,0,0,0.05)', color: 'text.secondary', fontWeight: 600 }} />
-        </Box>
-      </Card>
 
-      {/* Main Feed Area */}
-      {!hasUpdates ? (
-        <Card component={motion.div} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} sx={{ borderRadius: 4, border: `1px dashed ${alpha(activeTheme.main, 0.25)}`, boxShadow: 'none', bgcolor: 'transparent' }}>
-          <CardContent sx={{ textAlign: 'center', py: 8 }}>
-            <RssFeedIcon sx={{ fontSize: 60, color: alpha(activeTheme.main, 0.2), mb: 2 }} />
-            <Typography variant="h5" sx={{ fontWeight: 800, mb: 1 }}>Your Ecosystem is Quiet</Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 400, mx: 'auto', mb: 4 }}>
-              Your feed is currently empty because you haven't curated your interests yet. Select the niches below to start receiving highly targeted updates, opportunities, and trade deals.
-            </Typography>
+        {/* Expandable Content Area */}
+        <AnimatePresence>
+          {isAgendaExpanded && (
+            <Box
+              component={motion.div}
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              sx={{ overflow: 'hidden', zIndex: 1 }}
+            >
+              <Box sx={{ p: 2, pt: 0, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                {/* Mock Event 1 */}
+                <Box sx={{ 
+                  display: 'flex', alignItems: 'center', gap: 1.5, 
+                  bgcolor: 'rgba(255,255,255,0.1)', p: 1.5, borderRadius: 3,
+                  cursor: 'pointer', transition: 'all 0.2s ease',
+                  '&:hover': { bgcolor: 'rgba(255,255,255,0.2)', transform: 'translateY(-1px)' }
+                }}>
+                  <Box sx={{ width: 4, height: 24, bgcolor: '#f59e0b', borderRadius: 4 }} />
+                  <Box>
+                    <Typography variant="caption" sx={{ fontWeight: 800, display: 'block' }}>10:00 AM</Typography>
+                    <Typography variant="caption" sx={{ opacity: 0.9 }}>Logistics Standup</Typography>
+                  </Box>
+                </Box>
+                {/* Mock Event 2 */}
+                <Box sx={{ 
+                  display: 'flex', alignItems: 'center', gap: 1.5, 
+                  bgcolor: 'rgba(255,255,255,0.1)', p: 1.5, borderRadius: 3,
+                  cursor: 'pointer', transition: 'all 0.2s ease',
+                  '&:hover': { bgcolor: 'rgba(255,255,255,0.2)', transform: 'translateY(-1px)' }
+                }}>
+                  <Box sx={{ width: 4, height: 24, bgcolor: '#8b5cf6', borderRadius: 4 }} />
+                  <Box>
+                    <Typography variant="caption" sx={{ fontWeight: 800, display: 'block' }}>2:00 PM</Typography>
+                    <Typography variant="caption" sx={{ opacity: 0.9 }}>Vendor Meeting</Typography>
+                  </Box>
+                </Box>
 
-            <Divider sx={{ mb: 4 }}><Chip label="CURATE YOUR FEED" size="small" sx={{ bgcolor: alpha(activeTheme.main, 0.1), color: activeTheme.main, fontWeight: 700 }} /></Divider>
-
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center', maxWidth: 600, mx: 'auto' }}>
-              {availableNiches.map(niche => (
-                <Chip
-                  key={niche}
-                  label={niche}
-                  onClick={() => toggleNiche(niche)}
-                  icon={selectedNiches.includes(niche) ? <ControlPointIcon sx={{ transform: 'rotate(45deg)', color: `${activeTheme.main} !important` }} /> : <ControlPointIcon sx={{ color: `${alpha(activeTheme.main, 0.5)} !important` }} />}
-                  sx={{
-                    px: 1, py: 2.5, borderRadius: 2,
-                    fontWeight: 700,
-                    border: '1px solid',
-                    borderColor: selectedNiches.includes(niche) ? activeTheme.main : alpha(activeTheme.main, 0.15),
-                    bgcolor: selectedNiches.includes(niche) ? alpha(activeTheme.main, 0.08) : 'background.paper',
-                    color: selectedNiches.includes(niche) ? activeTheme.main : 'text.secondary',
-                    transition: 'all 0.2s ease',
+                {/* View Full Calendar Button */}
+                <Button 
+                  fullWidth
+                  onClick={openCalendar}
+                  sx={{ 
+                    mt: 1,
+                    bgcolor: 'rgba(255,255,255,0.2)', 
+                    backdropFilter: 'blur(10px)',
+                    color: 'white',
+                    borderRadius: 3,
+                    py: 1.5,
+                    fontWeight: 800,
+                    fontSize: '0.75rem',
+                    border: '1px solid rgba(255,255,255,0.3)',
+                    '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' }
                   }}
-                />
-              ))}
+                >
+                  Open Full Calendar
+                </Button>
+              </Box>
             </Box>
+          )}
+        </AnimatePresence>
+      </Box>
 
-            <Box sx={{ mt: 5 }}>
-              <Button 
-                variant="contained" 
-                size="large" 
-                disabled={selectedNiches.length === 0}
-                sx={{ 
-                  borderRadius: 8, 
-                  px: 6, 
-                  py: 1.5, 
-                  fontWeight: 800,
-                  bgcolor: activeTheme.main,
-                  '&:hover': { bgcolor: activeTheme.main }
-                }}
-              >
-                Save Preferences & Load Feed
-              </Button>
-            </Box>
-          </CardContent>
-        </Card>
-      ) : (
-        <Box>
-          {/* Real updates will be mapped here */}
-        </Box>
-      )}
-
+      {/* Compact Feed List */}
+      <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+        <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 1, mb: 1.5, pl: 0.5 }}>
+          Latest Activity
+        </Typography>
+        <AnimatePresence>
+          {mockUpdates.map((item, index) => renderFeedCard(item, index))}
+        </AnimatePresence>
+      </Box>
+      
     </Box>
   );
 }

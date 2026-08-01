@@ -10,6 +10,7 @@ import AddIcon from '@mui/icons-material/Add';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import { motion } from 'framer-motion';
 import { useSociety } from './SocietyContext';
+import EcosystemCalendar from '@/app/components/calendar/EcosystemCalendar';
 
 interface CalendarOverlayContextType {
   isOpen: boolean;
@@ -40,7 +41,7 @@ export function CalendarOverlayProvider({ children }: { children: ReactNode }) {
       <Dialog 
         open={isOpen} 
         onClose={closeCalendar}
-        fullScreen
+        maxWidth="lg"
         TransitionComponent={motion.div as any}
         TransitionProps={{
           initial: { opacity: 0, scale: 0.95 },
@@ -51,11 +52,17 @@ export function CalendarOverlayProvider({ children }: { children: ReactNode }) {
         slotProps={{
           paper: {
             sx: {
-              bgcolor: 'rgba(255, 255, 255, 0.7)',
+              width: '90vw',
+              height: '90vh',
+              maxWidth: 'none',
+              maxHeight: 'none',
+              borderRadius: 6,
+              bgcolor: 'rgba(255, 255, 255, 0.75)',
               backdropFilter: 'blur(40px) saturate(200%)',
-              border: 'none',
-              boxShadow: 'none',
-              color: 'text.primary'
+              border: '1px solid rgba(255,255,255,0.4)',
+              boxShadow: '0 24px 64px rgba(0,0,0,0.15)',
+              color: 'text.primary',
+              overflow: 'hidden'
             }
           }
         }}
@@ -86,30 +93,9 @@ export function CalendarOverlayProvider({ children }: { children: ReactNode }) {
           </IconButton>
         </Box>
 
-        {/* Content (Placeholder for full calendar grid) */}
-        <DialogContent sx={{ p: { xs: 2, md: 4 } }}>
-          <Box 
-            sx={{ 
-              height: '100%', 
-              width: '100%', 
-              borderRadius: 4, 
-              border: '1px dashed rgba(0,0,0,0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexDirection: 'column',
-              bgcolor: 'rgba(255,255,255,0.4)',
-              minHeight: 400
-            }}
-          >
-            <CalendarMonthIcon sx={{ fontSize: 80, color: 'rgba(0,0,0,0.05)', mb: 2 }} />
-            <Typography variant="h6" sx={{ fontWeight: 800, color: 'text.secondary' }}>
-              Full Month View Coming Soon
-            </Typography>
-            <Typography variant="body2" sx={{ color: 'text.disabled', maxWidth: 400, textAlign: 'center' }}>
-              This overlay will render the complete grid view of your aggregated schedule without forcing you to leave your current module.
-            </Typography>
-          </Box>
+        {/* Content (Ecosystem Calendar Grid) */}
+        <DialogContent sx={{ p: { xs: 2, md: 4 }, display: 'flex', flexDirection: 'column' }}>
+          <EcosystemCalendar tenantId={profile?.tenantId || 'foodnerve'} />
         </DialogContent>
 
         {/* Floating Action Button for adding events */}

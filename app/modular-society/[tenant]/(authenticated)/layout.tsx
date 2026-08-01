@@ -182,13 +182,23 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
           }}
         >
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Typography variant="h5" fontWeight={800}>Updates</Typography>
-            <IconButton onClick={() => setUpdatesOpen(false)}>
-              <LockOutlinedIcon sx={{ fontSize: 20 }} /> 
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: activeTheme.main, boxShadow: `0 0 12px ${activeTheme.main}` }} />
+              <Typography variant="h5" sx={{ fontWeight: 900, letterSpacing: -0.5 }}>Updates</Typography>
+            </Box>
+            <IconButton onClick={() => setUpdatesOpen(false)} sx={{ bgcolor: 'rgba(0,0,0,0.04)', '&:hover': { bgcolor: 'rgba(0,0,0,0.08)' } }}>
+              <LockOutlinedIcon sx={{ fontSize: 18 }} /> 
             </IconButton>
           </Box>
-          <Typography variant="body2" color="text.secondary" mb={3}>Your activity feed and notifications will appear here.</Typography>
-          <Box sx={{ flex: 1, overflowY: 'auto' }}>
+          <Box sx={{ 
+            flex: 1, 
+            overflowY: 'auto', 
+            pb: 10,
+            px: 1, // Add slight horizontal padding for shadow clipping
+            mx: -1, // Offset the padding
+            '&::-webkit-scrollbar': { display: 'none' },
+            scrollbarWidth: 'none' 
+          }}>
             <UpdatesFeed />
           </Box>
         </Box>
