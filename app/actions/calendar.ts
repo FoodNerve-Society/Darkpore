@@ -1,11 +1,11 @@
 'use server';
 
-import { prisma } from '@/lib/prisma';
-import { getCurrentUser } from '@/lib/firebase-admin';
+import { prisma } from '@/lib/db/client';
+import { getCurrentSessionUser } from '@/lib/actions/users';
 
 export async function getCalendarEvents(tenantId: string) {
-  const currentUser = await getCurrentUser();
-  const userId = currentUser?.uid;
+  const sessionResult = await getCurrentSessionUser();
+  const userId = sessionResult.success && sessionResult.data ? sessionResult.data.id : null;
 
   let userOrganizationIds: string[] = [];
 

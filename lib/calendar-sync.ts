@@ -14,6 +14,10 @@ export interface CalendarEventSyncParams {
   category?: string;
   organizationName?: string;
   status?: 'upcoming' | 'live' | 'expired';
+  tenantId: string;
+  visibility?: string;
+  organizationId?: string;
+  userId?: string;
 }
 
 /**
@@ -41,6 +45,10 @@ export async function syncCalendarEvent(params: CalendarEventSyncParams) {
         category: params.category || null,
         organizationName: params.organizationName || null,
         status: params.status ?? 'upcoming',
+        tenantId: params.tenantId,
+        visibility: params.visibility ?? 'personal',
+        organizationId: params.organizationId || null,
+        userId: params.userId || null,
       },
       update: {
         slug: params.slug || null,
@@ -52,6 +60,10 @@ export async function syncCalendarEvent(params: CalendarEventSyncParams) {
         category: params.category || null,
         organizationName: params.organizationName || null,
         ...(params.status && { status: params.status }),
+        tenantId: params.tenantId,
+        ...(params.visibility && { visibility: params.visibility }),
+        ...(params.organizationId !== undefined && { organizationId: params.organizationId || null }),
+        ...(params.userId !== undefined && { userId: params.userId || null }),
       },
     });
   } catch (error) {
@@ -80,14 +92,17 @@ export async function removeCalendarEvent(sourceType: string, sourceId: string) 
 /**
  * Query helper to fetch calendar events within a date range or category filter.
  */
-export async function getCalendarEvents(options?: {
+export async function getCalendarEvents(options: {
+  tenantId: string;
   startDate?: Date;
   endDate?: Date;
   sourceType?: string;
   category?: string;
   limit?: number;
 }) {
-  const where: any = {};
+  const where: any = {
+    tenantId: options.tenantId,
+  };
 
   if (options?.startDate || options?.endDate) {
     where.date = {};

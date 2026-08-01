@@ -153,7 +153,7 @@ export default function EcosystemCalendar({ tenantId }: { tenantId: string }) {
                         '&:hover': { bgcolor: alpha(dotColor, 0.15) }
                       }}
                     >
-                      <Typography variant="caption" sx={{ fontWeight: 700, color: dotColor, noWrap: true, display: 'block', fontSize: '0.65rem' }}>
+                      <Typography variant="caption" noWrap sx={{ fontWeight: 700, color: dotColor, display: 'block', fontSize: '0.65rem' }}>
                         {event.title}
                       </Typography>
                     </Box>

@@ -42,13 +42,6 @@ export function CalendarOverlayProvider({ children }: { children: ReactNode }) {
         open={isOpen} 
         onClose={closeCalendar}
         maxWidth="lg"
-        TransitionComponent={motion.div as any}
-        TransitionProps={{
-          initial: { opacity: 0, scale: 0.95 },
-          animate: { opacity: 1, scale: 1 },
-          exit: { opacity: 0, scale: 0.95 },
-          transition: { type: 'spring', damping: 25, stiffness: 300 }
-        } as any}
         slotProps={{
           paper: {
             sx: {
@@ -95,7 +88,7 @@ export function CalendarOverlayProvider({ children }: { children: ReactNode }) {
 
         {/* Content (Ecosystem Calendar Grid) */}
         <DialogContent sx={{ p: { xs: 2, md: 4 }, display: 'flex', flexDirection: 'column' }}>
-          <EcosystemCalendar tenantId={profile?.tenantId || 'foodnerve'} />
+          <EcosystemCalendar tenantId={(profile as any)?.tenantId || 'foodnerve'} />
         </DialogContent>
 
         {/* Floating Action Button for adding events */}

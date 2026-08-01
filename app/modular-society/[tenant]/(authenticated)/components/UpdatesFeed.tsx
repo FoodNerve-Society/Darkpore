@@ -111,14 +111,14 @@ export default function UpdatesFeed() {
         {/* Dense Content */}
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 0.25 }}>
-            <Typography variant="body2" sx={{ fontWeight: 800, color: 'text.primary', noWrap: true, fontSize: '0.875rem' }}>
+            <Typography variant="body2" noWrap sx={{ fontWeight: 800, color: 'text.primary', fontSize: '0.875rem' }}>
               {item.title}
             </Typography>
             <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, fontSize: '0.7rem' }}>
               {item.time}
             </Typography>
           </Box>
-          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500, noWrap: true, display: 'block', fontSize: '0.75rem' }}>
+          <Typography variant="caption" noWrap sx={{ color: 'text.secondary', fontWeight: 500, display: 'block', fontSize: '0.75rem' }}>
             {item.snippet}
           </Typography>
         </Box>

@@ -231,6 +231,10 @@ export async function createLearnContent(data: CreateLearnContentPayload, isDraf
       category: result.category ?? result.type,
       organizationName: orgName,
       status: 'upcoming',
+      tenantId: 'foodnerve',
+      visibility: orgName ? 'organization' : 'society',
+      organizationId: result.organizationId || undefined,
+      userId: result.authorId,
     });
   } else {
     await removeCalendarEvent(result.type, result.id);
