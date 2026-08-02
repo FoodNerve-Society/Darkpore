@@ -34,9 +34,12 @@ export async function getCalendarEvents(tenantId: string) {
 export async function scheduleCalendarEvent(payload: {
   targetScope: 'personal' | 'organization' | 'society';
   eventType: 'article' | 'livestream' | 'general';
+  dateType?: 'START_TIME' | 'DEADLINE' | 'PUBLISH_DATE' | 'DATE_RANGE';
   title: string;
   date: string;
   time: string;
+  endDate?: string;
+  endTime?: string;
   challengeId?: string;
   subcategoryId?: string;
   eraId?: string;
@@ -77,10 +80,10 @@ export async function scheduleCalendarEvent(payload: {
     }
 
     // 2. Create the Calendar Event
-    let organizationId: string | undefined;
+    let organizationId: string | null = null;
     if (payload.targetScope === 'organization') {
       if (payload.selectedOrgId) {
-         organizationId = payload.selectedOrgId;
+        organizationId = payload.selectedOrgId;
       } else {
         const orgMember = await prisma.organizationMember.findFirst({
           where: { userId: user.id }
@@ -89,20 +92,28 @@ export async function scheduleCalendarEvent(payload: {
       }
     }
 
-    await prisma.calendarEvent.create({
+    let scheduledEndDate: Date | null = null;
+    if (payload.endDate && payload.endTime) {
+      scheduledEndDate = new Date(`${payload.endDate}T${payload.endTime}:00`);
+    } else if (payload.dateType === 'START_TIME' || payload.dateType === 'DATE_RANGE') {
+      scheduledEndDate = new Date(scheduledDate.getTime() + 60 * 60 * 1000); // +1 hour default
+    }
+
+    const event = await prisma.calendarEvent.create({
       data: {
-        title: payload.title,
-        date: scheduledDate,
-        endDate: new Date(scheduledDate.getTime() + 60 * 60 * 1000), // +1 hour default
-        visibility: payload.targetScope,
-        category: payload.challengeId || payload.eventType,
-        sourceType: payload.eventType === 'livestream' ? 'livestream' : 'custom',
-        sourceId: learnContentId || '',
+        sourceType: payload.eventType === 'general' ? 'meetEvent' : payload.eventType,
+        sourceId: learnContentId || 'generic',
         tenantId: payload.tenantId,
-        userId: user.id,
+        visibility: payload.targetScope,
         organizationId: organizationId,
+        userId: payload.targetScope === 'personal' ? user.id : null,
+        dateType: payload.dateType || 'START_TIME',
+        date: scheduledDate,
+        endDate: scheduledEndDate,
+        title: payload.title,
         description: payload.description,
         tags: payload.tags,
+        category: payload.eventType === 'general' ? 'Meeting' : (payload.eventType === 'article' ? 'Article' : 'Livestream'),
       }
     });
 

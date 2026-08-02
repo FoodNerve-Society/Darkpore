@@ -34,7 +34,13 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
     try {
       const url = new URL(window.location.href);
       url.searchParams.set('view', viewMode);
-      url.searchParams.set('date', currentDate.toISOString().split('T')[0]);
+      
+      // Extract exact local YYYY-MM-DD to prevent timezone shifting from toISOString()
+      const y = currentDate.getFullYear();
+      const m = String(currentDate.getMonth() + 1).padStart(2, '0');
+      const d = String(currentDate.getDate()).padStart(2, '0');
+      
+      url.searchParams.set('date', `${y}-${m}-${d}`);
       window.history.replaceState(null, '', url.toString());
     } catch (e) {}
   }, [viewMode, currentDate]);
@@ -44,7 +50,20 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
       setLoading(true);
       try {
         const data = await getCalendarEvents(tenantId);
-        setEvents(data);
+        
+        // Inject mock data for visualization
+        const today = new Date();
+        const y = today.getFullYear();
+        const m = today.getMonth();
+        const mockEvents: any[] = [
+          { id: 'm1', title: 'Ecosystem Launch Broadcast', date: new Date(y, m, today.getDate() + 1, 10, 0), endDate: new Date(y, m, today.getDate() + 1, 12, 0), visibility: 'society', category: 'Livestream', organizationName: 'FoodNerve HQ', dateType: 'START_TIME' },
+          { id: 'm2', title: 'Agro Investor Deal Room', date: new Date(y, m, today.getDate() + 2, 14, 0), endDate: new Date(y, m, today.getDate() + 2, 18, 0), visibility: 'organization', category: 'Networking', organizationName: 'Darkpore', dateType: 'DATE_RANGE' },
+          { id: 'm3', title: 'Farm Grant Applications Due', date: new Date(y, m, today.getDate() + 2, 23, 59), visibility: 'society', category: 'Deadline', organizationName: 'Gov', dateType: 'DEADLINE' },
+          { id: 'm4', title: 'Supply Chain Q&A', date: new Date(y, m, today.getDate() + 5, 18, 0), visibility: 'organization', category: 'Q&A', organizationName: 'Community', dateType: 'START_TIME' },
+          { id: 'm5', title: 'Quarterly Report Published', date: new Date(y, m, today.getDate(), 9, 30), visibility: 'personal', category: 'Article', organizationName: 'Self', dateType: 'PUBLISH_DATE' },
+        ];
+        
+        setEvents([...data, ...mockEvents]);
       } catch (err) {
         console.error("Failed to load events", err);
       }
@@ -86,11 +105,18 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
     }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   };
 
-  const getVisibilityColor = (visibility: string | null) => {
-    if (visibility === 'society') return '#3b82f6'; // Blue
-    if (visibility === 'organization') return '#10b981'; // Green
-    if (visibility === 'personal') return '#8b5cf6'; // Purple
-    return theme.palette.primary.main;
+  const getIntentColor = (dateType: string | null) => {
+    if (dateType === 'PUBLISH_DATE') return '#10b981'; // Green
+    if (dateType === 'DEADLINE') return '#ff3366'; // Red
+    if (dateType === 'DATE_RANGE') return '#8b5cf6'; // Purple
+    return '#3b82f6'; // Blue (START_TIME / Default)
+  };
+
+  const formatTimeSpan = (date: Date, endDate?: Date) => {
+    const start = new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (!endDate) return start;
+    const end = new Date(endDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return `${start} - ${end}`;
   };
 
   const getVisibilityLabel = (visibility: string | null) => {
@@ -118,16 +144,19 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
         {/* Header Row: 8 columns (Empty for week number + 7 Days) */}
         <Box sx={{ display: 'grid', gridTemplateColumns: '40px repeat(7, 1fr)', gap: 1, mb: 1.5 }}>
           <Box /> {/* Empty cell for week column header */}
-          {dayNames.map(day => (
-            <Box key={day} sx={{ 
-              textAlign: 'center', bgcolor: alpha(theme.palette.primary.main, 0.05), 
-              py: 0.8, borderRadius: 2, border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`
-            }}>
-              <Typography variant="caption" sx={{ fontWeight: 800, color: theme.palette.primary.main, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                {day}
-              </Typography>
-            </Box>
-          ))}
+          {dayNames.map((day, index) => {
+            const isDaySelected = currentDate.getDay() === (index === 6 ? 0 : index + 1);
+            return (
+              <Box key={day} sx={{ 
+                textAlign: 'center', bgcolor: alpha(theme.palette.primary.main, isDaySelected ? 0.2 : 0.05), 
+                py: 0.8, borderRadius: 2, border: `1px solid ${alpha(theme.palette.primary.main, isDaySelected ? 0.4 : 0.1)}`
+              }}>
+                <Typography variant="caption" sx={{ fontWeight: 800, color: theme.palette.primary.main, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  {day}
+                </Typography>
+              </Box>
+            );
+          })}
         </Box>
         
         {/* Body Grid: 8 columns per row */}
@@ -142,16 +171,14 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
 
             // Check if any day in this row matches currentDate (for highlighting the week)
             let isWeekSelected = false;
-            if (isAddingEvent) {
-              for (let colIndex = 0; colIndex < 7; colIndex++) {
-                const cellIndex = rowIndex * 7 + colIndex;
-                const day = cellIndex - firstDayOfMonth + 1;
-                if (day >= 1 && day <= daysInMonth) {
-                  const targetDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-                  if (currentDate.toDateString() === targetDate.toDateString()) {
-                    isWeekSelected = true;
-                    break;
-                  }
+            for (let colIndex = 0; colIndex < 7; colIndex++) {
+              const cellIndex = rowIndex * 7 + colIndex;
+              const day = cellIndex - firstDayOfMonth + 1;
+              if (day >= 1 && day <= daysInMonth) {
+                const targetDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+                if (currentDate.toDateString() === targetDate.toDateString()) {
+                  isWeekSelected = true;
+                  break;
                 }
               }
             }
@@ -187,7 +214,7 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
 
                   const targetDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
                   const isToday = new Date().toDateString() === targetDate.toDateString();
-                  const isSelected = isAddingEvent && currentDate.toDateString() === targetDate.toDateString();
+                  const isSelected = currentDate.toDateString() === targetDate.toDateString();
                   const dayEvents = getEventsForDate(targetDate);
 
                   return (
@@ -220,17 +247,20 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
                       }}>
                         {day}
                       </Typography>
-                      <Box sx={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 0.5, '&::-webkit-scrollbar': { display: 'none' } }}>
-                        {dayEvents.map(event => {
-                          const dotColor = getVisibilityColor(event.visibility);
-                          return (
-                            <Box key={event.id} sx={{ bgcolor: alpha(dotColor, 0.1), borderLeft: `2px solid ${dotColor}`, px: 1, py: 0.25, borderRadius: 1 }}>
-                              <Typography variant="caption" noWrap sx={{ fontWeight: 700, color: dotColor, display: 'block', fontSize: '0.65rem' }}>
-                                {event.title}
-                              </Typography>
-                            </Box>
-                          );
-                        })}
+                      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', '&::-webkit-scrollbar': { display: 'none' } }}>
+                        {dayEvents.length > 0 && (
+                          <Box sx={{ 
+                            bgcolor: tenantId === 'foodnerve' ? alpha(theme.palette.primary.main, 0.15) : alpha('#10b981', 0.15), 
+                            px: 1, py: 0.5, borderRadius: 3, textAlign: 'center',
+                            boxShadow: `0 4px 12px ${tenantId === 'foodnerve' ? alpha(theme.palette.primary.main, 0.2) : alpha('#10b981', 0.2)}`,
+                            backdropFilter: 'blur(4px)',
+                            border: 'none'
+                          }}>
+                            <Typography variant="caption" sx={{ fontWeight: 900, color: tenantId === 'foodnerve' ? theme.palette.primary.main : '#10b981', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                              {dayEvents.length} {tenantId === 'foodnerve' ? (dayEvents.length === 1 ? 'Broadcast' : 'Broadcasts') : (dayEvents.length === 1 ? 'Event' : 'Events')}
+                            </Typography>
+                          </Box>
+                        )}
                       </Box>
                     </Box>
                   );
@@ -303,19 +333,35 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
                   display: 'flex', flexDirection: 'column', overflowY: 'hidden', gap: 1
                 }}
               >
-                {dayEvents.map(event => {
-                  const dotColor = getVisibilityColor(event.visibility);
-                  return (
-                    <Box key={event.id} sx={{ bgcolor: alpha(dotColor, 0.05), border: `1px solid ${alpha(dotColor, 0.2)}`, borderLeft: `3px solid ${dotColor}`, p: 1, borderRadius: 2 }}>
-                      <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 0.25, fontWeight: 700, fontSize: '0.65rem' }}>
-                        {new Date(event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 800, color: 'text.primary', lineHeight: 1.2, fontSize: '0.85rem' }}>
-                        {event.title}
-                      </Typography>
-                    </Box>
-                  );
-                })}
+                <Box sx={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 1, '&::-webkit-scrollbar': { display: 'none' } }}>
+                  {dayEvents.map(event => {
+                    const dotColor = getIntentColor(event.dateType);
+                    return (
+                      <Box key={event.id} sx={{ 
+                        bgcolor: 'rgba(255,255,255,0.6)', 
+                        backdropFilter: 'blur(10px)',
+                        px: 1.5, py: 1, borderRadius: 4, mb: 0.5, 
+                        boxShadow: `0 8px 24px ${alpha(dotColor, 0.12)}`,
+                        position: 'relative', overflow: 'hidden',
+                        border: 'none',
+                        transition: 'all 0.2s ease',
+                        '&:hover': { bgcolor: 'rgba(255,255,255,0.8)', transform: 'translateY(-2px)', boxShadow: `0 12px 32px ${alpha(dotColor, 0.18)}` }
+                      }}>
+                        <Typography variant="caption" sx={{ fontWeight: 900, color: dotColor, display: 'block', mb: 0.2, fontSize: '0.7rem' }}>
+                          {formatTimeSpan(event.date, event.endDate)}
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 800, color: '#0f172a', lineHeight: 1.2, mb: 0.5 }}>
+                          {event.title}
+                        </Typography>
+                        {event.category && (
+                          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, fontSize: '0.65rem', textTransform: 'uppercase' }}>
+                            {event.category}
+                          </Typography>
+                        )}
+                      </Box>
+                    );
+                  })}
+                </Box>
               </Box>
             );
           })}
@@ -363,32 +409,56 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
             </Box>
           ) : (
             dayEvents.map(event => {
-              const dotColor = getVisibilityColor(event.visibility);
+              const dotColor = getIntentColor(event.dateType);
               return (
                 <Box key={event.id} sx={{ 
-                  bgcolor: alpha(dotColor, 0.05), border: `1px solid ${alpha(dotColor, 0.2)}`, 
-                  borderLeft: `4px solid ${dotColor}`, p: 2, borderRadius: 3,
-                  transition: 'all 0.2s ease',
-                  '&:hover': { bgcolor: alpha(dotColor, 0.08), transform: 'translateY(-2px)' }
+                  display: 'flex', gap: 3, p: 3, borderRadius: 5, 
+                  bgcolor: 'rgba(255,255,255,0.5)', backdropFilter: 'blur(20px)',
+                  boxShadow: `0 16px 40px ${alpha(dotColor, 0.12)}, inset 0 2px 4px rgba(255,255,255,0.6)`,
+                  border: 'none',
+                  transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                  '&:hover': { bgcolor: 'rgba(255,255,255,0.7)', transform: 'translateY(-4px)', boxShadow: `0 24px 64px ${alpha(dotColor, 0.2)}, inset 0 2px 4px rgba(255,255,255,0.8)` }
                 }}>
-                  <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 0.5, fontWeight: 800, fontSize: '0.75rem' }}>
-                    {new Date(event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </Typography>
-                  <Typography variant="h6" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 800, color: 'text.primary', lineHeight: 1.2, mb: 1 }}>
-                    {event.title}
-                  </Typography>
-                  
-                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                    <Box sx={{ bgcolor: alpha(dotColor, 0.1), color: dotColor, px: 1.5, py: 0.5, borderRadius: 2 }}>
-                      <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', fontSize: '0.65rem' }}>
-                        {getVisibilityLabel(event.visibility)}
-                      </Typography>
-                    </Box>
-                    {event.category && (
-                      <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, bgcolor: 'rgba(0,0,0,0.04)', px: 1.5, py: 0.5, borderRadius: 2 }}>
-                        {event.category} {event.organizationName && `• ${event.organizationName}`}
-                      </Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 80 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 900, color: dotColor, fontFamily: 'var(--font-dosis)', lineHeight: 1 }}>
+                      {new Date(event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).split(' ')[0]}
+                    </Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', mb: event.endDate ? 1 : 0 }}>
+                      {new Date(event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).split(' ')[1]}
+                    </Typography>
+                    
+                    {event.endDate && (
+                      <>
+                        <Box sx={{ width: 1, height: 10, bgcolor: alpha(dotColor, 0.3), my: 0.5 }} />
+                        <Typography variant="h6" sx={{ fontWeight: 900, color: 'text.secondary', fontFamily: 'var(--font-dosis)', lineHeight: 1, opacity: 0.8 }}>
+                          {new Date(event.endDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).split(' ')[0]}
+                        </Typography>
+                        <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', opacity: 0.8 }}>
+                          {new Date(event.endDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).split(' ')[1]}
+                        </Typography>
+                      </>
                     )}
+                  </Box>
+                  <Box sx={{ width: 2, bgcolor: alpha(dotColor, 0.2), borderRadius: 2 }} />
+                  <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a', mb: 0.5, letterSpacing: '-0.02em' }}>
+                      {event.title}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#475569', mb: 2, fontWeight: 500 }}>
+                      {event.dateType === 'DEADLINE' ? 'Critical application deadline. Ensure all materials are submitted.' : (event.dateType === 'PUBLISH_DATE' ? 'Content scheduled for public release.' : 'Join this session to collaborate, review resources, and ask questions live with the organizers.')}
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                      <Box sx={{ bgcolor: alpha(dotColor, 0.1), color: dotColor, px: 1.5, py: 0.5, borderRadius: 2 }}>
+                        <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', fontSize: '0.65rem' }}>
+                          {event.dateType?.replace('_', ' ')}
+                        </Typography>
+                      </Box>
+                      {event.category && (
+                        <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, bgcolor: 'rgba(0,0,0,0.04)', px: 1.5, py: 0.5, borderRadius: 2 }}>
+                          {event.category} {event.organizationName && `• ${event.organizationName}`}
+                        </Typography>
+                      )}
+                    </Box>
                   </Box>
                 </Box>
               );
@@ -400,7 +470,7 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
   };
 
   return (
-    <Box sx={{ width: '100%', height: '100%', display: 'flex', gap: 3, overflow: 'hidden' }}>
+    <Box sx={{ width: '100%', height: '100%', display: 'flex', gap: 3, minHeight: 0 }}>
       
       {/* Calendar Area */}
       <Box sx={{ 
@@ -408,7 +478,8 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
         transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)', 
         display: 'flex', 
         flexDirection: 'column',
-        height: '100%'
+        height: '100%',
+        minHeight: 0
       }}>
         {/* Calendar Toolbar */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>

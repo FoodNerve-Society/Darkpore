@@ -42,13 +42,17 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
   const router = useRouter();
   const { user, profile } = useSociety();
   
-  const [targetScope, setTargetScope] = useState<'personal' | 'organization' | 'society'>('personal');
+  const [targetScope, setTargetScope] = useState<'personal' | 'organization' | 'society'>('personal'); // personal, organization, society
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
+  const [eventType, setEventType] = useState<'article' | 'livestream' | 'general'>('general'); // general, article, livestream
+  const [dateType, setDateType] = useState<'START_TIME' | 'DEADLINE' | 'PUBLISH_DATE' | 'DATE_RANGE'>('START_TIME'); // START_TIME, DEADLINE, PUBLISH_DATE, DATE_RANGE
   
-  const [eventType, setEventType] = useState<'article' | 'livestream' | 'general'>('general');
   const [title, setTitle] = useState('');
   const [date, setDate] = useState(initialDate ? initialDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
   const [time, setTime] = useState('10:00');
+  
+  const [endDate, setEndDate] = useState('');
+  const [endTime, setEndTime] = useState('11:00');
   
   const [contentType, setContentType] = useState<'text' | 'todo'>('text');
   const [description, setDescription] = useState('');
@@ -165,10 +169,13 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
         targetScope,
         selectedOrgId: selectedOrgId || undefined,
         eventType,
+        dateType,
         title,
         date,
         time,
-        challengeId: challengeId?.id || undefined,
+        endDate: endDate || undefined,
+        endTime: endTime || undefined,
+        challengeId: challengeId?.id,
         subcategoryId,
         eraId,
         tenantId,
@@ -483,15 +490,40 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
                             label="Event Title" placeholder="e.g. Q3 Roadmap Review" 
                             fullWidth size="small" value={title} onChange={(e: any) => setTitle(e.target.value)} colorTheme={color}
                           />
+
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            <Typography sx={{ fontWeight: 800, color: '#334155', fontSize: '0.85rem' }}>Timing Intent</Typography>
+                            <Box sx={{ display: 'flex', gap: 1 }}>
+                              {['START_TIME', 'DEADLINE', 'PUBLISH_DATE', 'DATE_RANGE'].map((dt) => (
+                                <Button 
+                                  key={dt}
+                                  variant={dateType === dt ? 'contained' : 'outlined'}
+                                  onClick={() => setDateType(dt as any)}
+                                  size="small"
+                                  sx={{ 
+                                    flex: 1, borderRadius: 2, py: 0.5,
+                                    fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase',
+                                    ...(dateType === dt 
+                                        ? { bgcolor: color, color: '#fff', '&:hover': { bgcolor: alpha(color, 0.9) } }
+                                        : { color: 'text.secondary', borderColor: 'rgba(0,0,0,0.1)', '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' } })
+                                  }}
+                                >
+                                  {dt.replace('_', ' ')}
+                                </Button>
+                              ))}
+                            </Box>
+                          </Box>
+
                           <Box sx={{ display: 'flex', gap: 2 }}>
                             <Box sx={{ flex: 1 }}>
                               <PremiumDatePicker 
-                                label={isSociety ? "Publish Date" : "Date"} 
+                                label={dateType === 'PUBLISH_DATE' ? "Publish Date" : (dateType === 'DEADLINE' ? "Deadline Date" : (dateType === 'DATE_RANGE' ? "Start Date" : "Start Date"))} 
                                 value={date} 
                                 onChange={(e: any) => {
                                   setDate(e.target.value);
                                   if (onDateChange && e.target.value) {
-                                    const parsedDate = new Date(e.target.value);
+                                    // Parse as local date to prevent timezone shift
+                                    const parsedDate = new Date(e.target.value.replace(/-/g, '/'));
                                     if (!isNaN(parsedDate.getTime())) onDateChange(parsedDate);
                                   }
                                 }} 
@@ -507,6 +539,27 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
                               />
                             </Box>
                           </Box>
+
+                          {(dateType === 'DATE_RANGE' || dateType === 'START_TIME') && (
+                            <Box sx={{ display: 'flex', gap: 2 }}>
+                              <Box sx={{ flex: 1 }}>
+                                <PremiumDatePicker 
+                                  label="End Date (Optional)" 
+                                  value={endDate} 
+                                  onChange={(e: any) => setEndDate(e.target.value)} 
+                                  colorTheme={color}
+                                />
+                              </Box>
+                              <Box sx={{ flex: 1 }}>
+                                <PremiumTimePicker 
+                                  label="End Time (Optional)" 
+                                  value={endTime} 
+                                  onChange={(e: any) => setEndTime(e.target.value)} 
+                                  colorTheme={color}
+                                />
+                              </Box>
+                            </Box>
+                          )}
 
                           {/* Content AND Todo List */}
                           <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
