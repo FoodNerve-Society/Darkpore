@@ -19,6 +19,7 @@ import PremiumTextField from '@/components/PremiumTextField';
 import PremiumAutocomplete from '@/components/PremiumAutocomplete';
 import PremiumDatePicker from '@/components/PremiumDatePicker';
 import PremiumTimePicker from '@/components/PremiumTimePicker';
+import PremiumSwitch from '@/components/PremiumSwitch';
 import { scheduleCalendarEvent } from '@/app/actions/calendar';
 
 import { getTenantConfig, ERAS } from '@/lib/cms';
@@ -53,6 +54,7 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
   
   const [endDate, setEndDate] = useState('');
   const [endTime, setEndTime] = useState('11:00');
+  const [isAllDay, setIsAllDay] = useState(false);
   
   const [contentType, setContentType] = useState<'text' | 'todo'>('text');
   const [description, setDescription] = useState('');
@@ -172,9 +174,9 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
         dateType,
         title,
         date,
-        time,
+        time: isAllDay ? '00:00' : time,
         endDate: endDate || undefined,
-        endTime: endTime || undefined,
+        endTime: isAllDay ? '23:59' : (endTime || undefined),
         challengeId: challengeId?.id,
         subcategoryId,
         eraId,
@@ -491,26 +493,36 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
                             fullWidth size="small" value={title} onChange={(e: any) => setTitle(e.target.value)} colorTheme={color}
                           />
 
-                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                            <Typography sx={{ fontWeight: 800, color: '#334155', fontSize: '0.85rem' }}>Timing Intent</Typography>
-                            <Box sx={{ display: 'flex', gap: 1 }}>
-                              {['START_TIME', 'DEADLINE', 'PUBLISH_DATE', 'DATE_RANGE'].map((dt) => (
-                                <Button 
-                                  key={dt}
-                                  variant={dateType === dt ? 'contained' : 'outlined'}
-                                  onClick={() => setDateType(dt as any)}
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <Typography sx={{ fontWeight: 800, color: '#334155', fontSize: '0.85rem' }}>Timing Intent</Typography>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: 'text.secondary' }}>All Day</Typography>
+                                <PremiumSwitch 
+                                  checked={isAllDay} 
+                                  onChange={(e) => setIsAllDay(e.target.checked)} 
                                   size="small"
-                                  sx={{ 
-                                    flex: 1, borderRadius: 2, py: 0.5,
-                                    fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase',
-                                    ...(dateType === dt 
-                                        ? { bgcolor: color, color: '#fff', '&:hover': { bgcolor: alpha(color, 0.9) } }
-                                        : { color: 'text.secondary', borderColor: 'rgba(0,0,0,0.1)', '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' } })
-                                  }}
-                                >
-                                  {dt.replace('_', ' ')}
-                                </Button>
-                              ))}
+                                  colorTheme={color}
+                                />
+                              </Box>
+                            </Box>
+                            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+                              <CardChoice 
+                                title="Start Date" desc="Specific time block" color={color} 
+                                selected={dateType === 'START_TIME'} onClick={() => setDateType('START_TIME')}
+                              />
+                              <CardChoice 
+                                title="Deadline" desc="Cut-off or due date" color={color} 
+                                selected={dateType === 'DEADLINE'} onClick={() => setDateType('DEADLINE')}
+                              />
+                              <CardChoice 
+                                title="Publish Date" desc="When content goes live" color={color} 
+                                selected={dateType === 'PUBLISH_DATE'} onClick={() => setDateType('PUBLISH_DATE')}
+                              />
+                              <CardChoice 
+                                title="Date Range" desc="Multi-day event" color={color} 
+                                selected={dateType === 'DATE_RANGE'} onClick={() => setDateType('DATE_RANGE')}
+                              />
                             </Box>
                           </Box>
 
@@ -530,14 +542,16 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
                                 colorTheme={color}
                               />
                             </Box>
-                            <Box sx={{ flex: 1 }}>
-                              <PremiumTimePicker 
-                                label="Time" 
-                                value={time} 
-                                onChange={(e: any) => setTime(e.target.value)} 
-                                colorTheme={color}
-                              />
-                            </Box>
+                            {!isAllDay && (
+                              <Box sx={{ flex: 1 }}>
+                                <PremiumTimePicker 
+                                  label="Time" 
+                                  value={time} 
+                                  onChange={(e: any) => setTime(e.target.value)} 
+                                  colorTheme={color}
+                                />
+                              </Box>
+                            )}
                           </Box>
 
                           {(dateType === 'DATE_RANGE' || dateType === 'START_TIME') && (
@@ -550,14 +564,16 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
                                   colorTheme={color}
                                 />
                               </Box>
-                              <Box sx={{ flex: 1 }}>
-                                <PremiumTimePicker 
-                                  label="End Time (Optional)" 
-                                  value={endTime} 
-                                  onChange={(e: any) => setEndTime(e.target.value)} 
-                                  colorTheme={color}
-                                />
-                              </Box>
+                              {!isAllDay && (
+                                <Box sx={{ flex: 1 }}>
+                                  <PremiumTimePicker 
+                                    label="End Time (Optional)" 
+                                    value={endTime} 
+                                    onChange={(e: any) => setEndTime(e.target.value)} 
+                                    colorTheme={color}
+                                  />
+                                </Box>
+                              )}
                             </Box>
                           )}
 

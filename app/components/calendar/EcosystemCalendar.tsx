@@ -116,6 +116,16 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
     const start = new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     if (!endDate) return start;
     const end = new Date(endDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    // Check if it's an all-day event (00:00 to 23:59)
+    if (start.includes('12:00 AM') && end.includes('11:59 PM')) {
+      return 'All Day';
+    }
+    // Also support 24-hour format checks
+    if (start.includes('00:00') && end.includes('23:59')) {
+      return 'All Day';
+    }
+
     return `${start} - ${end}`;
   };
 
@@ -338,14 +348,14 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
                     const dotColor = getIntentColor(event.dateType);
                     return (
                       <Box key={event.id} sx={{ 
-                        bgcolor: 'rgba(255,255,255,0.6)', 
+                        bgcolor: alpha(dotColor, 0.12), 
                         backdropFilter: 'blur(10px)',
-                        px: 1.5, py: 1, borderRadius: 4, mb: 0.5, 
-                        boxShadow: `0 8px 24px ${alpha(dotColor, 0.12)}`,
+                        px: 1.5, py: 1, borderRadius: 3, mb: 0.5, 
+                        boxShadow: `0 8px 16px ${alpha(dotColor, 0.15)}, inset 0 2px 4px rgba(255,255,255,0.4)`,
                         position: 'relative', overflow: 'hidden',
-                        border: 'none',
+                        border: '1px solid', borderColor: alpha(dotColor, 0.25),
                         transition: 'all 0.2s ease',
-                        '&:hover': { bgcolor: 'rgba(255,255,255,0.8)', transform: 'translateY(-2px)', boxShadow: `0 12px 32px ${alpha(dotColor, 0.18)}` }
+                        '&:hover': { bgcolor: alpha(dotColor, 0.18), borderColor: alpha(dotColor, 0.4), transform: 'translateY(-2px)', boxShadow: `0 12px 24px ${alpha(dotColor, 0.22)}, inset 0 2px 4px rgba(255,255,255,0.6)` }
                       }}>
                         <Typography variant="caption" sx={{ fontWeight: 900, color: dotColor, display: 'block', mb: 0.2, fontSize: '0.7rem' }}>
                           {formatTimeSpan(event.date, event.endDate)}
@@ -419,23 +429,31 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
                   transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
                   '&:hover': { bgcolor: 'rgba(255,255,255,0.7)', transform: 'translateY(-4px)', boxShadow: `0 24px 64px ${alpha(dotColor, 0.2)}, inset 0 2px 4px rgba(255,255,255,0.8)` }
                 }}>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 80 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 900, color: dotColor, fontFamily: 'var(--font-dosis)', lineHeight: 1 }}>
-                      {new Date(event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).split(' ')[0]}
-                    </Typography>
-                    <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', mb: event.endDate ? 1 : 0 }}>
-                      {new Date(event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).split(' ')[1]}
-                    </Typography>
-                    
-                    {event.endDate && (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 80, justifyContent: 'center' }}>
+                    {formatTimeSpan(event.date, event.endDate) === 'All Day' ? (
+                      <Typography variant="h6" sx={{ fontWeight: 900, color: dotColor, fontFamily: 'var(--font-dosis)', lineHeight: 1 }}>
+                        ALL DAY
+                      </Typography>
+                    ) : (
                       <>
-                        <Box sx={{ width: 1, height: 10, bgcolor: alpha(dotColor, 0.3), my: 0.5 }} />
-                        <Typography variant="h6" sx={{ fontWeight: 900, color: 'text.secondary', fontFamily: 'var(--font-dosis)', lineHeight: 1, opacity: 0.8 }}>
-                          {new Date(event.endDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).split(' ')[0]}
+                        <Typography variant="h6" sx={{ fontWeight: 900, color: dotColor, fontFamily: 'var(--font-dosis)', lineHeight: 1 }}>
+                          {new Date(event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).split(' ')[0]}
                         </Typography>
-                        <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', opacity: 0.8 }}>
-                          {new Date(event.endDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).split(' ')[1]}
+                        <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', mb: event.endDate ? 1 : 0 }}>
+                          {new Date(event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).split(' ')[1]}
                         </Typography>
+                        
+                        {event.endDate && (
+                          <>
+                            <Box sx={{ width: 1, height: 10, bgcolor: alpha(dotColor, 0.3), my: 0.5 }} />
+                            <Typography variant="h6" sx={{ fontWeight: 900, color: 'text.secondary', fontFamily: 'var(--font-dosis)', lineHeight: 1, opacity: 0.8 }}>
+                              {new Date(event.endDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).split(' ')[0]}
+                            </Typography>
+                            <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', opacity: 0.8 }}>
+                              {new Date(event.endDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).split(' ')[1]}
+                            </Typography>
+                          </>
+                        )}
                       </>
                     )}
                   </Box>
