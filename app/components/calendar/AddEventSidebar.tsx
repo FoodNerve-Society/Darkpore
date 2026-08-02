@@ -33,9 +33,11 @@ const BLOCK_DEFINITIONS: Record<string, { label: string, color: string }> = {
 interface AddEventSidebarProps {
   onClose: () => void;
   tenantId: string;
+  initialDate?: Date;
+  onDateChange?: (date: Date) => void;
 }
 
-export default function AddEventSidebar({ onClose, tenantId }: AddEventSidebarProps) {
+export default function AddEventSidebar({ onClose, tenantId, initialDate, onDateChange }: AddEventSidebarProps) {
   const theme = useTheme();
   const router = useRouter();
   const { user, profile } = useSociety();
@@ -45,7 +47,7 @@ export default function AddEventSidebar({ onClose, tenantId }: AddEventSidebarPr
   
   const [eventType, setEventType] = useState<'article' | 'livestream' | 'general'>('general');
   const [title, setTitle] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(initialDate ? initialDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
   const [time, setTime] = useState('10:00');
   
   const [contentType, setContentType] = useState<'text' | 'todo'>('text');
@@ -126,7 +128,7 @@ export default function AddEventSidebar({ onClose, tenantId }: AddEventSidebarPr
               }
             }}
           >
-            Start Upgrading Now
+            Join the Ecosystem
           </Button>
         </Box>
       </Box>
@@ -296,38 +298,39 @@ export default function AddEventSidebar({ onClose, tenantId }: AddEventSidebarPr
                       position: isFlipped ? 'absolute' : 'relative',
                       width: '100%', top: 0,
                       borderRadius: '20px',
-                      border: `1px solid ${filled ? alpha(color, 0.8) : alpha(color, 0.15)}`,
+                      border: `1px solid ${filled ? alpha(color, 0.8) : 'rgba(255,255,255,0.2)'}`,
                       background: filled 
                         ? `linear-gradient(135deg, ${color} 0%, ${alpha(color, 0.8)} 100%)`
-                        : `linear-gradient(to right, ${alpha(color, 0.2)} ${fillPercent}%, rgba(255,255,255,0.95) ${fillPercent}%, rgba(248,250,252,0.9) 100%)`,
-                      backdropFilter: 'blur(16px)',
-                      boxShadow: filled ? `0 12px 32px ${alpha(color, 0.3)}` : `0 8px 32px rgba(0,0,0,0.04)`,
+                        : `linear-gradient(to right, ${alpha(color, 0.4)} ${fillPercent}%, rgba(255,255,255,0.15) ${fillPercent}%, rgba(255,255,255,0.05) 100%)`,
+                      backdropFilter: 'blur(24px)',
+                      boxShadow: filled ? `0 12px 32px ${alpha(color, 0.3)}` : `0 8px 32px rgba(0,0,0,0.4), inset 0 2px 0 0 rgba(255,255,255,0.1)`,
                       overflow: 'hidden',
                       cursor: 'pointer',
                       transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
                       '&:hover': {
-                        borderColor: filled ? color : alpha(color, 0.6),
-                        boxShadow: filled ? `0 16px 48px ${alpha(color, 0.4)}` : `0 12px 48px rgba(0,0,0,0.08)`,
+                        borderColor: filled ? color : alpha(color, 0.5),
+                        boxShadow: filled ? `0 16px 48px ${alpha(color, 0.4)}` : `0 12px 48px rgba(0,0,0,0.5), inset 0 2px 0 0 rgba(255,255,255,0.2)`,
                         transform: 'translateY(-2px)'
                       },
                     }}
                   >
                     <Box sx={{ display: 'flex', alignItems: 'stretch', position: 'relative', zIndex: 1 }}>
-                      <Box sx={{ width: filled ? 0 : 6, flexShrink: 0, background: filled ? `transparent` : `linear-gradient(180deg, ${alpha(color, 0.4)} 0%, ${alpha(color, 0.1)} 100%)` }} />
+                      <Box sx={{ width: filled ? 0 : 6, flexShrink: 0, background: filled ? `transparent` : `linear-gradient(180deg, ${color} 0%, ${alpha(color, 0.3)} 100%)` }} />
                       <Box sx={{ p: 2, flex: 1, display: 'flex', alignItems: 'center', gap: 2 }}>
                         <Box sx={{
                           width: 36, height: 36, borderRadius: '10px', flexShrink: 0,
-                          bgcolor: filled ? 'rgba(255,255,255,0.2)' : alpha(color, 0.1), 
-                          border: filled ? '1px solid rgba(255,255,255,0.3)' : `1px solid ${alpha(color, 0.2)}`,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center'
+                          bgcolor: filled ? 'rgba(255,255,255,0.2)' : alpha(color, 0.15), 
+                          border: filled ? '1px solid rgba(255,255,255,0.3)' : `1px solid ${alpha(color, 0.3)}`,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          boxShadow: filled ? 'none' : `0 0 16px ${alpha(color, 0.2)}`
                         }}>
-                          {filled ? <CheckIcon sx={{ color: '#fff', fontSize: 18 }} /> : <Typography sx={{ fontWeight: 800, fontSize: '1rem', color }}>{i + 1}</Typography>}
+                          {filled ? <CheckIcon sx={{ color: '#fff', fontSize: 18 }} /> : <Typography sx={{ fontWeight: 900, fontSize: '1rem', color }}>{i + 1}</Typography>}
                         </Box>
                         <Box sx={{ flex: 1, minWidth: 0 }}>
-                          <Typography sx={{ fontWeight: 800, color: filled ? '#fff' : '#0f172a', fontSize: '1rem', letterSpacing: '-0.01em', mb: 0.2 }}>
+                          <Typography sx={{ fontWeight: 800, color: '#fff', fontSize: '1.05rem', letterSpacing: '-0.01em', mb: 0.2 }}>
                             {b.role}
                           </Typography>
-                          <Typography sx={{ color: filled ? 'rgba(255,255,255,0.8)' : '#64748b', fontSize: '0.8rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }}>
+                          <Typography sx={{ color: filled ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.6)', fontSize: '0.85rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600 }}>
                             {filled ? filledSummary : b.desc}
                           </Typography>
                         </Box>
@@ -485,7 +488,13 @@ export default function AddEventSidebar({ onClose, tenantId }: AddEventSidebarPr
                               <PremiumDatePicker 
                                 label={isSociety ? "Publish Date" : "Date"} 
                                 value={date} 
-                                onChange={(e: any) => setDate(e.target.value)} 
+                                onChange={(e: any) => {
+                                  setDate(e.target.value);
+                                  if (onDateChange && e.target.value) {
+                                    const parsedDate = new Date(e.target.value);
+                                    if (!isNaN(parsedDate.getTime())) onDateChange(parsedDate);
+                                  }
+                                }} 
                                 colorTheme={color}
                               />
                             </Box>
@@ -534,7 +543,7 @@ export default function AddEventSidebar({ onClose, tenantId }: AddEventSidebarPr
                           {/* Tags for Organization or Personal */}
                           {(!isSociety) && (
                             <Box sx={{ mt: 1 }}>
-                              <Typography sx={{ fontWeight: 800, color: '#334155', fontSize: '0.85rem', mb: 1 }}>Organizational Tags (Optional)</Typography>
+                              <Typography sx={{ fontWeight: 800, color: '#334155', fontSize: '0.85rem', mb: 1 }}>Keywords / Tags (Optional)</Typography>
                               <PremiumAutocomplete
                                 multiple
                                 freeSolo

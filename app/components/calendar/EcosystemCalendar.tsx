@@ -100,75 +100,127 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
     return 'Event';
   };
 
-  // --- RENDER MONTH VIEW ---
-  const renderMonthView = () => (
-    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1, mb: 1 }}>
-        {dayNames.map(day => (
-          <Typography key={day} variant="caption" sx={{ textAlign: 'center', fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase' }}>
-            {day}
-          </Typography>
-        ))}
-      </Box>
-      <Box sx={{ 
-        flex: 1, display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gridAutoRows: 'minmax(100px, 1fr)', gap: 1, minHeight: 0
-      }}>
-        {Array.from({ length: firstDayOfMonth }).map((_, i) => (
-          <Box key={`empty-${i}`} sx={{ bgcolor: 'rgba(0,0,0,0.02)', borderRadius: 2 }} />
-        ))}
-        
-        {Array.from({ length: daysInMonth }).map((_, i) => {
-          const day = i + 1;
-          const targetDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-          const isToday = new Date().toDateString() === targetDate.toDateString();
-          const dayEvents = getEventsForDate(targetDate);
+  const getWeekNumber = (d: Date) => {
+    const date = new Date(d.getTime());
+    date.setHours(0, 0, 0, 0);
+    date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+    const week1 = new Date(date.getFullYear(), 0, 4);
+    return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+  };
 
-          return (
-            <Box 
-              key={day} 
-              onClick={() => {
-                setCurrentDate(targetDate);
-                setViewMode('day');
-              }}
-              sx={{ 
-                bgcolor: isToday ? alpha(theme.palette.primary.main, 0.05) : 'rgba(255,255,255,0.4)', 
-                borderRadius: 3, p: 1,
-                border: isToday ? `1px solid ${alpha(theme.palette.primary.main, 0.4)}` : '1px solid rgba(0,0,0,0.03)',
-                boxShadow: isToday ? `0 4px 12px ${alpha(theme.palette.primary.main, 0.1)}` : '0 2px 8px rgba(0,0,0,0.01)',
-                backdropFilter: 'blur(8px)',
-                transition: 'all 0.2s ease', cursor: 'pointer',
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.8)', transform: 'translateY(-2px)', boxShadow: '0 8px 24px rgba(0,0,0,0.04)' },
-                display: 'flex', flexDirection: 'column', overflow: 'hidden'
-              }}
-            >
-              <Typography variant="body2" sx={{ 
-                fontFamily: 'var(--font-dosis)',
-                fontWeight: isToday ? 900 : 700, 
-                color: isToday ? theme.palette.primary.main : '#334155', 
-                mb: 1,
-                fontSize: isToday ? '1.1rem' : '0.9rem',
-                letterSpacing: '-0.02em'
-              }}>
+  // --- RENDER MONTH VIEW ---
+  const renderMonthView = () => {
+    const totalCells = firstDayOfMonth + daysInMonth;
+    const numRows = Math.ceil(totalCells / 7);
+
+    return (
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        {/* Header Row: 8 columns (Empty for week number + 7 Days) */}
+        <Box sx={{ display: 'grid', gridTemplateColumns: '40px repeat(7, 1fr)', gap: 1, mb: 1.5 }}>
+          <Box /> {/* Empty cell for week column header */}
+          {dayNames.map(day => (
+            <Box key={day} sx={{ 
+              textAlign: 'center', bgcolor: alpha(theme.palette.primary.main, 0.05), 
+              py: 0.8, borderRadius: 2, border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`
+            }}>
+              <Typography variant="caption" sx={{ fontWeight: 800, color: theme.palette.primary.main, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 {day}
               </Typography>
-              <Box sx={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 0.5, '&::-webkit-scrollbar': { display: 'none' } }}>
-                {dayEvents.map(event => {
-                  const dotColor = getVisibilityColor(event.visibility);
+            </Box>
+          ))}
+        </Box>
+        
+        {/* Body Grid: 8 columns per row */}
+        <Box sx={{ 
+          flex: 1, display: 'grid', gridTemplateColumns: '40px repeat(7, 1fr)', gridAutoRows: 'minmax(100px, 1fr)', gap: 1, minHeight: 0
+        }}>
+          {Array.from({ length: numRows }).map((_, rowIndex) => {
+            // Find the date for Thursday of this row to determine the ISO week number
+            const targetDayNum = (rowIndex * 7 + 3) - firstDayOfMonth + 1; // 3 is Thursday (0-based)
+            const refDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), targetDayNum);
+            const weekNumber = getWeekNumber(refDate);
+
+            return (
+              <React.Fragment key={`row-${rowIndex}`}>
+                {/* 1. Week Number Cell */}
+                <Box sx={{ 
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                  bgcolor: 'rgba(0,0,0,0.01)', borderRadius: 2, border: '1px dashed rgba(0,0,0,0.05)'
+                }}>
+                  <Typography sx={{ 
+                    fontWeight: 900, color: '#94a3b8', fontSize: '0.75rem', 
+                    textTransform: 'uppercase', letterSpacing: '0.05em', transform: 'rotate(-90deg)' 
+                  }}>
+                    W{weekNumber}
+                  </Typography>
+                </Box>
+                
+                {/* 2. Seven Day Cells */}
+                {Array.from({ length: 7 }).map((_, colIndex) => {
+                  const cellIndex = rowIndex * 7 + colIndex;
+                  const day = cellIndex - firstDayOfMonth + 1;
+                  
+                  if (day < 1 || day > daysInMonth) {
+                    return <Box key={`empty-${cellIndex}`} sx={{ bgcolor: 'rgba(0,0,0,0.015)', borderRadius: 3 }} />;
+                  }
+
+                  const targetDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+                  const isToday = new Date().toDateString() === targetDate.toDateString();
+                  const isSelected = isAddingEvent && currentDate.toDateString() === targetDate.toDateString();
+                  const dayEvents = getEventsForDate(targetDate);
+
                   return (
-                    <Box key={event.id} sx={{ bgcolor: alpha(dotColor, 0.1), borderLeft: `2px solid ${dotColor}`, px: 1, py: 0.25, borderRadius: 1 }}>
-                      <Typography variant="caption" noWrap sx={{ fontWeight: 700, color: dotColor, display: 'block', fontSize: '0.65rem' }}>
-                        {event.title}
+                    <Box 
+                      key={day} 
+                      onClick={() => {
+                        setCurrentDate(targetDate);
+                        setViewMode('day');
+                      }}
+                      sx={{ 
+                        bgcolor: isSelected ? alpha(theme.palette.primary.main, 0.1) : (isToday ? alpha(theme.palette.primary.main, 0.05) : 'rgba(255,255,255,0.4)'), 
+                        borderRadius: 3, p: 1,
+                        border: isSelected ? `2px solid ${theme.palette.primary.main}` : (isToday ? `1px solid ${alpha(theme.palette.primary.main, 0.4)}` : '1px solid rgba(0,0,0,0.03)'),
+                        boxShadow: isSelected ? `0 0 0 4px ${alpha(theme.palette.primary.main, 0.2)}` : (isToday ? `0 4px 12px ${alpha(theme.palette.primary.main, 0.1)}` : '0 2px 8px rgba(0,0,0,0.01)'),
+                        backdropFilter: 'blur(8px)',
+                        transition: 'all 0.2s ease', cursor: 'pointer',
+                        '&:hover': { bgcolor: 'rgba(255,255,255,0.8)', transform: 'translateY(-2px)', boxShadow: '0 8px 24px rgba(0,0,0,0.04)' },
+                        display: 'flex', flexDirection: 'column', overflow: 'hidden',
+                        position: isSelected ? 'relative' : 'static',
+                        zIndex: isSelected ? 2 : 1
+                      }}
+                    >
+                      <Typography variant="body2" sx={{ 
+                        fontFamily: 'var(--font-dosis)',
+                        fontWeight: (isToday || isSelected) ? 900 : 700, 
+                        color: isSelected ? theme.palette.primary.main : (isToday ? theme.palette.primary.main : '#334155'), 
+                        mb: 1,
+                        fontSize: (isToday || isSelected) ? '1.1rem' : '0.9rem',
+                        letterSpacing: '-0.02em'
+                      }}>
+                        {day}
                       </Typography>
+                      <Box sx={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 0.5, '&::-webkit-scrollbar': { display: 'none' } }}>
+                        {dayEvents.map(event => {
+                          const dotColor = getVisibilityColor(event.visibility);
+                          return (
+                            <Box key={event.id} sx={{ bgcolor: alpha(dotColor, 0.1), borderLeft: `2px solid ${dotColor}`, px: 1, py: 0.25, borderRadius: 1 }}>
+                              <Typography variant="caption" noWrap sx={{ fontWeight: 700, color: dotColor, display: 'block', fontSize: '0.65rem' }}>
+                                {event.title}
+                              </Typography>
+                            </Box>
+                          );
+                        })}
+                      </Box>
                     </Box>
                   );
                 })}
-              </Box>
-            </Box>
-          );
-        })}
+              </React.Fragment>
+            );
+          })}
+        </Box>
       </Box>
-    </Box>
-  );
+    );
+  };
 
   // --- RENDER WEEK VIEW ---
   const renderWeekView = () => {
@@ -413,6 +465,8 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
         <Box sx={{ flex: 1, position: 'relative', minWidth: 320 }}>
           <AddEventSidebar 
             tenantId={tenantId} 
+            initialDate={currentDate}
+            onDateChange={setCurrentDate}
             onClose={() => setIsAddingEvent(false)} 
           />
         </Box>

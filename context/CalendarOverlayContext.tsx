@@ -97,7 +97,7 @@ export function CalendarOverlayProvider({ children }: { children: ReactNode }) {
         </IconButton>
 
         {/* Content (Ecosystem Calendar Grid) */}
-        <DialogContent sx={{ p: { xs: 2, md: 4 }, display: 'flex', flexDirection: 'column' }}>
+        <DialogContent sx={{ p: { xs: 2, md: 4 }, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
           <Box sx={{ mb: 2, pl: 1 }}>
             <Typography variant="h4" sx={{ fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <CalendarMonthIcon sx={{ color: theme.palette.primary.main, fontSize: 32 }} /> Ecosystem Calendar
