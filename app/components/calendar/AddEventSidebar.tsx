@@ -77,21 +77,57 @@ export default function AddEventSidebar({ onClose, tenantId }: AddEventSidebarPr
     return (
       <Box sx={sidebarStyles}>
         <Header onClose={onClose} />
-        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', p: 3 }}>
-          <Box sx={{ p: 3, bgcolor: 'rgba(255,255,255,0.05)', borderRadius: '50%', mb: 3, boxShadow: 'inset 0 0 20px rgba(255,255,255,0.05)' }}>
-            <LockOutlinedIcon sx={{ fontSize: 48, color: 'rgba(255,255,255,0.8)' }} />
+        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', p: { xs: 3, md: 5 } }}>
+          
+          <Box sx={{
+            position: 'relative', mb: 4,
+            '&::before': {
+              content: '""', position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+              width: '120px', height: '120px', background: `radial-gradient(circle, ${alpha(theme.palette.primary.main, 0.4)} 0%, transparent 70%)`,
+              zIndex: 0, filter: 'blur(10px)'
+            }
+          }}>
+            <Box sx={{ 
+              position: 'relative', zIndex: 1, width: 80, height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: '24px', background: 'linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02))',
+              border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 8px 32px rgba(0,0,0,0.4), inset 0 2px 0 0 rgba(255,255,255,0.2)',
+              backdropFilter: 'blur(12px)'
+            }}>
+              <LockOutlinedIcon sx={{ fontSize: 36, color: '#fff', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }} />
+            </Box>
           </Box>
-          <Typography variant="h5" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 800, mb: 1, color: '#fff' }}>
-            Sign In Required
+
+          <Typography variant="h4" sx={{ fontWeight: 800, mb: 1.5, color: '#fff', letterSpacing: '-0.02em', textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>
+            Restricted Access
           </Typography>
-          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mb: 4, lineHeight: 1.6 }}>
-            Access to the Boardroom Calendar requires authentication. Sign in to Society OS to schedule events and manage drafts.
+          <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.7)', mb: 5, lineHeight: 1.7, maxWidth: '320px', marginX: 'auto', fontWeight: 500 }}>
+            While the calendar is open for public viewing, you need to sign in and reach <strong>Rank 4</strong> to schedule events or host livestreams. Registered members also receive personalized daily calendar reminders via email.
           </Typography>
         </Box>
-        <Box sx={footerStyles}>
-          <PremiumButton variant="filled" baseColor={theme.palette.primary.main} onClick={() => router.push('/join')} sx={{ width: '100%' }}>
+        <Box sx={{ p: { xs: 3, md: 5 }, pt: 0, width: '100%' }}>
+          <Button
+            onClick={() => router.push('/join')}
+            sx={{ 
+              width: '100%',
+              py: 1.8,
+              borderRadius: '100px',
+              background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
+              color: '#fff',
+              fontWeight: 900,
+              fontSize: '1.05rem',
+              letterSpacing: '0.5px',
+              textTransform: 'none',
+              boxShadow: `0 12px 32px ${alpha(theme.palette.primary.main, 0.4)}, inset 0 2px 0 0 rgba(255,255,255,0.2)`,
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:hover': {
+                background: `linear-gradient(135deg, ${theme.palette.primary.light}, ${theme.palette.primary.main})`,
+                boxShadow: `0 16px 48px ${alpha(theme.palette.primary.main, 0.6)}, inset 0 2px 0 0 rgba(255,255,255,0.3)`,
+                transform: 'translateY(-2px)'
+              }
+            }}
+          >
             Start Upgrading Now
-          </PremiumButton>
+          </Button>
         </Box>
       </Box>
     );

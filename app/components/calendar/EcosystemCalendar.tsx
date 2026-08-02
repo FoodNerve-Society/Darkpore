@@ -6,6 +6,7 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
+import ShareIcon from '@mui/icons-material/Share';
 import { getCalendarEvents } from '@/app/actions/calendar';
 import { CalendarEvent } from '@prisma/client';
 import AddEventSidebar from './AddEventSidebar';
@@ -370,6 +371,25 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
             <ToggleButton value="week">Week</ToggleButton>
             <ToggleButton value="day">Day</ToggleButton>
           </ToggleButtonGroup>
+
+          <IconButton 
+            size="small" 
+            title="Share this calendar view"
+            onClick={() => {
+              if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                navigator.clipboard.writeText(window.location.href);
+                alert('Calendar link copied to clipboard!');
+              }
+            }}
+            sx={{ 
+              bgcolor: 'rgba(0,0,0,0.04)', 
+              borderRadius: 2, p: 1, 
+              color: 'text.secondary',
+              '&:hover': { bgcolor: 'rgba(0,0,0,0.08)', color: 'text.primary' } 
+            }}
+          >
+            <ShareIcon fontSize="small" />
+          </IconButton>
 
           <Button 
             variant="contained" 
