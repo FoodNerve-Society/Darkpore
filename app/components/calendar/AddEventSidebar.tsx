@@ -17,17 +17,16 @@ import { useRouter } from 'next/navigation';
 import PremiumButton from '@/components/PremiumButton';
 import PremiumTextField from '@/components/PremiumTextField';
 import PremiumAutocomplete from '@/components/PremiumAutocomplete';
+import PremiumDatePicker from '@/components/PremiumDatePicker';
+import PremiumTimePicker from '@/components/PremiumTimePicker';
 import { scheduleCalendarEvent } from '@/app/actions/calendar';
 
-const EVENT_FRAMEWORK = [
-  { id: 'scope', type: 'scope', role: 'Target Scope', desc: 'Where is this event being posted?' },
-  { id: 'type', type: 'type', role: 'Event Type', desc: 'What kind of event is this?' },
-  { id: 'details', type: 'details', role: 'Details & Specifics', desc: 'Title, Date, Content, and Taxonomy' }
-];
+import { getTenantConfig, ERAS } from '@/lib/cms';
 
 const BLOCK_DEFINITIONS: Record<string, { label: string, color: string }> = {
   scope: { label: 'Scope', color: '#ef4444' },
   type: { label: 'Format', color: '#f59e0b' },
+  taxonomy: { label: 'Taxonomy', color: '#10b981' },
   details: { label: 'Details', color: '#3b82f6' }
 };
 
@@ -63,6 +62,17 @@ export default function AddEventSidebar({ onClose, tenantId }: AddEventSidebarPr
 
   const [flippedBlockId, setFlippedBlockId] = useState<string | null>('scope');
 
+  const tenantConfig = getTenantConfig(tenantId);
+  const categories = tenantConfig.com.homepage.challenges;
+  const isSociety = targetScope === 'society';
+
+  const framework = [
+    { id: 'scope', type: 'scope', role: 'Target Scope', desc: 'Where is this event being posted?' },
+    { id: 'type', type: 'type', role: 'Event Type', desc: 'What kind of event is this?' },
+    ...(isSociety ? [{ id: 'taxonomy', type: 'taxonomy', role: 'Ecosystem Categorization', desc: 'Category, Subcategory, and Era' }] : []),
+    { id: 'details', type: 'details', role: 'Details & Specifics', desc: 'Title, Date, Content, and Tags' }
+  ];
+
   if (!user || !profile) {
     return (
       <Box sx={sidebarStyles}>
@@ -87,7 +97,6 @@ export default function AddEventSidebar({ onClose, tenantId }: AddEventSidebarPr
     );
   }
 
-  const isSociety = targetScope === 'society';
   const isOrg = targetScope === 'organization';
   const gatekeeper = isSociety ? checkGatekeeper(profile, 4) : { allowed: true };
 
@@ -155,17 +164,17 @@ export default function AddEventSidebar({ onClose, tenantId }: AddEventSidebarPr
         total = 1; 
         if (eventType) filled++;
         break;
+      case 'taxonomy':
+        total = 3; // challenge, subcategory, era
+        if (challengeId) filled++;
+        if (subcategoryId) filled++;
+        if (eraId) filled++;
+        break;
       case 'details':
         total = 3; // title, date, time
         if (title) filled++;
         if (date) filled++;
         if (time) filled++;
-        
-        if (isSociety) {
-          total += 2; // challenge, subcategory
-          if (challengeId) filled++;
-          if (subcategoryId) filled++;
-        }
         break;
     }
     return { filled, total };
@@ -176,16 +185,7 @@ export default function AddEventSidebar({ onClose, tenantId }: AddEventSidebarPr
     return stats.filled >= stats.total;
   };
 
-  const allFilled = EVENT_FRAMEWORK.every(b => isBlockFilled(b.id));
-
-  // Dummy options for challenges
-  const CHALLENGES = [
-    { id: 'post-harvest-loss', name: 'Post-Harvest Loss' },
-    { id: 'cold-chain', name: 'Cold Chain' },
-    { id: 'soil-health', name: 'Soil Health' },
-    { id: 'market-access', name: 'Market Access' },
-    { id: 'capital', name: 'Capital' }
-  ];
+  const allFilled = framework.every(b => isBlockFilled(b.id));
 
   if (isSuccess) {
     return (
@@ -227,7 +227,7 @@ export default function AddEventSidebar({ onClose, tenantId }: AddEventSidebarPr
 
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', p: { xs: 3, md: 4 }, pt: 0, '&::-webkit-scrollbar': { display: 'none' } }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-          {EVENT_FRAMEWORK.map((b, i) => {
+          {framework.map((b, i) => {
             const isFlipped = flippedBlockId === b.id;
             const fillStats = getBlockFillStats(b.id);
             const filled = fillStats.filled >= fillStats.total;
@@ -239,6 +239,7 @@ export default function AddEventSidebar({ onClose, tenantId }: AddEventSidebarPr
             if (filled) {
               if (b.id === 'scope') filledSummary = targetScope === 'organization' ? `Organization Target` : targetScope === 'society' ? `Society (Public)` : `Personal Target`;
               if (b.id === 'type') filledSummary = eventType === 'article' ? 'Article Draft' : eventType === 'livestream' ? 'Livestream Draft' : 'General Event';
+              if (b.id === 'taxonomy') filledSummary = `${challengeId?.title || 'Category'} • ${eraId}`;
               if (b.id === 'details') filledSummary = `${title || 'No Title'} • ${date} ${time}`;
             }
 
@@ -398,7 +399,45 @@ export default function AddEventSidebar({ onClose, tenantId }: AddEventSidebarPr
                         </Box>
                       )}
 
-                      {/* --- BLOCK 3: DETAILS & TAXONOMY --- */}
+                      {b.id === 'taxonomy' && (
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+                          {!gatekeeper.allowed && (
+                            <Alert severity="warning" sx={{ mb: 1 }}>
+                              You must be Level 4+ to post Society-wide events.
+                            </Alert>
+                          )}
+                          <PremiumAutocomplete
+                            label="Mission Category"
+                            options={categories}
+                            getOptionLabel={(opt) => opt.title}
+                            value={challengeId}
+                            onChange={(e, val) => {
+                              setChallengeId(val);
+                              setSubcategoryId('');
+                            }}
+                            colorTheme={color}
+                          />
+                          <PremiumAutocomplete
+                            label="Subcategory / Focus"
+                            options={challengeId ? challengeId.subcategories : []}
+                            getOptionLabel={(opt) => opt.title}
+                            value={challengeId?.subcategories?.find((s: any) => s.id === subcategoryId) || null}
+                            onChange={(e, val) => setSubcategoryId(val ? val.id : '')}
+                            colorTheme={color}
+                            disabled={!challengeId}
+                          />
+                          <PremiumAutocomplete
+                            label="Era"
+                            options={ERAS}
+                            getOptionLabel={(opt) => opt.label}
+                            value={ERAS.find(e => e.id === eraId) || null}
+                            onChange={(e, val) => setEraId(val ? val.id : '')}
+                            colorTheme={color}
+                          />
+                        </Box>
+                      )}
+
+                      {/* --- BLOCK 3: DETAILS --- */}
                       {b.id === 'details' && (
                         <>
                           <PremiumTextField 
@@ -406,101 +445,70 @@ export default function AddEventSidebar({ onClose, tenantId }: AddEventSidebarPr
                             fullWidth size="small" value={title} onChange={(e: any) => setTitle(e.target.value)} colorTheme={color}
                           />
                           <Box sx={{ display: 'flex', gap: 2 }}>
-                            <PremiumTextField 
-                              label={isSociety ? "Publish Date" : "Date"} type="date" 
-                              fullWidth size="small" slotProps={{ inputLabel: { shrink: true } }} 
-                              value={date} onChange={(e: any) => setDate(e.target.value)} colorTheme={color}
-                            />
-                            <PremiumTextField 
-                              label="Time" type="time" 
-                              fullWidth size="small" slotProps={{ inputLabel: { shrink: true } }} 
-                              value={time} onChange={(e: any) => setTime(e.target.value)} colorTheme={color}
-                            />
-                          </Box>
-
-                          {/* Content / Todo Toggle */}
-                          <Box sx={{ mt: 1 }}>
-                            <Box sx={{ display: 'flex', mb: 1, p: 0.5, bgcolor: 'rgba(0,0,0,0.05)', borderRadius: '12px' }}>
-                              <Button 
-                                fullWidth size="small"
-                                sx={{ borderRadius: '10px', fontWeight: 700, color: contentType === 'text' ? color : '#64748b', bgcolor: contentType === 'text' ? '#fff' : 'transparent', boxShadow: contentType === 'text' ? '0 2px 8px rgba(0,0,0,0.05)' : 'none' }}
-                                onClick={() => setContentType('text')}
-                              >Description</Button>
-                              <Button 
-                                fullWidth size="small"
-                                sx={{ borderRadius: '10px', fontWeight: 700, color: contentType === 'todo' ? color : '#64748b', bgcolor: contentType === 'todo' ? '#fff' : 'transparent', boxShadow: contentType === 'todo' ? '0 2px 8px rgba(0,0,0,0.05)' : 'none' }}
-                                onClick={() => setContentType('todo')}
-                              >Action List</Button>
+                            <Box sx={{ flex: 1 }}>
+                              <PremiumDatePicker 
+                                label={isSociety ? "Publish Date" : "Date"} 
+                                value={date} 
+                                onChange={(e: any) => setDate(e.target.value)} 
+                                colorTheme={color}
+                              />
                             </Box>
-                            
-                            {contentType === 'text' ? (
-                              <PremiumTextField 
-                                label="Description" multiline rows={3} fullWidth size="small"
-                                value={description} onChange={(e: any) => setDescription(e.target.value)} colorTheme={color}
+                            <Box sx={{ flex: 1 }}>
+                              <PremiumTimePicker 
+                                label="Time" 
+                                value={time} 
+                                onChange={(e: any) => setTime(e.target.value)} 
+                                colorTheme={color}
                               />
-                            ) : (
-                              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                {todoItems.map((todo, idx) => (
-                                  <Box key={todo.id} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <Box sx={{ width: 16, height: 16, borderRadius: '4px', border: `2px solid ${alpha(color, 0.4)}` }} />
-                                    <PremiumTextField 
-                                      placeholder={`Task ${idx + 1}`} fullWidth size="small"
-                                      value={todo.text} onChange={(e: any) => updateTodo(todo.id, e.target.value)} colorTheme={color}
-                                    />
-                                    <IconButton size="small" onClick={() => removeTodo(todo.id)} sx={{ color: '#ef4444' }}>
-                                      <DeleteIcon fontSize="small" />
-                                    </IconButton>
-                                  </Box>
-                                ))}
-                                <Button startIcon={<AddIcon />} size="small" onClick={handleAddTodo} sx={{ color, fontWeight: 700, alignSelf: 'flex-start' }}>
-                                  Add Task
-                                </Button>
-                              </Box>
-                            )}
+                            </Box>
                           </Box>
 
-                          {/* Tags for Organization */}
-                          {isOrg && (
-                            <PremiumAutocomplete
-                              multiple
-                              freeSolo
-                              colorTheme={color}
-                              label="Organization Tags"
-                              options={[]}
-                              value={tags}
-                              onChange={(e, val) => setTags(val)}
-                              placeholder="Type and press enter"
+                          {/* Content AND Todo List */}
+                          <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <PremiumTextField 
+                              label="Description / Context" multiline rows={2} fullWidth size="small"
+                              value={description} onChange={(e: any) => setDescription(e.target.value)} colorTheme={color}
                             />
-                          )}
+                            
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                              <Typography sx={{ fontWeight: 800, color: '#334155', fontSize: '0.85rem' }}>Action List (Optional)</Typography>
+                              {todoItems.map((todo, idx) => (
+                                <Box key={todo.id} sx={{ 
+                                  display: 'flex', alignItems: 'flex-start', gap: 1.5, p: 1.5,
+                                  bgcolor: 'rgba(255,255,255,0.6)', borderRadius: '16px',
+                                  border: '1px solid rgba(0,0,0,0.04)',
+                                  boxShadow: '0 2px 10px rgba(0,0,0,0.02)'
+                                }}>
+                                  <Box sx={{ width: 18, height: 18, mt: 1.2, borderRadius: '6px', border: `2px solid ${alpha(color, 0.4)}`, flexShrink: 0, bgcolor: 'rgba(255,255,255,0.8)' }} />
+                                  <PremiumTextField 
+                                    label={`Task ${idx + 1}`} fullWidth size="small"
+                                    value={todo.text} onChange={(e: any) => updateTodo(todo.id, e.target.value)} colorTheme={color}
+                                  />
+                                  <IconButton size="small" onClick={() => removeTodo(todo.id)} sx={{ color: '#ef4444', mt: 0.5, bgcolor: 'rgba(239,68,68,0.1)', '&:hover': { bgcolor: 'rgba(239,68,68,0.2)' } }}>
+                                    <DeleteIcon fontSize="small" />
+                                  </IconButton>
+                                </Box>
+                              ))}
+                              <Button startIcon={<AddIcon />} size="small" onClick={handleAddTodo} sx={{ color, fontWeight: 800, alignSelf: 'flex-start', bgcolor: alpha(color, 0.1), borderRadius: '10px', px: 2, '&:hover': { bgcolor: alpha(color, 0.2) } }}>
+                                Add Task
+                              </Button>
+                            </Box>
+                          </Box>
 
-                          {/* Taxonomy for Society */}
-                          {isSociety && (
-                            <>
-                              <Typography sx={{ fontWeight: 800, color: '#0f172a', fontSize: '0.85rem', mt: 1 }}>Ecosystem Categorization</Typography>
+                          {/* Tags for Organization or Personal */}
+                          {(!isSociety) && (
+                            <Box sx={{ mt: 1 }}>
+                              <Typography sx={{ fontWeight: 800, color: '#334155', fontSize: '0.85rem', mb: 1 }}>Organizational Tags (Optional)</Typography>
                               <PremiumAutocomplete
-                                colorTheme={color}
-                                label="Challenge Area"
-                                options={CHALLENGES}
-                                getOptionLabel={(o:any) => o.name}
-                                value={challengeId}
-                                onChange={(e, val:any) => setChallengeId(val)}
-                              />
-                              <PremiumTextField 
-                                label="Subcategory (slug)" 
-                                placeholder="e.g. aggregation-centers" 
-                                fullWidth size="small"
-                                value={subcategoryId} onChange={(e: any) => setSubcategoryId(e.target.value)}
+                                multiple
+                                freeSolo
+                                label="Press Enter to add tags"
+                                options={[]}
+                                value={tags}
+                                onChange={(e, val) => setTags(val as string[])}
                                 colorTheme={color}
                               />
-                              <PremiumTextField 
-                                select label="Era" fullWidth size="small"
-                                value={eraId} onChange={(e: any) => setEraId(e.target.value)} colorTheme={color}
-                              >
-                                <MenuItem value="ideation">Ideation</MenuItem>
-                                <MenuItem value="pilot">Pilot</MenuItem>
-                                <MenuItem value="scale">Scale</MenuItem>
-                              </PremiumTextField>
-                            </>
+                            </Box>
                           )}
                         </>
                       )}
@@ -540,30 +548,37 @@ const CardChoice = ({ title, desc, color, selected, onClick }: any) => (
   <Box 
     onClick={onClick}
     sx={{ 
-      p: 2, borderRadius: '16px', display: 'flex', alignItems: 'center', gap: 2,
-      border: `1px solid ${selected ? alpha(color, 0.5) : 'rgba(0,0,0,0.06)'}`, 
-      background: selected ? `linear-gradient(135deg, ${alpha(color, 0.1)}, ${alpha(color, 0.02)})` : 'rgba(255,255,255,0.7)',
-      boxShadow: selected ? `0 8px 24px ${alpha(color, 0.15)}` : '0 2px 12px rgba(0,0,0,0.02)',
+      p: 2, borderRadius: '16px', display: 'flex', alignItems: 'flex-start', gap: 2,
+      border: `1px solid ${selected ? alpha(color, 0.6) : 'rgba(0,0,0,0.06)'}`, 
+      background: selected 
+        ? `linear-gradient(135deg, ${alpha(color, 0.08)} 0%, rgba(255,255,255,0.95) 100%)` 
+        : 'rgba(255,255,255,0.7)',
+      boxShadow: selected 
+        ? `0 12px 32px ${alpha(color, 0.15)}, inset 0 2px 0 0 rgba(255,255,255,0.7)` 
+        : '0 4px 16px rgba(0,0,0,0.03), inset 0 2px 0 0 rgba(255,255,255,0.5)',
       cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
       position: 'relative',
-      overflow: 'hidden',
+      backdropFilter: 'blur(12px)',
       '&:hover': { 
-        background: selected ? `linear-gradient(135deg, ${alpha(color, 0.15)}, ${alpha(color, 0.05)})` : '#ffffff', 
-        borderColor: selected ? color : alpha(color, 0.2), 
+        background: selected 
+          ? `linear-gradient(135deg, ${alpha(color, 0.12)} 0%, rgba(255,255,255,0.98) 100%)` 
+          : 'rgba(255,255,255,0.95)', 
+        borderColor: selected ? color : alpha(color, 0.3), 
         transform: 'translateY(-2px)',
-        boxShadow: selected ? `0 12px 32px ${alpha(color, 0.2)}` : '0 8px 24px rgba(0,0,0,0.06)'
+        boxShadow: selected 
+          ? `0 16px 40px ${alpha(color, 0.2)}, inset 0 2px 0 0 rgba(255,255,255,1)` 
+          : '0 8px 24px rgba(0,0,0,0.06), inset 0 2px 0 0 rgba(255,255,255,0.8)'
       }
     }}
   >
-    {selected && <Box sx={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', bgcolor: color }} />}
-    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: selected ? color : '#94a3b8' }}>
+    <Box sx={{ mt: 0.2, display: 'flex', alignItems: 'center', justifyContent: 'center', color: selected ? color : '#cbd5e1' }}>
       {selected ? <RadioButtonCheckedIcon /> : <RadioButtonUncheckedIcon />}
     </Box>
     <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-      <Typography sx={{ fontWeight: 800, fontSize: '0.95rem', color: selected ? '#0f172a' : '#334155', mb: desc ? 0.5 : 0 }}>
+      <Typography sx={{ fontWeight: 800, fontSize: '0.95rem', color: selected ? '#0f172a' : '#475569', mb: desc ? 0.25 : 0, letterSpacing: '-0.01em' }}>
         {title}
       </Typography>
-      {desc && <Typography sx={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500, lineHeight: 1.3 }}>{desc}</Typography>}
+      {desc && <Typography sx={{ fontSize: '0.8rem', color: selected ? '#475569' : '#94a3b8', fontWeight: 500, lineHeight: 1.4 }}>{desc}</Typography>}
     </Box>
   </Box>
 );
@@ -587,14 +602,13 @@ const Header = ({ onClose }: { onClose: () => void }) => (
 );
 
 const sidebarStyles = {
-  width: { xs: '100vw', md: '450px', lg: '500px' }, 
+  width: '100%', 
   minWidth: 320, 
   bgcolor: 'rgba(12, 12, 14, 0.75)', 
   backdropFilter: 'blur(32px) saturate(180%)', 
-  borderRadius: { xs: 0, md: '24px 0 0 24px' }, 
+  borderRadius: { xs: 0, md: '24px' }, 
   border: { xs: 'none', md: '1px solid rgba(255,255,255,0.08)' }, 
-  borderRight: 'none',
-  boxShadow: '-20px 0 80px rgba(0,0,0,0.5)',
+  boxShadow: '-10px 0 40px rgba(0,0,0,0.4)',
   display: 'flex',
   flexDirection: 'column',
   height: '100%',

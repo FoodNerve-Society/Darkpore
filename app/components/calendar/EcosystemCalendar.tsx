@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, IconButton, Button, alpha, useTheme, ToggleButtonGroup, ToggleButton, TextField, MenuItem, Drawer } from '@mui/material';
+import { Box, Typography, IconButton, Button, alpha, useTheme, ToggleButtonGroup, ToggleButton, TextField, MenuItem } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import AddIcon from '@mui/icons-material/Add';
@@ -330,7 +330,7 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
       
       {/* Calendar Area */}
       <Box sx={{ 
-        flex: 1,
+        flex: isAddingEvent ? '0 0 60%' : 1,
         transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)', 
         display: 'flex', 
         flexDirection: 'column',
@@ -388,24 +388,15 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
       {viewMode === 'day' && renderDayView()}
       </Box>
 
-      <Drawer
-        anchor="right"
-        open={isAddingEvent}
-        onClose={() => setIsAddingEvent(false)}
-        PaperProps={{
-          sx: {
-            background: 'transparent',
-            boxShadow: 'none',
-            overflow: 'visible'
-          }
-        }}
-        slotProps={{ backdrop: { sx: { backdropFilter: 'blur(4px)' } } }}
-      >
-        <AddEventSidebar 
-          tenantId={tenantId} 
-          onClose={() => setIsAddingEvent(false)} 
-        />
-      </Drawer>
+      {/* Add Event Form Split-Screen */}
+      {isAddingEvent && (
+        <Box sx={{ flex: 1, position: 'relative', minWidth: 320 }}>
+          <AddEventSidebar 
+            tenantId={tenantId} 
+            onClose={() => setIsAddingEvent(false)} 
+          />
+        </Box>
+      )}
 
     </Box>
   );
