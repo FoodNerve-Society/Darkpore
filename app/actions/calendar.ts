@@ -41,6 +41,9 @@ export async function scheduleCalendarEvent(payload: {
   subcategoryId?: string;
   eraId?: string;
   tenantId: string;
+  description?: string;
+  tags?: string;
+  selectedOrgId?: string;
 }) {
   const sessionResult = await getCurrentSessionUser();
   if (!sessionResult.success || !sessionResult.data) {
@@ -76,11 +79,14 @@ export async function scheduleCalendarEvent(payload: {
     // 2. Create the Calendar Event
     let organizationId: string | undefined;
     if (payload.targetScope === 'organization') {
-      // Find the user's active org or just the first one for now
-      const orgMember = await prisma.organizationMember.findFirst({
-        where: { userId: user.id }
-      });
-      if (orgMember) organizationId = orgMember.organizationId;
+      if (payload.selectedOrgId) {
+         organizationId = payload.selectedOrgId;
+      } else {
+        const orgMember = await prisma.organizationMember.findFirst({
+          where: { userId: user.id }
+        });
+        if (orgMember) organizationId = orgMember.organizationId;
+      }
     }
 
     await prisma.calendarEvent.create({
@@ -91,10 +97,12 @@ export async function scheduleCalendarEvent(payload: {
         visibility: payload.targetScope,
         category: payload.challengeId || payload.eventType,
         sourceType: payload.eventType === 'livestream' ? 'livestream' : 'custom',
-        sourceId: learnContentId,
+        sourceId: learnContentId || '',
         tenantId: payload.tenantId,
         userId: user.id,
         organizationId: organizationId,
+        description: payload.description,
+        tags: payload.tags,
       }
     });
 

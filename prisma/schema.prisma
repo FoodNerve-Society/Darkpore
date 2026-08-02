@@ -765,6 +765,8 @@ model CalendarEvent {
   imageUrl         String?
   category         String?
   organizationName String?
+  description      String?   // Used for general events (text or stringified JSON checklist)
+  tags             String?   // JSON string array for organization tags
 
   // --- Metadata ---
   status           String    @default("upcoming") // 'upcoming' | 'live' | 'expired'

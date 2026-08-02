@@ -2,129 +2,32 @@
 
 import React, { useState } from 'react';
 import { 
-  Box, Typography, IconButton, Button, TextField, MenuItem, alpha, useTheme, styled
+  Box, Typography, IconButton, MenuItem, alpha, useTheme, Paper, Alert, Button
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined';
+import CheckIcon from '@mui/icons-material/Check';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { useSociety, checkGatekeeper } from '@/context/SocietyContext';
 import { useRouter } from 'next/navigation';
 import PremiumButton from '@/components/PremiumButton';
+import PremiumTextField from '@/components/PremiumTextField';
+import PremiumAutocomplete from '@/components/PremiumAutocomplete';
 import { scheduleCalendarEvent } from '@/app/actions/calendar';
 
-// --- Premium Styled Components ---
+const EVENT_FRAMEWORK = [
+  { id: 'scope', type: 'scope', role: 'Target Scope', desc: 'Where is this event being posted?' },
+  { id: 'type', type: 'type', role: 'Event Type', desc: 'What kind of event is this?' },
+  { id: 'details', type: 'details', role: 'Details & Specifics', desc: 'Title, Date, Content, and Taxonomy' }
+];
 
-const darkMenuProps = {
-  slotProps: {
-    paper: {
-      sx: {
-        bgcolor: 'rgba(20, 20, 22, 0.95)',
-        backdropFilter: 'blur(20px)',
-        border: '1px solid rgba(255,255,255,0.1)',
-        color: '#fff',
-        borderRadius: '12px',
-        mt: 1,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-        '& .MuiMenuItem-root': {
-          transition: 'all 0.2s',
-          '&:hover': {
-            bgcolor: 'rgba(255,255,255,0.08)'
-          },
-          '&.Mui-selected': {
-            bgcolor: 'rgba(255,255,255,0.12)',
-            '&:hover': { bgcolor: 'rgba(255,255,255,0.15)' }
-          }
-        }
-      }
-    }
-  }
+const BLOCK_DEFINITIONS: Record<string, { label: string, color: string }> = {
+  scope: { label: 'Scope', color: '#ef4444' },
+  type: { label: 'Format', color: '#f59e0b' },
+  details: { label: 'Details', color: '#3b82f6' }
 };
-
-const GlassTextField = styled(TextField)({
-  '& .MuiOutlinedInput-root': {
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    backdropFilter: 'blur(10px)',
-    borderRadius: '12px',
-    color: '#fff',
-    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-    fontFamily: 'var(--font-inter), sans-serif',
-    '& fieldset': {
-      borderColor: 'rgba(255, 255, 255, 0.1)',
-      transition: 'all 0.3s ease',
-    },
-    '&:hover fieldset': {
-      borderColor: 'rgba(255, 255, 255, 0.25)',
-    },
-    '&:hover': {
-      backgroundColor: 'rgba(255, 255, 255, 0.06)',
-    },
-    '&.Mui-focused fieldset': {
-      borderColor: '#ff3366', 
-      borderWidth: '1px',
-    },
-    '&.Mui-focused': {
-      backgroundColor: 'rgba(255, 255, 255, 0.08)',
-      boxShadow: '0 0 20px rgba(255, 51, 102, 0.15)',
-    }
-  },
-  '& .MuiInputLabel-root': {
-    color: 'rgba(255, 255, 255, 0.5)',
-    fontWeight: 500,
-    '&.Mui-focused': {
-      color: '#ff3366',
-    }
-  },
-  '& .MuiSvgIcon-root': {
-    color: 'rgba(255, 255, 255, 0.5)'
-  },
-  // Ensure date/time picker inputs have correct text color
-  '& input[type="date"]::-webkit-calendar-picker-indicator, & input[type="time"]::-webkit-calendar-picker-indicator': {
-    filter: 'invert(1)',
-    opacity: 0.6,
-    cursor: 'pointer',
-    '&:hover': { opacity: 1 }
-  }
-});
-
-const PremiumGlassButton = styled(Button)({
-  background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.02) 100%)',
-  backdropFilter: 'blur(10px)',
-  border: '1px solid rgba(255,255,255,0.1)',
-  color: '#fff',
-  borderRadius: '12px',
-  textTransform: 'none',
-  padding: '12px 24px',
-  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-  boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
-  position: 'relative',
-  overflow: 'hidden',
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
-    background: 'linear-gradient(135deg, rgba(255, 51, 102, 0.8) 0%, rgba(255, 153, 51, 0.8) 100%)',
-    opacity: 0,
-    transition: 'opacity 0.4s ease',
-    zIndex: 0
-  },
-  '&:hover': {
-    transform: 'translateY(-2px)',
-    boxShadow: '0 8px 25px rgba(255, 51, 102, 0.3)',
-    border: '1px solid rgba(255,255,255,0.3)',
-    '&::before': { opacity: 1 }
-  },
-  '&.Mui-disabled': {
-    color: 'rgba(255,255,255,0.3)',
-    background: 'rgba(255,255,255,0.05)',
-    border: '1px solid rgba(255,255,255,0.05)',
-  },
-  '& .MuiButton-label, & .MuiTypography-root, & span': {
-    position: 'relative',
-    zIndex: 1
-  }
-});
-
-// --- Main Component ---
 
 interface AddEventSidebarProps {
   onClose: () => void;
@@ -137,20 +40,27 @@ export default function AddEventSidebar({ onClose, tenantId }: AddEventSidebarPr
   const { user, profile } = useSociety();
   
   const [targetScope, setTargetScope] = useState<'personal' | 'organization' | 'society'>('personal');
+  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
+  
   const [eventType, setEventType] = useState<'article' | 'livestream' | 'general'>('general');
   const [title, setTitle] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [time, setTime] = useState('10:00');
   
-  const [challengeId, setChallengeId] = useState('');
-  const [subcategoryId, setSubcategoryId] = useState('');
-  const [eraId, setEraId] = useState('ideation');
+  const [contentType, setContentType] = useState<'text' | 'todo'>('text');
+  const [description, setDescription] = useState('');
+  const [todoItems, setTodoItems] = useState<{id: string, text: string, done: boolean}[]>([]);
+  
+  const [tags, setTags] = useState<string[]>([]);
+  const [challengeId, setChallengeId] = useState<any>(null);
+  const [subcategoryId, setSubcategoryId] = useState<string>('');
+  const [eraId, setEraId] = useState<string>('ideation');
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [draftId, setDraftId] = useState<string | null>(null);
 
-  // If user is completely unauthenticated, show login prompt
+  const [flippedBlockId, setFlippedBlockId] = useState<string | null>('scope');
+
   if (!user || !profile) {
     return (
       <Box sx={sidebarStyles}>
@@ -165,7 +75,9 @@ export default function AddEventSidebar({ onClose, tenantId }: AddEventSidebarPr
           <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mb: 4, lineHeight: 1.6 }}>
             Access to the Boardroom Calendar requires authentication. Sign in to Society OS to schedule events and manage drafts.
           </Typography>
-          <PremiumButton variant="filled" baseColor={theme.palette.primary.main} onClick={() => router.push('/join')}>
+        </Box>
+        <Box sx={footerStyles}>
+          <PremiumButton variant="filled" baseColor={theme.palette.primary.main} onClick={() => router.push('/join')} sx={{ width: '100%' }}>
             Start Upgrading Now
           </PremiumButton>
         </Box>
@@ -174,59 +86,18 @@ export default function AddEventSidebar({ onClose, tenantId }: AddEventSidebarPr
   }
 
   const isSociety = targetScope === 'society';
+  const isOrg = targetScope === 'organization';
   const gatekeeper = isSociety ? checkGatekeeper(profile, 4) : { allowed: true };
 
-  // If they selected Society but aren't Rank 4
-  if (isSociety && !gatekeeper.allowed) {
-    return (
-      <Box sx={sidebarStyles}>
-        <Header onClose={onClose} />
-        
-        <Box sx={{ p: 1, mb: 3 }}>
-          <GlassTextField 
-            select 
-            label="Where are you posting this to?" 
-            fullWidth 
-            size="small" 
-            value={targetScope} 
-            onChange={(e) => setTargetScope(e.target.value as any)}
-            slotProps={{ select: { MenuProps: darkMenuProps } }}
-          >
-            <MenuItem value="personal">Personal Calendar</MenuItem>
-            {profile.organizations && profile.organizations.length > 0 && (
-              <MenuItem value="organization">Organization Calendar</MenuItem>
-            )}
-            <MenuItem value="society">FoodNerve Society</MenuItem>
-          </GlassTextField>
-        </Box>
-
-        <Box sx={{ 
-          flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', 
-          textAlign: 'center', p: 4, 
-          bgcolor: 'rgba(255, 51, 102, 0.05)', 
-          borderRadius: 4, 
-          border: `1px solid rgba(255, 51, 102, 0.15)`,
-          boxShadow: 'inset 0 0 30px rgba(255, 51, 102, 0.05)'
-        }}>
-          <LockOutlinedIcon sx={{ fontSize: 48, color: '#ff3366', mb: 3, filter: 'drop-shadow(0 0 10px rgba(255,51,102,0.4))' }} />
-          <Typography variant="h5" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 800, mb: 1, color: '#fff' }}>
-            Rank 4 Required
-          </Typography>
-          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mb: 4, lineHeight: 1.6 }}>
-            Exclusive access: Only authenticated Rank 4 members can broadcast events directly to the Society Boardroom.
-          </Typography>
-          <PremiumButton variant="outlined" baseColor={theme.palette.error.main} onClick={() => router.push((gatekeeper as any).upgradeRoute || '/profile')}>
-            Upgrade Authorization
-          </PremiumButton>
-        </Box>
-      </Box>
-    );
-  }
-
-  // Handle Event Type Constraints
-  if (isSociety && eventType === 'general') {
-    setEventType('article'); // Force content draft for society
-  }
+  const handleAddTodo = () => {
+    setTodoItems([...todoItems, { id: Math.random().toString(), text: '', done: false }]);
+  };
+  const updateTodo = (id: string, text: string) => {
+    setTodoItems(todoItems.map(t => t.id === id ? { ...t, text } : t));
+  };
+  const removeTodo = (id: string) => {
+    setTodoItems(todoItems.filter(t => t.id !== id));
+  };
 
   const handleSubmit = async () => {
     if (!title || !date || !time) return;
@@ -237,21 +108,26 @@ export default function AddEventSidebar({ onClose, tenantId }: AddEventSidebarPr
     
     setIsSubmitting(true);
     
+    const finalDescription = contentType === 'todo' ? JSON.stringify(todoItems) : description;
+    const finalTags = tags.length > 0 ? JSON.stringify(tags) : undefined;
+    
     try {
       const result = await scheduleCalendarEvent({
         targetScope,
+        selectedOrgId: selectedOrgId || undefined,
         eventType,
         title,
         date,
         time,
-        challengeId,
+        challengeId: challengeId?.id || undefined,
         subcategoryId,
         eraId,
-        tenantId
+        tenantId,
+        description: finalDescription,
+        tags: finalTags
       });
 
       if (result.success) {
-        setDraftId(result.draftId);
         setIsSuccess(true);
       } else {
         throw new Error(result.error || 'Failed to schedule event');
@@ -264,17 +140,58 @@ export default function AddEventSidebar({ onClose, tenantId }: AddEventSidebarPr
     }
   };
 
+  const getBlockFillStats = (blockId: string) => {
+    let filled = 0;
+    let total = 1;
+    switch(blockId) {
+      case 'scope':
+        total = isOrg ? 2 : 1; // TargetScope + SelectedOrgId
+        if (targetScope) filled++;
+        if (isOrg && selectedOrgId) filled++;
+        break;
+      case 'type':
+        total = 1; 
+        if (eventType) filled++;
+        break;
+      case 'details':
+        total = 3; // title, date, time
+        if (title) filled++;
+        if (date) filled++;
+        if (time) filled++;
+        
+        if (isSociety) {
+          total += 2; // challenge, subcategory
+          if (challengeId) filled++;
+          if (subcategoryId) filled++;
+        }
+        break;
+    }
+    return { filled, total };
+  };
+
+  const isBlockFilled = (blockId: string) => {
+    const stats = getBlockFillStats(blockId);
+    return stats.filled >= stats.total;
+  };
+
+  const allFilled = EVENT_FRAMEWORK.every(b => isBlockFilled(b.id));
+
+  // Dummy options for challenges
+  const CHALLENGES = [
+    { id: 'post-harvest-loss', name: 'Post-Harvest Loss' },
+    { id: 'cold-chain', name: 'Cold Chain' },
+    { id: 'soil-health', name: 'Soil Health' },
+    { id: 'market-access', name: 'Market Access' },
+    { id: 'capital', name: 'Capital' }
+  ];
+
   if (isSuccess) {
     return (
       <Box sx={sidebarStyles}>
         <Header onClose={onClose} />
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', p: 3 }}>
           <Box sx={{ 
-            p: 3, 
-            bgcolor: 'rgba(76, 175, 80, 0.1)', 
-            borderRadius: '50%', 
-            mb: 3, 
-            boxShadow: '0 0 30px rgba(76, 175, 80, 0.2)' 
+            p: 3, bgcolor: 'rgba(76, 175, 80, 0.1)', borderRadius: '50%', mb: 3, boxShadow: '0 0 30px rgba(76, 175, 80, 0.2)' 
           }}>
             <CheckCircleOutlinedIcon sx={{ fontSize: 64, color: '#4caf50' }} />
           </Box>
@@ -286,18 +203,17 @@ export default function AddEventSidebar({ onClose, tenantId }: AddEventSidebarPr
               ? 'Your event has been successfully logged to the secure timeline.' 
               : 'Your scheduled draft has been created and securely stored.'}
           </Typography>
-          
-          <PremiumGlassButton sx={{ width: '100%', maxWidth: 280 }} onClick={() => {
+        </Box>
+        <Box sx={footerStyles}>
+          <PremiumButton variant="filled" baseColor="#4caf50" onClick={() => {
             if (eventType !== 'general' && challengeId && subcategoryId) {
-              router.push(`/${challengeId}/${subcategoryId}/learn`);
+              router.push(`/${challengeId.id}/${subcategoryId}/learn`);
             } else {
               onClose();
             }
-          }}>
-            <Typography sx={{ fontWeight: 700, fontSize: '1rem', letterSpacing: '0.02em' }}>
-              {eventType === 'general' ? 'Acknowledge' : 'Proceed to Learn Tab'}
-            </Typography>
-          </PremiumGlassButton>
+          }} sx={{ width: '100%' }}>
+            {eventType === 'general' ? 'Acknowledge' : 'Proceed to Learn Tab'}
+          </PremiumButton>
         </Box>
       </Box>
     );
@@ -307,157 +223,347 @@ export default function AddEventSidebar({ onClose, tenantId }: AddEventSidebarPr
     <Box sx={sidebarStyles}>
       <Header onClose={onClose} />
 
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 1 }}>
-        <GlassTextField 
-          select 
-          label="Target Scope" 
-          fullWidth 
-          size="medium" 
-          value={targetScope} 
-          onChange={(e) => setTargetScope(e.target.value as any)}
-          slotProps={{ select: { MenuProps: darkMenuProps } }}
-        >
-          <MenuItem value="personal">Personal Calendar</MenuItem>
-          {profile.organizations && profile.organizations.length > 0 && (
-            <MenuItem value="organization">Organization Calendar</MenuItem>
-          )}
-          <MenuItem value="society">FoodNerve Society (Public)</MenuItem>
-        </GlassTextField>
+      <Box sx={{ flex: 1, overflowY: 'auto', p: { xs: 3, md: 4 }, pt: 0, '&::-webkit-scrollbar': { display: 'none' } }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+          {EVENT_FRAMEWORK.map((b, i) => {
+            const isFlipped = flippedBlockId === b.id;
+            const fillStats = getBlockFillStats(b.id);
+            const filled = fillStats.filled >= fillStats.total;
+            const fillPercent = fillStats.total === 0 ? 100 : Math.min(100, Math.round((fillStats.filled / fillStats.total) * 100));
+            const bDef = BLOCK_DEFINITIONS[b.type] || { color: '#ef4444', label: 'Block' };
+            const color = bDef.color;
 
-        <GlassTextField 
-          select 
-          label="Event Type" 
-          fullWidth 
-          size="medium" 
-          value={eventType} 
-          onChange={(e) => setEventType(e.target.value as any)}
-          slotProps={{ select: { MenuProps: darkMenuProps } }}
-        >
-          <MenuItem value="article">Article Draft</MenuItem>
-          <MenuItem value="livestream">Livestream Draft</MenuItem>
-          {!isSociety && <MenuItem value="general">General Event (Text Reminder)</MenuItem>}
-        </GlassTextField>
+            let filledSummary = 'Content added — tap to edit';
+            if (filled) {
+              if (b.id === 'scope') filledSummary = targetScope === 'organization' ? `Organization Target` : targetScope === 'society' ? `Society (Public)` : `Personal Target`;
+              if (b.id === 'type') filledSummary = eventType === 'article' ? 'Article Draft' : eventType === 'livestream' ? 'Livestream Draft' : 'General Event';
+              if (b.id === 'details') filledSummary = `${title || 'No Title'} • ${date} ${time}`;
+            }
 
-        <GlassTextField 
-          label="Event / Draft Title" 
-          placeholder="e.g. Q3 Investor Update" 
-          fullWidth 
-          size="medium" 
-          value={title}
-          onChange={e => setTitle(e.target.value)}
-        />
-        
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <GlassTextField 
-            label={isSociety ? "Publish Date" : "Date"} 
-            type="date" 
-            fullWidth 
-            size="medium" 
-            slotProps={{ inputLabel: { shrink: true } }} 
-            value={date}
-            onChange={e => setDate(e.target.value)}
-          />
-          <GlassTextField 
-            label="Time" 
-            type="time" 
-            fullWidth 
-            size="medium" 
-            slotProps={{ inputLabel: { shrink: true } }} 
-            value={time}
-            onChange={e => setTime(e.target.value)}
-          />
+            return (
+              <Box key={b.id} id={`block-${b.id}`} sx={{ perspective: '1600px', mb: 2.5 }}>
+                <Box sx={{
+                  position: 'relative',
+                  transition: 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                  transformStyle: 'preserve-3d',
+                  transformOrigin: 'center center',
+                  transform: isFlipped ? 'rotateX(-180deg)' : 'none',
+                }}>
+                  {/* FRONT FACE */}
+                  <Box
+                    onClick={() => !isFlipped && setFlippedBlockId(b.id)}
+                    sx={{
+                      backfaceVisibility: 'hidden',
+                      position: isFlipped ? 'absolute' : 'relative',
+                      width: '100%', top: 0,
+                      borderRadius: '20px',
+                      border: `1px solid ${filled ? alpha(color, 0.8) : alpha(color, 0.15)}`,
+                      background: filled 
+                        ? `linear-gradient(135deg, ${color} 0%, ${alpha(color, 0.8)} 100%)`
+                        : `linear-gradient(to right, ${alpha(color, 0.2)} ${fillPercent}%, rgba(255,255,255,0.95) ${fillPercent}%, rgba(248,250,252,0.9) 100%)`,
+                      backdropFilter: 'blur(16px)',
+                      boxShadow: filled ? `0 12px 32px ${alpha(color, 0.3)}` : `0 8px 32px rgba(0,0,0,0.04)`,
+                      overflow: 'hidden',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                      '&:hover': {
+                        borderColor: filled ? color : alpha(color, 0.6),
+                        boxShadow: filled ? `0 16px 48px ${alpha(color, 0.4)}` : `0 12px 48px rgba(0,0,0,0.08)`,
+                        transform: 'translateY(-2px)'
+                      },
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'stretch', position: 'relative', zIndex: 1 }}>
+                      <Box sx={{ width: filled ? 0 : 6, flexShrink: 0, background: filled ? `transparent` : `linear-gradient(180deg, ${alpha(color, 0.4)} 0%, ${alpha(color, 0.1)} 100%)` }} />
+                      <Box sx={{ p: 2, flex: 1, display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Box sx={{
+                          width: 36, height: 36, borderRadius: '10px', flexShrink: 0,
+                          bgcolor: filled ? 'rgba(255,255,255,0.2)' : alpha(color, 0.1), 
+                          border: filled ? '1px solid rgba(255,255,255,0.3)' : `1px solid ${alpha(color, 0.2)}`,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center'
+                        }}>
+                          {filled ? <CheckIcon sx={{ color: '#fff', fontSize: 18 }} /> : <Typography sx={{ fontWeight: 800, fontSize: '1rem', color }}>{i + 1}</Typography>}
+                        </Box>
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography sx={{ fontWeight: 800, color: filled ? '#fff' : '#0f172a', fontSize: '1rem', letterSpacing: '-0.01em', mb: 0.2 }}>
+                            {b.role}
+                          </Typography>
+                          <Typography sx={{ color: filled ? 'rgba(255,255,255,0.8)' : '#64748b', fontSize: '0.8rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }}>
+                            {filled ? filledSummary : b.desc}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Box>
+                  </Box>
+
+                  {/* BACK FACE */}
+                  <Box sx={{
+                    backfaceVisibility: 'hidden',
+                    transform: 'rotateX(180deg)',
+                    position: isFlipped ? 'relative' : 'absolute',
+                    width: '100%', top: 0,
+                    borderRadius: '20px',
+                    border: `1px solid ${alpha(color, 0.4)}`,
+                    background: `linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(248,250,252,0.95) 100%)`,
+                    backdropFilter: 'blur(20px)',
+                    boxShadow: `0 16px 48px rgba(0,0,0,0.08)`,
+                    overflow: 'hidden',
+                  }}>
+                    <Box sx={{
+                      display: 'flex', alignItems: 'center', gap: 1.5, px: 2, py: 1.5,
+                      borderBottom: `1px solid rgba(0,0,0,0.06)`, background: alpha(color, 0.05),
+                    }}>
+                      <Box sx={{ width: 28, height: 28, borderRadius: '8px', bgcolor: alpha(color, 0.15), display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${alpha(color, 0.2)}` }}>
+                        <Typography sx={{ fontWeight: 800, fontSize: '0.8rem', color }}>{i + 1}</Typography>
+                      </Box>
+                      <Typography sx={{ fontWeight: 800, color: '#0f172a', fontSize: '0.95rem', flex: 1 }}>
+                        {b.role}
+                      </Typography>
+                      <IconButton
+                        size="small"
+                        onClick={() => setFlippedBlockId(null)}
+                        sx={{ bgcolor: color, color: '#fff', boxShadow: `0 4px 12px ${alpha(color, 0.3)}`, '&:hover': { bgcolor: alpha(color, 0.9), transform: 'scale(1.05)' } }}
+                      >
+                        <CheckIcon sx={{ fontSize: 16, fontWeight: 900 }} />
+                      </IconButton>
+                    </Box>
+
+                    <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      
+                      {/* --- BLOCK 1: TARGET SCOPE --- */}
+                      {b.id === 'scope' && (
+                        <>
+                          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 1.5 }}>
+                            <CardChoice 
+                              title="Personal Calendar" desc="Only visible to you" color={color} 
+                              selected={targetScope === 'personal'} onClick={() => { setTargetScope('personal'); }}
+                            />
+                            
+                            {profile.organizations && profile.organizations.length > 0 && (
+                              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                <CardChoice 
+                                  title="Organization" desc="Sync with your team's agenda" color={color} 
+                                  selected={targetScope === 'organization'} onClick={() => { setTargetScope('organization'); }}
+                                />
+                                {targetScope === 'organization' && (
+                                  <Box sx={{ px: 2, pb: 1, pt: 0.5 }}>
+                                    <PremiumAutocomplete
+                                      colorTheme={color}
+                                      label="Select Organization"
+                                      options={profile.organizations.map((o:any) => ({ id: o.organizationId, name: o.organization?.name || 'Unknown' }))}
+                                      getOptionLabel={(o:any) => o.name}
+                                      value={profile.organizations.find((o:any) => o.organizationId === selectedOrgId) || null}
+                                      onChange={(e, val:any) => setSelectedOrgId(val ? val.id : null)}
+                                    />
+                                  </Box>
+                                )}
+                              </Box>
+                            )}
+                            
+                            <CardChoice 
+                              title="Society Broadcast" desc="Public event in the ecosystem" color={color} 
+                              selected={targetScope === 'society'} onClick={() => { setTargetScope('society'); }}
+                            />
+                          </Box>
+
+                          {isSociety && !gatekeeper.allowed && (
+                            <Alert severity="error" sx={{ borderRadius: 2, mt: 1, '& .MuiAlert-icon': { color: '#ff3366' }, bgcolor: 'rgba(255, 51, 102, 0.1)', color: '#ff3366' }}>
+                              <Typography variant="body2" sx={{ fontWeight: 700 }}>Rank 4 Required</Typography>
+                              Only authenticated Rank 4 members can broadcast to the Society.
+                            </Alert>
+                          )}
+                        </>
+                      )}
+
+                      {/* --- BLOCK 2: EVENT TYPE --- */}
+                      {b.id === 'type' && (
+                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 1.5 }}>
+                          <CardChoice 
+                            title="Article Draft" desc="Schedule a written report" color={color} 
+                            selected={eventType === 'article'} onClick={() => setEventType('article')}
+                          />
+                          <CardChoice 
+                            title="Livestream Draft" desc="Schedule a live session" color={color} 
+                            selected={eventType === 'livestream'} onClick={() => setEventType('livestream')}
+                          />
+                          {!isSociety && (
+                            <CardChoice 
+                              title="General Event" desc="Standard text reminder" color={color} 
+                              selected={eventType === 'general'} onClick={() => setEventType('general')}
+                            />
+                          )}
+                        </Box>
+                      )}
+
+                      {/* --- BLOCK 3: DETAILS & TAXONOMY --- */}
+                      {b.id === 'details' && (
+                        <>
+                          <PremiumTextField 
+                            label="Event Title" placeholder="e.g. Q3 Roadmap Review" 
+                            fullWidth size="small" value={title} onChange={(e: any) => setTitle(e.target.value)} colorTheme={color}
+                          />
+                          <Box sx={{ display: 'flex', gap: 2 }}>
+                            <PremiumTextField 
+                              label={isSociety ? "Publish Date" : "Date"} type="date" 
+                              fullWidth size="small" slotProps={{ inputLabel: { shrink: true } }} 
+                              value={date} onChange={(e: any) => setDate(e.target.value)} colorTheme={color}
+                            />
+                            <PremiumTextField 
+                              label="Time" type="time" 
+                              fullWidth size="small" slotProps={{ inputLabel: { shrink: true } }} 
+                              value={time} onChange={(e: any) => setTime(e.target.value)} colorTheme={color}
+                            />
+                          </Box>
+
+                          {/* Content / Todo Toggle */}
+                          <Box sx={{ mt: 1 }}>
+                            <Box sx={{ display: 'flex', mb: 1, p: 0.5, bgcolor: 'rgba(0,0,0,0.05)', borderRadius: '12px' }}>
+                              <Button 
+                                fullWidth size="small"
+                                sx={{ borderRadius: '10px', fontWeight: 700, color: contentType === 'text' ? color : '#64748b', bgcolor: contentType === 'text' ? '#fff' : 'transparent', boxShadow: contentType === 'text' ? '0 2px 8px rgba(0,0,0,0.05)' : 'none' }}
+                                onClick={() => setContentType('text')}
+                              >Description</Button>
+                              <Button 
+                                fullWidth size="small"
+                                sx={{ borderRadius: '10px', fontWeight: 700, color: contentType === 'todo' ? color : '#64748b', bgcolor: contentType === 'todo' ? '#fff' : 'transparent', boxShadow: contentType === 'todo' ? '0 2px 8px rgba(0,0,0,0.05)' : 'none' }}
+                                onClick={() => setContentType('todo')}
+                              >Action List</Button>
+                            </Box>
+                            
+                            {contentType === 'text' ? (
+                              <PremiumTextField 
+                                label="Description" multiline rows={3} fullWidth size="small"
+                                value={description} onChange={(e: any) => setDescription(e.target.value)} colorTheme={color}
+                              />
+                            ) : (
+                              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                {todoItems.map((todo, idx) => (
+                                  <Box key={todo.id} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <Box sx={{ width: 16, height: 16, borderRadius: '4px', border: `2px solid ${alpha(color, 0.4)}` }} />
+                                    <PremiumTextField 
+                                      placeholder={`Task ${idx + 1}`} fullWidth size="small"
+                                      value={todo.text} onChange={(e: any) => updateTodo(todo.id, e.target.value)} colorTheme={color}
+                                    />
+                                    <IconButton size="small" onClick={() => removeTodo(todo.id)} sx={{ color: '#ef4444' }}>
+                                      <DeleteIcon fontSize="small" />
+                                    </IconButton>
+                                  </Box>
+                                ))}
+                                <Button startIcon={<AddIcon />} size="small" onClick={handleAddTodo} sx={{ color, fontWeight: 700, alignSelf: 'flex-start' }}>
+                                  Add Task
+                                </Button>
+                              </Box>
+                            )}
+                          </Box>
+
+                          {/* Tags for Organization */}
+                          {isOrg && (
+                            <PremiumAutocomplete
+                              multiple
+                              freeSolo
+                              colorTheme={color}
+                              label="Organization Tags"
+                              options={[]}
+                              value={tags}
+                              onChange={(e, val) => setTags(val)}
+                              placeholder="Type and press enter"
+                            />
+                          )}
+
+                          {/* Taxonomy for Society */}
+                          {isSociety && (
+                            <>
+                              <Typography sx={{ fontWeight: 800, color: '#0f172a', fontSize: '0.85rem', mt: 1 }}>Ecosystem Categorization</Typography>
+                              <PremiumAutocomplete
+                                colorTheme={color}
+                                label="Challenge Area"
+                                options={CHALLENGES}
+                                getOptionLabel={(o:any) => o.name}
+                                value={challengeId}
+                                onChange={(e, val:any) => setChallengeId(val)}
+                              />
+                              <PremiumTextField 
+                                label="Subcategory (slug)" 
+                                placeholder="e.g. aggregation-centers" 
+                                fullWidth size="small"
+                                value={subcategoryId} onChange={(e: any) => setSubcategoryId(e.target.value)}
+                                colorTheme={color}
+                              />
+                              <PremiumTextField 
+                                select label="Era" fullWidth size="small"
+                                value={eraId} onChange={(e: any) => setEraId(e.target.value)} colorTheme={color}
+                              >
+                                <MenuItem value="ideation">Ideation</MenuItem>
+                                <MenuItem value="pilot">Pilot</MenuItem>
+                                <MenuItem value="scale">Scale</MenuItem>
+                              </PremiumTextField>
+                            </>
+                          )}
+                        </>
+                      )}
+                    </Box>
+                  </Box>
+                </Box>
+              </Box>
+            );
+          })}
         </Box>
-
-        {(isSociety || eventType !== 'general') && (
-          <Box sx={{ 
-            p: 3, 
-            bgcolor: 'rgba(255,255,255,0.02)', 
-            borderRadius: 3, 
-            display: 'flex', 
-            flexDirection: 'column', 
-            gap: 2.5, 
-            border: '1px solid rgba(255,255,255,0.05)',
-            boxShadow: 'inset 0 0 20px rgba(0,0,0,0.2)'
-          }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: -1 }}>
-              <Box sx={{ width: 4, height: 16, bgcolor: '#ff3366', borderRadius: 1 }} />
-              <Typography variant="caption" sx={{ fontWeight: 800, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Categorization {isSociety ? '(Required)' : '(Optional)'}
-              </Typography>
-            </Box>
-            
-            <GlassTextField 
-              select 
-              label="Challenge (Category)" 
-              fullWidth 
-              size="medium"
-              value={challengeId}
-              onChange={e => setChallengeId(e.target.value)}
-              required={isSociety}
-              slotProps={{ select: { MenuProps: darkMenuProps } }}
-            >
-              <MenuItem value="post-harvest-loss">Post-Harvest Loss</MenuItem>
-              <MenuItem value="cold-chain">Cold Chain</MenuItem>
-              <MenuItem value="soil-health">Soil Health</MenuItem>
-              <MenuItem value="market-access">Market Access</MenuItem>
-              <MenuItem value="capital">Capital</MenuItem>
-            </GlassTextField>
-            
-            <GlassTextField 
-              label="Subcategory ID (slug)" 
-              placeholder="e.g. aggregation-centers" 
-              fullWidth 
-              size="medium"
-              value={subcategoryId}
-              onChange={e => setSubcategoryId(e.target.value)}
-              required={isSociety}
-            />
-            
-            <GlassTextField 
-              select 
-              label="Era" 
-              fullWidth 
-              size="medium"
-              value={eraId}
-              onChange={e => setEraId(e.target.value)}
-              slotProps={{ select: { MenuProps: darkMenuProps } }}
-            >
-              <MenuItem value="ideation">Ideation</MenuItem>
-              <MenuItem value="pilot">Pilot</MenuItem>
-              <MenuItem value="scale">Scale</MenuItem>
-            </GlassTextField>
-          </Box>
-        )}
-
-        <PremiumGlassButton 
-          disabled={isSubmitting || !title || !date || !time || (isSociety && (!challengeId || !subcategoryId))}
-          onClick={handleSubmit}
-          sx={{ mt: 2 }}
-        >
-          <Typography sx={{ fontWeight: 700, fontSize: '1.1rem', letterSpacing: '0.02em' }}>
-            {isSubmitting ? 'Authenticating...' : (eventType === 'general' ? 'Schedule Event' : 'Initialize Scheduled Draft')}
-          </Typography>
-        </PremiumGlassButton>
       </Box>
+
+      {/* FIXED FOOTER WITH BUTTON */}
+      <Box sx={footerStyles}>
+        <PremiumButton 
+          variant="filled"
+          baseColor="#3b82f6"
+          disabled={isSubmitting || !allFilled || (isSociety && (!gatekeeper.allowed))}
+          onClick={handleSubmit}
+          sx={{ width: '100%' }}
+        >
+          {isSubmitting ? 'Processing...' : (eventType === 'general' ? 'Schedule Event' : 'Initialize Scheduled Draft')}
+        </PremiumButton>
+      </Box>
+
     </Box>
   );
 }
 
+// --- HELPER COMPONENTS ---
+
+const CardChoice = ({ title, desc, color, selected, onClick }: any) => (
+  <Paper 
+    onClick={onClick}
+    sx={{ 
+      p: 1.5, borderRadius: '14px', display: 'flex', flexDirection: 'column', gap: 0.5,
+      border: `2px solid ${selected ? color : 'transparent'}`, 
+      bgcolor: selected ? alpha(color, 0.05) : 'rgba(0,0,0,0.03)',
+      cursor: 'pointer', transition: 'all 0.2s',
+      opacity: selected ? 1 : 0.7,
+      '&:hover': { bgcolor: selected ? alpha(color, 0.08) : 'rgba(0,0,0,0.06)', opacity: 1 }
+    }}
+  >
+    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <Typography sx={{ fontWeight: 800, fontSize: '0.95rem', color: selected ? color : '#0f172a' }}>
+        {title}
+      </Typography>
+      {selected && <CheckIcon sx={{ fontSize: 18, color }} />}
+    </Box>
+    <Typography sx={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500 }}>
+      {desc}
+    </Typography>
+  </Paper>
+);
+
 const Header = ({ onClose }: { onClose: () => void }) => (
-  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: { xs: 3, md: 4 }, pb: 2 }}>
     <Typography variant="h5" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: '#fff', letterSpacing: '-0.02em' }}>
       Create Event
     </Typography>
     <IconButton 
-      size="small" 
-      onClick={onClose} 
+      size="small" onClick={onClose} 
       sx={{ 
-        bgcolor: 'rgba(255,255,255,0.05)', 
-        color: 'rgba(255,255,255,0.6)',
-        border: '1px solid rgba(255,255,255,0.1)',
-        backdropFilter: 'blur(10px)',
+        bgcolor: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.1)',
+        backdropFilter: 'blur(10px)', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         '&:hover': { bgcolor: 'rgba(255,255,255,0.1)', color: '#fff', transform: 'rotate(90deg)' },
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
       }}
     >
       <CloseIcon fontSize="small" />
@@ -471,27 +577,18 @@ const sidebarStyles = {
   bgcolor: 'rgba(12, 12, 14, 0.75)', 
   backdropFilter: 'blur(32px) saturate(180%)', 
   borderRadius: { xs: 0, md: 6 }, 
-  p: { xs: 3, md: 4 }, 
   border: { xs: 'none', md: '1px solid rgba(255,255,255,0.08)' }, 
   borderLeft: '1px solid rgba(255,255,255,0.1)',
   boxShadow: '-20px 0 60px rgba(0,0,0,0.6)',
   display: 'flex',
   flexDirection: 'column',
-  overflowY: 'auto',
+  overflow: 'hidden', // CLIPPED
   height: '100%',
-  
-  // Custom scrollbar for webkit
-  '&::-webkit-scrollbar': {
-    width: '6px',
-  },
-  '&::-webkit-scrollbar-track': {
-    background: 'transparent',
-  },
-  '&::-webkit-scrollbar-thumb': {
-    background: 'rgba(255,255,255,0.1)',
-    borderRadius: '10px',
-  },
-  '&::-webkit-scrollbar-thumb:hover': {
-    background: 'rgba(255,255,255,0.2)',
-  }
+};
+
+const footerStyles = {
+  p: { xs: 3, md: 4 }, pt: 3, pb: { xs: 4, md: 4 },
+  borderTop: '1px solid rgba(255,255,255,0.06)',
+  bgcolor: 'rgba(0,0,0,0.3)',
+  backdropFilter: 'blur(10px)'
 };
