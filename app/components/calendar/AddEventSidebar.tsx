@@ -7,6 +7,8 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined';
+import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
+import RadioButtonCheckedIcon from '@mui/icons-material/RadioButtonChecked';
 import CheckIcon from '@mui/icons-material/Check';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -223,8 +225,8 @@ export default function AddEventSidebar({ onClose, tenantId }: AddEventSidebarPr
     <Box sx={sidebarStyles}>
       <Header onClose={onClose} />
 
-      <Box sx={{ flex: 1, overflowY: 'auto', p: { xs: 3, md: 4 }, pt: 0, '&::-webkit-scrollbar': { display: 'none' } }}>
-        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', p: { xs: 3, md: 4 }, pt: 0, '&::-webkit-scrollbar': { display: 'none' } }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
           {EVENT_FRAMEWORK.map((b, i) => {
             const isFlipped = flippedBlockId === b.id;
             const fillStats = getBlockFillStats(b.id);
@@ -346,15 +348,16 @@ export default function AddEventSidebar({ onClose, tenantId }: AddEventSidebarPr
                                   selected={targetScope === 'organization'} onClick={() => { setTargetScope('organization'); }}
                                 />
                                 {targetScope === 'organization' && (
-                                  <Box sx={{ px: 2, pb: 1, pt: 0.5 }}>
-                                    <PremiumAutocomplete
-                                      colorTheme={color}
-                                      label="Select Organization"
-                                      options={profile.organizations.map((o:any) => ({ id: o.organizationId, name: o.organization?.name || 'Unknown' }))}
-                                      getOptionLabel={(o:any) => o.name}
-                                      value={profile.organizations.find((o:any) => o.organizationId === selectedOrgId) || null}
-                                      onChange={(e, val:any) => setSelectedOrgId(val ? val.id : null)}
-                                    />
+                                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 1, px: 1, pb: 0.5 }}>
+                                    {profile.organizations.map((o: any) => (
+                                      <CardChoice
+                                        key={o.organizationId}
+                                        title={o.organization?.name || 'Unknown Organization'}
+                                        color={color}
+                                        selected={selectedOrgId === o.organizationId}
+                                        onClick={() => setSelectedOrgId(o.organizationId)}
+                                      />
+                                    ))}
                                   </Box>
                                 )}
                               </Box>
@@ -507,22 +510,26 @@ export default function AddEventSidebar({ onClose, tenantId }: AddEventSidebarPr
               </Box>
             );
           })}
+
+          <Box sx={{ mt: 'auto', pt: 4, pb: 2 }}>
+            {!allFilled && (
+              <Alert severity="info" sx={{ mb: 2, borderRadius: 3, bgcolor: 'rgba(255,255,255,0.05)', color: '#fff', '& .MuiAlert-icon': { color: '#fff' }, border: '1px solid rgba(255,255,255,0.1)' }}>
+                <Typography variant="body2" sx={{ fontWeight: 700 }}>Incomplete</Typography>
+                Complete all blocks to schedule your event.
+              </Alert>
+            )}
+            <PremiumButton 
+              variant="filled"
+              baseColor="#3b82f6"
+              disabled={isSubmitting || !allFilled || (isSociety && (!gatekeeper.allowed))}
+              onClick={handleSubmit}
+              sx={{ width: '100%' }}
+            >
+              {isSubmitting ? 'Processing...' : (eventType === 'general' ? 'Schedule Event' : 'Initialize Scheduled Draft')}
+            </PremiumButton>
+          </Box>
         </Box>
       </Box>
-
-      {/* FIXED FOOTER WITH BUTTON */}
-      <Box sx={footerStyles}>
-        <PremiumButton 
-          variant="filled"
-          baseColor="#3b82f6"
-          disabled={isSubmitting || !allFilled || (isSociety && (!gatekeeper.allowed))}
-          onClick={handleSubmit}
-          sx={{ width: '100%' }}
-        >
-          {isSubmitting ? 'Processing...' : (eventType === 'general' ? 'Schedule Event' : 'Initialize Scheduled Draft')}
-        </PremiumButton>
-      </Box>
-
     </Box>
   );
 }
@@ -530,27 +537,35 @@ export default function AddEventSidebar({ onClose, tenantId }: AddEventSidebarPr
 // --- HELPER COMPONENTS ---
 
 const CardChoice = ({ title, desc, color, selected, onClick }: any) => (
-  <Paper 
+  <Box 
     onClick={onClick}
     sx={{ 
-      p: 1.5, borderRadius: '14px', display: 'flex', flexDirection: 'column', gap: 0.5,
-      border: `2px solid ${selected ? color : 'transparent'}`, 
-      bgcolor: selected ? alpha(color, 0.05) : 'rgba(0,0,0,0.03)',
-      cursor: 'pointer', transition: 'all 0.2s',
-      opacity: selected ? 1 : 0.7,
-      '&:hover': { bgcolor: selected ? alpha(color, 0.08) : 'rgba(0,0,0,0.06)', opacity: 1 }
+      p: 2, borderRadius: '16px', display: 'flex', alignItems: 'center', gap: 2,
+      border: `1px solid ${selected ? alpha(color, 0.5) : 'rgba(0,0,0,0.06)'}`, 
+      background: selected ? `linear-gradient(135deg, ${alpha(color, 0.1)}, ${alpha(color, 0.02)})` : 'rgba(255,255,255,0.7)',
+      boxShadow: selected ? `0 8px 24px ${alpha(color, 0.15)}` : '0 2px 12px rgba(0,0,0,0.02)',
+      cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+      position: 'relative',
+      overflow: 'hidden',
+      '&:hover': { 
+        background: selected ? `linear-gradient(135deg, ${alpha(color, 0.15)}, ${alpha(color, 0.05)})` : '#ffffff', 
+        borderColor: selected ? color : alpha(color, 0.2), 
+        transform: 'translateY(-2px)',
+        boxShadow: selected ? `0 12px 32px ${alpha(color, 0.2)}` : '0 8px 24px rgba(0,0,0,0.06)'
+      }
     }}
   >
-    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <Typography sx={{ fontWeight: 800, fontSize: '0.95rem', color: selected ? color : '#0f172a' }}>
+    {selected && <Box sx={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', bgcolor: color }} />}
+    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: selected ? color : '#94a3b8' }}>
+      {selected ? <RadioButtonCheckedIcon /> : <RadioButtonUncheckedIcon />}
+    </Box>
+    <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+      <Typography sx={{ fontWeight: 800, fontSize: '0.95rem', color: selected ? '#0f172a' : '#334155', mb: desc ? 0.5 : 0 }}>
         {title}
       </Typography>
-      {selected && <CheckIcon sx={{ fontSize: 18, color }} />}
+      {desc && <Typography sx={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500, lineHeight: 1.3 }}>{desc}</Typography>}
     </Box>
-    <Typography sx={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500 }}>
-      {desc}
-    </Typography>
-  </Paper>
+  </Box>
 );
 
 const Header = ({ onClose }: { onClose: () => void }) => (
@@ -572,17 +587,16 @@ const Header = ({ onClose }: { onClose: () => void }) => (
 );
 
 const sidebarStyles = {
-  width: { xs: '100%', md: '400px', lg: '450px' }, 
+  width: { xs: '100vw', md: '450px', lg: '500px' }, 
   minWidth: 320, 
   bgcolor: 'rgba(12, 12, 14, 0.75)', 
   backdropFilter: 'blur(32px) saturate(180%)', 
-  borderRadius: { xs: 0, md: 6 }, 
+  borderRadius: { xs: 0, md: '24px 0 0 24px' }, 
   border: { xs: 'none', md: '1px solid rgba(255,255,255,0.08)' }, 
-  borderLeft: '1px solid rgba(255,255,255,0.1)',
-  boxShadow: '-20px 0 60px rgba(0,0,0,0.6)',
+  borderRight: 'none',
+  boxShadow: '-20px 0 80px rgba(0,0,0,0.5)',
   display: 'flex',
   flexDirection: 'column',
-  overflow: 'hidden', // CLIPPED
   height: '100%',
 };
 
