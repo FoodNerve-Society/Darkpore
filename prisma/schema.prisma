@@ -749,6 +749,12 @@ model CalendarEvent {
   sourceId         String    // The ID of the original record in its source table
   slug             String?   // Human-readable slug for slug-based routes (e.g. articles)
 
+  // --- Visibility & Scoping (The 3 Tiers) ---
+  tenantId       String
+  visibility     String    @default("personal") // 'society' | 'organization' | 'personal'
+  organizationId String?   // Required if visibility = 'organization'
+  userId         String?   // Required if visibility = 'personal' (The owner)
+
   // --- Date Specificity ---
   dateType         String    @default("START_TIME") // 'DEADLINE' | 'START_TIME' | 'PUBLISH_DATE' | 'DATE_RANGE'
   date             DateTime  // The primary deadline / scheduled time / release date
@@ -759,6 +765,8 @@ model CalendarEvent {
   imageUrl         String?
   category         String?
   organizationName String?
+  description      String?   // Used for general events (text or stringified JSON checklist)
+  tags             String?   // JSON string array for organization tags
 
   // --- Metadata ---
   status           String    @default("upcoming") // 'upcoming' | 'live' | 'expired'
@@ -768,5 +776,10 @@ model CalendarEvent {
   @@index([date])
   @@index([status, date])
   @@index([sourceType, date])
+  @@index([tenantId, visibility, date])
+  @@index([organizationId, date])
+  @@index([userId, date])
 }
+
+
 

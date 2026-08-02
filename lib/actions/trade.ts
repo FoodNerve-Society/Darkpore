@@ -221,6 +221,10 @@ export async function createTradeListing(data: CreateTradeListingPayload) {
         imageUrl: listing.imageUrl ?? undefined,
         category: listing.category,
         organizationName: orgName,
+        tenantId: 'foodnerve',
+        visibility: listing.organizationId ? 'organization' : 'personal',
+        organizationId: listing.organizationId || undefined,
+        userId: listing.postedById,
       });
     } else {
       await removeCalendarEvent(sourceType, listing.id);

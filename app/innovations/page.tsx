@@ -54,6 +54,7 @@ export default async function InnovationsHomepage(props: { searchParams?: Promis
     todayEnd.setHours(23, 59, 59, 999);
 
     const result = await fetchCalendarEvents({
+      tenantId: 'foodnerve',
       startDate: todayStart.toISOString(),
       endDate: todayEnd.toISOString(),
       limit: 10

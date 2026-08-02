@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Box, Typography, CardActionArea, Button } from '@mui/material';
+import { Box, Typography, Button } from '@mui/material';
 import Link from 'next/link';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { motion, Variants } from 'framer-motion';
@@ -100,7 +100,7 @@ export default function BentoGridTeaser({ challenges }: { challenges: any[] }) {
               }} />
 
               {/* Content */}
-              <CardActionArea sx={{ 
+              <Box sx={{ 
                 p: { xs: 3, md: 4 }, 
                 height: '100%', 
                 display: 'flex', 
@@ -138,6 +138,7 @@ export default function BentoGridTeaser({ challenges }: { challenges: any[] }) {
                 </Box>
 
                 <PremiumButton 
+                  component="div"
                   variant="outlined"
                   baseColor="white"
                   endIcon={<ArrowForwardIcon sx={{ fontSize: 18 }} />}
@@ -156,7 +157,7 @@ export default function BentoGridTeaser({ challenges }: { challenges: any[] }) {
                   }}>
                   Explore
                 </PremiumButton>
-              </CardActionArea>
+              </Box>
             </Box>
           </Link>
         </Box>

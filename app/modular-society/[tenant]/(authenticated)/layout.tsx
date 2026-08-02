@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 
-import React, { useEffect, useState, FC, ReactNode } from 'react';
+import React, { useEffect, useState, FC, ReactNode, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -23,6 +23,7 @@ import OnboardingWizard from '@/components/OnboardingWizard';
 import MiniAuthModal from './components/MiniAuthModal';
 import UpdatesFeed from './components/UpdatesFeed';
 import { WikiOverlayProvider } from '@/context/WikiOverlayContext';
+import { CalendarOverlayProvider } from '@/context/CalendarOverlayContext';
 
 const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
   const { user, profile, loading, needsOnboarding, isUpdatesOpen, setUpdatesOpen } = useSociety();
@@ -34,6 +35,8 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const [showUnauthModal, setShowUnauthModal] = useState(false);
+  const phantomRedirectRef = useRef(false);
+  const prevPathnameRef = useRef(pathname);
 
   // --- THE DEFINITIVE, RACE-CONDITION-FREE GATEKEEPER ---
   useEffect(() => {
@@ -43,12 +46,10 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
     }
 
     // State B: Auth is confirmed, and there is NO user.
-    // Instead of instantly showing the modal (which causes flashes during IndexedDB restores),
-    // we debounce it slightly.
     if (!user) {
       const timer = setTimeout(() => {
         setShowUnauthModal(true);
-      }, 500); // Wait 500ms before declaring them definitely logged out
+      }, 500); 
       return () => clearTimeout(timer);
     }
 
@@ -56,41 +57,57 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
     setShowUnauthModal(false);
 
     // State D (The Race Condition): The user is confirmed, but their DB profile is still loading.
-    // We wait patiently for the profile to exist before making any logic decisions.
     if (!profile) {
       return;
     }
 
-    // State C: We have a user AND their profile. Now we can safely run routing logic.
-    // If the user navigates directly to a base authenticated route or logs in without a specific destination,
-    // we route them to their last active tab, or default to trade.
-    // However, since we don't have a specific "root" in authenticated, we handle it if they happen to hit a generic redirect.
-    // Actually, if they are exactly on an onboarding path or a path that doesn't exist, we force them to trade.
     // --- PHANTOM LANDING FOR UPDATES ---
-    if (pathname === '/updates') {
-      const targetTab = profile.lastActiveTab || 'trade';
-      setUpdatesOpen(true);
-      router.replace(`/${targetTab}`);
+    const normalizedPath = pathname.replace(/\/$/, '');
+    if (normalizedPath === '/updates' && !needsOnboarding) {
+      let targetTab = profile.lastActiveTab || profile.landingPage || 'trade';
+      if (targetTab === 'updates' || targetTab === '/updates') {
+        targetTab = profile.landingPage && profile.landingPage !== 'updates' ? profile.landingPage : 'trade';
+      }
+      if (targetTab.startsWith('/')) {
+        targetTab = targetTab.substring(1);
+      }
+      
+      phantomRedirectRef.current = true;
+      
+      setTimeout(() => {
+        router.replace(`/${targetTab}`);
+      }, 10);
+      
       return;
     }
 
-    const isBaseAuthPath = pathname === '/dashboard'; // We deleted this, but just in case they have a bookmark
-    
+    const isBaseAuthPath = pathname === '/dashboard'; 
     if (isBaseAuthPath) {
       const targetTab = profile.lastActiveTab || 'trade';
       router.replace(`/${targetTab}`);
       return;
     }
 
-  }, [loading, user, profile, pathname, router, setUpdatesOpen]);
+  }, [loading, user, profile, pathname, router]);
 
-  // --- AUTO-CLOSE UPDATES ON ROUTE CHANGE ---
+  // --- HANDLE PHANTOM REDIRECT COMPLETION & AUTO-CLOSE ---
   useEffect(() => {
-    // If the user navigates somewhere else (clicking a link in the updates feed), close the drawer.
-    if (pathname !== '/updates' && isUpdatesOpen) {
-      setUpdatesOpen(false);
+    const normalizedPath = pathname.replace(/\/$/, '');
+    const prevNormalized = prevPathnameRef.current.replace(/\/$/, '');
+    
+    if (normalizedPath !== prevNormalized) {
+      if (normalizedPath !== '/updates') {
+        if (phantomRedirectRef.current) {
+          phantomRedirectRef.current = false;
+          setUpdatesOpen(true);
+        } else if (isUpdatesOpen) {
+          setUpdatesOpen(false);
+        }
+      }
     }
-  }, [pathname]);
+    
+    prevPathnameRef.current = pathname;
+  }, [pathname, isUpdatesOpen, setUpdatesOpen]);
 
   // --- SCROLL LOCK FOR MOBILE UPDATES DRAWER ---
   useEffect(() => {
@@ -106,10 +123,7 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
   }, [isMobile, isUpdatesOpen]);
 
   // --- UNAUTHENTICATED LOGIC ---
-  // The user must manually click to redirect. No auto-timer.
-
   const handleSignOut = async () => {
-    // If Dev Bypass is active, just route out
     if (process.env.NODE_ENV === 'development') {
         router.push('/join');
         return;
@@ -118,19 +132,18 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
     router.push('/join');
   };
 
-  // Only show the definitive loading screen if we are actively checking auth or fetching a profile for an existing user.
   if (loading || (user && !profile)) {
     return <LivelyLoadingScreen />;
   }
 
-  // If we reach here, we either have a fully loaded user+profile, OR we have NO user (so showUnauthModal is true)
   const activeTheme = getActiveTheme(pathname);
 
   return (
     <WikiOverlayProvider>
+      <CalendarOverlayProvider>
       <Box sx={{ display: 'flex', height: '100dvh', flexDirection: isMobile ? 'column' : 'row', position: 'relative', bgcolor: '#f8fafc', overflow: 'hidden' }}>
 
-        {/* --- DYNAMIC BACKGROUND LAYER (Fixed behind everything) --- */}
+        {/* --- DYNAMIC BACKGROUND LAYER --- */}
       <Box sx={{
         position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
         opacity: 1,
@@ -148,24 +161,16 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
         />
       )}
       
-      {/* Desktop Updates Panel (Hidden underneath, revealed when main page shifts right) */}
+      {/* Desktop Updates Panel */}
       {!isMobile && (
         <Box
           component={motion.div}
-          animate={isUpdatesOpen ? {
-            x: 60,
-            scale: 1,
-            opacity: 1,
-          } : {
-            x: 20,
-            scale: 0.92,
-            opacity: 0,
-          }}
+          animate={isUpdatesOpen ? { x: 60, scale: 1, opacity: 1 } : { x: 20, scale: 0.92, opacity: 0 }}
           transition={{ type: 'spring', damping: 25, stiffness: 180 }}
           sx={{
             position: 'absolute',
             top: 0, 
-            left: 280, // Positioned right next to the 280px sidebar
+            left: 280, 
             width: 360,
             height: '100vh',
             zIndex: 5,
@@ -177,13 +182,23 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
           }}
         >
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Typography variant="h5" fontWeight={800}>Updates</Typography>
-            <IconButton onClick={() => setUpdatesOpen(false)}>
-              <LockOutlinedIcon sx={{ fontSize: 20 }} /> {/* Temp close icon */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: activeTheme.main, boxShadow: `0 0 12px ${activeTheme.main}` }} />
+              <Typography variant="h5" sx={{ fontWeight: 900, letterSpacing: -0.5 }}>Updates</Typography>
+            </Box>
+            <IconButton onClick={() => setUpdatesOpen(false)} sx={{ bgcolor: 'rgba(0,0,0,0.04)', '&:hover': { bgcolor: 'rgba(0,0,0,0.08)' } }}>
+              <LockOutlinedIcon sx={{ fontSize: 18 }} /> 
             </IconButton>
           </Box>
-          <Typography variant="body2" color="text.secondary" mb={3}>Your activity feed and notifications will appear here.</Typography>
-          <Box sx={{ flex: 1, overflowY: 'auto' }}>
+          <Box sx={{ 
+            flex: 1, 
+            overflowY: 'auto', 
+            pb: 10,
+            px: 1, // Add slight horizontal padding for shadow clipping
+            mx: -1, // Offset the padding
+            '&::-webkit-scrollbar': { display: 'none' },
+            scrollbarWidth: 'none' 
+          }}>
             <UpdatesFeed />
           </Box>
         </Box>
@@ -196,7 +211,7 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
         animate={(!isMobile && isUpdatesOpen) ? {
           scale: 0.95,
           x: 360,
-          marginRight: 360, // Shrinks the flex width so x:360 doesn't shove it off screen
+          marginRight: 360,
           opacity: 0.8,
         } : {
           scale: 1,
@@ -212,8 +227,7 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
           flexDirection: 'column', 
           position: 'relative', 
           zIndex: 10,
-          // height: '100dvh', removed height constraint to let flex: 1 govern it
-          overflowY: 'visible', // Allow page card shadow to bleed out seamlessly
+          overflowY: 'visible', 
           overflowX: 'visible',
           boxSizing: 'border-box'
         }}
@@ -252,7 +266,11 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
               onComplete={() => window.location.reload()} 
               profile={profile}
             />
-            {children}
+            {pathname.replace(/\/$/, '') === '/updates' ? (
+              <LivelyLoadingScreen />
+            ) : (
+              children
+            )}
             <AdminOnboardingModal />
           </>
         )}
@@ -293,6 +311,7 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
         />
       )}
       </Box>
+      </CalendarOverlayProvider>
     </WikiOverlayProvider>
   );
 };

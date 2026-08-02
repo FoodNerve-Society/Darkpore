@@ -33,6 +33,7 @@ export type CreateLearnContentPayload = {
   reportPdfUrl?: string;
   reportPages?: number;
   thumbnailUrl?: string;
+  targetDate?: string;
 };
 
 export async function createLearnContent(data: CreateLearnContentPayload, isDraft = false) {
@@ -84,6 +85,7 @@ export async function createLearnContent(data: CreateLearnContentPayload, isDraf
           authorName: data.authorName,
           authorAvatarUrl: data.authorAvatarUrl,
           organizationId: data.organizationId || null,
+          targetDate: data.targetDate ? new Date(data.targetDate) : null,
         },
       });
     } else {
@@ -103,6 +105,7 @@ export async function createLearnContent(data: CreateLearnContentPayload, isDraf
           authorName: data.authorName,
           authorAvatarUrl: data.authorAvatarUrl,
           organizationId: data.organizationId || null,
+          targetDate: data.targetDate ? new Date(data.targetDate) : null,
         },
       });
     }
@@ -231,6 +234,10 @@ export async function createLearnContent(data: CreateLearnContentPayload, isDraf
       category: result.category ?? result.type,
       organizationName: orgName,
       status: 'upcoming',
+      tenantId: 'foodnerve',
+      visibility: orgName ? 'organization' : 'society',
+      organizationId: result.organizationId || undefined,
+      userId: result.authorId,
     });
   } else {
     await removeCalendarEvent(result.type, result.id);

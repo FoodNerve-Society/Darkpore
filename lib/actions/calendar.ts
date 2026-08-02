@@ -3,7 +3,8 @@
 import { getCalendarEvents } from '@/lib/calendar-sync';
 import { getCalendarEventRoute } from '@/lib/calendar-routes';
 
-export async function fetchCalendarEvents(options?: {
+export async function fetchCalendarEvents(options: {
+  tenantId: string;
   startDate?: string;
   endDate?: string;
   sourceType?: string;
@@ -12,6 +13,7 @@ export async function fetchCalendarEvents(options?: {
 }) {
   try {
     const events = await getCalendarEvents({
+      tenantId: options.tenantId,
       startDate: options?.startDate ? new Date(options.startDate) : undefined,
       endDate: options?.endDate ? new Date(options.endDate) : undefined,
       sourceType: options?.sourceType,
