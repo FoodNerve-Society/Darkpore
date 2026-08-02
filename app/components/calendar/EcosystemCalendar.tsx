@@ -140,15 +140,36 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
             const refDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), targetDayNum);
             const weekNumber = getWeekNumber(refDate);
 
+            // Check if any day in this row matches currentDate (for highlighting the week)
+            let isWeekSelected = false;
+            if (isAddingEvent) {
+              for (let colIndex = 0; colIndex < 7; colIndex++) {
+                const cellIndex = rowIndex * 7 + colIndex;
+                const day = cellIndex - firstDayOfMonth + 1;
+                if (day >= 1 && day <= daysInMonth) {
+                  const targetDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+                  if (currentDate.toDateString() === targetDate.toDateString()) {
+                    isWeekSelected = true;
+                    break;
+                  }
+                }
+              }
+            }
+
             return (
               <React.Fragment key={`row-${rowIndex}`}>
                 {/* 1. Week Number Cell */}
                 <Box sx={{ 
                   display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                  bgcolor: 'rgba(0,0,0,0.01)', borderRadius: 2, border: '1px dashed rgba(0,0,0,0.05)'
+                  bgcolor: isWeekSelected ? alpha(theme.palette.primary.main, 0.15) : 'rgba(0,0,0,0.01)', 
+                  borderRadius: 2, 
+                  border: isWeekSelected ? `1px solid ${alpha(theme.palette.primary.main, 0.4)}` : '1px dashed rgba(0,0,0,0.05)',
+                  transition: 'all 0.2s ease'
                 }}>
                   <Typography sx={{ 
-                    fontWeight: 900, color: '#94a3b8', fontSize: '0.75rem', 
+                    fontWeight: 900, 
+                    color: isWeekSelected ? theme.palette.primary.main : '#94a3b8', 
+                    fontSize: '0.75rem', 
                     textTransform: 'uppercase', letterSpacing: '0.05em', transform: 'rotate(-90deg)' 
                   }}>
                     W{weekNumber}
