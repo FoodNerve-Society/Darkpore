@@ -23,7 +23,7 @@ import PremiumSwitch from '@/components/PremiumSwitch';
 import { scheduleCalendarEvent } from '@/app/actions/calendar';
 import { ECOSYSTEM_EVENT_TYPES } from '@/lib/config/eventTypes';
 
-import { getTenantConfig, ERAS } from '@/lib/cms';
+import { getTenantConfig, ERAS, FOOD_TYPES, VALUE_CHAIN_ACTORS } from '@/lib/cms';
 
 const BLOCK_DEFINITIONS: Record<string, { label: string, color: string }> = {
   core: { label: 'Core', color: '#3b82f6' },
@@ -58,7 +58,10 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
   const [tags, setTags] = useState<string[]>([]);
   const [challengeId, setChallengeId] = useState<any>(null);
   const [subcategoryId, setSubcategoryId] = useState<string>('');
+  const [includeTaxonomy, setIncludeTaxonomy] = useState(false);
   const [eraId, setEraId] = useState<string>(ERAS[0]?.id || '');
+  const [foodTypeId, setFoodTypeId] = useState<string>('');
+  const [valueChainActorId, setValueChainActorId] = useState<string>('');
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -153,9 +156,11 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
       const result = await scheduleCalendarEvent({
         eventType: eventType as any,
         title,
-        challengeId: challengeId?.id,
-        subcategoryId,
-        eraId,
+        challengeId: includeTaxonomy ? challengeId?.id : undefined,
+        subcategoryId: includeTaxonomy ? subcategoryId : undefined,
+        eraId: includeTaxonomy ? eraId : undefined,
+        foodTypeId: includeTaxonomy ? foodTypeId : undefined,
+        valueChainActorId: includeTaxonomy ? valueChainActorId : undefined,
         tenantId,
         tags: finalTags,
         scopes,
@@ -239,12 +244,14 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
         <Box sx={footerStyles}>
           <PremiumButton variant="filled" baseColor="#4caf50" onClick={() => {
             if (eventType !== 'general' && challengeId && subcategoryId) {
-              router.push(`/${challengeId.id}/${subcategoryId}/learn`);
+              const selectedType = ECOSYSTEM_EVENT_TYPES.find(t => t.id === eventType);
+              const targetTab = selectedType?.tab || 'learn';
+              router.push(`/${challengeId.id}/${subcategoryId}/${targetTab}`);
             } else {
               onClose();
             }
           }} sx={{ width: '100%' }}>
-            {eventType === 'general' ? 'Acknowledge' : 'Proceed to Learn Tab'}
+            {eventType === 'general' ? 'Acknowledge' : 'Proceed to Draft'}
           </PremiumButton>
         </Box>
       </Box>
@@ -393,7 +400,7 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
                           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                             <PremiumAutocomplete
                               label="Select Event Type"
-                              options={ECOSYSTEM_EVENT_TYPES}
+                              options={ECOSYSTEM_EVENT_TYPES.filter(t => t.isActive)}
                               getOptionLabel={(opt) => opt.label}
                               value={ECOSYSTEM_EVENT_TYPES.find((t) => t.id === eventType) || ECOSYSTEM_EVENT_TYPES[0]}
                               onChange={(e, val) => setEventType(val ? val.id : 'general')}
@@ -486,24 +493,38 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
                               else setScopes([...scopes, 'society']);
                             }}
                           />
-                          {scopes.includes('society') && (
+                          {scopes.includes('society') && eventType !== 'general' && (
                             <Box sx={{ 
                               ml: 4, pl: 2, borderLeft: `2px solid ${alpha(color, 0.2)}`, 
                               display: 'flex', flexDirection: 'column', gap: 1.5 
                             }}>
-                              <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                Ecosystem Taxonomy
-                              </Typography>
-                              <PremiumAutocomplete 
-                                label="Target Era" 
-                                options={ERAS} 
-                                getOptionLabel={(opt) => opt.label} 
-                                value={ERAS.find((e) => e.id === eraId) || null} 
-                                onChange={(e, val) => setEraId(val ? val.id : '')} 
-                                colorTheme={color} 
-                              />
-                              <PremiumAutocomplete label="Mission Category" options={categories} getOptionLabel={(opt) => opt.title} value={challengeId} onChange={(e, val) => { setChallengeId(val); setSubcategoryId(''); }} colorTheme={color} />
-                              <PremiumAutocomplete label="Subcategory / Focus" options={challengeId ? challengeId.subcategories : []} getOptionLabel={(opt) => opt.title} value={challengeId?.subcategories?.find((s: any) => s.id === subcategoryId) || null} onChange={(e, val) => setSubcategoryId(val ? val.id : '')} colorTheme={color} disabled={!challengeId} />
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                                <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                  Apply Ecosystem Taxonomy
+                                </Typography>
+                                <PremiumSwitch 
+                                  checked={includeTaxonomy} 
+                                  onChange={(e: any) => setIncludeTaxonomy(e.target.checked)} 
+                                  colorTheme={color} 
+                                />
+                              </Box>
+                              
+                              {includeTaxonomy && (
+                                <>
+                                  <PremiumAutocomplete 
+                                    label="Target Era" 
+                                    options={ERAS} 
+                                    getOptionLabel={(opt) => opt.label} 
+                                    value={ERAS.find((e) => e.id === eraId) || null} 
+                                    onChange={(e, val) => setEraId(val ? val.id : '')} 
+                                    colorTheme={color} 
+                                  />
+                                  <PremiumAutocomplete label="Mission Category" options={categories} getOptionLabel={(opt) => opt.title} value={challengeId} onChange={(e, val) => { setChallengeId(val); setSubcategoryId(''); }} colorTheme={color} />
+                                  <PremiumAutocomplete label="Subcategory / Focus" options={challengeId ? challengeId.subcategories : []} getOptionLabel={(opt) => opt.title} value={challengeId?.subcategories?.find((s: any) => s.id === subcategoryId) || null} onChange={(e, val) => setSubcategoryId(val ? val.id : '')} colorTheme={color} disabled={!challengeId} />
+                                  <PremiumAutocomplete label="Food Type" options={FOOD_TYPES} getOptionLabel={(opt) => opt.label} value={FOOD_TYPES.find(v => v.id === foodTypeId) || null} onChange={(e, val) => setFoodTypeId(val ? val.id : '')} colorTheme={color} />
+                                  <PremiumAutocomplete label="Value Chain Actor" options={VALUE_CHAIN_ACTORS} getOptionLabel={(opt) => opt.label} value={VALUE_CHAIN_ACTORS.find(v => v.id === valueChainActorId) || null} onChange={(e, val) => setValueChainActorId(val ? val.id : '')} colorTheme={color} />
+                                </>
+                              )}
                             </Box>
                           )}
                         </Box>

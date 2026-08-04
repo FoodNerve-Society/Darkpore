@@ -37,6 +37,8 @@ export async function scheduleCalendarEvent(payload: {
   challengeId?: string;
   subcategoryId?: string;
   eraId?: string;
+  foodTypeId?: string;
+  valueChainActorId?: string;
   tenantId: string;
   description?: string;
   tags?: string;
@@ -57,28 +59,58 @@ export async function scheduleCalendarEvent(payload: {
     let sourceId = crypto.randomUUID();
     let reviewStatus = 'none';
 
-    // 1. If it's a draft (article/livestream), create the LearnContent first
-    if (payload.eventType === 'article' || payload.eventType === 'livestream') {
+    // 1. If it's a draft, create the underlying entity first based on tab
+    if (payload.eventType !== 'general') {
       const societyTimeline = payload.timelines.society;
       const targetDate = societyTimeline ? new Date(`${societyTimeline.date}T${societyTimeline.time}:00`) : new Date();
       
-      const draft = await prisma.learnContent.create({
-        data: {
-          title: payload.title,
-          slug: `${payload.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now()}`,
-          description: `Scheduled ${payload.eventType}`,
-          type: payload.eventType,
-          status: 'scheduled',
-          category: payload.challengeId,
-          subcategory: payload.subcategoryId,
-          timeframe: payload.eraId,
-          authorName: user.name || 'Anonymous',
-          authorId: user.id,
-          authorAvatarUrl: user.avatarUrl,
-          targetDate: targetDate,
-        }
-      });
-      sourceId = draft.id;
+      if (['article', 'livestream', 'masterclass'].includes(payload.eventType)) {
+        const draft = await prisma.learnContent.create({
+          data: {
+            title: payload.title,
+            slug: `${payload.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now()}`,
+            description: `Scheduled ${payload.eventType}`,
+            type: payload.eventType,
+            status: 'scheduled',
+            category: payload.challengeId,
+            subcategory: payload.subcategoryId,
+            timeframe: payload.eraId,
+            authorName: user.name || 'Anonymous',
+            authorId: user.id,
+            authorAvatarUrl: user.avatarUrl,
+            targetDate: targetDate,
+          }
+        });
+        sourceId = draft.id;
+      } else if (['flash-sale', 'listing'].includes(payload.eventType)) {
+        const draft = await prisma.tradeListing.create({
+          data: {
+            title: payload.title,
+            description: `Scheduled ${payload.eventType} draft`,
+            category: payload.eventType,
+            priceOrAsk: 'TBD',
+            location: 'TBD',
+            lga: 'TBD',
+            status: 'draft'
+          }
+        });
+        sourceId = draft.id;
+      } else if (payload.eventType === 'meetup') {
+        const draft = await prisma.meetEvent.create({
+          data: {
+            title: payload.title,
+            description: `Scheduled ${payload.eventType} draft`,
+            type: 'meetup',
+            date: targetDate,
+            location: 'TBD',
+            maxAttendees: 0,
+            hostName: user.name || 'Anonymous',
+            hostUserId: user.id,
+            status: 'draft'
+          }
+        });
+        sourceId = draft.id;
+      }
       
       if (payload.scopes.includes('organization')) {
          reviewStatus = 'drafting';

@@ -17,3 +17,24 @@ export const ERAS = [
   { id: 'present', label: 'Present' },
   { id: 'future', label: 'Future' }
 ];
+
+export const FOOD_TYPES = [
+  { id: 'cereals', label: 'Cereals & Grains' },
+  { id: 'tubers', label: 'Roots & Tubers' },
+  { id: 'produce', label: 'Fruits & Vegetables' },
+  { id: 'livestock', label: 'Meat & Poultry' },
+  { id: 'dairy', label: 'Dairy & Eggs' },
+  { id: 'seafood', label: 'Fish & Seafood' },
+  { id: 'legumes', label: 'Legumes & Nuts' }
+];
+
+export const VALUE_CHAIN_ACTORS = [
+  { id: 'producer', label: 'Farmer / Producer' },
+  { id: 'processor', label: 'Processor / Manufacturer' },
+  { id: 'distributor', label: 'Distributor / Transporter' },
+  { id: 'retailer', label: 'Retailer / Vendor' },
+  { id: 'consumer', label: 'Consumer' },
+  { id: 'regulator', label: 'Regulator / Policymaker' },
+  { id: 'innovator', label: 'Researcher / Innovator' },
+  { id: 'investor', label: 'Investor / Financier' }
+];
