@@ -58,7 +58,7 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
   const [tags, setTags] = useState<string[]>([]);
   const [challengeId, setChallengeId] = useState<any>(null);
   const [subcategoryId, setSubcategoryId] = useState<string>('');
-  const [eraId, setEraId] = useState<string>('ideation');
+  const [eraId, setEraId] = useState<string>(ERAS[0]?.id || '');
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -403,13 +403,6 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
                               {(ECOSYSTEM_EVENT_TYPES.find((t) => t.id === eventType) || ECOSYSTEM_EVENT_TYPES[0]).description}
                             </Typography>
                           </Box>
-                          {scopes.includes('society') && (
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: 1 }}>
-                              <Typography sx={{ fontWeight: 800, color: '#334155', fontSize: '0.85rem' }}>Ecosystem Taxonomy</Typography>
-                              <PremiumAutocomplete label="Mission Category" options={categories} getOptionLabel={(opt) => opt.title} value={challengeId} onChange={(e, val) => { setChallengeId(val); setSubcategoryId(''); }} colorTheme={color} />
-                              <PremiumAutocomplete label="Subcategory / Focus" options={challengeId ? challengeId.subcategories : []} getOptionLabel={(opt) => opt.title} value={challengeId?.subcategories?.find((s: any) => s.id === subcategoryId) || null} onChange={(e, val) => setSubcategoryId(val ? val.id : '')} colorTheme={color} disabled={!challengeId} />
-                            </Box>
-                          )}
                         </Box>
                       )}
 
@@ -493,6 +486,26 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
                               else setScopes([...scopes, 'society']);
                             }}
                           />
+                          {scopes.includes('society') && (
+                            <Box sx={{ 
+                              ml: 4, pl: 2, borderLeft: `2px solid ${alpha(color, 0.2)}`, 
+                              display: 'flex', flexDirection: 'column', gap: 1.5 
+                            }}>
+                              <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                Ecosystem Taxonomy
+                              </Typography>
+                              <PremiumAutocomplete 
+                                label="Target Era" 
+                                options={ERAS} 
+                                getOptionLabel={(opt) => opt.label} 
+                                value={ERAS.find((e) => e.id === eraId) || null} 
+                                onChange={(e, val) => setEraId(val ? val.id : '')} 
+                                colorTheme={color} 
+                              />
+                              <PremiumAutocomplete label="Mission Category" options={categories} getOptionLabel={(opt) => opt.title} value={challengeId} onChange={(e, val) => { setChallengeId(val); setSubcategoryId(''); }} colorTheme={color} />
+                              <PremiumAutocomplete label="Subcategory / Focus" options={challengeId ? challengeId.subcategories : []} getOptionLabel={(opt) => opt.title} value={challengeId?.subcategories?.find((s: any) => s.id === subcategoryId) || null} onChange={(e, val) => setSubcategoryId(val ? val.id : '')} colorTheme={color} disabled={!challengeId} />
+                            </Box>
+                          )}
                         </Box>
                       )}
 
@@ -506,7 +519,7 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
                               {['START_TIME', 'PUBLISH_DATE', 'DATE_RANGE', 'DEADLINE'].map(dt => (
                                 <Box 
                                   key={dt}
-                                  onClick={() => setTimelines({ ...timelines, [scopeKey]: { ...timeline, dateType: dt } })}
+                                  onClick={() => setTimelines({ ...timelines, [scopeKey]: { ...timeline, dateType: dt, allDay: dt === 'PUBLISH_DATE' ? true : timeline.allDay } })}
                                   sx={{
                                     px: 2, py: 0.8, borderRadius: '100px', cursor: 'pointer', flexShrink: 0,
                                     border: `1px solid ${timeline.dateType === dt ? color : alpha(color, 0.3)}`,
