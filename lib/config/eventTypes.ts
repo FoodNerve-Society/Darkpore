@@ -6,13 +6,14 @@ export interface EcosystemEventType {
   tab: EcosystemTab;
   description?: string;
   isActive?: boolean;
+  orgOnly?: boolean;
 }
 
 export const ECOSYSTEM_EVENT_TYPES: EcosystemEventType[] = [
   { id: 'general', label: 'General Event', tab: 'general', description: 'A standard calendar event.', isActive: true },
   { id: 'article', label: 'Article Draft', tab: 'learn', description: 'Schedule an article for publication.', isActive: true },
   { id: 'video', label: 'Video Insights', tab: 'learn', description: 'Share short-form video analysis.', isActive: false },
-  { id: 'livestream', label: 'Livestream', tab: 'learn', description: 'Host a live video session.', isActive: false },
+  { id: 'livestream', label: 'Livestream', tab: 'learn', description: 'Host a live video session.', isActive: false, orgOnly: true },
   { id: 'class', label: 'Masterclass', tab: 'learn', description: 'Create an in-depth educational course.', isActive: false },
   
   { id: 'jobs', label: 'Job Listing', tab: 'trade', description: 'Post an open position or hiring need.', isActive: true },

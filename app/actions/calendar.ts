@@ -59,6 +59,31 @@ export async function scheduleCalendarEvent(payload: {
     let sourceId = crypto.randomUUID();
     let reviewStatus = 'none';
 
+    // Security Gate: Verify org membership for org/society scopes
+    let userOrgId: string | null = null;
+    if (payload.scopes.includes('organization') || payload.scopes.includes('society')) {
+      const orgTimeline = payload.timelines.organization;
+      if (orgTimeline?.orgId) {
+        // Verify user actually belongs to this org
+        const membership = await prisma.organizationMember.findFirst({
+          where: { userId: user.id, organizationId: orgTimeline.orgId }
+        });
+        if (!membership) {
+          return { success: false, error: 'You are not a member of this organization.' };
+        }
+        userOrgId = orgTimeline.orgId;
+      } else {
+        // Fallback: use first org
+        const membership = await prisma.organizationMember.findFirst({
+          where: { userId: user.id }
+        });
+        if (!membership) {
+          return { success: false, error: 'You must belong to a verified Organization to post Organization or Society events.' };
+        }
+        userOrgId = membership.organizationId;
+      }
+    }
+
     // 1. If it's a draft, create the underlying entity first based on tab
     if (payload.eventType !== 'general') {
       const societyTimeline = payload.timelines.society;
@@ -79,10 +104,11 @@ export async function scheduleCalendarEvent(payload: {
             authorId: user.id,
             authorAvatarUrl: user.avatarUrl,
             targetDate: targetDate,
+            ...(userOrgId ? { organizationId: userOrgId } : {}),
           }
         });
         sourceId = draft.id;
-      } else if (['flash-sale', 'listing'].includes(payload.eventType)) {
+      } else if (['flash-sale', 'listing', 'jobs'].includes(payload.eventType)) {
         const draft = await prisma.tradeListing.create({
           data: {
             title: payload.title,
@@ -92,7 +118,8 @@ export async function scheduleCalendarEvent(payload: {
             location: 'TBD',
             lga: 'TBD',
             status: 'draft',
-            postedById: user.id
+            postedById: user.id,
+            ...(userOrgId ? { organizationId: userOrgId } : {}),
           }
         });
         sourceId = draft.id;
@@ -107,7 +134,8 @@ export async function scheduleCalendarEvent(payload: {
             maxAttendees: 0,
             hostName: user.name || 'Anonymous',
             hostUserId: user.id,
-            status: 'draft'
+            status: 'draft',
+            ...(userOrgId ? { organizationId: userOrgId } : {}),
           }
         });
         sourceId = draft.id;
@@ -134,16 +162,8 @@ export async function scheduleCalendarEvent(payload: {
       let dateType = timeline.dateType || 'START_TIME';
 
       let organizationId: string | null = null;
-      if (scope === 'organization') {
-        const orgTimeline = timeline as any;
-        if (orgTimeline.orgId) {
-          organizationId = orgTimeline.orgId;
-        } else {
-          const orgMember = await prisma.organizationMember.findFirst({
-            where: { userId: user.id }
-          });
-          if (orgMember) organizationId = orgMember.organizationId;
-        }
+      if (scope === 'organization' || scope === 'society') {
+        organizationId = userOrgId;
       }
 
       const compiledDescription = JSON.stringify({

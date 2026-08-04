@@ -71,6 +71,11 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
   const categories = tenantConfig.com.homepage.challenges;
   const isSociety = scopes.includes('society');
 
+  // Organization ownership enforcement
+  const hasOrgs = !!(profile?.organizations && profile.organizations.length > 0);
+  const activeEventConfig = ECOSYSTEM_EVENT_TYPES.find(t => t.id === eventType);
+  const isOrgOnly = activeEventConfig?.orgOnly === true;
+
   const framework = [
     { id: 'core', type: 'core', role: 'Core Identity', desc: 'Title, Event Type, Content & Taxonomy' },
     { id: 'scopes', type: 'scopes', role: 'Target Scopes', desc: 'Who is this event for?' },
@@ -143,6 +148,14 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
 
   const handleSubmit = async () => {
     if (!title) return;
+    if (isOrgOnly && !hasOrgs) {
+      alert("This event type requires a verified Organization. Please join one first.");
+      return;
+    }
+    if ((scopes.includes('organization') || scopes.includes('society')) && !hasOrgs) {
+      alert("You must belong to a verified Organization to post Organization or Society events.");
+      return;
+    }
     if (scopes.includes('society') && (!challengeId || !subcategoryId)) {
       alert("Category and Subcategory are required for Society postings.");
       return;
@@ -403,7 +416,22 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
                               options={ECOSYSTEM_EVENT_TYPES.filter(t => t.isActive)}
                               getOptionLabel={(opt) => opt.label}
                               value={ECOSYSTEM_EVENT_TYPES.find((t) => t.id === eventType) || ECOSYSTEM_EVENT_TYPES[0]}
-                              onChange={(e, val) => setEventType(val ? val.id : 'general')}
+                              onChange={(e, val) => {
+                                const newType = val ? val.id : 'general';
+                                setEventType(newType);
+                                // Auto-enforce organization scope for orgOnly events
+                                const newConfig = ECOSYSTEM_EVENT_TYPES.find(t => t.id === newType);
+                                if (newConfig?.orgOnly && hasOrgs) {
+                                  setScopes(prev => {
+                                    const withoutPersonal = prev.filter(s => s !== 'personal');
+                                    return withoutPersonal.includes('organization') ? withoutPersonal : [...withoutPersonal, 'organization'];
+                                  });
+                                  // Pre-fill orgId if not already set
+                                  if (!timelines.organization.orgId && profile?.organizations?.[0]) {
+                                    setTimelines(prev => ({ ...prev, organization: { ...prev.organization, orgId: profile.organizations[0].id } }));
+                                  }
+                                }
+                              }}
                               colorTheme={color}
                             />
                             <Typography sx={{ fontSize: '0.75rem', color: '#64748b', ml: 1, fontWeight: 600 }}>
@@ -418,79 +446,102 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
                           <PremiumChecklistItem 
                             title="Personal Calendar" desc="Only visible to you" color={color} 
                             selected={scopes.includes('personal')} 
+                            disabled={isOrgOnly}
+                            disabledReason={isOrgOnly ? 'This event type requires an Organization' : undefined}
                             onClick={() => {
                               if (scopes.includes('personal')) setScopes(scopes.filter(s => s !== 'personal'));
                               else setScopes([...scopes, 'personal']);
                             }}
                           />
-                          {profile.organizations && profile.organizations.length > 0 && (
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                              <PremiumChecklistItem 
-                                title={timelines.organization.orgId && profile.organizations?.find((o: any) => o.id === timelines.organization.orgId) ? `Organization: ${profile.organizations.find((o: any) => o.id === timelines.organization.orgId)?.name}` : "Organization Workspace"} 
-                                desc={timelines.organization.orgId ? "Sync with this team's agenda" : "Select a workspace below to sync agenda"}
-                                color={color} 
-                                selected={scopes.includes('organization')} 
-                                onClick={() => {
-                                  if (scopes.includes('organization')) setScopes(scopes.filter(s => s !== 'organization'));
-                                  else setScopes([...scopes, 'organization']);
-                                }}
-                              />
-                              {scopes.includes('organization') && (
-                                <Box sx={{ 
-                                  ml: 4, pl: 2, borderLeft: `2px solid ${alpha(color, 0.2)}`, 
-                                  display: 'flex', flexDirection: 'column', gap: 1 
-                                }}>
-                                  <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                    Target Workspace
-                                  </Typography>
-                                  <PremiumAutocomplete
-                                    label="Select Organization"
-                                    options={profile.organizations.map((o: any) => ({ id: o.id, label: o.name || 'Unknown' }))}
-                                    getOptionLabel={(opt) => opt.label}
-                                    value={profile.organizations.find((o: any) => o.id === timelines.organization.orgId) ? { id: timelines.organization.orgId, label: profile.organizations.find((o: any) => o.id === timelines.organization.orgId)?.name } : null}
-                                    onChange={(e, val) => setTimelines({ ...timelines, organization: { ...timelines.organization, orgId: val ? val.id : '' } })}
-                                    colorTheme={color}
-                                  />
-                                  {timelines.organization.orgId && (
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            <PremiumChecklistItem 
+                              title={timelines.organization.orgId && profile.organizations?.find((o: any) => o.id === timelines.organization.orgId) ? `Organization: ${profile.organizations.find((o: any) => o.id === timelines.organization.orgId)?.name}` : "Organization Workspace"} 
+                              desc={!hasOrgs ? undefined : (timelines.organization.orgId ? "Sync with this team's agenda" : "Select a workspace below to sync agenda")}
+                              color={color} 
+                              selected={scopes.includes('organization')} 
+                              disabled={!hasOrgs}
+                              disabledReason={!hasOrgs ? 'Join a verified Organization to unlock' : undefined}
+                              onClick={() => {
+                                if (isOrgOnly) return; // Can't deselect org for orgOnly events
+                                if (scopes.includes('organization')) {
+                                  // Unchecking org also unchecks society
+                                  setScopes(scopes.filter(s => s !== 'organization' && s !== 'society'));
+                                } else {
+                                  setScopes([...scopes, 'organization']);
+                                  // Pre-fill orgId if not set
+                                  if (!timelines.organization.orgId && profile?.organizations?.[0]) {
+                                    setTimelines(prev => ({ ...prev, organization: { ...prev.organization, orgId: profile.organizations[0].id } }));
+                                  }
+                                }
+                              }}
+                            />
+                            {scopes.includes('organization') && hasOrgs && (
+                              <Box sx={{ 
+                                ml: 4, pl: 2, borderLeft: `2px solid ${alpha(color, 0.2)}`, 
+                                display: 'flex', flexDirection: 'column', gap: 1 
+                              }}>
+                                <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                  Target Workspace
+                                </Typography>
+                                <PremiumAutocomplete
+                                  label="Select Organization"
+                                  options={profile.organizations.map((o: any) => ({ id: o.id, label: o.name || 'Unknown' }))}
+                                  getOptionLabel={(opt) => opt.label}
+                                  value={profile.organizations.find((o: any) => o.id === timelines.organization.orgId) ? { id: timelines.organization.orgId, label: profile.organizations.find((o: any) => o.id === timelines.organization.orgId)?.name } : null}
+                                  onChange={(e, val) => setTimelines({ ...timelines, organization: { ...timelines.organization, orgId: val ? val.id : '' } })}
+                                  colorTheme={color}
+                                />
+                                {timelines.organization.orgId && (
+                                  <Box sx={{ 
+                                    mt: 1, p: 2, 
+                                    display: 'flex', alignItems: 'center', gap: 2,
+                                    bgcolor: alpha(color, 0.05), border: `1px solid ${alpha(color, 0.1)}`, 
+                                    borderRadius: 2 
+                                  }}>
                                     <Box sx={{ 
-                                      mt: 1, p: 2, 
-                                      display: 'flex', alignItems: 'center', gap: 2,
-                                      bgcolor: alpha(color, 0.05), border: `1px solid ${alpha(color, 0.1)}`, 
-                                      borderRadius: 2 
+                                      width: 40, height: 40, borderRadius: '10px', 
+                                      bgcolor: alpha(color, 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                      overflow: 'hidden', flexShrink: 0
                                     }}>
-                                      <Box sx={{ 
-                                        width: 40, height: 40, borderRadius: '10px', 
-                                        bgcolor: alpha(color, 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        overflow: 'hidden', flexShrink: 0
-                                      }}>
-                                        {profile.organizations.find((o: any) => o.id === timelines.organization.orgId)?.logoUrl ? (
-                                          <img src={profile.organizations.find((o: any) => o.id === timelines.organization.orgId)?.logoUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                        ) : (
-                                          <Typography sx={{ fontWeight: 800, color, fontSize: '1.2rem' }}>
-                                            {profile.organizations.find((o: any) => o.id === timelines.organization.orgId)?.name?.charAt(0) || 'O'}
-                                          </Typography>
-                                        )}
-                                      </Box>
-                                      <Box>
-                                        <Typography sx={{ fontWeight: 800, color: '#1e293b', fontSize: '0.9rem' }}>
-                                          {profile.organizations.find((o: any) => o.id === timelines.organization.orgId)?.name}
+                                      {profile.organizations.find((o: any) => o.id === timelines.organization.orgId)?.logoUrl ? (
+                                        <img src={profile.organizations.find((o: any) => o.id === timelines.organization.orgId)?.logoUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                      ) : (
+                                        <Typography sx={{ fontWeight: 800, color, fontSize: '1.2rem' }}>
+                                          {profile.organizations.find((o: any) => o.id === timelines.organization.orgId)?.name?.charAt(0) || 'O'}
                                         </Typography>
-                                        <Typography sx={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>
-                                          {profile.organizations.find((o: any) => o.id === timelines.organization.orgId)?.role || 'Member'}
-                                        </Typography>
-                                      </Box>
+                                      )}
                                     </Box>
-                                  )}
-                                </Box>
-                              )}
-                            </Box>
-                          )}
+                                    <Box>
+                                      <Typography sx={{ fontWeight: 800, color: '#1e293b', fontSize: '0.9rem' }}>
+                                        {profile.organizations.find((o: any) => o.id === timelines.organization.orgId)?.name}
+                                      </Typography>
+                                      <Typography sx={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>
+                                        {profile.organizations.find((o: any) => o.id === timelines.organization.orgId)?.role || 'Member'}
+                                      </Typography>
+                                    </Box>
+                                  </Box>
+                                )}
+                              </Box>
+                            )}
+                          </Box>
                           <PremiumChecklistItem 
                             title="Society Broadcast" desc="Public event in the ecosystem" color={color} 
                             selected={scopes.includes('society')} 
+                            disabled={!hasOrgs}
+                            disabledReason={!hasOrgs ? 'Join a verified Organization to unlock' : undefined}
                             onClick={() => {
-                              if (scopes.includes('society')) setScopes(scopes.filter(s => s !== 'society'));
-                              else setScopes([...scopes, 'society']);
+                              if (scopes.includes('society')) {
+                                setScopes(scopes.filter(s => s !== 'society'));
+                              } else {
+                                // Auto-check organization when society is checked
+                                const newScopes = [...scopes, 'society'];
+                                if (!newScopes.includes('organization')) newScopes.push('organization');
+                                setScopes(newScopes);
+                                // Pre-fill orgId if not set
+                                if (!timelines.organization.orgId && profile?.organizations?.[0]) {
+                                  setTimelines(prev => ({ ...prev, organization: { ...prev.organization, orgId: profile.organizations[0].id } }));
+                                }
+                              }
                             }}
                           />
                           {scopes.includes('society') && eventType !== 'general' && (
@@ -753,16 +804,17 @@ const CardChoice = ({ title, desc, color, selected, onClick }: any) => (
   </Box>
 );
 
-const PremiumChecklistItem = ({ title, desc, color, selected, onClick }: any) => (
+const PremiumChecklistItem = ({ title, desc, color, selected, onClick, disabled, disabledReason }: any) => (
   <Box 
-    onClick={onClick}
+    onClick={disabled ? undefined : onClick}
     sx={{ 
       display: 'flex', alignItems: 'center', gap: 2, p: 2, 
-      borderRadius: '16px', cursor: 'pointer',
+      borderRadius: '16px', cursor: disabled ? 'not-allowed' : 'pointer',
       transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-      border: `1px solid ${selected ? color : 'rgba(0,0,0,0.05)'}`,
-      bgcolor: selected ? alpha(color, 0.05) : '#fff',
-      '&:hover': {
+      border: `1px solid ${disabled ? 'rgba(0,0,0,0.04)' : (selected ? color : 'rgba(0,0,0,0.05)')}`,
+      bgcolor: disabled ? 'rgba(0,0,0,0.02)' : (selected ? alpha(color, 0.05) : '#fff'),
+      opacity: disabled ? 0.55 : 1,
+      '&:hover': disabled ? {} : {
         bgcolor: selected ? alpha(color, 0.08) : 'rgba(0,0,0,0.02)',
         borderColor: selected ? color : 'rgba(0,0,0,0.1)'
       }
@@ -771,18 +823,22 @@ const PremiumChecklistItem = ({ title, desc, color, selected, onClick }: any) =>
     <Box sx={{ 
       width: 24, height: 24, borderRadius: '6px', 
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      border: `2px solid ${selected ? color : '#cbd5e1'}`,
-      bgcolor: selected ? color : 'transparent',
+      border: `2px solid ${disabled ? '#cbd5e1' : (selected ? color : '#cbd5e1')}`,
+      bgcolor: disabled ? 'rgba(0,0,0,0.04)' : (selected ? color : 'transparent'),
       transition: 'all 0.2s ease',
       color: '#fff'
     }}>
-      {selected && <CheckIcon sx={{ fontSize: 16, fontWeight: 900 }} />}
+      {disabled ? <LockOutlinedIcon sx={{ fontSize: 14, color: '#94a3b8' }} /> : (selected && <CheckIcon sx={{ fontSize: 16, fontWeight: 900 }} />)}
     </Box>
     <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-      <Typography sx={{ fontWeight: 800, fontSize: '0.95rem', color: '#1e293b', letterSpacing: '-0.01em' }}>
+      <Typography sx={{ fontWeight: 800, fontSize: '0.95rem', color: disabled ? '#94a3b8' : '#1e293b', letterSpacing: '-0.01em' }}>
         {title}
       </Typography>
-      {desc && <Typography sx={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500, lineHeight: 1.4 }}>{desc}</Typography>}
+      {(disabledReason && disabled) ? (
+        <Typography sx={{ fontSize: '0.8rem', color: '#ef4444', fontWeight: 600, lineHeight: 1.4 }}>{disabledReason}</Typography>
+      ) : (
+        desc && <Typography sx={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500, lineHeight: 1.4 }}>{desc}</Typography>
+      )}
     </Box>
   </Box>
 );
