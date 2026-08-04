@@ -32,21 +32,20 @@ export async function getCalendarEvents(tenantId: string) {
 }
 
 export async function scheduleCalendarEvent(payload: {
-  targetScope: 'personal' | 'organization' | 'society';
   eventType: 'article' | 'livestream' | 'general';
-  dateType?: 'START_TIME' | 'DEADLINE' | 'PUBLISH_DATE' | 'DATE_RANGE';
   title: string;
-  date: string;
-  time: string;
-  endDate?: string;
-  endTime?: string;
   challengeId?: string;
   subcategoryId?: string;
   eraId?: string;
   tenantId: string;
   description?: string;
   tags?: string;
-  selectedOrgId?: string;
+  scopes: ('personal' | 'organization' | 'society')[];
+  timelines: {
+    personal?: { date: string, time: string, endDate?: string, endTime?: string, description?: string, rules?: string, tasks?: any[] },
+    organization?: { date: string, time: string, orgId?: string, endDate?: string, endTime?: string, requireApproval?: boolean, description?: string, rules?: string, tasks?: any[] },
+    society?: { date: string, time: string, endDate?: string, endTime?: string, description?: string, rules?: string, tasks?: any[] }
+  }
 }) {
   const sessionResult = await getCurrentSessionUser();
   if (!sessionResult.success || !sessionResult.data) {
@@ -55,11 +54,14 @@ export async function scheduleCalendarEvent(payload: {
   const user = sessionResult.data;
 
   try {
-    const scheduledDate = new Date(`${payload.date}T${payload.time}:00`);
-    let learnContentId: string | undefined;
+    let sourceId = crypto.randomUUID();
+    let reviewStatus = 'none';
 
     // 1. If it's a draft (article/livestream), create the LearnContent first
     if (payload.eventType === 'article' || payload.eventType === 'livestream') {
+      const societyTimeline = payload.timelines.society;
+      const targetDate = societyTimeline ? new Date(`${societyTimeline.date}T${societyTimeline.time}:00`) : new Date();
+      
       const draft = await prisma.learnContent.create({
         data: {
           title: payload.title,
@@ -73,51 +75,73 @@ export async function scheduleCalendarEvent(payload: {
           authorName: user.name || 'Anonymous',
           authorId: user.id,
           authorAvatarUrl: user.avatarUrl,
-          targetDate: scheduledDate,
+          targetDate: targetDate,
         }
       });
-      learnContentId = draft.id;
+      sourceId = draft.id;
+      
+      if (payload.scopes.includes('organization')) {
+         reviewStatus = 'drafting';
+      }
     }
 
-    // 2. Create the Calendar Event
-    let organizationId: string | null = null;
-    if (payload.targetScope === 'organization') {
-      if (payload.selectedOrgId) {
-        organizationId = payload.selectedOrgId;
+    // 2. Create the Calendar Events based on scopes
+    for (const scope of payload.scopes) {
+      const timeline = payload.timelines[scope as keyof typeof payload.timelines];
+      if (!timeline || !timeline.date || !timeline.time) continue;
+
+      const scheduledDate = new Date(`${timeline.date}T${timeline.time}:00`);
+      let scheduledEndDate: Date | null = null;
+      if (timeline.endDate && timeline.endTime) {
+        scheduledEndDate = new Date(`${timeline.endDate}T${timeline.endTime}:00`);
       } else {
-        const orgMember = await prisma.organizationMember.findFirst({
-          where: { userId: user.id }
-        });
-        if (orgMember) organizationId = orgMember.organizationId;
+        scheduledEndDate = new Date(scheduledDate.getTime() + 60 * 60 * 1000);
       }
+
+      let dateType = 'START_TIME';
+      if (scope === 'organization') dateType = 'DEADLINE';
+      if (scope === 'society') dateType = 'PUBLISH_DATE';
+
+      let organizationId: string | null = null;
+      if (scope === 'organization') {
+        const orgTimeline = timeline as any;
+        if (orgTimeline.orgId) {
+          organizationId = orgTimeline.orgId;
+        } else {
+          const orgMember = await prisma.organizationMember.findFirst({
+            where: { userId: user.id }
+          });
+          if (orgMember) organizationId = orgMember.organizationId;
+        }
+      }
+
+      const compiledDescription = JSON.stringify({
+        text: timeline.description || '',
+        rules: timeline.rules || '',
+        tasks: timeline.tasks || []
+      });
+
+      await prisma.calendarEvent.create({
+        data: {
+          sourceType: payload.eventType === 'general' ? 'meetEvent' : payload.eventType,
+          sourceId: sourceId,
+          tenantId: payload.tenantId,
+          visibility: scope,
+          organizationId: organizationId,
+          userId: scope === 'personal' ? user.id : null,
+          dateType: dateType,
+          date: scheduledDate,
+          endDate: scheduledEndDate,
+          title: payload.title,
+          description: compiledDescription,
+          tags: payload.tags,
+          category: payload.eventType === 'general' ? 'Meeting' : (payload.eventType === 'article' ? 'Article' : 'Livestream'),
+          reviewStatus: reviewStatus
+        }
+      });
     }
 
-    let scheduledEndDate: Date | null = null;
-    if (payload.endDate && payload.endTime) {
-      scheduledEndDate = new Date(`${payload.endDate}T${payload.endTime}:00`);
-    } else if (payload.dateType === 'START_TIME' || payload.dateType === 'DATE_RANGE') {
-      scheduledEndDate = new Date(scheduledDate.getTime() + 60 * 60 * 1000); // +1 hour default
-    }
-
-    const event = await prisma.calendarEvent.create({
-      data: {
-        sourceType: payload.eventType === 'general' ? 'meetEvent' : payload.eventType,
-        sourceId: learnContentId || 'generic',
-        tenantId: payload.tenantId,
-        visibility: payload.targetScope,
-        organizationId: organizationId,
-        userId: payload.targetScope === 'personal' ? user.id : null,
-        dateType: payload.dateType || 'START_TIME',
-        date: scheduledDate,
-        endDate: scheduledEndDate,
-        title: payload.title,
-        description: payload.description,
-        tags: payload.tags,
-        category: payload.eventType === 'general' ? 'Meeting' : (payload.eventType === 'article' ? 'Article' : 'Livestream'),
-      }
-    });
-
-    return { success: true, draftId: learnContentId };
+    return { success: true, draftId: sourceId };
   } catch (err: any) {
     console.error("Error scheduling event:", err);
     return { success: false, error: err.message || 'Failed to schedule event' };

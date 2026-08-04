@@ -770,9 +770,10 @@ model CalendarEvent {
 
   // --- Metadata ---
   status           String    @default("upcoming") // 'upcoming' | 'live' | 'expired'
+  reviewStatus     String    @default("none") // 'none' | 'drafting' | 'pending_approval' | 'approved'
   createdAt        DateTime  @default(now())
 
-  @@unique([sourceType, sourceId])
+  @@index([sourceType, sourceId])
   @@index([date])
   @@index([status, date])
   @@index([sourceType, date])
