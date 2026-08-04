@@ -7,9 +7,9 @@ import {
   DeleteOutlined as DeleteIcon,
   VisibilityOutlined as ViewIcon,
   Article as ArticleIcon,
-  WorkOutline as JobIcon,
+  WorkOutlined as JobIcon,
   Event as EventIcon,
-  PlayCircleOutline as VideoIcon,
+  PlayCircleOutlined as VideoIcon,
   School as ClassIcon,
   Storefront as ListingIcon
 } from '@mui/icons-material';

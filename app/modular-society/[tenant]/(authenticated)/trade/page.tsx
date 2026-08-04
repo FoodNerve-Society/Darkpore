@@ -31,7 +31,7 @@ import { useSociety } from "@/context/SocietyContext";
 import FlipContainer from "../components/shared/FlipContainer";
 import CreateListingForm from "./components/CreateListingForm";
 import ListingStudioDashboard from "./components/ListingStudioDashboard";
-import { getUserDrafts, deleteTradeListing, getTradeListings } from "@/lib/actions/trade";
+import { getUserDrafts, deleteTradeListing, getTradeListings, getUserPublishedListings, getOrgTradeListings } from "@/lib/actions/trade";
 import PremiumAutocomplete from "@/components/PremiumAutocomplete";
 
 // ── Colors ────────────────────────────────────────────────
@@ -100,54 +100,44 @@ const MOCK_LISTINGS: TradeListing[] = [
   {
     id: "l3",
     category: "swap",
-    title: "Tractor Time for Fertilizer",
-    description: "I have 2 days of tractor usage, need 10 bags of NPK fertilizer.",
-    priceOrAsk: "Barter",
-    location: "Ogbomoso Farm",
-    lga: "Ogbomoso",
-    postedBy: { name: "Kunle Farms", avatarUrl: "", isVerified: false },
+    title: "Swap: Logistics Van for Cold Storage Space",
+    description: "I have a delivery van available 3 days a week. Looking to swap for cold storage space.",
+    priceOrAsk: "Value Exchange",
+    location: "Surulere",
+    lga: "Surulere",
+    postedBy: { name: "Transit Pro", avatarUrl: "", isVerified: false },
     postedAt: new Date().toISOString(),
     urgency: "normal",
     status: "active",
-    swapOffer: "Tractor",
-    swapWant: "Fertilizer",
     isBoosted: false,
-    imageUrl: "https://images.unsplash.com/photo-1592982537447-6f2a6a0a3824?w=800&auto=format&fit=crop",
   },
   {
     id: "l4",
     category: "jobs",
-    title: "Harvest Supervisor Needed (2 Weeks)",
-    description: "Looking for an experienced supervisor for our tomato harvest.",
-    priceOrAsk: "₦50,000 / week",
-    location: "Abeokuta Farms",
-    lga: "Abeokuta North",
-    postedBy: { name: "Ogun AgriCorp", avatarUrl: "", isVerified: true },
+    title: "Senior Agronomist (Full-Time)",
+    description: "Leading a 50-hectare cassava project.",
+    priceOrAsk: "₦350,000 / month",
+    location: "Epe Farm Settlement",
+    lga: "Epe",
+    postedBy: { name: "AgriCorp Nig", avatarUrl: "", isVerified: true },
     postedAt: new Date().toISOString(),
-    urgency: "urgent",
+    urgency: "normal",
     status: "active",
     isBoosted: true,
-    jobSource: "verified_tenant",
-    compType: "fiat",
-    imageUrl: "https://images.unsplash.com/photo-1595841696677-647fa58d20ae?w=800&auto=format&fit=crop",
   },
   {
     id: "l5",
     category: "volunteer",
-    title: "Translate Agronomy Guide to Yoruba",
-    description: "Help us translate our latest pest-control guide for local farmers.",
-    priceOrAsk: "500 NP",
-    location: "Remote",
-    lga: "Virtual",
-    postedBy: { name: "FoodNerve Core", avatarUrl: "", isVerified: true },
+    title: "Market Data Collector (Weekend)",
+    description: "Help us track tomato prices at Mile 12. Earn NP points.",
+    priceOrAsk: "250 NP / Shift",
+    location: "Mile 12",
+    lga: "Kosofe",
+    postedBy: { name: "FoodNerve Foundation", avatarUrl: "", isVerified: true },
     postedAt: new Date().toISOString(),
     urgency: "normal",
     status: "active",
     isBoosted: false,
-    jobSource: "internal_foodnerve",
-    compType: "volunteer",
-    npReward: 500,
-    imageUrl: "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&auto=format&fit=crop",
   },
 ];
 
@@ -168,14 +158,33 @@ function CategoryAccentBar({ category }: { category: string }) {
   );
 }
 
+function renderCategoryBadge(cat: string) {
+  switch (cat) {
+    case "flash-sale":
+      return <Chip icon={<BoltIcon sx={{ fontSize: 14 }} />} label="FLASH SALE" size="small" sx={{ height: 22, fontSize: '0.65rem', fontWeight: 800, bgcolor: alpha(FLASH_RED, 0.1), color: FLASH_RED, '& .MuiChip-icon': { color: FLASH_RED } }} />;
+    case "group-buy":
+      return <Chip label="GROUP-BUY" size="small" sx={{ height: 22, fontSize: '0.65rem', fontWeight: 800, bgcolor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }} />;
+    case "swap":
+      return <Chip label="SWAP" size="small" sx={{ height: 22, fontSize: '0.65rem', fontWeight: 800, bgcolor: 'rgba(168, 85, 247, 0.1)', color: '#a855f7' }} />;
+    case "jobs":
+      return <Chip label="JOB" size="small" sx={{ height: 22, fontSize: '0.65rem', fontWeight: 800, bgcolor: 'rgba(234, 179, 8, 0.1)', color: '#eab308' }} />;
+    case "volunteer":
+      return <Chip label="VOLUNTEER" size="small" sx={{ height: 22, fontSize: '0.65rem', fontWeight: 800, bgcolor: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }} />;
+    default:
+      return null;
+  }
+}
+
 function ListingCard({ listing, isGrid = false, onDraftClick }: { listing: TradeListing, isGrid?: boolean, onDraftClick?: (id: string) => void }) {
   const router = useRouter();
-  
+  const isDraft = listing.status === 'draft';
+  const displayTitle = listing.title || 'Untitled Draft';
+
   return (
     <Paper
       elevation={0}
       onClick={() => {
-        if (listing.status === 'draft' && onDraftClick) {
+        if (isDraft && onDraftClick) {
           onDraftClick(listing.id);
         } else {
           router.push(`/society/trade/${listing.id}`);
@@ -250,7 +259,7 @@ function ListingCard({ listing, isGrid = false, onDraftClick }: { listing: Trade
            </Typography>
         </Box>
         <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.2, mb: 1, color: "#000" }}>
-          {listing.title}
+          {displayTitle}
         </Typography>
         <Typography variant="body2" sx={{ color: "text.secondary", mb: 2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
           {listing.description}
@@ -322,6 +331,7 @@ export default function TradePage() {
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
   // Dashboard / Form State
   const [drafts, setDrafts] = useState<any[]>([]);
+  const [workspaceTabs, setWorkspaceTabs] = useState<any[]>([]);
   const [feedListings, setFeedListings] = useState<any[]>(MOCK_LISTINGS);
   const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
   const [editingListingData, setEditingListingData] = useState<any>(null);
@@ -356,10 +366,40 @@ export default function TradePage() {
   const fetchListings = () => {
     const userId = profile?.uid || profile?.id;
     if (userId) {
-      getUserDrafts(userId).then(res => {
-        if (res.success && res.drafts) {
-          setDrafts(res.drafts);
+      // Fetch Workspace Data
+      Promise.all([
+        getUserDrafts(userId),
+        getUserPublishedListings(userId)
+      ]).then(async ([draftsRes, publishedData]) => {
+        const userDrafts = draftsRes.success ? draftsRes.drafts : [];
+        const userPublished = publishedData || [];
+        
+        let personalItems: any[] = [
+          ...userDrafts.map((d: any) => ({ id: d.id, title: d.title, type: d.category, status: d.status, date: d.postedAt, authorName: profile.displayName })),
+          ...userPublished.map((p: any) => ({ id: p.id, title: p.title, type: p.category, status: p.status, date: p.postedAt, authorName: profile.displayName }))
+        ];
+        // Sort newest first
+        personalItems.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+        let newTabs: any[] = [{ id: 'personal', label: 'Personal', items: personalItems }];
+
+        if (profile.organizations && profile.organizations.length > 0) {
+          for (const org of profile.organizations) {
+            const orgContentRes = await getOrgTradeListings(org.id);
+            const orgItems: any[] = [];
+            if (orgContentRes.success && orgContentRes.all) {
+              orgContentRes.all.forEach((o: any) => {
+                orgItems.push({
+                  id: o.id, title: o.title, type: o.category, status: o.status, date: o.postedAt, authorName: o.postedById === userId ? profile.displayName : 'Team Member' 
+                });
+              });
+            }
+            newTabs.push({ id: org.id, label: org.name, logoUrl: org.logoUrl, items: orgItems });
+          }
         }
+        
+        setWorkspaceTabs(newTabs);
+        setDrafts(userDrafts);
       });
     }
     // Fetch actual db listings for jobs and volunteering
@@ -705,6 +745,7 @@ export default function TradePage() {
                 : (profile?.displayName ? profile.displayName.split(' ')[0] : 'Creative')
             }
             drafts={drafts}
+            workspaceTabs={workspaceTabs}
             onStartFresh={(category, selections, ingestData) => {
               setCreateCategory(category);
               if (selections) setCreateSelections(selections);
