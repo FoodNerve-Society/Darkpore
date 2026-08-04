@@ -19,6 +19,7 @@ import {
 } from '@mui/icons-material';
 import { keyframes } from '@mui/system';
 import WikiHotspot from '@/components/wiki/WikiHotspot';
+import { ECOSYSTEM_EVENT_TYPES } from '@/lib/config/eventTypes';
 
 const EMERALD = "#10b981";
 const EMERALD_DARK = "#059669";
@@ -420,6 +421,8 @@ export default function ListingStudioDashboard({
         transition: 'gap 0.4s ease, padding 0.4s ease, margin 0.4s ease'
       }}>
         {LISTING_OPTIONS.map((opt) => {
+          const config = ECOSYSTEM_EVENT_TYPES.find(t => t.id === opt.type && t.tab === 'trade');
+          const isActive = config?.isActive;
           const isExpanded = expandedStartType === opt.type;
           const isHidden = expandedStartType !== null && expandedStartType !== opt.type;
 
@@ -427,24 +430,26 @@ export default function ListingStudioDashboard({
             <Paper
               key={opt.type}
               onClick={() => {
-                if (!expandedStartType) handleOpenCreator(opt.type);
+                if (isActive && !expandedStartType) handleOpenCreator(opt.type);
               }}
               elevation={0}
               sx={{
                 flex: isHidden ? '0 0 0%' : (isExpanded ? '0 0 100%' : '0 0 auto'),
-                minWidth: isHidden ? 0 : (isExpanded ? '100%' : { xs: 140, sm: 240, md: 280 }),
-                maxWidth: isHidden ? 0 : (isExpanded ? '100%' : { xs: 140, sm: 240, md: 280 }),
-                height: isExpanded ? 'auto' : (isHidden ? 0 : { xs: 160, sm: 280, md: 320 }),
-                opacity: isHidden ? 0 : 1,
+                minWidth: isHidden ? 0 : (isExpanded ? '100%' : { xs: 150, sm: 260, md: 300 }),
+                maxWidth: isHidden ? 0 : (isExpanded ? '100%' : { xs: 150, sm: 260, md: 300 }),
+                height: isExpanded ? 'auto' : (isHidden ? 0 : { xs: 170, sm: 290, md: 340 }),
+                opacity: isHidden ? 0 : (isActive ? 1 : 0.65),
+                filter: isActive ? 'none' : 'grayscale(0.8)',
                 p: isExpanded ? 0 : (isHidden ? 0 : { xs: 1.5, sm: 2.5, md: 3.5 }),
                 display: 'flex', flexDirection: 'column', gap: { xs: 1, sm: 1.5, md: 2 },
-                borderRadius: { xs: '16px', sm: '24px', md: '28px' }, cursor: isExpanded ? 'default' : 'pointer',
+                borderRadius: { xs: '16px', sm: '24px', md: '28px' }, 
+                cursor: isExpanded ? 'default' : (isActive ? 'pointer' : 'not-allowed'),
                 background: isExpanded ? `linear-gradient(135deg, #0f172a 0%, #1e293b 100%)` : opt.grad,
                 border: isHidden ? 'none' : '1px solid rgba(255,255,255,0.15)',
                 boxShadow: isHidden ? 'none' : `inset 0 2px 10px rgba(255,255,255,0.2), 0 10px 30px ${alpha(opt.color, 0.25)}`,
                 position: 'relative', overflow: 'hidden',
                 transition: 'all 0.6s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                '&:hover': !isExpanded ? {
+                '&:hover': !isExpanded && isActive ? {
                   transform: 'translateY(-8px) scale(1.02)',
                   boxShadow: `inset 0 2px 10px rgba(255,255,255,0.3), 0 24px 48px ${alpha(opt.color, 0.4)}`,
                   borderColor: 'rgba(255,255,255,0.3)',
@@ -467,13 +472,22 @@ export default function ListingStudioDashboard({
                       {opt.icon}
                     </Box>
                     <Box sx={{ position: 'relative', zIndex: 10 }}>
-                      <WikiHotspot id={`listing-start-fresh-${opt.type}`} label={opt.title} />
+                      <WikiHotspot id={`trade-start-fresh-${opt.type}`} label={opt.title} />
                     </Box>
                   </Box>
-                  <Box sx={{ position: 'relative', zIndex: 1, mt: { xs: 0, sm: 1 } }}>
-                    <Typography sx={{ fontWeight: 900, fontSize: { xs: '0.85rem', sm: '1.2rem' }, mb: 0.25, color: '#fff', letterSpacing: '-0.02em' }}>
-                      {opt.title}
-                    </Typography>
+                  <Box sx={{ position: 'relative', zIndex: 1, mt: { xs: 0, sm: 1 }, display: 'flex', flexDirection: 'column', flex: 1 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <Typography sx={{ fontWeight: 900, fontSize: { xs: '0.85rem', sm: '1.25rem' }, mb: 0.25, color: '#fff', letterSpacing: '-0.02em' }}>
+                        {opt.title}
+                      </Typography>
+                      {!isActive && (
+                        <Chip 
+                          label="Coming Soon" 
+                          size="small" 
+                          sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700, bgcolor: 'rgba(0,0,0,0.4)', color: '#fff' }} 
+                        />
+                      )}
+                    </Box>
                     <Typography sx={{ fontSize: { xs: '0.65rem', sm: '0.85rem' }, color: 'rgba(255,255,255,0.8)', lineHeight: 1.4, fontWeight: 500 }}>
                       {opt.desc}
                     </Typography>

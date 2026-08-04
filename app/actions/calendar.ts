@@ -32,7 +32,7 @@ export async function getCalendarEvents(tenantId: string) {
 }
 
 export async function scheduleCalendarEvent(payload: {
-  eventType: 'article' | 'livestream' | 'general';
+  eventType: string;
   title: string;
   challengeId?: string;
   subcategoryId?: string;
@@ -91,7 +91,8 @@ export async function scheduleCalendarEvent(payload: {
             priceOrAsk: 'TBD',
             location: 'TBD',
             lga: 'TBD',
-            status: 'draft'
+            status: 'draft',
+            postedById: user.id
           }
         });
         sourceId = draft.id;
@@ -146,9 +147,9 @@ export async function scheduleCalendarEvent(payload: {
       }
 
       const compiledDescription = JSON.stringify({
-        text: timeline.description || '',
-        rules: timeline.rules || '',
-        tasks: timeline.tasks || []
+        text: (timeline as any).description || '',
+        rules: (timeline as any).rules || '',
+        tasks: (timeline as any).tasks || []
       });
 
       await prisma.calendarEvent.create({
