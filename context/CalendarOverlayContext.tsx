@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { 
   Dialog, DialogContent, IconButton, Typography, Box, 
   alpha, useTheme
@@ -9,7 +9,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import { motion } from 'framer-motion';
 import { useSociety } from './SocietyContext';
-import EcosystemCalendar from '@/app/components/calendar/EcosystemCalendar';
+import EcosystemCalendar, { ViewMode } from '@/app/components/calendar/EcosystemCalendar';
 
 interface CalendarOverlayContextType {
   isOpen: boolean;
@@ -27,11 +27,44 @@ export const useCalendarOverlay = () => useContext(CalendarOverlayContext);
 
 export function CalendarOverlayProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [initialView, setInitialView] = useState<ViewMode>('month');
+  const [initialDate, setInitialDate] = useState<Date | undefined>(undefined);
+  
   const theme = useTheme();
   const { profile } = useSociety();
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      const viewParam = url.searchParams.get('view');
+      const dateParam = url.searchParams.get('date');
+      
+      if (viewParam === 'month' || viewParam === 'week' || viewParam === 'day') {
+        setIsOpen(true);
+        setInitialView(viewParam);
+        if (dateParam) {
+          const parsed = new Date(dateParam);
+          if (!isNaN(parsed.getTime())) {
+            // Need to adjust for timezone shifts if they strictly passed YYYY-MM-DD
+            parsed.setMinutes(parsed.getMinutes() + parsed.getTimezoneOffset());
+            setInitialDate(parsed);
+          }
+        }
+      }
+    }
+  }, []);
+
   const openCalendar = () => setIsOpen(true);
-  const closeCalendar = () => setIsOpen(false);
+  
+  const closeCalendar = () => {
+    setIsOpen(false);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('view');
+      url.searchParams.delete('date');
+      window.history.replaceState(null, '', url.pathname + url.search);
+    }
+  };
 
   return (
     <CalendarOverlayContext.Provider value={{ isOpen, openCalendar, closeCalendar }}>
@@ -64,7 +97,7 @@ export function CalendarOverlayProvider({ children }: { children: ReactNode }) {
         </IconButton>
 
         {/* Content (Ecosystem Calendar Grid) */}
-        <DialogContent sx={{ p: { xs: 2, md: 4 }, display: 'flex', flexDirection: 'column' }}>
+        <DialogContent sx={{ p: { xs: 2, md: 4 }, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
           <Box sx={{ mb: 2, pl: 1 }}>
             <Typography variant="h4" sx={{ fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <CalendarMonthIcon sx={{ color: theme.palette.primary.main, fontSize: 32 }} /> Ecosystem Calendar
@@ -73,7 +106,11 @@ export function CalendarOverlayProvider({ children }: { children: ReactNode }) {
               Explore deadlines, livestreams, and events across the network.
             </Typography>
           </Box>
-          <EcosystemCalendar tenantId={(profile as any)?.tenantId || 'foodnerve'} />
+          <EcosystemCalendar 
+            tenantId={(profile as any)?.tenantId || 'foodnerve'} 
+            initialView={initialView}
+            initialDate={initialDate}
+          />
         </DialogContent>
 
 

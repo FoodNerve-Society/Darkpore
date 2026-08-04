@@ -141,7 +141,7 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
   return (
     <WikiOverlayProvider>
       <CalendarOverlayProvider>
-      <Box sx={{ display: 'flex', height: '100dvh', flexDirection: isMobile ? 'column' : 'row', position: 'relative', bgcolor: '#f8fafc', overflow: 'hidden' }}>
+      <Box sx={{ display: 'flex', height: '100dvh', flexDirection: isMobile ? 'column' : 'row', position: 'relative', bgcolor: '#f8fafc', overflow: 'hidden', perspective: '1200px' }}>
 
         {/* --- DYNAMIC BACKGROUND LAYER --- */}
       <Box sx={{
@@ -165,7 +165,7 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
       {!isMobile && (
         <Box
           component={motion.div}
-          animate={isUpdatesOpen ? { x: 60, scale: 1, opacity: 1 } : { x: 20, scale: 0.92, opacity: 0 }}
+          animate={isUpdatesOpen ? { x: 0, scale: 1, opacity: 1 } : { x: -40, scale: 0.92, opacity: 0 }}
           transition={{ type: 'spring', damping: 25, stiffness: 180 }}
           sx={{
             position: 'absolute',
@@ -186,16 +186,13 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
               <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: activeTheme.main, boxShadow: `0 0 12px ${activeTheme.main}` }} />
               <Typography variant="h5" sx={{ fontWeight: 900, letterSpacing: -0.5 }}>Updates</Typography>
             </Box>
-            <IconButton onClick={() => setUpdatesOpen(false)} sx={{ bgcolor: 'rgba(0,0,0,0.04)', '&:hover': { bgcolor: 'rgba(0,0,0,0.08)' } }}>
-              <LockOutlinedIcon sx={{ fontSize: 18 }} /> 
-            </IconButton>
           </Box>
           <Box sx={{ 
             flex: 1, 
             overflowY: 'auto', 
             pb: 10,
-            px: 1, // Add slight horizontal padding for shadow clipping
-            mx: -1, // Offset the padding
+            px: 4, // Add generous horizontal padding for shadow clipping
+            mx: -4, // Offset the padding
             '&::-webkit-scrollbar': { display: 'none' },
             scrollbarWidth: 'none' 
           }}>
@@ -207,20 +204,29 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
       {/* Scrollable Main Content Area */}
       <Box 
         id="main-scroll-container"
+        onClick={() => {
+          if (!isMobile && isUpdatesOpen) {
+            setUpdatesOpen(false);
+          }
+        }}
         component={motion.div}
         animate={(!isMobile && isUpdatesOpen) ? {
           scale: 0.95,
           x: 360,
+          rotateY: -4,
           marginRight: 360,
           opacity: 0.8,
         } : {
           scale: 1,
           x: 0,
+          rotateY: 0,
           marginRight: 0,
           opacity: 1,
         }}
         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
         sx={{ 
+          transformOrigin: 'left center',
+          transformStyle: 'preserve-3d',
           flex: 1, 
           minHeight: 0,
           display: 'flex', 
@@ -229,7 +235,8 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
           zIndex: 10,
           overflowY: 'visible', 
           overflowX: 'visible',
-          boxSizing: 'border-box'
+          boxSizing: 'border-box',
+          cursor: (!isMobile && isUpdatesOpen) ? 'pointer' : 'default'
         }}
       >
         {isMobile && (

@@ -19,6 +19,7 @@ import PremiumTextField from '@/components/PremiumTextField';
 import PremiumAutocomplete from '@/components/PremiumAutocomplete';
 import PremiumDatePicker from '@/components/PremiumDatePicker';
 import PremiumTimePicker from '@/components/PremiumTimePicker';
+import PremiumSwitch from '@/components/PremiumSwitch';
 import { scheduleCalendarEvent } from '@/app/actions/calendar';
 
 import { getTenantConfig, ERAS } from '@/lib/cms';
@@ -33,20 +34,27 @@ const BLOCK_DEFINITIONS: Record<string, { label: string, color: string }> = {
 interface AddEventSidebarProps {
   onClose: () => void;
   tenantId: string;
+  initialDate?: Date;
+  onDateChange?: (date: Date) => void;
 }
 
-export default function AddEventSidebar({ onClose, tenantId }: AddEventSidebarProps) {
+export default function AddEventSidebar({ onClose, tenantId, initialDate, onDateChange }: AddEventSidebarProps) {
   const theme = useTheme();
   const router = useRouter();
   const { user, profile } = useSociety();
   
-  const [targetScope, setTargetScope] = useState<'personal' | 'organization' | 'society'>('personal');
+  const [targetScope, setTargetScope] = useState<'personal' | 'organization' | 'society'>('personal'); // personal, organization, society
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
+  const [eventType, setEventType] = useState<'article' | 'livestream' | 'general'>('general'); // general, article, livestream
+  const [dateType, setDateType] = useState<'START_TIME' | 'DEADLINE' | 'PUBLISH_DATE' | 'DATE_RANGE'>('START_TIME'); // START_TIME, DEADLINE, PUBLISH_DATE, DATE_RANGE
   
-  const [eventType, setEventType] = useState<'article' | 'livestream' | 'general'>('general');
   const [title, setTitle] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(initialDate ? initialDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
   const [time, setTime] = useState('10:00');
+  
+  const [endDate, setEndDate] = useState('');
+  const [endTime, setEndTime] = useState('11:00');
+  const [isAllDay, setIsAllDay] = useState(false);
   
   const [contentType, setContentType] = useState<'text' | 'todo'>('text');
   const [description, setDescription] = useState('');
@@ -77,21 +85,57 @@ export default function AddEventSidebar({ onClose, tenantId }: AddEventSidebarPr
     return (
       <Box sx={sidebarStyles}>
         <Header onClose={onClose} />
-        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', p: 3 }}>
-          <Box sx={{ p: 3, bgcolor: 'rgba(255,255,255,0.05)', borderRadius: '50%', mb: 3, boxShadow: 'inset 0 0 20px rgba(255,255,255,0.05)' }}>
-            <LockOutlinedIcon sx={{ fontSize: 48, color: 'rgba(255,255,255,0.8)' }} />
+        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', p: { xs: 3, md: 5 } }}>
+          
+          <Box sx={{
+            position: 'relative', mb: 4,
+            '&::before': {
+              content: '""', position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+              width: '120px', height: '120px', background: `radial-gradient(circle, ${alpha(theme.palette.primary.main, 0.4)} 0%, transparent 70%)`,
+              zIndex: 0, filter: 'blur(10px)'
+            }
+          }}>
+            <Box sx={{ 
+              position: 'relative', zIndex: 1, width: 80, height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: '24px', background: 'linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02))',
+              border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 8px 32px rgba(0,0,0,0.4), inset 0 2px 0 0 rgba(255,255,255,0.2)',
+              backdropFilter: 'blur(12px)'
+            }}>
+              <LockOutlinedIcon sx={{ fontSize: 36, color: '#fff', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }} />
+            </Box>
           </Box>
-          <Typography variant="h5" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 800, mb: 1, color: '#fff' }}>
-            Sign In Required
+
+          <Typography variant="h4" sx={{ fontWeight: 800, mb: 1.5, color: '#fff', letterSpacing: '-0.02em', textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>
+            Restricted Access
           </Typography>
-          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mb: 4, lineHeight: 1.6 }}>
-            Access to the Boardroom Calendar requires authentication. Sign in to Society OS to schedule events and manage drafts.
+          <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.7)', mb: 5, lineHeight: 1.7, maxWidth: '320px', marginX: 'auto', fontWeight: 500 }}>
+            While the calendar is open for public viewing, you need to sign in and reach <strong>Rank 4</strong> to schedule events or host livestreams. Registered members also receive personalized daily calendar reminders via email.
           </Typography>
         </Box>
-        <Box sx={footerStyles}>
-          <PremiumButton variant="filled" baseColor={theme.palette.primary.main} onClick={() => router.push('/join')} sx={{ width: '100%' }}>
-            Start Upgrading Now
-          </PremiumButton>
+        <Box sx={{ p: { xs: 3, md: 5 }, pt: 0, width: '100%' }}>
+          <Button
+            onClick={() => router.push('/join')}
+            sx={{ 
+              width: '100%',
+              py: 1.8,
+              borderRadius: '100px',
+              background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
+              color: '#fff',
+              fontWeight: 900,
+              fontSize: '1.05rem',
+              letterSpacing: '0.5px',
+              textTransform: 'none',
+              boxShadow: `0 12px 32px ${alpha(theme.palette.primary.main, 0.4)}, inset 0 2px 0 0 rgba(255,255,255,0.2)`,
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:hover': {
+                background: `linear-gradient(135deg, ${theme.palette.primary.light}, ${theme.palette.primary.main})`,
+                boxShadow: `0 16px 48px ${alpha(theme.palette.primary.main, 0.6)}, inset 0 2px 0 0 rgba(255,255,255,0.3)`,
+                transform: 'translateY(-2px)'
+              }
+            }}
+          >
+            Join the Ecosystem
+          </Button>
         </Box>
       </Box>
     );
@@ -127,10 +171,13 @@ export default function AddEventSidebar({ onClose, tenantId }: AddEventSidebarPr
         targetScope,
         selectedOrgId: selectedOrgId || undefined,
         eventType,
+        dateType,
         title,
         date,
-        time,
-        challengeId: challengeId?.id || undefined,
+        time: isAllDay ? '00:00' : time,
+        endDate: endDate || undefined,
+        endTime: isAllDay ? '23:59' : (endTime || undefined),
+        challengeId: challengeId?.id,
         subcategoryId,
         eraId,
         tenantId,
@@ -260,38 +307,39 @@ export default function AddEventSidebar({ onClose, tenantId }: AddEventSidebarPr
                       position: isFlipped ? 'absolute' : 'relative',
                       width: '100%', top: 0,
                       borderRadius: '20px',
-                      border: `1px solid ${filled ? alpha(color, 0.8) : alpha(color, 0.15)}`,
+                      border: `1px solid ${filled ? alpha(color, 0.8) : 'rgba(255,255,255,0.2)'}`,
                       background: filled 
                         ? `linear-gradient(135deg, ${color} 0%, ${alpha(color, 0.8)} 100%)`
-                        : `linear-gradient(to right, ${alpha(color, 0.2)} ${fillPercent}%, rgba(255,255,255,0.95) ${fillPercent}%, rgba(248,250,252,0.9) 100%)`,
-                      backdropFilter: 'blur(16px)',
-                      boxShadow: filled ? `0 12px 32px ${alpha(color, 0.3)}` : `0 8px 32px rgba(0,0,0,0.04)`,
+                        : `linear-gradient(to right, ${alpha(color, 0.4)} ${fillPercent}%, rgba(255,255,255,0.15) ${fillPercent}%, rgba(255,255,255,0.05) 100%)`,
+                      backdropFilter: 'blur(24px)',
+                      boxShadow: filled ? `0 12px 32px ${alpha(color, 0.3)}` : `0 8px 32px rgba(0,0,0,0.4), inset 0 2px 0 0 rgba(255,255,255,0.1)`,
                       overflow: 'hidden',
                       cursor: 'pointer',
                       transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
                       '&:hover': {
-                        borderColor: filled ? color : alpha(color, 0.6),
-                        boxShadow: filled ? `0 16px 48px ${alpha(color, 0.4)}` : `0 12px 48px rgba(0,0,0,0.08)`,
+                        borderColor: filled ? color : alpha(color, 0.5),
+                        boxShadow: filled ? `0 16px 48px ${alpha(color, 0.4)}` : `0 12px 48px rgba(0,0,0,0.5), inset 0 2px 0 0 rgba(255,255,255,0.2)`,
                         transform: 'translateY(-2px)'
                       },
                     }}
                   >
                     <Box sx={{ display: 'flex', alignItems: 'stretch', position: 'relative', zIndex: 1 }}>
-                      <Box sx={{ width: filled ? 0 : 6, flexShrink: 0, background: filled ? `transparent` : `linear-gradient(180deg, ${alpha(color, 0.4)} 0%, ${alpha(color, 0.1)} 100%)` }} />
+                      <Box sx={{ width: filled ? 0 : 6, flexShrink: 0, background: filled ? `transparent` : `linear-gradient(180deg, ${color} 0%, ${alpha(color, 0.3)} 100%)` }} />
                       <Box sx={{ p: 2, flex: 1, display: 'flex', alignItems: 'center', gap: 2 }}>
                         <Box sx={{
                           width: 36, height: 36, borderRadius: '10px', flexShrink: 0,
-                          bgcolor: filled ? 'rgba(255,255,255,0.2)' : alpha(color, 0.1), 
-                          border: filled ? '1px solid rgba(255,255,255,0.3)' : `1px solid ${alpha(color, 0.2)}`,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center'
+                          bgcolor: filled ? 'rgba(255,255,255,0.2)' : alpha(color, 0.15), 
+                          border: filled ? '1px solid rgba(255,255,255,0.3)' : `1px solid ${alpha(color, 0.3)}`,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          boxShadow: filled ? 'none' : `0 0 16px ${alpha(color, 0.2)}`
                         }}>
-                          {filled ? <CheckIcon sx={{ color: '#fff', fontSize: 18 }} /> : <Typography sx={{ fontWeight: 800, fontSize: '1rem', color }}>{i + 1}</Typography>}
+                          {filled ? <CheckIcon sx={{ color: '#fff', fontSize: 18 }} /> : <Typography sx={{ fontWeight: 900, fontSize: '1rem', color }}>{i + 1}</Typography>}
                         </Box>
                         <Box sx={{ flex: 1, minWidth: 0 }}>
-                          <Typography sx={{ fontWeight: 800, color: filled ? '#fff' : '#0f172a', fontSize: '1rem', letterSpacing: '-0.01em', mb: 0.2 }}>
+                          <Typography sx={{ fontWeight: 800, color: '#fff', fontSize: '1.05rem', letterSpacing: '-0.01em', mb: 0.2 }}>
                             {b.role}
                           </Typography>
-                          <Typography sx={{ color: filled ? 'rgba(255,255,255,0.8)' : '#64748b', fontSize: '0.8rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }}>
+                          <Typography sx={{ color: filled ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.6)', fontSize: '0.85rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600 }}>
                             {filled ? filledSummary : b.desc}
                           </Typography>
                         </Box>
@@ -444,24 +492,90 @@ export default function AddEventSidebar({ onClose, tenantId }: AddEventSidebarPr
                             label="Event Title" placeholder="e.g. Q3 Roadmap Review" 
                             fullWidth size="small" value={title} onChange={(e: any) => setTitle(e.target.value)} colorTheme={color}
                           />
-                          <Box sx={{ display: 'flex', gap: 2 }}>
-                            <Box sx={{ flex: 1 }}>
-                              <PremiumDatePicker 
-                                label={isSociety ? "Publish Date" : "Date"} 
-                                value={date} 
-                                onChange={(e: any) => setDate(e.target.value)} 
-                                colorTheme={color}
-                              />
+
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <Typography sx={{ fontWeight: 800, color: '#334155', fontSize: '0.85rem' }}>Timing Intent</Typography>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: 'text.secondary' }}>All Day</Typography>
+                                <PremiumSwitch 
+                                  checked={isAllDay} 
+                                  onChange={(e) => setIsAllDay(e.target.checked)} 
+                                  size="small"
+                                  colorTheme={color}
+                                />
+                              </Box>
                             </Box>
-                            <Box sx={{ flex: 1 }}>
-                              <PremiumTimePicker 
-                                label="Time" 
-                                value={time} 
-                                onChange={(e: any) => setTime(e.target.value)} 
-                                colorTheme={color}
+                            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+                              <CardChoice 
+                                title="Start Date" desc="Specific time block" color={color} 
+                                selected={dateType === 'START_TIME'} onClick={() => setDateType('START_TIME')}
+                              />
+                              <CardChoice 
+                                title="Deadline" desc="Cut-off or due date" color={color} 
+                                selected={dateType === 'DEADLINE'} onClick={() => setDateType('DEADLINE')}
+                              />
+                              <CardChoice 
+                                title="Publish Date" desc="When content goes live" color={color} 
+                                selected={dateType === 'PUBLISH_DATE'} onClick={() => setDateType('PUBLISH_DATE')}
+                              />
+                              <CardChoice 
+                                title="Date Range" desc="Multi-day event" color={color} 
+                                selected={dateType === 'DATE_RANGE'} onClick={() => setDateType('DATE_RANGE')}
                               />
                             </Box>
                           </Box>
+
+                          <Box sx={{ display: 'flex', gap: 2 }}>
+                            <Box sx={{ flex: 1 }}>
+                              <PremiumDatePicker 
+                                label={dateType === 'PUBLISH_DATE' ? "Publish Date" : (dateType === 'DEADLINE' ? "Deadline Date" : (dateType === 'DATE_RANGE' ? "Start Date" : "Start Date"))} 
+                                value={date} 
+                                onChange={(e: any) => {
+                                  setDate(e.target.value);
+                                  if (onDateChange && e.target.value) {
+                                    // Parse as local date to prevent timezone shift
+                                    const parsedDate = new Date(e.target.value.replace(/-/g, '/'));
+                                    if (!isNaN(parsedDate.getTime())) onDateChange(parsedDate);
+                                  }
+                                }} 
+                                colorTheme={color}
+                              />
+                            </Box>
+                            {!isAllDay && (
+                              <Box sx={{ flex: 1 }}>
+                                <PremiumTimePicker 
+                                  label="Time" 
+                                  value={time} 
+                                  onChange={(e: any) => setTime(e.target.value)} 
+                                  colorTheme={color}
+                                />
+                              </Box>
+                            )}
+                          </Box>
+
+                          {(dateType === 'DATE_RANGE' || dateType === 'START_TIME') && (
+                            <Box sx={{ display: 'flex', gap: 2 }}>
+                              <Box sx={{ flex: 1 }}>
+                                <PremiumDatePicker 
+                                  label="End Date (Optional)" 
+                                  value={endDate} 
+                                  onChange={(e: any) => setEndDate(e.target.value)} 
+                                  colorTheme={color}
+                                />
+                              </Box>
+                              {!isAllDay && (
+                                <Box sx={{ flex: 1 }}>
+                                  <PremiumTimePicker 
+                                    label="End Time (Optional)" 
+                                    value={endTime} 
+                                    onChange={(e: any) => setEndTime(e.target.value)} 
+                                    colorTheme={color}
+                                  />
+                                </Box>
+                              )}
+                            </Box>
+                          )}
 
                           {/* Content AND Todo List */}
                           <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -498,7 +612,7 @@ export default function AddEventSidebar({ onClose, tenantId }: AddEventSidebarPr
                           {/* Tags for Organization or Personal */}
                           {(!isSociety) && (
                             <Box sx={{ mt: 1 }}>
-                              <Typography sx={{ fontWeight: 800, color: '#334155', fontSize: '0.85rem', mb: 1 }}>Organizational Tags (Optional)</Typography>
+                              <Typography sx={{ fontWeight: 800, color: '#334155', fontSize: '0.85rem', mb: 1 }}>Keywords / Tags (Optional)</Typography>
                               <PremiumAutocomplete
                                 multiple
                                 freeSolo
