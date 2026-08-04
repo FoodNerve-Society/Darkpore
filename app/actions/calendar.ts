@@ -42,9 +42,9 @@ export async function scheduleCalendarEvent(payload: {
   tags?: string;
   scopes: ('personal' | 'organization' | 'society')[];
   timelines: {
-    personal?: { date: string, time: string, endDate?: string, endTime?: string, description?: string, rules?: string, tasks?: any[], statusTag?: string },
-    organization?: { date: string, time: string, orgId?: string, endDate?: string, endTime?: string, requireApproval?: boolean, description?: string, rules?: string, tasks?: any[], statusTag?: string },
-    society?: { date: string, time: string, endDate?: string, endTime?: string, description?: string, rules?: string, tasks?: any[], statusTag?: string }
+    personal?: { dateType: string, allDay: boolean, date: string, time: string, endDate?: string, endTime?: string, tasks?: any[] },
+    organization?: { dateType: string, allDay: boolean, date: string, time: string, orgId?: string, endDate?: string, endTime?: string, requireApproval?: boolean, rules?: string, tasks?: any[] },
+    society?: { dateType: string, allDay: boolean, date: string, time: string, endDate?: string, endTime?: string, description?: string, tasks?: any[] }
   }
 }) {
   const sessionResult = await getCurrentSessionUser();
@@ -98,9 +98,7 @@ export async function scheduleCalendarEvent(payload: {
         scheduledEndDate = new Date(scheduledDate.getTime() + 60 * 60 * 1000);
       }
 
-      let dateType = 'START_TIME';
-      if (scope === 'organization') dateType = 'DEADLINE';
-      if (scope === 'society') dateType = 'PUBLISH_DATE';
+      let dateType = timeline.dateType || 'START_TIME';
 
       let organizationId: string | null = null;
       if (scope === 'organization') {

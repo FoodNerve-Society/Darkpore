@@ -48,9 +48,9 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
   const [scopes, setScopes] = useState<('personal' | 'organization' | 'society')[]>([]);
   const defaultDate = initialDate ? initialDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
   const [timelines, setTimelines] = useState<Record<string, any>>({
-    personal: { date: '', time: '', description: '', rules: '', tasks: [], statusTag: '' },
-    organization: { date: '', time: '', orgId: '', description: '', rules: '', tasks: [], statusTag: '' },
-    society: { date: '', time: '', description: '', rules: '', tasks: [], statusTag: '' }
+    personal: { dateType: 'START_TIME', allDay: false, date: '', time: '', endDate: '', endTime: '', tasks: [{ id: '1', text: '', done: false }] },
+    organization: { dateType: 'START_TIME', allDay: false, date: '', time: '', endDate: '', endTime: '', orgId: '', rules: '', tasks: [{ id: '1', text: '', done: false }] },
+    society: { dateType: 'START_TIME', allDay: false, date: '', time: '', endDate: '', endTime: '', description: '', tasks: [{ id: '1', text: '', done: false }] }
   });
 
   const [eventType, setEventType] = useState<string>('general');
@@ -279,16 +279,13 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
                 filledSummary = scopeLabels.length > 0 ? scopeLabels.join(' • ') : 'No scopes selected';
               }
               if (b.id === 'org_timeline') {
-                filledSummary = `${timelines.organization.date} ${timelines.organization.time}`;
-                if (timelines.organization.statusTag) filledSummary += ` • ${timelines.organization.statusTag}`;
+                filledSummary = `${timelines.organization.date} ${timelines.organization.allDay ? '(All Day)' : timelines.organization.time}`;
               }
               if (b.id === 'soc_timeline') {
-                filledSummary = `${timelines.society.date} ${timelines.society.time}`;
-                if (timelines.society.statusTag) filledSummary += ` • ${timelines.society.statusTag}`;
+                filledSummary = `${timelines.society.date} ${timelines.society.allDay ? '(All Day)' : timelines.society.time}`;
               }
               if (b.id === 'per_timeline') {
-                filledSummary = `${timelines.personal.date} ${timelines.personal.time}`;
-                if (timelines.personal.statusTag) filledSummary += ` • ${timelines.personal.statusTag}`;
+                filledSummary = `${timelines.personal.date} ${timelines.personal.allDay ? '(All Day)' : timelines.personal.time}`;
               }
             }
 
@@ -505,51 +502,101 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
                         
                         return (
                           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <Box sx={{ display: 'flex', gap: 1, overflowX: 'auto', pb: 1, '&::-webkit-scrollbar': { display: 'none' } }}>
+                              {['START_TIME', 'PUBLISH_DATE', 'DATE_RANGE', 'DEADLINE'].map(dt => (
+                                <Box 
+                                  key={dt}
+                                  onClick={() => setTimelines({ ...timelines, [scopeKey]: { ...timeline, dateType: dt } })}
+                                  sx={{
+                                    px: 2, py: 0.8, borderRadius: '100px', cursor: 'pointer', flexShrink: 0,
+                                    border: `1px solid ${timeline.dateType === dt ? color : alpha(color, 0.3)}`,
+                                    bgcolor: timeline.dateType === dt ? alpha(color, 0.1) : 'transparent',
+                                    transition: 'all 0.2s ease',
+                                    '&:hover': { bgcolor: alpha(color, 0.05) }
+                                  }}
+                                >
+                                  <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: timeline.dateType === dt ? color : '#64748b', textTransform: 'capitalize' }}>
+                                    {dt === 'START_TIME' ? 'Start Date' : dt === 'PUBLISH_DATE' ? 'Publish Date' : dt === 'DATE_RANGE' ? 'Duration' : 'Deadline / End'}
+                                  </Typography>
+                                </Box>
+                              ))}
+                            </Box>
+
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: alpha(color, 0.05), p: 1.5, borderRadius: '12px', border: `1px solid ${alpha(color, 0.1)}` }}>
+                              <Typography sx={{ fontWeight: 800, color: '#334155', fontSize: '0.85rem' }}>All Day Event</Typography>
+                              <PremiumSwitch 
+                                checked={timeline.allDay} 
+                                onChange={(e: any) => setTimelines({ ...timelines, [scopeKey]: { ...timeline, allDay: e.target.checked } })} 
+                                colorTheme={color} 
+                              />
+                            </Box>
+
                             <Box sx={{ display: 'flex', gap: 2 }}>
                               <Box sx={{ flex: 1 }}>
                                 <PremiumDatePicker 
-                                  label="Date" 
+                                  label={timeline.dateType === 'DATE_RANGE' ? "Start Date" : "Date"} 
                                   value={timeline.date} 
                                   onChange={(e: any) => setTimelines({ ...timelines, [scopeKey]: { ...timeline, date: e.target.value } })} 
                                   colorTheme={color}
                                 />
                               </Box>
-                              <Box sx={{ flex: 1 }}>
-                                <PremiumTimePicker 
-                                  label="Time" 
-                                  value={timeline.time} 
-                                  onChange={(e: any) => setTimelines({ ...timelines, [scopeKey]: { ...timeline, time: e.target.value } })} 
-                                  colorTheme={color}
-                                />
-                              </Box>
+                              {!timeline.allDay && (
+                                <Box sx={{ flex: 1 }}>
+                                  <PremiumTimePicker 
+                                    label={timeline.dateType === 'DATE_RANGE' ? "Start Time" : "Time"} 
+                                    value={timeline.time} 
+                                    onChange={(e: any) => setTimelines({ ...timelines, [scopeKey]: { ...timeline, time: e.target.value } })} 
+                                    colorTheme={color}
+                                  />
+                                </Box>
+                              )}
                             </Box>
-                            
-                            <PremiumAutocomplete
-                              label="Status Tag (Optional)"
-                              options={['Autopsy', 'Critical', 'Current Reality', 'Failure', 'Forecast', 'Insight', 'Post-Mortem', 'Prediction', 'Root Cause', 'Solution', 'Status Quo', 'Strategy', 'Success', 'Trend', 'Vision', 'Warning']}
-                              value={timeline.statusTag || null}
-                              onChange={(e, val) => setTimelines({ ...timelines, [scopeKey]: { ...timeline, statusTag: val || '' } })}
-                              colorTheme={color}
-                            />
 
-                            <PremiumTextField 
-                              label="Description / Context" 
-                              multiline rows={2} fullWidth size="small" 
-                              value={timeline.description} 
-                              onChange={(e: any) => setTimelines({ ...timelines, [scopeKey]: { ...timeline, description: e.target.value } })} 
-                              colorTheme={color} 
-                            />
+                            {timeline.dateType === 'DATE_RANGE' && (
+                              <Box sx={{ display: 'flex', gap: 2, mt: 0 }}>
+                                <Box sx={{ flex: 1 }}>
+                                  <PremiumDatePicker 
+                                    label="End Date" 
+                                    value={timeline.endDate} 
+                                    onChange={(e: any) => setTimelines({ ...timelines, [scopeKey]: { ...timeline, endDate: e.target.value } })} 
+                                    colorTheme={color}
+                                  />
+                                </Box>
+                                {!timeline.allDay && (
+                                  <Box sx={{ flex: 1 }}>
+                                    <PremiumTimePicker 
+                                      label="End Time" 
+                                      value={timeline.endTime} 
+                                      onChange={(e: any) => setTimelines({ ...timelines, [scopeKey]: { ...timeline, endTime: e.target.value } })} 
+                                      colorTheme={color}
+                                    />
+                                  </Box>
+                                )}
+                              </Box>
+                            )}
 
-                            <PremiumTextField 
-                              label="Rules & Guidelines" 
-                              multiline rows={2} fullWidth size="small" 
-                              value={timeline.rules} 
-                              onChange={(e: any) => setTimelines({ ...timelines, [scopeKey]: { ...timeline, rules: e.target.value } })} 
-                              colorTheme={color} 
-                            />
+                            {b.id === 'soc_timeline' && (
+                              <PremiumTextField 
+                                label="Description / Context" 
+                                multiline rows={2} fullWidth size="small" 
+                                value={timeline.description} 
+                                onChange={(e: any) => setTimelines({ ...timelines, [scopeKey]: { ...timeline, description: e.target.value } })} 
+                                colorTheme={color} 
+                              />
+                            )}
+
+                            {b.id === 'org_timeline' && (
+                              <PremiumTextField 
+                                label="Rules & Guidelines" 
+                                multiline rows={2} fullWidth size="small" 
+                                value={timeline.rules} 
+                                onChange={(e: any) => setTimelines({ ...timelines, [scopeKey]: { ...timeline, rules: e.target.value } })} 
+                                colorTheme={color} 
+                              />
+                            )}
 
                             <Box sx={{ p: 2, bgcolor: alpha(color, 0.05), borderRadius: 2, border: `1px solid ${alpha(color, 0.2)}` }}>
-                              <Typography sx={{ fontWeight: 800, color: '#334155', fontSize: '0.85rem', mb: 1 }}>Action List (Optional)</Typography>
+                              <Typography sx={{ fontWeight: 800, color: '#334155', fontSize: '0.85rem', mb: 1 }}>Tasks (Optional)</Typography>
                               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                                 {timeline.tasks && timeline.tasks.map((task: any, idx: number) => (
                                   <Box key={task.id} sx={{ 
