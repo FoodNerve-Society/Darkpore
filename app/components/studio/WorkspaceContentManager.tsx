@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Typography, alpha, IconButton, Chip } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -41,31 +41,44 @@ interface WorkspaceContentManagerProps {
 }
 
 const getTypeIcon = (type: string, color: string) => {
+  const props = { sx: { color, fontSize: '1.4rem' } };
   switch (type) {
-    case 'article': return <ArticleIcon sx={{ color, fontSize: 20 }} />;
-    case 'jobs': return <JobIcon sx={{ color, fontSize: 20 }} />;
-    case 'volunteer': return <JobIcon sx={{ color, fontSize: 20 }} />;
-    case 'meetup': return <EventIcon sx={{ color, fontSize: 20 }} />;
-    case 'livestream': return <VideoIcon sx={{ color, fontSize: 20 }} />;
-    case 'masterclass': return <ClassIcon sx={{ color, fontSize: 20 }} />;
-    default: return <ListingIcon sx={{ color, fontSize: 20 }} />;
+    case 'article': return <ArticleIcon {...props} />;
+    case 'job': return <JobIcon {...props} />;
+    case 'event': return <EventIcon {...props} />;
+    case 'video': return <VideoIcon {...props} />;
+    case 'course': return <ClassIcon {...props} />;
+    case 'listing': return <ListingIcon {...props} />;
+    default: return <ArticleIcon {...props} />;
   }
 };
 
 const getStatusColor = (status: string) => {
   switch (status) {
-    case 'draft': return '#64748b'; // Slate
-    case 'scheduled': return '#3b82f6'; // Blue
-    case 'pending_org_review': return '#f59e0b'; // Amber
-    case 'published': case 'active': return '#10b981'; // Emerald
-    case 'rejected': return '#ef4444'; // Red
-    default: return '#64748b';
+    case 'published':
+    case 'active':
+      return '#10b981'; // Emerald
+    case 'draft':
+    case 'scheduled':
+    case 'pending_org_review':
+      return '#f59e0b'; // Amber
+    case 'rejected':
+      return '#ef4444'; // Red
+    default:
+      return '#94a3b8'; // Slate
   }
 };
 
 export default function WorkspaceContentManager({ tabs, onEdit, onDelete, colorTheme = '#1e293b' }: WorkspaceContentManagerProps) {
   const [activeTabId, setActiveTabId] = useState<string>(tabs[0]?.id || '');
   const [direction, setDirection] = useState(0);
+
+  // Ensure activeTabId is set correctly if tabs load asynchronously
+  useEffect(() => {
+    if (tabs && tabs.length > 0 && !tabs.find(t => t.id === activeTabId)) {
+      setActiveTabId(tabs[0].id);
+    }
+  }, [tabs, activeTabId]);
 
   if (!tabs || tabs.length === 0) return null;
 
@@ -100,7 +113,7 @@ export default function WorkspaceContentManager({ tabs, onEdit, onDelete, colorT
   return (
     <Box sx={{ mt: 4, display: 'flex', flexDirection: 'column', gap: 4 }}>
       
-      {/* Option 1: iOS Segmented Track */}
+      {/* Option 1: High-Contrast Segmented Track */}
       <Box sx={{ 
         width: '100%', overflowX: 'auto', pb: 2, pt: 1, px: 1,
         '&::-webkit-scrollbar': { height: 0 },
@@ -112,10 +125,8 @@ export default function WorkspaceContentManager({ tabs, onEdit, onDelete, colorT
           gap: 0.5,
           p: 0.75,
           borderRadius: '100px',
-          bgcolor: 'rgba(255,255,255,0.4)',
-          backdropFilter: 'blur(16px)',
-          border: '1px solid rgba(255,255,255,0.5)',
-          boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.02)'
+          bgcolor: 'rgba(0,0,0,0.03)', // subtle trough
+          boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)'
         }}>
           {tabs.map(tab => {
             const isActive = tab.id === activeTabId;
@@ -130,48 +141,65 @@ export default function WorkspaceContentManager({ tabs, onEdit, onDelete, colorT
                   py: 1, px: 2.5, borderRadius: '100px',
                   cursor: 'pointer',
                   WebkitTapHighlightColor: 'transparent',
+                  transition: 'all 0.3s ease',
+                  '&:hover .tab-content': {
+                    opacity: 1,
+                  }
                 }}
               >
-                {/* Sliding Thumb Background */}
+                {/* Solid Colored Sliding Thumb */}
                 {isActive && (
                   <Box
                     component={motion.div}
                     layoutId="activeTabThumb"
-                    initial={false}
                     transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                     sx={{
                       position: 'absolute',
                       inset: 0,
                       borderRadius: '100px',
-                      bgcolor: '#fff',
-                      boxShadow: `0 4px 16px ${alpha(colorTheme, 0.15)}, 0 1px 4px ${alpha(colorTheme, 0.05)}`,
+                      bgcolor: colorTheme,
+                      boxShadow: `0 4px 12px ${alpha(colorTheme, 0.4)}, inset 0 2px 4px rgba(255,255,255,0.2)`,
                       zIndex: 0
                     }}
                   />
                 )}
                 
                 {/* Content (Sits above thumb) */}
-                <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                <Box className="tab-content" sx={{ 
+                  position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: 1.25,
+                  opacity: isActive ? 1 : 0.6,
+                  transition: 'opacity 0.3s ease'
+                }}>
                   {tab.logoUrl ? (
-                    <Box sx={{ width: 22, height: 22, borderRadius: '50%', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                    <Box sx={{ 
+                      width: 24, 
+                      height: 24, 
+                      borderRadius: '50%', overflow: 'hidden', 
+                      boxShadow: isActive ? '0 2px 8px rgba(0,0,0,0.2)' : 'none',
+                      border: isActive ? '2px solid rgba(255,255,255,0.8)' : 'none',
+                      transition: 'all 0.3s ease'
+                    }}>
                       <img src={tab.logoUrl} alt={tab.label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </Box>
                   ) : (
                     <Box sx={{ 
-                      width: 22, height: 22, borderRadius: '50%', 
-                      bgcolor: isActive ? colorTheme : alpha(colorTheme, 0.1), 
-                      color: isActive ? '#fff' : colorTheme,
+                      width: 24, 
+                      height: 24, 
+                      borderRadius: '50%', 
+                      bgcolor: isActive ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.06)', 
+                      color: isActive ? '#fff' : '#64748b',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '0.7rem', fontWeight: 900,
+                      fontSize: '0.75rem', fontWeight: 900,
+                      border: isActive ? '1px solid rgba(255,255,255,0.4)' : 'none',
                       transition: 'all 0.3s ease'
                     }}>
                       {tab.label.charAt(0).toUpperCase()}
                     </Box>
                   )}
                   <Typography sx={{ 
-                    fontWeight: isActive ? 800 : 600, 
-                    color: isActive ? '#0f172a' : '#64748b',
-                    fontSize: '0.9rem',
+                    fontWeight: isActive ? 900 : 600, 
+                    color: isActive ? '#fff' : '#475569',
+                    fontSize: '0.95rem',
                     letterSpacing: '-0.01em',
                     transition: 'color 0.3s ease'
                   }}>
@@ -179,10 +207,10 @@ export default function WorkspaceContentManager({ tabs, onEdit, onDelete, colorT
                   </Typography>
                   {count > 0 && (
                     <Box sx={{ 
-                      bgcolor: isActive ? alpha(colorTheme, 0.1) : 'rgba(0,0,0,0.05)', 
-                      color: isActive ? colorTheme : '#64748b',
-                      px: 1, py: 0.25, borderRadius: '100px',
-                      fontSize: '0.7rem', fontWeight: 800,
+                      bgcolor: isActive ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.06)', 
+                      color: isActive ? '#fff' : '#64748b',
+                      px: 1.2, py: 0.25, borderRadius: '100px',
+                      fontSize: '0.75rem', fontWeight: 900,
                       transition: 'all 0.3s ease'
                     }}>
                       {count}
@@ -196,84 +224,83 @@ export default function WorkspaceContentManager({ tabs, onEdit, onDelete, colorT
       </Box>
 
       {/* Content Area with Sliding Animation */}
-      <Box sx={{ position: 'relative', overflow: 'hidden', px: 1, py: 1 }}>
+      <Box sx={{ position: 'relative', overflow: 'hidden', px: 1, py: 1, flex: 1, overflowY: 'auto' }}>
         <AnimatePresence mode="wait" custom={direction}>
-          <motion.div
+          <Box
+            component={motion.div}
             key={activeTabId}
             custom={direction}
             variants={contentVariants}
             initial="enter"
             animate="center"
             exit="exit"
-            transition={{ type: 'tween', ease: 'easeInOut', duration: 0.25 }}
-            style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}
+            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+            sx={{ display: 'flex', flexDirection: 'column', gap: 5, pb: 10 }}
           >
-            {/* Drafts & Scheduled */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, ml: 1 }}>
-                <Typography sx={{ fontWeight: 900, fontSize: '1.05rem', color: '#1e293b', letterSpacing: '-0.02em' }}>
-                  Drafts & Scheduled
-                </Typography>
-                <Chip 
-                  label={draftsAndScheduled.length} 
-                  size="small" 
-                  sx={{ bgcolor: 'rgba(0,0,0,0.04)', color: '#64748b', fontWeight: 800, fontSize: '0.75rem', height: 22 }} 
-                />
-              </Box>
-              {draftsAndScheduled.length === 0 ? (
-                <Box sx={{ 
-                  p: 6, borderRadius: '24px', border: '2px dashed rgba(0,0,0,0.06)', 
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                  bgcolor: 'rgba(255,255,255,0.4)', backdropFilter: 'blur(8px)'
-                }}>
-                  <Box sx={{ width: 48, height: 48, borderRadius: '16px', bgcolor: 'rgba(0,0,0,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
-                    <EditIcon sx={{ color: '#94a3b8' }} />
-                  </Box>
-                  <Typography sx={{ color: '#64748b', fontSize: '1.05rem', fontWeight: 800, letterSpacing: '-0.01em' }}>Empty Workspace</Typography>
-                  <Typography sx={{ color: '#94a3b8', fontSize: '0.85rem', fontWeight: 500, mt: 0.5 }}>You don't have any drafts or scheduled items here.</Typography>
+            {/* Drafts & Scheduled Swimlane */}
+            {draftsAndScheduled.length > 0 && (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pl: 2, mb: 0 }}>
+                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#f59e0b' }} />
+                  <Typography sx={{ fontWeight: 900, fontSize: '0.85rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                    Drafts & Scheduled
+                  </Typography>
                 </Box>
-              ) : (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                  {draftsAndScheduled.map(item => (
+                <Box sx={{ 
+                  display: 'flex', flexDirection: 'row', gap: 2, 
+                  overflowX: 'auto', 
+                  pt: 2, pb: 4, px: 2, ml: -1, mr: -1, /* Generous padding to prevent shadow/hover clipping */
+                  WebkitOverflowScrolling: 'touch',
+                  '&::-webkit-scrollbar': { display: 'none' }, msOverflowStyle: 'none', scrollbarWidth: 'none'
+                }}>
+                  {draftsAndScheduled.map((item) => (
                     <ContentRow key={item.id} item={item} colorTheme={colorTheme} onEdit={onEdit} onDelete={onDelete} />
                   ))}
                 </Box>
-              )}
-            </Box>
+              </Box>
+            )}
 
-            {/* Published & Live */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, ml: 1 }}>
-                <Typography sx={{ fontWeight: 900, fontSize: '1.05rem', color: '#1e293b', letterSpacing: '-0.02em' }}>
-                  Published & Live
-                </Typography>
-                <Chip 
-                  label={publishedAndLive.length} 
-                  size="small" 
-                  sx={{ bgcolor: 'rgba(0,0,0,0.04)', color: '#64748b', fontWeight: 800, fontSize: '0.75rem', height: 22 }} 
-                />
-              </Box>
-              {publishedAndLive.length === 0 ? (
-                <Box sx={{ 
-                  p: 6, borderRadius: '24px', border: '2px dashed rgba(0,0,0,0.06)', 
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                  bgcolor: 'rgba(255,255,255,0.4)', backdropFilter: 'blur(8px)'
-                }}>
-                  <Box sx={{ width: 48, height: 48, borderRadius: '16px', bgcolor: 'rgba(0,0,0,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
-                    <ViewIcon sx={{ color: '#94a3b8' }} />
-                  </Box>
-                  <Typography sx={{ color: '#64748b', fontSize: '1.05rem', fontWeight: 800, letterSpacing: '-0.01em' }}>No Live Content</Typography>
-                  <Typography sx={{ color: '#94a3b8', fontSize: '0.85rem', fontWeight: 500, mt: 0.5 }}>Items you publish will appear here for management.</Typography>
+            {/* Live & Published Swimlane */}
+            {publishedAndLive.length > 0 && (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pl: 2, mb: 0 }}>
+                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#10b981' }} />
+                  <Typography sx={{ fontWeight: 900, fontSize: '0.85rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                    Live & Published
+                  </Typography>
                 </Box>
-              ) : (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                  {publishedAndLive.map(item => (
+                <Box sx={{ 
+                  display: 'flex', flexDirection: 'row', gap: 2, 
+                  overflowX: 'auto', 
+                  pt: 2, pb: 4, px: 2, ml: -1, mr: -1, /* Generous padding to prevent shadow/hover clipping */
+                  WebkitOverflowScrolling: 'touch',
+                  '&::-webkit-scrollbar': { display: 'none' }, msOverflowStyle: 'none', scrollbarWidth: 'none'
+                }}>
+                  {publishedAndLive.map((item) => (
                     <ContentRow key={item.id} item={item} colorTheme={colorTheme} onEdit={onEdit} onDelete={onDelete} />
                   ))}
                 </Box>
-              )}
-            </Box>
-          </motion.div>
+              </Box>
+            )}
+
+            {/* Empty State */}
+            {activeTab.items.length === 0 && (
+              <Box sx={{ 
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', 
+                py: 12, opacity: 0.5 
+              }}>
+                <Box sx={{ width: 64, height: 64, borderRadius: '16px', bgcolor: 'rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+                  <ArticleIcon sx={{ fontSize: 32, color: colorTheme }} />
+                </Box>
+                <Typography sx={{ fontSize: '1.1rem', fontWeight: 700, color: '#475569', mb: 1 }}>
+                  No {activeTab.label.toLowerCase()} found
+                </Typography>
+                <Typography sx={{ fontSize: '0.9rem', color: '#94a3b8' }}>
+                  Get started by creating a new one.
+                </Typography>
+              </Box>
+            )}
+          </Box>
         </AnimatePresence>
       </Box>
     </Box>
@@ -281,129 +308,120 @@ export default function WorkspaceContentManager({ tabs, onEdit, onDelete, colorT
 }
 
 function ContentRow({ item, colorTheme, onEdit, onDelete }: { item: WorkspaceItem, colorTheme: string, onEdit: any, onDelete: any }) {
-  const statusColor = getStatusColor(item.status);
+  // Determine if incomplete (draft) or complete (published)
+  const isComplete = ['published', 'active'].includes(item.status);
+  const completionTint = isComplete ? '#047857' : '#b45309'; // Very Dark Emerald (700), Very Dark Amber (700)
   
   return (
     <Box sx={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+      minWidth: 280, maxWidth: 280, height: 210,
       p: 2.5, borderRadius: '24px', 
-      bgcolor: 'rgba(255,255,255,0.5)',
+      bgcolor: alpha(completionTint, 0.08), 
       backdropFilter: 'blur(24px)',
       WebkitBackdropFilter: 'blur(24px)',
-      border: '1px solid rgba(255,255,255,0.8)',
-      boxShadow: '0 8px 32px rgba(0,0,0,0.03), inset 0 2px 6px rgba(255,255,255,0.8)',
+      border: `1px solid ${alpha(completionTint, 0.15)}`, 
+      boxShadow: `0 8px 32px rgba(15, 23, 42, 0.03), inset 0 2px 6px rgba(255,255,255,0.8)`,
       transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)',
       cursor: 'pointer',
       position: 'relative',
+      flexShrink: 0,
       '&:hover': {
-        bgcolor: 'rgba(255,255,255,0.9)',
-        borderColor: alpha(colorTheme, 0.4),
-        boxShadow: `0 16px 40px ${alpha(colorTheme, 0.12)}, inset 0 2px 4px rgba(255,255,255,1)`,
-        transform: 'translateY(-2px)',
+        bgcolor: alpha(completionTint, 0.12),
+        boxShadow: `0 16px 40px ${alpha(completionTint, 0.15)}, inset 0 2px 4px rgba(255,255,255,1)`,
+        transform: 'translateY(-4px)',
         '& .action-buttons': {
           opacity: 1,
-          transform: 'translateX(0)',
+          transform: 'scale(1)',
         }
       }
     }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5, pl: 1 }}>
-        {/* Spatial Gradient Icon Container */}
+      {/* Top Section: Icon & Type */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <Box sx={{ 
-          width: 52, height: 52, borderRadius: '16px', 
-          background: `linear-gradient(135deg, ${alpha(colorTheme, 0.2)} 0%, ${alpha(colorTheme, 0.05)} 100%)`,
-          border: `1px solid ${alpha(colorTheme, 0.15)}`,
+          width: 44, height: 44, borderRadius: '14px', 
+          background: `linear-gradient(135deg, ${alpha(colorTheme, 0.25)} 0%, ${alpha(colorTheme, 0.05)} 100%)`,
+          border: `1px solid ${alpha(colorTheme, 0.2)}`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: `inset 0 2px 6px ${alpha('#fff', 0.6)}, 0 4px 12px ${alpha(colorTheme, 0.08)}`
+          boxShadow: `inset 0 2px 6px ${alpha('#fff', 0.6)}, 0 4px 12px ${alpha(colorTheme, 0.1)}`
         }}>
           {getTypeIcon(item.type, colorTheme)}
         </Box>
-        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-          <Typography sx={{ fontWeight: 900, color: '#0f172a', fontSize: '1.1rem', letterSpacing: '-0.02em', mb: 0.5 }}>
-            {item.title}
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Typography sx={{ fontSize: '0.75rem', fontWeight: 900, color: colorTheme, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              {item.type}
-            </Typography>
-            <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: '#cbd5e1' }} />
-            <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b' }}>
-              {new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-            </Typography>
-            {item.authorName && (
-              <>
-                <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: '#cbd5e1' }} />
-                <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b' }}>
-                  By <span style={{ fontWeight: 800, color: '#334155' }}>{item.authorName}</span>
-                </Typography>
-              </>
-            )}
-          </Box>
-        </Box>
-      </Box>
-      
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 4, pr: 1 }}>
-        {/* Spatial Stats */}
-        {item.stats && (
-          <Box sx={{ display: 'flex', gap: 3, mr: 2 }}>
-            {item.stats.views !== undefined && (
-              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <Typography sx={{ fontSize: '1rem', fontWeight: 900, color: '#0f172a' }}>{item.stats.views}</Typography>
-                <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Views</Typography>
-              </Box>
-            )}
-            {item.stats.applications !== undefined && (
-              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <Typography sx={{ fontSize: '1rem', fontWeight: 900, color: '#0f172a' }}>{item.stats.applications}</Typography>
-                <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Apps</Typography>
-              </Box>
-            )}
-          </Box>
-        )}
-
-        {/* Frosted Status Pill */}
         <Chip 
           label={item.status.replace(/_/g, ' ')} 
           size="small" 
-          icon={<Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: statusColor, ml: '10px !important' }} />}
+          icon={<Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: completionTint, ml: '10px !important' }} />}
           sx={{ 
-            bgcolor: alpha(statusColor, 0.1), color: statusColor, 
-            backdropFilter: 'blur(8px)',
-            fontWeight: 900, fontSize: '0.75rem', textTransform: 'capitalize',
-            borderRadius: '12px', height: 30, px: 0.5,
-            border: `1px solid ${alpha(statusColor, 0.2)}`,
-            boxShadow: `inset 0 1px 2px rgba(255,255,255,0.3)`
+            bgcolor: alpha(completionTint, 0.15), color: completionTint, 
+            backdropFilter: 'blur(12px)',
+            fontWeight: 900, fontSize: '0.7rem', textTransform: 'capitalize',
+            borderRadius: '10px', height: 26, px: 0.5,
+            border: `1px solid ${alpha(completionTint, 0.3)}`,
+            boxShadow: `inset 0 1px 4px rgba(255,255,255,0.6)`
           }} 
         />
-        
+      </Box>
+
+      {/* Middle Section: Title & Date */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, flex: 1, justifyContent: 'center', mt: 2 }}>
+        <Typography sx={{ 
+          fontWeight: 900, color: '#0f172a', fontSize: '1.05rem', 
+          letterSpacing: '-0.02em', lineHeight: 1.2,
+          display: '-webkit-box', overflow: 'hidden', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2 
+        }}>
+          {item.title}
+        </Typography>
+        <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#64748b' }}>
+          {new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+        </Typography>
+      </Box>
+
+      {/* Bottom Section: Stats & Actions */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mt: 2 }}>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          {item.stats?.views !== undefined && (
+            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+              <Typography sx={{ fontSize: '0.9rem', fontWeight: 900, color: '#0f172a' }}>{item.stats.views}</Typography>
+              <Typography sx={{ fontSize: '0.6rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Views</Typography>
+            </Box>
+          )}
+          {item.stats?.applications !== undefined && (
+            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+              <Typography sx={{ fontSize: '0.9rem', fontWeight: 900, color: '#0f172a' }}>{item.stats.applications}</Typography>
+              <Typography sx={{ fontSize: '0.6rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Apps</Typography>
+            </Box>
+          )}
+        </Box>
+
         <Box 
           className="action-buttons"
           sx={{ 
             display: 'flex', gap: 1, 
             opacity: { xs: 1, md: 0 }, 
-            transform: { xs: 'none', md: 'translateX(10px)' }, 
+            transform: { xs: 'none', md: 'scale(0.95)' }, 
             transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)',
-            ml: 1
+            transformOrigin: 'bottom right'
           }}
         >
           <IconButton 
             size="small" 
             onClick={(e) => { e.stopPropagation(); onEdit(item.id, item.type); }} 
             sx={{ 
-              bgcolor: 'rgba(255,255,255,0.6)', color: colorTheme,
-              backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.8)',
+              bgcolor: 'rgba(255,255,255,0.7)', color: colorTheme,
+              backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.9)',
               boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
               '&:hover': { bgcolor: '#fff', transform: 'scale(1.05)' }
             }}
           >
-            {['published', 'active'].includes(item.status) ? <ViewIcon fontSize="small" /> : <EditIcon fontSize="small" />}
+            {isComplete ? <ViewIcon fontSize="small" /> : <EditIcon fontSize="small" />}
           </IconButton>
-          {['draft', 'scheduled', 'rejected'].includes(item.status) && (
+          {!isComplete && (
             <IconButton 
               size="small" 
               onClick={(e) => { e.stopPropagation(); onDelete(item.id, item.type); }} 
               sx={{ 
-                bgcolor: 'rgba(255,255,255,0.6)', color: '#ef4444',
-                backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.8)',
+                bgcolor: 'rgba(255,255,255,0.7)', color: '#ef4444',
+                backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.9)',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
                 '&:hover': { bgcolor: '#fff', transform: 'scale(1.05)' }
               }}
