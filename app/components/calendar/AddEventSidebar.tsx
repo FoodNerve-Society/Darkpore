@@ -48,9 +48,9 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
   const [scopes, setScopes] = useState<('personal' | 'organization' | 'society')[]>([]);
   const defaultDate = initialDate ? initialDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
   const [timelines, setTimelines] = useState<Record<string, any>>({
-    personal: { date: defaultDate, time: '10:00', description: '', rules: '', tasks: [] },
-    organization: { date: defaultDate, time: '10:00', orgId: '', description: '', rules: '', tasks: [] },
-    society: { date: defaultDate, time: '10:00', description: '', rules: '', tasks: [] }
+    personal: { date: '', time: '', description: '', rules: '', tasks: [], statusTag: '' },
+    organization: { date: '', time: '', orgId: '', description: '', rules: '', tasks: [], statusTag: '' },
+    society: { date: '', time: '', description: '', rules: '', tasks: [], statusTag: '' }
   });
 
   const [eventType, setEventType] = useState<string>('general');
@@ -267,11 +267,29 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
 
             let filledSummary = 'Content added — tap to edit';
             if (filled) {
-              if (b.id === 'core') filledSummary = `${title || 'No Title'} • ${eventType === 'article' ? 'Article Draft' : eventType === 'livestream' ? 'Livestream Draft' : 'General Event'}`;
-              if (b.id === 'scopes') filledSummary = scopes.map(s => s === 'organization' ? 'Organization' : s === 'society' ? 'Society' : 'Personal').join(' • ');
-              if (b.id === 'org_timeline') filledSummary = `${timelines.organization.date} ${timelines.organization.time}`;
-              if (b.id === 'soc_timeline') filledSummary = `${timelines.society.date} ${timelines.society.time}`;
-              if (b.id === 'per_timeline') filledSummary = `${timelines.personal.date} ${timelines.personal.time}`;
+              if (b.id === 'core') {
+                const typeLabel = ECOSYSTEM_EVENT_TYPES.find(t => t.id === eventType)?.label || 'Event';
+                filledSummary = `${title || 'No Title'} • ${typeLabel}`;
+              }
+              if (b.id === 'scopes') {
+                const scopeLabels = [];
+                if (scopes.includes('personal')) scopeLabels.push('Personal');
+                if (scopes.includes('organization')) scopeLabels.push('Organization');
+                if (scopes.includes('society')) scopeLabels.push('Society');
+                filledSummary = scopeLabels.length > 0 ? scopeLabels.join(' • ') : 'No scopes selected';
+              }
+              if (b.id === 'org_timeline') {
+                filledSummary = `${timelines.organization.date} ${timelines.organization.time}`;
+                if (timelines.organization.statusTag) filledSummary += ` • ${timelines.organization.statusTag}`;
+              }
+              if (b.id === 'soc_timeline') {
+                filledSummary = `${timelines.society.date} ${timelines.society.time}`;
+                if (timelines.society.statusTag) filledSummary += ` • ${timelines.society.statusTag}`;
+              }
+              if (b.id === 'per_timeline') {
+                filledSummary = `${timelines.personal.date} ${timelines.personal.time}`;
+                if (timelines.personal.statusTag) filledSummary += ` • ${timelines.personal.statusTag}`;
+              }
             }
 
             return (
@@ -319,13 +337,15 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
                         }}>
                           {filled ? <CheckIcon sx={{ color: '#fff', fontSize: 18 }} /> : <Typography sx={{ fontWeight: 900, fontSize: '1rem', color }}>{i + 1}</Typography>}
                         </Box>
-                        <Box sx={{ flex: 1, minWidth: 0 }}>
-                          <Typography sx={{ fontWeight: 800, color: '#fff', fontSize: '1.05rem', letterSpacing: '-0.01em', mb: 0.2 }}>
-                            {b.role}
-                          </Typography>
-                          <Typography sx={{ color: filled ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.6)', fontSize: '0.85rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600 }}>
-                            {filled ? filledSummary : b.desc}
-                          </Typography>
+                        <Box sx={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+                          <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <Typography sx={{ fontWeight: 800, color: '#fff', fontSize: '1.05rem', letterSpacing: '-0.01em', mb: 0.2 }}>
+                              {b.role}
+                            </Typography>
+                            <Typography sx={{ color: filled ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.6)', fontSize: '0.85rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600 }}>
+                              {filled ? filledSummary : b.desc}
+                            </Typography>
+                          </Box>
                         </Box>
                       </Box>
                     </Box>
@@ -373,14 +393,19 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
                             fullWidth size="small" value={title} onChange={(e: any) => setTitle(e.target.value)} colorTheme={color}
                           />
                           <Typography sx={{ fontWeight: 800, color: '#334155', fontSize: '0.85rem', mt: 1 }}>Event Type</Typography>
-                          <PremiumAutocomplete
-                            label="Select Event Type"
-                            options={ECOSYSTEM_EVENT_TYPES}
-                            getOptionLabel={(opt) => opt.label}
-                            value={ECOSYSTEM_EVENT_TYPES.find((t) => t.id === eventType) || ECOSYSTEM_EVENT_TYPES[0]}
-                            onChange={(e, val) => setEventType(val ? val.id : 'general')}
-                            colorTheme={color}
-                          />
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                            <PremiumAutocomplete
+                              label="Select Event Type"
+                              options={ECOSYSTEM_EVENT_TYPES}
+                              getOptionLabel={(opt) => opt.label}
+                              value={ECOSYSTEM_EVENT_TYPES.find((t) => t.id === eventType) || ECOSYSTEM_EVENT_TYPES[0]}
+                              onChange={(e, val) => setEventType(val ? val.id : 'general')}
+                              colorTheme={color}
+                            />
+                            <Typography sx={{ fontSize: '0.75rem', color: '#64748b', ml: 1, fontWeight: 600 }}>
+                              {(ECOSYSTEM_EVENT_TYPES.find((t) => t.id === eventType) || ECOSYSTEM_EVENT_TYPES[0]).description}
+                            </Typography>
+                          </Box>
                           {scopes.includes('society') && (
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: 1 }}>
                               <Typography sx={{ fontWeight: 800, color: '#334155', fontSize: '0.85rem' }}>Ecosystem Taxonomy</Typography>
@@ -498,6 +523,15 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
                                 />
                               </Box>
                             </Box>
+                            
+                            <PremiumAutocomplete
+                              label="Status Tag (Optional)"
+                              options={['Autopsy', 'Critical', 'Current Reality', 'Failure', 'Forecast', 'Insight', 'Post-Mortem', 'Prediction', 'Root Cause', 'Solution', 'Status Quo', 'Strategy', 'Success', 'Trend', 'Vision', 'Warning']}
+                              value={timeline.statusTag || null}
+                              onChange={(e, val) => setTimelines({ ...timelines, [scopeKey]: { ...timeline, statusTag: val || '' } })}
+                              colorTheme={color}
+                            />
+
                             <PremiumTextField 
                               label="Description / Context" 
                               multiline rows={2} fullWidth size="small" 

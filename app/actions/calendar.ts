@@ -42,9 +42,9 @@ export async function scheduleCalendarEvent(payload: {
   tags?: string;
   scopes: ('personal' | 'organization' | 'society')[];
   timelines: {
-    personal?: { date: string, time: string, endDate?: string, endTime?: string, description?: string, rules?: string, tasks?: any[] },
-    organization?: { date: string, time: string, orgId?: string, endDate?: string, endTime?: string, requireApproval?: boolean, description?: string, rules?: string, tasks?: any[] },
-    society?: { date: string, time: string, endDate?: string, endTime?: string, description?: string, rules?: string, tasks?: any[] }
+    personal?: { date: string, time: string, endDate?: string, endTime?: string, description?: string, rules?: string, tasks?: any[], statusTag?: string },
+    organization?: { date: string, time: string, orgId?: string, endDate?: string, endTime?: string, requireApproval?: boolean, description?: string, rules?: string, tasks?: any[], statusTag?: string },
+    society?: { date: string, time: string, endDate?: string, endTime?: string, description?: string, rules?: string, tasks?: any[], statusTag?: string }
   }
 }) {
   const sessionResult = await getCurrentSessionUser();
