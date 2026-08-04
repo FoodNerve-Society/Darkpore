@@ -45,7 +45,7 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
   const router = useRouter();
   const { user, profile } = useSociety();
   
-  const [scopes, setScopes] = useState<('personal' | 'organization' | 'society')[]>(['personal']);
+  const [scopes, setScopes] = useState<('personal' | 'organization' | 'society')[]>([]);
   const defaultDate = initialDate ? initialDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
   const [timelines, setTimelines] = useState<Record<string, any>>({
     personal: { date: defaultDate, time: '10:00', description: '', rules: '', tasks: [] },
@@ -392,8 +392,8 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
                       )}
 
                       {b.id === 'scopes' && (
-                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 1.5 }}>
-                          <CardChoice 
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                          <PremiumChecklistItem 
                             title="Personal Calendar" desc="Only visible to you" color={color} 
                             selected={scopes.includes('personal')} 
                             onClick={() => {
@@ -403,8 +403,10 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
                           />
                           {profile.organizations && profile.organizations.length > 0 && (
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                              <CardChoice 
-                                title="Organization" desc="Sync with your team's agenda" color={color} 
+                              <PremiumChecklistItem 
+                                title={timelines.organization.orgId && profile.organizations?.find((o: any) => o.id === timelines.organization.orgId) ? `Organization: ${profile.organizations.find((o: any) => o.id === timelines.organization.orgId)?.name}` : "Organization Workspace"} 
+                                desc={timelines.organization.orgId ? "Sync with this team's agenda" : "Select a workspace below to sync agenda"}
+                                color={color} 
                                 selected={scopes.includes('organization')} 
                                 onClick={() => {
                                   if (scopes.includes('organization')) setScopes(scopes.filter(s => s !== 'organization'));
@@ -412,21 +414,56 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
                                 }}
                               />
                               {scopes.includes('organization') && (
-                                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 1, px: 1, pb: 0.5 }}>
-                                  {profile.organizations.map((o: any) => (
-                                    <CardChoice
-                                      key={o.organizationId}
-                                      title={o.organization?.name || 'Unknown Organization'}
-                                      color={color}
-                                      selected={timelines.organization.orgId === o.organizationId}
-                                      onClick={() => setTimelines({ ...timelines, organization: { ...timelines.organization, orgId: o.organizationId } })}
-                                    />
-                                  ))}
+                                <Box sx={{ 
+                                  ml: 4, pl: 2, borderLeft: `2px solid ${alpha(color, 0.2)}`, 
+                                  display: 'flex', flexDirection: 'column', gap: 1 
+                                }}>
+                                  <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                    Target Workspace
+                                  </Typography>
+                                  <PremiumAutocomplete
+                                    label="Select Organization"
+                                    options={profile.organizations.map((o: any) => ({ id: o.id, label: o.name || 'Unknown' }))}
+                                    getOptionLabel={(opt) => opt.label}
+                                    value={profile.organizations.find((o: any) => o.id === timelines.organization.orgId) ? { id: timelines.organization.orgId, label: profile.organizations.find((o: any) => o.id === timelines.organization.orgId)?.name } : null}
+                                    onChange={(e, val) => setTimelines({ ...timelines, organization: { ...timelines.organization, orgId: val ? val.id : '' } })}
+                                    colorTheme={color}
+                                  />
+                                  {timelines.organization.orgId && (
+                                    <Box sx={{ 
+                                      mt: 1, p: 2, 
+                                      display: 'flex', alignItems: 'center', gap: 2,
+                                      bgcolor: alpha(color, 0.05), border: `1px solid ${alpha(color, 0.1)}`, 
+                                      borderRadius: 2 
+                                    }}>
+                                      <Box sx={{ 
+                                        width: 40, height: 40, borderRadius: '10px', 
+                                        bgcolor: alpha(color, 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        overflow: 'hidden', flexShrink: 0
+                                      }}>
+                                        {profile.organizations.find((o: any) => o.id === timelines.organization.orgId)?.logoUrl ? (
+                                          <img src={profile.organizations.find((o: any) => o.id === timelines.organization.orgId)?.logoUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        ) : (
+                                          <Typography sx={{ fontWeight: 800, color, fontSize: '1.2rem' }}>
+                                            {profile.organizations.find((o: any) => o.id === timelines.organization.orgId)?.name?.charAt(0) || 'O'}
+                                          </Typography>
+                                        )}
+                                      </Box>
+                                      <Box>
+                                        <Typography sx={{ fontWeight: 800, color: '#1e293b', fontSize: '0.9rem' }}>
+                                          {profile.organizations.find((o: any) => o.id === timelines.organization.orgId)?.name}
+                                        </Typography>
+                                        <Typography sx={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>
+                                          {profile.organizations.find((o: any) => o.id === timelines.organization.orgId)?.role || 'Member'}
+                                        </Typography>
+                                      </Box>
+                                    </Box>
+                                  )}
                                 </Box>
                               )}
                             </Box>
                           )}
-                          <CardChoice 
+                          <PremiumChecklistItem 
                             title="Society Broadcast" desc="Public event in the ecosystem" color={color} 
                             selected={scopes.includes('society')} 
                             onClick={() => {
@@ -478,33 +515,41 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
                             />
 
                             <Box sx={{ p: 2, bgcolor: alpha(color, 0.05), borderRadius: 2, border: `1px solid ${alpha(color, 0.2)}` }}>
-                              <Typography sx={{ fontWeight: 800, color: '#334155', fontSize: '0.85rem', mb: 1 }}>Tasks & Checklists</Typography>
-                              {timeline.tasks && timeline.tasks.length > 0 && (
-                                <Box sx={{ mb: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                                  {timeline.tasks.map((task: any) => (
-                                    <Box key={task.id} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                      <IconButton size="small" onClick={() => setTimelines({ ...timelines, [scopeKey]: { ...timeline, tasks: timeline.tasks.filter((t: any) => t.id !== task.id) } })}>
-                                        <DeleteIcon sx={{ fontSize: 14, color: '#94a3b8' }} />
-                                      </IconButton>
-                                      <Typography sx={{ fontSize: '0.85rem', color: '#475569' }}>{task.text}</Typography>
-                                    </Box>
-                                  ))}
-                                </Box>
-                              )}
-                              <Button 
-                                size="small" 
-                                startIcon={<AddIcon />} 
-                                onClick={() => {
-                                  const text = window.prompt('Task details:');
-                                  if (text) {
-                                    const newTask = { id: Math.random().toString(), text, done: false };
+                              <Typography sx={{ fontWeight: 800, color: '#334155', fontSize: '0.85rem', mb: 1 }}>Action List (Optional)</Typography>
+                              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                                {timeline.tasks && timeline.tasks.map((task: any, idx: number) => (
+                                  <Box key={task.id} sx={{ 
+                                    display: 'flex', alignItems: 'flex-start', gap: 1.5, p: 1.5,
+                                    bgcolor: 'rgba(255,255,255,0.6)', borderRadius: '16px',
+                                    border: '1px solid rgba(0,0,0,0.04)',
+                                    boxShadow: '0 2px 10px rgba(0,0,0,0.02)'
+                                  }}>
+                                    <Box sx={{ width: 18, height: 18, mt: 1.2, borderRadius: '6px', border: `2px solid ${alpha(color, 0.4)}`, flexShrink: 0, bgcolor: 'rgba(255,255,255,0.8)' }} />
+                                    <PremiumTextField 
+                                      label={`Task ${idx + 1}`} fullWidth size="small"
+                                      value={task.text} 
+                                      onChange={(e: any) => {
+                                        const newTasks = timeline.tasks.map((t: any) => t.id === task.id ? { ...t, text: e.target.value } : t);
+                                        setTimelines({ ...timelines, [scopeKey]: { ...timeline, tasks: newTasks } });
+                                      }} 
+                                      colorTheme={color}
+                                    />
+                                    <IconButton size="small" onClick={() => setTimelines({ ...timelines, [scopeKey]: { ...timeline, tasks: timeline.tasks.filter((t: any) => t.id !== task.id) } })} sx={{ color: '#ef4444', mt: 0.5, bgcolor: 'rgba(239,68,68,0.1)', '&:hover': { bgcolor: 'rgba(239,68,68,0.2)' } }}>
+                                      <DeleteIcon fontSize="small" />
+                                    </IconButton>
+                                  </Box>
+                                ))}
+                                <Button 
+                                  startIcon={<AddIcon />} size="small" 
+                                  onClick={() => {
+                                    const newTask = { id: Math.random().toString(), text: '', done: false };
                                     setTimelines({ ...timelines, [scopeKey]: { ...timeline, tasks: [...(timeline.tasks || []), newTask] } });
-                                  }
-                                }}
-                                sx={{ color: color, textTransform: 'none', fontWeight: 700 }}
-                              >
-                                Add Task
-                              </Button>
+                                  }} 
+                                  sx={{ color, fontWeight: 800, alignSelf: 'flex-start', bgcolor: alpha(color, 0.1), borderRadius: '10px', px: 2, '&:hover': { bgcolor: alpha(color, 0.2) } }}
+                                >
+                                  Add Task
+                                </Button>
+                              </Box>
                             </Box>
 
                             {b.id === 'org_timeline' && (
@@ -589,6 +634,40 @@ const CardChoice = ({ title, desc, color, selected, onClick }: any) => (
         {title}
       </Typography>
       {desc && <Typography sx={{ fontSize: '0.8rem', color: selected ? '#475569' : '#94a3b8', fontWeight: 500, lineHeight: 1.4 }}>{desc}</Typography>}
+    </Box>
+  </Box>
+);
+
+const PremiumChecklistItem = ({ title, desc, color, selected, onClick }: any) => (
+  <Box 
+    onClick={onClick}
+    sx={{ 
+      display: 'flex', alignItems: 'center', gap: 2, p: 2, 
+      borderRadius: '16px', cursor: 'pointer',
+      transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+      border: `1px solid ${selected ? color : 'rgba(0,0,0,0.05)'}`,
+      bgcolor: selected ? alpha(color, 0.05) : '#fff',
+      '&:hover': {
+        bgcolor: selected ? alpha(color, 0.08) : 'rgba(0,0,0,0.02)',
+        borderColor: selected ? color : 'rgba(0,0,0,0.1)'
+      }
+    }}
+  >
+    <Box sx={{ 
+      width: 24, height: 24, borderRadius: '6px', 
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      border: `2px solid ${selected ? color : '#cbd5e1'}`,
+      bgcolor: selected ? color : 'transparent',
+      transition: 'all 0.2s ease',
+      color: '#fff'
+    }}>
+      {selected && <CheckIcon sx={{ fontSize: 16, fontWeight: 900 }} />}
+    </Box>
+    <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+      <Typography sx={{ fontWeight: 800, fontSize: '0.95rem', color: '#1e293b', letterSpacing: '-0.01em' }}>
+        {title}
+      </Typography>
+      {desc && <Typography sx={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500, lineHeight: 1.4 }}>{desc}</Typography>}
     </Box>
   </Box>
 );
