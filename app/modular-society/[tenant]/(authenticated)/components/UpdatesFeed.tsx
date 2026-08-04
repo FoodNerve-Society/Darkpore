@@ -170,9 +170,6 @@ export default function UpdatesFeed() {
             </Box>
           ))}
         </Box>
-        <IconButton size="small" sx={{ color: 'text.secondary', '&:hover': { color: activeTheme.main, bgcolor: alpha(activeTheme.main, 0.05) } }}>
-          <TuneIcon sx={{ fontSize: 18 }} />
-        </IconButton>
       </Box>
 
       {/* Premium Agenda Widget */}

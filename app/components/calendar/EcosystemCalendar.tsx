@@ -52,7 +52,7 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
         const data = await getCalendarEvents(tenantId);
         
         // Inject mock data for visualization
-        const today = new Date();
+        const today = currentDate; // use currentDate so mocks always appear in current view
         const y = today.getFullYear();
         const m = today.getMonth();
         const mockEvents: any[] = [
@@ -144,13 +144,19 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
     return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
   };
 
+  const getOrdinal = (n: number) => {
+    const s = ["th", "st", "nd", "rd"];
+    const v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  };
+
   // --- RENDER MONTH VIEW ---
   const renderMonthView = () => {
     const totalCells = firstDayOfMonth + daysInMonth;
     const numRows = Math.ceil(totalCells / 7);
 
     return (
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         {/* Header Row: 8 columns (Empty for week number + 7 Days) */}
         <Box sx={{ display: 'grid', gridTemplateColumns: '40px repeat(7, 1fr)', gap: 1, mb: 1.5 }}>
           <Box /> {/* Empty cell for week column header */}
@@ -196,18 +202,25 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
             return (
               <React.Fragment key={`row-${rowIndex}`}>
                 {/* 1. Week Number Cell */}
-                <Box sx={{ 
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                <Box 
+                  onClick={() => {
+                    setCurrentDate(refDate);
+                    setViewMode('week');
+                  }}
+                  sx={{ 
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
                   bgcolor: isWeekSelected ? alpha(theme.palette.primary.main, 0.15) : 'rgba(0,0,0,0.01)', 
                   borderRadius: 2, 
                   border: isWeekSelected ? `1px solid ${alpha(theme.palette.primary.main, 0.4)}` : '1px dashed rgba(0,0,0,0.05)',
-                  transition: 'all 0.2s ease'
+                  transition: 'all 0.2s ease',
+                  '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.1), transform: 'scale(1.05)', borderColor: alpha(theme.palette.primary.main, 0.3) }
                 }}>
                   <Typography sx={{ 
                     fontWeight: 900, 
                     color: isWeekSelected ? theme.palette.primary.main : '#94a3b8', 
                     fontSize: '0.75rem', 
-                    textTransform: 'uppercase', letterSpacing: '0.05em', transform: 'rotate(-90deg)' 
+                    textTransform: 'uppercase', letterSpacing: '0.05em', transform: 'rotate(-90deg)',
+                    pointerEvents: 'none'
                   }}>
                     W{weekNumber}
                   </Typography>
@@ -297,7 +310,7 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
     });
 
     return (
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1, mb: 2 }}>
           {weekDates.map(d => {
             const isToday = d.toDateString() === new Date().toDateString();
@@ -343,8 +356,12 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
                   display: 'flex', flexDirection: 'column', overflowY: 'hidden', gap: 1
                 }}
               >
-                <Box sx={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 1, '&::-webkit-scrollbar': { display: 'none' } }}>
-                  {dayEvents.map(event => {
+                <Box sx={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 1, '&::-webkit-scrollbar': { display: 'none' }, px: 2, mx: -2, pb: 4, mb: -4 }}>
+                  {dayEvents.length === 0 ? (
+                    <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Typography variant="caption" sx={{ color: '#cbd5e1', fontWeight: 700 }}>No events</Typography>
+                    </Box>
+                  ) : dayEvents.map(event => {
                     const dotColor = getIntentColor(event.dateType);
                     return (
                       <Box key={event.id} sx={{ 
@@ -353,7 +370,7 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
                         px: 1.5, py: 1, borderRadius: 3, mb: 0.5, 
                         boxShadow: `0 8px 16px ${alpha(dotColor, 0.15)}, inset 0 2px 4px rgba(255,255,255,0.4)`,
                         position: 'relative', overflow: 'hidden',
-                        border: '1px solid', borderColor: alpha(dotColor, 0.25),
+                        border: 'none',
                         transition: 'all 0.2s ease',
                         '&:hover': { bgcolor: alpha(dotColor, 0.18), borderColor: alpha(dotColor, 0.4), transform: 'translateY(-2px)', boxShadow: `0 12px 24px ${alpha(dotColor, 0.22)}, inset 0 2px 4px rgba(255,255,255,0.6)` }
                       }}>
@@ -386,7 +403,7 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
     const isToday = currentDate.toDateString() === new Date().toDateString();
     
     return (
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'stretch', overflowY: 'auto', pr: { xs: 0, md: 1 } }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'stretch', overflowY: 'auto', px: { xs: 1, md: 2 }, mx: { xs: -1, md: -2 }, pb: 4, mb: -4, minHeight: 0 }}>
         
         {/* Header matching Week View style but bigger */}
         <Box sx={{ 
@@ -488,7 +505,7 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
   };
 
   return (
-    <Box sx={{ width: '100%', height: '100%', display: 'flex', gap: 3, minHeight: 0 }}>
+    <Box sx={{ width: '100%', flex: 1, display: 'flex', gap: 3, minHeight: 0 }}>
       
       {/* Calendar Area */}
       <Box sx={{ 
@@ -502,16 +519,50 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
         {/* Calendar Toolbar */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Typography variant="h5" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: '#0f172a', minWidth: 150, letterSpacing: '-0.02em', fontSize: '1.6rem' }}>
-            {viewMode === 'day' 
-              ? currentDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
-              : `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`
-            }
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 0.5, bgcolor: 'rgba(255,255,255,0.5)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.6)', borderRadius: 2, p: 0.5, boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-            <IconButton size="small" onClick={handlePrev}><ChevronLeftIcon /></IconButton>
-            <IconButton size="small" onClick={handleNext}><ChevronRightIcon /></IconButton>
+          <IconButton size="small" onClick={handlePrev} sx={{ bgcolor: 'rgba(255,255,255,0.5)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.6)', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', '&:hover': { bgcolor: 'rgba(255,255,255,0.8)' } }}>
+            <ChevronLeftIcon />
+          </IconButton>
+
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 160 }}>
+            {/* Eyebrow Subtitle Breadcrumbs */}
+            {viewMode === 'week' && (
+              <Typography 
+                variant="caption" 
+                onClick={() => setViewMode('month')}
+                sx={{ 
+                  fontWeight: 800, color: 'text.secondary', letterSpacing: '0.05em', textTransform: 'uppercase', 
+                  cursor: 'pointer', transition: 'color 0.2s', '&:hover': { color: theme.palette.primary.main } 
+                }}
+              >
+                {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+              </Typography>
+            )}
+            {viewMode === 'day' && (
+              <Typography 
+                variant="caption" 
+                sx={{ fontWeight: 800, color: 'text.secondary', letterSpacing: '0.05em', textTransform: 'uppercase', display: 'flex', gap: 1 }}
+              >
+                <span style={{ cursor: 'pointer', transition: 'color 0.2s' }} onClick={() => setViewMode('month')} onMouseOver={(e) => e.currentTarget.style.color = theme.palette.primary.main} onMouseOut={(e) => e.currentTarget.style.color = 'inherit'}>
+                  {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                </span>
+                {' • '}
+                <span style={{ cursor: 'pointer', transition: 'color 0.2s' }} onClick={() => setViewMode('week')} onMouseOver={(e) => e.currentTarget.style.color = theme.palette.primary.main} onMouseOut={(e) => e.currentTarget.style.color = 'inherit'}>
+                  WEEK {getWeekNumber(currentDate)}
+                </span>
+              </Typography>
+            )}
+            
+            {/* Huge Text */}
+            <Typography variant="h5" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em', fontSize: '1.6rem', lineHeight: 1 }}>
+              {viewMode === 'month' && `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`}
+              {viewMode === 'week' && `Week ${getWeekNumber(currentDate)}`}
+              {viewMode === 'day' && `${currentDate.toLocaleDateString('en-US', { weekday: 'long' })} ${getOrdinal(currentDate.getDate())}`}
+            </Typography>
           </Box>
+
+          <IconButton size="small" onClick={handleNext} sx={{ bgcolor: 'rgba(255,255,255,0.5)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.6)', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', '&:hover': { bgcolor: 'rgba(255,255,255,0.8)' } }}>
+            <ChevronRightIcon />
+          </IconButton>
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
