@@ -823,7 +823,7 @@ export default function ListingStudioDashboard({
       {/* ================================================================ */}
       {/* 3. BOTTOM SECTION: WORKSPACE CONTENT MANAGER                     */}
       {/* ================================================================ */}
-      {workspaceTabs && workspaceTabs.length > 0 && (
+      {workspaceTabs && (
         <Box sx={{ width: '100%', mt: 4 }}>
           <WorkspaceContentManager
             tabs={workspaceTabs}
