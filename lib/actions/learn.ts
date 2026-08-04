@@ -284,6 +284,28 @@ export async function getUserDrafts(userId: string) {
   });
 }
 
+export async function getUserPublishedContent(userId: string) {
+  return await prisma.learnContent.findMany({
+    where: { authorId: userId, status: 'published' },
+    orderBy: { createdAt: 'desc' }
+  });
+}
+
+export async function getOrgLearnContent(organizationId: string) {
+  return await prisma.learnContent.findMany({
+    where: { 
+      organizationId,
+      status: {
+        in: ['draft', 'scheduled', 'published', 'pending_org_review']
+      }
+    },
+    orderBy: { createdAt: 'desc' },
+    include: {
+      organization: true
+    }
+  });
+}
+
 export async function deleteLearnContent(id: string) {
   return await prisma.learnContent.delete({
     where: { id }
