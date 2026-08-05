@@ -4,6 +4,11 @@ import { foodChallenges } from './challenges';
 export const foodTenantConfig: TenantConfig = {
   name: 'FoodNerve',
   domain: 'foodnerve.com',
+  socialLinks: {
+    x: 'https://twitter.com/FoodNerve',
+    linkedin: '', // Empty to test disabled state
+    instagram: '',
+  },
   people: [
     {
       slug: 'adefolami-agunbiade',

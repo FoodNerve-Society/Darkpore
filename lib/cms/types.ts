@@ -110,6 +110,12 @@ export type TenantConfig = {
   name: string;
   domain: string;
   people: Person[];
+  socialLinks?: {
+    x?: string;
+    linkedin?: string;
+    instagram?: string;
+    facebook?: string;
+  };
   palette: {
     light: ElaboratePalette;
     dark: ElaboratePalette;

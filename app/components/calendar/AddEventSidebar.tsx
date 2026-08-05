@@ -43,7 +43,7 @@ interface AddEventSidebarProps {
 
 export default function AddEventSidebar({ onClose, tenantId, initialDate, onDateChange, themeColor }: AddEventSidebarProps) {
   const theme = useTheme();
-  const primaryColor = themeColor || primaryColor;
+  const primaryColor = themeColor || theme.palette.primary.main;
   const router = useRouter();
   const { user, profile } = useSociety();
   
@@ -538,7 +538,7 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
                                 // Auto-check organization when society is checked
                                 const newScopes = [...scopes, 'society'];
                                 if (!newScopes.includes('organization')) newScopes.push('organization');
-                                setScopes(newScopes);
+                                setScopes(newScopes as ('personal' | 'organization' | 'society')[]);
                                 // Pre-fill orgId if not set
                                 if (!timelines.organization.orgId && profile?.organizations?.[0]) {
                                   setTimelines(prev => ({ ...prev, organization: { ...prev.organization, orgId: profile.organizations[0].id } }));

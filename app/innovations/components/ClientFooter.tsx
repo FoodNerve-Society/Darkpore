@@ -1,18 +1,39 @@
 'use client';
 
-import React from 'react';
-import { Box, Container, Typography, Grid, Divider, useTheme, alpha } from '@mui/material';
+import React, { useState } from 'react';
+import { Box, Container, Typography, Grid, Divider, useTheme, alpha, Snackbar, Alert } from '@mui/material';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-export default function ClientFooter({ tenantName, tenantDomain, orgDomain }: { tenantName: string, tenantDomain: string, orgDomain: string }) {
+interface ClientFooterProps {
+  tenantName: string;
+  tenantDomain: string;
+  orgDomain: string;
+  socialLinks?: {
+    x?: string;
+    linkedin?: string;
+    instagram?: string;
+    facebook?: string;
+  };
+}
+
+export default function ClientFooter({ tenantName, tenantDomain, orgDomain, socialLinks }: ClientFooterProps) {
   const pathname = usePathname();
   const theme = useTheme();
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
 
   const isActive = (path: string) => {
     if (path === '/' && pathname === '/') return true;
-    if (path !== '/' && pathname.startsWith(path)) return true;
+    if (path.startsWith('/challenges') && pathname.startsWith('/challenges')) return true;
     return false;
+  };
+
+  const handleSocialClick = (url?: string) => {
+    if (!url) {
+      setSnackbarOpen(true);
+    } else {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
   };
 
   const navLinks = [
@@ -80,34 +101,31 @@ export default function ClientFooter({ tenantName, tenantDomain, orgDomain }: { 
               </Typography>
               
               <Box sx={{ display: 'flex', gap: 2 }}>
-                <Box sx={{ 
-                  width: 40, height: 40, borderRadius: '50%', 
-                  bgcolor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                  '&:hover': { 
-                      bgcolor: alpha(theme.palette.primary.main, 0.1), 
-                      borderColor: alpha(theme.palette.primary.main, 0.3),
-                      boxShadow: `0 8px 24px ${alpha(theme.palette.primary.main, 0.2)}`,
-                      transform: 'translateY(-4px) scale(1.05)' 
-                  }
-                }}>
-                  <Typography sx={{ fontSize: '1rem', color: 'white', transition: 'color 0.3s' }}>𝕏</Typography>
-                </Box>
-                <Box sx={{ 
-                  width: 40, height: 40, borderRadius: '50%', 
-                  bgcolor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                  '&:hover': { 
-                      bgcolor: alpha(theme.palette.primary.main, 0.1), 
-                      borderColor: alpha(theme.palette.primary.main, 0.3),
-                      boxShadow: `0 8px 24px ${alpha(theme.palette.primary.main, 0.2)}`,
-                      transform: 'translateY(-4px) scale(1.05)' 
-                  }
-                }}>
-                  <Typography sx={{ fontSize: '1rem', color: 'white', transition: 'color 0.3s' }}>in</Typography>
-                </Box>
+                {[
+                  { key: 'x', label: '𝕏', url: socialLinks?.x },
+                  { key: 'linkedin', label: 'in', url: socialLinks?.linkedin }
+                ].map((social) => (
+                  <Box 
+                    key={social.key}
+                    onClick={() => handleSocialClick(social.url)}
+                    sx={{ 
+                      width: 40, height: 40, borderRadius: '50%', 
+                      bgcolor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      cursor: social.url ? 'pointer' : 'default', transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                      opacity: social.url ? 1 : 0.5,
+                      '&:hover': social.url ? { 
+                          bgcolor: alpha(theme.palette.primary.main, 0.1), 
+                          borderColor: alpha(theme.palette.primary.main, 0.3),
+                          boxShadow: `0 8px 24px ${alpha(theme.palette.primary.main, 0.2)}`,
+                          transform: 'translateY(-4px) scale(1.05)' 
+                      } : {}
+                    }}>
+                    <Typography sx={{ fontSize: '1rem', color: 'white', transition: 'color 0.3s' }}>
+                      {social.label}
+                    </Typography>
+                  </Box>
+                ))}
               </Box>
             </Box>
           </Grid>
@@ -164,14 +182,14 @@ export default function ClientFooter({ tenantName, tenantDomain, orgDomain }: { 
           <Grid size={{ xs: 12, sm: 4, md: 3 }}>
             <Box sx={{ 
               p: 3, 
-              bgcolor: 'rgba(255,255,255,0.02)', 
+              bgcolor: 'transparent', 
               borderRadius: 4, 
-              border: '1px solid rgba(255,255,255,0.05)',
+              border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+              background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, transparent 100%)`,
               position: 'relative',
               overflow: 'hidden'
             }}>
-              <Box sx={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', bgcolor: 'rgba(255,255,255,0.1)' }} />
-              <Typography variant="overline" sx={{ color: 'white', fontWeight: 900, letterSpacing: 1.5, mb: 1, display: 'block' }}>
+              <Typography variant="overline" sx={{ color: theme.palette.primary.light, fontWeight: 900, letterSpacing: 1.5, mb: 1, display: 'block' }}>
                 RESTRICTED ACCESS
               </Typography>
               <Typography variant="body2" sx={{ fontSize: '0.8rem', lineHeight: 1.6, color: 'rgba(255,255,255,0.4)' }}>
@@ -199,6 +217,17 @@ export default function ClientFooter({ tenantName, tenantDomain, orgDomain }: { 
           </Box>
         </Box>
       </Container>
+      
+      <Snackbar 
+        open={snackbarOpen} 
+        autoHideDuration={4000} 
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity="info" onClose={() => setSnackbarOpen(false)} sx={{ bgcolor: '#0f172a', color: 'white', '& .MuiAlert-icon': { color: theme.palette.primary.main } }}>
+          Social media channel coming soon!
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

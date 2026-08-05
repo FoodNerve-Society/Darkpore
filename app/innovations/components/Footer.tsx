@@ -9,5 +9,5 @@ export default async function Footer() {
   const tenant = getTenantConfig(tenantId);
   const orgDomain = tenantId === 'energy' ? 'energynerve.org' : 'foodnerve.org';
 
-  return <ClientFooter tenantName={tenant.name} tenantDomain={tenant.domain} orgDomain={orgDomain} />;
+  return <ClientFooter tenantName={tenant.name} tenantDomain={tenant.domain} orgDomain={orgDomain} socialLinks={tenant.socialLinks} />;
 }
