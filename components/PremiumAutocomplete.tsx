@@ -87,6 +87,11 @@ function PremiumAutocomplete<
                 />
             )}
             slotProps={{
+                popper: {
+                    sx: {
+                        zIndex: 10000,
+                    }
+                },
                 paper: {
                     elevation: 0,
                     sx: {

@@ -13,6 +13,7 @@ import CinematicHero from './components/CinematicHero';
 import CommandCenterHero from './components/CommandCenterHero';
 import SocietyGatewayCTA from './components/SocietyGatewayCTA';
 import Swimlane from './components/Swimlane';
+import EmailCaptureTrigger from './components/EmailCaptureTrigger';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
@@ -488,7 +489,12 @@ export default async function InnovationsHomepage() {
               tags: ['🔴 Live Broadcast', '🎙️ Expert Panel', '📈 Strategy Session'],
               categoryLabel: i.categoryLabel
             }));
-            return <Swimlane key={lane.id} lane={{ ...lane, items: streamItems, newCount: streamItems.length, totalCount: statsObj.livestreams }} />;
+            return (
+              <React.Fragment key={lane.id}>
+                <EmailCaptureTrigger />
+                <Swimlane lane={{ ...lane, items: streamItems, newCount: streamItems.length, totalCount: statsObj.livestreams }} />
+              </React.Fragment>
+            );
           }
           // Generate consolidated items for careers
           if (lane.id === 'lane-jobs') {
