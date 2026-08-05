@@ -757,13 +757,13 @@ export default function CommandCenterHero({ globalAlerts = [], stats }: CommandC
         <DialogContent sx={{ p: { xs: 2, md: 4 }, display: 'flex', flexDirection: 'column' }}>
           <Box sx={{ mb: 2, pl: 1 }}>
             <Typography variant="h4" sx={{ fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <CalendarMonthIcon sx={{ color: theme.palette.primary.main, fontSize: 32 }} /> Ecosystem Calendar
+              <CalendarMonthIcon sx={{ color: themeConfig.iconColor, fontSize: 32 }} /> Ecosystem Calendar
             </Typography>
             <Typography variant="body1" sx={{ color: '#64748b', fontWeight: 500, mt: 0.5 }}>
               Explore deadlines, livestreams, and events across the network.
             </Typography>
           </Box>
-          <EcosystemCalendar tenantId="foodnerve" initialView="month" initialDate={currentDate} />
+          <EcosystemCalendar tenantId="foodnerve" initialView="month" initialDate={currentDate} themeColor={themeConfig.iconColor} />
         </DialogContent>
       </Dialog>
     </Box>

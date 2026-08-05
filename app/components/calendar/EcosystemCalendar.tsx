@@ -17,10 +17,12 @@ interface EcosystemCalendarProps {
   tenantId: string;
   initialView?: ViewMode;
   initialDate?: Date;
+  themeColor?: string;
 }
 
-export default function EcosystemCalendar({ tenantId, initialView = 'month', initialDate }: EcosystemCalendarProps) {
+export default function EcosystemCalendar({ tenantId, initialView = 'month', initialDate, themeColor }: EcosystemCalendarProps) {
   const theme = useTheme();
+  const primaryColor = themeColor || theme.palette.primary.main;
   
   const [viewMode, setViewMode] = useState<ViewMode>(initialView);
   const [currentDate, setCurrentDate] = useState(initialDate || new Date());
@@ -164,10 +166,10 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
             const isDaySelected = currentDate.getDay() === (index === 6 ? 0 : index + 1);
             return (
               <Box key={day} sx={{ 
-                textAlign: 'center', bgcolor: alpha(theme.palette.primary.main, isDaySelected ? 0.2 : 0.05), 
-                py: 0.8, borderRadius: 2, border: `1px solid ${alpha(theme.palette.primary.main, isDaySelected ? 0.4 : 0.1)}`
+                textAlign: 'center', bgcolor: alpha(primaryColor, isDaySelected ? 0.2 : 0.05), 
+                py: 0.8, borderRadius: 2, border: `1px solid ${alpha(primaryColor, isDaySelected ? 0.4 : 0.1)}`
               }}>
-                <Typography variant="caption" sx={{ fontWeight: 800, color: theme.palette.primary.main, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <Typography variant="caption" sx={{ fontWeight: 800, color: primaryColor, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   {day}
                 </Typography>
               </Box>
@@ -209,15 +211,15 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
                   }}
                   sx={{ 
                   display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                  bgcolor: isWeekSelected ? alpha(theme.palette.primary.main, 0.15) : 'rgba(0,0,0,0.01)', 
+                  bgcolor: isWeekSelected ? alpha(primaryColor, 0.15) : 'rgba(0,0,0,0.01)', 
                   borderRadius: 2, 
-                  border: isWeekSelected ? `1px solid ${alpha(theme.palette.primary.main, 0.4)}` : '1px dashed rgba(0,0,0,0.05)',
+                  border: isWeekSelected ? `1px solid ${alpha(primaryColor, 0.4)}` : '1px dashed rgba(0,0,0,0.05)',
                   transition: 'all 0.2s ease',
-                  '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.1), transform: 'scale(1.05)', borderColor: alpha(theme.palette.primary.main, 0.3) }
+                  '&:hover': { bgcolor: alpha(primaryColor, 0.1), transform: 'scale(1.05)', borderColor: alpha(primaryColor, 0.3) }
                 }}>
                   <Typography sx={{ 
                     fontWeight: 900, 
-                    color: isWeekSelected ? theme.palette.primary.main : '#94a3b8', 
+                    color: isWeekSelected ? primaryColor : '#94a3b8', 
                     fontSize: '0.75rem', 
                     textTransform: 'uppercase', letterSpacing: '0.05em', transform: 'rotate(-90deg)',
                     pointerEvents: 'none'
@@ -248,10 +250,10 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
                         setViewMode('day');
                       }}
                       sx={{ 
-                        bgcolor: isSelected ? alpha(theme.palette.primary.main, 0.1) : (isToday ? alpha(theme.palette.primary.main, 0.05) : 'rgba(255,255,255,0.4)'), 
+                        bgcolor: isSelected ? alpha(primaryColor, 0.1) : (isToday ? alpha(primaryColor, 0.05) : 'rgba(255,255,255,0.4)'), 
                         borderRadius: 3, p: 1,
-                        border: isSelected ? `2px solid ${theme.palette.primary.main}` : (isToday ? `1px solid ${alpha(theme.palette.primary.main, 0.4)}` : '1px solid rgba(0,0,0,0.03)'),
-                        boxShadow: isSelected ? `0 0 0 4px ${alpha(theme.palette.primary.main, 0.2)}` : (isToday ? `0 4px 12px ${alpha(theme.palette.primary.main, 0.1)}` : '0 2px 8px rgba(0,0,0,0.01)'),
+                        border: isSelected ? `2px solid ${primaryColor}` : (isToday ? `1px solid ${alpha(primaryColor, 0.4)}` : '1px solid rgba(0,0,0,0.03)'),
+                        boxShadow: isSelected ? `0 0 0 4px ${alpha(primaryColor, 0.2)}` : (isToday ? `0 4px 12px ${alpha(primaryColor, 0.1)}` : '0 2px 8px rgba(0,0,0,0.01)'),
                         backdropFilter: 'blur(8px)',
                         transition: 'all 0.2s ease', cursor: 'pointer',
                         '&:hover': { bgcolor: 'rgba(255,255,255,0.8)', transform: 'translateY(-2px)', boxShadow: '0 8px 24px rgba(0,0,0,0.04)' },
@@ -263,7 +265,7 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
                       <Typography variant="body2" sx={{ 
                         fontFamily: 'var(--font-dosis)',
                         fontWeight: (isToday || isSelected) ? 900 : 700, 
-                        color: isSelected ? theme.palette.primary.main : (isToday ? theme.palette.primary.main : '#334155'), 
+                        color: isSelected ? primaryColor : (isToday ? primaryColor : '#334155'), 
                         mb: 1,
                         fontSize: (isToday || isSelected) ? '1.1rem' : '0.9rem',
                         letterSpacing: '-0.02em'
@@ -273,13 +275,13 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
                       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', '&::-webkit-scrollbar': { display: 'none' } }}>
                         {dayEvents.length > 0 && (
                           <Box sx={{ 
-                            bgcolor: tenantId === 'foodnerve' ? alpha(theme.palette.primary.main, 0.15) : alpha('#10b981', 0.15), 
+                            bgcolor: tenantId === 'foodnerve' ? alpha(primaryColor, 0.15) : alpha('#10b981', 0.15), 
                             px: 1, py: 0.5, borderRadius: 3, textAlign: 'center',
-                            boxShadow: `0 4px 12px ${tenantId === 'foodnerve' ? alpha(theme.palette.primary.main, 0.2) : alpha('#10b981', 0.2)}`,
+                            boxShadow: `0 4px 12px ${tenantId === 'foodnerve' ? alpha(primaryColor, 0.2) : alpha('#10b981', 0.2)}`,
                             backdropFilter: 'blur(4px)',
                             border: 'none'
                           }}>
-                            <Typography variant="caption" sx={{ fontWeight: 900, color: tenantId === 'foodnerve' ? theme.palette.primary.main : '#10b981', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            <Typography variant="caption" sx={{ fontWeight: 900, color: tenantId === 'foodnerve' ? primaryColor : '#10b981', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                               {dayEvents.length} {tenantId === 'foodnerve' ? (dayEvents.length === 1 ? 'Broadcast' : 'Broadcasts') : (dayEvents.length === 1 ? 'Event' : 'Events')}
                             </Typography>
                           </Box>
@@ -319,15 +321,15 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
             return (
               <Box key={d.toISOString()} sx={{ 
                 textAlign: 'center', p: 1, borderRadius: 3,
-                bgcolor: isSelected ? theme.palette.primary.main : (isToday ? alpha(theme.palette.primary.main, 0.1) : 'transparent'),
+                bgcolor: isSelected ? primaryColor : (isToday ? alpha(primaryColor, 0.1) : 'transparent'),
                 color: isSelected ? 'white' : 'inherit',
-                boxShadow: isSelected ? `0 8px 24px ${alpha(theme.palette.primary.main, 0.3)}` : 'none',
+                boxShadow: isSelected ? `0 8px 24px ${alpha(primaryColor, 0.3)}` : 'none',
                 transition: 'all 0.2s ease',
               }}>
                 <Typography variant="caption" sx={{ fontFamily: 'var(--font-ysabeau-infant)', fontWeight: 800, color: isSelected ? 'rgba(255,255,255,0.8)' : '#94a3b8', textTransform: 'uppercase', display: 'block', letterSpacing: '0.05em' }}>
                   {dayNames[d.getDay() === 0 ? 6 : d.getDay() - 1]}
                 </Typography>
-                <Typography variant="body1" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: isSelected || isToday ? 900 : 700, color: isSelected ? '#ffffff' : (isToday ? theme.palette.primary.main : '#334155'), fontSize: '1.2rem' }}>
+                <Typography variant="body1" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: isSelected || isToday ? 900 : 700, color: isSelected ? '#ffffff' : (isToday ? primaryColor : '#334155'), fontSize: '1.2rem' }}>
                   {d.getDate()}
                 </Typography>
               </Box>
@@ -346,10 +348,10 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
                   setViewMode('day');
                 }}
                 sx={{ 
-                  bgcolor: isToday ? alpha(theme.palette.primary.main, 0.05) : 'rgba(255,255,255,0.4)', 
+                  bgcolor: isToday ? alpha(primaryColor, 0.05) : 'rgba(255,255,255,0.4)', 
                   borderRadius: 3, p: 1.5,
-                  border: isToday ? `1px solid ${alpha(theme.palette.primary.main, 0.4)}` : '1px solid rgba(0,0,0,0.03)',
-                  boxShadow: isToday ? `0 4px 12px ${alpha(theme.palette.primary.main, 0.1)}` : '0 2px 8px rgba(0,0,0,0.01)',
+                  border: isToday ? `1px solid ${alpha(primaryColor, 0.4)}` : '1px solid rgba(0,0,0,0.03)',
+                  boxShadow: isToday ? `0 4px 12px ${alpha(primaryColor, 0.1)}` : '0 2px 8px rgba(0,0,0,0.01)',
                   backdropFilter: 'blur(8px)',
                   transition: 'all 0.2s ease', cursor: 'pointer',
                   '&:hover': { bgcolor: 'rgba(255,255,255,0.8)', transform: 'translateY(-2px)', boxShadow: '0 8px 24px rgba(0,0,0,0.04)' },
@@ -408,9 +410,9 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
         {/* Header matching Week View style but bigger */}
         <Box sx={{ 
           textAlign: 'center', p: 2, borderRadius: 4, mb: 3, width: '100%',
-          bgcolor: theme.palette.primary.main,
+          bgcolor: primaryColor,
           color: 'white',
-          boxShadow: `0 8px 24px ${alpha(theme.palette.primary.main, 0.3)}`,
+          boxShadow: `0 8px 24px ${alpha(primaryColor, 0.3)}`,
         }}>
           <Typography variant="subtitle2" sx={{ fontFamily: 'var(--font-ysabeau-infant)', fontWeight: 800, color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
             {currentDate.toLocaleDateString(undefined, { weekday: 'long' })}
@@ -423,10 +425,10 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
         {/* The "Combined 5 strips" Container */}
         <Box sx={{ 
           width: '100%', flex: 1,
-          bgcolor: isToday ? alpha(theme.palette.primary.main, 0.05) : 'rgba(255,255,255,0.4)', 
+          bgcolor: isToday ? alpha(primaryColor, 0.05) : 'rgba(255,255,255,0.4)', 
           borderRadius: 4, p: 3,
-          border: isToday ? `1px solid ${alpha(theme.palette.primary.main, 0.4)}` : '1px solid rgba(0,0,0,0.03)',
-          boxShadow: isToday ? `0 4px 12px ${alpha(theme.palette.primary.main, 0.1)}` : '0 4px 16px rgba(0,0,0,0.02)',
+          border: isToday ? `1px solid ${alpha(primaryColor, 0.4)}` : '1px solid rgba(0,0,0,0.03)',
+          boxShadow: isToday ? `0 4px 12px ${alpha(primaryColor, 0.1)}` : '0 4px 16px rgba(0,0,0,0.02)',
           backdropFilter: 'blur(12px)',
           display: 'flex', flexDirection: 'column', gap: 2,
         }}>
@@ -531,7 +533,7 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
                 onClick={() => setViewMode('month')}
                 sx={{ 
                   fontWeight: 800, color: 'text.secondary', letterSpacing: '0.05em', textTransform: 'uppercase', 
-                  cursor: 'pointer', transition: 'color 0.2s', '&:hover': { color: theme.palette.primary.main } 
+                  cursor: 'pointer', transition: 'color 0.2s', '&:hover': { color: primaryColor } 
                 }}
               >
                 {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
@@ -542,11 +544,11 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
                 variant="caption" 
                 sx={{ fontWeight: 800, color: 'text.secondary', letterSpacing: '0.05em', textTransform: 'uppercase', display: 'flex', gap: 1 }}
               >
-                <span style={{ cursor: 'pointer', transition: 'color 0.2s' }} onClick={() => setViewMode('month')} onMouseOver={(e) => e.currentTarget.style.color = theme.palette.primary.main} onMouseOut={(e) => e.currentTarget.style.color = 'inherit'}>
+                <span style={{ cursor: 'pointer', transition: 'color 0.2s' }} onClick={() => setViewMode('month')} onMouseOver={(e) => e.currentTarget.style.color = primaryColor} onMouseOut={(e) => e.currentTarget.style.color = 'inherit'}>
                   {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
                 </span>
                 {' • '}
-                <span style={{ cursor: 'pointer', transition: 'color 0.2s' }} onClick={() => setViewMode('week')} onMouseOver={(e) => e.currentTarget.style.color = theme.palette.primary.main} onMouseOut={(e) => e.currentTarget.style.color = 'inherit'}>
+                <span style={{ cursor: 'pointer', transition: 'color 0.2s' }} onClick={() => setViewMode('week')} onMouseOver={(e) => e.currentTarget.style.color = primaryColor} onMouseOut={(e) => e.currentTarget.style.color = 'inherit'}>
                   WEEK {getWeekNumber(currentDate)}
                 </span>
               </Typography>

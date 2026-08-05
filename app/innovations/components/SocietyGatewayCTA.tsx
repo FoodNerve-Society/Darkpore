@@ -17,51 +17,65 @@ interface SocietyGatewayCTAProps {
 }
 
 /* ── Polaroid Component (from /join page) ── */
-const Polaroid = ({ src, rotate, caption, stickerText, stickerBg, sx }: any) => (
+const Polaroid = ({ src, rotate, left, top, zIndex, caption, stickerText, stickerBg }: any) => (
   <Box
     sx={{
-      background: '#ffffff',
-      padding: { xs: '6px 6px 28px 6px', md: '10px 10px 44px 10px' },
-      borderRadius: '0px',
-      boxShadow: '0 25px 50px -12px rgba(0,0,0,0.35), 0 10px 15px -3px rgba(0,0,0,0.15)',
       position: 'absolute',
+      left,
+      top,
+      transform: { xs: `translate(-50%, -50%) rotate(${rotate}deg)`, md: `translate(0, 0) rotate(${rotate}deg)` },
+      background: '#ffffff',
+      padding: { xs: '8px 8px 32px 8px', md: '16px 16px 64px 16px' },
+      borderRadius: '0px',
+      boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4), 0 10px 15px -3px rgba(0,0,0,0.2)',
+      zIndex,
       transition: 'all 1.2s cubic-bezier(0.25, 1, 0.5, 1)',
-      ...sx,
     }}
   >
-    {/* Tape */}
+    {/* Premium Tape Effect */}
     <Box sx={{
-      position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%) rotate(-3deg)',
-      width: '60px', height: '18px', background: 'rgba(255, 255, 255, 0.4)',
-      backdropFilter: 'blur(8px)', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', zIndex: 2,
+      position: 'absolute', top: '-12px', left: '50%', transform: 'translateX(-50%) rotate(-3deg)',
+      width: '80px', height: '24px', background: 'rgba(255, 255, 255, 0.4)',
+      backdropFilter: 'blur(8px)', boxShadow: '0 1px 3px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.8)', zIndex: 2,
     }} />
-    <Box sx={{
-      width: { xs: 100, md: 140 }, height: { xs: 130, md: 170 },
-      backgroundImage: `url(${src})`, backgroundSize: 'cover', backgroundPosition: 'center',
-      position: 'relative',
+    <Box sx={{ 
+      width: { xs: 140, md: 150, lg: 160 }, height: { xs: 180, md: 190, lg: 200 }, 
+      backgroundImage: `url(${src})`, backgroundSize: 'cover', backgroundPosition: 'center', 
+      borderRadius: '0px', boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.1)',
+      position: 'relative'
     }}>
+      {/* Playful Sticker */}
       {stickerText && (
         <Box sx={{
-          position: 'absolute', top: -10, right: -10,
-          width: 32, height: 32, borderRadius: '50%',
+          position: 'absolute', top: -15, right: -15,
+          width: 45, height: 45, borderRadius: '50%',
           background: stickerBg || '#fbbf24',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.2)', transform: 'rotate(12deg)',
-          color: '#000', fontWeight: 900, fontSize: '0.55rem',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+          transform: 'rotate(12deg)',
+          color: '#000', fontWeight: 900, fontSize: '0.65rem',
+          fontFamily: 'var(--font-quicksand)', letterSpacing: '0.5px',
           border: '2px solid white'
         }}>
-          {stickerText}
+           {stickerText}
         </Box>
       )}
     </Box>
+    
+    {/* Handwriting Caption */}
     {caption && (
       <Typography sx={{
-        fontFamily: '"Caveat", cursive', fontSize: { xs: '0.8rem', md: '1rem' },
-        color: 'rgba(0,0,0,0.8)', textAlign: 'center',
-        position: 'absolute', bottom: { xs: '4px', md: '12px' },
-        left: 0, right: 0, lineHeight: 1, transform: 'rotate(-2deg)'
+          fontFamily: '"Caveat", "Shadows Into Light", "Kalam", "Comic Sans MS", cursive',
+          fontSize: { xs: '1rem', md: '1.25rem' },
+          color: 'rgba(0,0,0,0.8)',
+          textAlign: 'center',
+          position: 'absolute',
+          bottom: { xs: '8px', md: '20px' },
+          left: 0, right: 0,
+          lineHeight: 1,
+          transform: 'rotate(-2deg)'
       }}>
-        {caption}
+          {caption}
       </Typography>
     )}
   </Box>
@@ -115,18 +129,9 @@ export default function SocietyGatewayCTA({ userCount, tenantName }: SocietyGate
     return () => clearInterval(interval);
   }, []);
 
-  const getPolaroidPos = (index: number) => {
-    const dist = (index - frontIndex + 3) % 3;
-    if (dist === 0) return { transform: 'rotate(0deg)', zIndex: 4, top: '35%', left: '30%' };
-    if (dist === 1) return { transform: 'rotate(14deg)', zIndex: 2, top: '22%', left: '52%' };
-    return { transform: 'rotate(-12deg)', zIndex: 3, top: '30%', left: '10%' };
-  };
+  // We no longer need this as we've unified the components
 
-  // Mobile horizontal feed — show 3 cards
-  const mobileFeed = [];
-  for (let i = 0; i < 3; i++) {
-    mobileFeed.push(ACTIVITY_FEED[(startIndex + i) % ACTIVITY_FEED.length]);
-  }
+  // Removed mobileFeed array generation because we unified the layout
 
   const POLAROID_DATA = [
     { src: '/images/society/login-hero.png', caption: "Nairobi '25", stickerText: '⭐', stickerBg: '#fbbf24' },
@@ -139,7 +144,7 @@ export default function SocietyGatewayCTA({ userCount, tenantName }: SocietyGate
       bgcolor: '#f2f7f1',
       color: '#0f2414',
       position: 'relative',
-      overflow: 'visible', // allow polaroids to protrude above
+      overflow: 'visible', // Allow polaroids to float outside on mobile
       borderTop: '1px solid rgba(27, 94, 32, 0.08)',
     }}>
       {/* Society mesh bg */}
@@ -153,78 +158,50 @@ export default function SocietyGatewayCTA({ userCount, tenantName }: SocietyGate
         zIndex: 0, pointerEvents: 'none'
       }} />
 
-      {/* ── MOBILE: Polaroids on top, protruding above the section ── */}
+      {/* ── POLAROID STACK ── 
+          Placed absolutely over the whole section, using responsive left/top.
+          This behaves EXACTLY like the /join page floating polaroids. 
+      */}
       <Box sx={{
-        display: { xs: 'flex', lg: 'none' },
-        justifyContent: 'center',
-        position: 'relative',
-        height: 200,
-        mt: -10, // protrude upward above the section boundary
-        mb: -2,  // tuck into the center content below
-        zIndex: 3,
+        position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 3, pointerEvents: 'none'
       }}>
         {POLAROID_DATA.map((p, idx) => {
-          const pos = getPolaroidPos(idx);
-          // Stack them all centered, using transform for the fan effect
-          const mobileOffsets = [
-            { left: '50%', translateX: '-55%' },
-            { left: '50%', translateX: '-20%' },
-            { left: '50%', translateX: '-80%' },
-          ];
+          const dist = (idx - frontIndex + 3) % 3;
+          let pos;
+          if (dist === 0) pos = { rotate: 0, left: { xs: '50%', md: '10%' }, top: { xs: '120px', md: '30%' }, zIndex: 4 }; // Front
+          else if (dist === 1) pos = { rotate: 15, left: { xs: '68%', md: '16%' }, top: { xs: '90px', md: '20%' }, zIndex: 2 }; // Back Right
+          else pos = { rotate: -15, left: { xs: '32%', md: '2%' }, top: { xs: '100px', md: '25%' }, zIndex: 3 }; // Middle Left
+          
           return (
-            <Polaroid
-              key={idx}
-              src={p.src}
-              caption={p.caption}
-              stickerText={p.stickerText}
-              stickerBg={p.stickerBg}
-              sx={{
-                transform: `${pos.transform} translateX(${mobileOffsets[idx].translateX})`,
-                zIndex: pos.zIndex,
-                top: '10%',
-                left: mobileOffsets[idx].left,
-              }}
-            />
+            <Box key={idx} sx={{ pointerEvents: 'auto', display: 'inline-block' }}>
+              <Polaroid
+                src={p.src}
+                caption={p.caption}
+                stickerText={p.stickerText}
+                stickerBg={p.stickerBg}
+                {...pos}
+              />
+            </Box>
           );
         })}
       </Box>
 
-      {/* Three-column layout: Polaroids | Center Content | Activity Feed */}
+      {/* Three-column layout: Polaroids space | Center Content | Activity Feed */}
       <Box sx={{
         position: 'relative', zIndex: 2,
         display: 'flex',
         flexDirection: { xs: 'column', lg: 'row' },
         alignItems: 'center',
         minHeight: { xs: 'auto', lg: 420 },
+        pt: { xs: 32, lg: 0 }, // give room for mobile polaroids at the top
       }}>
 
-        {/* ── LEFT: Polaroid Stack (Desktop) ── */}
+        {/* ── LEFT: Spacer for Polaroids (Desktop) ── */}
         <Box sx={{
           display: { xs: 'none', lg: 'block' },
-          width: '28%',
-          position: 'relative',
-          height: 420,
+          width: '24%',
           flexShrink: 0,
-        }}>
-          {POLAROID_DATA.map((p, idx) => {
-            const pos = getPolaroidPos(idx);
-            return (
-              <Polaroid
-                key={idx}
-                src={p.src}
-                caption={p.caption}
-                stickerText={p.stickerText}
-                stickerBg={p.stickerBg}
-                sx={{
-                  transform: pos.transform,
-                  zIndex: pos.zIndex,
-                  top: pos.top,
-                  left: pos.left,
-                }}
-              />
-            );
-          })}
-        </Box>
+        }} />
 
         {/* ── CENTER: Minimal Text + Single CTA ── */}
         <Box sx={{
@@ -254,7 +231,7 @@ export default function SocietyGatewayCTA({ userCount, tenantName }: SocietyGate
             sx={{
               fontWeight: 900, color: '#0f2414',
               letterSpacing: '-0.03em',
-              fontSize: { xs: '2rem', md: '2.6rem' },
+              fontSize: { xs: '2.4rem', md: '2.6rem' },
               lineHeight: 1.15, mb: 2,
               fontFamily: 'var(--font-playfair)',
             }}
@@ -264,7 +241,7 @@ export default function SocietyGatewayCTA({ userCount, tenantName }: SocietyGate
 
           <Typography variant="body1" sx={{
             color: 'rgba(15, 36, 20, 0.55)', lineHeight: 1.7, mb: 4,
-            maxWidth: '420px', fontSize: '1rem',
+            maxWidth: '420px', fontSize: { xs: '1.15rem', md: '1rem' },
           }}>
             {formattedCount}+ visionaries powering the ecosystem. Join them.
           </Typography>
@@ -289,107 +266,19 @@ export default function SocietyGatewayCTA({ userCount, tenantName }: SocietyGate
               Join the Society
             </Button>
           </Link>
-
-          {/* ── MOBILE: Vertical Live Activity Feed (under the button) ── */}
-          <Box sx={{
-            display: { xs: 'flex', lg: 'none' },
-            flexDirection: 'column',
-            width: '100%',
-            maxWidth: 380,
-            mt: 5,
-          }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2, px: 0.5 }}>
-              <motion.div
-                animate={{ scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                style={{
-                  width: 7, height: 7, borderRadius: '50%',
-                  backgroundColor: '#ef4444', boxShadow: '0 0 10px rgba(239, 68, 68, 0.6)',
-                }}
-              />
-              <Typography variant="overline" sx={{ color: 'rgba(0,0,0,0.4)', letterSpacing: '2px', fontWeight: 700, fontSize: '0.58rem' }}>
-                LIVE ACROSS THE ECOSYSTEM
-              </Typography>
-            </Box>
-            <Stack spacing={1.2}>
-              <AnimatePresence initial={false} mode="popLayout">
-                {mobileFeed.map((stat) => {
-                  const accentColor = TAB_COLORS[stat.tab] || '#10b981';
-                  return (
-                    <motion.div
-                      key={stat.id}
-                      layout
-                      initial={{ opacity: 0, y: 30, scale: 0.92 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -20, scale: 0.9, transition: { duration: 0.25 } }}
-                      transition={{ type: 'spring', stiffness: 350, damping: 28 }}
-                      style={{ width: '100%' }}
-                    >
-                      <Paper
-                        elevation={0}
-                        sx={{
-                          width: '100%',
-                          background: 'rgba(18, 24, 20, 0.92)',
-                          backdropFilter: 'blur(20px)',
-                          borderRadius: '16px',
-                          boxShadow: `0 4px 16px ${alpha(accentColor, 0.15)}`,
-                          border: `1px solid ${alpha(accentColor, 0.1)}`,
-                          display: 'flex', alignItems: 'center',
-                          px: 2, py: 1.2,
-                        }}
-                      >
-                        <Avatar
-                          variant="rounded"
-                          src={stat.avatarUrl}
-                          alt={stat.userName}
-                          sx={{
-                            width: 34, height: 34, mr: 1.5,
-                            borderRadius: '10px',
-                            border: `2px solid ${alpha(accentColor, 0.4)}`,
-                          }}
-                        />
-                        <Box sx={{ flex: 1, overflow: 'hidden' }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <Chip
-                              label={stat.tab} size="small"
-                              sx={{
-                                height: 16, fontSize: '0.5rem', fontWeight: 800,
-                                color: '#fff', background: stat.gradient,
-                                textTransform: 'uppercase', letterSpacing: '0.5px',
-                                borderRadius: '5px', '& .MuiChip-label': { px: 0.7 }
-                              }}
-                            />
-                            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.6rem' }}>
-                              {stat.timeAgo}
-                            </Typography>
-                          </Box>
-                          <Typography variant="body2" sx={{
-                            fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)',
-                            lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', mt: 0.3,
-                          }}>
-                            <Box component="span" sx={{ fontWeight: 700, color: 'rgba(255,255,255,0.9)' }}>
-                              {stat.userName}
-                            </Box>{' '}{stat.action}
-                          </Typography>
-                        </Box>
-                      </Paper>
-                    </motion.div>
-                  );
-                })}
-              </AnimatePresence>
-            </Stack>
-          </Box>
         </Box>
 
-        {/* ── RIGHT: Live Activity Feed (Desktop) ── */}
+        {/* ── RIGHT: Live Activity Feed (Unified Desktop/Mobile) ── */}
         <Box sx={{
-          display: { xs: 'none', lg: 'flex' },
+          display: 'flex',
           flexDirection: 'column',
-          width: '28%',
+          width: { xs: '100%', lg: '24%' },
+          maxWidth: { xs: 480, lg: '100%' },
           flexShrink: 0,
           py: 4,
-          pr: 4,
-          pl: 2,
+          pr: { xs: 2, lg: 6 },
+          pl: { xs: 2, lg: 1 },
+          perspective: '1200px', // Exact 3D drum perspective from SocietyHero
         }}>
           {/* Live indicator */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2, px: 1 }}>
@@ -401,16 +290,20 @@ export default function SocietyGatewayCTA({ userCount, tenantName }: SocietyGate
                 backgroundColor: '#ef4444', boxShadow: '0 0 12px rgba(239, 68, 68, 0.6)',
               }}
             />
-            <Typography variant="overline" sx={{ color: 'rgba(0,0,0,0.4)', letterSpacing: '2px', fontWeight: 700, fontSize: '0.6rem' }}>
-              LIVE ACTIVITY
+            <Typography variant="overline" sx={{ color: 'rgba(0,0,0,0.45)', letterSpacing: '2.5px', fontWeight: 700, fontSize: '0.65rem' }}>
+              LIVE ACROSS THE ECOSYSTEM
             </Typography>
           </Box>
 
-          <Stack spacing={1.2}>
+          <Stack spacing={1.5} sx={{ transformStyle: 'preserve-3d' }}>
             <AnimatePresence initial={false} mode="popLayout">
               {feed.map((stat, index) => {
                 const accentColor = TAB_COLORS[stat.tab] || '#10b981';
-                const distFromCenter = Math.abs(index - 1.5);
+                // 3D drum perspective: cards curve away at top and bottom
+                const center = 2;
+                const offset = index - center;
+                const rotateX = offset * -4; // top tilts back (+8°), bottom tilts forward (-8°)
+                const distFromCenter = Math.abs(offset);
                 const opacity = 1 - distFromCenter * 0.12;
                 const scale = 1 - distFromCenter * 0.02;
 
@@ -418,11 +311,11 @@ export default function SocietyGatewayCTA({ userCount, tenantName }: SocietyGate
                   <motion.div
                     key={stat.id}
                     layout
-                    initial={{ opacity: 0, y: 40, scale: 0.92 }}
-                    animate={{ opacity, y: 0, scale }}
-                    exit={{ opacity: 0, y: -25, scale: 0.9, transition: { duration: 0.3 } }}
+                    initial={{ opacity: 0, y: 50, scale: 0.92 }}
+                    animate={{ opacity, y: 0, scale, rotateX }}
+                    exit={{ opacity: 0, y: -30, scale: 0.9, rotateX: 12, transition: { duration: 0.3 } }}
                     transition={{ type: 'spring', stiffness: 350, damping: 28 }}
-                    style={{ width: '100%' }}
+                    style={{ width: '100%', transformStyle: 'preserve-3d' }}
                   >
                     <Paper
                       elevation={0}
@@ -430,14 +323,15 @@ export default function SocietyGatewayCTA({ userCount, tenantName }: SocietyGate
                         width: '100%',
                         background: 'rgba(18, 24, 20, 0.92)',
                         backdropFilter: 'blur(20px)',
-                        borderRadius: '18px',
-                        boxShadow: `0 4px 20px ${alpha(accentColor, 0.15)}`,
-                        border: `1px solid ${alpha(accentColor, 0.1)}`,
+                        borderRadius: '22px',
+                        boxShadow: `0 6px 28px ${alpha(accentColor, 0.18)}, 0 1.5px 4px rgba(0,0,0,0.08)`,
+                        border: `1px solid ${alpha(accentColor, 0.12)}`,
                         display: 'flex', alignItems: 'center',
-                        px: 2, py: 1.2,
-                        transition: 'box-shadow 0.3s ease',
+                        px: 2, py: 1.25,
+                        transition: 'box-shadow 0.3s ease, border 0.3s ease',
                         '&:hover': {
-                          boxShadow: `0 8px 30px ${alpha(accentColor, 0.25)}`,
+                          boxShadow: `0 12px 40px ${alpha(accentColor, 0.28)}, 0 2px 6px rgba(0,0,0,0.1)`,
+                          border: `1px solid ${alpha(accentColor, 0.25)}`,
                         },
                       }}
                     >
@@ -449,6 +343,7 @@ export default function SocietyGatewayCTA({ userCount, tenantName }: SocietyGate
                           width: 36, height: 36, mr: 1.5,
                           borderRadius: '10px',
                           border: `2px solid ${alpha(accentColor, 0.4)}`,
+                          boxShadow: `0 0 12px ${alpha(accentColor, 0.2)}`,
                         }}
                       />
                       <Box sx={{ flex: 1, overflow: 'hidden' }}>
@@ -458,19 +353,19 @@ export default function SocietyGatewayCTA({ userCount, tenantName }: SocietyGate
                             sx={{
                               height: 16, fontSize: '0.55rem', fontWeight: 800,
                               color: '#fff', background: stat.gradient,
-                              textTransform: 'uppercase', letterSpacing: '0.6px',
-                              borderRadius: '5px', '& .MuiChip-label': { px: 0.8 }
+                              textTransform: 'uppercase', letterSpacing: '0.5px',
+                              borderRadius: '4px', '& .MuiChip-label': { px: 0.75 }
                             }}
                           />
-                          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.3)', fontWeight: 500, fontSize: '0.65rem' }}>
+                          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.35)', fontWeight: 500, fontSize: '0.65rem' }}>
                             {stat.timeAgo}
                           </Typography>
                         </Box>
                         <Typography variant="body2" sx={{
-                          fontSize: '0.78rem', color: 'rgba(255,255,255,0.65)',
-                          lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', mt: 0.3
+                          fontSize: '0.78rem', color: 'rgba(255,255,255,0.7)',
+                          lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', mt: 0.25,
                         }}>
-                          <Box component="span" sx={{ fontWeight: 700, color: 'rgba(255,255,255,0.9)' }}>
+                          <Box component="span" sx={{ fontWeight: 700, color: 'rgba(255,255,255,0.95)' }}>
                             {stat.userName}
                           </Box>{' '}{stat.action}
                         </Typography>
@@ -485,9 +380,9 @@ export default function SocietyGatewayCTA({ userCount, tenantName }: SocietyGate
             <motion.div
               animate={{
                 width: isExpanding ? '100%' : '50%',
-                height: isExpanding ? 52 : 24,
+                height: isExpanding ? 62 : 28,
                 opacity: isExpanding ? 0.7 : 0.35,
-                borderRadius: isExpanding ? 18 : 12,
+                borderRadius: isExpanding ? 22 : 14,
               }}
               transition={{ duration: 0.65, ease: [0.4, 0, 0.2, 1] }}
               style={{ alignSelf: 'center', overflow: 'hidden', position: 'relative' }}
@@ -496,15 +391,30 @@ export default function SocietyGatewayCTA({ userCount, tenantName }: SocietyGate
                 elevation={0}
                 sx={{
                   width: '100%', height: '100%',
-                  background: 'rgba(18, 24, 20, 0.4)',
+                  background: 'rgba(18, 24, 20, 0.45)',
                   backdropFilter: 'blur(8px)',
                   borderRadius: 'inherit',
-                  border: '1px dashed rgba(255,255,255,0.08)',
+                  border: '1px dashed rgba(255,255,255,0.1)',
                   display: 'flex', alignItems: 'center',
                   justifyContent: isExpanding ? 'flex-start' : 'center',
-                  px: isExpanding ? 2 : 0,
+                  px: isExpanding ? 2.5 : 0,
                 }}
               >
+                <AnimatePresence>
+                  {isExpanding && (
+                    <motion.div
+                      initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2, duration: 0.3 }}
+                      style={{ display: 'flex', alignItems: 'center', width: '100%' }}
+                    >
+                      <Box sx={{ width: 36, height: 36, borderRadius: '11px', bgcolor: 'rgba(255,255,255,0.08)', mr: 1.5, flexShrink: 0 }} />
+                      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 0.6 }}>
+                        <Box sx={{ width: 55, height: 10, borderRadius: '3px', bgcolor: 'rgba(255,255,255,0.08)' }} />
+                        <Box sx={{ width: '70%', height: 8, borderRadius: '3px', bgcolor: 'rgba(255,255,255,0.05)' }} />
+                      </Box>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
                 {!isExpanding && (
                   <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center', width: '100%' }}>
                     {[0, 1, 2].map(i => (
@@ -520,107 +430,6 @@ export default function SocietyGatewayCTA({ userCount, tenantName }: SocietyGate
               </Paper>
             </motion.div>
           </Stack>
-        </Box>
-      </Box>
-
-      {/* ── MOBILE: Horizontal Live Activity Feed ── */}
-      <Box sx={{
-        display: { xs: 'block', lg: 'none' },
-        position: 'relative', zIndex: 2,
-        pb: 5, px: 2,
-      }}>
-        {/* Live indicator */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2, px: 1 }}>
-          <motion.div
-            animate={{ scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }}
-            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-            style={{
-              width: 7, height: 7, borderRadius: '50%',
-              backgroundColor: '#ef4444', boxShadow: '0 0 10px rgba(239, 68, 68, 0.6)',
-            }}
-          />
-          <Typography variant="overline" sx={{ color: 'rgba(0,0,0,0.4)', letterSpacing: '2px', fontWeight: 700, fontSize: '0.58rem' }}>
-            LIVE ACROSS THE ECOSYSTEM
-          </Typography>
-        </Box>
-
-        {/* Horizontal scrolling cards */}
-        <Box sx={{
-          display: 'flex',
-          gap: 1.5,
-          overflowX: 'auto',
-          pb: 1,
-          scrollSnapType: 'x mandatory',
-          '&::-webkit-scrollbar': { display: 'none' },
-          scrollbarWidth: 'none',
-          mx: -1,
-          px: 1,
-        }}>
-          <AnimatePresence initial={false} mode="popLayout">
-            {mobileFeed.map((stat) => {
-              const accentColor = TAB_COLORS[stat.tab] || '#10b981';
-              return (
-                <motion.div
-                  key={stat.id}
-                  layout
-                  initial={{ opacity: 0, x: 60, scale: 0.9 }}
-                  animate={{ opacity: 1, x: 0, scale: 1 }}
-                  exit={{ opacity: 0, x: -40, scale: 0.9, transition: { duration: 0.25 } }}
-                  transition={{ type: 'spring', stiffness: 350, damping: 28 }}
-                  style={{ flexShrink: 0, scrollSnapAlign: 'start' }}
-                >
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      width: 260,
-                      background: 'rgba(18, 24, 20, 0.92)',
-                      backdropFilter: 'blur(20px)',
-                      borderRadius: '16px',
-                      boxShadow: `0 4px 16px ${alpha(accentColor, 0.15)}`,
-                      border: `1px solid ${alpha(accentColor, 0.1)}`,
-                      display: 'flex', alignItems: 'center',
-                      px: 2, py: 1.5,
-                    }}
-                  >
-                    <Avatar
-                      variant="rounded"
-                      src={stat.avatarUrl}
-                      alt={stat.userName}
-                      sx={{
-                        width: 34, height: 34, mr: 1.5,
-                        borderRadius: '10px',
-                        border: `2px solid ${alpha(accentColor, 0.4)}`,
-                      }}
-                    />
-                    <Box sx={{ flex: 1, overflow: 'hidden' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.3 }}>
-                        <Chip
-                          label={stat.tab} size="small"
-                          sx={{
-                            height: 16, fontSize: '0.5rem', fontWeight: 800,
-                            color: '#fff', background: stat.gradient,
-                            textTransform: 'uppercase', letterSpacing: '0.5px',
-                            borderRadius: '5px', '& .MuiChip-label': { px: 0.7 }
-                          }}
-                        />
-                        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.6rem' }}>
-                          {stat.timeAgo}
-                        </Typography>
-                      </Box>
-                      <Typography variant="body2" sx={{
-                        fontSize: '0.72rem', color: 'rgba(255,255,255,0.6)',
-                        lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                      }}>
-                        <Box component="span" sx={{ fontWeight: 700, color: 'rgba(255,255,255,0.9)' }}>
-                          {stat.userName}
-                        </Box>{' '}{stat.action}
-                      </Typography>
-                    </Box>
-                  </Paper>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
         </Box>
       </Box>
     </Box>
