@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { Box, Typography, Container, IconButton } from '@mui/material';
+import { Box, Typography, Container, IconButton, Skeleton } from '@mui/material';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import Link from 'next/link';
@@ -19,82 +19,7 @@ export default function Swimlane({ lane }: { lane: any }) {
     if (scrollRef.current) scrollRef.current.scrollBy({ left: 400, behavior: 'smooth' });
   };
 
-  // Generate mock items based on the lane type if real items aren't provided
-  const itemsToDisplay: EcosystemItem[] = lane.items && lane.items.length > 0 ? lane.items : Array.from({ length: Math.max(1, lane.newCount) }).map((_, i) => {
-    const isArticle = lane.title.includes('Articles') || lane.title.includes('Top Stories');
-    const isLivestream = lane.title.includes('Livestreams');
-    const isJob = lane.title.includes('Jobs') || lane.title.includes('Internships');
-    const isOpportunity = lane.title.includes('Opportunities') || lane.title.includes('Volunteering');
-
-    let itemType: any = 'Intelligence';
-    if (isLivestream) itemType = 'Activities';
-    else if (isJob) itemType = 'Jobs';
-    else if (isOpportunity) itemType = 'Opportunities';
-
-    const sampleArticleTitles = [
-      'Can community savings groups transform food security?',
-      'Why Nigeria loses so many tomatoes before they reach the market',
-      'How insecurity is reshaping food trade across the Sahel',
-      'Could one egg a day transform child nutrition in rural communities?',
-      'Why fertilizer remains unaffordable for smallholder farmers',
-      'Cold storage infrastructure: Solving post-harvest losses',
-    ];
-
-    const sampleJobTitles = [
-      'Cold-Chain Logistics Operator',
-      'Senior Agronomist & Soil Specialist',
-      'Food Supply Chain Data Analyst',
-      'Community Farm Manager',
-      'Agricultural Equipment Technician',
-      'Post-Harvest Research Fellow',
-    ];
-
-    const sampleLivestreamTitles = [
-      'What This Week’s Three Stories Reveal About the Future of Food',
-      'Masterclass: Scaling Solar Cold Rooms Across West Africa',
-      'Financing AgTech Startups: VC Insights & Direct Grants',
-      'Reducing Food Waste in Open Air Markets',
-    ];
-
-    const sampleAuthors = ['Amaka Okafor', 'Chinedu Eze', 'Dr. Tobi Adeyemi', 'Fatima Bello', 'Kelechi Iheanacho'];
-    const sampleOrgs = ['FoodNerve Operations', 'AgroTech Global', 'GreenField Hub', 'Sahel Food Systems', 'FarmTrust Cooperative'];
-
-    const title = isJob 
-      ? sampleJobTitles[i % sampleJobTitles.length]
-      : isLivestream
-      ? sampleLivestreamTitles[i % sampleLivestreamTitles.length]
-      : sampleArticleTitles[i % sampleArticleTitles.length];
-
-    const sampleEras = ['Present', 'Past', 'Future'];
-    const sampleBlockTags = [
-      ['🌾 Cold Storage Deficit', '📉 34% Post-Harvest Loss', '💡 Solar Chilling Unit', '📊 Field Data 2026'],
-      ['🥚 Rural Child Nutrition', '📈 1 Egg / Day Trial', '🤝 Community Savings', '🔍 Ogun State Findings'],
-      ['🚜 Fertilizer Price Spike', '💰 $420 / Ton Impact', '🛠️ Soil Micro-Dosing', '📌 Contract Farming'],
-      ['🚚 Sahel Trade Route', '⚠️ Border Bottlenecks', '🛰️ Satellite Tracking', '⚡ Fast-Track Logistics'],
-    ];
-
-    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') + `-${i + 1}a9x`;
-
-    return {
-      id: `mock-${lane.id}-${i}`,
-      title,
-      type: itemType,
-      thumbnailUrl: isLivestream 
-        ? 'https://images.unsplash.com/photo-1591696205602-2f950c417cb9?auto=format&fit=crop&q=80&w=800'
-        : 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?auto=format&fit=crop&q=80&w=800',
-      link: isJob ? '/careers' : isLivestream ? '/calendar' : `/learn/article/${slug}`,
-      slug,
-      authorOrOperator: sampleAuthors[i % sampleAuthors.length],
-      organizationName: sampleOrgs[i % sampleOrgs.length],
-      authorAvatarUrl: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200`,
-      categoryLabel: isJob ? (i % 2 === 0 ? 'FULL-TIME' : 'REMOTE') : isLivestream ? 'LIVESTREAM' : 'SAVINGS',
-      era: sampleEras[i % sampleEras.length],
-      tags: sampleBlockTags[i % sampleBlockTags.length],
-      metaInfo: isJob ? 'Closing in 5 days' : isLivestream ? (i % 3 === 0 ? '🔴 Happening Now' : i % 3 === 1 ? 'Wed • 7:00 PM WAT' : '▶️ Replay Available') : `${(i + 4) * 2} min read`,
-      readCount: `${(i + 2) * 1.4}k reads`,
-      locationOrSalary: isJob ? `📍 Lagos, NG • 💰 $${(i + 1) * 800}/mo` : undefined,
-    };
-  });
+  const itemsToDisplay: EcosystemItem[] = lane.items && lane.items.length > 0 ? lane.items : [];
 
   // Event-driven sequencing: no timer, each card drives the next
   const advanceToNextCard = useCallback(() => {
@@ -129,9 +54,11 @@ export default function Swimlane({ lane }: { lane: any }) {
                 {lane.title}
               </Typography>
             </Link>
-            <Box sx={{ bgcolor: `${lane.color}15`, color: lane.color, px: { xs: 1, md: 1.5 }, py: { xs: 0.25, md: 0.5 }, borderRadius: '8px', fontSize: { xs: '0.65rem', md: '0.85rem' }, fontWeight: 800, display: { xs: 'none', sm: 'block' } }}>
-              {lane.newCount} New
-            </Box>
+            {lane.newCount > 0 && (
+              <Box sx={{ bgcolor: `${lane.color}15`, color: lane.color, px: { xs: 1, md: 1.5 }, py: { xs: 0.25, md: 0.5 }, borderRadius: '8px', fontSize: { xs: '0.65rem', md: '0.85rem' }, fontWeight: 800, display: { xs: 'none', sm: 'block' } }}>
+                {lane.newCount} New
+              </Box>
+            )}
           </Box>
           
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -162,26 +89,34 @@ export default function Swimlane({ lane }: { lane: any }) {
               overflowX: 'auto', 
               pt: 2,
               pb: 6,
-              px: 2,
-              mx: -2,
+              px: 4,
+              mx: -4,
               scrollBehavior: 'smooth',
               '&::-webkit-scrollbar': { display: 'none' },
             }}
           >
-            {itemsToDisplay.map((item, idx) => (
-              <Box key={item.id} sx={{ width: lane.id === 'lane-livestreams' ? { xs: 320, md: 480 } : lane.id === 'lane-top-stories' ? { xs: 260, md: 300 } : { xs: 280, md: 360 }, flexShrink: 0, pt: 1 }}>
-                <EcosystemCard 
-                  item={item} 
-                  themeColor={lane.color} 
-                  isFirst={idx === 0}
-                  isLast={idx === itemsToDisplay.length - 1}
-                  tickerIndex={idx}
-                  activeTickerIndex={activeTickerIndex}
-                  variant={lane.id === 'lane-top-stories' ? 'compact' : 'default'}
-                  onTickerComplete={advanceToNextCard}
-                />
-              </Box>
-            ))}
+            {itemsToDisplay.length > 0 ? (
+              itemsToDisplay.map((item, idx) => (
+                <Box key={item.id} sx={{ width: lane.id === 'lane-livestreams' ? { xs: 320, md: 480 } : lane.id === 'lane-top-stories' ? { xs: 260, md: 300 } : { xs: 280, md: 360 }, flexShrink: 0, pt: 1 }}>
+                  <EcosystemCard 
+                    item={item} 
+                    themeColor={lane.color} 
+                    isFirst={idx === 0}
+                    isLast={idx === itemsToDisplay.length - 1}
+                    tickerIndex={idx}
+                    activeTickerIndex={activeTickerIndex}
+                    variant={lane.id === 'lane-top-stories' ? 'compact' : 'default'}
+                    onTickerComplete={advanceToNextCard}
+                  />
+                </Box>
+              ))
+            ) : (
+              Array.from({ length: 4 }).map((_, idx) => (
+                <Box key={`skel-${idx}`} sx={{ width: lane.id === 'lane-livestreams' ? { xs: 320, md: 480 } : lane.id === 'lane-top-stories' ? { xs: 260, md: 300 } : { xs: 280, md: 360 }, flexShrink: 0, pt: 1 }}>
+                  <Skeleton variant="rectangular" width="100%" height={380} sx={{ borderRadius: '24px', bgcolor: 'rgba(0,0,0,0.03)' }} />
+                </Box>
+              ))
+            )}
 
             {/* VIEW ALL CARD */}
             <Box 
@@ -211,7 +146,7 @@ export default function Swimlane({ lane }: { lane: any }) {
             >
               <ArrowForwardIosIcon sx={{ fontSize: '2rem', mb: 2 }} />
               <Typography sx={{ fontWeight: 800, fontSize: { xs: '0.85rem', sm: '1rem' } }}>
-                View All 100+
+                View All {lane.totalCount ? `(${lane.totalCount})` : ''}
               </Typography>
             </Box>
             

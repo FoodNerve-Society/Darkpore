@@ -18,6 +18,7 @@ interface CommandCenterHeroProps {
     livestreams: number;
     jobs: number;
     missions: number;
+    users?: number;
   };
 }
 
@@ -35,10 +36,10 @@ const pulseAnimation = keyframes`
 
 export default function CommandCenterHero({ globalAlerts = [], stats }: CommandCenterHeroProps) {
   const CATEGORIES = [
-    { id: 'lane-articles', label: 'Articles', icon: '📝', color: '#3b82f6', count: stats?.articles || 142, newCount: stats ? 0 : 12 },
-    { id: 'lane-livestreams', label: 'Livestreams', icon: '🎥', color: '#f59e0b', count: stats?.livestreams || 24, newCount: stats ? 0 : 3, isLive: true },
-    { id: 'lane-jobs', label: 'Jobs & Internships', icon: '💼', color: '#10b981', count: stats?.jobs || 110, newCount: stats ? 0 : 8 },
-    { id: 'lane-missions', label: 'Missions', icon: '🎯', color: '#ec4899', count: stats?.missions || 15, newCount: stats ? 0 : 2 },
+    { id: 'lane-articles', label: 'Articles', icon: '📝', color: '#3b82f6', count: stats?.articles || 0, newCount: stats ? 0 : 0 },
+    { id: 'lane-livestreams', label: 'Livestreams', icon: '🎥', color: '#f59e0b', count: stats?.livestreams || 0, newCount: stats ? 0 : 0, isLive: stats?.livestreams ? stats.livestreams > 0 : false },
+    { id: 'lane-jobs', label: 'Jobs & Internships', icon: '💼', color: '#10b981', count: stats?.jobs || 0, newCount: stats ? 0 : 0 },
+    { id: 'lane-missions', label: 'Missions', icon: '🎯', color: '#ec4899', count: stats?.missions || 0, newCount: stats ? 0 : 0 },
   ];
 
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -404,17 +405,15 @@ export default function CommandCenterHero({ globalAlerts = [], stats }: CommandC
                     <Typography sx={{ fontFamily: 'var(--font-ysabeau-infant)', fontWeight: 700, fontSize: { xs: '0.95rem', sm: '1.15rem' }, color: '#0f172a', lineHeight: 1.2 }}>
                       {cat.label}
                     </Typography>
-                    {cat.newCount > 0 && (
-                      <Box sx={{ bgcolor: `${cat.color}15`, color: cat.color, px: 0.8, py: 0.2, borderRadius: '4px', fontSize: '0.6rem', fontWeight: 700, fontFamily: 'var(--font-ysabeau-infant)', whiteSpace: 'nowrap' }}>
-                        +{cat.newCount} NEW
-                      </Box>
-                    )}
+                    <Box sx={{ bgcolor: `${cat.color}15`, color: cat.color, px: 0.8, py: 0.2, borderRadius: '4px', fontSize: '0.6rem', fontWeight: 700, fontFamily: 'var(--font-ysabeau-infant)', whiteSpace: 'nowrap' }}>
+                      +{cat.newCount || 0} NEW
+                    </Box>
                     {cat.isLive && (
                       <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#ef4444', flexShrink: 0, animation: `${pulseAnimation} 1.5s infinite` }} />
                     )}
                   </Box>
                   <Typography sx={{ fontFamily: 'var(--font-ysabeau-infant)', fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.85rem' }, color: '#64748b', mt: 0.25 }}>
-                    {cat.count} - total
+                    {cat.count} total
                   </Typography>
                 </Box>
                 <Box sx={{ width: { xs: 24, sm: 32 }, height: { xs: 24, sm: 32 }, borderRadius: '50%', bgcolor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s ease' }}>
@@ -466,7 +465,7 @@ export default function CommandCenterHero({ globalAlerts = [], stats }: CommandC
                   </Typography>
                   <Typography sx={{ fontFamily: 'var(--font-ysabeau-infant)', fontWeight: 700, fontSize: { xs: '0.75rem', sm: '0.85rem' }, color: '#059669', mt: 0.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <Box component="span" sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#10b981', display: 'inline-block', animation: `${pulseAnimation} 2s infinite` }} />
-                    14,204 Operators in
+                    {new Intl.NumberFormat('en-US').format(stats?.users || 14204)} Operators in
                   </Typography>
                 </Box>
               </Box>

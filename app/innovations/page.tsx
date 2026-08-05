@@ -99,7 +99,8 @@ export default async function InnovationsHomepage() {
         author: lc.authorName || 'Society Architect',
         dateAdded: lc.createdAt,
         readTime: lc.type === 'video' || lc.type === 'livestream' ? 'Watch' : '5 min read',
-        link: `/${lc.challengeId || 'global'}/${lc.subcategory || 'general'}/learn/article/${lc.slug}`
+        link: `/${lc.challengeId || 'global'}/${lc.subcategory || 'general'}/learn/article/${lc.slug}`,
+        blocks: lc.article?.blocks || []
       };
     });
 
@@ -126,7 +127,7 @@ export default async function InnovationsHomepage() {
   const allChallenges = homepageConfig.challenges;
 
   // Fetch real database stats and slideshow content for the Hero
-  let statsObj = { articles: 0, livestreams: 0, jobs: 0, missions: 0 };
+  let statsObj = { articles: 0, livestreams: 0, jobs: 0, missions: 0, users: 0 };
   let learnContentCount = 142;
   let userCount = 12500;
   let slideshowItems: { image: string, title: string }[] = [];
@@ -154,7 +155,7 @@ export default async function InnovationsHomepage() {
       prisma.campaign.count({ where: { status: 'active_deployment' } })
     ]);
     
-    statsObj = { articles: articlesCount, livestreams: livestreamsCount, jobs: jobsCount, missions: missionsCount };
+    statsObj = { articles: articlesCount, livestreams: livestreamsCount, jobs: jobsCount, missions: missionsCount, users: uCount };
     
     learnContentCount = lcCount;
     userCount = uCount;
@@ -388,7 +389,7 @@ export default async function InnovationsHomepage() {
           authorAvatarUrl: lc.authorAvatarUrl || '/images/default-avatar.png',
           readTime: lc.article?.readTime || '6 min read',
           categoryLabel: (lc.subcategory || lc.category || 'ANALYSIS').toUpperCase(),
-          link: `/learn/article/${lc.slug}`,
+          link: `/${lc.challengeId || 'global'}/${lc.subcategory || 'general'}/learn/article/${lc.slug}`,
           score,
           createdAt: lc.createdAt,
           tags
@@ -424,7 +425,7 @@ export default async function InnovationsHomepage() {
             id: 'lane-top-stories', 
             title: 'Top Stories', 
             color: '#dc2626', 
-            newCount: 5,
+            newCount: 0,
             items: (editorialTopStories && editorialTopStories.length > 0)
               ? [editorialFeaturedStory, ...editorialTopStories].filter(Boolean).map((s: any) => ({
                   id: s.id,
@@ -440,13 +441,61 @@ export default async function InnovationsHomepage() {
                 }))
               : undefined
           },
-          { id: 'lane-articles', title: 'Latest Articles', color: '#3b82f6', newCount: 12 },
-          { id: 'lane-livestreams', title: 'Livestreams', color: '#f59e0b', newCount: 3 },
-          { id: 'lane-jobs', title: 'Careers & Opportunities', color: '#10b981', newCount: 18 },
-          { id: 'lane-missions', title: 'Missions', color: '#ec4899', newCount: 2 }
+          { id: 'lane-articles', title: 'Latest Articles', color: '#3b82f6', newCount: 0 },
+          { id: 'lane-livestreams', title: 'Livestreams', color: '#f59e0b', newCount: 0 },
+          { id: 'lane-jobs', title: 'Careers & Opportunities', color: '#10b981', newCount: 0 },
+          { id: 'lane-missions', title: 'Missions', color: '#ec4899', newCount: 0 }
         ].map((lane) => {
           if (lane.id === 'lane-top-stories') {
             return <Swimlane key={lane.id} lane={lane} />;
+          }
+          if (lane.id === 'lane-articles') {
+            const articleItems = recentIntelligence.filter((i: any) => i.type === 'article').map((i: any) => {
+              let tags: string[] = [];
+              if (i.blocks && i.blocks.length > 0) {
+                tags = i.blocks.map((b: any) => {
+                  try {
+                    const payload = typeof b.content === 'string' ? JSON.parse(b.content) : b.content;
+                    let textVal = '';
+                    if (b.blockType === 'subheading') textVal = payload?.text;
+                    else if (b.blockType === 'exec_summary') textVal = payload?.point1 || payload?.point2;
+                    else if (b.blockType === 'highlight_card') textVal = payload?.caption || payload?.label;
+                    else if (b.blockType === 'core_interactive') textVal = payload?.heading;
+                    if (typeof textVal === 'string' && textVal.trim().length > 0) {
+                      const clean = textVal.replace(/<[^>]*>?/gm, '').trim();
+                      return clean.length > 45 ? clean.substring(0, 42) + '...' : clean;
+                    }
+                  } catch(e) {}
+                  return null;
+                }).filter((t: any) => t && t.length > 3);
+              }
+              return {
+                id: i.id,
+                type: 'Article',
+                title: i.title,
+                authorOrOperator: i.author,
+                metaInfo: i.readTime,
+                thumbnailUrl: i.thumbnailUrl,
+                link: i.link,
+                tags: tags.length > 0 ? tags : ['🌾 System Intelligence', '📊 Field Report', '💡 Architecture'],
+                categoryLabel: i.categoryLabel
+              };
+            });
+            return <Swimlane key={lane.id} lane={{ ...lane, items: articleItems }} />;
+          }
+          if (lane.id === 'lane-livestreams') {
+            const streamItems = recentIntelligence.filter((i: any) => i.type === 'livestream' || i.type === 'video').map((i: any) => ({
+              id: i.id,
+              type: i.type === 'livestream' ? 'Live' : 'Video',
+              title: i.title,
+              authorOrOperator: i.author,
+              metaInfo: i.readTime,
+              thumbnailUrl: i.thumbnailUrl,
+              link: i.link,
+              tags: ['🔴 Live Broadcast', '🎙️ Expert Panel', '📈 Strategy Session'],
+              categoryLabel: i.categoryLabel
+            }));
+            return <Swimlane key={lane.id} lane={{ ...lane, items: streamItems }} />;
           }
           // Generate consolidated items for careers
           if (lane.id === 'lane-jobs') {
@@ -466,12 +515,13 @@ export default async function InnovationsHomepage() {
           if (lane.id === 'lane-missions') {
             const missionItems = activeDeployments.map((dep: any) => ({
               id: dep.id,
-              type: dep.type,
+              type: 'Missions',
               title: dep.title,
               authorOrOperator: dep.operator?.name || 'FoodNerve Society',
               metaInfo: dep.traction,
               thumbnailUrl: dep.imageUrl || 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?auto=format&fit=crop&q=80&w=800',
-              link: dep.link
+              link: dep.link,
+              progress: dep.progress || 45
             }));
             return <Swimlane key={lane.id} lane={{ ...lane, items: missionItems }} />;
           }
