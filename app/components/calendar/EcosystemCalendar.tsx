@@ -577,8 +577,8 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
             sx={{
               bgcolor: 'rgba(0,0,0,0.04)', p: 0.5, borderRadius: 3,
               '& .MuiToggleButton-root': {
-                border: 'none', borderRadius: 2, px: 2, py: 0.5, fontWeight: 700, textTransform: 'none', color: 'text.secondary',
-                '&.Mui-selected': { bgcolor: 'white', color: 'text.primary', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', '&:hover': { bgcolor: 'white' } }
+                border: 'none', borderRadius: 2, px: 2, py: 0.5, fontWeight: 700, textTransform: 'none', color: alpha(primaryColor, 0.5),
+                '&.Mui-selected': { bgcolor: 'white', color: primaryColor, boxShadow: '0 2px 8px rgba(0,0,0,0.05)', '&:hover': { bgcolor: 'white' } }
               }
             }}
           >
@@ -599,8 +599,8 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
             sx={{ 
               bgcolor: 'rgba(0,0,0,0.04)', 
               borderRadius: 2, p: 1, 
-              color: 'text.secondary',
-              '&:hover': { bgcolor: 'rgba(0,0,0,0.08)', color: 'text.primary' } 
+              color: primaryColor,
+              '&:hover': { bgcolor: alpha(primaryColor, 0.1) } 
             }}
           >
             <ShareIcon fontSize="small" />
@@ -610,7 +610,7 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
             variant="contained" 
             onClick={() => setIsAddingEvent(!isAddingEvent)}
             startIcon={<AddIcon />}
-            sx={{ borderRadius: 8, fontWeight: 800, textTransform: 'none', px: 3, boxShadow: 'none' }}
+            sx={{ borderRadius: 8, fontWeight: 800, textTransform: 'none', px: 3, boxShadow: 'none', bgcolor: primaryColor, '&:hover': { bgcolor: primaryColor, filter: 'brightness(0.9)' } }}
           >
             Add Event
           </Button>
@@ -630,7 +630,8 @@ export default function EcosystemCalendar({ tenantId, initialView = 'month', ini
             tenantId={tenantId} 
             initialDate={currentDate}
             onDateChange={setCurrentDate}
-            onClose={() => setIsAddingEvent(false)} 
+            onClose={() => setIsAddingEvent(false)}
+            themeColor={primaryColor} 
           />
         </Box>
       )}

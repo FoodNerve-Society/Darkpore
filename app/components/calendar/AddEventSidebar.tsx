@@ -38,10 +38,12 @@ interface AddEventSidebarProps {
   tenantId: string;
   initialDate?: Date;
   onDateChange?: (date: Date) => void;
+  themeColor?: string;
 }
 
-export default function AddEventSidebar({ onClose, tenantId, initialDate, onDateChange }: AddEventSidebarProps) {
+export default function AddEventSidebar({ onClose, tenantId, initialDate, onDateChange, themeColor }: AddEventSidebarProps) {
   const theme = useTheme();
+  const primaryColor = themeColor || primaryColor;
   const router = useRouter();
   const { user, profile } = useSociety();
   
@@ -94,7 +96,7 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
             position: 'relative', mb: 4,
             '&::before': {
               content: '""', position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-              width: '120px', height: '120px', background: `radial-gradient(circle, ${alpha(theme.palette.primary.main, 0.4)} 0%, transparent 70%)`,
+              width: '120px', height: '120px', background: `radial-gradient(circle, ${alpha(primaryColor, 0.4)} 0%, transparent 70%)`,
               zIndex: 0, filter: 'blur(10px)'
             }
           }}>
@@ -122,17 +124,17 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
               width: '100%',
               py: 1.8,
               borderRadius: '100px',
-              background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
+              background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor})`,
               color: '#fff',
               fontWeight: 900,
               fontSize: '1.05rem',
               letterSpacing: '0.5px',
               textTransform: 'none',
-              boxShadow: `0 12px 32px ${alpha(theme.palette.primary.main, 0.4)}, inset 0 2px 0 0 rgba(255,255,255,0.2)`,
+              boxShadow: `0 12px 32px ${alpha(primaryColor, 0.4)}, inset 0 2px 0 0 rgba(255,255,255,0.2)`,
               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
               '&:hover': {
-                background: `linear-gradient(135deg, ${theme.palette.primary.light}, ${theme.palette.primary.main})`,
-                boxShadow: `0 16px 48px ${alpha(theme.palette.primary.main, 0.6)}, inset 0 2px 0 0 rgba(255,255,255,0.3)`,
+                background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor})`,
+                boxShadow: `0 16px 48px ${alpha(primaryColor, 0.6)}, inset 0 2px 0 0 rgba(255,255,255,0.3)`,
                 transform: 'translateY(-2px)'
               }
             }}
