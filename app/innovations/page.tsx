@@ -8,8 +8,10 @@ import KnowledgeTeaser from './components/KnowledgeTeaser';
 import ShowcaseCarousel from './components/ShowcaseCarousel';
 import BentoGridTeaser from './components/BentoGridTeaser';
 import RadarIndexOverview from './components/RadarIndexOverview';
+import PlayCircleFilledIcon from '@mui/icons-material/PlayCircleFilled';
 import CinematicHero from './components/CinematicHero';
 import CommandCenterHero from './components/CommandCenterHero';
+import SocietyGatewayCTA from './components/SocietyGatewayCTA';
 import Swimlane from './components/Swimlane';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
@@ -520,90 +522,11 @@ export default async function InnovationsHomepage() {
         })}
       </Box>
 
-
-
-
       {/* ═══════════════════════════════════════════════════════════
           SECTION 3: THE SOCIETY GATEWAY
-          Dark dramatic closer — the cross-domain hook
+          Light premium closer — the cross-domain hook focusing on Community
       ═══════════════════════════════════════════════════════════ */}
-      <Box sx={{ 
-        pt: { xs: 12, md: 20 }, 
-        pb: { xs: 12, md: 20 }, 
-        px: 2, 
-        bgcolor: '#050505',
-        color: '#ffffff', 
-        textAlign: 'center',
-        position: 'relative',
-        overflow: 'hidden',
-      }}>
-        {/* Deep mesh/glow background */}
-        <Box sx={{
-          position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-          width: '100%', height: '100%',
-          background: 'radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.05) 0%, transparent 60%)',
-          zIndex: 0
-        }} />
-        
-        {/* Floating Glass Card */}
-        <Container maxWidth="md" sx={{ position: 'relative', zIndex: 2 }}>
-          <Box sx={{
-            p: { xs: 5, md: 10 },
-            borderRadius: '32px',
-            background: 'rgba(255, 255, 255, 0.02)',
-            backdropFilter: 'blur(24px)',
-            border: '1px solid rgba(255, 255, 255, 0.05)',
-            boxShadow: '0 30px 60px -10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
-            position: 'relative',
-            overflow: 'hidden'
-          }}>
-            {/* Inner subtle glow for the card */}
-            <Box sx={{
-              position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
-              width: '60%', height: '1px',
-              background: 'linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.4), transparent)'
-            }} />
-            
-            <Box sx={{ mb: 4, display: 'inline-flex', p: 3, bgcolor: 'rgba(16, 185, 129, 0.08)', borderRadius: '50%', border: '1px solid rgba(16, 185, 129, 0.15)', boxShadow: '0 0 30px rgba(16, 185, 129, 0.1)' }}>
-              <LockOutlinedIcon sx={{ fontSize: 40, color: '#10b981' }} />
-            </Box>
-            
-            <Typography variant="h2" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 800, mb: 3, letterSpacing: '-0.02em', fontSize: { xs: '2.5rem', md: '3.5rem' }, background: 'linear-gradient(180deg, #ffffff 0%, rgba(255,255,255,0.6) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              Welcome to the<br />Factory Floor.
-            </Typography>
-            
-            <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.5)', mb: 6, lineHeight: 1.8, maxWidth: '500px', mx: 'auto', fontWeight: 400 }}>
-              {tenant.name}.com is just the public registry. The real work — deal rooms, trade floors, live operations — happens inside Society OS.
-            </Typography>
-            
-            <Link href="/join" style={{ textDecoration: 'none' }}>
-              <Button 
-                variant="contained" 
-                size="large" 
-                sx={{ 
-                  bgcolor: '#ffffff', 
-                  color: '#000000', 
-                  px: 6, 
-                  py: 2, 
-                  borderRadius: '100px',
-                  fontSize: '1.1rem',
-                  fontWeight: 800,
-                  textTransform: 'none',
-                  boxShadow: '0 10px 30px -10px rgba(255,255,255,0.2)',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  '&:hover': { 
-                    bgcolor: '#f8fafc',
-                    transform: 'translateY(-3px)',
-                    boxShadow: '0 20px 40px -10px rgba(255,255,255,0.4)'
-                  },
-                }}
-              >
-                Unlock the Network
-              </Button>
-            </Link>
-          </Box>
-        </Container>
-      </Box>
+      <SocietyGatewayCTA userCount={userCount} tenantName={tenant.name} />
 
     </Box>
   );
