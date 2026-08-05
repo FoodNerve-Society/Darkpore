@@ -18,15 +18,7 @@ import { getChallengeUpdatesBySubcategories } from '@/lib/actions/db';
 import PremiumButton from '@/components/PremiumButton';
 import { prisma } from '@/lib/db/client';
 
-// Version B (Editorial Magazine) Imports & A/B Toggle
-import EditorialMagazineHero, { EditorialStoryItem } from './components/EditorialMagazineHero';
-import EditorialGrid from './components/EditorialGrid';
-import TopicExplorerRow from './components/TopicExplorerRow';
-import ABToggleBar from './components/ABToggleBar';
-
-export default async function InnovationsHomepage(props: { searchParams?: Promise<{ view?: string }> }) {
-  const resolvedSearchParams = props.searchParams ? await props.searchParams : {};
-  const currentView = (resolvedSearchParams.view || 'a').toLowerCase(); // Default to Variant A (Command Center)
+export default async function InnovationsHomepage() {
   const headersList = await headers();
   const rawTenantId = headersList.get('x-tenant-id') || 'food';
   const tenantId = rawTenantId.includes('energy') ? 'energy' : 'food'; // Normalized
@@ -134,12 +126,13 @@ export default async function InnovationsHomepage(props: { searchParams?: Promis
   const allChallenges = homepageConfig.challenges;
 
   // Fetch real database stats and slideshow content for the Hero
+  let statsObj = { articles: 0, livestreams: 0, jobs: 0, missions: 0 };
   let learnContentCount = 142;
   let userCount = 12500;
   let slideshowItems: { image: string, title: string }[] = [];
 
   try {
-    const [lcCount, uCount, recentLC] = await Promise.all([
+    const [lcCount, uCount, recentLC, articlesCount, livestreamsCount, jobsCount, missionsCount] = await Promise.all([
       prisma.learnContent.count(),
       prisma.user.count(),
       prisma.learnContent.findMany({
@@ -154,8 +147,14 @@ export default async function InnovationsHomepage(props: { searchParams?: Promis
             }
           }
         }
-      })
+      }),
+      prisma.learnContent.count({ where: { status: 'published' } }),
+      prisma.calendarEvent.count({ where: { sourceType: 'livestream', status: { in: ['upcoming', 'live'] } } }),
+      prisma.tradeListing.count({ where: { category: { in: ['jobs', 'volunteer', 'internship'] }, status: 'active' } }),
+      prisma.campaign.count({ where: { status: 'active_deployment' } })
     ]);
+    
+    statsObj = { articles: articlesCount, livestreams: livestreamsCount, jobs: jobsCount, missions: missionsCount };
     
     learnContentCount = lcCount;
     userCount = uCount;
@@ -323,8 +322,8 @@ export default async function InnovationsHomepage(props: { searchParams?: Promis
   });
 
   // ── HYBRID RANKING HIERARCHY FOR EDITORIAL HERO (VERSION B) ───────
-  let editorialFeaturedStory: EditorialStoryItem | null = null;
-  let editorialTopStories: EditorialStoryItem[] = [];
+  let editorialFeaturedStory: any | null = null;
+  let editorialTopStories: any[] = [];
 
   try {
     const publishedArticles = await prisma.learnContent.findMany({
@@ -409,89 +408,79 @@ export default async function InnovationsHomepage(props: { searchParams?: Promis
   return (
     <Box sx={{ bgcolor: '#050505', minHeight: '100vh' }}>
       
-      {currentView === 'b' ? (
-        /* ═══════════════════════════════════════════════════════════
-            VARIANT B: THE EDITORIAL MAGAZINE HOMEPAGE (New Layout)
-        ═══════════════════════════════════════════════════════════ */
-        <>
-          <EditorialMagazineHero 
-            featuredStory={editorialFeaturedStory}
-            topStories={editorialTopStories}
-          />
-          <EditorialGrid />
-          <TopicExplorerRow />
-        </>
-      ) : (
-        /* ═══════════════════════════════════════════════════════════
-            VARIANT A: THE COMMAND CENTER HOMEPAGE (Current Layout)
-        ═══════════════════════════════════════════════════════════ */
-        <>
-          <Box sx={{ bgcolor: '#ffffff' }}>
-            <CommandCenterHero 
-              globalAlerts={marqueeItems}
-            />
-          </Box>
+      {/* ═══════════════════════════════════════════════════════════
+          THE COMMAND CENTER HOMEPAGE
+      ═══════════════════════════════════════════════════════════ */}
+      <Box sx={{ bgcolor: '#ffffff' }}>
+        <CommandCenterHero 
+          globalAlerts={marqueeItems}
+          stats={statsObj}
+        />
+      </Box>
 
-          <Box sx={{ bgcolor: '#ffffff', py: 8 }}>
-            {[
-              { 
-                id: 'lane-top-stories', 
-                title: 'Top Stories', 
-                color: '#dc2626', 
-                newCount: 5,
-                items: (editorialTopStories && editorialTopStories.length > 0)
-                  ? [editorialFeaturedStory, ...editorialTopStories].filter(Boolean).map((s: any) => ({
-                      id: s.id,
-                      type: 'Intelligence',
-                      title: s.title,
-                      thumbnailUrl: s.imageUrl || 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?auto=format&fit=crop&q=80&w=1200',
-                      link: s.link,
-                      authorOrOperator: s.authorName || 'FoodNerve Editorial',
-                      authorAvatarUrl: s.authorAvatarUrl,
-                      categoryLabel: s.categoryLabel || 'TOP STORY',
-                      metaInfo: s.readTime || '5 min read',
-                      tags: s.tags,
-                    }))
-                  : undefined
-              },
-              { id: 'lane-articles', title: 'Latest Articles', color: '#3b82f6', newCount: 12 },
-              { id: 'lane-livestreams', title: 'Livestreams', color: '#f59e0b', newCount: 3 },
-              { id: 'lane-jobs', title: 'Careers & Opportunities', color: '#10b981', newCount: 18 },
-              { id: 'lane-missions', title: 'Missions', color: '#ec4899', newCount: 2 }
-            ].map((lane) => {
-              if (lane.id === 'lane-top-stories') {
-                return <Swimlane key={lane.id} lane={lane} />;
-              }
-              // Generate consolidated items for careers
-              if (lane.id === 'lane-jobs') {
-                const combinedItems = [
-                  { id: 'job1', type: 'Jobs', title: 'Chief Agronomist', authorOrOperator: 'Olam Agri', companyLogo: '/logos/olam.png', locationOrSalary: 'Lagos, Nigeria', metaInfo: 'Actively Hiring', link: '/careers/job1' },
-                  { id: 'int1', type: 'Internships', title: 'Data Analyst Intern', authorOrOperator: 'FoodNerve', companyLogo: '/logos/fn.png', locationOrSalary: 'Remote', metaInfo: 'Ends Friday', link: '/careers/int1' },
-                  { id: 'vol1', type: 'Volunteering', title: 'Community Outreach Lead', authorOrOperator: 'Green Belt', companyLogo: '/logos/green.png', locationOrSalary: 'Kano, Nigeria', metaInfo: 'Urgent', link: '/careers/vol1' },
-                  { id: 'opp1', type: 'Opportunities', title: 'Agri-Tech Startup Grant ($50k)', authorOrOperator: 'Tony Elumelu Foundation', companyLogo: '/logos/tef.png', locationOrSalary: 'Africa', metaInfo: 'Deadline: Oct 1', link: '/careers/opp1' }
-                ];
-                return <Swimlane key={lane.id} lane={{ ...lane, items: combinedItems }} />;
-              }
-              // Generate basic items for missions
-              if (lane.id === 'lane-missions') {
-                const missionItems = [
-                  { id: 'm1', type: 'Missions', title: 'Zero Post-Harvest Loss by 2030', authorOrOperator: 'FoodNerve Society', metaInfo: 'Active Mission', thumbnailUrl: 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?auto=format&fit=crop&q=80&w=800', progress: 45, link: '/projects/m1' },
-                  { id: 'm2', type: 'Missions', title: '1 Million Solar Chillers Deployed', authorOrOperator: 'FoodNerve Systems', metaInfo: 'Fundraising Phase', thumbnailUrl: 'https://images.unsplash.com/photo-1591696205602-2f950c417cb9?auto=format&fit=crop&q=80&w=800', progress: 12, link: '/projects/m2' },
-                  { id: 'm3', type: 'Missions', title: 'Digitize 50,000 Smallholder Farmers', authorOrOperator: 'Ministry of Agriculture', metaInfo: 'Execution Phase', thumbnailUrl: 'https://images.unsplash.com/photo-1574943320219-553eb213f72d?auto=format&fit=crop&q=80&w=800', progress: 80, link: '/projects/m3' }
-                ];
-                return <Swimlane key={lane.id} lane={{ ...lane, items: missionItems }} />;
-              }
-              return <Swimlane key={lane.id} lane={lane} />;
-            })}
-          </Box>
-        </>
-      )}
+      <Box sx={{ bgcolor: '#ffffff', py: 8 }}>
+        {[
+          { 
+            id: 'lane-top-stories', 
+            title: 'Top Stories', 
+            color: '#dc2626', 
+            newCount: 5,
+            items: (editorialTopStories && editorialTopStories.length > 0)
+              ? [editorialFeaturedStory, ...editorialTopStories].filter(Boolean).map((s: any) => ({
+                  id: s.id,
+                  type: 'Intelligence',
+                  title: s.title,
+                  thumbnailUrl: s.imageUrl || 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?auto=format&fit=crop&q=80&w=1200',
+                  link: s.link,
+                  authorOrOperator: s.authorName || 'FoodNerve Editorial',
+                  authorAvatarUrl: s.authorAvatarUrl,
+                  categoryLabel: s.categoryLabel || 'TOP STORY',
+                  metaInfo: s.readTime || '5 min read',
+                  tags: s.tags,
+                }))
+              : undefined
+          },
+          { id: 'lane-articles', title: 'Latest Articles', color: '#3b82f6', newCount: 12 },
+          { id: 'lane-livestreams', title: 'Livestreams', color: '#f59e0b', newCount: 3 },
+          { id: 'lane-jobs', title: 'Careers & Opportunities', color: '#10b981', newCount: 18 },
+          { id: 'lane-missions', title: 'Missions', color: '#ec4899', newCount: 2 }
+        ].map((lane) => {
+          if (lane.id === 'lane-top-stories') {
+            return <Swimlane key={lane.id} lane={lane} />;
+          }
+          // Generate consolidated items for careers
+          if (lane.id === 'lane-jobs') {
+            const combinedItems = activeOpportunities.map((opp: any) => ({
+              id: opp.id,
+              type: opp.type,
+              title: opp.title,
+              authorOrOperator: opp.author,
+              locationOrSalary: opp.location || 'Remote',
+              metaInfo: opp.metric,
+              link: opp.link,
+              thumbnailUrl: opp.imageUrl
+            }));
+            return <Swimlane key={lane.id} lane={{ ...lane, items: combinedItems }} />;
+          }
+          // Generate basic items for missions
+          if (lane.id === 'lane-missions') {
+            const missionItems = activeDeployments.map((dep: any) => ({
+              id: dep.id,
+              type: dep.type,
+              title: dep.title,
+              authorOrOperator: dep.operator?.name || 'FoodNerve Society',
+              metaInfo: dep.traction,
+              thumbnailUrl: dep.imageUrl || 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?auto=format&fit=crop&q=80&w=800',
+              link: dep.link
+            }));
+            return <Swimlane key={lane.id} lane={{ ...lane, items: missionItems }} />;
+          }
+          return <Swimlane key={lane.id} lane={lane} />;
+        })}
+      </Box>
 
       {/* RADAR INDEX OVERVIEW SECTION */}
       <RadarIndexOverview />
-
-      {/* LIVE A/B TESTING TOGGLE BAR (FLOATING AT BOTTOM RIGHT) */}
-      <ABToggleBar currentView={currentView} />
 
 
       {/* ═══════════════════════════════════════════════════════════

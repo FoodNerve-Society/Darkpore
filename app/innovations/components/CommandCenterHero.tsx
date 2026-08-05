@@ -13,14 +13,13 @@ import EcosystemCalendar from '@/app/components/calendar/EcosystemCalendar';
 
 interface CommandCenterHeroProps {
   globalAlerts?: any[];
+  stats?: {
+    articles: number;
+    livestreams: number;
+    jobs: number;
+    missions: number;
+  };
 }
-
-const CATEGORIES = [
-  { id: 'lane-articles', label: 'Articles', icon: '📝', color: '#3b82f6', count: 142, newCount: 12 },
-  { id: 'lane-livestreams', label: 'Livestreams', icon: '🎥', color: '#f59e0b', count: 24, newCount: 3, isLive: true },
-  { id: 'lane-jobs', label: 'Jobs & Internships', icon: '💼', color: '#10b981', count: 110, newCount: 8 },
-  { id: 'lane-missions', label: 'Missions', icon: '🎯', color: '#ec4899', count: 15, newCount: 2 },
-];
 
 const flowAnimation = keyframes`
   0% { background-position: 0% 50%; }
@@ -34,7 +33,14 @@ const pulseAnimation = keyframes`
   100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 `;
 
-export default function CommandCenterHero({ globalAlerts = [] }: CommandCenterHeroProps) {
+export default function CommandCenterHero({ globalAlerts = [], stats }: CommandCenterHeroProps) {
+  const CATEGORIES = [
+    { id: 'lane-articles', label: 'Articles', icon: '📝', color: '#3b82f6', count: stats?.articles || 142, newCount: stats ? 0 : 12 },
+    { id: 'lane-livestreams', label: 'Livestreams', icon: '🎥', color: '#f59e0b', count: stats?.livestreams || 24, newCount: stats ? 0 : 3, isLive: true },
+    { id: 'lane-jobs', label: 'Jobs & Internships', icon: '💼', color: '#10b981', count: stats?.jobs || 110, newCount: stats ? 0 : 8 },
+    { id: 'lane-missions', label: 'Missions', icon: '🎯', color: '#ec4899', count: stats?.missions || 15, newCount: stats ? 0 : 2 },
+  ];
+
   const [currentSlide, setCurrentSlide] = useState(0);
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [dailyAlerts, setDailyAlerts] = useState<any[]>(globalAlerts || []);

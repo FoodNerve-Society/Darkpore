@@ -119,6 +119,22 @@ model OrganizationMember {
 }
 
 // ════════════════════════════════════════════════════════
+// PLATFORM CONFIGURATION MODELS
+// ════════════════════════════════════════════════════════
+
+model TenantSettings {
+  id              String   @id @default("foodnerve") // default tenant id
+  name            String
+  headline        String
+  subheadline     String
+  logoUrl         String?
+  primaryColor    String?
+  showcaseProjects String? // JSON string array of campaign IDs to showcase
+  challenges      String?  // JSON string array of active challenge config
+  updatedAt       DateTime @updatedAt
+}
+
+// ════════════════════════════════════════════════════════
 // SOCIETY OS MODELS
 // ════════════════════════════════════════════════════════
 
