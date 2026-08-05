@@ -6,10 +6,10 @@ import {
   Box, Typography, Button, Backdrop, Fade, useTheme, alpha,
   Card, CardContent, MenuItem, Chip,
 } from '@mui/material';
-import {
-  ArrowForward, CheckCircleOutline,
-  NotificationsNoneOutlined, ArrowBack,
-} from '@mui/icons-material';
+import ArrowForward from '@mui/icons-material/ArrowForward';
+import CheckCircleOutline from '@mui/icons-material/CheckCircleOutline';
+import NotificationsNoneOutlined from '@mui/icons-material/NotificationsNoneOutlined';
+import ArrowBack from '@mui/icons-material/ArrowBack';
 import { motion } from 'framer-motion';
 import PremiumTextField from '@/components/PremiumTextField';
 import PremiumAutocomplete from '@/components/PremiumAutocomplete';
