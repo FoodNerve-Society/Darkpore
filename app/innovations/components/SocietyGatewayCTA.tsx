@@ -9,6 +9,7 @@ import ContactsIcon from '@mui/icons-material/Contacts';
 import SchoolIcon from '@mui/icons-material/School';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import PublicIcon from '@mui/icons-material/Public';
+import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface SocietyGatewayCTAProps {
@@ -246,26 +247,41 @@ export default function SocietyGatewayCTA({ userCount, tenantName }: SocietyGate
             {formattedCount}+ visionaries powering the ecosystem. Join them.
           </Typography>
 
-          <Link href="/join" passHref style={{ textDecoration: 'none' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+            <Link href="/join" passHref style={{ textDecoration: 'none' }}>
+              <Button
+                variant="contained"
+                size="large"
+                endIcon={<ArrowForwardIcon />}
+                sx={{
+                  borderRadius: '16px', px: 5, py: 2,
+                  fontSize: '1.05rem', textTransform: 'none', fontWeight: 700,
+                  background: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)',
+                  boxShadow: '0 8px 24px rgba(217, 119, 6, 0.3)',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    boxShadow: '0 12px 30px rgba(217, 119, 6, 0.5)',
+                    transform: 'translateY(-3px)',
+                  },
+                }}
+              >
+                Join the Society
+              </Button>
+            </Link>
             <Button
-              variant="contained"
-              size="large"
-              endIcon={<ArrowForwardIcon />}
+              variant="outlined"
+              onClick={() => window.dispatchEvent(new Event('open-capture-modal'))}
               sx={{
-                borderRadius: '16px', px: 5, py: 2,
-                fontSize: '1.05rem', textTransform: 'none', fontWeight: 700,
-                background: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)',
-                boxShadow: '0 8px 24px rgba(217, 119, 6, 0.3)',
+                borderRadius: '16px', minWidth: '56px', px: 2, py: 2,
+                color: 'rgba(15, 36, 20, 0.6)', borderColor: 'rgba(15, 36, 20, 0.1)',
+                '&:hover': { background: 'rgba(15, 36, 20, 0.05)', borderColor: 'rgba(15, 36, 20, 0.2)', transform: 'translateY(-3px)' },
                 transition: 'all 0.3s ease',
-                '&:hover': {
-                  boxShadow: '0 12px 30px rgba(217, 119, 6, 0.5)',
-                  transform: 'translateY(-3px)',
-                },
               }}
+              title="Stay Updated"
             >
-              Join the Society
+               <NotificationsActiveIcon />
             </Button>
-          </Link>
+          </Box>
         </Box>
 
         {/* ── RIGHT: Live Activity Feed (Unified Desktop/Mobile) ── */}
