@@ -520,155 +520,88 @@ export default async function InnovationsHomepage() {
         })}
       </Box>
 
-      {/* RADAR INDEX OVERVIEW SECTION */}
-      <RadarIndexOverview />
 
-
-      {/* ═══════════════════════════════════════════════════════════
-          SECTION 3: THE CHALLENGES TEASER
-          Dark manifesto excerpt + premium challenge cards
-      ═══════════════════════════════════════════════════════════ */}
-      <Box id="section-challenges" sx={{ 
-        pt: { xs: 4, md: 6 }, 
-        pb: { xs: 4, md: 5 }, 
-        px: 2, 
-        position: 'relative',
-        bgcolor: '#050505', 
-        color: 'white',
-        overflow: 'hidden',
-        '&::before': {
-          content: '""', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'radial-gradient(circle at 50% 50%, rgba(20, 20, 20, 0.8) 0%, #050505 100%)',
-          zIndex: 0
-        },
-        // Subtle grid texture
-        backgroundImage: 'linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)',
-        backgroundSize: '50px 50px'
-      }}>
-        <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
-          <Box sx={{ maxWidth: '800px', mb: 3 }}>
-            <Typography variant="overline" sx={{ color: 'error.main', fontWeight: 900, letterSpacing: 3, mb: 1, display: 'block' }}>
-              THE CHALLENGES
-            </Typography>
-            <Typography variant="h3" sx={{ fontWeight: 900, mb: 1, lineHeight: 1.1, letterSpacing: '-0.02em', fontSize: { xs: '2rem', md: '2.5rem' } }}>
-              Systemic Fault Lines Isolated.
-            </Typography>
-            <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 400, lineHeight: 1.6, fontSize: '1rem' }}>
-              Explore the core infrastructure deficits preventing scale.
-            </Typography>
-          </Box>
-
-          <Box sx={{ mt: 2 }}>
-            <BentoGridTeaser challenges={allChallenges} />
-          </Box>
-
-          <Box sx={{ mt: 4, textAlign: 'center', position: 'relative', zIndex: 2 }}>
-            <Link href="/challenges" passHref style={{ textDecoration: 'none' }}>
-              <PremiumButton 
-                variant="outlined" 
-                size="large"
-                baseColor="white"
-                endIcon={<ArrowForwardIcon />}
-                sx={{ 
-                  color: 'white', 
-                  borderColor: 'rgba(255,255,255,0.15)', 
-                  px: 6, 
-                  py: 1.5,
-                  fontSize: '0.9rem',
-                  fontWeight: 'bold',
-                  '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.1)', boxShadow: '0 0 20px rgba(255,255,255,0.2)' },
-                }}
-              >
-                See all {homepageConfig.challenges.length} Challenges
-              </PremiumButton>
-            </Link>
-          </Box>
-        </Container>
-      </Box>
 
 
       {/* ═══════════════════════════════════════════════════════════
-          SECTION 4: THE INNOVATIONS SHOWCASE
-          Horizontal Scrollable Cinematic Projects
-      ═══════════════════════════════════════════════════════════ */}
-      <Box id="section-deployments" sx={{ bgcolor: '#022c22', color: 'white', overflow: 'hidden' }}>
-        {/* Section Header */}
-        <Container maxWidth="lg" sx={{ pt: { xs: 8, md: 10 }, pb: 4 }}>
-          <Box sx={{ maxWidth: '700px' }}>
-            <Typography variant="overline" sx={{ color: 'primary.light', fontWeight: 900, letterSpacing: 3, mb: 1, display: 'block' }}>
-              ACTIVE DEPLOYMENTS
-            </Typography>
-            <Typography variant="h3" sx={{ fontWeight: 900, mb: 2, lineHeight: 1.1 }}>
-              Building core infrastructure.
-            </Typography>
-            <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.5)', fontWeight: 400, lineHeight: 1.6 }}>
-              Explore the massive operational deployments gaining traction.
-            </Typography>
-          </Box>
-        </Container>
-
-        {/* Interactive Showcase Carousel */}
-        <ShowcaseCarousel projects={activeDeployments} />
-      </Box>
-
-      {/* ═══════════════════════════════════════════════════════════
-          SECTION 5: THE KNOWLEDGE CENTER TEASER
-          Premium intelligence cards (Client Component)
-      ═══════════════════════════════════════════════════════════ */}
-      <Box id="section-knowledge">
-        <KnowledgeTeaser materials={recentIntelligence} />
-      </Box>
-
-
-      {/* ═══════════════════════════════════════════════════════════
-          SECTION 6: THE SOCIETY GATEWAY
+          SECTION 3: THE SOCIETY GATEWAY
           Dark dramatic closer — the cross-domain hook
       ═══════════════════════════════════════════════════════════ */}
       <Box sx={{ 
-        pt: { xs: 12, md: 16 }, 
-        pb: { xs: 12, md: 16 }, 
+        pt: { xs: 12, md: 20 }, 
+        pb: { xs: 12, md: 20 }, 
         px: 2, 
-        bgcolor: 'primary.main',
-        color: 'primary.contrastText', 
+        bgcolor: '#050505',
+        color: '#ffffff', 
         textAlign: 'center',
         position: 'relative',
         overflow: 'hidden',
       }}>
-        {/* Subtle radial glow */}
+        {/* Deep mesh/glow background */}
         <Box sx={{
           position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-          width: '600px', height: '600px', borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%)',
+          width: '100%', height: '100%',
+          background: 'radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.05) 0%, transparent 60%)',
+          zIndex: 0
         }} />
         
+        {/* Floating Glass Card */}
         <Container maxWidth="md" sx={{ position: 'relative', zIndex: 2 }}>
-          <Box sx={{ mb: 4, display: 'inline-flex', p: 2.5, bgcolor: 'rgba(255,255,255,0.06)', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <LockOutlinedIcon sx={{ fontSize: 36, color: 'rgba(255,255,255,0.5)' }} />
+          <Box sx={{
+            p: { xs: 5, md: 10 },
+            borderRadius: '32px',
+            background: 'rgba(255, 255, 255, 0.02)',
+            backdropFilter: 'blur(24px)',
+            border: '1px solid rgba(255, 255, 255, 0.05)',
+            boxShadow: '0 30px 60px -10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            {/* Inner subtle glow for the card */}
+            <Box sx={{
+              position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
+              width: '60%', height: '1px',
+              background: 'linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.4), transparent)'
+            }} />
+            
+            <Box sx={{ mb: 4, display: 'inline-flex', p: 3, bgcolor: 'rgba(16, 185, 129, 0.08)', borderRadius: '50%', border: '1px solid rgba(16, 185, 129, 0.15)', boxShadow: '0 0 30px rgba(16, 185, 129, 0.1)' }}>
+              <LockOutlinedIcon sx={{ fontSize: 40, color: '#10b981' }} />
+            </Box>
+            
+            <Typography variant="h2" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 800, mb: 3, letterSpacing: '-0.02em', fontSize: { xs: '2.5rem', md: '3.5rem' }, background: 'linear-gradient(180deg, #ffffff 0%, rgba(255,255,255,0.6) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              Welcome to the<br />Factory Floor.
+            </Typography>
+            
+            <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.5)', mb: 6, lineHeight: 1.8, maxWidth: '500px', mx: 'auto', fontWeight: 400 }}>
+              {tenant.name}.com is just the public registry. The real work — deal rooms, trade floors, live operations — happens inside Society OS.
+            </Typography>
+            
+            <Link href="/join" style={{ textDecoration: 'none' }}>
+              <Button 
+                variant="contained" 
+                size="large" 
+                sx={{ 
+                  bgcolor: '#ffffff', 
+                  color: '#000000', 
+                  px: 6, 
+                  py: 2, 
+                  borderRadius: '100px',
+                  fontSize: '1.1rem',
+                  fontWeight: 800,
+                  textTransform: 'none',
+                  boxShadow: '0 10px 30px -10px rgba(255,255,255,0.2)',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '&:hover': { 
+                    bgcolor: '#f8fafc',
+                    transform: 'translateY(-3px)',
+                    boxShadow: '0 20px 40px -10px rgba(255,255,255,0.4)'
+                  },
+                }}
+              >
+                Unlock the Network
+              </Button>
+            </Link>
           </Box>
-          <Typography variant="h3" sx={{ fontWeight: 900, mb: 3 }}>
-            Welcome to the Factory Floor.
-          </Typography>
-          <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.5)', mb: 6, lineHeight: 1.7, maxWidth: '600px', mx: 'auto', fontWeight: 400 }}>
-            {tenant.name}.com is just the public registry. The real work — deal rooms, trade floors, live operations — happens inside Society OS.
-          </Typography>
-          <Link href="/join" style={{ textDecoration: 'none' }}>
-            <PremiumButton 
-              variant="filled" 
-              size="large" 
-              baseColor="white"
-              sx={{ 
-                color: '#0a0a0a', 
-                px: 6, 
-                py: 2, 
-                fontSize: '1.1rem',
-                fontWeight: 'bold',
-                boxShadow: '0 8px 30px rgba(255,255,255,0.1)',
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' },
-              }}
-            >
-              Join the {tenant.name} Society
-            </PremiumButton>
-          </Link>
         </Container>
       </Box>
 
