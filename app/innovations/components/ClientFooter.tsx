@@ -37,9 +37,9 @@ export default function ClientFooter({ tenantName, tenantDomain, orgDomain, soci
   };
 
   const navLinks = [
-    { label: 'The Challenges', path: '/challenges' },
-    { label: 'Active Innovations', path: '/projects' },
-    { label: 'Knowledge Center', path: '/learn' },
+    { label: 'Challenges', path: '/challenges' },
+    { label: 'Projects', path: '/projects' },
+    { label: 'Insights', path: '/learn' },
     { label: 'Our People', path: '/people' },
   ];
 
@@ -97,7 +97,7 @@ export default function ClientFooter({ tenantName, tenantDomain, orgDomain, soci
                 color: 'rgba(255,255,255,0.5)',
                 mb: 4
               }}>
-                The {tenantName} ecosystem is an open, decentralized initiative deploying capital and technology to solve Africa's most pressing infrastructure challenges. We back builders, researchers, and innovators.
+                Engineering the future of food logistics and venture scaling in Africa. We architect decentralized supply chains and back the technical innovators building them.
               </Typography>
               
               <Box sx={{ display: 'flex', gap: 2 }}>

@@ -1,4 +1,5 @@
-'use client';
+
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, Button, IconButton, Stack, Avatar, useTheme, alpha, Collapse, keyframes } from '@mui/material';
@@ -72,8 +73,8 @@ export default function ClientNavbar({ tenantName, orgDomain }: { tenantName: st
 
   const navLinks = [
     { label: 'Challenges', path: '/challenges' },
-    { label: 'Innovations', path: '/projects' },
-    { label: 'Knowledge', path: '/learn' },
+    { label: 'Projects', path: '/projects' },
+    { label: 'Insights', path: '/learn' },
   ];
 
 
