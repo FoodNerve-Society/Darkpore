@@ -1,12 +1,19 @@
-'use client';
+'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Button, IconButton, Stack, Avatar, useTheme, alpha, Collapse } from '@mui/material';
+import { Box, Typography, Button, IconButton, Stack, Avatar, useTheme, alpha, Collapse, keyframes } from '@mui/material';
 import { ExpandMore, ExpandLess } from '@mui/icons-material';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+
+const drapeSway = keyframes`
+  0% { transform: perspective(600px) rotateX(0deg) rotateY(0deg) rotateZ(0deg) skewX(0deg); }
+  25% { transform: perspective(600px) rotateX(6deg) rotateY(-4deg) rotateZ(1deg) skewX(-2deg); }
+  75% { transform: perspective(600px) rotateX(-4deg) rotateY(3deg) rotateZ(-1deg) skewX(1deg); }
+  100% { transform: perspective(600px) rotateX(0deg) rotateY(0deg) rotateZ(0deg) skewX(0deg); }
+`;
 
 export default function ClientNavbar({ tenantName, orgDomain }: { tenantName: string, orgDomain: string }) {
   const pathname = usePathname();
@@ -69,76 +76,6 @@ export default function ClientNavbar({ tenantName, orgDomain }: { tenantName: st
     { label: 'Knowledge', path: '/learn' },
   ];
 
-'use client';
-
-import React, { useState, useEffect } from 'react';
-import { Box, Typography, Button, IconButton, Stack, Avatar, useTheme, alpha, Collapse } from '@mui/material';
-import { ExpandMore, ExpandLess } from '@mui/icons-material';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { onAuthStateChanged, User } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
-
-export default function ClientNavbar({ tenantName, orgDomain }: { tenantName: string, orgDomain: string }) {
-  const pathname = usePathname();
-  const theme = useTheme();
-  const [scrolled, setScrolled] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
-  const [hasMounted, setHasMounted] = useState(false);
-
-  useEffect(() => {
-    setHasMounted(true);
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  const currentHour = new Date().getHours();
-  const isMorning = hasMounted && (currentHour >= 5 && currentHour < 12);
-  const isAfternoon = hasMounted && (currentHour >= 12 && currentHour < 18);
-  const timeGradient = !hasMounted ? 'linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%)' :
-                       isMorning ? 'linear-gradient(135deg, #e11d48 0%, #be123c 100%)' :
-                       isAfternoon ? 'linear-gradient(135deg, #0891b2 0%, #0e7490 100%)' :
-                       'linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%)';
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  // Extract the current challenge or top route from the URL
-  const pathSegments = pathname.split('/').filter(Boolean);
-  const knownTopRoutes = ['challenges', 'projects', 'learn', 'categories', 'careers', 'people'];
-  const currentChallenge = pathSegments.length > 0 && !knownTopRoutes.includes(pathSegments[0])
-    ? pathSegments[0]
-    : null;
-    
-  const currentTopRoute = pathSegments.length > 0 && knownTopRoutes.includes(pathSegments[0])
-    ? pathSegments[0]
-    : null;
-    
-  const activeCategory = currentChallenge || currentTopRoute;
-
-  const isActive = (path: string) => {
-    if (path === '/' && pathname === '/') return true;
-    if (path !== '/' && pathname.startsWith(path)) return true;
-    
-    // Smart deep link detection
-    if (path === '/learn' && pathSegments.includes('learn')) return true;
-    if (path === '/projects' && pathSegments.includes('innovations')) return true;
-    if (path === '/challenges' && currentChallenge && !pathSegments.includes('learn') && !pathSegments.includes('innovations')) return true;
-    
-    return false;
-  };
-
-  const navLinks = [
-    { label: 'Challenges', path: '/challenges' },
-    { label: 'Innovations', path: '/projects' },
-    { label: 'Knowledge', path: '/learn' },
-  ];
 
   // Extract logo parts for vertical rendering in the logo block
   const match = tenantName.match(/^(.*)(nerve)$/i);
@@ -157,45 +94,47 @@ export default function ClientNavbar({ tenantName, orgDomain }: { tenantName: st
       transition: 'all 0.3s ease',
       bgcolor: 'rgba(255, 255, 255, 0.75)',
       backdropFilter: 'blur(20px)',
-      borderRadius: '24px',
+      borderRadius: '12px 12px 24px 24px',
       border: '1px solid rgba(255, 255, 255, 0.3)',
       boxShadow: scrolled ? '0 12px 32px rgba(0,0,0,0.08)' : '0 8px 32px rgba(0, 0, 0, 0.05)',
       overflow: 'visible', // Ensure the absolute logo can hang outside
     }}>
-      {/* Brand Identity - Perfectly centered vertically on the left edge. 
-          We place it outside the overflow:hidden area but inside the wrapper. */}
-      <Link href="/" passHref style={{ textDecoration: 'none', position: 'absolute', top: '50%', left: 0, transform: 'translate(-50%, -50%)', zIndex: 10 }}>
+      {/* Brand Identity - Absolute positioned but inset from the edge, fixed at the inner top */}
+      <Link href="/" passHref style={{ textDecoration: 'none', position: 'absolute', top: 0, left: 16, zIndex: 10 }}>
           <Box sx={{
               bgcolor: '#f1f8e9', /* Static brand color */
-              px: scrolled ? 1.5 : 2, 
-              py: scrolled ? 2.5 : 3.5,
+              px: 1.5, 
+              pt: 3,
+              pb: 1,
               display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-end',
-              boxShadow: scrolled ? '4px 4px 20px rgba(0, 0, 0, 0.1)' : '6px 6px 30px rgba(0, 0, 0, 0.15)',
-              borderRadius: 0, // No border radius
-              minHeight: scrolled ? '80px' : '110px',
-              width: scrolled ? '60px' : '80px',
+              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.25), 0px 4px 10px rgba(0,0,0,0.15)', // Pronounced shadow to pop out
+              borderRadius: 0,
+              minHeight: '80px',
+              width: '60px',
+              animation: `${drapeSway} 8s ease-in-out infinite`,
+              transformOrigin: 'top center',
               transition: 'all 0.4s cubic-bezier(0.2, 0, 0, 1)'
           }}>
-              <Typography variant="h6" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, fontSize: scrolled ? '0.75rem' : '1rem', color: '#1b5e20', lineHeight: 1, letterSpacing: '-0.02em', textAlign: 'left', transition: 'all 0.4s ease' }}>
+              <Typography variant="h6" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, fontSize: '0.75rem', color: '#1b5e20', lineHeight: 1, letterSpacing: '-0.02em', textAlign: 'left', transition: 'all 0.4s ease' }}>
                   {logoPart1}{logoPart2 && <><br />{logoPart2}</>}
               </Typography>
           </Box>
       </Link>
 
-      <Box sx={{ overflow: 'hidden', borderRadius: '24px' }}>
+      <Box sx={{ overflow: 'hidden', borderRadius: '12px 12px 24px 24px' }}>
         <Box sx={{ 
           display: 'flex', 
           alignItems: 'center', 
           justifyContent: 'space-between',
           pr: { xs: 1.5, md: 2.5 },
-          pl: 0, // No left padding so the logo forms the edge
+          pl: 0,
           py: 1,
           gap: 2,
-          position: 'relative' // Needed for absolute positioning the logo
+          position: 'relative'
         }}>
           
           {/* Spacer to push content right so it doesn't overlap the absolute positioned logo */}
-          <Box sx={{ width: scrolled ? '30px' : '40px', transition: 'width 0.3s ease', flexShrink: 0 }} />
+          <Box sx={{ width: scrolled ? '90px' : '110px', transition: 'width 0.3s ease', flexShrink: 0 }} />
 
           {/* Category context indicator */}
           {activeCategory && (
@@ -328,7 +267,7 @@ export default function ClientNavbar({ tenantName, orgDomain }: { tenantName: st
                   fullWidth
                   onClick={() => setDrawerOpen(false)}
                   sx={{
-                    justifyContent: 'flex-start',
+                    justifyContent: 'center', // Centered to avoid overlap with left logo
                     color: isActive(link.path) ? theme.palette.primary.main : '#0f172a',
                     fontWeight: isActive(link.path) ? 800 : 600,
                     textTransform: 'none',
