@@ -72,6 +72,7 @@ export default async function InnovationsHomepage() {
   let recentIntelligence: any[] = [];
   try {
     const recentLC = await prisma.learnContent.findMany({
+      where: { status: 'published' },
       orderBy: { createdAt: 'desc' },
       take: 20,
       include: {
@@ -99,7 +100,7 @@ export default async function InnovationsHomepage() {
         author: lc.authorName || 'Society Architect',
         dateAdded: lc.createdAt,
         readTime: lc.type === 'video' || lc.type === 'livestream' ? 'Watch' : '5 min read',
-        link: `/${lc.challengeId || 'global'}/${lc.subcategory || 'general'}/learn/article/${lc.slug}`,
+        link: `/learn/article/${lc.slug}`,
         blocks: lc.article?.blocks || []
       };
     });
@@ -137,6 +138,7 @@ export default async function InnovationsHomepage() {
       prisma.learnContent.count(),
       prisma.user.count(),
       prisma.learnContent.findMany({
+        where: { status: 'published' },
         orderBy: { createdAt: 'desc' },
         take: 5,
         include: {
@@ -219,17 +221,6 @@ export default async function InnovationsHomepage() {
     }));
   } catch (e) {
     console.warn("SERVER LOG - Failed to fetch active deployments from DB.", e);
-  }
-
-  // Fallback to static CMS data if the database is completely empty
-  if (activeDeployments.length === 0) {
-    activeDeployments = homepageConfig.showcaseProjects.map((p: any) => ({
-      ...p,
-      type: 'Venture',
-      origin: 'Core Platform',
-      operator: { name: 'Society Base', avatarUrl: '/images/default-avatar.png' },
-      traction: 'Recently Deployed'
-    }));
   }
 
   // Fetch Jobs & Volunteering Opportunities
@@ -389,7 +380,7 @@ export default async function InnovationsHomepage() {
           authorAvatarUrl: lc.authorAvatarUrl || '/images/default-avatar.png',
           readTime: lc.article?.readTime || '6 min read',
           categoryLabel: (lc.subcategory || lc.category || 'ANALYSIS').toUpperCase(),
-          link: `/${lc.challengeId || 'global'}/${lc.subcategory || 'general'}/learn/article/${lc.slug}`,
+          link: `/learn/article/${lc.slug}`,
           score,
           createdAt: lc.createdAt,
           tags
@@ -447,7 +438,7 @@ export default async function InnovationsHomepage() {
           { id: 'lane-missions', title: 'Missions', color: '#ec4899', newCount: 0 }
         ].map((lane) => {
           if (lane.id === 'lane-top-stories') {
-            return <Swimlane key={lane.id} lane={lane} />;
+            return <Swimlane key={lane.id} lane={{ ...lane, newCount: lane.items?.length || 0, totalCount: statsObj.articles }} />;
           }
           if (lane.id === 'lane-articles') {
             const articleItems = recentIntelligence.filter((i: any) => i.type === 'article').map((i: any) => {
@@ -481,7 +472,7 @@ export default async function InnovationsHomepage() {
                 categoryLabel: i.categoryLabel
               };
             });
-            return <Swimlane key={lane.id} lane={{ ...lane, items: articleItems }} />;
+            return <Swimlane key={lane.id} lane={{ ...lane, items: articleItems, newCount: articleItems.length, totalCount: statsObj.articles }} />;
           }
           if (lane.id === 'lane-livestreams') {
             const streamItems = recentIntelligence.filter((i: any) => i.type === 'livestream' || i.type === 'video').map((i: any) => ({
@@ -495,7 +486,7 @@ export default async function InnovationsHomepage() {
               tags: ['🔴 Live Broadcast', '🎙️ Expert Panel', '📈 Strategy Session'],
               categoryLabel: i.categoryLabel
             }));
-            return <Swimlane key={lane.id} lane={{ ...lane, items: streamItems }} />;
+            return <Swimlane key={lane.id} lane={{ ...lane, items: streamItems, newCount: streamItems.length, totalCount: statsObj.livestreams }} />;
           }
           // Generate consolidated items for careers
           if (lane.id === 'lane-jobs') {
@@ -509,7 +500,7 @@ export default async function InnovationsHomepage() {
               link: opp.link,
               thumbnailUrl: opp.imageUrl
             }));
-            return <Swimlane key={lane.id} lane={{ ...lane, items: combinedItems }} />;
+            return <Swimlane key={lane.id} lane={{ ...lane, items: combinedItems, newCount: combinedItems.length, totalCount: statsObj.jobs }} />;
           }
           // Generate basic items for missions
           if (lane.id === 'lane-missions') {
@@ -523,7 +514,7 @@ export default async function InnovationsHomepage() {
               link: dep.link,
               progress: dep.progress || 45
             }));
-            return <Swimlane key={lane.id} lane={{ ...lane, items: missionItems }} />;
+            return <Swimlane key={lane.id} lane={{ ...lane, items: missionItems, newCount: missionItems.length, totalCount: statsObj.missions }} />;
           }
           return <Swimlane key={lane.id} lane={lane} />;
         })}

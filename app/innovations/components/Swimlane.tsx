@@ -43,7 +43,7 @@ export default function Swimlane({ lane }: { lane: any }) {
   return (
     <Box id={lane.id} sx={{ mb: { xs: 2, md: 3 }, scrollMarginTop: '120px' }}>
       <Container maxWidth="xl" sx={{ px: { xs: 2, md: 6 } }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: { xs: 1.5, md: 2 } }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: { xs: 1.5, md: 2 }, position: 'relative', zIndex: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, md: 2 } }}>
             <Box sx={{ width: { xs: 8, md: 12 }, height: { xs: 8, md: 12 }, borderRadius: '50%', bgcolor: lane.color }} />
             <Link href={`/categories/${lane.id.replace('lane-', '')}`} style={{ textDecoration: 'none' }}>
@@ -56,27 +56,10 @@ export default function Swimlane({ lane }: { lane: any }) {
             </Link>
             {lane.newCount > 0 && (
               <Box sx={{ bgcolor: `${lane.color}15`, color: lane.color, px: { xs: 1, md: 1.5 }, py: { xs: 0.25, md: 0.5 }, borderRadius: '8px', fontSize: { xs: '0.65rem', md: '0.85rem' }, fontWeight: 800, display: { xs: 'none', sm: 'block' } }}>
-                {lane.newCount} New
+                {lane.newCount} Total
               </Box>
             )}
           </Box>
-          
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Link href={`/categories/${lane.id.replace('lane-', '')}`} style={{ textDecoration: 'none' }}>
-              <Box sx={{ 
-                display: 'flex', alignItems: 'center', gap: 0.5, 
-                color: lane.color, 
-                fontWeight: 800, fontSize: { xs: '0.75rem', md: '0.9rem' },
-                transition: 'all 0.2s',
-                px: { xs: 1.5, md: 2 }, py: { xs: 0.75, md: 1 },
-                borderRadius: '999px',
-                bgcolor: `${lane.color}15`,
-                '&:hover': { bgcolor: `${lane.color}25`, transform: 'translateX(4px)' }
-              }}>
-                Archive <ArrowForwardIosIcon sx={{ fontSize: '0.8rem' }} />
-              </Box>
-            </Link>
-          </Box>          
         </Box>
         
         {/* Scroll container */}

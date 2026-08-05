@@ -8,6 +8,9 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import CloseIcon from '@mui/icons-material/Close';
+import WbSunnyIcon from '@mui/icons-material/WbSunny';
+import WbTwilightIcon from '@mui/icons-material/WbTwilight';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
 import Link from 'next/link';
 import EcosystemCalendar from '@/app/components/calendar/EcosystemCalendar';
 
@@ -34,6 +37,40 @@ const pulseAnimation = keyframes`
   100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 `;
 
+const blob1 = keyframes`
+  0% { transform: translate(0%, 0%) scale(1) rotate(0deg); }
+  33% { transform: translate(30%, -20%) scale(1.2) rotate(90deg); }
+  66% { transform: translate(-20%, 20%) scale(0.9) rotate(180deg); }
+  100% { transform: translate(0%, 0%) scale(1) rotate(360deg); }
+`;
+
+const blob2 = keyframes`
+  0% { transform: translate(0%, 0%) scale(1) rotate(0deg); }
+  33% { transform: translate(-30%, 20%) scale(1.1) rotate(-90deg); }
+  66% { transform: translate(20%, -20%) scale(0.9) rotate(-180deg); }
+  100% { transform: translate(0%, 0%) scale(1) rotate(-360deg); }
+`;
+
+const blob3 = keyframes`
+  0% { transform: translate(0%, 0%) scale(1) rotate(0deg); }
+  33% { transform: translate(20%, 30%) scale(1.3) rotate(45deg); }
+  66% { transform: translate(-30%, -20%) scale(0.8) rotate(135deg); }
+  100% { transform: translate(0%, 0%) scale(1) rotate(360deg); }
+`;
+
+const blob4 = keyframes`
+  0% { transform: translate(0%, 0%) scale(1) rotate(0deg); }
+  33% { transform: translate(-20%, -30%) scale(0.8) rotate(-45deg); }
+  66% { transform: translate(30%, 20%) scale(1.2) rotate(-135deg); }
+  100% { transform: translate(0%, 0%) scale(1) rotate(-360deg); }
+`;
+
+const iconPulseAnimation = keyframes`
+  0% { transform: scale(1); opacity: 0.8; filter: drop-shadow(0 0 2px currentColor); }
+  50% { transform: scale(1.15); opacity: 1; filter: drop-shadow(0 0 8px currentColor); }
+  100% { transform: scale(1); opacity: 0.8; filter: drop-shadow(0 0 2px currentColor); }
+`;
+
 export default function CommandCenterHero({ globalAlerts = [], stats }: CommandCenterHeroProps) {
   const CATEGORIES = [
     { id: 'lane-articles', label: 'Articles', icon: '📝', color: '#3b82f6', count: stats?.articles || 0, newCount: stats ? 0 : 0 },
@@ -44,6 +81,16 @@ export default function CommandCenterHero({ globalAlerts = [], stats }: CommandC
 
   const [currentSlide, setCurrentSlide] = useState(0);
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [realHour, setRealHour] = useState<number>(12); // Initialized later to prevent hydration mismatch
+
+  useEffect(() => {
+    setRealHour(new Date().getHours());
+    const timer = setInterval(() => {
+      setRealHour(new Date().getHours());
+    }, 60000); // Check every minute
+    return () => clearInterval(timer);
+  }, []);
+
   const [dailyAlerts, setDailyAlerts] = useState<any[]>(globalAlerts || []);
   const [isLoading, setIsLoading] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
@@ -140,20 +187,107 @@ export default function CommandCenterHero({ globalAlerts = [], stats }: CommandC
 
   const statusObj = getTimeStatus(dailyAlerts[currentSlide]);
 
-  const currentHour = new Date().getHours();
-  let bgTheme = { bgcolor: '#ffffff', glowColor: 'rgba(16, 185, 129, 0.08)' };
-  if (currentHour >= 6 && currentHour < 12) {
-    bgTheme = { bgcolor: '#fffbeb', glowColor: 'rgba(245, 158, 11, 0.15)' }; // Morning (warm)
+  const currentHour = realHour;
+  let themeConfig = {
+    gradient: 'radial-gradient(at 0% 0%, #ffffff 0px, transparent 50%), radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 50%)',
+    mesh: 'radial-gradient(at 0% 0%, #ffffff 0px, transparent 50%)',
+    glassBg: 'rgba(255, 255, 255, 0.7)',
+    glassBorder: 'rgba(255, 255, 255, 0.8)',
+    shadowColor: 'rgba(16, 185, 129, 0.1)',
+    greeting: 'Good Day',
+    Icon: WbSunnyIcon,
+    iconColor: '#10b981'
+  };
+
+  if (currentHour >= 5 && currentHour < 12) {
+    themeConfig = {
+      gradient: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 50%, #fde68a 100%)',
+      mesh: 'radial-gradient(at 0% 0%, #fef3c7 0px, transparent 50%), radial-gradient(at 100% 0%, #fffbeb 0px, transparent 50%), radial-gradient(at 100% 100%, #fcd34d 0px, transparent 50%), radial-gradient(at 0% 100%, #fde68a 0px, transparent 50%)',
+      glassBg: 'rgba(255, 255, 255, 0.65)',
+      glassBorder: 'rgba(255, 255, 255, 0.9)',
+      shadowColor: 'rgba(245, 158, 11, 0.15)',
+      greeting: 'Good Morning',
+      Icon: WbTwilightIcon,
+      iconColor: '#f59e0b'
+    };
   } else if (currentHour >= 12 && currentHour < 18) {
-    bgTheme = { bgcolor: '#f0fdf4', glowColor: 'rgba(16, 185, 129, 0.08)' }; // Afternoon (fresh)
+    themeConfig = {
+      gradient: 'linear-gradient(135deg, #f0fdf4 0%, #d1fae5 50%, #a7f3d0 100%)',
+      mesh: 'radial-gradient(at 0% 0%, #d1fae5 0px, transparent 50%), radial-gradient(at 100% 0%, #f0fdf4 0px, transparent 50%), radial-gradient(at 100% 100%, #6ee7b7 0px, transparent 50%), radial-gradient(at 0% 100%, #a7f3d0 0px, transparent 50%)',
+      glassBg: 'rgba(255, 255, 255, 0.65)',
+      glassBorder: 'rgba(255, 255, 255, 0.9)',
+      shadowColor: 'rgba(16, 185, 129, 0.15)',
+      greeting: 'Good Afternoon',
+      Icon: WbSunnyIcon,
+      iconColor: '#10b981'
+    };
   } else {
-    bgTheme = { bgcolor: '#f8fafc', glowColor: 'rgba(79, 70, 229, 0.12)' }; // Evening (cool dusk)
+    themeConfig = {
+      gradient: 'linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 50%, #a5b4fc 100%)',
+      mesh: 'radial-gradient(at 0% 0%, #c7d2fe 0px, transparent 50%), radial-gradient(at 100% 0%, #e0e7ff 0px, transparent 50%), radial-gradient(at 100% 100%, #818cf8 0px, transparent 50%), radial-gradient(at 0% 100%, #a5b4fc 0px, transparent 50%)',
+      glassBg: 'rgba(255, 255, 255, 0.55)',
+      glassBorder: 'rgba(255, 255, 255, 0.7)',
+      shadowColor: 'rgba(79, 70, 229, 0.25)',
+      greeting: 'Good Evening',
+      Icon: DarkModeIcon,
+      iconColor: '#4f46e5'
+    };
   }
 
+  // Calculate opacities for smooth background crossfading
+  const isMorning = currentHour >= 5 && currentHour < 12;
+  const isAfternoon = currentHour >= 12 && currentHour < 18;
+  const isEvening = currentHour >= 18 || currentHour < 5;
+
+
   return (
-    <Box sx={{ minHeight: '80vh', bgcolor: bgTheme.bgcolor, color: '#0f172a', pt: { xs: 12, md: 16 }, pb: 8, position: 'relative', overflow: 'hidden', transition: 'background-color 1s ease' }}>
-      {/* Background ambient glow */}
-      <Box sx={{ position: 'absolute', top: '-20%', left: '50%', transform: 'translateX(-50%)', width: '100%', height: '100%', background: `radial-gradient(circle, ${bgTheme.glowColor} 0%, transparent 50%)`, zIndex: 0, pointerEvents: 'none', transition: 'background 1s ease' }} />
+    <Box sx={{ minHeight: '80vh', color: '#0f172a', pt: { xs: 12, md: 16 }, pb: 8, position: 'relative', overflow: 'hidden' }}>
+      {/* Dynamic Ambient Mesh Backgrounds (Crossfading) */}
+      
+      {/* Morning Background (Amber, Peach, Rose) */}
+      <Box sx={{ 
+        position: 'absolute', inset: 0, 
+        bgcolor: '#fffbeb',
+        zIndex: 0,
+        opacity: isMorning ? 1 : 0,
+        transition: 'opacity 3s ease-in-out',
+        overflow: 'hidden'
+      }}>
+        <Box sx={{ position: 'absolute', top: '-20%', left: '-10%', width: '60%', height: '60%', bgcolor: '#fde68a', opacity: 0.5, borderRadius: '40% 60% 70% 30% / 40% 50% 60% 50%', filter: 'blur(90px) saturate(50%)', animation: `${blob1} 15s infinite alternate ease-in-out` }} />
+        <Box sx={{ position: 'absolute', top: '10%', right: '-10%', width: '50%', height: '50%', bgcolor: '#fda4af', opacity: 0.5, borderRadius: '60% 40% 30% 70% / 50% 60% 40% 50%', filter: 'blur(90px) saturate(50%)', animation: `${blob2} 18s infinite alternate ease-in-out` }} />
+        <Box sx={{ position: 'absolute', bottom: '-20%', left: '10%', width: '60%', height: '60%', bgcolor: '#fdba74', opacity: 0.5, borderRadius: '30% 70% 50% 50% / 60% 40% 60% 40%', filter: 'blur(90px) saturate(50%)', animation: `${blob3} 20s infinite alternate ease-in-out` }} />
+        <Box sx={{ position: 'absolute', top: '20%', left: '30%', width: '40%', height: '40%', bgcolor: '#fef08a', opacity: 0.5, borderRadius: '50%', filter: 'blur(90px) saturate(50%)', animation: `${blob4} 16s infinite alternate ease-in-out` }} />
+      </Box>
+
+      {/* Afternoon Background (Emerald, Teal, Cyan) */}
+      <Box sx={{ 
+        position: 'absolute', inset: 0, 
+        bgcolor: '#f0fdf4',
+        zIndex: 0,
+        opacity: isAfternoon ? 1 : 0,
+        transition: 'opacity 3s ease-in-out',
+        overflow: 'hidden'
+      }}>
+        <Box sx={{ position: 'absolute', top: '-20%', left: '-10%', width: '60%', height: '60%', bgcolor: '#a7f3d0', opacity: 0.5, borderRadius: '40% 60% 70% 30% / 40% 50% 60% 50%', filter: 'blur(90px) saturate(50%)', animation: `${blob1} 15s infinite alternate ease-in-out` }} />
+        <Box sx={{ position: 'absolute', top: '10%', right: '-10%', width: '50%', height: '50%', bgcolor: '#67e8f9', opacity: 0.5, borderRadius: '60% 40% 30% 70% / 50% 60% 40% 50%', filter: 'blur(90px) saturate(50%)', animation: `${blob2} 18s infinite alternate ease-in-out` }} />
+        <Box sx={{ position: 'absolute', bottom: '-20%', left: '10%', width: '60%', height: '60%', bgcolor: '#99f6e4', opacity: 0.5, borderRadius: '30% 70% 50% 50% / 60% 40% 60% 40%', filter: 'blur(90px) saturate(50%)', animation: `${blob3} 20s infinite alternate ease-in-out` }} />
+        <Box sx={{ position: 'absolute', top: '20%', left: '30%', width: '40%', height: '40%', bgcolor: '#bef264', opacity: 0.3, borderRadius: '50%', filter: 'blur(90px) saturate(50%)', animation: `${blob4} 16s infinite alternate ease-in-out` }} />
+      </Box>
+
+      {/* Evening Background (Indigo, Purple, Pink, Sky Blue) */}
+      <Box sx={{ 
+        position: 'absolute', inset: 0, 
+        bgcolor: '#e0e7ff',
+        zIndex: 0,
+        opacity: isEvening ? 1 : 0,
+        transition: 'opacity 3s ease-in-out',
+        overflow: 'hidden'
+      }}>
+        <Box sx={{ position: 'absolute', top: '-20%', left: '-10%', width: '60%', height: '60%', bgcolor: '#a5b4fc', opacity: 0.5, borderRadius: '40% 60% 70% 30% / 40% 50% 60% 50%', filter: 'blur(90px) saturate(50%)', animation: `${blob1} 15s infinite alternate ease-in-out` }} />
+        <Box sx={{ position: 'absolute', top: '10%', right: '-10%', width: '50%', height: '50%', bgcolor: '#c084fc', opacity: 0.5, borderRadius: '60% 40% 30% 70% / 50% 60% 40% 50%', filter: 'blur(90px) saturate(50%)', animation: `${blob2} 18s infinite alternate ease-in-out` }} />
+        <Box sx={{ position: 'absolute', bottom: '-20%', left: '10%', width: '60%', height: '60%', bgcolor: '#f472b6', opacity: 0.5, borderRadius: '30% 70% 50% 50% / 60% 40% 60% 40%', filter: 'blur(90px) saturate(50%)', animation: `${blob3} 20s infinite alternate ease-in-out` }} />
+        <Box sx={{ position: 'absolute', top: '20%', left: '30%', width: '40%', height: '40%', bgcolor: '#38bdf8', opacity: 0.25, borderRadius: '50%', filter: 'blur(90px) saturate(50%)', animation: `${blob4} 16s infinite alternate ease-in-out` }} />
+      </Box>
 
       <Container maxWidth="xl" sx={{ position: 'relative', zIndex: 1 }}>
         
@@ -167,14 +301,19 @@ export default function CommandCenterHero({ globalAlerts = [], stats }: CommandC
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1 }}>
             {/* Left: Greeting + Status */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Typography sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 700, color: '#0f172a', fontSize: { xs: '1.2rem', md: '1.6rem' }, letterSpacing: '-0.01em', whiteSpace: 'nowrap' }}>
-                {(() => {
-                  const hour = new Date().getHours();
-                  if (hour < 12) return 'Good Morning';
-                  if (hour < 18) return 'Good Afternoon';
-                  return 'Good Evening';
-                })()}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ 
+                  color: themeConfig.iconColor, 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  animation: `${iconPulseAnimation} 4s ease-in-out infinite` 
+                }}>
+                  <themeConfig.Icon fontSize="small" />
+                </Box>
+                <Typography sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 700, color: '#0f172a', fontSize: { xs: '1.2rem', md: '1.6rem' }, letterSpacing: '-0.01em', whiteSpace: 'nowrap' }}>
+                  {themeConfig.greeting}
+                </Typography>
+              </Box>
               
               <AnimatePresence mode="wait">
                 {statusObj && dailyAlerts.length > 0 && (
@@ -246,13 +385,16 @@ export default function CommandCenterHero({ globalAlerts = [], stats }: CommandC
               position: 'relative', 
               borderRadius: '28px', 
               overflow: 'hidden', 
-              bgcolor: '#ffffff', 
-              border: '1px solid rgba(255,255,255,0.8)',
+              bgcolor: themeConfig.glassBg, 
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              border: `1px solid ${themeConfig.glassBorder}`,
               minHeight: { xs: '450px', md: '550px' },
               display: 'flex',
               flexDirection: 'column',
-              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.02)',
-              flexGrow: 1
+              boxShadow: `0 25px 50px -12px ${themeConfig.shadowColor}, 0 0 0 1px rgba(0,0,0,0.02)`,
+              flexGrow: 1,
+              transition: 'all 1s ease'
             }}>
             <AnimatePresence mode="wait">
               <Box 
@@ -382,15 +524,18 @@ export default function CommandCenterHero({ globalAlerts = [], stats }: CommandC
                   alignItems: 'center',
                   p: { xs: 1.5, sm: 2.5 },
                   borderRadius: '20px',
-                  background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
-                  border: '1px solid rgba(0,0,0,0.03)',
-                  boxShadow: '0 10px 30px -10px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8)',
+                  background: themeConfig.glassBg,
+                  backdropFilter: 'blur(24px)',
+                  WebkitBackdropFilter: 'blur(24px)',
+                  border: `1px solid ${themeConfig.glassBorder}`,
+                  boxShadow: `0 10px 30px -10px ${themeConfig.shadowColor}, inset 0 1px 0 rgba(255,255,255,0.8)`,
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   cursor: 'pointer',
                   flexShrink: 0,
                   position: 'relative',
                   '&:hover': {
                     borderColor: `${cat.color}40`,
+                    background: '#ffffff',
                     transform: { lg: 'translateX(-8px) scale(1.02)' },
                     boxShadow: `-15px 15px 30px ${cat.color}15, inset 0 1px 0 rgba(255,255,255,1)`
                   }
