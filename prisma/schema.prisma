@@ -75,24 +75,24 @@ model User {
 // ════════════════════════════════════════════════════════
 
 model Organization {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String   @unique
-  legalName String?
-  cacNumber String?
-  verified  Boolean  @default(false)
-  rank      Int      @default(3) // Businesses start at Rank 3
-  createdAt DateTime @default(now())
-  logoUrl   String?
-  country   String?
-  state     String?
-  lga       String?
-  address   String?
-  isVirtual Boolean  @default(false)
-  isExternal Boolean @default(false)
-  isPlatformOwner Boolean @default(false)
-  challenges String? // JSON string array of challenge IDs
-  subcategories String? // JSON string array of subcategory IDs
+  id              String   @id @default(cuid())
+  name            String
+  slug            String   @unique
+  legalName       String?
+  cacNumber       String?
+  verified        Boolean  @default(false)
+  rank            Int      @default(3) // Businesses start at Rank 3
+  createdAt       DateTime @default(now())
+  logoUrl         String?
+  country         String?
+  state           String?
+  lga             String?
+  address         String?
+  isVirtual       Boolean  @default(false)
+  isExternal      Boolean  @default(false)
+  isPlatformOwner Boolean  @default(false)
+  challenges      String? // JSON string array of challenge IDs
+  subcategories   String? // JSON string array of subcategory IDs
 
   // Relations
   members        OrganizationMember[]
@@ -123,15 +123,15 @@ model OrganizationMember {
 // ════════════════════════════════════════════════════════
 
 model TenantSettings {
-  id              String   @id @default("foodnerve") // default tenant id
-  name            String
-  headline        String
-  subheadline     String
-  logoUrl         String?
-  primaryColor    String?
+  id               String   @id @default("foodnerve") // default tenant id
+  name             String
+  headline         String
+  subheadline      String
+  logoUrl          String?
+  primaryColor     String?
   showcaseProjects String? // JSON string array of campaign IDs to showcase
-  challenges      String?  // JSON string array of active challenge config
-  updatedAt       DateTime @updatedAt
+  challenges       String? // JSON string array of active challenge config
+  updatedAt        DateTime @updatedAt
 }
 
 // ════════════════════════════════════════════════════════
@@ -161,30 +161,30 @@ model TradeListing {
   postedAt        DateTime  @default(now())
 
   // --- Job & Volunteer Classification Fields ---
-  jobSource       String?   // 'internal_foodnerve' | 'verified_tenant' | 'admin_curated' | 'community_sourced'
-  compType        String?   // 'fiat' | 'volunteer'
-  targetTenantId  String?   // If verified_tenant, links to their profile
-  externalUrl     String?   // Where to apply if external
-  npReward        Int?      // How much NP the volunteer gets (Escrow)
-  minRank         Int?      // Minimum rank required to apply (for Premium internal jobs)
-  currency        String?
-  minSalary       Float?
-  maxSalary       Float?
-  duration        String?
-  startDate       DateTime?
-  endDate         DateTime?
-  workModel       String?   // 'remote' | 'hybrid' | 'onsite'
-  jobFunction     String?   // E.g., 'Finance & Accounting', 'Agronomy'
-  challenges      String?   // JSON string array of challenge IDs
-  subcategories   String?   // JSON string array of subcategory IDs
+  jobSource      String? // 'internal_foodnerve' | 'verified_tenant' | 'admin_curated' | 'community_sourced'
+  compType       String? // 'fiat' | 'volunteer'
+  targetTenantId String? // If verified_tenant, links to their profile
+  externalUrl    String? // Where to apply if external
+  npReward       Int? // How much NP the volunteer gets (Escrow)
+  minRank        Int? // Minimum rank required to apply (for Premium internal jobs)
+  currency       String?
+  minSalary      Float?
+  maxSalary      Float?
+  duration       String?
+  startDate      DateTime?
+  endDate        DateTime?
+  workModel      String? // 'remote' | 'hybrid' | 'onsite'
+  jobFunction    String? // E.g., 'Finance & Accounting', 'Agronomy'
+  challenges     String? // JSON string array of challenge IDs
+  subcategories  String? // JSON string array of subcategory IDs
 
   // --- Application & CTA Setup Fields ---
-  applicationMethod       String   @default("native") // 'external' | 'native' | 'email'
-  applicationEmail        String?  // If method is 'email'
-  applicationInstructions String?  // If method is 'email', stores formatting instructions
-  customQuestions         String?  // JSON array of objects if method is 'native'
-  requiredDocuments       String?  // JSON array (e.g., ["resume", "coverLetter", "portfolio"])
-  externalButtonText      String?  // Custom button text for external links
+  applicationMethod       String  @default("native") // 'external' | 'native' | 'email'
+  applicationEmail        String? // If method is 'email'
+  applicationInstructions String? // If method is 'email', stores formatting instructions
+  customQuestions         String? // JSON array of objects if method is 'native'
+  requiredDocuments       String? // JSON array (e.g., ["resume", "coverLetter", "portfolio"])
+  externalButtonText      String? // Custom button text for external links
 
   // Relations
   postedById String
@@ -254,11 +254,11 @@ model MeetEvent {
 }
 
 model LearnContent {
-  id              String   @id @default(cuid())
-  slug            String   @unique @default(cuid())
-  type            String   @default("article") // 'livestream' | 'class' | 'video' | 'article' | 'report'
-  status          String   @default("published") // 'draft' | 'published' | 'archived' | 'pending_org_review' | 'rejected'
-  bottleneckTags  String   @default("[]") // JSON array of challenge tags (e.g. '["post-harvest-loss", "cold-chain"]')
+  id              String    @id @default(cuid())
+  slug            String    @unique @default(cuid())
+  type            String    @default("article") // 'livestream' | 'class' | 'video' | 'article' | 'report'
+  status          String    @default("published") // 'draft' | 'published' | 'archived' | 'pending_org_review' | 'rejected'
+  bottleneckTags  String    @default("[]") // JSON array of challenge tags (e.g. '["post-harvest-loss", "cold-chain"]')
   category        String?
   subcategory     String?
   timeframe       String?
@@ -268,15 +268,15 @@ model LearnContent {
   authorId        String?
   authorName      String?
   authorAvatarUrl String?
-  collaborators   String   @default("[]") // JSON array of collaborator objects { name, uid, role, timestamp }
-  isVerified      Boolean  @default(false)
-  isPaid          Boolean  @default(false)
+  collaborators   String    @default("[]") // JSON array of collaborator objects { name, uid, role, timestamp }
+  isVerified      Boolean   @default(false)
+  isPaid          Boolean   @default(false)
   costNP          Int?
-  views           Int      @default(0)
-  likes           Int      @default(0)
+  views           Int       @default(0)
+  likes           Int       @default(0)
   targetDate      DateTime? // The hype/deadline date used for Global Alerts
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @default(now()) @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @default(now()) @updatedAt
 
   // Relations
   organizationId String?
@@ -310,7 +310,7 @@ model LearnArticleBlock {
   blockType  String // e.g. 'subheading', 'myth_fact', 'live_poll', 'core_interactive'
   content    String // JSON stringified payload specific to the blockType
 
-  article LearnArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  article   LearnArticle                @relation(fields: [articleId], references: [id], onDelete: Cascade)
   revisions LearnArticleBlockRevision[]
   comments  BlockComment[]
 }
@@ -318,17 +318,17 @@ model LearnArticleBlock {
 model BlockComment {
   id          String   @id @default(cuid())
   blockId     String
-  userId      String?  // null for anonymous users
+  userId      String? // null for anonymous users
   displayName String   @default("Anonymous")
   avatarUrl   String?
   text        String
   likes       Int      @default(0)
-  parentId    String?  // for threaded replies
+  parentId    String? // for threaded replies
   createdAt   DateTime @default(now())
 
-  block  LearnArticleBlock @relation(fields: [blockId], references: [id], onDelete: Cascade)
-  parent BlockComment?     @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies BlockComment[]   @relation("CommentReplies")
+  block   LearnArticleBlock @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  parent  BlockComment?     @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies BlockComment[]    @relation("CommentReplies")
 
   @@index([blockId, createdAt])
   @@index([parentId])
@@ -337,9 +337,9 @@ model BlockComment {
 model LearnArticleBlockRevision {
   id         String   @id @default(cuid())
   blockId    String
-  editedBy   String   // The uid or ID of the user who made the edit
-  oldContent String   // The state before the edit (JSON)
-  newContent String   // The state after the edit (JSON)
+  editedBy   String // The uid or ID of the user who made the edit
+  oldContent String // The state before the edit (JSON)
+  newContent String // The state after the edit (JSON)
   reason     String?
   createdAt  DateTime @default(now())
 
@@ -371,7 +371,17 @@ model LearnLivestream {
   isLive         Boolean   @default(false)
   scheduledFor   DateTime?
 
-  learnContent LearnContent @relation(fields: [learnContentId], references: [id], onDelete: Cascade)
+  learnContent LearnContent           @relation(fields: [learnContentId], references: [id], onDelete: Cascade)
+  blocks       LearnLivestreamBlock[]
+}
+
+model LearnLivestreamBlock {
+  id           String          @id @default(cuid())
+  livestreamId String
+  orderIndex   Int
+  blockType    String
+  content      String          @default("{}")
+  livestream   LearnLivestream @relation(fields: [livestreamId], references: [id], onDelete: Cascade)
 }
 
 model LearnReport {
@@ -437,12 +447,12 @@ model CommunityGroup {
   memberCount    Int      @default(0)
   createdAt      DateTime @default(now())
 
-  community     Community              @relation(fields: [communityId], references: [id])
-  organization  Organization?          @relation(fields: [organizationId], references: [id])
-  members       CommunityGroupMember[]
-  cards         CommunityCard[]
+  community      Community              @relation(fields: [communityId], references: [id])
+  organization   Organization?          @relation(fields: [organizationId], references: [id])
+  members        CommunityGroupMember[]
+  cards          CommunityCard[]
   communityPosts CommunityPost[]
-  conversations Conversation[]
+  conversations  Conversation[]
 }
 
 model CommunityGroupMember {
@@ -516,8 +526,8 @@ model CommunityPost {
   likes       Int      @default(0)
   createdAt   DateTime @default(now())
 
-  group  CommunityGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  author User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  group  CommunityGroup       @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  author User                 @relation(fields: [authorId], references: [id], onDelete: Cascade)
   blocks CommunityPostBlock[]
 }
 
@@ -690,56 +700,56 @@ model Message {
 // ════════════════════════════════════════════════════════
 
 model OmniWikiDoc {
-  id           String   @id @default(cuid())
-  slug         String   @unique
-  title        String
-  category     String
-  status       String   @default("published") // 'published' | 'pending_org_review' | 'rejected' | 'draft'
-  
+  id       String @id @default(cuid())
+  slug     String @unique
+  title    String
+  category String
+  status   String @default("published") // 'published' | 'pending_org_review' | 'rejected' | 'draft'
+
   // Document-Level Access Control
-  isPublic     Boolean  @default(false)
-  allowedRoles String   @default("[]") // JSON Array: ["internal_staff", "admin"]
-  allowedUsers String   @default("[]") // JSON Array: ["uid1", "uid2"]
+  isPublic     Boolean @default(false)
+  allowedRoles String  @default("[]") // JSON Array: ["internal_staff", "admin"]
+  allowedUsers String  @default("[]") // JSON Array: ["uid1", "uid2"]
 
   // The Content
-  blocks       String   @default("[]") // JSON stringified array of WikiBlock objects
-  
+  blocks String @default("[]") // JSON stringified array of WikiBlock objects
+
   // Metadata
-  parentId     String?
-  hotspotId    String?  @unique
-  tags         String   @default("[]") // JSON stringified array of tags
-  authorId     String
+  parentId       String?
+  hotspotId      String?  @unique
+  tags           String   @default("[]") // JSON stringified array of tags
+  authorId       String
   organizationId String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   author       User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
   organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   parent       OmniWikiDoc?  @relation("WikiHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
   children     OmniWikiDoc[] @relation("WikiHierarchy")
-  
-  userStates   UserWikiState[]
+
+  userStates UserWikiState[]
 
   @@index([category])
   @@index([organizationId])
 }
 
 model UserWikiState {
-  id        String   @id @default(cuid())
+  id        String @id @default(cuid())
   wikiDocId String
   userId    String
-  
+
   // Stored block state (JSON strings)
-  checkboxes   String @default("{}")
-  promptInputs String @default("{}")
-  scratchpads  String @default("{}")
-  scrollPosition Int  @default(0)
-  
+  checkboxes     String @default("{}")
+  promptInputs   String @default("{}")
+  scratchpads    String @default("{}")
+  scrollPosition Int    @default(0)
+
   updatedAt DateTime @updatedAt
-  
+
   wikiDoc OmniWikiDoc @relation(fields: [wikiDocId], references: [id], onDelete: Cascade)
   user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   @@unique([wikiDocId, userId])
 }
 
@@ -758,36 +768,36 @@ model WikiHotspotRegistry {
 // ════════════════════════════════════════════════════════
 
 model CalendarEvent {
-  id               String    @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // --- Source Reference ---
-  sourceType       String    // 'job' | 'listing' | 'livestream' | 'article' | 'video' | 'class' | 'meetEvent' | 'campaign'
-  sourceId         String    // The ID of the original record in its source table
-  slug             String?   // Human-readable slug for slug-based routes (e.g. articles)
+  sourceType String // 'job' | 'listing' | 'livestream' | 'article' | 'video' | 'class' | 'meetEvent' | 'campaign'
+  sourceId   String // The ID of the original record in its source table
+  slug       String? // Human-readable slug for slug-based routes (e.g. articles)
 
   // --- Visibility & Scoping (The 3 Tiers) ---
   tenantId       String
-  visibility     String    @default("personal") // 'society' | 'organization' | 'personal'
-  organizationId String?   // Required if visibility = 'organization'
-  userId         String?   // Required if visibility = 'personal' (The owner)
+  visibility     String  @default("personal") // 'society' | 'organization' | 'personal'
+  organizationId String? // Required if visibility = 'organization'
+  userId         String? // Required if visibility = 'personal' (The owner)
 
   // --- Date Specificity ---
-  dateType         String    @default("START_TIME") // 'DEADLINE' | 'START_TIME' | 'PUBLISH_DATE' | 'DATE_RANGE'
-  date             DateTime  // The primary deadline / scheduled time / release date
-  endDate          DateTime? // Optional end date (for ranges or expiration windows)
+  dateType String    @default("START_TIME") // 'DEADLINE' | 'START_TIME' | 'PUBLISH_DATE' | 'DATE_RANGE'
+  date     DateTime // The primary deadline / scheduled time / release date
+  endDate  DateTime? // Optional end date (for ranges or expiration windows)
 
   // --- Denormalized Display Data ---
   title            String
   imageUrl         String?
   category         String?
   organizationName String?
-  description      String?   // Used for general events (text or stringified JSON checklist)
-  tags             String?   // JSON string array for organization tags
+  description      String? // Used for general events (text or stringified JSON checklist)
+  tags             String? // JSON string array for organization tags
 
   // --- Metadata ---
-  status           String    @default("upcoming") // 'upcoming' | 'live' | 'expired'
-  reviewStatus     String    @default("none") // 'none' | 'drafting' | 'pending_approval' | 'approved'
-  createdAt        DateTime  @default(now())
+  status       String   @default("upcoming") // 'upcoming' | 'live' | 'expired'
+  reviewStatus String   @default("none") // 'none' | 'drafting' | 'pending_approval' | 'approved'
+  createdAt    DateTime @default(now())
 
   @@index([sourceType, sourceId])
   @@index([date])
@@ -798,9 +808,6 @@ model CalendarEvent {
   @@index([userId, date])
 }
 
-
-
-
 model EarlyAccessLead {
   id        String   @id @default(cuid())
   firstName String
@@ -809,4 +816,3 @@ model EarlyAccessLead {
   role      String?
   createdAt DateTime @default(now())
 }
-

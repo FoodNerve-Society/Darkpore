@@ -30,6 +30,7 @@ export type CreateLearnContentPayload = {
   classModules?: number;
   classDuration?: string;
   livestreamUrl?: string;
+  livestreamBlocks?: ArticleBlockPayload[];
   reportPdfUrl?: string;
   reportPages?: number;
   thumbnailUrl?: string;
@@ -171,9 +172,9 @@ export async function createLearnContent(data: CreateLearnContentPayload, isDraf
         }
         break;
       case 'livestream':
-        const existingStream = await tx.learnLivestream.findUnique({ where: { learnContentId: content.id } });
-        if (existingStream) {
-          await tx.learnLivestream.update({
+        let stream = await tx.learnLivestream.findUnique({ where: { learnContentId: content.id } });
+        if (stream) {
+          stream = await tx.learnLivestream.update({
             where: { learnContentId: content.id },
             data: { 
               streamUrl: data.livestreamUrl,
@@ -181,12 +182,26 @@ export async function createLearnContent(data: CreateLearnContentPayload, isDraf
             }
           });
         } else {
-          await tx.learnLivestream.create({
+          stream = await tx.learnLivestream.create({
             data: {
               learnContentId: content.id,
               streamUrl: data.livestreamUrl,
               scheduledFor: data.targetDate ? new Date(data.targetDate) : null,
             },
+          });
+        }
+        
+        // Delete old blocks
+        await tx.learnLivestreamBlock.deleteMany({ where: { livestreamId: stream.id } });
+        
+        if (data.livestreamBlocks && data.livestreamBlocks.length > 0) {
+          await tx.learnLivestreamBlock.createMany({
+            data: data.livestreamBlocks.map(block => ({
+              livestreamId: stream!.id,
+              orderIndex: block.orderIndex,
+              blockType: block.blockType,
+              content: block.content,
+            })),
           });
         }
         break;
