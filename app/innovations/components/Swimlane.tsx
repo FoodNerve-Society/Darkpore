@@ -96,7 +96,7 @@ export default function Swimlane({ lane }: { lane: any }) {
             ) : (
               Array.from({ length: 4 }).map((_, idx) => (
                 <Box key={`skel-${idx}`} sx={{ width: lane.id === 'lane-livestreams' ? { xs: 320, md: 480 } : lane.id === 'lane-top-stories' ? { xs: 260, md: 300 } : { xs: 280, md: 360 }, flexShrink: 0, pt: 1 }}>
-                  <Skeleton variant="rectangular" width="100%" height={380} sx={{ borderRadius: '24px', bgcolor: 'rgba(0,0,0,0.03)' }} />
+                  <Skeleton variant="rectangular" width="100%" height={240} sx={{ borderRadius: '24px', bgcolor: 'rgba(0,0,0,0.03)' }} />
                 </Box>
               ))
             )}

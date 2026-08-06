@@ -109,22 +109,11 @@ export default async function InnovationsHomepage() {
     });
 
     if (recentIntelligence.length === 0) {
-      const mockData = await getKnowledgeMaterials({ tenantId, limit: 20 });
-      // Map mock types to the new types if needed
-      recentIntelligence = mockData.map(m => ({
-        ...m,
-        type: m.type === 'pdf' ? 'class' : m.type,
-        link: `/${m.challengeId || 'global'}/${(m as any).subcategory || 'general'}/learn/article/${m.slug}`
-      }));
+      // Do not fallback to mock data, just show the empty state skeleton
+      // so the user knows there is no real data yet.
     }
   } catch (e) {
-    console.warn("SERVER LOG - Database connection failed, falling back to mock intelligence.");
-    const mockData = await getKnowledgeMaterials({ tenantId, limit: 20 });
-    recentIntelligence = mockData.map(m => ({
-      ...m,
-      type: m.type === 'pdf' ? 'class' : m.type,
-      link: `/${m.challengeId || 'global'}/${(m as any).subcategory || 'general'}/learn/article/${m.slug}`
-    }));
+    console.warn("SERVER LOG - Database connection failed, returning empty intelligence.");
   }
 
   // Pick all challenges for BentoGrid and fallback slideshow

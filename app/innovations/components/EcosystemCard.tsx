@@ -150,18 +150,14 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({
   const renderTickerTape = () => (
     <Box sx={{ overflow: 'hidden', width: '100%', position: 'relative', mb: 1.5, height: 26, flexShrink: 0 }}>
       <Box
-        key={tickerKey}
-        onAnimationEnd={handleAnimationEnd}
         sx={{
           display: 'flex',
           gap: '12px',
-          width: 'max-content',
-          animation: shouldPlay
-            ? `${marqueeOnce} ${Math.max(8, autoPills.length * 3)}s linear forwards`
-            : 'none',
+          width: '100%',
+          overflow: 'hidden'
         }}
       >
-        {[...autoPills, ...autoPills].map((p, idx) => (
+        {autoPills.map((p, idx) => (
           <Box
             key={idx}
             sx={{
