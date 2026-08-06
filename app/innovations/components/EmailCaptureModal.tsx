@@ -81,8 +81,15 @@ export default function EmailCaptureModal() {
     e.preventDefault();
     setIsLoading(true);
     setErrorMsg('');
+    
+    if (!role) {
+      setErrorMsg('Please select your role from the list.');
+      setIsLoading(false);
+      return;
+    }
+
     const formData = new FormData(e.currentTarget);
-    if (role) formData.append('role', role.value);
+    formData.append('role', role.value);
     
     const result = await submitLead(formData);
     
@@ -251,29 +258,6 @@ export default function EmailCaptureModal() {
                 alignItems: 'center',
                 justifyContent: 'center',
               }}>
-                {submitted ? (
-                  <Box sx={{
-                    height: '100%', display: 'flex', flexDirection: 'column',
-                    alignItems: 'center', justifyContent: 'center', textAlign: 'center', py: 6
-                  }}>
-                    <motion.div
-                      initial={{ scale: 0, rotate: -180 }}
-                      animate={{ scale: 1, rotate: 0 }}
-                      transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-                    >
-                      <CheckCircleOutlined sx={{ fontSize: 72, color: '#10b981', mb: 3 }} />
-                    </motion.div>
-                    <Typography variant="h4" sx={{
-                      fontWeight: 900, mb: 1.5, color: '#0f172a',
-                      letterSpacing: '-0.03em',
-                    }}>
-                      You're on the list.
-                    </Typography>
-                    <Typography sx={{ color: '#475569', fontSize: '1.05rem', fontWeight: 500 }}>
-                      Watch your inbox for dispatch briefings.
-                    </Typography>
-                  </Box>
-                ) : (
                   <Box sx={{ width: '100%', maxWidth: 440, display: 'flex', flexDirection: 'column', flex: 1, mx: 'auto', textAlign: 'center' }}>
                     <Typography variant="h5" sx={{
                       fontWeight: 900, mb: 1, color: '#0f172a',
@@ -282,18 +266,43 @@ export default function EmailCaptureModal() {
                       Join the Vanguard
                     </Typography>
                     <Typography variant="body1" sx={{
-                      color: '#475569', mb: 4, fontWeight: 500, fontSize: '1rem',
+                      color: '#475569', mb: 3, fontWeight: 500, fontSize: '1rem',
                     }}>
                       Get exclusive briefings on our latest ventures.
                     </Typography>
 
-                    {errorMsg && (
-                      <Typography sx={{ color: '#ef4444', fontSize: '0.9rem', mb: 2, fontWeight: 600 }}>
-                        {errorMsg}
-                      </Typography>
+                    {submitted && (
+                      <Box sx={{
+                        p: 2, mb: 3, borderRadius: '12px', bgcolor: 'rgba(16, 185, 129, 0.08)',
+                        border: '1px solid rgba(16, 185, 129, 0.2)',
+                        display: 'flex', alignItems: 'flex-start', gap: 1.5, textAlign: 'left'
+                      }}>
+                        <CheckCircleOutlined sx={{ color: '#10b981', mt: 0.2 }} />
+                        <Box>
+                          <Typography sx={{ color: '#065f46', fontWeight: 700, fontSize: '0.95rem' }}>
+                            You're on the list.
+                          </Typography>
+                          <Typography sx={{ color: '#065f46', fontSize: '0.85rem', mt: 0.5, fontWeight: 500 }}>
+                            Check your emails regularly for dispatch briefings and early access.
+                          </Typography>
+                        </Box>
+                      </Box>
                     )}
 
-                    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1 }}>
+                    {errorMsg && (
+                      <Box sx={{
+                        p: 2, mb: 3, borderRadius: '12px', bgcolor: 'rgba(239, 68, 68, 0.05)',
+                        border: '1px solid rgba(239, 68, 68, 0.2)',
+                        display: 'flex', alignItems: 'center', gap: 1.5, textAlign: 'left'
+                      }}>
+                        <CloseIcon sx={{ color: '#ef4444' }} />
+                        <Typography sx={{ color: '#b91c1c', fontWeight: 600, fontSize: '0.9rem' }}>
+                          {errorMsg}
+                        </Typography>
+                      </Box>
+                    )}
+
+                    <form noValidate onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1 }}>
                       <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
                         <PremiumTextField
                           name="firstName"
@@ -302,6 +311,7 @@ export default function EmailCaptureModal() {
                           label="First Name"
                           placeholder="e.g. Aisha"
                           required
+                          disabled={submitted || isLoading}
                         />
                         <PremiumTextField
                           name="lastName"
@@ -310,6 +320,7 @@ export default function EmailCaptureModal() {
                           label="Last Name"
                           placeholder="e.g. Ibrahim"
                           required
+                          disabled={submitted || isLoading}
                         />
                       </Box>
                       <PremiumTextField
@@ -320,6 +331,7 @@ export default function EmailCaptureModal() {
                         placeholder="name@company.com"
                         type="email"
                         required
+                        disabled={submitted || isLoading}
                       />
                       <PremiumAutocomplete
                         colorTheme="#0f172a"
@@ -329,13 +341,14 @@ export default function EmailCaptureModal() {
                         onChange={(_: any, newVal: any) => setRole(newVal)}
                         label="I am a..."
                         placeholder="Select your role"
+                        disabled={submitted || isLoading}
                       />
                       <Box sx={{ mt: 'auto', display: 'flex', gap: 2, pt: { xs: 1, sm: 3 } }}>
                         <Button
                           type="submit"
                           variant="contained"
                           fullWidth
-                          disabled={isLoading}
+                          disabled={submitted || isLoading}
                           sx={{
                             borderRadius: '50px', py: { xs: 1.2, sm: 1.6 },
                             textTransform: 'none', fontWeight: 800, fontSize: { xs: '0.9rem', sm: '1rem' },
@@ -353,12 +366,11 @@ export default function EmailCaptureModal() {
                             }
                           }}
                         >
-                          {isLoading ? 'Submitting...' : 'Submit'}
+                          {isLoading ? 'Submitting...' : (submitted ? 'Submitted' : 'Submit')}
                         </Button>
                       </Box>
                     </form>
                   </Box>
-                )}
               </CardContent>
             </Card>
           </motion.div>

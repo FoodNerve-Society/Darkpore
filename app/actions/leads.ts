@@ -1,6 +1,10 @@
 'use server';
 
 import { prisma } from '@/lib/db/client';
+import { Resend } from 'resend';
+import WelcomeEmail from '@/emails/WelcomeEmail';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function submitLead(formData: FormData) {
   try {
@@ -9,8 +13,8 @@ export async function submitLead(formData: FormData) {
     const email = formData.get('email') as string;
     const role = formData.get('role') as string;
 
-    if (!firstName || !lastName || !email) {
-      return { success: false, error: 'Please fill in all required fields.' };
+    if (!firstName || !lastName || !email || !role) {
+      return { success: false, error: 'Please fill in all required fields, including your role.' };
     }
 
     // Check if email already exists
@@ -30,6 +34,25 @@ export async function submitLead(formData: FormData) {
         role: role || 'Unknown',
       },
     });
+
+    // Send the Welcome Email
+    if (process.env.RESEND_API_KEY) {
+      const resendResponse = await resend.emails.send({
+        from: 'onboarding@resend.dev', // Resend sandbox email for testing
+        to: email,
+        subject: 'Welcome to the Vanguard.',
+        react: WelcomeEmail({ firstName, role: role || 'Value Chain Actors' }),
+      });
+      
+      console.log('Resend API Response:', resendResponse);
+      
+      if (resendResponse.error) {
+        console.error('Failed to send email via Resend:', resendResponse.error);
+        // We still return success: true because the lead was captured in the DB
+      }
+    } else {
+      console.warn('RESEND_API_KEY is not set. Email was not sent.');
+    }
 
     return { success: true };
   } catch (error) {
