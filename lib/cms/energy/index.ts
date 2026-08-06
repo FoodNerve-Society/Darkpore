@@ -2,8 +2,13 @@ import { TenantConfig } from '../types';
 import { energyChallenges } from './challenges';
 
 export const energyTenantConfig: TenantConfig = {
-  name: 'Energy Nerve',
-  domain: 'energynerve.com',  people: [
+  name: 'EnergyNerve',
+  domain: 'energynerve.com',
+  socialLinks: {
+    x: '', // Empty to test disabled state
+    linkedin: 'https://linkedin.com/company/energynerve',
+  },
+  people: [
     {
       slug: 'michael-chen',
       name: 'Michael Chen',

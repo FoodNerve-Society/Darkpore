@@ -18,12 +18,12 @@ export type CustomPaletteKey = keyof CustomPalette;
 
 // --- TYPE AUGMENTATION ---
 declare module '@mui/material/styles' {
-  interface Palette extends MuiPalette { custom: CustomPalette; }
-  interface PaletteOptions { custom?: Partial<CustomPalette>; }
   interface Palette {
+    custom: CustomPalette;
     surface: { main: string; variant: string; };
   }
   interface PaletteOptions {
+    custom?: Partial<CustomPalette>;
     surface?: { main: string; variant: string; };
   }
   interface PaletteColor {

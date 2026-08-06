@@ -119,6 +119,22 @@ model OrganizationMember {
 }
 
 // ════════════════════════════════════════════════════════
+// PLATFORM CONFIGURATION MODELS
+// ════════════════════════════════════════════════════════
+
+model TenantSettings {
+  id              String   @id @default("foodnerve") // default tenant id
+  name            String
+  headline        String
+  subheadline     String
+  logoUrl         String?
+  primaryColor    String?
+  showcaseProjects String? // JSON string array of campaign IDs to showcase
+  challenges      String?  // JSON string array of active challenge config
+  updatedAt       DateTime @updatedAt
+}
+
+// ════════════════════════════════════════════════════════
 // SOCIETY OS MODELS
 // ════════════════════════════════════════════════════════
 
@@ -770,9 +786,10 @@ model CalendarEvent {
 
   // --- Metadata ---
   status           String    @default("upcoming") // 'upcoming' | 'live' | 'expired'
+  reviewStatus     String    @default("none") // 'none' | 'drafting' | 'pending_approval' | 'approved'
   createdAt        DateTime  @default(now())
 
-  @@unique([sourceType, sourceId])
+  @@index([sourceType, sourceId])
   @@index([date])
   @@index([status, date])
   @@index([sourceType, date])
@@ -782,4 +799,14 @@ model CalendarEvent {
 }
 
 
+
+
+model EarlyAccessLead {
+  id        String   @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String   @unique
+  role      String?
+  createdAt DateTime @default(now())
+}
 

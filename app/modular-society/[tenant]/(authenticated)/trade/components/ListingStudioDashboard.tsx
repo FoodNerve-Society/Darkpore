@@ -19,6 +19,8 @@ import {
 } from '@mui/icons-material';
 import { keyframes } from '@mui/system';
 import WikiHotspot from '@/components/wiki/WikiHotspot';
+import { ECOSYSTEM_EVENT_TYPES } from '@/lib/config/eventTypes';
+import WorkspaceContentManager from '@/app/components/studio/WorkspaceContentManager';
 
 const EMERALD = "#10b981";
 const EMERALD_DARK = "#059669";
@@ -134,17 +136,19 @@ const TRADE_CONFIGS: Record<string, any[]> = {
 };
 
 export default function ListingStudioDashboard({
+  userName,
   drafts = [],
+  workspaceTabs = [],
   onStartFresh,
   onEditDraft,
   onDeleteDraft,
-  userName
 }: {
-  drafts: any[];
-  onStartFresh: (category: string, selections?: { primary: string, secondary: string, tertiary?: string }, fastIngestData?: any) => void;
-  onEditDraft: (draftId: string) => void;
-  onDeleteDraft: (draftId: string) => void;
   userName?: string;
+  drafts?: any[];
+  workspaceTabs?: any[];
+  onStartFresh: (type: string, selections?: any, fastIngestData?: any) => void;
+  onEditDraft: (id: string) => void;
+  onDeleteDraft: (id: string) => void;
 }) {
   const { profile } = useSociety();
   const [expandedStartType, setExpandedStartType] = useState<string | null>(null);
@@ -420,6 +424,8 @@ export default function ListingStudioDashboard({
         transition: 'gap 0.4s ease, padding 0.4s ease, margin 0.4s ease'
       }}>
         {LISTING_OPTIONS.map((opt) => {
+          const config = ECOSYSTEM_EVENT_TYPES.find(t => t.id === opt.type && t.tab === 'trade');
+          const isActive = config?.isActive;
           const isExpanded = expandedStartType === opt.type;
           const isHidden = expandedStartType !== null && expandedStartType !== opt.type;
 
@@ -427,24 +433,26 @@ export default function ListingStudioDashboard({
             <Paper
               key={opt.type}
               onClick={() => {
-                if (!expandedStartType) handleOpenCreator(opt.type);
+                if (isActive && !expandedStartType) handleOpenCreator(opt.type);
               }}
               elevation={0}
               sx={{
                 flex: isHidden ? '0 0 0%' : (isExpanded ? '0 0 100%' : '0 0 auto'),
-                minWidth: isHidden ? 0 : (isExpanded ? '100%' : { xs: 140, sm: 240, md: 280 }),
-                maxWidth: isHidden ? 0 : (isExpanded ? '100%' : { xs: 140, sm: 240, md: 280 }),
-                height: isExpanded ? 'auto' : (isHidden ? 0 : { xs: 160, sm: 280, md: 320 }),
-                opacity: isHidden ? 0 : 1,
+                minWidth: isHidden ? 0 : (isExpanded ? '100%' : { xs: 150, sm: 260, md: 300 }),
+                maxWidth: isHidden ? 0 : (isExpanded ? '100%' : { xs: 150, sm: 260, md: 300 }),
+                height: isExpanded ? 'auto' : (isHidden ? 0 : { xs: 170, sm: 290, md: 340 }),
+                opacity: isHidden ? 0 : (isActive ? 1 : 0.65),
+                filter: isActive ? 'none' : 'grayscale(0.8)',
                 p: isExpanded ? 0 : (isHidden ? 0 : { xs: 1.5, sm: 2.5, md: 3.5 }),
                 display: 'flex', flexDirection: 'column', gap: { xs: 1, sm: 1.5, md: 2 },
-                borderRadius: { xs: '16px', sm: '24px', md: '28px' }, cursor: isExpanded ? 'default' : 'pointer',
+                borderRadius: { xs: '16px', sm: '24px', md: '28px' }, 
+                cursor: isExpanded ? 'default' : (isActive ? 'pointer' : 'not-allowed'),
                 background: isExpanded ? `linear-gradient(135deg, #0f172a 0%, #1e293b 100%)` : opt.grad,
                 border: isHidden ? 'none' : '1px solid rgba(255,255,255,0.15)',
                 boxShadow: isHidden ? 'none' : `inset 0 2px 10px rgba(255,255,255,0.2), 0 10px 30px ${alpha(opt.color, 0.25)}`,
                 position: 'relative', overflow: 'hidden',
                 transition: 'all 0.6s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                '&:hover': !isExpanded ? {
+                '&:hover': !isExpanded && isActive ? {
                   transform: 'translateY(-8px) scale(1.02)',
                   boxShadow: `inset 0 2px 10px rgba(255,255,255,0.3), 0 24px 48px ${alpha(opt.color, 0.4)}`,
                   borderColor: 'rgba(255,255,255,0.3)',
@@ -467,13 +475,22 @@ export default function ListingStudioDashboard({
                       {opt.icon}
                     </Box>
                     <Box sx={{ position: 'relative', zIndex: 10 }}>
-                      <WikiHotspot id={`listing-start-fresh-${opt.type}`} label={opt.title} />
+                      <WikiHotspot id={`trade-start-fresh-${opt.type}`} label={opt.title} />
                     </Box>
                   </Box>
-                  <Box sx={{ position: 'relative', zIndex: 1, mt: { xs: 0, sm: 1 } }}>
-                    <Typography sx={{ fontWeight: 900, fontSize: { xs: '0.85rem', sm: '1.2rem' }, mb: 0.25, color: '#fff', letterSpacing: '-0.02em' }}>
-                      {opt.title}
-                    </Typography>
+                  <Box sx={{ position: 'relative', zIndex: 1, mt: { xs: 0, sm: 1 }, display: 'flex', flexDirection: 'column', flex: 1 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <Typography sx={{ fontWeight: 900, fontSize: { xs: '0.85rem', sm: '1.25rem' }, mb: 0.25, color: '#fff', letterSpacing: '-0.02em' }}>
+                        {opt.title}
+                      </Typography>
+                      {!isActive && (
+                        <Chip 
+                          label="Coming Soon" 
+                          size="small" 
+                          sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700, bgcolor: 'rgba(0,0,0,0.4)', color: '#fff' }} 
+                        />
+                      )}
+                    </Box>
                     <Typography sx={{ fontSize: { xs: '0.65rem', sm: '0.85rem' }, color: 'rgba(255,255,255,0.8)', lineHeight: 1.4, fontWeight: 500 }}>
                       {opt.desc}
                     </Typography>
@@ -804,274 +821,16 @@ export default function ListingStudioDashboard({
         })}
       </Box>
       {/* ================================================================ */}
-      {/* 3. BOTTOM SIDE-BY-SIDE GRID: DRAFTS & GOVERNANCE QUEUE           */}
+      {/* 3. BOTTOM SECTION: WORKSPACE CONTENT MANAGER                     */}
       {/* ================================================================ */}
-      <Paper elevation={0} sx={{ 
-        p: { xs: 2, sm: 3, md: 4 }, 
-        mt: 4, 
-        borderRadius: '24px', 
-        background: 'linear-gradient(145deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.2) 100%)', 
-        backdropFilter: 'blur(20px)',
-        border: '1px solid rgba(255,255,255,0.5)',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.04)'
-      }}>
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' }, gap: 4, alignItems: 'start' }}>
-        {/* LEFT COLUMN: YOUR ACTIVE DRAFTS */}
-        <Box>
-          <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', mb: 2, letterSpacing: '0.05em' }}>
-            Your Personal Drafts
-          </Typography>
-
-          {drafts.length === 0 ? (
-            <Box sx={{ 
-              p: 3, borderRadius: '20px', border: '2px dashed rgba(0,0,0,0.06)', 
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-              bgcolor: 'rgba(255,255,255,0.4)', backdropFilter: 'blur(10px)', minHeight: 140
-            }}>
-              <Typography sx={{ fontWeight: 700, color: '#94a3b8', mb: 0.5, fontSize: '0.9rem' }}>No active personal drafts</Typography>
-              <Typography variant="body2" sx={{ color: '#cbd5e1', fontSize: '0.78rem' }}>Select a format above to start a new listing.</Typography>
-            </Box>
-          ) : (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {drafts.map((draft) => {
-                const opt = LISTING_OPTIONS.find(o => o.type === draft.category) || LISTING_OPTIONS[0];
-                return (
-                  <Paper key={draft.id} elevation={0} sx={{
-                    p: 2.5, borderRadius: '20px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
-                    background: 'linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.4) 100%)',
-                    backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.8)',
-                    boxShadow: '0 4px 24px rgba(0,0,0,0.03)',
-                    transition: 'transform 0.2s, box-shadow 0.2s',
-                    '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 8px 32px rgba(0,0,0,0.06)' },
-                    flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 2, sm: 0 }
-                  }}>
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', width: '100%' }}>
-                      <Box sx={{ 
-                        width: 44, height: 44, borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: opt.grad, color: '#fff', flexShrink: 0, boxShadow: `0 4px 12px ${alpha(opt.color, 0.3)}`
-                      }}>
-                        {opt.icon}
-                      </Box>
-                      <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                          <Chip label={opt.title} size="small" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 800, bgcolor: alpha(opt.color, 0.1), color: opt.color }} />
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#FF416C', animation: 'pulseGlow 2s infinite' }} />
-                            <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, color: '#FF416C', letterSpacing: '0.05em' }}>IN PROGRESS</Typography>
-                          </Box>
-                        </Box>
-                        <Typography sx={{ fontWeight: 800, color: '#1e293b', fontSize: '0.98rem', lineHeight: 1.3, mb: 0.5, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                          {draft.title || 'Untitled Listing'}
-                        </Typography>
-                        <Typography sx={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600 }}>
-                          Last edited {draft.lastEdited || 'recently'}
-                        </Typography>
-                      </Box>
-
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, alignSelf: { xs: 'flex-end', sm: 'center' } }}>
-                        <IconButton onClick={() => onDeleteDraft(draft.id)} sx={{ color: '#ef4444', bgcolor: 'rgba(239, 68, 68, 0.05)', '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.1)' } }}>
-                          <DeleteOutlineIcon sx={{ fontSize: 18 }} />
-                        </IconButton>
-                        <Button
-                          variant="contained"
-                          onClick={() => onEditDraft(draft.id)}
-                          endIcon={<ArrowForwardArrow />}
-                          sx={{
-                            bgcolor: '#1e293b', color: '#fff', borderRadius: '12px', fontWeight: 700, px: 2, py: 0.8, fontSize: '0.8rem', textTransform: 'none',
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                            '&:hover': { bgcolor: '#0f172a' }
-                          }}
-                        >
-                          Resume
-                        </Button>
-                      </Box>
-                    </Box>
-                  </Paper>
-                );
-              })}
-            </Box>
-          )}
-        </Box>
-
-        {/* RIGHT COLUMN: ORGANIZATION SUBMISSIONS & GOVERNANCE QUEUE */}
-        <Box>
-          <OrgListingsStudioGovernance onEditDraft={onEditDraft} />
-        </Box>
-      </Box>
-      </Paper>
-
-    </Box>
-  );
-}
-
-function OrgListingsStudioGovernance({ onEditDraft }: { onEditDraft: (id: string) => void }) {
-  const { profile, activeOrg } = useSociety();
-  const [orgData, setOrgData] = React.useState<{ pending: any[]; rejected: any[]; active: any[]; drafts: any[] }>({
-    pending: [],
-    rejected: [],
-    active: [],
-    drafts: []
-  });
-  const [loading, setLoading] = React.useState(false);
-  const [activeTab, setActiveTab] = React.useState<'pending' | 'active' | 'rejected'>('pending');
-
-  const isOrgMember = Boolean(activeOrg?.id);
-  const isOrgAdmin = activeOrg?.role === 'owner' || activeOrg?.role === 'admin';
-
-  const loadOrgListings = React.useCallback(async () => {
-    if (!activeOrg?.id) return;
-    setLoading(true);
-    try {
-      const { getOrgTradeListings } = await import('@/lib/actions/trade');
-      const res = await getOrgTradeListings(activeOrg.id, profile?.uid);
-      if (res.success) {
-        setOrgData({
-          pending: res.pending || [],
-          rejected: res.rejected || [],
-          active: res.active || [],
-          drafts: res.drafts || []
-        });
-      }
-    } catch (err) {
-      console.error('Failed loading org studio listings:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [activeOrg?.id, profile?.uid]);
-
-  React.useEffect(() => {
-    loadOrgListings();
-  }, [loadOrgListings]);
-
-  const handleApprove = async (listingId: string) => {
-    const { approveOrgContent } = await import('@/lib/actions/org-approval');
-    await approveOrgContent(listingId, 'trade', profile?.uid || '');
-    loadOrgListings();
-  };
-
-  const handleReject = async (listingId: string) => {
-    const { rejectOrgContent } = await import('@/lib/actions/org-approval');
-    await rejectOrgContent(listingId, 'trade', profile?.uid || '');
-    loadOrgListings();
-  };
-
-  const handleCullBack = async (listingId: string) => {
-    const { cullBackTradeListing } = await import('@/lib/actions/trade');
-    await cullBackTradeListing(listingId, profile?.uid || '', 'rejected');
-    loadOrgListings();
-  };
-
-  if (!isOrgMember) return null;
-
-  const currentItems = activeTab === 'pending' ? orgData.pending : activeTab === 'active' ? orgData.active : orgData.rejected;
-
-  return (
-    <Box sx={{ mt: 4 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, flexWrap: 'wrap', gap: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.9rem' }}>
-            🏢 {activeOrg?.name} — Governance & Submissions
-          </Typography>
-          {activeOrg?.verified && <Chip label="Verified Org" size="small" sx={{ bgcolor: '#d1fae5', color: '#059669', fontWeight: 800, height: 20, fontSize: '0.65rem' }} />}
-        </Box>
-
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          {[
-            { id: 'pending', label: `Pending (${orgData.pending.length})`, badgeColor: '#f59e0b' },
-            { id: 'active', label: `Active (${orgData.active.length})`, badgeColor: '#10b981' },
-            { id: 'rejected', label: `Rejected (${orgData.rejected.length})`, badgeColor: '#ef4444' },
-          ].map((tab) => (
-            <Chip
-              key={tab.id}
-              label={tab.label}
-              onClick={() => setActiveTab(tab.id as any)}
-              sx={{
-                fontWeight: 800,
-                cursor: 'pointer',
-                borderRadius: '10px',
-                bgcolor: activeTab === tab.id ? tab.badgeColor : '#f1f5f9',
-                color: activeTab === tab.id ? '#fff' : '#475569',
-                '&:hover': { bgcolor: activeTab === tab.id ? tab.badgeColor : '#e2e8f0' }
-              }}
-            />
-          ))}
-        </Box>
-      </Box>
-
-      {loading ? (
-        <Typography sx={{ color: '#94a3b8', fontSize: '0.85rem' }}>Loading organization listings...</Typography>
-      ) : currentItems.length === 0 ? (
-        <Box sx={{ p: 3, textAlign: 'center', bgcolor: 'rgba(255,255,255,0.6)', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
-          <Typography sx={{ color: '#64748b', fontSize: '0.88rem', fontWeight: 600 }}>
-            {activeTab === 'pending' && '✅ No listings currently pending approval.'}
-            {activeTab === 'active' && 'No active organization listings.'}
-            {activeTab === 'rejected' && 'No rejected organization listings.'}
-          </Typography>
-        </Box>
-      ) : (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-          {currentItems.map((item) => (
-            <Paper key={item.id} elevation={0} sx={{ p: 2.5, borderRadius: '16px', border: '1px solid #e2e8f0', bgcolor: '#fff', display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'stretch', sm: 'center' }, justifyContent: 'space-between', gap: 2 }}>
-              <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                  <Chip label={item.category.toUpperCase()} size="small" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 800, bgcolor: '#f1f5f9' }} />
-                  <Typography sx={{ fontWeight: 800, color: '#0f172a', fontSize: '0.98rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {item.title}
-                  </Typography>
-                </Box>
-                <Typography sx={{ fontSize: '0.78rem', color: '#64748b' }}>
-                  Posted by <strong>{item.postedBy?.name || 'Employee'}</strong> • {new Date(item.postedAt).toLocaleDateString()}
-                </Typography>
-              </Box>
-
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                {activeTab === 'pending' && isOrgAdmin && (
-                  <>
-                    <Button
-                      variant="contained"
-                      size="small"
-                      onClick={() => handleApprove(item.id)}
-                      sx={{ bgcolor: '#10b981', color: '#fff', borderRadius: '10px', fontWeight: 700, textTransform: 'none', px: 2, '&:hover': { bgcolor: '#059669' } }}
-                    >
-                      Approve Listing
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      color="error"
-                      onClick={() => handleReject(item.id)}
-                      sx={{ borderRadius: '10px', fontWeight: 700, textTransform: 'none', px: 2 }}
-                    >
-                      Reject
-                    </Button>
-                  </>
-                )}
-
-                {activeTab === 'active' && (isOrgAdmin || item.postedById === profile?.uid) && (
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    color="warning"
-                    onClick={() => handleCullBack(item.id)}
-                    sx={{ borderRadius: '10px', fontWeight: 700, textTransform: 'none', px: 2, borderColor: '#f59e0b', color: '#d97706' }}
-                  >
-                    Cull Back (Revoke) ↩️
-                  </Button>
-                )}
-
-                {activeTab === 'rejected' && (
-                  <Button
-                    variant="contained"
-                    size="small"
-                    onClick={() => onEditDraft(item.id)}
-                    sx={{ bgcolor: '#0f172a', color: '#fff', borderRadius: '10px', fontWeight: 700, textTransform: 'none', px: 2 }}
-                  >
-                    Edit & Resubmit ✏️
-                  </Button>
-                )}
-              </Box>
-            </Paper>
-          ))}
+      {workspaceTabs && (
+        <Box sx={{ width: '100%', mt: 4 }}>
+          <WorkspaceContentManager
+            tabs={workspaceTabs}
+            colorTheme={EMERALD}
+            onEdit={onEditDraft}
+            onDelete={onDeleteDraft}
+          />
         </Box>
       )}
     </Box>

@@ -31,18 +31,29 @@ const FEATURE_OPTIONS: { id: string; title: string; desc: string; icon: string; 
   { id: 'profile', title: 'Profile', desc: 'Personal brand and settings.', icon: '⚙️', color: '#64748b' },
 ];
 
+const WAHAALA_OPTIONS = [
+  { id: 'post-harvest-loss', title: 'Post-Harvest Loss', desc: 'Preserving food after harvest.', icon: '🌾' },
+  { id: 'cold-chain', title: 'Cold-Chain', desc: 'Temperature-controlled logistics.', icon: '❄️' },
+  { id: 'soil-health', title: 'Soil Health', desc: 'Restoring and enriching the earth.', icon: '🌱' },
+  { id: 'market-access', title: 'Market Access', desc: 'Connecting farmers to buyers.', icon: '📈' },
+  { id: 'capital', title: 'Capital & Finance', desc: 'Funding agricultural innovation.', icon: '💰' },
+  { id: 'energy', title: 'Energy', desc: 'Powering rural farming.', icon: '⚡' },
+  { id: 'inputs', title: 'Inputs & Seeds', desc: 'Access to quality farming materials.', icon: '📦' },
+];
+
 export default function OnboardingWizard({ open, onComplete, profile }: OnboardingWizardProps) {
   const [step, setStep] = useState(1);
   const [selectedPrimaryFeature, setSelectedPrimaryFeature] = useState<string | null>(null);
+  const [selectedWahaalas, setSelectedWahaalas] = useState<string[]>([]);
   const [rankedFeatures, setRankedFeatures] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const CORE_FEATURES = FEATURE_OPTIONS.filter(f => ['trade', 'meet', 'learn', 'support'].includes(f.id));
 
-  // Pre-fill Step 2 so if the primary feature is a core feature, it gets locked at #1
+  // Pre-fill Step 3 so if the primary feature is a core feature, it gets locked at #1
   React.useEffect(() => {
-    if (step === 2 && rankedFeatures.length === 0 && selectedPrimaryFeature) {
+    if (step === 3 && rankedFeatures.length === 0 && selectedPrimaryFeature) {
       if (['trade', 'meet', 'learn', 'support'].includes(selectedPrimaryFeature)) {
         setRankedFeatures([selectedPrimaryFeature]);
       }
@@ -112,6 +123,7 @@ export default function OnboardingWizard({ open, onComplete, profile }: Onboardi
         body: JSON.stringify({
           landingPage: selectedPrimaryFeature,
           tabOrder: rankedFeatures,
+          wahaalaCategories: selectedWahaalas,
           firstName: firstName.trim(),
           lastName: lastName.trim(),
           prefixes,
@@ -150,8 +162,10 @@ export default function OnboardingWizard({ open, onComplete, profile }: Onboardi
         
         {/* Step Indicator */}
         <Box sx={{ display: 'flex', gap: 1, mb: 4, justifyContent: 'center' }}>
-          <Box sx={{ width: 40, height: 6, borderRadius: 3, bgcolor: step >= 1 ? '#10b981' : 'rgba(255,255,255,0.2)', transition: 'all 0.3s' }} />
-          <Box sx={{ width: 40, height: 6, borderRadius: 3, bgcolor: step >= 2 ? '#10b981' : 'rgba(255,255,255,0.2)', transition: 'all 0.3s' }} />
+          <Box sx={{ width: 30, height: 6, borderRadius: 3, bgcolor: step >= 1 ? '#10b981' : 'rgba(255,255,255,0.2)', transition: 'all 0.3s' }} />
+          <Box sx={{ width: 30, height: 6, borderRadius: 3, bgcolor: step >= 2 ? '#10b981' : 'rgba(255,255,255,0.2)', transition: 'all 0.3s' }} />
+          <Box sx={{ width: 30, height: 6, borderRadius: 3, bgcolor: step >= 3 ? '#10b981' : 'rgba(255,255,255,0.2)', transition: 'all 0.3s' }} />
+          <Box sx={{ width: 30, height: 6, borderRadius: 3, bgcolor: step >= 4 ? '#10b981' : 'rgba(255,255,255,0.2)', transition: 'all 0.3s' }} />
         </Box>
 
         {step === 1 && (
@@ -217,7 +231,80 @@ export default function OnboardingWizard({ open, onComplete, profile }: Onboardi
         )}
 
         {step === 2 && (
-          <Box>
+          <Box component={motion.div} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+            <Typography variant="h4" sx={{ fontWeight: 900, mb: 1, textAlign: 'center', fontFamily: 'var(--font-dosis)', letterSpacing: '-0.02em', color: 'text.primary' }}>
+              Your Wahaalas
+            </Typography>
+            <Typography variant="body1" sx={{ color: 'text.secondary', textAlign: 'center', mb: 4, fontSize: '1.05rem' }}>
+              Select up to 3 major bottlenecks you want to help solve.
+            </Typography>
+
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2, mb: 6 }}>
+              {WAHAALA_OPTIONS.map((wahaala) => {
+                const isSelected = selectedWahaalas.includes(wahaala.id);
+                return (
+                  <PremiumCard
+                    key={wahaala.id}
+                    variant="interactive"
+                    onClick={() => {
+                      if (isSelected) {
+                        setSelectedWahaalas(prev => prev.filter(id => id !== wahaala.id));
+                      } else if (selectedWahaalas.length < 3) {
+                        setSelectedWahaalas(prev => [...prev, wahaala.id]);
+                      }
+                    }}
+                    sx={{ 
+                      p: 2, 
+                      cursor: 'pointer',
+                      borderRadius: 3, 
+                      border: isSelected ? '2px solid #10b981' : '1px solid rgba(0,0,0,0.1)',
+                      bgcolor: isSelected ? alpha('#10b981', 0.1) : 'background.paper',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 2,
+                      opacity: !isSelected && selectedWahaalas.length >= 3 ? 0.5 : 1
+                    }}
+                  >
+                    <Box sx={{ fontSize: '2rem' }}>{wahaala.icon}</Box>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 800, color: 'text.primary' }}>{wahaala.title}</Typography>
+                      <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.2 }}>{wahaala.desc}</Typography>
+                    </Box>
+                    {isSelected ? (
+                      <RadioButtonCheckedIcon sx={{ color: '#10b981' }} />
+                    ) : (
+                      <RadioButtonUncheckedIcon sx={{ color: 'text.disabled' }} />
+                    )}
+                  </PremiumCard>
+                );
+              })}
+            </Box>
+
+            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
+              <PremiumButton 
+                variant="outlined" 
+                onClick={() => setStep(1)}
+                sx={{ px: 4, py: 1.5, fontWeight: 700, borderRadius: 100 }}
+              >
+                Back
+              </PremiumButton>
+              <PremiumButton 
+                variant="filled" 
+                baseColor="#10b981" 
+                size="large"
+                disabled={selectedWahaalas.length === 0}
+                onClick={() => setStep(3)}
+                endIcon={<ArrowForwardIcon />}
+                sx={{ px: 6, py: 1.5, fontSize: '1.1rem', fontWeight: 800, borderRadius: 100 }}
+              >
+                Continue
+              </PremiumButton>
+            </Box>
+          </Box>
+        )}
+
+        {step === 3 && (
+          <Box component={motion.div} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
             <Typography variant="h4" sx={{ fontWeight: 900, mb: 1, textAlign: 'center', fontFamily: 'var(--font-dosis)', letterSpacing: '-0.02em', color: 'text.primary' }}>
               Arrange Your Priorities
             </Typography>
@@ -357,7 +444,7 @@ export default function OnboardingWizard({ open, onComplete, profile }: Onboardi
             <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
               <PremiumButton 
                 variant="outlined" 
-                onClick={() => setStep(1)}
+                onClick={() => setStep(2)}
                 sx={{ px: 4, py: 1.5, fontWeight: 700, borderRadius: 100 }}
               >
                 Back
@@ -371,7 +458,7 @@ export default function OnboardingWizard({ open, onComplete, profile }: Onboardi
                   if (profile?.gatekeepers?.hasCompletedProfile) {
                     handleSubmit();
                   } else {
-                    setStep(3);
+                    setStep(4);
                   }
                 }}
                 sx={{ px: 6, py: 1.5, fontSize: '1.1rem', fontWeight: 800, borderRadius: 100 }}
@@ -382,7 +469,7 @@ export default function OnboardingWizard({ open, onComplete, profile }: Onboardi
           </Box>
         )}
 
-        {step === 3 && (
+        {step === 4 && (
           <Box component={motion.div} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
             <Box sx={{ textAlign: 'center', mb: 5 }}>
               <Typography variant="h4" sx={{ fontWeight: 900, color: 'text.primary', mb: 2 }}>
@@ -486,7 +573,7 @@ export default function OnboardingWizard({ open, onComplete, profile }: Onboardi
             <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
               <PremiumButton 
                 variant="outlined" 
-                onClick={() => setStep(2)}
+                onClick={() => setStep(3)}
                 sx={{ px: 4, py: 1.5, fontWeight: 700, borderRadius: 100 }}
               >
                 Back

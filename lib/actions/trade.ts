@@ -262,6 +262,28 @@ export async function getUserDrafts(userId: string) {
     return { success: false, error: error.message };
   }
 }
+
+export async function getUserPublishedListings(userId: string) {
+  try {
+    const listings = await prisma.tradeListing.findMany({
+      where: {
+        postedById: userId,
+        status: 'active'
+      },
+      orderBy: {
+        postedAt: 'desc'
+      },
+      include: {
+        organization: true
+      }
+    });
+    return listings;
+  } catch (error) {
+    console.error('Failed to get user published listings:', error);
+    return [];
+  }
+}
+
 export async function deleteTradeListing(listingId: string, userId: string) {
   try {
     const listing = await prisma.tradeListing.findUnique({

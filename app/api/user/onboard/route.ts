@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     const uid = decodedToken.uid;
 
     const body = await request.json();
-    const { landingPage, tabOrder, firstName, lastName, prefixes, suffixes } = body;
+    const { landingPage, tabOrder, wahaalaCategories, firstName, lastName, prefixes, suffixes } = body;
 
     if (!landingPage || !tabOrder) {
        return NextResponse.json({ error: 'Landing page and Tab Order are required' }, { status: 400 });
@@ -32,6 +32,10 @@ export async function POST(request: Request) {
       landingPage: landingPage,
       tabOrder: JSON.stringify(tabOrder),
     };
+
+    if (wahaalaCategories) {
+      updateData.wahaalaCategories = JSON.stringify(wahaalaCategories);
+    }
 
     // Security Check: If they signed in with Google, enforce their Google identity.
     let finalFirstName = firstName;

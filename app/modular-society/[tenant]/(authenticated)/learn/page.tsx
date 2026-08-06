@@ -53,7 +53,7 @@ import {
 } from "@/lib/db/society";
 import { useSociety, type Challenge, RANK_NAMES, type RankLevel } from "@/context/SocietyContext";
 import { getTenantConfig } from "@/lib/cms";
-import { getUserDrafts, deleteLearnContent } from "@/lib/actions/learn";
+import { getUserDrafts, deleteLearnContent, getOrgLearnContent, getUserPublishedContent } from "@/lib/actions/learn";
 import FlipContainer from "../components/shared/FlipContainer";
 import CreateLearnContentForm from "../components/forms/CreateLearnContentForm";
 import CreatorStudioDashboard from "../components/forms/CreatorStudioDashboard";
@@ -1323,12 +1323,6 @@ export default function LearnPage() {
   }, [tenantConfig]);
 
   const [isFlipped, setIsFlipped] = useState(false);
-  useEffect(() => {
-    if (profile?.uid) {
-      getUserDrafts(profile.uid).then(setDrafts);
-    }
-  }, [profile?.uid, isFlipped]);
-
   const [sessionKey, setSessionKey] = useState(0);
   const [postingAs, setPostingAs] = useState<'personal' | 'organization'>('personal');
   const [selectedOrgId, setSelectedOrgId] = useState<string>('');
@@ -1395,9 +1389,46 @@ export default function LearnPage() {
 
   // ADD NEW STATES:
   const [drafts, setDrafts] = useState<any[]>([]);
+  const [workspaceTabs, setWorkspaceTabs] = useState<any[]>([]);
   const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
   const [expandedStartType, setExpandedStartType] = useState<string | null>(null);
   const [selectedChallenge, setSelectedChallenge] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchWorkspaceData() {
+      if (profile?.uid) {
+        const userDrafts = await getUserDrafts(profile.uid);
+        const userPublished = await getUserPublishedContent(profile.uid);
+        if (cancelled) return;
+
+        let personalItems: any[] = [
+          ...userDrafts.map(d => ({ id: d.id, title: d.title, type: d.type, status: d.status, date: d.createdAt.toString(), authorName: profile.displayName })),
+          ...userPublished.map(p => ({ id: p.id, title: p.title, type: p.type, status: p.status, date: p.createdAt.toString(), authorName: profile.displayName }))
+        ];
+        // Sort newest first
+        personalItems.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+        let newTabs: any[] = [{ id: 'personal', label: 'Personal', items: personalItems }];
+
+        if (profile.organizations && profile.organizations.length > 0) {
+          for (const org of profile.organizations) {
+            const orgContent = await getOrgLearnContent(org.id);
+            if (cancelled) return;
+            const orgItems: any[] = orgContent.map(o => ({
+              id: o.id, title: o.title, type: o.type, status: o.status, date: o.createdAt.toString(), authorName: o.authorId === profile.uid ? profile.displayName : 'Team Member' 
+            }));
+            newTabs.push({ id: org.id, label: org.name, logoUrl: org.logoUrl, items: orgItems });
+          }
+        }
+        
+        setWorkspaceTabs(newTabs);
+        setDrafts(userDrafts);
+      }
+    }
+    fetchWorkspaceData();
+    return () => { cancelled = true; };
+  }, [profile?.uid, profile?.organizations, isFlipped]);
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
   const [draftTaxonomy, setDraftTaxonomy] = useState<any>(null);
   const [expandedDraftId, setExpandedDraftId] = useState<string | null>(null);
@@ -2078,6 +2109,7 @@ export default function LearnPage() {
               : (profile?.displayName ? profile.displayName.split(' ')[0] : 'Creative')
           }
           drafts={drafts}
+          workspaceTabs={workspaceTabs}
           challengesData={tenantConfig.com.homepage.challenges}
           onStartFresh={(type, taxonomy, payload) => {
             setCreateContentType(type);

@@ -21,14 +21,16 @@ import PremiumDatePicker from '@/components/PremiumDatePicker';
 import PremiumTimePicker from '@/components/PremiumTimePicker';
 import PremiumSwitch from '@/components/PremiumSwitch';
 import { scheduleCalendarEvent } from '@/app/actions/calendar';
+import { ECOSYSTEM_EVENT_TYPES } from '@/lib/config/eventTypes';
 
-import { getTenantConfig, ERAS } from '@/lib/cms';
+import { getTenantConfig, ERAS, FOOD_TYPES, VALUE_CHAIN_ACTORS } from '@/lib/cms';
 
 const BLOCK_DEFINITIONS: Record<string, { label: string, color: string }> = {
-  scope: { label: 'Scope', color: '#ef4444' },
-  type: { label: 'Format', color: '#f59e0b' },
-  taxonomy: { label: 'Taxonomy', color: '#10b981' },
-  details: { label: 'Details', color: '#3b82f6' }
+  core: { label: 'Core', color: '#3b82f6' },
+  scopes: { label: 'Scopes', color: '#ef4444' },
+  org_timeline: { label: 'Internal Workflow', color: '#f59e0b' },
+  soc_timeline: { label: 'Society Broadcast', color: '#10b981' },
+  per_timeline: { label: 'Personal Timeline', color: '#8b5cf6' }
 };
 
 interface AddEventSidebarProps {
@@ -36,49 +38,52 @@ interface AddEventSidebarProps {
   tenantId: string;
   initialDate?: Date;
   onDateChange?: (date: Date) => void;
+  themeColor?: string;
 }
 
-export default function AddEventSidebar({ onClose, tenantId, initialDate, onDateChange }: AddEventSidebarProps) {
+export default function AddEventSidebar({ onClose, tenantId, initialDate, onDateChange, themeColor }: AddEventSidebarProps) {
   const theme = useTheme();
+  const primaryColor = themeColor || theme.palette.primary.main;
   const router = useRouter();
   const { user, profile } = useSociety();
   
-  const [targetScope, setTargetScope] = useState<'personal' | 'organization' | 'society'>('personal'); // personal, organization, society
-  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
-  const [eventType, setEventType] = useState<'article' | 'livestream' | 'general'>('general'); // general, article, livestream
-  const [dateType, setDateType] = useState<'START_TIME' | 'DEADLINE' | 'PUBLISH_DATE' | 'DATE_RANGE'>('START_TIME'); // START_TIME, DEADLINE, PUBLISH_DATE, DATE_RANGE
-  
+  const [scopes, setScopes] = useState<('personal' | 'organization' | 'society')[]>([]);
+  const defaultDate = initialDate ? initialDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+  const [timelines, setTimelines] = useState<Record<string, any>>({
+    personal: { dateType: 'START_TIME', allDay: false, date: '', time: '', endDate: '', endTime: '', tasks: [{ id: '1', text: '', done: false }] },
+    organization: { dateType: 'START_TIME', allDay: false, date: '', time: '', endDate: '', endTime: '', orgId: '', rules: '', tasks: [{ id: '1', text: '', done: false }] },
+    society: { dateType: 'START_TIME', allDay: false, date: '', time: '', endDate: '', endTime: '', description: '', tasks: [{ id: '1', text: '', done: false }] }
+  });
+
+  const [eventType, setEventType] = useState<string>('general');
   const [title, setTitle] = useState('');
-  const [date, setDate] = useState(initialDate ? initialDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
-  const [time, setTime] = useState('10:00');
-  
-  const [endDate, setEndDate] = useState('');
-  const [endTime, setEndTime] = useState('11:00');
-  const [isAllDay, setIsAllDay] = useState(false);
-  
-  const [contentType, setContentType] = useState<'text' | 'todo'>('text');
-  const [description, setDescription] = useState('');
-  const [todoItems, setTodoItems] = useState<{id: string, text: string, done: boolean}[]>([]);
-  
   const [tags, setTags] = useState<string[]>([]);
   const [challengeId, setChallengeId] = useState<any>(null);
   const [subcategoryId, setSubcategoryId] = useState<string>('');
-  const [eraId, setEraId] = useState<string>('ideation');
+  const [includeTaxonomy, setIncludeTaxonomy] = useState(false);
+  const [eraId, setEraId] = useState<string>(ERAS[0]?.id || '');
+  const [foodTypeId, setFoodTypeId] = useState<string>('');
+  const [valueChainActorId, setValueChainActorId] = useState<string>('');
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-
-  const [flippedBlockId, setFlippedBlockId] = useState<string | null>('scope');
+  const [flippedBlockId, setFlippedBlockId] = useState<string | null>('core');
 
   const tenantConfig = getTenantConfig(tenantId);
   const categories = tenantConfig.com.homepage.challenges;
-  const isSociety = targetScope === 'society';
+  const isSociety = scopes.includes('society');
+
+  // Organization ownership enforcement
+  const hasOrgs = !!(profile?.organizations && profile.organizations.length > 0);
+  const activeEventConfig = ECOSYSTEM_EVENT_TYPES.find(t => t.id === eventType);
+  const isOrgOnly = activeEventConfig?.orgOnly === true;
 
   const framework = [
-    { id: 'scope', type: 'scope', role: 'Target Scope', desc: 'Where is this event being posted?' },
-    { id: 'type', type: 'type', role: 'Event Type', desc: 'What kind of event is this?' },
-    ...(isSociety ? [{ id: 'taxonomy', type: 'taxonomy', role: 'Ecosystem Categorization', desc: 'Category, Subcategory, and Era' }] : []),
-    { id: 'details', type: 'details', role: 'Details & Specifics', desc: 'Title, Date, Content, and Tags' }
+    { id: 'core', type: 'core', role: 'Core Identity', desc: 'Title, Event Type, Content & Taxonomy' },
+    { id: 'scopes', type: 'scopes', role: 'Target Scopes', desc: 'Who is this event for?' },
+    ...(scopes.includes('organization') ? [{ id: 'org_timeline', type: 'org_timeline', role: 'Internal Workflow', desc: 'Deadline & Assignees' }] : []),
+    ...(scopes.includes('society') ? [{ id: 'soc_timeline', type: 'soc_timeline', role: 'Public Broadcast', desc: 'Publish Date & Time' }] : []),
+    ...(scopes.includes('personal') ? [{ id: 'per_timeline', type: 'per_timeline', role: 'Personal Reminder', desc: 'Reminder Date & Time' }] : []),
   ];
 
   if (!user || !profile) {
@@ -91,7 +96,7 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
             position: 'relative', mb: 4,
             '&::before': {
               content: '""', position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-              width: '120px', height: '120px', background: `radial-gradient(circle, ${alpha(theme.palette.primary.main, 0.4)} 0%, transparent 70%)`,
+              width: '120px', height: '120px', background: `radial-gradient(circle, ${alpha(primaryColor, 0.4)} 0%, transparent 70%)`,
               zIndex: 0, filter: 'blur(10px)'
             }
           }}>
@@ -119,17 +124,17 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
               width: '100%',
               py: 1.8,
               borderRadius: '100px',
-              background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
+              background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor})`,
               color: '#fff',
               fontWeight: 900,
               fontSize: '1.05rem',
               letterSpacing: '0.5px',
               textTransform: 'none',
-              boxShadow: `0 12px 32px ${alpha(theme.palette.primary.main, 0.4)}, inset 0 2px 0 0 rgba(255,255,255,0.2)`,
+              boxShadow: `0 12px 32px ${alpha(primaryColor, 0.4)}, inset 0 2px 0 0 rgba(255,255,255,0.2)`,
               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
               '&:hover': {
-                background: `linear-gradient(135deg, ${theme.palette.primary.light}, ${theme.palette.primary.main})`,
-                boxShadow: `0 16px 48px ${alpha(theme.palette.primary.main, 0.6)}, inset 0 2px 0 0 rgba(255,255,255,0.3)`,
+                background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor})`,
+                boxShadow: `0 16px 48px ${alpha(primaryColor, 0.6)}, inset 0 2px 0 0 rgba(255,255,255,0.3)`,
                 transform: 'translateY(-2px)'
               }
             }}
@@ -141,48 +146,40 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
     );
   }
 
-  const isOrg = targetScope === 'organization';
   const gatekeeper = isSociety ? checkGatekeeper(profile, 4) : { allowed: true };
 
-  const handleAddTodo = () => {
-    setTodoItems([...todoItems, { id: Math.random().toString(), text: '', done: false }]);
-  };
-  const updateTodo = (id: string, text: string) => {
-    setTodoItems(todoItems.map(t => t.id === id ? { ...t, text } : t));
-  };
-  const removeTodo = (id: string) => {
-    setTodoItems(todoItems.filter(t => t.id !== id));
-  };
-
   const handleSubmit = async () => {
-    if (!title || !date || !time) return;
-    if (isSociety && (!challengeId || !subcategoryId)) {
+    if (!title) return;
+    if (isOrgOnly && !hasOrgs) {
+      alert("This event type requires a verified Organization. Please join one first.");
+      return;
+    }
+    if ((scopes.includes('organization') || scopes.includes('society')) && !hasOrgs) {
+      alert("You must belong to a verified Organization to post Organization or Society events.");
+      return;
+    }
+    if (scopes.includes('society') && (!challengeId || !subcategoryId)) {
       alert("Category and Subcategory are required for Society postings.");
       return;
     }
     
     setIsSubmitting(true);
     
-    const finalDescription = contentType === 'todo' ? JSON.stringify(todoItems) : description;
     const finalTags = tags.length > 0 ? JSON.stringify(tags) : undefined;
     
     try {
       const result = await scheduleCalendarEvent({
-        targetScope,
-        selectedOrgId: selectedOrgId || undefined,
-        eventType,
-        dateType,
+        eventType: eventType as any,
         title,
-        date,
-        time: isAllDay ? '00:00' : time,
-        endDate: endDate || undefined,
-        endTime: isAllDay ? '23:59' : (endTime || undefined),
-        challengeId: challengeId?.id,
-        subcategoryId,
-        eraId,
+        challengeId: includeTaxonomy ? challengeId?.id : undefined,
+        subcategoryId: includeTaxonomy ? subcategoryId : undefined,
+        eraId: includeTaxonomy ? eraId : undefined,
+        foodTypeId: includeTaxonomy ? foodTypeId : undefined,
+        valueChainActorId: includeTaxonomy ? valueChainActorId : undefined,
         tenantId,
-        description: finalDescription,
-        tags: finalTags
+        tags: finalTags,
+        scopes,
+        timelines
       });
 
       if (result.success) {
@@ -199,29 +196,35 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
   };
 
   const getBlockFillStats = (blockId: string) => {
-    let filled = 0;
-    let total = 1;
+    let filled = 0; let total = 1;
     switch(blockId) {
-      case 'scope':
-        total = isOrg ? 2 : 1; // TargetScope + SelectedOrgId
-        if (targetScope) filled++;
-        if (isOrg && selectedOrgId) filled++;
-        break;
-      case 'type':
-        total = 1; 
-        if (eventType) filled++;
-        break;
-      case 'taxonomy':
-        total = 3; // challenge, subcategory, era
-        if (challengeId) filled++;
-        if (subcategoryId) filled++;
-        if (eraId) filled++;
-        break;
-      case 'details':
-        total = 3; // title, date, time
+      case 'core':
+        total = scopes.includes('society') ? 4 : 2; 
         if (title) filled++;
-        if (date) filled++;
-        if (time) filled++;
+        if (eventType) filled++;
+        if (scopes.includes('society')) {
+           if (challengeId) filled++;
+           if (subcategoryId) filled++;
+        }
+        break;
+      case 'scopes':
+        total = 1;
+        if (scopes.length > 0) filled++;
+        break;
+      case 'org_timeline':
+        total = 2; 
+        if (timelines.organization.date) filled++;
+        if (timelines.organization.time) filled++;
+        break;
+      case 'soc_timeline':
+        total = 2;
+        if (timelines.society.date) filled++;
+        if (timelines.society.time) filled++;
+        break;
+      case 'per_timeline':
+        total = 2;
+        if (timelines.personal.date) filled++;
+        if (timelines.personal.time) filled++;
         break;
     }
     return { filled, total };
@@ -256,12 +259,14 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
         <Box sx={footerStyles}>
           <PremiumButton variant="filled" baseColor="#4caf50" onClick={() => {
             if (eventType !== 'general' && challengeId && subcategoryId) {
-              router.push(`/${challengeId.id}/${subcategoryId}/learn`);
+              const selectedType = ECOSYSTEM_EVENT_TYPES.find(t => t.id === eventType);
+              const targetTab = selectedType?.tab || 'learn';
+              router.push(`/${challengeId.id}/${subcategoryId}/${targetTab}`);
             } else {
               onClose();
             }
           }} sx={{ width: '100%' }}>
-            {eventType === 'general' ? 'Acknowledge' : 'Proceed to Learn Tab'}
+            {eventType === 'general' ? 'Acknowledge' : 'Proceed to Draft'}
           </PremiumButton>
         </Box>
       </Box>
@@ -284,10 +289,26 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
 
             let filledSummary = 'Content added — tap to edit';
             if (filled) {
-              if (b.id === 'scope') filledSummary = targetScope === 'organization' ? `Organization Target` : targetScope === 'society' ? `Society (Public)` : `Personal Target`;
-              if (b.id === 'type') filledSummary = eventType === 'article' ? 'Article Draft' : eventType === 'livestream' ? 'Livestream Draft' : 'General Event';
-              if (b.id === 'taxonomy') filledSummary = `${challengeId?.title || 'Category'} • ${eraId}`;
-              if (b.id === 'details') filledSummary = `${title || 'No Title'} • ${date} ${time}`;
+              if (b.id === 'core') {
+                const typeLabel = ECOSYSTEM_EVENT_TYPES.find(t => t.id === eventType)?.label || 'Event';
+                filledSummary = `${title || 'No Title'} • ${typeLabel}`;
+              }
+              if (b.id === 'scopes') {
+                const scopeLabels = [];
+                if (scopes.includes('personal')) scopeLabels.push('Personal');
+                if (scopes.includes('organization')) scopeLabels.push('Organization');
+                if (scopes.includes('society')) scopeLabels.push('Society');
+                filledSummary = scopeLabels.length > 0 ? scopeLabels.join(' • ') : 'No scopes selected';
+              }
+              if (b.id === 'org_timeline') {
+                filledSummary = `${timelines.organization.date} ${timelines.organization.allDay ? '(All Day)' : timelines.organization.time}`;
+              }
+              if (b.id === 'soc_timeline') {
+                filledSummary = `${timelines.society.date} ${timelines.society.allDay ? '(All Day)' : timelines.society.time}`;
+              }
+              if (b.id === 'per_timeline') {
+                filledSummary = `${timelines.personal.date} ${timelines.personal.allDay ? '(All Day)' : timelines.personal.time}`;
+              }
             }
 
             return (
@@ -335,13 +356,15 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
                         }}>
                           {filled ? <CheckIcon sx={{ color: '#fff', fontSize: 18 }} /> : <Typography sx={{ fontWeight: 900, fontSize: '1rem', color }}>{i + 1}</Typography>}
                         </Box>
-                        <Box sx={{ flex: 1, minWidth: 0 }}>
-                          <Typography sx={{ fontWeight: 800, color: '#fff', fontSize: '1.05rem', letterSpacing: '-0.01em', mb: 0.2 }}>
-                            {b.role}
-                          </Typography>
-                          <Typography sx={{ color: filled ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.6)', fontSize: '0.85rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600 }}>
-                            {filled ? filledSummary : b.desc}
-                          </Typography>
+                        <Box sx={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+                          <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <Typography sx={{ fontWeight: 800, color: '#fff', fontSize: '1.05rem', letterSpacing: '-0.01em', mb: 0.2 }}>
+                              {b.role}
+                            </Typography>
+                            <Typography sx={{ color: filled ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.6)', fontSize: '0.85rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600 }}>
+                              {filled ? filledSummary : b.desc}
+                            </Typography>
+                          </Box>
                         </Box>
                       </Box>
                     </Box>
@@ -382,250 +405,336 @@ export default function AddEventSidebar({ onClose, tenantId, initialDate, onDate
                     <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
                       
                       {/* --- BLOCK 1: TARGET SCOPE --- */}
-                      {b.id === 'scope' && (
-                        <>
-                          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 1.5 }}>
-                            <CardChoice 
-                              title="Personal Calendar" desc="Only visible to you" color={color} 
-                              selected={targetScope === 'personal'} onClick={() => { setTargetScope('personal'); }}
-                            />
-                            
-                            {profile.organizations && profile.organizations.length > 0 && (
-                              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                <CardChoice 
-                                  title="Organization" desc="Sync with your team's agenda" color={color} 
-                                  selected={targetScope === 'organization'} onClick={() => { setTargetScope('organization'); }}
-                                />
-                                {targetScope === 'organization' && (
-                                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 1, px: 1, pb: 0.5 }}>
-                                    {profile.organizations.map((o: any) => (
-                                      <CardChoice
-                                        key={o.organizationId}
-                                        title={o.organization?.name || 'Unknown Organization'}
-                                        color={color}
-                                        selected={selectedOrgId === o.organizationId}
-                                        onClick={() => setSelectedOrgId(o.organizationId)}
-                                      />
-                                    ))}
-                                  </Box>
-                                )}
-                              </Box>
-                            )}
-                            
-                            <CardChoice 
-                              title="Society Broadcast" desc="Public event in the ecosystem" color={color} 
-                              selected={targetScope === 'society'} onClick={() => { setTargetScope('society'); }}
-                            />
-                          </Box>
-
-                          {isSociety && !gatekeeper.allowed && (
-                            <Alert severity="error" sx={{ borderRadius: 2, mt: 1, '& .MuiAlert-icon': { color: '#ff3366' }, bgcolor: 'rgba(255, 51, 102, 0.1)', color: '#ff3366' }}>
-                              <Typography variant="body2" sx={{ fontWeight: 700 }}>Rank 4 Required</Typography>
-                              Only authenticated Rank 4 members can broadcast to the Society.
-                            </Alert>
-                          )}
-                        </>
-                      )}
-
-                      {/* --- BLOCK 2: EVENT TYPE --- */}
-                      {b.id === 'type' && (
-                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 1.5 }}>
-                          <CardChoice 
-                            title="Article Draft" desc="Schedule a written report" color={color} 
-                            selected={eventType === 'article'} onClick={() => setEventType('article')}
-                          />
-                          <CardChoice 
-                            title="Livestream Draft" desc="Schedule a live session" color={color} 
-                            selected={eventType === 'livestream'} onClick={() => setEventType('livestream')}
-                          />
-                          {!isSociety && (
-                            <CardChoice 
-                              title="General Event" desc="Standard text reminder" color={color} 
-                              selected={eventType === 'general'} onClick={() => setEventType('general')}
-                            />
-                          )}
-                        </Box>
-                      )}
-
-                      {b.id === 'taxonomy' && (
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-                          {!gatekeeper.allowed && (
-                            <Alert severity="warning" sx={{ mb: 1 }}>
-                              You must be Level 4+ to post Society-wide events.
-                            </Alert>
-                          )}
-                          <PremiumAutocomplete
-                            label="Mission Category"
-                            options={categories}
-                            getOptionLabel={(opt) => opt.title}
-                            value={challengeId}
-                            onChange={(e, val) => {
-                              setChallengeId(val);
-                              setSubcategoryId('');
-                            }}
-                            colorTheme={color}
-                          />
-                          <PremiumAutocomplete
-                            label="Subcategory / Focus"
-                            options={challengeId ? challengeId.subcategories : []}
-                            getOptionLabel={(opt) => opt.title}
-                            value={challengeId?.subcategories?.find((s: any) => s.id === subcategoryId) || null}
-                            onChange={(e, val) => setSubcategoryId(val ? val.id : '')}
-                            colorTheme={color}
-                            disabled={!challengeId}
-                          />
-                          <PremiumAutocomplete
-                            label="Era"
-                            options={ERAS}
-                            getOptionLabel={(opt) => opt.label}
-                            value={ERAS.find(e => e.id === eraId) || null}
-                            onChange={(e, val) => setEraId(val ? val.id : '')}
-                            colorTheme={color}
-                          />
-                        </Box>
-                      )}
-
-                      {/* --- BLOCK 3: DETAILS --- */}
-                      {b.id === 'details' && (
-                        <>
+                      {b.id === 'core' && (
+                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 2 }}>
                           <PremiumTextField 
                             label="Event Title" placeholder="e.g. Q3 Roadmap Review" 
                             fullWidth size="small" value={title} onChange={(e: any) => setTitle(e.target.value)} colorTheme={color}
                           />
-
-                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <Typography sx={{ fontWeight: 800, color: '#334155', fontSize: '0.85rem' }}>Timing Intent</Typography>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: 'text.secondary' }}>All Day</Typography>
-                                <PremiumSwitch 
-                                  checked={isAllDay} 
-                                  onChange={(e) => setIsAllDay(e.target.checked)} 
-                                  size="small"
-                                  colorTheme={color}
-                                />
-                              </Box>
-                            </Box>
-                            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
-                              <CardChoice 
-                                title="Start Date" desc="Specific time block" color={color} 
-                                selected={dateType === 'START_TIME'} onClick={() => setDateType('START_TIME')}
-                              />
-                              <CardChoice 
-                                title="Deadline" desc="Cut-off or due date" color={color} 
-                                selected={dateType === 'DEADLINE'} onClick={() => setDateType('DEADLINE')}
-                              />
-                              <CardChoice 
-                                title="Publish Date" desc="When content goes live" color={color} 
-                                selected={dateType === 'PUBLISH_DATE'} onClick={() => setDateType('PUBLISH_DATE')}
-                              />
-                              <CardChoice 
-                                title="Date Range" desc="Multi-day event" color={color} 
-                                selected={dateType === 'DATE_RANGE'} onClick={() => setDateType('DATE_RANGE')}
-                              />
-                            </Box>
-                          </Box>
-
-                          <Box sx={{ display: 'flex', gap: 2 }}>
-                            <Box sx={{ flex: 1 }}>
-                              <PremiumDatePicker 
-                                label={dateType === 'PUBLISH_DATE' ? "Publish Date" : (dateType === 'DEADLINE' ? "Deadline Date" : (dateType === 'DATE_RANGE' ? "Start Date" : "Start Date"))} 
-                                value={date} 
-                                onChange={(e: any) => {
-                                  setDate(e.target.value);
-                                  if (onDateChange && e.target.value) {
-                                    // Parse as local date to prevent timezone shift
-                                    const parsedDate = new Date(e.target.value.replace(/-/g, '/'));
-                                    if (!isNaN(parsedDate.getTime())) onDateChange(parsedDate);
+                          <Typography sx={{ fontWeight: 800, color: '#334155', fontSize: '0.85rem', mt: 1 }}>Event Type</Typography>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                            <PremiumAutocomplete
+                              label="Select Event Type"
+                              options={ECOSYSTEM_EVENT_TYPES.filter(t => t.isActive)}
+                              getOptionLabel={(opt) => opt.label}
+                              value={ECOSYSTEM_EVENT_TYPES.find((t) => t.id === eventType) || ECOSYSTEM_EVENT_TYPES[0]}
+                              onChange={(e, val) => {
+                                const newType = val ? val.id : 'general';
+                                setEventType(newType);
+                                // Auto-enforce organization scope for orgOnly events
+                                const newConfig = ECOSYSTEM_EVENT_TYPES.find(t => t.id === newType);
+                                if (newConfig?.orgOnly && hasOrgs) {
+                                  setScopes(prev => {
+                                    const withoutPersonal = prev.filter(s => s !== 'personal');
+                                    return withoutPersonal.includes('organization') ? withoutPersonal : [...withoutPersonal, 'organization'];
+                                  });
+                                  // Pre-fill orgId if not already set
+                                  if (!timelines.organization.orgId && profile?.organizations?.[0]) {
+                                    setTimelines(prev => ({ ...prev, organization: { ...prev.organization, orgId: profile.organizations[0].id } }));
                                   }
-                                }} 
-                                colorTheme={color}
-                              />
-                            </Box>
-                            {!isAllDay && (
-                              <Box sx={{ flex: 1 }}>
-                                <PremiumTimePicker 
-                                  label="Time" 
-                                  value={time} 
-                                  onChange={(e: any) => setTime(e.target.value)} 
+                                }
+                              }}
+                              colorTheme={color}
+                            />
+                            <Typography sx={{ fontSize: '0.75rem', color: '#64748b', ml: 1, fontWeight: 600 }}>
+                              {(ECOSYSTEM_EVENT_TYPES.find((t) => t.id === eventType) || ECOSYSTEM_EVENT_TYPES[0]).description}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      )}
+
+                      {b.id === 'scopes' && (
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                          <PremiumChecklistItem 
+                            title="Personal Calendar" desc="Only visible to you" color={color} 
+                            selected={scopes.includes('personal')} 
+                            disabled={isOrgOnly}
+                            disabledReason={isOrgOnly ? 'This event type requires an Organization' : undefined}
+                            onClick={() => {
+                              if (scopes.includes('personal')) setScopes(scopes.filter(s => s !== 'personal'));
+                              else setScopes([...scopes, 'personal']);
+                            }}
+                          />
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            <PremiumChecklistItem 
+                              title={timelines.organization.orgId && profile.organizations?.find((o: any) => o.id === timelines.organization.orgId) ? `Organization: ${profile.organizations.find((o: any) => o.id === timelines.organization.orgId)?.name}` : "Organization Workspace"} 
+                              desc={!hasOrgs ? undefined : (timelines.organization.orgId ? "Sync with this team's agenda" : "Select a workspace below to sync agenda")}
+                              color={color} 
+                              selected={scopes.includes('organization')} 
+                              disabled={!hasOrgs}
+                              disabledReason={!hasOrgs ? 'Join a verified Organization to unlock' : undefined}
+                              onClick={() => {
+                                if (isOrgOnly) return; // Can't deselect org for orgOnly events
+                                if (scopes.includes('organization')) {
+                                  // Unchecking org also unchecks society
+                                  setScopes(scopes.filter(s => s !== 'organization' && s !== 'society'));
+                                } else {
+                                  setScopes([...scopes, 'organization']);
+                                  // Pre-fill orgId if not set
+                                  if (!timelines.organization.orgId && profile?.organizations?.[0]) {
+                                    setTimelines(prev => ({ ...prev, organization: { ...prev.organization, orgId: profile.organizations[0].id } }));
+                                  }
+                                }
+                              }}
+                            />
+                            {scopes.includes('organization') && hasOrgs && (
+                              <Box sx={{ 
+                                ml: 4, pl: 2, borderLeft: `2px solid ${alpha(color, 0.2)}`, 
+                                display: 'flex', flexDirection: 'column', gap: 1 
+                              }}>
+                                <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                  Target Workspace
+                                </Typography>
+                                <PremiumAutocomplete
+                                  label="Select Organization"
+                                  options={profile.organizations.map((o: any) => ({ id: o.id, label: o.name || 'Unknown' }))}
+                                  getOptionLabel={(opt) => opt.label}
+                                  value={profile.organizations.find((o: any) => o.id === timelines.organization.orgId) ? { id: timelines.organization.orgId, label: profile.organizations.find((o: any) => o.id === timelines.organization.orgId)?.name } : null}
+                                  onChange={(e, val) => setTimelines({ ...timelines, organization: { ...timelines.organization, orgId: val ? val.id : '' } })}
                                   colorTheme={color}
                                 />
+                                {timelines.organization.orgId && (
+                                  <Box sx={{ 
+                                    mt: 1, p: 2, 
+                                    display: 'flex', alignItems: 'center', gap: 2,
+                                    bgcolor: alpha(color, 0.05), border: `1px solid ${alpha(color, 0.1)}`, 
+                                    borderRadius: 2 
+                                  }}>
+                                    <Box sx={{ 
+                                      width: 40, height: 40, borderRadius: '10px', 
+                                      bgcolor: alpha(color, 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                      overflow: 'hidden', flexShrink: 0
+                                    }}>
+                                      {profile.organizations.find((o: any) => o.id === timelines.organization.orgId)?.logoUrl ? (
+                                        <img src={profile.organizations.find((o: any) => o.id === timelines.organization.orgId)?.logoUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                      ) : (
+                                        <Typography sx={{ fontWeight: 800, color, fontSize: '1.2rem' }}>
+                                          {profile.organizations.find((o: any) => o.id === timelines.organization.orgId)?.name?.charAt(0) || 'O'}
+                                        </Typography>
+                                      )}
+                                    </Box>
+                                    <Box>
+                                      <Typography sx={{ fontWeight: 800, color: '#1e293b', fontSize: '0.9rem' }}>
+                                        {profile.organizations.find((o: any) => o.id === timelines.organization.orgId)?.name}
+                                      </Typography>
+                                      <Typography sx={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>
+                                        {profile.organizations.find((o: any) => o.id === timelines.organization.orgId)?.role || 'Member'}
+                                      </Typography>
+                                    </Box>
+                                  </Box>
+                                )}
                               </Box>
                             )}
                           </Box>
+                          <PremiumChecklistItem 
+                            title="Society Broadcast" desc="Public event in the ecosystem" color={color} 
+                            selected={scopes.includes('society')} 
+                            disabled={!hasOrgs}
+                            disabledReason={!hasOrgs ? 'Join a verified Organization to unlock' : undefined}
+                            onClick={() => {
+                              if (scopes.includes('society')) {
+                                setScopes(scopes.filter(s => s !== 'society'));
+                              } else {
+                                // Auto-check organization when society is checked
+                                const newScopes = [...scopes, 'society'];
+                                if (!newScopes.includes('organization')) newScopes.push('organization');
+                                setScopes(newScopes as ('personal' | 'organization' | 'society')[]);
+                                // Pre-fill orgId if not set
+                                if (!timelines.organization.orgId && profile?.organizations?.[0]) {
+                                  setTimelines(prev => ({ ...prev, organization: { ...prev.organization, orgId: profile.organizations[0].id } }));
+                                }
+                              }
+                            }}
+                          />
+                          {scopes.includes('society') && eventType !== 'general' && (
+                            <Box sx={{ 
+                              ml: 4, pl: 2, borderLeft: `2px solid ${alpha(color, 0.2)}`, 
+                              display: 'flex', flexDirection: 'column', gap: 1.5 
+                            }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                                <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                  Apply Ecosystem Taxonomy
+                                </Typography>
+                                <PremiumSwitch 
+                                  checked={includeTaxonomy} 
+                                  onChange={(e: any) => setIncludeTaxonomy(e.target.checked)} 
+                                  colorTheme={color} 
+                                />
+                              </Box>
+                              
+                              {includeTaxonomy && (
+                                <>
+                                  <PremiumAutocomplete 
+                                    label="Target Era" 
+                                    options={ERAS} 
+                                    getOptionLabel={(opt) => opt.label} 
+                                    value={ERAS.find((e) => e.id === eraId) || null} 
+                                    onChange={(e, val) => setEraId(val ? val.id : '')} 
+                                    colorTheme={color} 
+                                  />
+                                  <PremiumAutocomplete label="Mission Category" options={categories} getOptionLabel={(opt) => opt.title} value={challengeId} onChange={(e, val) => { setChallengeId(val); setSubcategoryId(''); }} colorTheme={color} />
+                                  <PremiumAutocomplete label="Subcategory / Focus" options={challengeId ? challengeId.subcategories : []} getOptionLabel={(opt) => opt.title} value={challengeId?.subcategories?.find((s: any) => s.id === subcategoryId) || null} onChange={(e, val) => setSubcategoryId(val ? val.id : '')} colorTheme={color} disabled={!challengeId} />
+                                  <PremiumAutocomplete label="Food Type" options={FOOD_TYPES} getOptionLabel={(opt) => opt.label} value={FOOD_TYPES.find(v => v.id === foodTypeId) || null} onChange={(e, val) => setFoodTypeId(val ? val.id : '')} colorTheme={color} />
+                                  <PremiumAutocomplete label="Value Chain Actor" options={VALUE_CHAIN_ACTORS} getOptionLabel={(opt) => opt.label} value={VALUE_CHAIN_ACTORS.find(v => v.id === valueChainActorId) || null} onChange={(e, val) => setValueChainActorId(val ? val.id : '')} colorTheme={color} />
+                                </>
+                              )}
+                            </Box>
+                          )}
+                        </Box>
+                      )}
 
-                          {(dateType === 'DATE_RANGE' || dateType === 'START_TIME') && (
+                      {(b.id === 'org_timeline' || b.id === 'soc_timeline' || b.id === 'per_timeline') && (() => {
+                        const scopeKey = b.id === 'org_timeline' ? 'organization' : b.id === 'soc_timeline' ? 'society' : 'personal';
+                        const timeline = timelines[scopeKey];
+                        
+                        return (
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <Box sx={{ display: 'flex', gap: 1, overflowX: 'auto', pb: 1, '&::-webkit-scrollbar': { display: 'none' } }}>
+                              {['START_TIME', 'PUBLISH_DATE', 'DATE_RANGE', 'DEADLINE'].map(dt => (
+                                <Box 
+                                  key={dt}
+                                  onClick={() => setTimelines({ ...timelines, [scopeKey]: { ...timeline, dateType: dt, allDay: dt === 'PUBLISH_DATE' ? true : timeline.allDay } })}
+                                  sx={{
+                                    px: 2, py: 0.8, borderRadius: '100px', cursor: 'pointer', flexShrink: 0,
+                                    border: `1px solid ${timeline.dateType === dt ? color : alpha(color, 0.3)}`,
+                                    bgcolor: timeline.dateType === dt ? alpha(color, 0.1) : 'transparent',
+                                    transition: 'all 0.2s ease',
+                                    '&:hover': { bgcolor: alpha(color, 0.05) }
+                                  }}
+                                >
+                                  <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: timeline.dateType === dt ? color : '#64748b', textTransform: 'capitalize' }}>
+                                    {dt === 'START_TIME' ? 'Start Date' : dt === 'PUBLISH_DATE' ? 'Publish Date' : dt === 'DATE_RANGE' ? 'Duration' : 'Deadline / End'}
+                                  </Typography>
+                                </Box>
+                              ))}
+                            </Box>
+
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: alpha(color, 0.05), p: 1.5, borderRadius: '12px', border: `1px solid ${alpha(color, 0.1)}` }}>
+                              <Typography sx={{ fontWeight: 800, color: '#334155', fontSize: '0.85rem' }}>All Day Event</Typography>
+                              <PremiumSwitch 
+                                checked={timeline.allDay} 
+                                onChange={(e: any) => setTimelines({ ...timelines, [scopeKey]: { ...timeline, allDay: e.target.checked } })} 
+                                colorTheme={color} 
+                              />
+                            </Box>
+
                             <Box sx={{ display: 'flex', gap: 2 }}>
                               <Box sx={{ flex: 1 }}>
                                 <PremiumDatePicker 
-                                  label="End Date (Optional)" 
-                                  value={endDate} 
-                                  onChange={(e: any) => setEndDate(e.target.value)} 
+                                  label={timeline.dateType === 'DATE_RANGE' ? "Start Date" : "Date"} 
+                                  value={timeline.date} 
+                                  onChange={(e: any) => setTimelines({ ...timelines, [scopeKey]: { ...timeline, date: e.target.value } })} 
                                   colorTheme={color}
                                 />
                               </Box>
-                              {!isAllDay && (
+                              {!timeline.allDay && (
                                 <Box sx={{ flex: 1 }}>
                                   <PremiumTimePicker 
-                                    label="End Time (Optional)" 
-                                    value={endTime} 
-                                    onChange={(e: any) => setEndTime(e.target.value)} 
+                                    label={timeline.dateType === 'DATE_RANGE' ? "Start Time" : "Time"} 
+                                    value={timeline.time} 
+                                    onChange={(e: any) => setTimelines({ ...timelines, [scopeKey]: { ...timeline, time: e.target.value } })} 
                                     colorTheme={color}
                                   />
                                 </Box>
                               )}
                             </Box>
-                          )}
 
-                          {/* Content AND Todo List */}
-                          <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                            <PremiumTextField 
-                              label="Description / Context" multiline rows={2} fullWidth size="small"
-                              value={description} onChange={(e: any) => setDescription(e.target.value)} colorTheme={color}
-                            />
-                            
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                              <Typography sx={{ fontWeight: 800, color: '#334155', fontSize: '0.85rem' }}>Action List (Optional)</Typography>
-                              {todoItems.map((todo, idx) => (
-                                <Box key={todo.id} sx={{ 
-                                  display: 'flex', alignItems: 'flex-start', gap: 1.5, p: 1.5,
-                                  bgcolor: 'rgba(255,255,255,0.6)', borderRadius: '16px',
-                                  border: '1px solid rgba(0,0,0,0.04)',
-                                  boxShadow: '0 2px 10px rgba(0,0,0,0.02)'
-                                }}>
-                                  <Box sx={{ width: 18, height: 18, mt: 1.2, borderRadius: '6px', border: `2px solid ${alpha(color, 0.4)}`, flexShrink: 0, bgcolor: 'rgba(255,255,255,0.8)' }} />
-                                  <PremiumTextField 
-                                    label={`Task ${idx + 1}`} fullWidth size="small"
-                                    value={todo.text} onChange={(e: any) => updateTodo(todo.id, e.target.value)} colorTheme={color}
+                            {timeline.dateType === 'DATE_RANGE' && (
+                              <Box sx={{ display: 'flex', gap: 2, mt: 0 }}>
+                                <Box sx={{ flex: 1 }}>
+                                  <PremiumDatePicker 
+                                    label="End Date" 
+                                    value={timeline.endDate} 
+                                    onChange={(e: any) => setTimelines({ ...timelines, [scopeKey]: { ...timeline, endDate: e.target.value } })} 
+                                    colorTheme={color}
                                   />
-                                  <IconButton size="small" onClick={() => removeTodo(todo.id)} sx={{ color: '#ef4444', mt: 0.5, bgcolor: 'rgba(239,68,68,0.1)', '&:hover': { bgcolor: 'rgba(239,68,68,0.2)' } }}>
-                                    <DeleteIcon fontSize="small" />
-                                  </IconButton>
                                 </Box>
-                              ))}
-                              <Button startIcon={<AddIcon />} size="small" onClick={handleAddTodo} sx={{ color, fontWeight: 800, alignSelf: 'flex-start', bgcolor: alpha(color, 0.1), borderRadius: '10px', px: 2, '&:hover': { bgcolor: alpha(color, 0.2) } }}>
-                                Add Task
-                              </Button>
-                            </Box>
-                          </Box>
+                                {!timeline.allDay && (
+                                  <Box sx={{ flex: 1 }}>
+                                    <PremiumTimePicker 
+                                      label="End Time" 
+                                      value={timeline.endTime} 
+                                      onChange={(e: any) => setTimelines({ ...timelines, [scopeKey]: { ...timeline, endTime: e.target.value } })} 
+                                      colorTheme={color}
+                                    />
+                                  </Box>
+                                )}
+                              </Box>
+                            )}
 
-                          {/* Tags for Organization or Personal */}
-                          {(!isSociety) && (
-                            <Box sx={{ mt: 1 }}>
-                              <Typography sx={{ fontWeight: 800, color: '#334155', fontSize: '0.85rem', mb: 1 }}>Keywords / Tags (Optional)</Typography>
-                              <PremiumAutocomplete
-                                multiple
-                                freeSolo
-                                label="Press Enter to add tags"
-                                options={[]}
-                                value={tags}
-                                onChange={(e, val) => setTags(val as string[])}
-                                colorTheme={color}
+                            {b.id === 'soc_timeline' && (
+                              <PremiumTextField 
+                                label="Description / Context" 
+                                multiline rows={2} fullWidth size="small" 
+                                value={timeline.description} 
+                                onChange={(e: any) => setTimelines({ ...timelines, [scopeKey]: { ...timeline, description: e.target.value } })} 
+                                colorTheme={color} 
                               />
+                            )}
+
+                            {b.id === 'org_timeline' && (
+                              <PremiumTextField 
+                                label="Rules & Guidelines" 
+                                multiline rows={2} fullWidth size="small" 
+                                value={timeline.rules} 
+                                onChange={(e: any) => setTimelines({ ...timelines, [scopeKey]: { ...timeline, rules: e.target.value } })} 
+                                colorTheme={color} 
+                              />
+                            )}
+
+                            <Box sx={{ p: 2, bgcolor: alpha(color, 0.05), borderRadius: 2, border: `1px solid ${alpha(color, 0.2)}` }}>
+                              <Typography sx={{ fontWeight: 800, color: '#334155', fontSize: '0.85rem', mb: 1 }}>Tasks (Optional)</Typography>
+                              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                                {timeline.tasks && timeline.tasks.map((task: any, idx: number) => (
+                                  <Box key={task.id} sx={{ 
+                                    display: 'flex', alignItems: 'flex-start', gap: 1.5, p: 1.5,
+                                    bgcolor: 'rgba(255,255,255,0.6)', borderRadius: '16px',
+                                    border: '1px solid rgba(0,0,0,0.04)',
+                                    boxShadow: '0 2px 10px rgba(0,0,0,0.02)'
+                                  }}>
+                                    <Box sx={{ width: 18, height: 18, mt: 1.2, borderRadius: '6px', border: `2px solid ${alpha(color, 0.4)}`, flexShrink: 0, bgcolor: 'rgba(255,255,255,0.8)' }} />
+                                    <PremiumTextField 
+                                      label={`Task ${idx + 1}`} fullWidth size="small"
+                                      value={task.text} 
+                                      onChange={(e: any) => {
+                                        const newTasks = timeline.tasks.map((t: any) => t.id === task.id ? { ...t, text: e.target.value } : t);
+                                        setTimelines({ ...timelines, [scopeKey]: { ...timeline, tasks: newTasks } });
+                                      }} 
+                                      colorTheme={color}
+                                    />
+                                    <IconButton size="small" onClick={() => setTimelines({ ...timelines, [scopeKey]: { ...timeline, tasks: timeline.tasks.filter((t: any) => t.id !== task.id) } })} sx={{ color: '#ef4444', mt: 0.5, bgcolor: 'rgba(239,68,68,0.1)', '&:hover': { bgcolor: 'rgba(239,68,68,0.2)' } }}>
+                                      <DeleteIcon fontSize="small" />
+                                    </IconButton>
+                                  </Box>
+                                ))}
+                                <Button 
+                                  startIcon={<AddIcon />} size="small" 
+                                  onClick={() => {
+                                    const newTask = { id: Math.random().toString(), text: '', done: false };
+                                    setTimelines({ ...timelines, [scopeKey]: { ...timeline, tasks: [...(timeline.tasks || []), newTask] } });
+                                  }} 
+                                  sx={{ color, fontWeight: 800, alignSelf: 'flex-start', bgcolor: alpha(color, 0.1), borderRadius: '10px', px: 2, '&:hover': { bgcolor: alpha(color, 0.2) } }}
+                                >
+                                  Add Task
+                                </Button>
+                              </Box>
                             </Box>
-                          )}
-                        </>
-                      )}
+
+                            {b.id === 'org_timeline' && (
+                               <Box sx={{ p: 2, bgcolor: alpha(color, 0.05), borderRadius: 2, border: `1px solid ${alpha(color, 0.2)}` }}>
+                                 <Typography sx={{ fontWeight: 800, color: '#334155', fontSize: '0.85rem', mb: 1 }}>Assignees (Mockup)</Typography>
+                                 <Box sx={{ display: 'flex', gap: 1 }}>
+                                   <Box sx={{ width: 32, height: 32, borderRadius: '50%', bgcolor: '#cbd5e1' }} />
+                                   <Box sx={{ width: 32, height: 32, borderRadius: '50%', bgcolor: '#cbd5e1' }} />
+                                   <Box sx={{ width: 32, height: 32, borderRadius: '50%', border: '1px dashed #94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                     <AddIcon sx={{ fontSize: 16, color: '#94a3b8' }} />
+                                   </Box>
+                                 </Box>
+                               </Box>
+                            )}
+                          </Box>
+                        );
+                      })()}
                     </Box>
                   </Box>
                 </Box>
@@ -693,6 +802,45 @@ const CardChoice = ({ title, desc, color, selected, onClick }: any) => (
         {title}
       </Typography>
       {desc && <Typography sx={{ fontSize: '0.8rem', color: selected ? '#475569' : '#94a3b8', fontWeight: 500, lineHeight: 1.4 }}>{desc}</Typography>}
+    </Box>
+  </Box>
+);
+
+const PremiumChecklistItem = ({ title, desc, color, selected, onClick, disabled, disabledReason }: any) => (
+  <Box 
+    onClick={disabled ? undefined : onClick}
+    sx={{ 
+      display: 'flex', alignItems: 'center', gap: 2, p: 2, 
+      borderRadius: '16px', cursor: disabled ? 'not-allowed' : 'pointer',
+      transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+      border: `1px solid ${disabled ? 'rgba(0,0,0,0.04)' : (selected ? color : 'rgba(0,0,0,0.05)')}`,
+      bgcolor: disabled ? 'rgba(0,0,0,0.02)' : (selected ? alpha(color, 0.05) : '#fff'),
+      opacity: disabled ? 0.55 : 1,
+      '&:hover': disabled ? {} : {
+        bgcolor: selected ? alpha(color, 0.08) : 'rgba(0,0,0,0.02)',
+        borderColor: selected ? color : 'rgba(0,0,0,0.1)'
+      }
+    }}
+  >
+    <Box sx={{ 
+      width: 24, height: 24, borderRadius: '6px', 
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      border: `2px solid ${disabled ? '#cbd5e1' : (selected ? color : '#cbd5e1')}`,
+      bgcolor: disabled ? 'rgba(0,0,0,0.04)' : (selected ? color : 'transparent'),
+      transition: 'all 0.2s ease',
+      color: '#fff'
+    }}>
+      {disabled ? <LockOutlinedIcon sx={{ fontSize: 14, color: '#94a3b8' }} /> : (selected && <CheckIcon sx={{ fontSize: 16, fontWeight: 900 }} />)}
+    </Box>
+    <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+      <Typography sx={{ fontWeight: 800, fontSize: '0.95rem', color: disabled ? '#94a3b8' : '#1e293b', letterSpacing: '-0.01em' }}>
+        {title}
+      </Typography>
+      {(disabledReason && disabled) ? (
+        <Typography sx={{ fontSize: '0.8rem', color: '#ef4444', fontWeight: 600, lineHeight: 1.4 }}>{disabledReason}</Typography>
+      ) : (
+        desc && <Typography sx={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500, lineHeight: 1.4 }}>{desc}</Typography>
+      )}
     </Box>
   </Box>
 );

@@ -8,9 +8,12 @@ import KnowledgeTeaser from './components/KnowledgeTeaser';
 import ShowcaseCarousel from './components/ShowcaseCarousel';
 import BentoGridTeaser from './components/BentoGridTeaser';
 import RadarIndexOverview from './components/RadarIndexOverview';
+import PlayCircleFilledIcon from '@mui/icons-material/PlayCircleFilled';
 import CinematicHero from './components/CinematicHero';
 import CommandCenterHero from './components/CommandCenterHero';
+import SocietyGatewayCTA from './components/SocietyGatewayCTA';
 import Swimlane from './components/Swimlane';
+import EmailCaptureTrigger from './components/EmailCaptureTrigger';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
@@ -18,15 +21,7 @@ import { getChallengeUpdatesBySubcategories } from '@/lib/actions/db';
 import PremiumButton from '@/components/PremiumButton';
 import { prisma } from '@/lib/db/client';
 
-// Version B (Editorial Magazine) Imports & A/B Toggle
-import EditorialMagazineHero, { EditorialStoryItem } from './components/EditorialMagazineHero';
-import EditorialGrid from './components/EditorialGrid';
-import TopicExplorerRow from './components/TopicExplorerRow';
-import ABToggleBar from './components/ABToggleBar';
-
-export default async function InnovationsHomepage(props: { searchParams?: Promise<{ view?: string }> }) {
-  const resolvedSearchParams = props.searchParams ? await props.searchParams : {};
-  const currentView = (resolvedSearchParams.view || 'a').toLowerCase(); // Default to Variant A (Command Center)
+export default async function InnovationsHomepage() {
   const headersList = await headers();
   const rawTenantId = headersList.get('x-tenant-id') || 'food';
   const tenantId = rawTenantId.includes('energy') ? 'energy' : 'food'; // Normalized
@@ -80,6 +75,7 @@ export default async function InnovationsHomepage(props: { searchParams?: Promis
   let recentIntelligence: any[] = [];
   try {
     const recentLC = await prisma.learnContent.findMany({
+      where: { status: 'published' },
       orderBy: { createdAt: 'desc' },
       take: 20,
       include: {
@@ -107,7 +103,8 @@ export default async function InnovationsHomepage(props: { searchParams?: Promis
         author: lc.authorName || 'Society Architect',
         dateAdded: lc.createdAt,
         readTime: lc.type === 'video' || lc.type === 'livestream' ? 'Watch' : '5 min read',
-        link: `/${lc.challengeId || 'global'}/${lc.subcategory || 'general'}/learn/article/${lc.slug}`
+        link: `/learn/article/${lc.slug}`,
+        blocks: lc.article?.blocks || []
       };
     });
 
@@ -134,15 +131,17 @@ export default async function InnovationsHomepage(props: { searchParams?: Promis
   const allChallenges = homepageConfig.challenges;
 
   // Fetch real database stats and slideshow content for the Hero
+  let statsObj = { articles: 0, livestreams: 0, jobs: 0, missions: 0, users: 0 };
   let learnContentCount = 142;
   let userCount = 12500;
   let slideshowItems: { image: string, title: string }[] = [];
 
   try {
-    const [lcCount, uCount, recentLC] = await Promise.all([
+    const [lcCount, uCount, recentLC, articlesCount, livestreamsCount, jobsCount, missionsCount] = await Promise.all([
       prisma.learnContent.count(),
       prisma.user.count(),
       prisma.learnContent.findMany({
+        where: { status: 'published' },
         orderBy: { createdAt: 'desc' },
         take: 5,
         include: {
@@ -154,8 +153,14 @@ export default async function InnovationsHomepage(props: { searchParams?: Promis
             }
           }
         }
-      })
+      }),
+      prisma.learnContent.count({ where: { status: 'published' } }),
+      prisma.calendarEvent.count({ where: { sourceType: 'livestream', status: { in: ['upcoming', 'live'] } } }),
+      prisma.tradeListing.count({ where: { category: { in: ['jobs', 'volunteer', 'internship'] }, status: 'active' } }),
+      prisma.campaign.count({ where: { status: 'active_deployment' } })
     ]);
+    
+    statsObj = { articles: articlesCount, livestreams: livestreamsCount, jobs: jobsCount, missions: missionsCount, users: uCount };
     
     learnContentCount = lcCount;
     userCount = uCount;
@@ -219,17 +224,6 @@ export default async function InnovationsHomepage(props: { searchParams?: Promis
     }));
   } catch (e) {
     console.warn("SERVER LOG - Failed to fetch active deployments from DB.", e);
-  }
-
-  // Fallback to static CMS data if the database is completely empty
-  if (activeDeployments.length === 0) {
-    activeDeployments = homepageConfig.showcaseProjects.map((p: any) => ({
-      ...p,
-      type: 'Venture',
-      origin: 'Core Platform',
-      operator: { name: 'Society Base', avatarUrl: '/images/default-avatar.png' },
-      traction: 'Recently Deployed'
-    }));
   }
 
   // Fetch Jobs & Volunteering Opportunities
@@ -323,8 +317,8 @@ export default async function InnovationsHomepage(props: { searchParams?: Promis
   });
 
   // ── HYBRID RANKING HIERARCHY FOR EDITORIAL HERO (VERSION B) ───────
-  let editorialFeaturedStory: EditorialStoryItem | null = null;
-  let editorialTopStories: EditorialStoryItem[] = [];
+  let editorialFeaturedStory: any | null = null;
+  let editorialTopStories: any[] = [];
 
   try {
     const publishedArticles = await prisma.learnContent.findMany({
@@ -409,238 +403,136 @@ export default async function InnovationsHomepage(props: { searchParams?: Promis
   return (
     <Box sx={{ bgcolor: '#050505', minHeight: '100vh' }}>
       
-      {currentView === 'b' ? (
-        /* ═══════════════════════════════════════════════════════════
-            VARIANT B: THE EDITORIAL MAGAZINE HOMEPAGE (New Layout)
-        ═══════════════════════════════════════════════════════════ */
-        <>
-          <EditorialMagazineHero 
-            featuredStory={editorialFeaturedStory}
-            topStories={editorialTopStories}
-          />
-          <EditorialGrid />
-          <TopicExplorerRow />
-        </>
-      ) : (
-        /* ═══════════════════════════════════════════════════════════
-            VARIANT A: THE COMMAND CENTER HOMEPAGE (Current Layout)
-        ═══════════════════════════════════════════════════════════ */
-        <>
-          <Box sx={{ bgcolor: '#ffffff' }}>
-            <CommandCenterHero 
-              globalAlerts={marqueeItems}
-            />
-          </Box>
+      {/* ═══════════════════════════════════════════════════════════
+          THE COMMAND CENTER HOMEPAGE
+      ═══════════════════════════════════════════════════════════ */}
+      <Box sx={{ bgcolor: '#ffffff' }}>
+        <CommandCenterHero 
+          globalAlerts={marqueeItems}
+          stats={statsObj}
+        />
+      </Box>
 
-          <Box sx={{ bgcolor: '#ffffff', py: 8 }}>
-            {[
-              { 
-                id: 'lane-top-stories', 
-                title: 'Top Stories', 
-                color: '#dc2626', 
-                newCount: 5,
-                items: (editorialTopStories && editorialTopStories.length > 0)
-                  ? [editorialFeaturedStory, ...editorialTopStories].filter(Boolean).map((s: any) => ({
-                      id: s.id,
-                      type: 'Intelligence',
-                      title: s.title,
-                      thumbnailUrl: s.imageUrl || 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?auto=format&fit=crop&q=80&w=1200',
-                      link: s.link,
-                      authorOrOperator: s.authorName || 'FoodNerve Editorial',
-                      authorAvatarUrl: s.authorAvatarUrl,
-                      categoryLabel: s.categoryLabel || 'TOP STORY',
-                      metaInfo: s.readTime || '5 min read',
-                      tags: s.tags,
-                    }))
-                  : undefined
-              },
-              { id: 'lane-articles', title: 'Latest Articles', color: '#3b82f6', newCount: 12 },
-              { id: 'lane-livestreams', title: 'Livestreams', color: '#f59e0b', newCount: 3 },
-              { id: 'lane-jobs', title: 'Careers & Opportunities', color: '#10b981', newCount: 18 },
-              { id: 'lane-missions', title: 'Missions', color: '#ec4899', newCount: 2 }
-            ].map((lane) => {
-              if (lane.id === 'lane-top-stories') {
-                return <Swimlane key={lane.id} lane={lane} />;
+      <Box sx={{ bgcolor: '#ffffff', py: 8 }}>
+        {[
+          { 
+            id: 'lane-top-stories', 
+            title: 'Top Stories', 
+            color: '#dc2626', 
+            newCount: 0,
+            items: (editorialTopStories && editorialTopStories.length > 0)
+              ? [editorialFeaturedStory, ...editorialTopStories].filter(Boolean).map((s: any) => ({
+                  id: s.id,
+                  type: 'Intelligence',
+                  title: s.title,
+                  thumbnailUrl: s.imageUrl || 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?auto=format&fit=crop&q=80&w=1200',
+                  link: s.link,
+                  authorOrOperator: s.authorName || 'FoodNerve Editorial',
+                  authorAvatarUrl: s.authorAvatarUrl,
+                  categoryLabel: s.categoryLabel || 'TOP STORY',
+                  metaInfo: s.readTime || '5 min read',
+                  tags: s.tags,
+                }))
+              : undefined
+          },
+          { id: 'lane-articles', title: 'Latest Articles', color: '#3b82f6', newCount: 0 },
+          { id: 'lane-livestreams', title: 'Livestreams', color: '#f59e0b', newCount: 0 },
+          { id: 'lane-jobs', title: 'Careers & Opportunities', color: '#10b981', newCount: 0 },
+          { id: 'lane-missions', title: 'Missions', color: '#ec4899', newCount: 0 }
+        ].map((lane) => {
+          if (lane.id === 'lane-top-stories') {
+            return <Swimlane key={lane.id} lane={{ ...lane, newCount: lane.items?.length || 0, totalCount: statsObj.articles }} />;
+          }
+          if (lane.id === 'lane-articles') {
+            const articleItems = recentIntelligence.filter((i: any) => i.type === 'article').map((i: any) => {
+              let tags: string[] = [];
+              if (i.blocks && i.blocks.length > 0) {
+                tags = i.blocks.map((b: any) => {
+                  try {
+                    const payload = typeof b.content === 'string' ? JSON.parse(b.content) : b.content;
+                    let textVal = '';
+                    if (b.blockType === 'subheading') textVal = payload?.text;
+                    else if (b.blockType === 'exec_summary') textVal = payload?.point1 || payload?.point2;
+                    else if (b.blockType === 'highlight_card') textVal = payload?.caption || payload?.label;
+                    else if (b.blockType === 'core_interactive') textVal = payload?.heading;
+                    if (typeof textVal === 'string' && textVal.trim().length > 0) {
+                      const clean = textVal.replace(/<[^>]*>?/gm, '').trim();
+                      return clean.length > 45 ? clean.substring(0, 42) + '...' : clean;
+                    }
+                  } catch(e) {}
+                  return null;
+                }).filter((t: any) => t && t.length > 3);
               }
-              // Generate consolidated items for careers
-              if (lane.id === 'lane-jobs') {
-                const combinedItems = [
-                  { id: 'job1', type: 'Jobs', title: 'Chief Agronomist', authorOrOperator: 'Olam Agri', companyLogo: '/logos/olam.png', locationOrSalary: 'Lagos, Nigeria', metaInfo: 'Actively Hiring', link: '/careers/job1' },
-                  { id: 'int1', type: 'Internships', title: 'Data Analyst Intern', authorOrOperator: 'FoodNerve', companyLogo: '/logos/fn.png', locationOrSalary: 'Remote', metaInfo: 'Ends Friday', link: '/careers/int1' },
-                  { id: 'vol1', type: 'Volunteering', title: 'Community Outreach Lead', authorOrOperator: 'Green Belt', companyLogo: '/logos/green.png', locationOrSalary: 'Kano, Nigeria', metaInfo: 'Urgent', link: '/careers/vol1' },
-                  { id: 'opp1', type: 'Opportunities', title: 'Agri-Tech Startup Grant ($50k)', authorOrOperator: 'Tony Elumelu Foundation', companyLogo: '/logos/tef.png', locationOrSalary: 'Africa', metaInfo: 'Deadline: Oct 1', link: '/careers/opp1' }
-                ];
-                return <Swimlane key={lane.id} lane={{ ...lane, items: combinedItems }} />;
-              }
-              // Generate basic items for missions
-              if (lane.id === 'lane-missions') {
-                const missionItems = [
-                  { id: 'm1', type: 'Missions', title: 'Zero Post-Harvest Loss by 2030', authorOrOperator: 'FoodNerve Society', metaInfo: 'Active Mission', thumbnailUrl: 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?auto=format&fit=crop&q=80&w=800', progress: 45, link: '/projects/m1' },
-                  { id: 'm2', type: 'Missions', title: '1 Million Solar Chillers Deployed', authorOrOperator: 'FoodNerve Systems', metaInfo: 'Fundraising Phase', thumbnailUrl: 'https://images.unsplash.com/photo-1591696205602-2f950c417cb9?auto=format&fit=crop&q=80&w=800', progress: 12, link: '/projects/m2' },
-                  { id: 'm3', type: 'Missions', title: 'Digitize 50,000 Smallholder Farmers', authorOrOperator: 'Ministry of Agriculture', metaInfo: 'Execution Phase', thumbnailUrl: 'https://images.unsplash.com/photo-1574943320219-553eb213f72d?auto=format&fit=crop&q=80&w=800', progress: 80, link: '/projects/m3' }
-                ];
-                return <Swimlane key={lane.id} lane={{ ...lane, items: missionItems }} />;
-              }
-              return <Swimlane key={lane.id} lane={lane} />;
-            })}
-          </Box>
-        </>
-      )}
-
-      {/* RADAR INDEX OVERVIEW SECTION */}
-      <RadarIndexOverview />
-
-      {/* LIVE A/B TESTING TOGGLE BAR (FLOATING AT BOTTOM RIGHT) */}
-      <ABToggleBar currentView={currentView} />
-
-
-      {/* ═══════════════════════════════════════════════════════════
-          SECTION 3: THE CHALLENGES TEASER
-          Dark manifesto excerpt + premium challenge cards
-      ═══════════════════════════════════════════════════════════ */}
-      <Box id="section-challenges" sx={{ 
-        pt: { xs: 4, md: 6 }, 
-        pb: { xs: 4, md: 5 }, 
-        px: 2, 
-        position: 'relative',
-        bgcolor: '#050505', 
-        color: 'white',
-        overflow: 'hidden',
-        '&::before': {
-          content: '""', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'radial-gradient(circle at 50% 50%, rgba(20, 20, 20, 0.8) 0%, #050505 100%)',
-          zIndex: 0
-        },
-        // Subtle grid texture
-        backgroundImage: 'linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)',
-        backgroundSize: '50px 50px'
-      }}>
-        <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
-          <Box sx={{ maxWidth: '800px', mb: 3 }}>
-            <Typography variant="overline" sx={{ color: 'error.main', fontWeight: 900, letterSpacing: 3, mb: 1, display: 'block' }}>
-              THE CHALLENGES
-            </Typography>
-            <Typography variant="h3" sx={{ fontWeight: 900, mb: 1, lineHeight: 1.1, letterSpacing: '-0.02em', fontSize: { xs: '2rem', md: '2.5rem' } }}>
-              Systemic Fault Lines Isolated.
-            </Typography>
-            <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 400, lineHeight: 1.6, fontSize: '1rem' }}>
-              Explore the core infrastructure deficits preventing scale.
-            </Typography>
-          </Box>
-
-          <Box sx={{ mt: 2 }}>
-            <BentoGridTeaser challenges={allChallenges} />
-          </Box>
-
-          <Box sx={{ mt: 4, textAlign: 'center', position: 'relative', zIndex: 2 }}>
-            <Link href="/challenges" passHref style={{ textDecoration: 'none' }}>
-              <PremiumButton 
-                variant="outlined" 
-                size="large"
-                baseColor="white"
-                endIcon={<ArrowForwardIcon />}
-                sx={{ 
-                  color: 'white', 
-                  borderColor: 'rgba(255,255,255,0.15)', 
-                  px: 6, 
-                  py: 1.5,
-                  fontSize: '0.9rem',
-                  fontWeight: 'bold',
-                  '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.1)', boxShadow: '0 0 20px rgba(255,255,255,0.2)' },
-                }}
-              >
-                See all {homepageConfig.challenges.length} Challenges
-              </PremiumButton>
-            </Link>
-          </Box>
-        </Container>
-      </Box>
-
-
-      {/* ═══════════════════════════════════════════════════════════
-          SECTION 4: THE INNOVATIONS SHOWCASE
-          Horizontal Scrollable Cinematic Projects
-      ═══════════════════════════════════════════════════════════ */}
-      <Box id="section-deployments" sx={{ bgcolor: '#022c22', color: 'white', overflow: 'hidden' }}>
-        {/* Section Header */}
-        <Container maxWidth="lg" sx={{ pt: { xs: 8, md: 10 }, pb: 4 }}>
-          <Box sx={{ maxWidth: '700px' }}>
-            <Typography variant="overline" sx={{ color: 'primary.light', fontWeight: 900, letterSpacing: 3, mb: 1, display: 'block' }}>
-              ACTIVE DEPLOYMENTS
-            </Typography>
-            <Typography variant="h3" sx={{ fontWeight: 900, mb: 2, lineHeight: 1.1 }}>
-              Building core infrastructure.
-            </Typography>
-            <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.5)', fontWeight: 400, lineHeight: 1.6 }}>
-              Explore the massive operational deployments gaining traction.
-            </Typography>
-          </Box>
-        </Container>
-
-        {/* Interactive Showcase Carousel */}
-        <ShowcaseCarousel projects={activeDeployments} />
+              return {
+                id: i.id,
+                type: 'Article',
+                title: i.title,
+                authorOrOperator: i.author,
+                metaInfo: i.readTime,
+                thumbnailUrl: i.thumbnailUrl,
+                link: i.link,
+                tags: tags.length > 0 ? tags : ['🌾 System Intelligence', '📊 Field Report', '💡 Architecture'],
+                categoryLabel: i.categoryLabel
+              };
+            });
+            return <Swimlane key={lane.id} lane={{ ...lane, items: articleItems, newCount: articleItems.length, totalCount: statsObj.articles }} />;
+          }
+          if (lane.id === 'lane-livestreams') {
+            const streamItems = recentIntelligence.filter((i: any) => i.type === 'livestream' || i.type === 'video').map((i: any) => ({
+              id: i.id,
+              type: i.type === 'livestream' ? 'Live' : 'Video',
+              title: i.title,
+              authorOrOperator: i.author,
+              metaInfo: i.readTime,
+              thumbnailUrl: i.thumbnailUrl,
+              link: i.link,
+              tags: ['🔴 Live Broadcast', '🎙️ Expert Panel', '📈 Strategy Session'],
+              categoryLabel: i.categoryLabel
+            }));
+            return (
+              <React.Fragment key={lane.id}>
+                <EmailCaptureTrigger />
+                <Swimlane lane={{ ...lane, items: streamItems, newCount: streamItems.length, totalCount: statsObj.livestreams }} />
+              </React.Fragment>
+            );
+          }
+          // Generate consolidated items for careers
+          if (lane.id === 'lane-jobs') {
+            const combinedItems = activeOpportunities.map((opp: any) => ({
+              id: opp.id,
+              type: opp.type,
+              title: opp.title,
+              authorOrOperator: opp.author,
+              locationOrSalary: opp.location || 'Remote',
+              metaInfo: opp.metric,
+              link: opp.link,
+              thumbnailUrl: opp.imageUrl
+            }));
+            return <Swimlane key={lane.id} lane={{ ...lane, items: combinedItems, newCount: combinedItems.length, totalCount: statsObj.jobs }} />;
+          }
+          // Generate basic items for missions
+          if (lane.id === 'lane-missions') {
+            const missionItems = activeDeployments.map((dep: any) => ({
+              id: dep.id,
+              type: 'Missions',
+              title: dep.title,
+              authorOrOperator: dep.operator?.name || 'FoodNerve Society',
+              metaInfo: dep.traction,
+              thumbnailUrl: dep.imageUrl || 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?auto=format&fit=crop&q=80&w=800',
+              link: dep.link,
+              progress: dep.progress || 45
+            }));
+            return <Swimlane key={lane.id} lane={{ ...lane, items: missionItems, newCount: missionItems.length, totalCount: statsObj.missions }} />;
+          }
+          return <Swimlane key={lane.id} lane={lane} />;
+        })}
       </Box>
 
       {/* ═══════════════════════════════════════════════════════════
-          SECTION 5: THE KNOWLEDGE CENTER TEASER
-          Premium intelligence cards (Client Component)
+          SECTION 3: THE SOCIETY GATEWAY
+          Light premium closer — the cross-domain hook focusing on Community
       ═══════════════════════════════════════════════════════════ */}
-      <Box id="section-knowledge">
-        <KnowledgeTeaser materials={recentIntelligence} />
-      </Box>
-
-
-      {/* ═══════════════════════════════════════════════════════════
-          SECTION 6: THE SOCIETY GATEWAY
-          Dark dramatic closer — the cross-domain hook
-      ═══════════════════════════════════════════════════════════ */}
-      <Box sx={{ 
-        pt: { xs: 12, md: 16 }, 
-        pb: { xs: 12, md: 16 }, 
-        px: 2, 
-        bgcolor: 'primary.main',
-        color: 'primary.contrastText', 
-        textAlign: 'center',
-        position: 'relative',
-        overflow: 'hidden',
-      }}>
-        {/* Subtle radial glow */}
-        <Box sx={{
-          position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-          width: '600px', height: '600px', borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%)',
-        }} />
-        
-        <Container maxWidth="md" sx={{ position: 'relative', zIndex: 2 }}>
-          <Box sx={{ mb: 4, display: 'inline-flex', p: 2.5, bgcolor: 'rgba(255,255,255,0.06)', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <LockOutlinedIcon sx={{ fontSize: 36, color: 'rgba(255,255,255,0.5)' }} />
-          </Box>
-          <Typography variant="h3" sx={{ fontWeight: 900, mb: 3 }}>
-            Welcome to the Factory Floor.
-          </Typography>
-          <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.5)', mb: 6, lineHeight: 1.7, maxWidth: '600px', mx: 'auto', fontWeight: 400 }}>
-            {tenant.name}.com is just the public registry. The real work — deal rooms, trade floors, live operations — happens inside Society OS.
-          </Typography>
-          <Link href="/join" style={{ textDecoration: 'none' }}>
-            <PremiumButton 
-              variant="filled" 
-              size="large" 
-              baseColor="white"
-              sx={{ 
-                color: '#0a0a0a', 
-                px: 6, 
-                py: 2, 
-                fontSize: '1.1rem',
-                fontWeight: 'bold',
-                boxShadow: '0 8px 30px rgba(255,255,255,0.1)',
-                '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' },
-              }}
-            >
-              Join the {tenant.name} Society
-            </PremiumButton>
-          </Link>
-        </Container>
-      </Box>
+      <SocietyGatewayCTA userCount={userCount} tenantName={tenant.name} />
 
     </Box>
   );

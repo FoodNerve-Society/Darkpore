@@ -5,6 +5,7 @@ import { getTenantConfig } from '@/lib/cms';
 
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import EmailCaptureModal from './components/EmailCaptureModal';
 
 export default async function InnovationsLayout({ children }: { children: React.ReactNode }) {
   // 2. Fetch Tenant Data
@@ -17,6 +18,7 @@ export default async function InnovationsLayout({ children }: { children: React.
           <Navbar />
           {children}
           <Footer />
+          <EmailCaptureModal />
         </ThemeRegistry>
     </>
   );

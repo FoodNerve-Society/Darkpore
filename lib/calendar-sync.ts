@@ -26,14 +26,17 @@ export interface CalendarEventSyncParams {
  */
 export async function syncCalendarEvent(params: CalendarEventSyncParams) {
   try {
-    return await prisma.calendarEvent.upsert({
+    const targetVisibility = params.visibility ?? 'personal';
+    
+    const existing = await prisma.calendarEvent.findFirst({
       where: {
-        sourceType_sourceId: {
-          sourceType: params.sourceType,
-          sourceId: params.sourceId,
-        },
-      },
-      create: {
+        sourceType: params.sourceType,
+        sourceId: params.sourceId,
+        visibility: targetVisibility,
+      }
+    });
+
+    const createData = {
         sourceType: params.sourceType,
         sourceId: params.sourceId,
         slug: params.slug || null,
@@ -46,26 +49,34 @@ export async function syncCalendarEvent(params: CalendarEventSyncParams) {
         organizationName: params.organizationName || null,
         status: params.status ?? 'upcoming',
         tenantId: params.tenantId,
-        visibility: params.visibility ?? 'personal',
+        visibility: targetVisibility,
         organizationId: params.organizationId || null,
         userId: params.userId || null,
-      },
-      update: {
-        slug: params.slug || null,
-        dateType: params.dateType || 'START_TIME',
-        title: params.title,
-        date: params.date,
-        endDate: params.endDate || null,
-        imageUrl: params.imageUrl || null,
-        category: params.category || null,
-        organizationName: params.organizationName || null,
-        ...(params.status && { status: params.status }),
-        tenantId: params.tenantId,
-        ...(params.visibility && { visibility: params.visibility }),
-        ...(params.organizationId !== undefined && { organizationId: params.organizationId || null }),
-        ...(params.userId !== undefined && { userId: params.userId || null }),
-      },
-    });
+    };
+
+    if (existing) {
+      return await prisma.calendarEvent.update({
+        where: { id: existing.id },
+        data: {
+          slug: params.slug || null,
+          dateType: params.dateType || 'START_TIME',
+          title: params.title,
+          date: params.date,
+          endDate: params.endDate || null,
+          imageUrl: params.imageUrl || null,
+          category: params.category || null,
+          organizationName: params.organizationName || null,
+          ...(params.status && { status: params.status }),
+          tenantId: params.tenantId,
+          ...(params.organizationId !== undefined && { organizationId: params.organizationId || null }),
+          ...(params.userId !== undefined && { userId: params.userId || null }),
+        }
+      });
+    } else {
+      return await prisma.calendarEvent.create({
+        data: createData
+      });
+    }
   } catch (error) {
     console.error(`[CalendarSync] Error syncing event for ${params.sourceType}:${params.sourceId}:`, error);
     throw error;
