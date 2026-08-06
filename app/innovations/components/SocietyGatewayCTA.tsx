@@ -146,7 +146,7 @@ export default function SocietyGatewayCTA({ userCount, tenantName }: SocietyGate
       color: '#0f2414',
       position: 'relative',
       overflow: 'visible', // Allow polaroids to float outside on mobile
-      borderTop: '1px solid rgba(27, 94, 32, 0.08)',
+      borderTop: '3px dotted rgba(27, 94, 32, 0.25)',
     }}>
       {/* Society mesh bg */}
       <Box sx={{

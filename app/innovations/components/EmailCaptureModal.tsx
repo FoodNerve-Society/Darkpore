@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Button, Backdrop, Fade, useTheme,
-  Card, CardContent, Autocomplete, TextField, Snackbar, Alert
+  Card, CardContent, Autocomplete, TextField, Snackbar, Alert, IconButton
 } from '@mui/material';
 import ArrowForward from '@mui/icons-material/ArrowForward';
 import CheckCircleOutlined from '@mui/icons-material/CheckCircleOutlined';
@@ -11,6 +11,7 @@ import ArrowBack from '@mui/icons-material/ArrowBack';
 import AutoAwesomeOutlined from '@mui/icons-material/AutoAwesomeOutlined';
 import InsightsOutlined from '@mui/icons-material/InsightsOutlined';
 import BuildOutlined from '@mui/icons-material/BuildOutlined';
+import CloseIcon from '@mui/icons-material/Close';
 import { motion } from 'framer-motion';
 import PremiumTextField from '@/components/PremiumTextField';
 import PremiumAutocomplete from '@/components/PremiumAutocomplete';
@@ -324,7 +325,7 @@ export default function EmailCaptureModal() {
                             },
                           }}
                         >
-                          Request Briefings
+                          Submit
                         </Button>
                       </Box>
                     </form>
@@ -344,20 +345,23 @@ export default function EmailCaptureModal() {
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
         <Box sx={{ 
-          background: 'rgba(15, 23, 42, 0.85)',
-          backdropFilter: 'blur(16px) saturate(180%)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          boxShadow: '0 16px 32px rgba(0,0,0,0.3)',
-          borderRadius: '50px',
-          px: 3, py: 1.5,
+          background: 'rgba(255, 255, 255, 0.65)',
+          backdropFilter: 'blur(24px) saturate(180%)',
+          border: '1px solid rgba(255, 255, 255, 0.8)',
+          boxShadow: '0 12px 40px rgba(0,0,0,0.1)',
+          borderRadius: '12px',
+          pl: 3, pr: 2, py: 1.5,
           display: 'flex', alignItems: 'center', gap: 2,
-          color: '#f8fafc',
+          color: '#0f172a',
           mb: { xs: 2, sm: 4 }
         }}>
-          <InsightsOutlined sx={{ color: '#38bdf8', fontSize: 20 }} />
-          <Typography sx={{ fontWeight: 500, fontSize: '0.95rem', letterSpacing: '-0.01em' }}>
-            Changed your mind? Access early briefings in the Society section below.
+          <InsightsOutlined sx={{ color: '#0284c7', fontSize: 20 }} />
+          <Typography sx={{ fontWeight: 600, fontSize: '0.95rem', letterSpacing: '-0.01em', mr: 2 }}>
+            You can find this anytime in the Society section below.
           </Typography>
+          <IconButton size="small" onClick={() => setShowToast(false)} sx={{ color: 'rgba(15, 23, 42, 0.5)' }}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
         </Box>
       </Snackbar>
     </>
