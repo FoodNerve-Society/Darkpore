@@ -16,6 +16,7 @@ import { motion } from 'framer-motion';
 import PremiumTextField from '@/components/PremiumTextField';
 import PremiumAutocomplete from '@/components/PremiumAutocomplete';
 import { VALUE_CHAIN_ACTORS } from '@/lib/cms';
+import { submitLead } from '@/app/actions/leads';
 
 const cardSx = (flipped: boolean, isFront: boolean) => ({
   position: 'absolute',
@@ -43,6 +44,8 @@ export default function EmailCaptureModal() {
   const [hasMounted, setHasMounted] = useState(false);
   const [role, setRole] = useState<{ label: string; value: string } | null>(null);
   const [showToast, setShowToast] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
     setHasMounted(true);
@@ -74,12 +77,24 @@ export default function EmailCaptureModal() {
 
   const handleAccept = () => setFlipped(true);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setSubmitted(true);
-    localStorage.setItem('foodnerve_capture_seen', 'true');
-    localStorage.setItem('foodnerve_capture_submitted', 'true');
-    setTimeout(() => setOpen(false), 3500);
+    setIsLoading(true);
+    setErrorMsg('');
+    const formData = new FormData(e.currentTarget);
+    if (role) formData.append('role', role.value);
+    
+    const result = await submitLead(formData);
+    
+    if (result.success) {
+      setSubmitted(true);
+      localStorage.setItem('foodnerve_capture_seen', 'true');
+      localStorage.setItem('foodnerve_capture_submitted', 'true');
+      setTimeout(() => setOpen(false), 3500);
+    } else {
+      setErrorMsg(result.error || 'Something went wrong.');
+    }
+    setIsLoading(false);
   };
 
   if (!hasMounted) return null;
@@ -272,9 +287,16 @@ export default function EmailCaptureModal() {
                       Get exclusive briefings on our latest ventures.
                     </Typography>
 
+                    {errorMsg && (
+                      <Typography sx={{ color: '#ef4444', fontSize: '0.9rem', mb: 2, fontWeight: 600 }}>
+                        {errorMsg}
+                      </Typography>
+                    )}
+
                     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1 }}>
                       <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
                         <PremiumTextField
+                          name="firstName"
                           colorTheme="#0f172a"
                           fullWidth
                           label="First Name"
@@ -282,6 +304,7 @@ export default function EmailCaptureModal() {
                           required
                         />
                         <PremiumTextField
+                          name="lastName"
                           colorTheme="#0f172a"
                           fullWidth
                           label="Last Name"
@@ -290,6 +313,7 @@ export default function EmailCaptureModal() {
                         />
                       </Box>
                       <PremiumTextField
+                        name="email"
                         colorTheme="#0f172a"
                         fullWidth
                         label="Email Address"
@@ -311,7 +335,7 @@ export default function EmailCaptureModal() {
                           type="submit"
                           variant="contained"
                           fullWidth
-                          endIcon={<ArrowForward />}
+                          disabled={isLoading}
                           sx={{
                             borderRadius: '50px', py: { xs: 1.2, sm: 1.6 },
                             textTransform: 'none', fontWeight: 800, fontSize: { xs: '0.9rem', sm: '1rem' },
@@ -323,9 +347,13 @@ export default function EmailCaptureModal() {
                               boxShadow: '0 12px 32px rgba(15,23,42,0.25)',
                               transform: 'translateY(-2px)',
                             },
+                            '&:disabled': {
+                              background: '#64748b',
+                              color: '#cbd5e1'
+                            }
                           }}
                         >
-                          Submit
+                          {isLoading ? 'Submitting...' : 'Submit'}
                         </Button>
                       </Box>
                     </form>
