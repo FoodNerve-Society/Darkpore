@@ -582,7 +582,17 @@ export default function CommandCenterHero({ globalAlerts = [], stats }: CommandC
                     <CalendarMonthIcon sx={{ fontSize: 36, color: '#94a3b8' }} />
                   </Box>
                   <Typography sx={{ fontFamily: 'var(--font-dosis)', color: '#0f172a', fontSize: '1.8rem', fontWeight: 800, mb: 1.5, letterSpacing: '-0.02em' }}>No Scheduled Events</Typography>
-                  <Typography sx={{ fontFamily: 'var(--font-ysabeau-infant)', color: '#64748b', fontSize: '1rem', fontWeight: 700, maxWidth: 300, lineHeight: 1.6 }}>Your briefing is clear for today. Kick back, or explore the ecosystem.</Typography>
+                  <Typography sx={{ fontFamily: 'var(--font-ysabeau-infant)', color: '#64748b', fontSize: '1rem', fontWeight: 700, maxWidth: 300, lineHeight: 1.6 }}>
+                    Get notified on future events{' '}
+                    <Box 
+                      component="span" 
+                      onClick={() => window.dispatchEvent(new Event('open-capture-modal'))}
+                      sx={{ color: themeConfig.iconColor, cursor: 'pointer', textDecoration: 'underline', '&:hover': { opacity: 0.8 } }}
+                    >
+                      here
+                    </Box>
+                    .
+                  </Typography>
                 </Box>
               )}
               
