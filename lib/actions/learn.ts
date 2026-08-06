@@ -175,13 +175,17 @@ export async function createLearnContent(data: CreateLearnContentPayload, isDraf
         if (existingStream) {
           await tx.learnLivestream.update({
             where: { learnContentId: content.id },
-            data: { streamUrl: data.livestreamUrl }
+            data: { 
+              streamUrl: data.livestreamUrl,
+              scheduledFor: data.targetDate ? new Date(data.targetDate) : null,
+            }
           });
         } else {
           await tx.learnLivestream.create({
             data: {
               learnContentId: content.id,
               streamUrl: data.livestreamUrl,
+              scheduledFor: data.targetDate ? new Date(data.targetDate) : null,
             },
           });
         }

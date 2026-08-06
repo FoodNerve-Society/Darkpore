@@ -1820,8 +1820,25 @@ export default function CreateLearnContentForm({
               </Box>
             ) : (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                <Typography variant="h5" sx={{ fontWeight: 900 }}>Media Details</Typography>
+                <Typography variant="h5" sx={{ fontWeight: 900 }}>Content Details</Typography>
                 
+                <PremiumTextField 
+                  colorTheme={activeThemeColor} 
+                  label="Title" 
+                  value={title} 
+                  onChange={e => setTitle(e.target.value)} 
+                  fullWidth 
+                />
+                <PremiumTextField 
+                  colorTheme={activeThemeColor} 
+                  label="Description" 
+                  value={description} 
+                  onChange={e => setDescription(e.target.value)} 
+                  fullWidth 
+                  multiline 
+                  rows={3} 
+                />
+
                 <Box sx={{ mb: 2, width: { xs: '100%', md: '50%' } }}>
                   <PremiumTextField
                     colorTheme={activeThemeColor}
@@ -1838,11 +1855,19 @@ export default function CreateLearnContentForm({
                 </Box>
 
                 {(type === 'video' || type === 'livestream') && (
-                  <PremiumTextField colorTheme={activeThemeColor} label="URL" value={videoUrl} onChange={e => setVideoUrl(e.target.value)} fullWidth />
+                  <PremiumTextField colorTheme={activeThemeColor} label={type === 'livestream' ? "Livestream URL" : "Video URL"} value={videoUrl} onChange={e => setVideoUrl(e.target.value)} fullWidth />
                 )}
                 {type === 'report' && (
                   <PremiumTextField colorTheme={activeThemeColor} label="PDF URL" value={reportPdfUrl} onChange={e => setReportPdfUrl(e.target.value)} fullWidth />
                 )}
+
+                <PremiumTextField 
+                  colorTheme={activeThemeColor} 
+                  label="Thumbnail URL (Optional)" 
+                  value={thumbnailUrl} 
+                  onChange={e => setThumbnailUrl(e.target.value)} 
+                  fullWidth 
+                />
               </Box>
             )}
           </Box>
