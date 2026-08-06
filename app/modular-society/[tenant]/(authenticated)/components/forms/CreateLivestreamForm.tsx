@@ -547,7 +547,7 @@ export default function CreateLivestreamForm({
   // Core fields
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [type, setType] = useState<CreateLearnContentPayload['type'] | ''>('');
+  const [type, setType] = useState<CreateLearnContentPayload['type']>('livestream');
   
   const activeThemeColor = CONTENT_TYPES.find(c => c.value === type)?.color || ACCENT;
   
@@ -845,7 +845,7 @@ export default function CreateLivestreamForm({
     let finalTitle = title;
     let finalDesc = description;
 
-    if (type === 'article') {
+    if (type === 'livestream') {
       const spikyBlock = blocks.find(b => b.type === 'subheading');
       if (spikyBlock && spikyBlock.content.text) {
         finalTitle = spikyBlock.content.text;
@@ -921,7 +921,7 @@ export default function CreateLivestreamForm({
       }
 
       let finalThumbnailUrl = thumbnailUrl;
-      if (type === 'article') {
+      if (type === 'livestream') {
         const imageBlock = finalBlocks.find(b => b.content.imageUrl || b.content.mediaUrl);
         if (imageBlock) {
           finalThumbnailUrl = imageBlock.content.imageUrl || imageBlock.content.mediaUrl;
@@ -956,7 +956,7 @@ export default function CreateLivestreamForm({
         authorName: finalAuthorName,
         authorAvatarUrl: finalAuthorAvatarUrl,
         
-        livestreamBlocks: type === 'article' ? finalBlocks.map((b, idx) => ({
+        livestreamBlocks: type === 'livestream' ? finalBlocks.map((b, idx) => ({
           blockType: b.type,
           orderIndex: idx,
           content: JSON.stringify(b.content)
@@ -1009,7 +1009,7 @@ export default function CreateLivestreamForm({
         {/* STEP 3: CONTENT / BLOCKS */}
         {step === 3 && (
           <Box sx={{ animation: 'fadeIn 0.3s', display: 'flex', flexDirection: 'column', gap: 0 }}>
-            {type === 'article' ? (
+            {type === 'livestream' ? (
               <Box sx={{ width: '100%' }}>
                   {/* ΓöÇΓöÇΓöÇ CONTEXT HEADER ΓöÇΓöÇΓöÇ */}
                 {(() => {
@@ -1854,10 +1854,10 @@ export default function CreateLivestreamForm({
                   </Typography>
                 </Box>
 
-                {(type === 'video' || type === 'livestream') && (
-                  <PremiumTextField colorTheme={activeThemeColor} label={type === 'livestream' ? "Livestream URL" : "Video URL"} value={videoUrl} onChange={e => setVideoUrl(e.target.value)} fullWidth />
+                {((type as any) === 'video' || (type as any) === 'livestream') && (
+                  <PremiumTextField colorTheme={activeThemeColor} label={((type as any) === 'livestream') ? 'Livestream URL' : 'Video URL'} value={videoUrl} onChange={e => setVideoUrl(e.target.value)} fullWidth />
                 )}
-                {type === 'report' && (
+                {((type as any) === 'report') && (
                   <PremiumTextField colorTheme={activeThemeColor} label="PDF URL" value={reportPdfUrl} onChange={e => setReportPdfUrl(e.target.value)} fullWidth />
                 )}
 
