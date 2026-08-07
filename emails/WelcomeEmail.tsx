@@ -6,6 +6,7 @@ import {
   Html,
   Preview,
   Text,
+  Font,
 } from '@react-email/components';
 import * as React from 'react';
 
@@ -22,7 +23,18 @@ export const WelcomeEmail = ({
 
   return (
     <Html>
-      <Head />
+      <Head>
+        <Font
+          fontFamily="Outfit"
+          fallbackFontFamily="Helvetica"
+          webFont={{
+            url: 'https://fonts.gstatic.com/s/outfit/v11/QGYyz_MVcBeNP4NJtEtq.woff2',
+            format: 'woff2',
+          }}
+          fontWeight={400}
+          fontStyle="normal"
+        />
+      </Head>
       <Preview>Welcome to the Vanguard.</Preview>
       <Body style={main}>
         <Container style={container}>
@@ -56,7 +68,7 @@ export default WelcomeEmail;
 
 const main = {
   backgroundColor: '#050505',
-  fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Ubuntu,sans-serif',
+  fontFamily: 'Outfit, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Ubuntu, sans-serif',
 };
 
 const container = {

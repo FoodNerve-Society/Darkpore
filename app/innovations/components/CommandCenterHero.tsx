@@ -724,7 +724,7 @@ export default function CommandCenterHero({ globalAlerts = [], stats }: CommandC
                   </Typography>
                   <Typography sx={{ fontFamily: 'var(--font-ysabeau-infant)', fontWeight: 600, fontSize: { xs: '0.8rem', sm: '0.9rem' }, color: 'rgba(255,255,255,0.8)', mt: 0.25, display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <Box component="span" sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#34d399', display: 'inline-block', animation: `${pulseAnimation} 2s infinite` }} />
-                    {new Intl.NumberFormat('en-US').format(stats?.users || 14204)} Operators in
+                    {new Intl.NumberFormat('en-US').format(stats?.users ?? 0)} Operators in
                   </Typography>
                 </Box>
               </Box>

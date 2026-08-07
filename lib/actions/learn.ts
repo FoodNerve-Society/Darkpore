@@ -30,6 +30,7 @@ export type CreateLearnContentPayload = {
   classModules?: number;
   classDuration?: string;
   livestreamUrl?: string;
+  livestreamBlocks?: ArticleBlockPayload[];
   reportPdfUrl?: string;
   reportPages?: number;
   thumbnailUrl?: string;
@@ -171,18 +172,36 @@ export async function createLearnContent(data: CreateLearnContentPayload, isDraf
         }
         break;
       case 'livestream':
-        const existingStream = await tx.learnLivestream.findUnique({ where: { learnContentId: content.id } });
-        if (existingStream) {
-          await tx.learnLivestream.update({
+        let stream = await tx.learnLivestream.findUnique({ where: { learnContentId: content.id } });
+        if (stream) {
+          stream = await tx.learnLivestream.update({
             where: { learnContentId: content.id },
-            data: { streamUrl: data.livestreamUrl }
+            data: { 
+              streamUrl: data.livestreamUrl,
+              scheduledFor: data.targetDate ? new Date(data.targetDate) : null,
+            }
           });
         } else {
-          await tx.learnLivestream.create({
+          stream = await tx.learnLivestream.create({
             data: {
               learnContentId: content.id,
               streamUrl: data.livestreamUrl,
+              scheduledFor: data.targetDate ? new Date(data.targetDate) : null,
             },
+          });
+        }
+        
+        // Delete old blocks
+        await tx.learnLivestreamBlock.deleteMany({ where: { livestreamId: stream.id } });
+        
+        if (data.livestreamBlocks && data.livestreamBlocks.length > 0) {
+          await tx.learnLivestreamBlock.createMany({
+            data: data.livestreamBlocks.map(block => ({
+              livestreamId: stream!.id,
+              orderIndex: block.orderIndex,
+              blockType: block.blockType,
+              content: block.content,
+            })),
           });
         }
         break;
@@ -327,7 +346,13 @@ export async function getLearnContentById(id: string) {
       },
       video: true,
       class: true,
-      livestream: true,
+      livestream: {
+        include: {
+          blocks: {
+            orderBy: { orderIndex: 'asc' }
+          }
+        }
+      },
       report: true,
     }
   });
@@ -372,4 +397,33 @@ export async function likeBlockComment(commentId: string) {
     where: { id: commentId },
     data: { likes: { increment: 1 } }
   });
+}
+
+
+export async function fetchLivestreamContentPool(userId: string, orgId: string | null) {
+  const articles = await prisma.learnContent.findMany({
+    where: {
+      type: 'article',
+      status: 'published',
+      OR: orgId 
+        ? [{ organizationId: orgId }]
+        : [{ authorId: userId }]
+    },
+    include: { article: { include: { blocks: { orderBy: { orderIndex: 'asc' } } } }, organization: true },
+    orderBy: { createdAt: 'desc' },
+    take: 20
+  });
+  
+  const jobs = await prisma.tradeListing.findMany({
+    where: {
+      category: 'jobs',
+      status: 'active',
+      OR: orgId ? [{ organizationId: orgId }] : [{ postedById: userId }]
+    },
+    include: { organization: true },
+    orderBy: { postedAt: 'desc' },
+    take: 10
+  });
+  
+  return { articles, jobs };
 }

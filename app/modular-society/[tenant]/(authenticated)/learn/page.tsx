@@ -56,6 +56,7 @@ import { getTenantConfig } from "@/lib/cms";
 import { getUserDrafts, deleteLearnContent, getOrgLearnContent, getUserPublishedContent } from "@/lib/actions/learn";
 import FlipContainer from "../components/shared/FlipContainer";
 import CreateLearnContentForm from "../components/forms/CreateLearnContentForm";
+import CreateLivestreamForm from "../components/forms/CreateLivestreamForm";
 import CreatorStudioDashboard from "../components/forms/CreatorStudioDashboard";
 import { ArticleReader } from "@/components/learn/ArticleReader";
 
@@ -2124,6 +2125,31 @@ export default function LearnPage() {
             await deleteLearnContent(draftId);
             setDrafts(drafts.filter((d: any) => d.id !== draftId));
           }}
+        />
+      ) : createContentType === 'livestream' ? (
+        <CreateLivestreamForm 
+          key={sessionKey}
+          onSuccess={() => {
+            setIsFlipped(false);
+            setFastPayload(null);
+            setTimeout(() => {
+              setCreateContentType('');
+              setSelectedDraftId(null);
+              setSessionKey(k => k + 1);
+            }, 600);
+          }} 
+          onCancel={() => {
+            setCreateContentType('');
+            setSelectedDraftId(null);
+            setFastPayload(null);
+          }} 
+          postingAs={postingAs}
+          selectedOrgId={selectedOrgId}
+          onTypeChange={(t) => setCreateContentType(t)}
+          draftId={selectedDraftId}
+          initialTaxonomy={draftTaxonomy}
+          initialType={createContentType}
+          initialDraftData={fastPayload || drafts.find((d: any) => d.id === selectedDraftId)}
         />
       ) : (
         <CreateLearnContentForm 
