@@ -38,7 +38,7 @@ export async function submitLead(formData: FormData) {
     // Send the Welcome Email
     if (process.env.RESEND_API_KEY) {
       const resendResponse = await resend.emails.send({
-        from: 'Food Nerve <hello@innhubs.app>', // Must match verified domain
+        from: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
         to: email,
         subject: 'Welcome to the Vanguard.',
         react: WelcomeEmail({ firstName, role: role || 'Value Chain Actors' }),
