@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, Button, IconButton, Chip, Drawer, useMediaQuery, useTheme } from '@mui/material';
 import { PlayArrow as PlayArrowIcon, ArrowBack as ArrowBackIcon, ArrowForward as ArrowForwardIcon, Fullscreen as FullscreenIcon, FullscreenExit as FullscreenExitIcon, Close as CloseIcon } from '@mui/icons-material';
-import { SlideSpikyTitle, SlideMythFact, SlideStatCard, SlideJob, SlideTransition, SlideQuote, SlideMedia, SlideFallback } from '../../../../components/forms/livestream/SlideComponents';
+import { SlideSpikyTitle, SlideMythFact, SlideStatCard, SlideJob, SlideTransition, SlideQuote, SlideMedia, SlideFallback } from '../../../components/forms/livestream/SlideComponents';
 import { useSociety } from '@/context/SocietyContext';
 
 export default function LivestreamPresentationViewer({ content }: { content: any }) {

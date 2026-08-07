@@ -137,7 +137,7 @@ export default function CreateLivestreamForm({
       let finalCoverUrl = typeof coverImage === 'string' ? coverImage : '';
       if (coverImage instanceof File) {
         const res = await uploadFile(coverImage);
-        finalCoverUrl = res;
+        finalCoverUrl = res?.secure_url || '';
       }
 
       // Format blocks for the backend
@@ -159,6 +159,7 @@ export default function CreateLivestreamForm({
         slug: title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
         coverImageUrl: finalCoverUrl,
         taxonomy: { category, subcategory, timeframe },
+        bottleneckTags: [],
         livestream: {
           streamUrl,
           guestStudioUrl,
@@ -306,7 +307,7 @@ export default function CreateLivestreamForm({
               <TextField fullWidth multiline rows={4} label="Description / Overview" value={description} onChange={e => setDescription(e.target.value)} />
               
               <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', md: 'row' } }}>
-                <TextField fullWidth type="datetime-local" label="Event Date & Time" value={eventDate} onChange={e => setEventDate(e.target.value)} InputLabelProps={{ shrink: true }} />
+                <TextField fullWidth type="datetime-local" label="Event Date & Time" value={eventDate} onChange={e => setEventDate(e.target.value)} slotProps={{ inputLabel: { shrink: true } }} />
               </Box>
 
               <Typography variant="h6" sx={{ fontWeight: 800, mt: 2, mb: 1, color: '#0f172a' }}>Taxonomy</Typography>

@@ -416,12 +416,12 @@ export async function fetchLivestreamContentPool(userId: string, orgId: string |
   
   const jobs = await prisma.tradeListing.findMany({
     where: {
-      type: 'job',
+      category: 'jobs',
       status: 'active',
       OR: orgId ? [{ organizationId: orgId }] : [{ postedById: userId }]
     },
     include: { organization: true },
-    orderBy: { createdAt: 'desc' },
+    orderBy: { postedAt: 'desc' },
     take: 10
   });
   

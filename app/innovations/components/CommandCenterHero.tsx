@@ -668,11 +668,9 @@ export default function CommandCenterHero({ globalAlerts = [], stats }: CommandC
                       <Typography sx={{ fontFamily: 'var(--font-ysabeau-infant)', fontWeight: 700, fontSize: { xs: '0.95rem', sm: '1.15rem' }, color: '#0f172a', lineHeight: 1.2 }}>
                         {cat.label}
                       </Typography>
-                      {cat.newCount > 0 && (
-                        <Box sx={{ bgcolor: `${cat.color}15`, color: cat.color, px: 0.8, py: 0.2, borderRadius: '4px', fontSize: '0.6rem', fontWeight: 700, fontFamily: 'var(--font-ysabeau-infant)', whiteSpace: 'nowrap' }}>
-                          +{cat.newCount} NEW
-                        </Box>
-                      )}
+                      <Box sx={{ bgcolor: `${cat.color}15`, color: cat.color, px: 0.8, py: 0.2, borderRadius: '4px', fontSize: '0.6rem', fontWeight: 700, fontFamily: 'var(--font-ysabeau-infant)', whiteSpace: 'nowrap' }}>
+                        +{cat.newCount || 0} NEW
+                      </Box>
                       {cat.isLive && (
                         <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#ef4444', flexShrink: 0, animation: `${pulseAnimation} 1.5s infinite` }} />
                       )}
