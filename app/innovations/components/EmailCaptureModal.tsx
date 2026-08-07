@@ -89,7 +89,7 @@ export default function EmailCaptureModal() {
     }
 
     const formData = new FormData(e.currentTarget);
-    formData.append('role', role.value);
+    formData.append('role', role.label);
     
     const result = await submitLead(formData);
     
