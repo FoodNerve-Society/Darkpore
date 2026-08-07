@@ -59,6 +59,16 @@ export default function CreateLivestreamForm({
   const [streamUrl, setStreamUrl] = useState(initialDraftData?.livestream?.streamUrl || '');
   const [eventDate, setEventDate] = useState(initialDraftData?.livestream?.eventDate ? new Date(initialDraftData.livestream.eventDate).toISOString().slice(0,16) : '');
   
+  // Step 3 (Communications) State
+  const [guestStudioUrl, setGuestStudioUrl] = useState(initialDraftData?.livestream?.guestStudioUrl || '');
+  const [guestMessageText, setGuestMessageText] = useState(initialDraftData?.livestream?.communications?.guestMessage?.text || '');
+  const [guestButtonText, setGuestButtonText] = useState(initialDraftData?.livestream?.communications?.guestMessage?.buttonText || '');
+  const [guestButtonLink, setGuestButtonLink] = useState(initialDraftData?.livestream?.communications?.guestMessage?.buttonLink || '');
+  
+  const [audienceMessageText, setAudienceMessageText] = useState(initialDraftData?.livestream?.communications?.audienceMessage?.text || '');
+  const [audienceButtonText, setAudienceButtonText] = useState(initialDraftData?.livestream?.communications?.audienceMessage?.buttonText || '');
+  const [audienceButtonLink, setAudienceButtonLink] = useState(initialDraftData?.livestream?.communications?.audienceMessage?.buttonLink || '');
+  
   // Taxonomy State
   const [category, setCategory] = useState(initialTaxonomy?.category || 'technology');
   const [subcategory, setSubcategory] = useState(initialTaxonomy?.subcategory || '');
@@ -98,36 +108,30 @@ export default function CreateLivestreamForm({
     return articleIds.size;
   };
   const distinctArticles = getDistinctArticleCount();
-  const canPublish = distinctArticles >= 5 && title && description && eventDate && coverImage;
+  const canPublish = distinctArticles >= 5 && title && description && category && eventDate && streamUrl;
 
   // Action Items Checklist
   const actionItems = useMemo(() => {
     const items = [];
+    if (!eventDate) items.push('Set Event Date & Time');
     if (!title) items.push('Add Livestream Title');
     if (!coverImage) items.push('Upload Cover Image');
-    if (!eventDate) items.push('Set Event Date & Time');
     
-    if (step === 2) {
+    if (step >= 2) {
       if (distinctArticles < 5) {
         items.push(`Reference at least 5 articles (${distinctArticles}/5)`);
       }
     }
+    if (step === 3) {
+      if (!streamUrl) items.push('Configure Public Stream URL');
+    }
     return items;
-  }, [eventDate, title, coverImage, distinctArticles, step]);
+  }, [streamUrl, eventDate, title, coverImage, distinctArticles, step]);
 
   const [isActionItemsMinimized, setIsActionItemsMinimized] = useState(false);
 
   const handleSave = async (isPublish: boolean) => {
     if (!profile?.uid) return;
-    
-    let finalStreamUrl = streamUrl;
-    if (isPublish && !streamUrl) {
-      const url = window.prompt("Where are you hosting this? Paste your YouTube Live, Google Meet, or Streamyard destination link:");
-      if (url === null) return; // User cancelled
-      finalStreamUrl = url;
-      setStreamUrl(url);
-    }
-
     setIsSubmitting(true);
     try {
       let finalCoverUrl = typeof coverImage === 'string' ? coverImage : '';
@@ -156,10 +160,23 @@ export default function CreateLivestreamForm({
         coverImageUrl: finalCoverUrl,
         taxonomy: { category, subcategory, timeframe },
         livestream: {
-          streamUrl: finalStreamUrl,
+          streamUrl,
+          guestStudioUrl,
           eventDate: new Date(eventDate),
           status: 'scheduled',
-          blocks: formattedBlocks
+          blocks: formattedBlocks,
+          communications: {
+            guestMessage: {
+              text: guestMessageText,
+              buttonText: guestButtonText,
+              buttonLink: guestButtonLink
+            },
+            audienceMessage: {
+              text: audienceMessageText,
+              buttonText: audienceButtonText,
+              buttonLink: audienceButtonLink
+            }
+          }
         }
       };
 
@@ -285,52 +302,31 @@ export default function CreateLivestreamForm({
             </Typography>
 
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, bgcolor: '#fff', p: 4, borderRadius: '24px', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 12px 40px rgba(0,0,0,0.03)' }}>
-              {/* Cover Image Upload */}
-              <Box 
-                sx={{ 
-                  border: '2px dashed rgba(0,0,0,0.1)', borderRadius: '16px', 
-                  p: 4, textAlign: 'center', bgcolor: '#f8fafc',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1,
-                  cursor: 'pointer', transition: 'all 0.2s ease',
-                  '&:hover': { borderColor: '#3b82f6', bgcolor: 'rgba(59,130,246,0.02)' }
-                }}
-                onClick={() => document.getElementById('coverImageInput')?.click()}
-              >
-                <input 
-                  type="file" 
-                  id="coverImageInput" 
-                  accept="image/*" 
-                  style={{ display: 'none' }} 
-                  onChange={(e) => {
-                    if (e.target.files && e.target.files[0]) {
-                      setCoverImage(e.target.files[0]);
-                    }
-                  }} 
-                />
-                {coverImage ? (
-                  <Box sx={{ width: '100%', height: 200, position: 'relative', borderRadius: '8px', overflow: 'hidden' }}>
-                    <img 
-                      src={typeof coverImage === 'string' ? coverImage : URL.createObjectURL(coverImage)} 
-                      alt="Cover" 
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                    />
-                  </Box>
-                ) : (
-                  <>
-                    <Box sx={{ p: 2, borderRadius: '50%', bgcolor: '#fff', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-                      <ArticleIcon sx={{ fontSize: 32, color: '#94a3b8' }} />
-                    </Box>
-                    <Typography sx={{ fontWeight: 700, color: '#334155' }}>Upload Cover Image</Typography>
-                    <Typography variant="body2" sx={{ color: '#94a3b8' }}>16:9 ratio recommended</Typography>
-                  </>
-                )}
-              </Box>
-
               <TextField fullWidth label="Livestream Title" value={title} onChange={e => setTitle(e.target.value)} />
               <TextField fullWidth multiline rows={4} label="Description / Overview" value={description} onChange={e => setDescription(e.target.value)} />
               
               <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', md: 'row' } }}>
                 <TextField fullWidth type="datetime-local" label="Event Date & Time" value={eventDate} onChange={e => setEventDate(e.target.value)} InputLabelProps={{ shrink: true }} />
+              </Box>
+
+              <Typography variant="h6" sx={{ fontWeight: 800, mt: 2, mb: 1, color: '#0f172a' }}>Taxonomy</Typography>
+              <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', md: 'row' } }}>
+                <FormControl fullWidth>
+                  <InputLabel>Category</InputLabel>
+                  <Select value={category} label="Category" onChange={e => setCategory(e.target.value)}>
+                    <MenuItem value="technology">Technology</MenuItem>
+                    <MenuItem value="agriculture">Agriculture</MenuItem>
+                    <MenuItem value="finance">Finance</MenuItem>
+                  </Select>
+                </FormControl>
+                <FormControl fullWidth>
+                  <InputLabel>Timeframe</InputLabel>
+                  <Select value={timeframe} label="Timeframe" onChange={e => setTimeframe(e.target.value)}>
+                    <MenuItem value="past">Past</MenuItem>
+                    <MenuItem value="present">Present</MenuItem>
+                    <MenuItem value="future">Future</MenuItem>
+                  </Select>
+                </FormControl>
               </Box>
             </Box>
           </Box>
@@ -435,6 +431,71 @@ export default function CreateLivestreamForm({
             )}
           </Box>
         )}
+
+        {step === 3 && (
+          <Box sx={{ animation: 'fadeIn 0.3s', maxWidth: 800, mx: 'auto', width: '100%' }}>
+            <Typography variant="h4" sx={{ fontWeight: 900, mb: 1, color: '#0f172a', letterSpacing: '-0.02em' }}>
+              Communications & Links
+            </Typography>
+            <Typography sx={{ color: '#475569', mb: 4, fontWeight: 500, fontSize: '1.05rem' }}>
+              Configure your broadcasting links and set up automated messages for your guests and audience.
+            </Typography>
+
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              
+              {/* Backstage (Guests) */}
+              <Box sx={{ p: 4, borderRadius: '24px', bgcolor: '#fff', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 8px 32px rgba(0,0,0,0.02)' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
+                  <Box sx={{ width: 32, height: 32, borderRadius: '8px', bgcolor: 'rgba(99, 102, 241, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Typography sx={{ fontSize: '1.2rem' }}>🎙️</Typography>
+                  </Box>
+                  <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>The Backstage (Guests)</Typography>
+                </Box>
+                
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  <TextField 
+                    fullWidth label="Guest Studio Link (Optional)" placeholder="e.g. Evmux, Streamyard, or Meet invite link" 
+                    value={guestStudioUrl} onChange={e => setGuestStudioUrl(e.target.value)} 
+                  />
+                  <TextField 
+                    fullWidth multiline rows={3} label="Message to Guests" placeholder="e.g. Join 15 mins early to test your mic." 
+                    value={guestMessageText} onChange={e => setGuestMessageText(e.target.value)} 
+                  />
+                  <Box sx={{ display: 'flex', gap: 2, p: 2.5, bgcolor: 'rgba(15, 23, 42, 0.02)', borderRadius: '12px', border: '1px dashed rgba(15, 23, 42, 0.1)' }}>
+                    <TextField fullWidth size="small" label="Action Button Text" placeholder="e.g. Join Studio" value={guestButtonText} onChange={e => setGuestButtonText(e.target.value)} />
+                    <TextField fullWidth size="small" label="Action Button Link" placeholder="Auto-fills with studio link if empty" value={guestButtonLink} onChange={e => setGuestButtonLink(e.target.value)} />
+                  </Box>
+                </Box>
+              </Box>
+
+              {/* Stage (Audience) */}
+              <Box sx={{ p: 4, borderRadius: '24px', bgcolor: '#fff', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 8px 32px rgba(0,0,0,0.02)' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
+                  <Box sx={{ width: 32, height: 32, borderRadius: '8px', bgcolor: 'rgba(16, 185, 129, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Typography sx={{ fontSize: '1.2rem' }}>📺</Typography>
+                  </Box>
+                  <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>The Stage (Audience)</Typography>
+                </Box>
+                
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  <TextField 
+                    fullWidth label="Public Stream Link (Required)" placeholder="e.g. YouTube Live or Twitch embed URL" 
+                    value={streamUrl} onChange={e => setStreamUrl(e.target.value)} 
+                    error={!streamUrl && actionItems.includes('Configure Public Stream URL')}
+                  />
+                  <TextField 
+                    fullWidth multiline rows={3} label="RSVP Confirmation Message" placeholder="e.g. Thanks for registering! Read our prep article below." 
+                    value={audienceMessageText} onChange={e => setAudienceMessageText(e.target.value)} 
+                  />
+                  <Box sx={{ display: 'flex', gap: 2, p: 2.5, bgcolor: 'rgba(15, 23, 42, 0.02)', borderRadius: '12px', border: '1px dashed rgba(15, 23, 42, 0.1)' }}>
+                    <TextField fullWidth size="small" label="Action Button Text" placeholder="e.g. Read Prep Material" value={audienceButtonText} onChange={e => setAudienceButtonText(e.target.value)} />
+                    <TextField fullWidth size="small" label="Action Button Link" placeholder="e.g. https://foodnerve.com/article/123" value={audienceButtonLink} onChange={e => setAudienceButtonLink(e.target.value)} />
+                  </Box>
+                </Box>
+              </Box>
+            </Box>
+          </Box>
+        )}
       </Box>
 
       {/* FIXED BOTTOM ACTION BAR */}
@@ -451,16 +512,16 @@ export default function CreateLivestreamForm({
           <Button 
             startIcon={<ArrowBackIcon />} 
             onClick={() => {
-              if (step === 2) setStep(1);
+              if (step > 1) setStep(step - 1);
               else onCancel?.();
             }}
             sx={{ color: '#475569', fontWeight: 700, borderRadius: '12px', px: 2 }}
           >
-            {step === 2 ? 'Back to Details' : 'Cancel'}
+            {step > 1 ? (step === 3 ? 'Back to Rundown' : 'Back to Details') : 'Cancel'}
           </Button>
           
           <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 1 }}>
-            {[1, 2].map((s) => (
+            {[1, 2, 3].map((s) => (
               <Box key={s} sx={{
                 width: s === step ? 32 : 12, height: 4, borderRadius: 2,
                 bgcolor: s === step ? '#3b82f6' : (s < step ? '#10b981' : 'rgba(0,0,0,0.1)'),
@@ -485,10 +546,10 @@ export default function CreateLivestreamForm({
             Save Draft
           </Button>
           
-          {step === 1 ? (
+          {step < 3 ? (
             <Button 
               variant="contained" 
-              onClick={() => setStep(2)}
+              onClick={() => setStep(step + 1)}
               sx={{ 
                 borderRadius: '14px', fontWeight: 800, px: 4, bgcolor: '#0f172a',
                 boxShadow: '0 4px 12px rgba(15,23,42,0.2)',
