@@ -346,7 +346,13 @@ export async function getLearnContentById(id: string) {
       },
       video: true,
       class: true,
-      livestream: true,
+      livestream: {
+        include: {
+          blocks: {
+            orderBy: { orderIndex: 'asc' }
+          }
+        }
+      },
       report: true,
     }
   });
@@ -391,4 +397,33 @@ export async function likeBlockComment(commentId: string) {
     where: { id: commentId },
     data: { likes: { increment: 1 } }
   });
+}
+
+
+export async function fetchLivestreamContentPool(userId: string, orgId: string | null) {
+  const articles = await prisma.learnContent.findMany({
+    where: {
+      type: 'article',
+      status: 'published',
+      OR: orgId 
+        ? [{ organizationId: orgId }]
+        : [{ authorId: userId }]
+    },
+    include: { article: { include: { blocks: { orderBy: { orderIndex: 'asc' } } } }, organization: true },
+    orderBy: { createdAt: 'desc' },
+    take: 20
+  });
+  
+  const jobs = await prisma.tradeListing.findMany({
+    where: {
+      type: 'job',
+      status: 'active',
+      OR: orgId ? [{ organizationId: orgId }] : [{ postedById: userId }]
+    },
+    include: { organization: true },
+    orderBy: { createdAt: 'desc' },
+    take: 10
+  });
+  
+  return { articles, jobs };
 }
