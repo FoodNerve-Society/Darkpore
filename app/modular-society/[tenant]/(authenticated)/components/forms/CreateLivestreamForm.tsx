@@ -98,15 +98,14 @@ export default function CreateLivestreamForm({
     return articleIds.size;
   };
   const distinctArticles = getDistinctArticleCount();
-  const canPublish = distinctArticles >= 5 && title && description && category && streamUrl && eventDate;
+  const canPublish = distinctArticles >= 5 && title && description && eventDate && coverImage;
 
   // Action Items Checklist
   const actionItems = useMemo(() => {
     const items = [];
-    if (!streamUrl) items.push('Configure Stream URL');
-    if (!eventDate) items.push('Set Event Date & Time');
     if (!title) items.push('Add Livestream Title');
     if (!coverImage) items.push('Upload Cover Image');
+    if (!eventDate) items.push('Set Event Date & Time');
     
     if (step === 2) {
       if (distinctArticles < 5) {
@@ -114,12 +113,21 @@ export default function CreateLivestreamForm({
       }
     }
     return items;
-  }, [streamUrl, eventDate, title, coverImage, distinctArticles, step]);
+  }, [eventDate, title, coverImage, distinctArticles, step]);
 
   const [isActionItemsMinimized, setIsActionItemsMinimized] = useState(false);
 
   const handleSave = async (isPublish: boolean) => {
     if (!profile?.uid) return;
+    
+    let finalStreamUrl = streamUrl;
+    if (isPublish && !streamUrl) {
+      const url = window.prompt("Where are you hosting this? Paste your YouTube Live, Google Meet, or Streamyard destination link:");
+      if (url === null) return; // User cancelled
+      finalStreamUrl = url;
+      setStreamUrl(url);
+    }
+
     setIsSubmitting(true);
     try {
       let finalCoverUrl = typeof coverImage === 'string' ? coverImage : '';
@@ -148,7 +156,7 @@ export default function CreateLivestreamForm({
         coverImageUrl: finalCoverUrl,
         taxonomy: { category, subcategory, timeframe },
         livestream: {
-          streamUrl,
+          streamUrl: finalStreamUrl,
           eventDate: new Date(eventDate),
           status: 'scheduled',
           blocks: formattedBlocks
@@ -277,32 +285,52 @@ export default function CreateLivestreamForm({
             </Typography>
 
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, bgcolor: '#fff', p: 4, borderRadius: '24px', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 12px 40px rgba(0,0,0,0.03)' }}>
+              {/* Cover Image Upload */}
+              <Box 
+                sx={{ 
+                  border: '2px dashed rgba(0,0,0,0.1)', borderRadius: '16px', 
+                  p: 4, textAlign: 'center', bgcolor: '#f8fafc',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1,
+                  cursor: 'pointer', transition: 'all 0.2s ease',
+                  '&:hover': { borderColor: '#3b82f6', bgcolor: 'rgba(59,130,246,0.02)' }
+                }}
+                onClick={() => document.getElementById('coverImageInput')?.click()}
+              >
+                <input 
+                  type="file" 
+                  id="coverImageInput" 
+                  accept="image/*" 
+                  style={{ display: 'none' }} 
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      setCoverImage(e.target.files[0]);
+                    }
+                  }} 
+                />
+                {coverImage ? (
+                  <Box sx={{ width: '100%', height: 200, position: 'relative', borderRadius: '8px', overflow: 'hidden' }}>
+                    <img 
+                      src={typeof coverImage === 'string' ? coverImage : URL.createObjectURL(coverImage)} 
+                      alt="Cover" 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    />
+                  </Box>
+                ) : (
+                  <>
+                    <Box sx={{ p: 2, borderRadius: '50%', bgcolor: '#fff', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+                      <ArticleIcon sx={{ fontSize: 32, color: '#94a3b8' }} />
+                    </Box>
+                    <Typography sx={{ fontWeight: 700, color: '#334155' }}>Upload Cover Image</Typography>
+                    <Typography variant="body2" sx={{ color: '#94a3b8' }}>16:9 ratio recommended</Typography>
+                  </>
+                )}
+              </Box>
+
               <TextField fullWidth label="Livestream Title" value={title} onChange={e => setTitle(e.target.value)} />
               <TextField fullWidth multiline rows={4} label="Description / Overview" value={description} onChange={e => setDescription(e.target.value)} />
               
               <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', md: 'row' } }}>
-                <TextField fullWidth type="url" label="Stream URL (e.g. YouTube Live, Meet)" value={streamUrl} onChange={e => setStreamUrl(e.target.value)} />
                 <TextField fullWidth type="datetime-local" label="Event Date & Time" value={eventDate} onChange={e => setEventDate(e.target.value)} InputLabelProps={{ shrink: true }} />
-              </Box>
-
-              <Typography variant="h6" sx={{ fontWeight: 800, mt: 2, mb: 1, color: '#0f172a' }}>Taxonomy</Typography>
-              <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', md: 'row' } }}>
-                <FormControl fullWidth>
-                  <InputLabel>Category</InputLabel>
-                  <Select value={category} label="Category" onChange={e => setCategory(e.target.value)}>
-                    <MenuItem value="technology">Technology</MenuItem>
-                    <MenuItem value="agriculture">Agriculture</MenuItem>
-                    <MenuItem value="finance">Finance</MenuItem>
-                  </Select>
-                </FormControl>
-                <FormControl fullWidth>
-                  <InputLabel>Timeframe</InputLabel>
-                  <Select value={timeframe} label="Timeframe" onChange={e => setTimeframe(e.target.value)}>
-                    <MenuItem value="past">Past</MenuItem>
-                    <MenuItem value="present">Present</MenuItem>
-                    <MenuItem value="future">Future</MenuItem>
-                  </Select>
-                </FormControl>
               </Box>
             </Box>
           </Box>
