@@ -753,16 +753,18 @@ export default function CommandCenterHero({ globalAlerts = [], stats }: CommandC
           backdrop: { sx: { backdropFilter: 'blur(4px)', backgroundColor: alpha('#000', 0.4) } }
         }}
       >
-        <IconButton 
-          onClick={closeCalendar}
-          sx={{ 
-            position: 'absolute', right: 16, top: 16, zIndex: 10,
-            bgcolor: 'rgba(0,0,0,0.05)', '&:hover': { bgcolor: 'rgba(0,0,0,0.1)', transform: 'rotate(90deg)' },
-            transition: 'all 0.2s ease'
-          }}
-        >
-          <CloseIcon />
-        </IconButton>
+        <Box sx={{ position: 'absolute', right: 16, top: 16, zIndex: 10, display: 'flex', gap: 2, alignItems: 'center' }}>
+          <Box id="calendar-header-actions" />
+          <IconButton 
+            onClick={closeCalendar}
+            sx={{ 
+              bgcolor: 'rgba(0,0,0,0.05)', '&:hover': { bgcolor: 'rgba(0,0,0,0.1)', transform: 'rotate(90deg)' },
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </Box>
 
         <DialogContent sx={{ p: { xs: 2, md: 4 }, display: 'flex', flexDirection: 'column' }}>
           <Box sx={{ mb: 2, pl: 1 }}>

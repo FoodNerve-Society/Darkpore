@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Box, Typography, IconButton, Button, alpha, useTheme, ToggleButtonGroup, ToggleButton, TextField, MenuItem, CircularProgress, LinearProgress } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
@@ -48,6 +49,15 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
   const [biddingAmount, setBiddingAmount] = useState<number>(0);
   const [isBidding, setIsBidding] = useState(false);
   const [isAccordionExpanded, setIsAccordionExpanded] = useState(true);
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [slideDirection, setSlideDirection] = useState<'left'|'right'>('right');
+  const [headerPortal, setHeaderPortal] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      setHeaderPortal(document.getElementById('calendar-header-actions'));
+    }
+  }, []);
 
   // Sync state to URL without full navigation
   useEffect(() => {
@@ -164,6 +174,8 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
   const firstDayOfMonth = firstDayOfMonthRaw === 0 ? 6 : firstDayOfMonthRaw - 1;
 
   const handlePrev = () => {
+    setSlideDirection('left');
+    setIsFlipped(false);
     const newDate = new Date(currentDate);
     if (viewMode === 'month') newDate.setMonth(newDate.getMonth() - 1);
     if (viewMode === 'week') newDate.setDate(newDate.getDate() - 7);
@@ -172,6 +184,8 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
   };
 
   const handleNext = () => {
+    setSlideDirection('right');
+    setIsFlipped(false);
     const newDate = new Date(currentDate);
     if (viewMode === 'month') newDate.setMonth(newDate.getMonth() + 1);
     if (viewMode === 'week') newDate.setDate(newDate.getDate() + 7);
@@ -399,55 +413,79 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
     return (
       <Box sx={{ flex: 1, display: 'flex', gap: 3, minHeight: 0, flexDirection: { xs: 'column', md: 'row' } }}>
         
-        {/* LEFT PANE: Protocol Card (Now the Master Control) */}
         <Box sx={{ 
           width: { xs: '100%', md: 350 }, flexShrink: 0, 
-          display: 'flex', flexDirection: 'column', gap: 2, 
-          p: 3, borderRadius: 4, 
-          bgcolor: '#0f172a', color: 'white',
-          position: 'relative', overflow: 'hidden',
-          boxShadow: `0 20px 40px ${alpha('#000', 0.2)}`
+          perspective: '1200px'
         }}>
-          <Box sx={{ position: 'absolute', top: -100, right: -50, width: 300, height: 300, bgcolor: primaryColor, filter: 'blur(100px)', opacity: 0.3, zIndex: 0 }} />
-          
-          <Box sx={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column' }}>
-            
-            {/* NEW MASTER TOOLBAR (Moved from main container) */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, pb: 2, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-              <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                <Typography variant="caption" sx={{ fontWeight: 800, color: 'rgba(255,255,255,0.6)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                  {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-                </Typography>
-                <Typography variant="h6" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: 'white', lineHeight: 1.2 }}>
-                  Week {getWeekNumber(currentDate)}
-                </Typography>
-              </Box>
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <IconButton size="small" onClick={handlePrev} sx={{ color: 'white', bgcolor: 'rgba(255,255,255,0.1)', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' } }}>
-                  <ChevronLeftIcon fontSize="small" />
-                </IconButton>
-                <IconButton size="small" onClick={handleNext} sx={{ color: 'white', bgcolor: 'rgba(255,255,255,0.1)', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' } }}>
-                  <ChevronRightIcon fontSize="small" />
-                </IconButton>
-              </Box>
-            </Box>
+          <Box 
+            component={motion.div}
+            initial={false}
+            animate={{ rotateY: isFlipped ? 180 : 0 }}
+            transition={{ duration: 0.6, type: 'spring', stiffness: 200, damping: 20 }}
+            sx={{ width: '100%', height: '100%', position: 'relative', transformStyle: 'preserve-3d' }}
+          >
+            {/* FRONT FACE: Protocol Card */}
+            <Box sx={{
+              width: '100%', height: '100%',
+              backfaceVisibility: 'hidden',
+              display: 'flex', flexDirection: 'column', gap: 2, 
+              p: 3, borderRadius: 4, 
+              bgcolor: '#0f172a', color: 'white',
+              position: 'relative', overflow: 'hidden',
+              boxShadow: `0 20px 40px ${alpha('#000', 0.2)}`
+            }}>
+              <Box sx={{ position: 'absolute', top: -100, right: -50, width: 300, height: 300, bgcolor: primaryColor, filter: 'blur(100px)', opacity: 0.3, zIndex: 0 }} />
+              
+              <Box sx={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column' }}>
+                
+                {/* COMBINED TOP FLIP TRIGGER CARD with SLIDING CONTENT */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <IconButton size="small" onClick={(e) => { e.stopPropagation(); handlePrev(); }} sx={{ color: 'white', bgcolor: 'rgba(255,255,255,0.05)', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>
+                    <ChevronLeftIcon />
+                  </IconButton>
 
-            <Typography variant="overline" sx={{ fontWeight: 800, color: alpha('#ffffff', 0.6), letterSpacing: '0.1em' }}>
-              Matrix Protocol
-            </Typography>
-            <Typography variant="h3" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, textTransform: 'uppercase', mt: 0.5, mb: 2, textShadow: '0 2px 10px rgba(0,0,0,0.5)', lineHeight: 1 }}>
-              {activeCommodity || 'SYNCING...'}
-            </Typography>
-            
-            <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-              <Box sx={{ bgcolor: alpha('#ffffff', 0.1), backdropFilter: 'blur(10px)', px: 1.5, py: 1, borderRadius: 2 }}>
-                <Typography variant="caption" sx={{ fontWeight: 700, opacity: 0.8 }}>THEME</Typography>
-                <Typography variant="body2" sx={{ fontWeight: 900, lineHeight: 1 }}>ECOSYSTEM FOCUS</Typography>
-              </Box>
-            </Box>
+                  <Box sx={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={currentDate.toISOString()}
+                        initial={{ x: slideDirection === 'left' ? -20 : 20, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        exit={{ x: slideDirection === 'left' ? 20 : -20, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        onClick={() => setIsFlipped(true)}
+                        style={{ display: 'flex', flexDirection: 'column', gap: 8, cursor: 'pointer' }}
+                      >
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                          <Typography variant="caption" sx={{ fontWeight: 800, color: 'rgba(255,255,255,0.6)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                            {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                          </Typography>
+                          <Typography variant="h6" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: 'white', lineHeight: 1 }}>
+                            Week {getWeekNumber(currentDate)}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', transition: 'all 0.3s', '&:hover': { transform: 'scale(1.02)' } }}>
+                          <Typography variant="h3" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, textTransform: 'uppercase', textShadow: '0 2px 10px rgba(0,0,0,0.5)', lineHeight: 1, letterSpacing: '-0.02em', textAlign: 'center' }}>
+                            {activeCommodity || 'SYNCING...'}
+                          </Typography>
+                        </Box>
+                      </motion.div>
+                    </AnimatePresence>
+                  </Box>
 
-            {/* Next Week's War (Bidding UI) */}
-            <Box sx={{ mt: 'auto', pt: 3, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                  <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleNext(); }} sx={{ color: 'white', bgcolor: 'rgba(255,255,255,0.05)', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>
+                    <ChevronRightIcon />
+                  </IconButton>
+                </Box>
+                  
+                {user && (user as any).rank >= 4 && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mt: 1, cursor: 'pointer' }} onClick={() => setIsFlipped(true)}>
+                      <Typography variant="caption" sx={{ fontWeight: 800, color: '#ef4444', letterSpacing: '0.05em' }}>TAP TO DEPLOY CAPITAL</Typography>
+                      <ArrowForwardIcon sx={{ color: '#ef4444', fontSize: 16 }} />
+                  </Box>
+                )}
+
+                {/* Next Week's War (Leaderboard updates) */}
+                <Box sx={{ mt: 'auto', pt: 4 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <LocalFireDepartmentIcon sx={{ color: '#ef4444' }} />
                 <Typography variant="h6" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: 'white' }}>
@@ -484,9 +522,38 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
                   ))}
                 </Box>
               )}
+            </Box>
+          </Box>
+        </Box>
 
-              {user && (user as any).rank >= 4 && (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        {/* BACK FACE: Bidding Form */}
+        <Box sx={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          backfaceVisibility: 'hidden',
+          transform: 'rotateY(180deg)',
+          display: 'flex', flexDirection: 'column', gap: 2, 
+          p: 3, borderRadius: 4, 
+          bgcolor: '#0f172a', color: 'white',
+          overflow: 'hidden',
+          boxShadow: `0 20px 40px ${alpha('#000', 0.2)}`
+        }}>
+          <Box sx={{ position: 'absolute', bottom: -100, left: -50, width: 300, height: 300, bgcolor: '#ef4444', filter: 'blur(100px)', opacity: 0.2, zIndex: 0 }} />
+          <Box sx={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column' }}>
+            
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 4, pb: 2, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+              <IconButton size="small" onClick={() => setIsFlipped(false)} sx={{ color: 'white', mr: 2, bgcolor: 'rgba(255,255,255,0.1)', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' } }}>
+                <ChevronLeftIcon />
+              </IconButton>
+              <Typography variant="h6" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: 'white', lineHeight: 1.2 }}>
+                Deploy Capital
+              </Typography>
+            </Box>
+
+            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mb: 4 }}>
+              Select a commodity and deploy your Nerve Points to push it up the leaderboard for next week's focus.
+            </Typography>
+
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                   <Box sx={{ display: 'flex', gap: 1 }}>
                     <TextField
                       select
@@ -534,14 +601,15 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
                   >
                     {isBidding ? <CircularProgress size={24} color="inherit" /> : 'DEPLOY'}
                   </Button>
-                </Box>
-              )}
             </Box>
           </Box>
         </Box>
+        
+        </Box>
+      </Box>
 
         {/* RIGHT PANE: 7-Day Accordion */}
-        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1.5, overflowY: 'auto', pr: 1, minHeight: 0, perspective: '1200px' }}>
+        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1.5, overflowY: 'auto', px: 2, pb: 4, minHeight: 0, perspective: '1200px' }}>
           {/* Top Padding for smooth scroll centering */}
           <Box sx={{ height: '5vh', flexShrink: 0 }} />
 
@@ -957,43 +1025,13 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
   };
 
   return (
-    <Box sx={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', gap: 3, minHeight: 0 }}>
-      {/* Main Grid: Calendar + Sidebars */}
-      <Box sx={{ flex: 1, display: 'flex', gap: 3, minHeight: 0 }}>
-        
-        {/* Calendar Area */}
+    <Box sx={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', gap: 3, minHeight: 0, position: 'relative' }}>
+      
+      {/* Header controls using React Portal into Modal Header */}
+      {headerPortal ? createPortal(
         <Box sx={{ 
-          flex: 1,
-          transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)', 
-          display: 'flex', 
-          flexDirection: 'column',
-          height: '100%',
-          minHeight: 0
+          display: 'flex', alignItems: 'center', gap: 2,
         }}>
-          {/* Main Calendar View Wrapper */}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            
-            {/* Context Header for Day View only */}
-            {viewMode === 'day' && (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <IconButton size="small" onClick={() => setViewMode('week')} sx={{ bgcolor: 'rgba(255,255,255,0.5)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.6)', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', '&:hover': { bgcolor: 'rgba(255,255,255,0.8)' } }}>
-                  <ChevronLeftIcon />
-                </IconButton>
-                <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                  <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                    BACK TO WEEK {getWeekNumber(currentDate)}
-                  </Typography>
-                  <Typography variant="h5" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em', lineHeight: 1 }}>
-                    {currentDate.toLocaleDateString('en-US', { weekday: 'long' })} {getOrdinal(currentDate.getDate())}
-                  </Typography>
-                </Box>
-              </Box>
-            )}
-
-            {/* Empty space block to push toggles to right when in week view */}
-            {viewMode === 'week' && <Box />}
-
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           {/* View Toggles */}
           <ToggleButtonGroup
             value={viewMode}
@@ -1039,8 +1077,45 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
           >
             Add Event
           </Button>
-        </Box>
-      </Box>
+        </Box>,
+        headerPortal
+      ) : null}
+
+      {/* Main Grid: Calendar + Sidebars */}
+      <Box sx={{ flex: 1, display: 'flex', gap: 3, minHeight: 0 }}>
+        
+        {/* Calendar Area */}
+        <Box sx={{ 
+          flex: 1,
+          transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)', 
+          display: 'flex', 
+          flexDirection: 'column',
+          height: '100%',
+          minHeight: 0
+        }}>
+          {/* Main Calendar View Wrapper */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            
+            {/* Context Header for Day View only */}
+            {viewMode === 'day' && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <IconButton size="small" onClick={() => setViewMode('week')} sx={{ bgcolor: 'rgba(255,255,255,0.5)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.6)', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', '&:hover': { bgcolor: 'rgba(255,255,255,0.8)' } }}>
+                  <ChevronLeftIcon />
+                </IconButton>
+                <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                  <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                    BACK TO WEEK {getWeekNumber(currentDate)}
+                  </Typography>
+                  <Typography variant="h5" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em', lineHeight: 1 }}>
+                    {currentDate.toLocaleDateString('en-US', { weekday: 'long' })} {getOrdinal(currentDate.getDate())}
+                  </Typography>
+                </Box>
+              </Box>
+            )}
+
+            {/* Empty space block to push toggles to right when in week view */}
+            {viewMode === 'week' && <Box />}
+          </Box>
 
         {/* Render Active View */}
         {viewMode === 'week' && renderWeekView()}
