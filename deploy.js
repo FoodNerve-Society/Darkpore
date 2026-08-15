@@ -19,10 +19,10 @@ async function deploy() {
     const answer = await askQuestion("Did you make any changes to schema.prisma that need to be pushed to Turso? (y/N): ");
     
     if (answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes') {
-      console.log("Running push_schema.js...");
-      // Execute the push_schema script. If it fails, execSync throws and stops deployment!
-      execSync('node push_schema.js', { stdio: 'inherit' });
-      console.log("✅ Database schema pushed successfully.");
+      console.log("Running automated Turso schema migration...");
+      // Execute the turso_migrate script. If it fails, execSync throws and stops deployment!
+      execSync('node turso_migrate.js', { stdio: 'inherit' });
+      console.log("✅ Database schema is synced.");
     } else {
       console.log("⏭️ Skipping database push.");
     }

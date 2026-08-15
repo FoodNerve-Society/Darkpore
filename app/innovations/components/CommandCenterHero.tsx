@@ -773,7 +773,7 @@ export default function CommandCenterHero({ globalAlerts = [], stats }: CommandC
               Explore deadlines, livestreams, and events across the network.
             </Typography>
           </Box>
-          <EcosystemCalendar tenantId="foodnerve" initialView="month" initialDate={currentDate} themeColor={themeConfig.iconColor} />
+          <EcosystemCalendar tenantId="foodnerve" initialView="week" initialDate={currentDate} themeColor={themeConfig.iconColor} />
         </DialogContent>
       </Dialog>
     </Box>
