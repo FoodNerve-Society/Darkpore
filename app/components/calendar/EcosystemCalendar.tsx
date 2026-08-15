@@ -53,6 +53,12 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
   const [isFlipped, setIsFlipped] = useState(false);
   const [slideDirection, setSlideDirection] = useState<number>(1);
   const [headerPortal, setHeaderPortal] = useState<HTMLElement | null>(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (typeof document !== 'undefined') {
@@ -421,10 +427,21 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
           display: 'flex', flexDirection: 'column'
         }}>
           {(() => {
-            const fullList = commoditiesList.map(c => {
+            const currentIsoWeek = getWeekNumber(currentTime);
+            const nextWeekIndex = currentIsoWeek % 26;
+            
+            const cyclicCommodities = [
+              ...commoditiesList.slice(nextWeekIndex),
+              ...commoditiesList.slice(0, nextWeekIndex)
+            ];
+
+            const fullList = cyclicCommodities.map((c, idx) => {
               const existing = leaderboard.find(l => l.commodity === c);
-              return existing || { commodity: c, totalNP: 0 };
-            }).sort((a, b) => b.totalNP - a.totalNP);
+              return { ...(existing || { commodity: c, totalNP: 0 }), cyclicIndex: idx };
+            }).sort((a, b) => {
+              if (b.totalNP !== a.totalNP) return b.totalNP - a.totalNP;
+              return a.cyclicIndex - b.cyclicIndex;
+            });
 
             return (
             <Box 
@@ -491,36 +508,57 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
                   </Box>
                   
                   {(() => {
-                    const now = new Date();
+                    const now = currentTime;
                     const day = now.getDay();
                     const hours = now.getHours();
                     const isWarActive = (day === 3 && hours >= 12) || day === 4 || day === 5 || day === 6;
                     const isSunday = day === 0;
                     const isMonTueWedMorning = day === 1 || day === 2 || (day === 3 && hours < 12);
 
+                    const getRemainingTimeStr = () => {
+                      const target = new Date(now);
+                      const daysUntilSaturday = 6 - now.getDay();
+                      target.setDate(now.getDate() + daysUntilSaturday);
+                      target.setHours(23, 59, 59, 999);
+                      
+                      const diffMs = target.getTime() - now.getTime();
+                      if (diffMs <= 0) return 'Ends soon';
+                      
+                      const d = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                      const h = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                      const m = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                      
+                      if (d > 0) return `Ends in ${d}d ${h}h`;
+                      if (h > 0) return `Ends in ${h}h ${m}m`;
+                      return `Ends in ${m}m`;
+                    };
+
                     if (isSunday) {
-                       const lockedCommodity = leaderboard.length > 0 ? leaderboard[0].commodity : 'LAND';
+                       const nextWeekIndex = getWeekNumber(currentTime) % 26;
+                       const lockedCommodity = leaderboard.length > 0 ? leaderboard[0].commodity : commoditiesList[nextWeekIndex];
                        return (
                          <Box>
                            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mb: 2 }}>
                              War Room Closed. Next week's Protocol locked:
                            </Typography>
-                           <Box sx={{ bgcolor: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', borderRadius: 2, p: 2, textAlign: 'center' }}>
-                             <Typography variant="h5" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: '#ef4444' }}>{lockedCommodity}</Typography>
+                           <Box sx={{ bgcolor: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', borderRadius: 2, py: 1, px: 2, textAlign: 'center' }}>
+                             <Typography variant="body1" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: '#ef4444' }}>{lockedCommodity}</Typography>
                            </Box>
                          </Box>
                        );
                     }
 
                     if (isMonTueWedMorning) {
+                       const nextWeekIndex = getWeekNumber(currentTime) % 26;
+                       const suggestedCommodity = commoditiesList[nextWeekIndex];
                        return (
                          <Box>
                            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mb: 2 }}>
                              Intelligence engine suggestion for next week:
                            </Typography>
-                           <Box sx={{ bgcolor: 'rgba(255, 255, 255, 0.05)', border: '1px dashed rgba(255,255,255,0.3)', borderRadius: 2, p: 2, textAlign: 'center' }}>
-                             <Typography variant="h6" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: 'white' }}>CAPITAL</Typography>
-                             <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>Pending War Room (Opens Wed 12PM)</Typography>
+                           <Box sx={{ bgcolor: 'rgba(255, 255, 255, 0.05)', border: '1px dashed rgba(255,255,255,0.3)', borderRadius: 2, py: 1, px: 2, textAlign: 'center' }}>
+                             <Typography variant="body1" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: 'white' }}>{suggestedCommodity}</Typography>
+                             <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', display: 'block' }}>Pending War Room (Opens Wed 12PM)</Typography>
                            </Box>
                          </Box>
                        );
@@ -530,7 +568,7 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
                     return (
                       <>
                         <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mb: 3 }}>
-                          Have a say in the protocol for next week. Place your bid below. Ends Sat 11:59 PM.
+                          Have a say in the protocol for next week. Place your bid below. {getRemainingTimeStr()}.
                         </Typography>
 
                         {leaderboard.length === 0 ? (
@@ -540,7 +578,7 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
                             onClick={() => setIsFlipped(true)}
                             sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.2)', py: 1.5, borderStyle: 'dashed', '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.05)' } }}
                           >
-                            BID NOW
+                            NO BIDS PLACED YET
                           </Button>
                         ) : (
                           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 3 }}>
@@ -570,6 +608,7 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
                     );
                   })()}
                 </Box>
+              </Box>
             </Box>
 
             {/* BACK FACE: Bidding Form */}
@@ -628,7 +667,7 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
                 {/* Bottom Bidding Action */}
                 <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}>
                   {(() => {
-                    const now = new Date();
+                    const now = currentTime;
                     const day = now.getDay();
                     const hours = now.getHours();
                     const isWarActive = (day === 3 && hours >= 12) || day === 4 || day === 5 || day === 6;
@@ -698,12 +737,14 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
             const distance = Math.abs(i - activeIndex);
             
             const isSelected = distance === 0;
+            if (viewMode === 'day' && !isSelected) return null;
+            
             const isToday = d.toDateString() === new Date().toDateString();
             const dayEvents = getEventsForDate(d);
             const CATEGORY_DISPLAY: Record<number, string> = { 1: 'LAND', 2: 'CAPITAL', 3: 'INPUTS', 4: 'ENERGY', 5: 'INSECURITY', 6: 'LOSS', 0: 'PROTEIN' };
             const matrixCategory = CATEGORY_DISPLAY[d.getDay()];
             
-            const showExpanded = isSelected && isAccordionExpanded;
+            const showExpanded = (isSelected && isAccordionExpanded) || viewMode === 'day';
             
             // Calculate Cover Flow metrics
             const cardWidth = isSelected ? '100%' : `${Math.max(80, 100 - (distance * 4))}%`;
@@ -856,8 +897,12 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
                       size="small" 
                       onClick={(e) => {
                         e.stopPropagation();
-                        setCurrentDate(d);
-                        setViewMode('day');
+                        if (viewMode === 'day') {
+                          setViewMode('week');
+                        } else {
+                          setCurrentDate(d);
+                          setViewMode('day');
+                        }
                       }}
                       sx={{ 
                         color: isSelected ? primaryColor : '#cbd5e1', 
@@ -869,7 +914,7 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
                         }
                       }}
                     >
-                      <OpenInFullIcon fontSize="small" sx={{ fontSize: '1.1rem' }} />
+                      {viewMode === 'day' ? <CloseFullscreenIcon fontSize="small" /> : <OpenInFullIcon fontSize="small" />}
                     </IconButton>
                     <IconButton size="small" sx={{ 
                       color: showExpanded ? 'white' : '#cbd5e1', 
@@ -997,163 +1042,6 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
     );
   };
 
-  // --- RENDER DAY VIEW ---
-  const renderDayView = () => {
-    const dayEvents = getEventsForDate(currentDate);
-    const day = currentDate.getDate();
-    const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
-    const CATEGORY_DISPLAY: Record<number, string> = { 1: 'LAND', 2: 'CAPITAL', 3: 'INPUTS', 4: 'ENERGY', 5: 'INSECURITY', 6: 'LOSS', 0: 'PROTEIN' };
-    const matrixCategory = CATEGORY_DISPLAY[currentDate.getDay()];
-    
-    return (
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', px: { xs: 1, md: 2 }, pb: 4, minHeight: 0 }}>
-        <Box 
-          sx={{ 
-            width: '100%',
-            flex: 1,
-            mx: 'auto',
-            borderRadius: 4, p: { xs: 3, md: 4 },
-            bgcolor: 'white',
-            border: '1px solid rgba(0,0,0,0.04)',
-            boxShadow: '0 20px 40px rgba(0,0,0,0.08)',
-            display: 'flex', flexDirection: 'column', gap: 3,
-            position: 'relative'
-          }}
-        >
-          {/* Header Row */}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
-            
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
-              <Box sx={{ 
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', 
-                minWidth: 70, height: 70, borderRadius: 3, 
-                bgcolor: alpha(primaryColor, 0.1), border: `2px solid ${alpha(primaryColor, 0.2)}`,
-                boxShadow: `0 0 0 4px ${alpha(primaryColor, 0.1)}`
-              }}>
-                <Typography variant="caption" sx={{ fontWeight: 900, color: primaryColor, letterSpacing: '0.05em', lineHeight: 1, mb: 0.5 }}>{dayName}</Typography>
-                <Typography variant="h4" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: primaryColor, lineHeight: 1 }}>{day}</Typography>
-              </Box>
-
-              <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                <Typography variant="h5" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: '#0f172a', lineHeight: 1.2 }}>
-                  {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })} - {matrixCategory}
-                </Typography>
-                <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 700, mt: 0.5 }}>
-                  {dayEvents.length} scheduled {dayEvents.length === 1 ? 'event' : 'events'}
-                </Typography>
-              </Box>
-            </Box>
-
-            {/* Minimize Button */}
-            <IconButton 
-              onClick={() => setViewMode('week')} 
-              sx={{ 
-                bgcolor: 'rgba(0,0,0,0.04)', 
-                color: 'text.secondary',
-                '&:hover': { bgcolor: 'rgba(0,0,0,0.08)' } 
-              }}
-            >
-              <CloseFullscreenIcon />
-            </IconButton>
-          </Box>
-
-          <Divider sx={{ my: 1, borderStyle: 'dashed' }} />
-
-          {/* Events List */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {dayEvents.length === 0 ? (
-              <Typography variant="body1" sx={{ color: 'text.secondary', fontStyle: 'italic', textAlign: 'center', py: 8 }}>
-                No events scheduled for this day.
-              </Typography>
-            ) : (
-              dayEvents.map(event => {
-                const dotColor = getIntentColor(event.dateType);
-                return (
-                  <Box 
-                    key={event.id} 
-                    component={motion.div}
-                    layoutId={`event-card-${event.id}-day`}
-                    sx={{ 
-                      bgcolor: alpha(dotColor, 0.05), p: 3, borderRadius: 4, 
-                      display: 'flex', alignItems: 'center', gap: 3,
-                      border: `1px solid ${alpha(dotColor, 0.2)}`,
-                      transition: 'all 0.3s',
-                      '&:hover': { 
-                        bgcolor: alpha(dotColor, 0.08), 
-                        transform: 'translateY(-2px)',
-                        boxShadow: `0 12px 40px ${alpha(dotColor, 0.15)}`
-                      }
-                    }}
-                  >
-                    {/* Premium Time Block */}
-                    <Box sx={{ 
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                      minWidth: 80, height: 80, borderRadius: 3,
-                      bgcolor: alpha(dotColor, 0.1),
-                      color: dotColor,
-                      position: 'relative'
-                    }}>
-                      <Box sx={{ position: 'absolute', top: 6, right: 6, width: 6, height: 6, borderRadius: '50%', bgcolor: dotColor, boxShadow: `0 0 8px ${dotColor}` }} />
-                      <Typography 
-                        variant="h5" 
-                        sx={{ fontWeight: 900, lineHeight: 1.1, fontFamily: 'var(--font-dosis)' }}
-                      >
-                        {formatTimeSpan(event.date, event.endDate).split(' ')[0]}
-                      </Typography>
-                      <Typography variant="caption" sx={{ fontWeight: 800, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        {formatTimeSpan(event.date, event.endDate).split(' ')[1] || ''}
-                      </Typography>
-                    </Box>
-                    
-                    {/* Premium Content */}
-                    <Box sx={{ flex: 1 }}>
-                      <Typography 
-                        variant="h6" 
-                        sx={{ fontWeight: 900, color: '#0f172a', mb: 1, lineHeight: 1.2, display: 'block' }}
-                      >
-                        {event.title}
-                      </Typography>
-                      <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                          <LocalFireDepartmentIcon sx={{ fontSize: 16, color: dotColor }} />
-                          <Typography variant="caption" sx={{ fontWeight: 800, color: dotColor, fontSize: '0.7rem', letterSpacing: '0.05em' }}>
-                            {event.dateType?.replace('_', ' ')}
-                          </Typography>
-                        </Box>
-                        {event.category && (
-                          <>
-                            <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: '#cbd5e1' }} />
-                            <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 700, fontSize: '0.7rem', letterSpacing: '0.02em', textTransform: 'uppercase' }}>
-                              {event.category}
-                            </Typography>
-                          </>
-                        )}
-                      </Box>
-                    </Box>
-
-                    {/* Optional Right Image/Avatar */}
-                    {event.category === 'Livestream' && (
-                      <Box 
-                        component={motion.div}
-                        layoutId={`event-img-${event.id}-day`}
-                        sx={{ 
-                          width: 64, height: 64, borderRadius: 3, flexShrink: 0,
-                          backgroundImage: 'url(https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=150&q=80)',
-                          backgroundSize: 'cover', backgroundPosition: 'center',
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                        }} 
-                      />
-                    )}
-                  </Box>
-                );
-              })
-            )}
-          </Box>
-        </Box>
-      </Box>
-    );
-  };
-
   return (
     <Box sx={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', gap: 3, minHeight: 0, position: 'relative' }}>
       
@@ -1270,8 +1158,7 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
               transition={{ duration: 0.4, type: 'spring', stiffness: 200, damping: 20 }}
               style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}
             >
-              {viewMode === 'week' && renderWeekView()}
-              {viewMode === 'day' && renderDayView()}
+              {renderWeekView()}
             </motion.div>
           </AnimatePresence>
         </Box>
