@@ -730,57 +730,83 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
         {/* RIGHT PANE: 7-Day Accordion */}
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1.5, overflowY: 'auto', px: 2, pb: 4, minHeight: 0, perspective: '1200px' }}>
           {/* Top Padding for smooth scroll centering */}
-          <Box sx={{ height: '5vh', flexShrink: 0 }} />
+          <Box sx={{ height: viewMode === 'day' ? '1vh' : '5vh', flexShrink: 0, transition: 'height 0.3s' }} />
 
-          {weekDates.map((d, i) => {
-            const activeIndex = weekDates.findIndex(date => date.toDateString() === currentDate.toDateString());
-            const distance = Math.abs(i - activeIndex);
-            
-            const isSelected = distance === 0;
-            if (viewMode === 'day' && !isSelected) return null;
-            
-            const isToday = d.toDateString() === new Date().toDateString();
-            const dayEvents = getEventsForDate(d);
-            const CATEGORY_DISPLAY: Record<number, string> = { 1: 'LAND', 2: 'CAPITAL', 3: 'INPUTS', 4: 'ENERGY', 5: 'INSECURITY', 6: 'LOSS', 0: 'PROTEIN' };
-            const matrixCategory = CATEGORY_DISPLAY[d.getDay()];
-            
-            const showExpanded = (isSelected && isAccordionExpanded) || viewMode === 'day';
-            
-            // Calculate Cover Flow metrics
-            const cardWidth = isSelected ? '100%' : `${Math.max(80, 100 - (distance * 4))}%`;
-            const tiltDirection = i < activeIndex ? -1 : 1;
-            const tiltDegree = isSelected ? 0 : distance * 2.5 * tiltDirection;
-            
-            return (
-              <Box 
-                key={d.toISOString()}
-                id={`timeline-day-${d.toDateString().replace(/\s+/g, '-')}`}
-                onClick={() => {
-                  if (isSelected) {
-                    setIsAccordionExpanded(!isAccordionExpanded); // Toggle minimize
-                  } else {
-                    setCurrentDate(d); // Expand accordion
-                    setIsAccordionExpanded(true);
-                  }
-                }}
-                sx={{ 
-                  width: cardWidth,
-                  mx: 'auto',
-                  borderRadius: 4, p: { xs: 2, md: 2.5 }, cursor: 'pointer', transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-                  bgcolor: isSelected ? 'white' : (isToday ? alpha(primaryColor, 0.05) : 'rgba(255,255,255,0.4)'),
-                  border: isSelected ? '1px solid rgba(0,0,0,0.04)' : (isToday ? `1px solid ${alpha(primaryColor, 0.3)}` : '1px solid rgba(0,0,0,0.03)'),
-                  boxShadow: isSelected ? '0 20px 40px rgba(0,0,0,0.08)' : '0 2px 8px rgba(0,0,0,0.02)',
-                  backdropFilter: 'blur(10px)',
-                  display: 'flex', flexDirection: 'column', gap: showExpanded ? 2.5 : 0,
-                  transform: isSelected ? 'scale(1.02)' : `rotateX(${tiltDegree}deg)`,
-                  transformOrigin: 'center center',
-                  zIndex: 10 - distance,
-                  '&:hover': {
-                    bgcolor: isSelected ? 'white' : 'rgba(255,255,255,0.7)',
-                    transform: isSelected ? 'scale(1.02)' : `rotateX(${tiltDegree * 0.5}deg) translateY(-2px)`
-                  }
-                }}
-              >
+          <AnimatePresence initial={false}>
+            {weekDates.map((d, i) => {
+              const activeIndex = weekDates.findIndex(date => date.toDateString() === currentDate.toDateString());
+              const distance = Math.abs(i - activeIndex);
+              
+              const isSelected = distance === 0;
+              if (viewMode === 'day' && !isSelected) return null;
+
+              const isToday = d.toDateString() === new Date().toDateString();
+              const dayEvents = getEventsForDate(d);
+              const CATEGORY_DISPLAY: Record<number, string> = { 1: 'LAND', 2: 'CAPITAL', 3: 'INPUTS', 4: 'ENERGY', 5: 'INSECURITY', 6: 'LOSS', 0: 'PROTEIN' };
+              const matrixCategory = CATEGORY_DISPLAY[d.getDay()];
+              
+              const showExpanded = isSelected && (isAccordionExpanded || viewMode === 'day');
+              
+              // Calculate Cover Flow metrics
+              const cardWidth = isSelected ? '100%' : `${Math.max(80, 100 - (distance * 4))}%`;
+              const tiltDirection = i < activeIndex ? -1 : 1;
+              const tiltDegree = isSelected ? 0 : distance * 2.5 * tiltDirection;
+              
+              return (
+                <Box 
+                  component={motion.div}
+                  layout
+                  initial={{ opacity: 0, scale: 0.95, height: 0 }}
+                  animate={{ 
+                    opacity: 1, 
+                    scale: 1, 
+                    height: 'auto',
+                    transition: { duration: 0.35, ease: [0.16, 1, 0.3, 1] }
+                  }}
+                  exit={{ 
+                    opacity: 0, 
+                    scale: 0.95, 
+                    height: 0, 
+                    paddingTop: 0, 
+                    paddingBottom: 0, 
+                    marginTop: 0, 
+                    marginBottom: 0, 
+                    overflow: 'hidden',
+                    transition: { duration: 0.25, ease: 'easeInOut' }
+                  }}
+                  key={d.toISOString()}
+                  id={`timeline-day-${d.toDateString().replace(/\s+/g, '-')}`}
+                  onClick={() => {
+                    if (viewMode === 'day') return;
+                    if (isSelected) {
+                      setIsAccordionExpanded(!isAccordionExpanded);
+                    } else {
+                      setCurrentDate(d);
+                      setIsAccordionExpanded(true);
+                    }
+                  }}
+                  sx={{ 
+                    width: viewMode === 'day' ? '100%' : cardWidth,
+                    mx: 'auto',
+                    flex: (viewMode === 'day' && isSelected) ? 1 : 'none',
+                    minHeight: (viewMode === 'day' && isSelected) ? '100%' : (showExpanded ? (dayEvents.length > 0 ? 300 : 200) : 'auto'),
+                    borderRadius: 4, p: { xs: 2, md: 2.5 }, 
+                    cursor: viewMode === 'day' ? 'default' : 'pointer', 
+                    transition: 'background-color 0.3s, border-color 0.3s, box-shadow 0.3s',
+                    bgcolor: isSelected ? 'white' : (isToday ? alpha(primaryColor, 0.05) : 'rgba(255,255,255,0.4)'),
+                    border: isSelected ? '1px solid rgba(0,0,0,0.04)' : (isToday ? `1px solid ${alpha(primaryColor, 0.3)}` : '1px solid rgba(0,0,0,0.03)'),
+                    boxShadow: isSelected ? '0 20px 40px rgba(0,0,0,0.08)' : '0 2px 8px rgba(0,0,0,0.02)',
+                    backdropFilter: 'blur(10px)',
+                    display: 'flex', flexDirection: 'column', gap: showExpanded ? 2.5 : 0,
+                    transform: (viewMode === 'day' && isSelected) ? 'none' : (isSelected ? 'scale(1.02)' : `rotateX(${tiltDegree}deg)`),
+                    transformOrigin: 'center center',
+                    zIndex: 10 - distance,
+                    '&:hover': {
+                      bgcolor: isSelected ? 'white' : 'rgba(255,255,255,0.7)',
+                      transform: (viewMode === 'day' && isSelected) ? 'none' : (isSelected ? 'scale(1.02)' : `rotateX(${tiltDegree * 0.5}deg) translateY(-2px)`)
+                    }
+                  }}
+                >
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', overflow: 'hidden' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5, flexShrink: 0 }}>
                     {/* Date Block */}
@@ -895,6 +921,7 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
                   <Box sx={{ pl: 2, flexShrink: 0, display: 'flex', gap: 1 }}>
                     <IconButton 
                       size="small" 
+                      title={viewMode === 'day' ? "Back to Week View" : "Focus on this Day"}
                       onClick={(e) => {
                         e.stopPropagation();
                         if (viewMode === 'day') {
@@ -1034,6 +1061,7 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
               </Box>
             );
           })}
+          </AnimatePresence>
           
           {/* Bottom Padding for smooth scroll centering */}
           <Box sx={{ height: '30vh', flexShrink: 0 }} />
@@ -1117,52 +1145,28 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
           flex: 1, position: 'relative', overflow: 'hidden',
           display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0
         }}>
-          {/* Main Calendar View Wrapper */}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            
-            {/* Context Header for Day View only */}
-            {viewMode === 'day' && (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <IconButton size="small" onClick={() => setViewMode('week')} sx={{ bgcolor: 'rgba(255,255,255,0.5)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.6)', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', '&:hover': { bgcolor: 'rgba(255,255,255,0.8)' } }}>
-                  <ChevronLeftIcon />
-                </IconButton>
-                <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                  <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                    BACK TO WEEK {getWeekNumber(currentDate)}
-                  </Typography>
-                  <Typography variant="h5" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em', lineHeight: 1 }}>
-                    {currentDate.toLocaleDateString('en-US', { weekday: 'long' })} {getOrdinal(currentDate.getDate())}
-                  </Typography>
-                </Box>
-              </Box>
-            )}
-
-            {/* Empty space block to push toggles to right when in week view */}
-            {viewMode === 'week' && <Box />}
+          {/* Render Active View */}
+          <Box sx={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+            <AnimatePresence initial={false} custom={slideDirection}>
+              <motion.div
+                key={viewMode === 'month' ? `month-${currentDate.getMonth()}-${currentDate.getFullYear()}` : `week-${getWeekNumber(currentDate)}-${currentDate.getFullYear()}`}
+                custom={slideDirection}
+                variants={{
+                  enter: (dir: number) => ({ x: dir > 0 ? '100%' : '-100%', opacity: 0, position: 'absolute' }),
+                  center: { x: 0, opacity: 1, position: 'relative' },
+                  exit: (dir: number) => ({ x: dir < 0 ? '100%' : '-100%', opacity: 0, position: 'absolute' })
+                }}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.4, type: 'spring', stiffness: 200, damping: 20 }}
+                style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}
+              >
+                {viewMode === 'month' && renderMonthView()}
+                {(viewMode === 'week' || viewMode === 'day') && renderWeekView()}
+              </motion.div>
+            </AnimatePresence>
           </Box>
-
-        {/* Render Active View */}
-        <Box sx={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-          <AnimatePresence initial={false} custom={slideDirection}>
-            <motion.div
-              key={`week-${getWeekNumber(currentDate)}-${currentDate.getFullYear()}-${viewMode}`}
-              custom={slideDirection}
-              variants={{
-                enter: (dir: number) => ({ x: dir > 0 ? '100%' : '-100%', opacity: 0, position: 'absolute' }),
-                center: { x: 0, opacity: 1, position: 'relative' },
-                exit: (dir: number) => ({ x: dir < 0 ? '100%' : '-100%', opacity: 0, position: 'absolute' })
-              }}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ duration: 0.4, type: 'spring', stiffness: 200, damping: 20 }}
-              style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}
-            >
-              {renderWeekView()}
-            </motion.div>
-          </AnimatePresence>
-        </Box>
-
         </Box>
 
       {isAddingEvent && (
