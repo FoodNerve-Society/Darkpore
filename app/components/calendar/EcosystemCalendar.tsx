@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Box, Typography, IconButton, Button, alpha, useTheme, ToggleButtonGroup, ToggleButton, TextField, MenuItem, CircularProgress, LinearProgress } from '@mui/material';
+import { Box, Typography, IconButton, Button, alpha, useTheme, ToggleButtonGroup, ToggleButton, TextField, MenuItem, CircularProgress, LinearProgress, Divider } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import AddIcon from '@mui/icons-material/Add';
@@ -14,6 +14,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import OpenInFullIcon from '@mui/icons-material/OpenInFull';
+import CloseFullscreenIcon from '@mui/icons-material/CloseFullscreen';
 import { getCalendarEvents } from '@/app/actions/calendar';
 import { getMatrixForWeekClient, getCommodityBiddingLeaderboard, placeCommodityBid } from '@/lib/actions/matrix';
 import { CalendarEvent } from '@prisma/client';
@@ -50,7 +51,7 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
   const [isBidding, setIsBidding] = useState(false);
   const [isAccordionExpanded, setIsAccordionExpanded] = useState(true);
   const [isFlipped, setIsFlipped] = useState(false);
-  const [slideDirection, setSlideDirection] = useState<'left'|'right'>('right');
+  const [slideDirection, setSlideDirection] = useState<number>(1);
   const [headerPortal, setHeaderPortal] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -174,7 +175,7 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
   const firstDayOfMonth = firstDayOfMonthRaw === 0 ? 6 : firstDayOfMonthRaw - 1;
 
   const handlePrev = () => {
-    setSlideDirection('left');
+    setSlideDirection(-1);
     setIsFlipped(false);
     const newDate = new Date(currentDate);
     if (viewMode === 'month') newDate.setMonth(newDate.getMonth() - 1);
@@ -184,7 +185,7 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
   };
 
   const handleNext = () => {
-    setSlideDirection('right');
+    setSlideDirection(1);
     setIsFlipped(false);
     const newDate = new Date(currentDate);
     if (viewMode === 'month') newDate.setMonth(newDate.getMonth() + 1);
@@ -413,200 +414,279 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
     return (
       <Box sx={{ flex: 1, display: 'flex', gap: 3, minHeight: 0, flexDirection: { xs: 'column', md: 'row' } }}>
         
+        {/* LEFT PANE: 3D Flip Card */}
         <Box sx={{ 
           width: { xs: '100%', md: 350 }, flexShrink: 0, 
-          perspective: '1200px'
+          perspective: '1200px',
+          display: 'flex', flexDirection: 'column'
         }}>
-          <Box 
-            component={motion.div}
-            initial={false}
-            animate={{ rotateY: isFlipped ? 180 : 0 }}
-            transition={{ duration: 0.6, type: 'spring', stiffness: 200, damping: 20 }}
-            sx={{ width: '100%', height: '100%', position: 'relative', transformStyle: 'preserve-3d' }}
-          >
-            {/* FRONT FACE: Protocol Card */}
-            <Box sx={{
-              width: '100%', height: '100%',
-              backfaceVisibility: 'hidden',
-              display: 'flex', flexDirection: 'column', gap: 2, 
-              p: 3, borderRadius: 4, 
-              bgcolor: '#0f172a', color: 'white',
-              position: 'relative', overflow: 'hidden',
-              boxShadow: `0 20px 40px ${alpha('#000', 0.2)}`
-            }}>
+          {(() => {
+            const fullList = commoditiesList.map(c => {
+              const existing = leaderboard.find(l => l.commodity === c);
+              return existing || { commodity: c, totalNP: 0 };
+            }).sort((a, b) => b.totalNP - a.totalNP);
+
+            return (
+            <Box 
+              component={motion.div}
+              initial={false}
+              animate={{ rotateY: isFlipped ? 180 : 0 }}
+              transition={{ duration: 0.6, type: 'spring', stiffness: 200, damping: 20 }}
+              sx={{ flex: 1, position: 'relative', transformStyle: 'preserve-3d' }}
+            >
+              {/* FRONT FACE: Protocol Card */}
+              <Box sx={{
+                width: '100%', height: '100%',
+                backfaceVisibility: 'hidden',
+                pointerEvents: isFlipped ? 'none' : 'auto',
+                display: 'flex', flexDirection: 'column', gap: 2, 
+                p: 3, borderRadius: 4, 
+                bgcolor: '#0f172a', color: 'white',
+                position: 'relative', overflow: 'hidden',
+                boxShadow: `0 20px 40px ${alpha('#000', 0.2)}`
+              }}>
               <Box sx={{ position: 'absolute', top: -100, right: -50, width: 300, height: 300, bgcolor: primaryColor, filter: 'blur(100px)', opacity: 0.3, zIndex: 0 }} />
               
               <Box sx={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column' }}>
                 
-                {/* COMBINED TOP FLIP TRIGGER CARD with SLIDING CONTENT */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <IconButton size="small" onClick={(e) => { e.stopPropagation(); handlePrev(); }} sx={{ color: 'white', bgcolor: 'rgba(255,255,255,0.05)', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>
-                    <ChevronLeftIcon />
-                  </IconButton>
-
-                  <Box sx={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-                    <AnimatePresence mode="wait">
-                      <motion.div
-                        key={currentDate.toISOString()}
-                        initial={{ x: slideDirection === 'left' ? -20 : 20, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        exit={{ x: slideDirection === 'left' ? 20 : -20, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        onClick={() => setIsFlipped(true)}
-                        style={{ display: 'flex', flexDirection: 'column', gap: 8, cursor: 'pointer' }}
-                      >
-                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <Typography variant="caption" sx={{ fontWeight: 800, color: 'rgba(255,255,255,0.6)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                            {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-                          </Typography>
-                          <Typography variant="h6" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: 'white', lineHeight: 1 }}>
-                            Week {getWeekNumber(currentDate)}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', transition: 'all 0.3s', '&:hover': { transform: 'scale(1.02)' } }}>
-                          <Typography variant="h3" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, textTransform: 'uppercase', textShadow: '0 2px 10px rgba(0,0,0,0.5)', lineHeight: 1, letterSpacing: '-0.02em', textAlign: 'center' }}>
-                            {activeCommodity || 'SYNCING...'}
-                          </Typography>
-                        </Box>
-                      </motion.div>
-                    </AnimatePresence>
+                {/* COMBINED TOP FLIP TRIGGER CARD */}
+                <Box 
+                  onClick={() => setIsFlipped(true)}
+                  sx={{ 
+                    display: 'flex', flexDirection: 'column', gap: 1.5, 
+                    cursor: 'pointer',
+                    transition: 'all 0.3s', '&:hover': { transform: 'scale(1.02)' }
+                  }}
+                >
+                  <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                    <Typography variant="caption" sx={{ fontWeight: 800, color: 'rgba(255,255,255,0.6)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                      {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                    </Typography>
+                    <Typography variant="h5" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: 'white', lineHeight: 1.2 }}>
+                      Week {getWeekNumber(currentDate)}
+                    </Typography>
                   </Box>
 
-                  <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleNext(); }} sx={{ color: 'white', bgcolor: 'rgba(255,255,255,0.05)', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>
-                    <ChevronRightIcon />
-                  </IconButton>
-                </Box>
+                  <Box>
+                    <Typography variant="h2" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, textTransform: 'uppercase', textShadow: '0 2px 10px rgba(0,0,0,0.5)', lineHeight: 1, letterSpacing: '-0.03em' }}>
+                      {activeCommodity || 'SYNCING...'}
+                    </Typography>
+                  </Box>
                   
-                {user && (user as any).rank >= 4 && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mt: 1, cursor: 'pointer' }} onClick={() => setIsFlipped(true)}>
-                      <Typography variant="caption" sx={{ fontWeight: 800, color: '#ef4444', letterSpacing: '0.05em' }}>TAP TO DEPLOY CAPITAL</Typography>
-                      <ArrowForwardIcon sx={{ color: '#ef4444', fontSize: 16 }} />
-                  </Box>
-                )}
+                  {user && (user as any).rank >= 4 && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1 }}>
+                       <Typography variant="caption" sx={{ fontWeight: 800, color: '#ef4444', letterSpacing: '0.05em' }}>TAP TO DEPLOY CAPITAL</Typography>
+                       <ArrowForwardIcon sx={{ color: 'rgba(255,255,255,0.4)', fontSize: 16 }} />
+                    </Box>
+                  )}
+                </Box>
 
                 {/* Next Week's War (Leaderboard updates) */}
                 <Box sx={{ mt: 'auto', pt: 4 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                <LocalFireDepartmentIcon sx={{ color: '#ef4444' }} />
-                <Typography variant="h6" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: 'white' }}>
-                  Next Week's War
-                </Typography>
-              </Box>
-              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mb: 3 }}>
-                Visionaries deploy NP to dictate next week's focus. Ends Thu 11:59 PM.
-              </Typography>
-
-              {leaderboard.length === 0 ? (
-                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.3)', fontStyle: 'italic', mb: 3 }}>No bids placed yet.</Typography>
-              ) : (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 3 }}>
-                  {leaderboard.slice(0, 3).map((bid, i) => (
-                    <Box key={bid.commodity}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 700, color: i === 0 ? '#ef4444' : 'white' }}>
-                          #{i + 1} {bid.commodity}
-                        </Typography>
-                        <Typography variant="caption" sx={{ fontWeight: 800, color: i === 0 ? '#ef4444' : 'rgba(255,255,255,0.5)' }}>
-                          {bid.totalNP.toLocaleString()} NP
-                        </Typography>
-                      </Box>
-                      <LinearProgress 
-                        variant="determinate" 
-                        value={Math.min((bid.totalNP / 10000) * 100, 100)} 
-                        sx={{ 
-                          height: 4, borderRadius: 2, bgcolor: 'rgba(255,255,255,0.1)',
-                          '& .MuiLinearProgress-bar': { bgcolor: i === 0 ? '#ef4444' : 'rgba(255,255,255,0.3)' }
-                        }} 
-                      />
-                    </Box>
-                  ))}
-                </Box>
-              )}
-            </Box>
-          </Box>
-        </Box>
-
-        {/* BACK FACE: Bidding Form */}
-        <Box sx={{
-          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-          backfaceVisibility: 'hidden',
-          transform: 'rotateY(180deg)',
-          display: 'flex', flexDirection: 'column', gap: 2, 
-          p: 3, borderRadius: 4, 
-          bgcolor: '#0f172a', color: 'white',
-          overflow: 'hidden',
-          boxShadow: `0 20px 40px ${alpha('#000', 0.2)}`
-        }}>
-          <Box sx={{ position: 'absolute', bottom: -100, left: -50, width: 300, height: 300, bgcolor: '#ef4444', filter: 'blur(100px)', opacity: 0.2, zIndex: 0 }} />
-          <Box sx={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column' }}>
-            
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 4, pb: 2, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-              <IconButton size="small" onClick={() => setIsFlipped(false)} sx={{ color: 'white', mr: 2, bgcolor: 'rgba(255,255,255,0.1)', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' } }}>
-                <ChevronLeftIcon />
-              </IconButton>
-              <Typography variant="h6" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: 'white', lineHeight: 1.2 }}>
-                Deploy Capital
-              </Typography>
-            </Box>
-
-            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mb: 4 }}>
-              Select a commodity and deploy your Nerve Points to push it up the leaderboard for next week's focus.
-            </Typography>
-
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <TextField
-                      select
-                      fullWidth
-                      size="small"
-                      label="Commodity"
-                      value={biddingCommodity}
-                      onChange={(e) => setBiddingCommodity(e.target.value)}
-                      sx={{ 
-                        '& .MuiInputBase-root': { color: 'white', bgcolor: 'rgba(255,255,255,0.05)' },
-                        '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.5)' },
-                        '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.1)' }
-                      }}
-                    >
-                      {commoditiesList.map((c) => (
-                        <MenuItem key={c} value={c}>{c}</MenuItem>
-                      ))}
-                    </TextField>
-                    <TextField
-                      size="small"
-                      label="NP"
-                      type="number"
-                      value={biddingAmount || ''}
-                      onChange={(e) => setBiddingAmount(parseInt(e.target.value) || 0)}
-                      sx={{ 
-                        width: 100,
-                        '& .MuiInputBase-root': { color: 'white', bgcolor: 'rgba(255,255,255,0.05)' },
-                        '& .MuiInputLabel-root': { color: 'rgba(255,255,255,0.5)' },
-                        '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.1)' }
-                      }}
-                      slotProps={{ htmlInput: { min: 0 } }}
-                    />
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                    <LocalFireDepartmentIcon sx={{ color: '#ef4444' }} />
+                    <Typography variant="h6" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: 'white' }}>
+                      Next Week's War
+                    </Typography>
                   </Box>
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    onClick={handlePlaceBid}
-                    disabled={isBidding || !biddingCommodity || biddingAmount <= 0}
-                    sx={{ 
-                      bgcolor: '#ef4444', color: 'white', fontWeight: 900, py: 1, borderRadius: 2,
-                      boxShadow: '0 4px 14px rgba(239, 68, 68, 0.4)',
-                      '&:hover': { bgcolor: '#dc2626', boxShadow: '0 6px 20px rgba(239, 68, 68, 0.6)' },
-                      '&.Mui-disabled': { bgcolor: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.3)' }
-                    }}
-                  >
-                    {isBidding ? <CircularProgress size={24} color="inherit" /> : 'DEPLOY'}
-                  </Button>
+                  
+                  {(() => {
+                    const now = new Date();
+                    const day = now.getDay();
+                    const hours = now.getHours();
+                    const isWarActive = (day === 3 && hours >= 12) || day === 4 || day === 5 || day === 6;
+                    const isSunday = day === 0;
+                    const isMonTueWedMorning = day === 1 || day === 2 || (day === 3 && hours < 12);
+
+                    if (isSunday) {
+                       const lockedCommodity = leaderboard.length > 0 ? leaderboard[0].commodity : 'LAND';
+                       return (
+                         <Box>
+                           <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mb: 2 }}>
+                             War Room Closed. Next week's Protocol locked:
+                           </Typography>
+                           <Box sx={{ bgcolor: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', borderRadius: 2, p: 2, textAlign: 'center' }}>
+                             <Typography variant="h5" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: '#ef4444' }}>{lockedCommodity}</Typography>
+                           </Box>
+                         </Box>
+                       );
+                    }
+
+                    if (isMonTueWedMorning) {
+                       return (
+                         <Box>
+                           <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mb: 2 }}>
+                             Intelligence engine suggestion for next week:
+                           </Typography>
+                           <Box sx={{ bgcolor: 'rgba(255, 255, 255, 0.05)', border: '1px dashed rgba(255,255,255,0.3)', borderRadius: 2, p: 2, textAlign: 'center' }}>
+                             <Typography variant="h6" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: 'white' }}>CAPITAL</Typography>
+                             <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>Pending War Room (Opens Wed 12PM)</Typography>
+                           </Box>
+                         </Box>
+                       );
+                    }
+
+                    // isWarActive is true
+                    return (
+                      <>
+                        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mb: 3 }}>
+                          Have a say in the protocol for next week. Place your bid below. Ends Sat 11:59 PM.
+                        </Typography>
+
+                        {leaderboard.length === 0 ? (
+                          <Button 
+                            fullWidth
+                            variant="outlined"
+                            onClick={() => setIsFlipped(true)}
+                            sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.2)', py: 1.5, borderStyle: 'dashed', '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.05)' } }}
+                          >
+                            BID NOW
+                          </Button>
+                        ) : (
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 3 }}>
+                            {leaderboard.slice(0, 3).map((bid, i) => (
+                              <Box key={bid.commodity}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                                  <Typography variant="body2" sx={{ fontWeight: 700, color: i === 0 ? '#ef4444' : 'white' }}>
+                                    #{i + 1} {bid.commodity}
+                                  </Typography>
+                                  <Typography variant="caption" sx={{ fontWeight: 800, color: i === 0 ? '#ef4444' : 'rgba(255,255,255,0.5)' }}>
+                                    {bid.totalNP.toLocaleString()} NP
+                                  </Typography>
+                                </Box>
+                                <LinearProgress 
+                                  variant="determinate" 
+                                  value={Math.min((bid.totalNP / 10000) * 100, 100)} 
+                                  sx={{ 
+                                    height: 4, borderRadius: 2, bgcolor: 'rgba(255,255,255,0.1)',
+                                    '& .MuiLinearProgress-bar': { bgcolor: i === 0 ? '#ef4444' : 'rgba(255,255,255,0.3)' }
+                                  }} 
+                                />
+                              </Box>
+                            ))}
+                          </Box>
+                        )}
+                      </>
+                    );
+                  })()}
+                </Box>
             </Box>
-          </Box>
+
+            {/* BACK FACE: Bidding Form */}
+            <Box sx={{
+              position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+              backfaceVisibility: 'hidden',
+              pointerEvents: isFlipped ? 'auto' : 'none',
+              transform: 'rotateY(180deg)',
+              display: 'flex', flexDirection: 'column', gap: 2, 
+              p: 3, borderRadius: 4, 
+              bgcolor: '#0f172a', color: 'white',
+              overflow: 'hidden',
+              boxShadow: `0 20px 40px ${alpha('#000', 0.2)}`
+            }}>
+              <Box sx={{ position: 'absolute', bottom: -100, left: -50, width: 300, height: 300, bgcolor: '#ef4444', filter: 'blur(100px)', opacity: 0.2, zIndex: 0 }} />
+              <Box sx={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, pb: 2, borderBottom: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}>
+                  <IconButton size="small" onClick={() => setIsFlipped(false)} sx={{ color: 'white', mr: 2, bgcolor: 'rgba(255,255,255,0.1)', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' } }}>
+                    <ChevronLeftIcon />
+                  </IconButton>
+                  <Typography variant="h6" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: 'white', lineHeight: 1.2 }}>
+                    Deploy Capital
+                  </Typography>
+                </Box>
+
+                <Box sx={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 1, pr: 1 }}>
+                   {fullList.map((item, index) => (
+                      <Box 
+                        key={item.commodity} 
+                        onClick={() => setBiddingCommodity(item.commodity)}
+                        sx={{ 
+                          p: 2, borderRadius: 3, 
+                          bgcolor: biddingCommodity === item.commodity ? alpha('#ef4444', 0.2) : 'rgba(255,255,255,0.03)',
+                          border: biddingCommodity === item.commodity ? '1px solid #ef4444' : '1px solid transparent',
+                          cursor: 'pointer',
+                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                          '&:hover': { bgcolor: biddingCommodity === item.commodity ? alpha('#ef4444', 0.2) : 'rgba(255,255,255,0.08)' }
+                        }}
+                      >
+                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 900, color: index === 0 && item.totalNP > 0 ? '#ef4444' : 'white' }}>
+                              #{index + 1}
+                            </Typography>
+                            <Typography variant="body1" sx={{ fontWeight: 800, color: 'white', fontFamily: 'var(--font-dosis)' }}>
+                              {item.commodity}
+                            </Typography>
+                         </Box>
+                         <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', fontWeight: 700 }}>
+                            {item.totalNP.toLocaleString()} NP
+                         </Typography>
+                      </Box>
+                   ))}
+                </Box>
+
+                {/* Bottom Bidding Action */}
+                <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}>
+                  {(() => {
+                    const now = new Date();
+                    const day = now.getDay();
+                    const hours = now.getHours();
+                    const isWarActive = (day === 3 && hours >= 12) || day === 4 || day === 5 || day === 6;
+                    
+                    if (!isWarActive) {
+                      return (
+                        <Typography variant="caption" sx={{ color: '#ef4444', textAlign: 'center', fontWeight: 800, mt: 1, display: 'block' }}>
+                          WAR ROOM OPENS WEDNESDAY 12PM - SATURDAY 11:59PM
+                        </Typography>
+                      );
+                    }
+
+                    if (!biddingCommodity) {
+                       return (
+                         <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', py: 1 }}>
+                           Select a protocol above to deploy capital.
+                         </Typography>
+                       );
+                    }
+
+                    return (
+                       <Box sx={{ display: 'flex', gap: 1 }}>
+                          <TextField
+                            size="small"
+                            placeholder="NP Amount"
+                            type="number"
+                            value={biddingAmount || ''}
+                            onChange={(e) => setBiddingAmount(parseInt(e.target.value) || 0)}
+                            sx={{ 
+                              flex: 1,
+                              '& .MuiInputBase-root': { color: 'white', bgcolor: 'rgba(255,255,255,0.05)', borderRadius: 2 },
+                              '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.2)' }
+                            }}
+                            slotProps={{ htmlInput: { min: 0 } }}
+                          />
+                          <Button
+                            variant="contained"
+                            onClick={handlePlaceBid}
+                            disabled={isBidding || biddingAmount <= 0}
+                            sx={{ 
+                              bgcolor: '#ef4444', color: 'white', fontWeight: 800, borderRadius: 2, px: 3, 
+                              boxShadow: '0 4px 14px rgba(239, 68, 68, 0.4)',
+                              '&:hover': { bgcolor: '#dc2626', boxShadow: '0 6px 20px rgba(239, 68, 68, 0.6)' },
+                              '&.Mui-disabled': { bgcolor: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.3)' }
+                            }}
+                          >
+                            {isBidding ? <CircularProgress size={24} color="inherit" /> : 'DEPLOY'}
+                          </Button>
+                       </Box>
+                    );
+                  })()}
+                </Box>
+              </Box>
+            </Box>
+            </Box>
+            );
+          })()}
         </Box>
-        
-        </Box>
-      </Box>
 
         {/* RIGHT PANE: 7-Day Accordion */}
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1.5, overflowY: 'auto', px: 2, pb: 4, minHeight: 0, perspective: '1200px' }}>
@@ -920,105 +1000,155 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
   // --- RENDER DAY VIEW ---
   const renderDayView = () => {
     const dayEvents = getEventsForDate(currentDate);
-    const isToday = currentDate.toDateString() === new Date().toDateString();
+    const day = currentDate.getDate();
+    const dayName = currentDate.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+    const CATEGORY_DISPLAY: Record<number, string> = { 1: 'LAND', 2: 'CAPITAL', 3: 'INPUTS', 4: 'ENERGY', 5: 'INSECURITY', 6: 'LOSS', 0: 'PROTEIN' };
+    const matrixCategory = CATEGORY_DISPLAY[currentDate.getDay()];
     
     return (
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'stretch', overflowY: 'auto', px: { xs: 1, md: 2 }, mx: { xs: -1, md: -2 }, pb: 4, mb: -4, minHeight: 0 }}>
-        
-        {/* Header matching Week View style but bigger */}
-        <Box sx={{ 
-          textAlign: 'center', p: 2, borderRadius: 4, mb: 3, width: '100%',
-          bgcolor: primaryColor,
-          color: 'white',
-          boxShadow: `0 8px 24px ${alpha(primaryColor, 0.3)}`,
-        }}>
-          <Typography variant="subtitle2" sx={{ fontFamily: 'var(--font-ysabeau-infant)', fontWeight: 800, color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-            {currentDate.toLocaleDateString(undefined, { weekday: 'long' })}
-          </Typography>
-          <Typography variant="h4" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: '#ffffff' }}>
-            {currentDate.getDate()} {currentDate.toLocaleDateString(undefined, { month: 'long' })}
-          </Typography>
-        </Box>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', px: { xs: 1, md: 2 }, pb: 4, minHeight: 0 }}>
+        <Box 
+          sx={{ 
+            width: '100%',
+            flex: 1,
+            mx: 'auto',
+            borderRadius: 4, p: { xs: 3, md: 4 },
+            bgcolor: 'white',
+            border: '1px solid rgba(0,0,0,0.04)',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.08)',
+            display: 'flex', flexDirection: 'column', gap: 3,
+            position: 'relative'
+          }}
+        >
+          {/* Header Row */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
+            
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
+              <Box sx={{ 
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', 
+                minWidth: 70, height: 70, borderRadius: 3, 
+                bgcolor: alpha(primaryColor, 0.1), border: `2px solid ${alpha(primaryColor, 0.2)}`,
+                boxShadow: `0 0 0 4px ${alpha(primaryColor, 0.1)}`
+              }}>
+                <Typography variant="caption" sx={{ fontWeight: 900, color: primaryColor, letterSpacing: '0.05em', lineHeight: 1, mb: 0.5 }}>{dayName}</Typography>
+                <Typography variant="h4" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: primaryColor, lineHeight: 1 }}>{day}</Typography>
+              </Box>
 
-        {/* The "Combined 5 strips" Container */}
-        <Box sx={{ 
-          width: '100%', flex: 1,
-          bgcolor: isToday ? alpha(primaryColor, 0.05) : 'rgba(255,255,255,0.4)', 
-          borderRadius: 4, p: 3,
-          border: isToday ? `1px solid ${alpha(primaryColor, 0.4)}` : '1px solid rgba(0,0,0,0.03)',
-          boxShadow: isToday ? `0 4px 12px ${alpha(primaryColor, 0.1)}` : '0 4px 16px rgba(0,0,0,0.02)',
-          backdropFilter: 'blur(12px)',
-          display: 'flex', flexDirection: 'column', gap: 2,
-        }}>
-          {dayEvents.length === 0 ? (
-            <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Typography variant="body1" sx={{ color: 'text.secondary', fontWeight: 600 }}>No events scheduled for this day.</Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                <Typography variant="h5" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: '#0f172a', lineHeight: 1.2 }}>
+                  {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })} - {matrixCategory}
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 700, mt: 0.5 }}>
+                  {dayEvents.length} scheduled {dayEvents.length === 1 ? 'event' : 'events'}
+                </Typography>
+              </Box>
             </Box>
-          ) : (
-            dayEvents.map(event => {
-              const dotColor = getIntentColor(event.dateType);
-              return (
-                <Box key={event.id} sx={{ 
-                  display: 'flex', gap: 3, p: 3, borderRadius: 5, 
-                  bgcolor: 'rgba(255,255,255,0.5)', backdropFilter: 'blur(20px)',
-                  boxShadow: `0 16px 40px ${alpha(dotColor, 0.12)}, inset 0 2px 4px rgba(255,255,255,0.6)`,
-                  border: 'none',
-                  transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                  '&:hover': { bgcolor: 'rgba(255,255,255,0.7)', transform: 'translateY(-4px)', boxShadow: `0 24px 64px ${alpha(dotColor, 0.2)}, inset 0 2px 4px rgba(255,255,255,0.8)` }
-                }}>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 80, justifyContent: 'center' }}>
-                    {formatTimeSpan(event.date, event.endDate) === 'All Day' ? (
-                      <Typography variant="h6" sx={{ fontWeight: 900, color: dotColor, fontFamily: 'var(--font-dosis)', lineHeight: 1 }}>
-                        ALL DAY
+
+            {/* Minimize Button */}
+            <IconButton 
+              onClick={() => setViewMode('week')} 
+              sx={{ 
+                bgcolor: 'rgba(0,0,0,0.04)', 
+                color: 'text.secondary',
+                '&:hover': { bgcolor: 'rgba(0,0,0,0.08)' } 
+              }}
+            >
+              <CloseFullscreenIcon />
+            </IconButton>
+          </Box>
+
+          <Divider sx={{ my: 1, borderStyle: 'dashed' }} />
+
+          {/* Events List */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {dayEvents.length === 0 ? (
+              <Typography variant="body1" sx={{ color: 'text.secondary', fontStyle: 'italic', textAlign: 'center', py: 8 }}>
+                No events scheduled for this day.
+              </Typography>
+            ) : (
+              dayEvents.map(event => {
+                const dotColor = getIntentColor(event.dateType);
+                return (
+                  <Box 
+                    key={event.id} 
+                    component={motion.div}
+                    layoutId={`event-card-${event.id}-day`}
+                    sx={{ 
+                      bgcolor: alpha(dotColor, 0.05), p: 3, borderRadius: 4, 
+                      display: 'flex', alignItems: 'center', gap: 3,
+                      border: `1px solid ${alpha(dotColor, 0.2)}`,
+                      transition: 'all 0.3s',
+                      '&:hover': { 
+                        bgcolor: alpha(dotColor, 0.08), 
+                        transform: 'translateY(-2px)',
+                        boxShadow: `0 12px 40px ${alpha(dotColor, 0.15)}`
+                      }
+                    }}
+                  >
+                    {/* Premium Time Block */}
+                    <Box sx={{ 
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                      minWidth: 80, height: 80, borderRadius: 3,
+                      bgcolor: alpha(dotColor, 0.1),
+                      color: dotColor,
+                      position: 'relative'
+                    }}>
+                      <Box sx={{ position: 'absolute', top: 6, right: 6, width: 6, height: 6, borderRadius: '50%', bgcolor: dotColor, boxShadow: `0 0 8px ${dotColor}` }} />
+                      <Typography 
+                        variant="h5" 
+                        sx={{ fontWeight: 900, lineHeight: 1.1, fontFamily: 'var(--font-dosis)' }}
+                      >
+                        {formatTimeSpan(event.date, event.endDate).split(' ')[0]}
                       </Typography>
-                    ) : (
-                      <>
-                        <Typography variant="h6" sx={{ fontWeight: 900, color: dotColor, fontFamily: 'var(--font-dosis)', lineHeight: 1 }}>
-                          {new Date(event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).split(' ')[0]}
-                        </Typography>
-                        <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', mb: event.endDate ? 1 : 0 }}>
-                          {new Date(event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).split(' ')[1]}
-                        </Typography>
-                        
-                        {event.endDate && (
+                      <Typography variant="caption" sx={{ fontWeight: 800, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        {formatTimeSpan(event.date, event.endDate).split(' ')[1] || ''}
+                      </Typography>
+                    </Box>
+                    
+                    {/* Premium Content */}
+                    <Box sx={{ flex: 1 }}>
+                      <Typography 
+                        variant="h6" 
+                        sx={{ fontWeight: 900, color: '#0f172a', mb: 1, lineHeight: 1.2, display: 'block' }}
+                      >
+                        {event.title}
+                      </Typography>
+                      <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <LocalFireDepartmentIcon sx={{ fontSize: 16, color: dotColor }} />
+                          <Typography variant="caption" sx={{ fontWeight: 800, color: dotColor, fontSize: '0.7rem', letterSpacing: '0.05em' }}>
+                            {event.dateType?.replace('_', ' ')}
+                          </Typography>
+                        </Box>
+                        {event.category && (
                           <>
-                            <Box sx={{ width: 1, height: 10, bgcolor: alpha(dotColor, 0.3), my: 0.5 }} />
-                            <Typography variant="h6" sx={{ fontWeight: 900, color: 'text.secondary', fontFamily: 'var(--font-dosis)', lineHeight: 1, opacity: 0.8 }}>
-                              {new Date(event.endDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).split(' ')[0]}
-                            </Typography>
-                            <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', opacity: 0.8 }}>
-                              {new Date(event.endDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).split(' ')[1]}
+                            <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: '#cbd5e1' }} />
+                            <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 700, fontSize: '0.7rem', letterSpacing: '0.02em', textTransform: 'uppercase' }}>
+                              {event.category}
                             </Typography>
                           </>
                         )}
-                      </>
+                      </Box>
+                    </Box>
+
+                    {/* Optional Right Image/Avatar */}
+                    {event.category === 'Livestream' && (
+                      <Box 
+                        component={motion.div}
+                        layoutId={`event-img-${event.id}-day`}
+                        sx={{ 
+                          width: 64, height: 64, borderRadius: 3, flexShrink: 0,
+                          backgroundImage: 'url(https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=150&q=80)',
+                          backgroundSize: 'cover', backgroundPosition: 'center',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                        }} 
+                      />
                     )}
                   </Box>
-                  <Box sx={{ width: 2, bgcolor: alpha(dotColor, 0.2), borderRadius: 2 }} />
-                  <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a', mb: 0.5, letterSpacing: '-0.02em' }}>
-                      {event.title}
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: '#475569', mb: 2, fontWeight: 500 }}>
-                      {event.dateType === 'DEADLINE' ? 'Critical application deadline. Ensure all materials are submitted.' : (event.dateType === 'PUBLISH_DATE' ? 'Content scheduled for public release.' : 'Join this session to collaborate, review resources, and ask questions live with the organizers.')}
-                    </Typography>
-                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                      <Box sx={{ bgcolor: alpha(dotColor, 0.1), color: dotColor, px: 1.5, py: 0.5, borderRadius: 2 }}>
-                        <Typography variant="caption" sx={{ fontWeight: 800, textTransform: 'uppercase', fontSize: '0.65rem' }}>
-                          {event.dateType?.replace('_', ' ')}
-                        </Typography>
-                      </Box>
-                      {event.category && (
-                        <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, bgcolor: 'rgba(0,0,0,0.04)', px: 1.5, py: 0.5, borderRadius: 2 }}>
-                          {event.category} {event.organizationName && `• ${event.organizationName}`}
-                        </Typography>
-                      )}
-                    </Box>
-                  </Box>
-                </Box>
-              );
-            })
-          )}
+                );
+              })
+            )}
+          </Box>
         </Box>
       </Box>
     );
@@ -1082,16 +1212,22 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
       ) : null}
 
       {/* Main Grid: Calendar + Sidebars */}
-      <Box sx={{ flex: 1, display: 'flex', gap: 3, minHeight: 0 }}>
+      <Box sx={{ flex: 1, display: 'flex', gap: 2, minHeight: 0, position: 'relative' }}>
         
+        {/* Master Navigation Left (Overlay, half outside) */}
+        <IconButton size="small" onClick={handlePrev} sx={{ position: 'absolute', left: -16, top: '50%', transform: 'translateY(-50%)', zIndex: 20, bgcolor: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(4px)', border: '1px solid rgba(255,255,255,0.3)', '&:hover': { bgcolor: 'rgba(255,255,255,0.5)' }, transition: 'all 0.2s' }}>
+          <ChevronLeftIcon sx={{ color: primaryColor }} />
+        </IconButton>
+
+        {/* Master Navigation Right (Overlay, half outside) */}
+        <IconButton size="small" onClick={handleNext} sx={{ position: 'absolute', right: -16, top: '50%', transform: 'translateY(-50%)', zIndex: 20, bgcolor: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(4px)', border: '1px solid rgba(255,255,255,0.3)', '&:hover': { bgcolor: 'rgba(255,255,255,0.5)' }, transition: 'all 0.2s' }}>
+          <ChevronRightIcon sx={{ color: primaryColor }} />
+        </IconButton>
+
         {/* Calendar Area */}
         <Box sx={{ 
-          flex: 1,
-          transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)', 
-          display: 'flex', 
-          flexDirection: 'column',
-          height: '100%',
-          minHeight: 0
+          flex: 1, position: 'relative', overflow: 'hidden',
+          display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0
         }}>
           {/* Main Calendar View Wrapper */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -1118,8 +1254,27 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
           </Box>
 
         {/* Render Active View */}
-        {viewMode === 'week' && renderWeekView()}
-        {viewMode === 'day' && renderDayView()}
+        <Box sx={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          <AnimatePresence initial={false} custom={slideDirection}>
+            <motion.div
+              key={`week-${getWeekNumber(currentDate)}-${currentDate.getFullYear()}-${viewMode}`}
+              custom={slideDirection}
+              variants={{
+                enter: (dir: number) => ({ x: dir > 0 ? '100%' : '-100%', opacity: 0, position: 'absolute' }),
+                center: { x: 0, opacity: 1, position: 'relative' },
+                exit: (dir: number) => ({ x: dir < 0 ? '100%' : '-100%', opacity: 0, position: 'absolute' })
+              }}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.4, type: 'spring', stiffness: 200, damping: 20 }}
+              style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}
+            >
+              {viewMode === 'week' && renderWeekView()}
+              {viewMode === 'day' && renderDayView()}
+            </motion.div>
+          </AnimatePresence>
+        </Box>
 
         </Box>
 
