@@ -97,15 +97,7 @@ export function CalendarOverlayProvider({ children }: { children: ReactNode }) {
         </IconButton>
 
         {/* Content (Ecosystem Calendar Grid) */}
-        <DialogContent sx={{ p: { xs: 2, md: 4 }, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
-          <Box sx={{ mb: 2, pl: 1 }}>
-            <Typography variant="h4" sx={{ fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <CalendarMonthIcon sx={{ color: theme.palette.primary.main, fontSize: 32 }} /> Ecosystem Calendar
-            </Typography>
-            <Typography variant="body1" sx={{ color: '#64748b', fontWeight: 500, mt: 0.5 }}>
-              Explore deadlines, livestreams, and events across the network.
-            </Typography>
-          </Box>
+        <DialogContent sx={{ p: { xs: 2, md: 3.5 }, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
           <EcosystemCalendar 
             tenantId={(profile as any)?.tenantId || 'foodnerve'} 
             initialView={initialView}

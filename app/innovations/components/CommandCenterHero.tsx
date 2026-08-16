@@ -753,27 +753,21 @@ export default function CommandCenterHero({ globalAlerts = [], stats }: CommandC
           backdrop: { sx: { backdropFilter: 'blur(4px)', backgroundColor: alpha('#000', 0.4) } }
         }}
       >
-        <IconButton 
-          onClick={closeCalendar}
-          sx={{ 
-            position: 'absolute', right: 16, top: 16, zIndex: 10,
-            bgcolor: 'rgba(0,0,0,0.05)', '&:hover': { bgcolor: 'rgba(0,0,0,0.1)', transform: 'rotate(90deg)' },
-            transition: 'all 0.2s ease'
-          }}
-        >
-          <CloseIcon />
-        </IconButton>
+        <Box sx={{ position: 'absolute', right: 16, top: 16, zIndex: 10, display: 'flex', gap: 2, alignItems: 'center' }}>
+          <Box id="calendar-header-actions" />
+          <IconButton 
+            onClick={closeCalendar}
+            sx={{ 
+              bgcolor: 'rgba(0,0,0,0.05)', '&:hover': { bgcolor: 'rgba(0,0,0,0.1)', transform: 'rotate(90deg)' },
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </Box>
 
-        <DialogContent sx={{ p: { xs: 2, md: 4 }, display: 'flex', flexDirection: 'column' }}>
-          <Box sx={{ mb: 2, pl: 1 }}>
-            <Typography variant="h4" sx={{ fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <CalendarMonthIcon sx={{ color: themeConfig.iconColor, fontSize: 32 }} /> Ecosystem Calendar
-            </Typography>
-            <Typography variant="body1" sx={{ color: '#64748b', fontWeight: 500, mt: 0.5 }}>
-              Explore deadlines, livestreams, and events across the network.
-            </Typography>
-          </Box>
-          <EcosystemCalendar tenantId="foodnerve" initialView="month" initialDate={currentDate} themeColor={themeConfig.iconColor} />
+        <DialogContent sx={{ p: { xs: 2, md: 3.5 }, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+          <EcosystemCalendar tenantId="foodnerve" initialView="week" initialDate={currentDate} themeColor={themeConfig.iconColor} />
         </DialogContent>
       </Dialog>
     </Box>

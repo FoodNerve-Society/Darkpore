@@ -66,6 +66,7 @@ model User {
   communityPosts       CommunityPost[]
   omniWikiDocs         OmniWikiDoc[]
   wikiStates           UserWikiState[]
+  weeklyCommodityBids  WeeklyCommodityBid[]
 
   @@index([email])
 }
@@ -815,4 +816,31 @@ model EarlyAccessLead {
   email     String   @unique
   role      String?
   createdAt DateTime @default(now())
+}
+
+// ════════════════════════════════════════════════════════
+// EDITORIAL MATRIX (COMMODITY BIDDING)
+// ════════════════════════════════════════════════════════
+
+model WeeklyCommodityBid {
+  id        String   @id @default(cuid())
+  year      Int
+  week      Int // The target week they are bidding for
+  commodity String // Which commodity they are pushing
+  userId    String // The Rank 4+ user making the bid
+  amountNP  Int // How much spendableNP they pledged
+  status    String   @default("active") // 'active', 'won', 'refunded'
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model WeeklyCommodityWinner {
+  id        String @id @default(cuid())
+  year      Int
+  week      Int
+  commodity String
+  totalNP   Int // Total NP burned to win this slot
+
+  @@unique([year, week])
 }
