@@ -1,12 +1,4 @@
 const { execSync } = require('child_process');
-const readline = require('readline');
-
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
-
-const askQuestion = (query) => new Promise((resolve) => rl.question(query, resolve));
 
 async function deploy() {
   console.log("=========================================");
@@ -14,26 +6,15 @@ async function deploy() {
   console.log("=========================================");
 
   try {
-    // 1. Database Update (Prompt)
-    console.log("\n[1/4] Database Schema Check...");
-    const answer = await askQuestion("Did you make any changes to schema.prisma that need to be pushed to Turso? (y/N): ");
-    
-    if (answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes') {
-      console.log("Running automated Turso schema migration...");
-      // Execute the turso_migrate script. If it fails, execSync throws and stops deployment!
-      execSync('node turso_migrate.js', { stdio: 'inherit' });
-      console.log("✅ Database schema is synced.");
-    } else {
-      console.log("⏭️ Skipping database push.");
-    }
+    // 1. Automated Turso Schema Parity & Migration Check
+    console.log("\n[1/4] Checking Turso Database Schema Parity...");
+    execSync('node turso_migrate.js', { stdio: 'inherit' });
+    console.log("✅ Live database schema verified with Prisma.");
 
     // 2. TypeScript Compilation Check
     console.log("\n[2/4] Verifying TypeScript Compilation...");
     execSync('npx tsc --noEmit', { stdio: 'inherit' });
     console.log("✅ TypeScript check passed cleanly (0 errors).");
-
-    // Close readline
-    rl.close();
 
     // 3. Commit local changes if any
     const status = execSync('git status --porcelain').toString();
@@ -61,7 +42,6 @@ async function deploy() {
     console.log("=========================================");
 
   } catch (error) {
-    rl.close();
     console.error("\n❌ Deployment failed:", error.message);
     if (error.stdout) console.error(error.stdout.toString());
     if (error.stderr) console.error(error.stderr.toString());
