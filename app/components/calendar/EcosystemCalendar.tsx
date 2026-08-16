@@ -17,6 +17,7 @@ import OpenInFullIcon from '@mui/icons-material/OpenInFull';
 import CloseFullscreenIcon from '@mui/icons-material/CloseFullscreen';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import { getCalendarEvents } from '@/app/actions/calendar';
 import { getMatrixForWeekClient, getCommodityBiddingLeaderboard, placeCommodityBid } from '@/lib/actions/matrix';
 import { CalendarEvent } from '@prisma/client';
@@ -1435,14 +1436,52 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
   };
 
   return (
-    <Box sx={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', gap: 3, minHeight: 0, position: 'relative' }}>
+    <Box sx={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', gap: 2.5, minHeight: 0, position: 'relative' }}>
       
-      {/* Header controls using React Portal into Modal Header */}
-      {headerPortal ? createPortal(
-        <Box sx={{ 
-          display: 'flex', alignItems: 'center', gap: 2,
-        }}>
-          {/* View Toggles */}
+      {/* Top Luxury Header Bar */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2, pb: 0.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {/* Frosted 3D Glass Medallion Icon */}
+          <Box sx={{ 
+            width: { xs: 46, md: 52 }, 
+            height: { xs: 46, md: 52 }, 
+            borderRadius: 3.5, 
+            bgcolor: alpha(primaryColor, 0.12),
+            border: `1px solid ${alpha(primaryColor, 0.28)}`,
+            boxShadow: `0 8px 24px ${alpha(primaryColor, 0.18)}, inset 0 1px 0 rgba(255,255,255,0.6)`,
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            backdropFilter: 'blur(12px)',
+            flexShrink: 0
+          }}>
+            <CalendarMonthIcon sx={{ color: primaryColor, fontSize: { xs: 26, md: 30 } }} />
+          </Box>
+
+          {/* Title & Subtitle */}
+          <Box>
+            <Typography 
+              component="h1"
+              sx={{ 
+                fontFamily: 'var(--font-playfair-display), serif',
+                fontWeight: 700, 
+                color: '#0f172a', 
+                letterSpacing: '-0.02em',
+                fontSize: { xs: '1.45rem', md: '1.85rem' },
+                lineHeight: 1.15
+              }}
+            >
+              Ecosystem Calendar
+            </Typography>
+
+            <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500, mt: 0.4, fontSize: { xs: '0.8rem', md: '0.88rem' } }}>
+              Explore deadlines, livestreams, and events across the network.
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* View Toggles & Actions */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <ToggleButtonGroup
             value={viewMode}
             exclusive
@@ -1487,9 +1526,8 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
           >
             Add Event
           </Button>
-        </Box>,
-        headerPortal
-      ) : null}
+        </Box>
+      </Box>
 
       {/* Main Grid: Calendar + Sidebars */}
       <Box sx={{ flex: 1, display: 'flex', gap: 2, minHeight: 0, position: 'relative' }}>
