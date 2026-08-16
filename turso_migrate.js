@@ -59,10 +59,19 @@ async function main() {
     process.exit(1);
   }
 
+  // Close shadow client to release file lock
+  try {
+    if (shadowClient && shadowClient.close) shadowClient.close();
+  } catch(e) {}
+
   let diffSql = fs.readFileSync(diffScriptPath, 'utf8');
   
   // Clean up shadow DB
-  fs.unlinkSync(shadowDbPath);
+  try {
+    if (fs.existsSync(shadowDbPath)) fs.unlinkSync(shadowDbPath);
+  } catch (e) {
+    // Ignore unlock delay on Windows
+  }
 
   const queries = diffSql.split(';')
     .map(q => q.split('\n').filter(line => !line.trim().startsWith('--')).join('\n').trim())
