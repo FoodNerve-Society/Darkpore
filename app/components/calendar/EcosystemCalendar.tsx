@@ -15,6 +15,7 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import OpenInFullIcon from '@mui/icons-material/OpenInFull';
 import CloseFullscreenIcon from '@mui/icons-material/CloseFullscreen';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { getCalendarEvents } from '@/app/actions/calendar';
 import { getMatrixForWeekClient, getCommodityBiddingLeaderboard, placeCommodityBid } from '@/lib/actions/matrix';
 import { CalendarEvent } from '@prisma/client';
@@ -134,16 +135,27 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
   }, [currentDate]);
 
   useEffect(() => {
-    if (viewMode === 'week') {
-      // Small timeout to ensure DOM has rendered
-      setTimeout(() => {
-        const activeEl = document.getElementById(`timeline-day-${currentDate.toDateString().replace(/\s+/g, '-')}`);
-        if (activeEl) {
-          activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (viewMode === 'week' || viewMode === 'day') {
+      const timer = setTimeout(() => {
+        if (viewMode === 'day') {
+          const container = document.getElementById('timeline-scroll-container');
+          if (container) {
+            container.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        } else {
+          const activeEl = document.getElementById(`timeline-day-${currentDate.toDateString().replace(/\s+/g, '-')}`);
+          if (activeEl) {
+            if (isAccordionExpanded) {
+              activeEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+              activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }
         }
-      }, 100);
+      }, 150);
+      return () => clearTimeout(timer);
     }
-  }, [currentDate, viewMode]);
+  }, [currentDate, viewMode, isAccordionExpanded]);
 
   const handlePlaceBid = async () => {
     if (!user || (user as any).rank < 4) {
@@ -467,147 +479,215 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
               <Box sx={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column' }}>
                 
                 {/* COMBINED TOP FLIP TRIGGER CARD */}
-                <Box 
-                  onClick={() => setIsFlipped(true)}
-                  sx={{ 
-                    display: 'flex', flexDirection: 'column', gap: 1.5, 
-                    cursor: 'pointer',
-                    transition: 'all 0.3s', '&:hover': { transform: 'scale(1.02)' }
-                  }}
-                >
-                  <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                    <Typography variant="caption" sx={{ fontWeight: 800, color: 'rgba(255,255,255,0.6)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                      {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-                    </Typography>
-                    <Typography variant="h5" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: 'white', lineHeight: 1.2 }}>
-                      Week {getWeekNumber(currentDate)}
-                    </Typography>
-                  </Box>
-
-                  <Box>
-                    <Typography variant="h2" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, textTransform: 'uppercase', textShadow: '0 2px 10px rgba(0,0,0,0.5)', lineHeight: 1, letterSpacing: '-0.03em' }}>
-                      {activeCommodity || 'SYNCING...'}
-                    </Typography>
-                  </Box>
+                {(() => {
+                  const currentIsoWeek = getWeekNumber(currentTime);
+                  const viewedIsoWeek = getWeekNumber(currentDate);
+                  const isViewingCurrentWeek = viewedIsoWeek === currentIsoWeek && currentDate.getFullYear() === currentTime.getFullYear();
+                  const isViewingImmediateNextWeek = (viewedIsoWeek === currentIsoWeek + 1 && currentDate.getFullYear() === currentTime.getFullYear()) || (currentIsoWeek >= 52 && viewedIsoWeek === 1 && currentDate.getFullYear() === currentTime.getFullYear() + 1);
+                  const isViewingSubsequentWeek = (currentDate.getFullYear() > currentTime.getFullYear() && !isViewingImmediateNextWeek) || (currentDate.getFullYear() === currentTime.getFullYear() && viewedIsoWeek > currentIsoWeek + 1);
+                  const isBiddingComplete = currentTime.getDay() === 0; // Sunday (Bidding ended)
                   
-                  {user && (user as any).rank >= 4 && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1 }}>
-                       <Typography variant="caption" sx={{ fontWeight: 800, color: '#ef4444', letterSpacing: '0.05em' }}>TAP TO DEPLOY CAPITAL</Typography>
-                       <ArrowForwardIcon sx={{ color: 'rgba(255,255,255,0.4)', fontSize: 16 }} />
-                    </Box>
-                  )}
-                </Box>
+                  return (
+                    <>
+                      <Box 
+                        onClick={() => {
+                          if (isViewingCurrentWeek && user && (user as any).rank >= 4) {
+                            setIsFlipped(true);
+                          }
+                        }}
+                        sx={{ 
+                          display: 'flex', flexDirection: 'column', gap: 1.5, 
+                          cursor: (isViewingCurrentWeek && user && (user as any).rank >= 4) ? 'pointer' : 'default',
+                          transition: 'all 0.3s', 
+                          '&:hover': { transform: (isViewingCurrentWeek && user && (user as any).rank >= 4) ? 'scale(1.02)' : 'none' }
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                          <Typography variant="caption" sx={{ fontWeight: 800, color: 'rgba(255,255,255,0.6)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                            {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                          </Typography>
+                          <Typography variant="h5" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: 'white', lineHeight: 1.2 }}>
+                            Week {getWeekNumber(currentDate)}
+                          </Typography>
+                        </Box>
 
-                {/* Next Week's War (Leaderboard updates) */}
-                <Box sx={{ mt: 'auto', pt: 4 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                    <LocalFireDepartmentIcon sx={{ color: '#ef4444' }} />
-                    <Typography variant="h6" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: 'white' }}>
-                      Next Week's War
-                    </Typography>
-                  </Box>
-                  
-                  {(() => {
-                    const now = currentTime;
-                    const day = now.getDay();
-                    const hours = now.getHours();
-                    const isWarActive = (day === 3 && hours >= 12) || day === 4 || day === 5 || day === 6;
-                    const isSunday = day === 0;
-                    const isMonTueWedMorning = day === 1 || day === 2 || (day === 3 && hours < 12);
-
-                    const getRemainingTimeStr = () => {
-                      const target = new Date(now);
-                      const daysUntilSaturday = 6 - now.getDay();
-                      target.setDate(now.getDate() + daysUntilSaturday);
-                      target.setHours(23, 59, 59, 999);
-                      
-                      const diffMs = target.getTime() - now.getTime();
-                      if (diffMs <= 0) return 'Ends soon';
-                      
-                      const d = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-                      const h = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                      const m = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-                      
-                      if (d > 0) return `Ends in ${d}d ${h}h`;
-                      if (h > 0) return `Ends in ${h}h ${m}m`;
-                      return `Ends in ${m}m`;
-                    };
-
-                    if (isSunday) {
-                       const nextWeekIndex = getWeekNumber(currentTime) % 26;
-                       const lockedCommodity = leaderboard.length > 0 ? leaderboard[0].commodity : commoditiesList[nextWeekIndex];
-                       return (
-                         <Box>
-                           <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mb: 2 }}>
-                             War Room Closed. Next week's Protocol locked:
-                           </Typography>
-                           <Box sx={{ bgcolor: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', borderRadius: 2, py: 1, px: 2, textAlign: 'center' }}>
-                             <Typography variant="body1" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: '#ef4444' }}>{lockedCommodity}</Typography>
-                           </Box>
-                         </Box>
-                       );
-                    }
-
-                    if (isMonTueWedMorning) {
-                       const nextWeekIndex = getWeekNumber(currentTime) % 26;
-                       const suggestedCommodity = commoditiesList[nextWeekIndex];
-                       return (
-                         <Box>
-                           <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mb: 2 }}>
-                             Intelligence engine suggestion for next week:
-                           </Typography>
-                           <Box sx={{ bgcolor: 'rgba(255, 255, 255, 0.05)', border: '1px dashed rgba(255,255,255,0.3)', borderRadius: 2, py: 1, px: 2, textAlign: 'center' }}>
-                             <Typography variant="body1" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: 'white' }}>{suggestedCommodity}</Typography>
-                             <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', display: 'block' }}>Pending War Room (Opens Wed 12PM)</Typography>
-                           </Box>
-                         </Box>
-                       );
-                    }
-
-                    // isWarActive is true
-                    return (
-                      <>
-                        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mb: 3 }}>
-                          Have a say in the protocol for next week. Place your bid below. {getRemainingTimeStr()}.
-                        </Typography>
-
-                        {leaderboard.length === 0 ? (
-                          <Button 
-                            fullWidth
-                            variant="outlined"
-                            onClick={() => setIsFlipped(true)}
-                            sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.2)', py: 1.5, borderStyle: 'dashed', '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.05)' } }}
-                          >
-                            NO BIDS PLACED YET
-                          </Button>
-                        ) : (
-                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 3 }}>
-                            {leaderboard.slice(0, 3).map((bid, i) => (
-                              <Box key={bid.commodity}>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                                  <Typography variant="body2" sx={{ fontWeight: 700, color: i === 0 ? '#ef4444' : 'white' }}>
-                                    #{i + 1} {bid.commodity}
-                                  </Typography>
-                                  <Typography variant="caption" sx={{ fontWeight: 800, color: i === 0 ? '#ef4444' : 'rgba(255,255,255,0.5)' }}>
-                                    {bid.totalNP.toLocaleString()} NP
-                                  </Typography>
-                                </Box>
-                                <LinearProgress 
-                                  variant="determinate" 
-                                  value={Math.min((bid.totalNP / 10000) * 100, 100)} 
-                                  sx={{ 
-                                    height: 4, borderRadius: 2, bgcolor: 'rgba(255,255,255,0.1)',
-                                    '& .MuiLinearProgress-bar': { bgcolor: i === 0 ? '#ef4444' : 'rgba(255,255,255,0.3)' }
-                                  }} 
-                                />
-                              </Box>
-                            ))}
+                        <Box>
+                          <Typography variant="h2" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, textTransform: 'uppercase', textShadow: '0 2px 10px rgba(0,0,0,0.5)', lineHeight: 1, letterSpacing: '-0.03em' }}>
+                            {activeCommodity || 'SYNCING...'}
+                          </Typography>
+                        </Box>
+                        
+                        {isViewingCurrentWeek && user && (user as any).rank >= 4 && (
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1 }}>
+                             <Typography variant="caption" sx={{ fontWeight: 800, color: '#ef4444', letterSpacing: '0.05em' }}>TAP TO DEPLOY CAPITAL</Typography>
+                             <ArrowForwardIcon sx={{ color: 'rgba(255,255,255,0.4)', fontSize: 16 }} />
                           </Box>
                         )}
-                      </>
-                    );
-                  })()}
-                </Box>
+                      </Box>
+
+                      {/* Bottom section of Left Pane */}
+                      {isViewingCurrentWeek ? (
+                        /* Next Week's War (Leaderboard updates) - ONLY ON CURRENT WEEK */
+                        <Box sx={{ mt: 'auto', pt: 4 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                            <LocalFireDepartmentIcon sx={{ color: '#ef4444' }} />
+                            <Typography variant="h6" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: 'white' }}>
+                              Next Week's Commodity
+                            </Typography>
+                          </Box>
+                          
+                          {(() => {
+                            const now = currentTime;
+                            const day = now.getDay();
+                            const hours = now.getHours();
+                            const isWarActive = (day === 3 && hours >= 12) || day === 4 || day === 5 || day === 6;
+                            const isSunday = day === 0;
+                            const isMonTueWedMorning = day === 1 || day === 2 || (day === 3 && hours < 12);
+
+                            const getRemainingTimeStr = () => {
+                              const target = new Date(now);
+                              const daysUntilSaturday = 6 - now.getDay();
+                              target.setDate(now.getDate() + daysUntilSaturday);
+                              target.setHours(23, 59, 59, 999);
+                              
+                              const diffMs = target.getTime() - now.getTime();
+                              if (diffMs <= 0) return 'Ends soon';
+                              
+                              const d = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                              const h = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                              const m = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                              
+                              if (d > 0) return `Ends in ${d}d ${h}h`;
+                              if (h > 0) return `Ends in ${h}h ${m}m`;
+                              return `Ends in ${m}m`;
+                            };
+
+                            if (isSunday) {
+                               const nextWeekIndex = getWeekNumber(currentTime) % 26;
+                               const lockedCommodity = leaderboard.length > 0 ? leaderboard[0].commodity : commoditiesList[nextWeekIndex];
+                               return (
+                                 <Box>
+                                   <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mb: 2 }}>
+                                     Bidding Closed. Next week's Commodity confirmed:
+                                   </Typography>
+                                   <Box sx={{ bgcolor: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', borderRadius: 2, py: 1, px: 2, textAlign: 'center' }}>
+                                     <Typography variant="body1" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: '#ef4444' }}>{lockedCommodity}</Typography>
+                                   </Box>
+                                 </Box>
+                               );
+                            }
+
+                            if (isMonTueWedMorning) {
+                               const nextWeekIndex = getWeekNumber(currentTime) % 26;
+                               const suggestedCommodity = commoditiesList[nextWeekIndex];
+                               return (
+                                 <Box>
+                                   <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mb: 2 }}>
+                                     Intelligence engine suggestion for next week:
+                                   </Typography>
+                                   <Box sx={{ bgcolor: 'rgba(255, 255, 255, 0.05)', border: '1px dashed rgba(255,255,255,0.3)', borderRadius: 2, py: 1, px: 2, textAlign: 'center' }}>
+                                     <Typography variant="body1" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: 'white' }}>{suggestedCommodity}</Typography>
+                                     <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', display: 'block' }}>Bidding Opens Wed 12PM</Typography>
+                                   </Box>
+                                 </Box>
+                               );
+                            }
+
+                            // isWarActive is true
+                            return (
+                              <>
+                                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mb: 3 }}>
+                                  Have a say in the commodity for next week. Place your bid below. {getRemainingTimeStr()}.
+                                </Typography>
+
+                                {leaderboard.length === 0 ? (
+                                  <Button 
+                                    fullWidth
+                                    variant="outlined"
+                                    onClick={() => setIsFlipped(true)}
+                                    sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.2)', py: 1.5, borderStyle: 'dashed', '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.05)' } }}
+                                  >
+                                    NO BIDS PLACED YET
+                                  </Button>
+                                ) : (
+                                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 3 }}>
+                                    {leaderboard.slice(0, 3).map((bid, i) => (
+                                      <Box key={bid.commodity}>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                                          <Typography variant="body2" sx={{ fontWeight: 700, color: i === 0 ? '#ef4444' : 'white' }}>
+                                            #{i + 1} {bid.commodity}
+                                          </Typography>
+                                          <Typography variant="caption" sx={{ fontWeight: 800, color: i === 0 ? '#ef4444' : 'rgba(255,255,255,0.5)' }}>
+                                            {bid.totalNP.toLocaleString()} NP
+                                          </Typography>
+                                        </Box>
+                                        <LinearProgress 
+                                          variant="determinate" 
+                                          value={Math.min((bid.totalNP / 10000) * 100, 100)} 
+                                          sx={{ 
+                                            height: 4, borderRadius: 2, bgcolor: 'rgba(255,255,255,0.1)',
+                                            '& .MuiLinearProgress-bar': { bgcolor: i === 0 ? '#ef4444' : 'rgba(255,255,255,0.3)' }
+                                          }} 
+                                        />
+                                      </Box>
+                                    ))}
+                                  </Box>
+                                )}
+                              </>
+                            );
+                          })()}
+                        </Box>
+                      ) : isViewingImmediateNextWeek ? (
+                        <Box sx={{ mt: 'auto', pt: 4 }}>
+                          {isBiddingComplete ? (
+                            <>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                <CheckCircleIcon sx={{ color: '#ef4444' }} />
+                                <Typography variant="h6" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: 'white' }}>
+                                  Confirmed Commodity
+                                </Typography>
+                              </Box>
+                              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mb: 2 }}>
+                                Confirmed Commodity for Week {getWeekNumber(currentDate)}:
+                              </Typography>
+                              <Box sx={{ bgcolor: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', borderRadius: 2, py: 1, px: 2, textAlign: 'center' }}>
+                                <Typography variant="body1" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: '#ef4444' }}>
+                                  {leaderboard.length > 0 ? leaderboard[0].commodity : activeCommodity}
+                                </Typography>
+                              </Box>
+                            </>
+                          ) : (
+                            <Box sx={{ bgcolor: 'rgba(255, 255, 255, 0.05)', border: '1px dashed rgba(255,255,255,0.2)', borderRadius: 2, p: 2 }}>
+                              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', display: 'block', fontWeight: 600 }}>
+                                Bidding for this commodity is currently active in Week {currentIsoWeek}.
+                              </Typography>
+                            </Box>
+                          )}
+                        </Box>
+                      ) : isViewingSubsequentWeek ? (
+                        <Box sx={{ mt: 'auto', pt: 4 }}>
+                          <Box sx={{ bgcolor: 'rgba(255, 255, 255, 0.05)', border: '1px dashed rgba(255,255,255,0.2)', borderRadius: 2, p: 2 }}>
+                            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', display: 'block', fontWeight: 600 }}>
+                              Bidding for this commodity opens during Week {viewedIsoWeek - 1 <= 0 ? 52 : viewedIsoWeek - 1}.
+                            </Typography>
+                          </Box>
+                        </Box>
+                      ) : (
+                        <Box sx={{ mt: 'auto', pt: 4 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                            <CheckCircleIcon sx={{ color: '#10b981' }} />
+                            <Typography variant="h6" sx={{ fontFamily: 'var(--font-dosis)', fontWeight: 900, color: 'white' }}>
+                              Concluded Commodity
+                            </Typography>
+                          </Box>
+                          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>
+                            The <strong style={{ color: 'white' }}>{activeCommodity}</strong> commodity cycle for Week {getWeekNumber(currentDate)} has concluded.
+                          </Typography>
+                        </Box>
+                      )}
+                    </>
+                  );
+                })()}
               </Box>
             </Box>
 
@@ -675,7 +755,7 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
                     if (!isWarActive) {
                       return (
                         <Typography variant="caption" sx={{ color: '#ef4444', textAlign: 'center', fontWeight: 800, mt: 1, display: 'block' }}>
-                          WAR ROOM OPENS WEDNESDAY 12PM - SATURDAY 11:59PM
+                          BIDDING OPENS WEDNESDAY 12PM - SATURDAY 11:59PM
                         </Typography>
                       );
                     }
@@ -683,7 +763,7 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
                     if (!biddingCommodity) {
                        return (
                          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', py: 1 }}>
-                           Select a protocol above to deploy capital.
+                           Select a commodity above to deploy capital.
                          </Typography>
                        );
                     }
@@ -728,9 +808,12 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
         </Box>
 
         {/* RIGHT PANE: 7-Day Accordion */}
-        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1.5, overflowY: 'auto', px: 2, pb: 4, minHeight: 0, perspective: '1200px' }}>
+        <Box 
+          id="timeline-scroll-container"
+          sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1.5, overflowY: 'auto', px: 2, pb: 4, minHeight: 0, perspective: '1200px', scrollBehavior: 'smooth' }}
+        >
           {/* Top Padding for smooth scroll centering */}
-          <Box sx={{ height: viewMode === 'day' ? '1vh' : '5vh', flexShrink: 0, transition: 'height 0.3s' }} />
+          <Box sx={{ height: viewMode === 'day' ? '1vh' : '4vh', flexShrink: 0, transition: 'height 0.3s' }} />
 
           <AnimatePresence initial={false}>
             {weekDates.map((d, i) => {
