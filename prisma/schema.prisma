@@ -844,3 +844,19 @@ model WeeklyCommodityWinner {
 
   @@unique([year, week])
 }
+
+model DailyEditorialIntel {
+  id              String   @id @default(cuid())
+  year            Int
+  week            Int
+  dayOfWeek       Int      // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  category        String   // land, capital, inputs, energy, insecurity, loss, protein
+  commodity       String   // e.g. "Soybeans, Nuts & Meals"
+  articleInsights String   // JSON stringified array of 10-12 article briefing objects
+  generatedAt     DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([year, week, dayOfWeek, commodity])
+  @@index([year, week, dayOfWeek])
+}
+

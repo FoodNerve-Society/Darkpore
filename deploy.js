@@ -31,14 +31,8 @@ async function deploy() {
     // 5. Complete bidirectional sync between dev & main
     console.log("\n[3/4] Synchronizing 'main' and 'dev' branches...");
     
-    // Ensure dev is up to date and has the latest commits
-    execSync('git checkout dev', { stdio: 'inherit' });
-    
-    // Switch to main and merge dev into main
+    // Switch to main and push
     execSync('git checkout main', { stdio: 'inherit' });
-    execSync('git merge dev -m "chore: merge dev into main for production"', { stdio: 'inherit' });
-    
-    // Push main to origin
     console.log("Pushing 'main' to GitHub origin (triggering Vercel deployment)...");
     execSync('git push origin main', { stdio: 'inherit' });
 

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { format } from 'date-fns';
 import { 
   Box, Typography, TextField, Button, Chip, 
   CircularProgress, alpha, IconButton, Tooltip,
@@ -285,7 +286,15 @@ const SLIDESHOW_IMAGES = [
   'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=1200',
 ];
 
-type BlockType = 'subheading' | 'exec_summary' | 'highlight_card' | 'core_interactive' | 'media' | 'myth_fact' | 'pull_quote' | 'live_poll' | 'data_embed' | 'strategic_directive' | 'call_to_action';
+import { 
+  getBlueprint, 
+  FORMAT_CONFIG, 
+  ERA_CONFIG, 
+  ArticleFormat, 
+  ArticleEra, 
+  SopBlock, 
+  BlockType 
+} from '@/lib/config/articleBlueprints';
 
 const BLOCK_DEFINITIONS: Record<BlockType, { label: string, color: string }> = {
   subheading: { label: 'Spiky Title', color: '#64748b' },
@@ -301,53 +310,7 @@ const BLOCK_DEFINITIONS: Record<BlockType, { label: string, color: string }> = {
   call_to_action: { label: 'Call to Action', color: '#f59e0b' },
 };
 
-type SopBlock = { type: BlockType; role: string; desc: string; hint: string };
 
-const ERA_CONFIG: Record<string, { label: string; emoji: string; color: string }> = {
-  past:    { label: 'The Autopsy',           emoji: '🔴', color: '#ef4444' },
-  present: { label: 'The Battlefield Report', emoji: '🟢', color: '#10b981' },
-  future:  { label: 'The Foresight Brief',   emoji: '🔵', color: '#3b82f6' },
-};
-
-const SOP_FRAMEWORKS: Record<'past'|'present'|'future', SopBlock[]> = {
-  past: [
-    { type: 'subheading',        role: 'The Spiky Title',       desc: 'Hook the reader by explicitly naming the failure and location.',  hint: 'Why Nigeria\'s $500M Rice Initiative Collapsed' },
-    { type: 'highlight_card',    role: 'The Autopsy Subject',   desc: 'A shocking visual or metric that makes the failure undeniable.',  hint: 'What exactly failed, and when?' },
-    { type: 'exec_summary',      role: 'The TL;DR',             desc: 'Deliver the core argument instantly for busy executives.',        hint: 'One point per line' },
-    { type: 'myth_fact',         role: 'The Disconnect',        desc: 'Shatter industry assumptions by contrasting belief with reality.',hint: 'The myth vs. the ground reality' },
-    { type: 'core_interactive',  role: 'The Breakdown',         desc: 'Nuanced breakdown of the mechanics so the reader learns the root cause.', hint: 'Did this initiative fail in your region? Why?' },
-    { type: 'pull_quote',        role: 'The Ground Truth',      desc: 'Add human credibility with raw feedback from operators on the ground.',   hint: 'Who said it and why it matters' },
-    { type: 'core_interactive',  role: 'The Collateral Damage', desc: 'Highlight the financial impact to make the failure tangible to investors.', hint: 'Who absorbed the financial hit in your sector?' },
-    { type: 'media',             role: 'The Proof of Death',    desc: 'Visual evidence proving the failure.',                            hint: 'Chart showing the collapse' },
-    { type: 'strategic_directive', role: 'The Commander\'s Intent', desc: 'Strict military-style commands on what to dismantle or never repeat.', hint: 'e.g. Directive for VCs: Fund X.' },
-    { type: 'live_poll',         role: 'The Pulse Check',       desc: 'Force the audience to reflect on their own operations and engage.',       hint: 'Are we at risk of repeating this exact mistake today?' },
-    { type: 'call_to_action',    role: 'Platform Growth CTA',   desc: 'Massive full-width highlight banner to pull readers into the ecosystem.', hint: 'Select a Macro CTA' }
-  ],
-  present: [
-    { type: 'subheading',        role: 'The Spiky Title',             desc: 'Hook the reader by naming the crisis and who it hits right now.', hint: 'How Lagos Operators Are Surviving $2/L Diesel' },
-    { type: 'highlight_card',    role: 'The 2026 Macro-Trigger',      desc: 'The killer stat causing the pain today to establish urgency.',    hint: 'Current FX rate, inflation metric, or fuel cost' },
-    { type: 'exec_summary',      role: 'The TL;DR',                   desc: 'Deliver the core argument instantly for busy executives.',        hint: 'One point per line' },
-    { type: 'pull_quote',        role: 'The Ground Truth',            desc: 'Add human credibility with a raw quote from an active operator.', hint: 'Direct from the field' },
-    { type: 'core_interactive',  role: 'The Hacker\'s Survival Guide', desc: 'Detail the exact workaround being used to survive the crisis.',  hint: 'What undocumented hack are operators using?' },
-    { type: 'media',             role: 'The Data Proof',              desc: 'Provide undeniable proof via chart or data visualization.',       hint: 'Upload supporting data visualization' },
-    { type: 'core_interactive',  role: 'Winners vs. Crushed',         desc: 'Clearly distinguish who is profiting versus who is dying.',       hint: 'Are you seeing a different winner in your sector?' },
-    { type: 'strategic_directive', role: 'The Commander\'s Intent', desc: 'Strict, aggressive commands on exactly where to deploy capital today.', hint: 'e.g. Directive for VCs: Deploy $X here.' },
-    { type: 'live_poll',         role: 'The Pulse Check',             desc: 'Force the audience to reflect on their own operations and engage.', hint: 'Are you deploying capital to bypass this bottleneck?' },
-    { type: 'call_to_action',    role: 'Platform Growth CTA',   desc: 'Massive full-width highlight banner to pull readers into the ecosystem.', hint: 'Select a Macro CTA' }
-  ],
-  future: [
-    { type: 'subheading',        role: 'The Spiky Title',              desc: 'Hook the reader by naming the paradigm shift and timeline.',    hint: 'Why Drone Logistics Will Replace 40% of Last-Mile by 2030' },
-    { type: 'highlight_card',    role: 'The Horizon Tech',             desc: 'A shocking visual or metric of the tech/policy arriving.',      hint: 'What technology is arriving and when?' },
-    { type: 'exec_summary',      role: 'The TL;DR',                    desc: 'Deliver the core argument instantly for busy executives.',      hint: 'One point per line' },
-    { type: 'myth_fact',         role: 'The Transition',               desc: 'Shatter industry assumptions by contrasting belief with reality.',hint: 'The current system will be entirely replaced by...' },
-    { type: 'core_interactive',  role: 'The Mechanism of Disruption',  desc: 'Nuanced breakdown of how the tech/policy actually works.',      hint: 'What is the biggest technical barrier to adopting this?' },
-    { type: 'media',             role: 'The Data Proof',               desc: 'Provide undeniable proof via schematic or adoption curve.',     hint: 'Upload forward-looking visualization' },
-    { type: 'core_interactive',  role: 'The Global South Roadblocks',  desc: 'Detail the real-world friction (bad roads, politics) to add realism.', hint: 'How would you solve the last-mile infrastructure gap?' },
-    { type: 'strategic_directive', role: 'The Commander\'s Intent', desc: 'Strict commands detailing exactly what startups to fund or policies to draft.', hint: 'e.g. Fund this R&D, establish sandbox today.' },
-    { type: 'live_poll',         role: 'The Pulse Check',              desc: 'Force the audience to reflect on timeline feasibility and engage.', hint: 'Will this reach commercial scale in Africa by 2030?' },
-    { type: 'call_to_action',    role: 'Platform Growth CTA',   desc: 'Massive full-width highlight banner to pull readers into the ecosystem.', hint: 'Select a Macro CTA' }
-  ],
-};
 
 // ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 // SPIKY TITLE TEMPLATES
@@ -436,7 +399,16 @@ export default function CreateLearnContentForm({
   selectedOrgId?: string | null,
   onTypeChange?: (type: string) => void,
   draftId?: string | null,
-  initialTaxonomy?: { category: string, subcategory: string, timeframe: string } | null,
+  initialTaxonomy?: {
+    category?: string;
+    subcategory?: string;
+    timeframe?: string;
+    commodity?: string;
+    format?: ArticleFormat;
+    targetDate?: string;
+    title?: string;
+    description?: string;
+  } | null,
   initialType?: string,
   initialDraftData?: any
 }) {
@@ -557,14 +529,25 @@ export default function CreateLearnContentForm({
   };
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>('');
+  const [selectedCommodity, setSelectedCommodity] = useState<string>('Soybeans, Nuts and Meals');
+  const [selectedFormat, setSelectedFormat] = useState<ArticleFormat>('brief');
+  const [selectedEra, setSelectedEra] = useState<ArticleEra>('present');
   const [thumbnailUrl, setThumbnailUrl] = useState('');
 
   useEffect(() => {
     if (initialTaxonomy) {
-      setType(initialType as any);
-      setSelectedCategory(initialTaxonomy.category);
-      setSelectedSubcategory(initialTaxonomy.subcategory);
-      setSelectedTimeframe(initialTaxonomy.timeframe as any);
+      setType((initialType as any) || 'article');
+      if (initialTaxonomy.commodity) setSelectedCommodity(initialTaxonomy.commodity);
+      if (initialTaxonomy.category) setSelectedCategory(initialTaxonomy.category);
+      if (initialTaxonomy.subcategory) setSelectedSubcategory(initialTaxonomy.subcategory);
+      if (initialTaxonomy.format) setSelectedFormat(initialTaxonomy.format);
+      if (initialTaxonomy.timeframe) {
+        setSelectedTimeframe(initialTaxonomy.timeframe as any);
+        setSelectedEra(initialTaxonomy.timeframe as any);
+      }
+      if (initialTaxonomy.targetDate) setTargetDate(initialTaxonomy.targetDate);
+      if (initialTaxonomy.title) setTitle(initialTaxonomy.title);
+      if (initialTaxonomy.description) setDescription(initialTaxonomy.description);
       setStep(3); // Jump directly to builder
     }
   }, [initialTaxonomy, initialType]);
@@ -572,18 +555,21 @@ export default function CreateLearnContentForm({
   useEffect(() => {
     if (initialDraftData) {
       setType(initialDraftData.type as any);
-      setTitle(initialDraftData.title || '');
-      setDescription(initialDraftData.description || '');
-      setSelectedCategory(initialDraftData.category || '');
-      setSelectedSubcategory(initialDraftData.subcategory || '');
-      setSelectedTimeframe(initialDraftData.timeframe as any || '');
+      if (initialDraftData.title) setTitle(initialDraftData.title || '');
+      if (initialDraftData.description) setDescription(initialDraftData.description || '');
+      if (initialDraftData.commodity) setSelectedCommodity(initialDraftData.commodity);
+      if (initialDraftData.category) setSelectedCategory(initialDraftData.category || '');
+      if (initialDraftData.subcategory) setSelectedSubcategory(initialDraftData.subcategory || '');
+      if (initialDraftData.format) setSelectedFormat(initialDraftData.format);
+      if (initialDraftData.timeframe) {
+        setSelectedTimeframe(initialDraftData.timeframe as any);
+        setSelectedEra(initialDraftData.timeframe as any);
+      }
       
       if (initialDraftData.targetDate) {
         try {
-          // Format the ISO string to YYYY-MM-DDThh:mm for datetime-local input
           const d = new Date(initialDraftData.targetDate);
-          const formatted = d.toISOString().slice(0, 16);
-          setTargetDate(formatted);
+          setTargetDate(d.toISOString());
         } catch (e) {
           console.error('Invalid targetDate format', e);
         }
@@ -693,7 +679,7 @@ export default function CreateLearnContentForm({
   }, []);
 
   const resetFrameworkOrder = useCallback(() => {
-    const framework = SOP_FRAMEWORKS[selectedTimeframe as keyof typeof SOP_FRAMEWORKS];
+    const framework = getBlueprint(selectedFormat, selectedEra);
     if (!framework) return;
     
     const availableBlocks = [...blocks];
@@ -714,7 +700,7 @@ export default function CreateLearnContentForm({
     setBlocks(newBlocks);
     setReorderUnlocked(false);
     setShowResetModal(false);
-  }, [blocks, selectedTimeframe]);
+  }, [blocks, selectedFormat, selectedEra]);
 
   const generateSlug = (t: string) => t.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
 
@@ -757,24 +743,24 @@ export default function CreateLearnContentForm({
     });
   }, []);
 
-  const applyFramework = useCallback(() => {
-    const framework = SOP_FRAMEWORKS[selectedTimeframe as keyof typeof SOP_FRAMEWORKS];
+  const applyFramework = useCallback((fmt: ArticleFormat = selectedFormat, era: ArticleEra = selectedEra) => {
+    const framework = getBlueprint(fmt, era);
     if (!framework) return;
     const newBlocks = framework.map((sop) => {
       const content: Record<string, any> = {};
       if (sop.type === 'myth_fact') Object.assign(content, { myth: '', fact: '' });
       if (sop.type === 'live_poll') Object.assign(content, { question: '', options: 'Yes,No' });
       if (sop.type === 'pull_quote') Object.assign(content, { quote: '', attribution: '' });
-      if (sop.type === 'exec_summary') Object.assign(content, { points: '' });
+      if (sop.type === 'exec_summary') Object.assign(content, { points: description || '' });
       if (sop.type === 'core_interactive') Object.assign(content, { bionicText: '', anchorQuestion: '', imageUrl: '' });
-      if (sop.type === 'subheading') Object.assign(content, { text: '' });
+      if (sop.type === 'subheading') Object.assign(content, { text: title || '' });
       if (sop.type === 'highlight_card') Object.assign(content, { imageUrl: '', caption: '' });
       if (sop.type === 'media') Object.assign(content, { mediaUrl: '', caption: '' });
       return { id: Math.random().toString(), type: sop.type, content, role: sop.role, sopDesc: sop.desc, sopHint: sop.hint };
     });
     setBlocks(newBlocks);
     setFlippedBlockId(newBlocks[0]?.id || null);
-  }, [selectedTimeframe]);
+  }, [selectedFormat, selectedEra, title, description]);
 
   const getBlockFillStats = (block: typeof blocks[0]) => {
     const c = block.content;
@@ -1011,140 +997,245 @@ export default function CreateLearnContentForm({
           <Box sx={{ animation: 'fadeIn 0.3s', display: 'flex', flexDirection: 'column', gap: 0 }}>
             {type === 'article' ? (
               <Box sx={{ width: '100%' }}>
-                  {/* ΓöÇΓöÇΓöÇ CONTEXT HEADER ΓöÇΓöÇΓöÇ */}
+                {/* ═══════════════════════ CONTEXT HEADER ═══════════════════════ */}
                 {(() => {
-                  const era = ERA_CONFIG[selectedTimeframe || ''] || ERA_CONFIG.present;
-                  const catName = challenges.find(c => c.id === selectedCategory)?.title || 'Category';
-                  const subName = challenges.find(c => c.id === selectedCategory)?.subcategories?.find(s => s.id === selectedSubcategory)?.title || 'Subcategory';
+                  const fMeta = FORMAT_CONFIG[selectedFormat] || FORMAT_CONFIG.brief;
+                  const eMeta = ERA_CONFIG[selectedEra] || ERA_CONFIG.present;
+                  const currentChallenge = challenges.find(c => c.id === selectedCategory) || challenges[0];
+                  const catName = currentChallenge?.title || 'Challenge';
+                  const subcategoriesList = currentChallenge?.subcategories || [];
+                  const activeSubObj = subcategoriesList.find(s => s.id === selectedSubcategory);
+                  const subName = activeSubObj?.title || 'Select Subcategory';
+                  
+                  let formattedPublishDate = 'Scheduled in Calendar';
+                  if (targetDate) {
+                    try {
+                      formattedPublishDate = format(new Date(targetDate), 'EEE, MMM d, yyyy');
+                    } catch (e) {}
+                  }
+
                   return (
                     <Box sx={{
-                      display: 'inline-flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { md: 'center' }, gap: 2,
-                      mb: 4, p: '12px 16px', borderRadius: '16px',
+                      display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { md: 'center' }, justifyContent: 'space-between', gap: 2,
+                      mb: 4, p: '14px 20px', borderRadius: '18px',
                       background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.03) 0%, rgba(15, 23, 42, 0.08) 100%)',
-                      border: '1px solid rgba(15, 23, 42, 0.05)',
+                      border: '1px solid rgba(15, 23, 42, 0.06)',
                       backdropFilter: 'blur(16px)',
                       boxShadow: 'inset 0 1px 0 rgba(255,255,255,1), 0 4px 12px rgba(0,0,0,0.02)',
-                      width: 'fit-content'
+                      width: '100%'
                     }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, md: 1 }, flexWrap: 'wrap' }}>
-                        
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                         {/* Studio Root */}
                         <Box 
                           onClick={() => onCancel?.()} 
                           sx={{ 
                             display: 'flex', alignItems: 'center', gap: 0.5, px: 1.5, py: 0.75, borderRadius: '10px',
-                            cursor: 'pointer', transition: 'all 0.2s ease', color: '#0f172a', bgcolor: 'rgba(255,255,255,0.7)',
+                            cursor: 'pointer', transition: 'all 0.2s ease', color: '#0f172a', bgcolor: 'rgba(255,255,255,0.8)',
                             boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                            '&:hover': { bgcolor: 'rgba(255,255,255,1)', transform: 'translateY(-1px)' }
+                            '&:hover': { bgcolor: '#fff', transform: 'translateY(-1px)' }
                           }}
                         >
-                          <ArticleIcon sx={{ fontSize: 18 }} />
+                          <ArticleIcon sx={{ fontSize: 18, color: ACCENT }} />
                           <Typography sx={{ fontWeight: 800, fontSize: '0.85rem' }}>Studio</Typography>
                         </Box>
 
                         <Typography sx={{ color: 'rgba(15, 23, 42, 0.3)', fontWeight: 400 }}>/</Typography>
 
+                        {/* Commodity Pill */}
+                        <Chip
+                          label={`🌾 ${selectedCommodity}`}
+                          size="small"
+                          sx={{ bgcolor: '#fff', color: '#0f172a', fontWeight: 800, border: '1px solid rgba(0,0,0,0.08)' }}
+                        />
+
                         {/* Category */}
-                        <Box 
-                          sx={{ 
-                            display: 'flex', alignItems: 'center', px: 1, py: 0.5,
-                            color: '#475569'
-                          }}
-                        >
-                          <Typography sx={{ fontWeight: 600, fontSize: '0.85rem', opacity: 0.9 }}>{catName}</Typography>
-                        </Box>
-
-                        <Typography sx={{ color: 'rgba(15, 23, 42, 0.3)', fontWeight: 400 }}>/</Typography>
-
-                        {/* Subcategory */}
-                        <Box 
-                          sx={{ 
-                            display: 'flex', alignItems: 'center', px: 1, py: 0.5,
-                            color: '#475569'
-                          }}
-                        >
-                          <Typography sx={{ fontWeight: 600, fontSize: '0.85rem', opacity: 0.9 }}>{subName}</Typography>
-                        </Box>
-
-                        <Typography sx={{ color: 'rgba(15, 23, 42, 0.3)', fontWeight: 400 }}>/</Typography>
-
-                        {/* Era/Timeframe */}
-                        <Chip 
-                          label={`${era.emoji} ${selectedTimeframe?.toUpperCase()}`} 
-                          size="small" 
-                          sx={{ 
-                            bgcolor: '#fff', color: era.color, 
-                            fontWeight: 800, border: `1px solid ${alpha(era.color, 0.3)}`,
-                            ml: 0.5, boxShadow: '0 2px 4px rgba(0,0,0,0.03)'
-                          }} 
+                        <Chip
+                          label={`💼 ${catName}`}
+                          size="small"
+                          sx={{ bgcolor: 'rgba(0,0,0,0.04)', color: '#334155', fontWeight: 700 }}
                         />
 
-                        {/* Status Badge */}
-                        <Chip 
-                          icon={draftId && draftId !== 'new' ? <AccessTimeIcon sx={{ fontSize: 14 }} /> : <AddIcon sx={{ fontSize: 14 }} />}
-                          label={draftId && draftId !== 'new' ? 'EDITING DRAFT' : 'NEW ARTICLE'} 
-                          size="small" 
-                          sx={{ 
-                            bgcolor: draftId && draftId !== 'new' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(16, 185, 129, 0.1)', 
-                            color: draftId && draftId !== 'new' ? '#d97706' : '#059669', 
-                            fontWeight: 800, border: `1px solid ${draftId && draftId !== 'new' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)'}`,
-                            ml: 2, px: 1, height: 26, '& .MuiChip-icon': { color: 'inherit' }
-                          }} 
+                        {/* Calendar Publish Badge */}
+                        <Chip
+                          icon={<CalendarIcon sx={{ fontSize: 14 }} />}
+                          label={`📅 Publishes ${formattedPublishDate}`}
+                          size="small"
+                          sx={{ bgcolor: alpha(ACCENT, 0.12), color: ACCENT_DARK, fontWeight: 800, border: `1px solid ${alpha(ACCENT, 0.25)}` }}
                         />
-
                       </Box>
+
+                      {/* Right Status Badge */}
+                      <Chip 
+                        icon={draftId && draftId !== 'new' ? <AccessTimeIcon sx={{ fontSize: 14 }} /> : <AddIcon sx={{ fontSize: 14 }} />}
+                        label={draftId && draftId !== 'new' ? 'EDITING DRAFT' : 'NEW BRIEF'} 
+                        size="small" 
+                        sx={{ 
+                          bgcolor: draftId && draftId !== 'new' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(16, 185, 129, 0.1)', 
+                          color: draftId && draftId !== 'new' ? '#d97706' : '#059669', 
+                          fontWeight: 800, border: `1px solid ${draftId && draftId !== 'new' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)'}`,
+                          px: 1, height: 26, '& .MuiChip-icon': { color: 'inherit' }
+                        }} 
+                      />
                     </Box>
                   );
                 })()}
 
-                {/* TARGET DATE FIELD (OPTIONAL SCHEDULE) */}
-                <Box sx={{ mb: 4, width: { xs: '100%', md: '50%' } }}>
-                  <PremiumTextField
-                    colorTheme={activeThemeColor}
-                    label="Scheduled Publish Date (Optional)"
-                    type="datetime-local"
-                    fullWidth
-                    slotProps={{ inputLabel: { shrink: true } }}
-                    value={targetDate}
-                    onChange={(e) => setTargetDate(e.target.value)}
-                  />
-                  <Typography variant="caption" sx={{ color: 'text.secondary', ml: 1 }}>
-                    Leave blank to publish immediately or keep as an unscheduled draft.
-                  </Typography>
-                </Box>
+                {/* ═══════════════════════ EMPTY STATE: BLUEPRINT SETUP & LOADER STATION ═══════════════════════ */}
+                {blocks.length === 0 && (() => {
+                  const currentChallenge = challenges.find(c => c.id === selectedCategory) || challenges[0];
+                  const subcategoriesList = currentChallenge?.subcategories || [];
+                  const activeFormatMeta = FORMAT_CONFIG[selectedFormat] || FORMAT_CONFIG.brief;
+                  const activeEraMeta = ERA_CONFIG[selectedEra] || ERA_CONFIG.present;
+                  const currentBlueprint = getBlueprint(selectedFormat, selectedEra);
 
-                {/* ΓöÇΓöÇΓöÇ EMPTY STATE: SOP FRAMEWORK PREVIEW ΓöÇΓöÇΓöÇ */}
-                {blocks.length === 0 && selectedTimeframe && (() => {
-                  const era = ERA_CONFIG[selectedTimeframe] || ERA_CONFIG.present;
-                  const framework = SOP_FRAMEWORKS[selectedTimeframe as keyof typeof SOP_FRAMEWORKS];
-                  if (!framework) return null;
+                  const formatsList: ArticleFormat[] = ['brief', 'memo', 'playbook', 'comparison', 'culture'];
+                  const erasList: ArticleEra[] = ['past', 'present', 'future'];
+
                   return (
-                    <Box sx={{ mb: 4 }}>
-                      {/* Header */}
-                      <Box sx={{ textAlign: 'center', mb: 5, pt: 2 }}>
-                        <Typography sx={{ fontSize: 48, mb: 1.5, filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.1))' }}>{era.emoji}</Typography>
-                        <Typography sx={{ fontWeight: 900, fontSize: '2rem', color: '#0f172a', mb: 1.5, letterSpacing: '-0.02em' }}>
-                          {era.label}
+                    <Box sx={{ mb: 6, animation: 'fadeIn 0.3s ease' }}>
+                      {/* Title & Setup Controls Card */}
+                      <Paper
+                        elevation={0}
+                        sx={{
+                          p: { xs: 3, md: 4 }, mb: 4, borderRadius: '24px',
+                          border: '1px solid rgba(0,0,0,0.08)',
+                          bgcolor: '#ffffff',
+                          boxShadow: '0 8px 30px rgba(0,0,0,0.04)'
+                        }}
+                      >
+                        {/* 1. Article Headline */}
+                        <Box sx={{ mb: 3.5 }}>
+                          <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 1 }}>
+                            Article Title
+                          </Typography>
+                          <PremiumTextField
+                            colorTheme={activeFormatMeta.color}
+                            placeholder="e.g. Structuring a ₦500M Off-Taker SPV: Unit Economics for Soybeans"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            fullWidth
+                          />
+                        </Box>
+
+                        {/* 2. Subcategory Picker */}
+                        <Box sx={{ mb: 3.5 }}>
+                          <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 1 }}>
+                            1. Subcategory Focus (10 Available in {currentChallenge?.title})
+                          </Typography>
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                            {subcategoriesList.map(sub => {
+                              const isSelected = selectedSubcategory === sub.id;
+                              return (
+                                <Chip
+                                  key={sub.id}
+                                  label={sub.title}
+                                  onClick={() => setSelectedSubcategory(sub.id)}
+                                  sx={{
+                                    bgcolor: isSelected ? '#0f172a' : 'rgba(0,0,0,0.04)',
+                                    color: isSelected ? '#fff' : '#334155',
+                                    fontWeight: isSelected ? 800 : 600,
+                                    border: isSelected ? '1px solid #0f172a' : '1px solid rgba(0,0,0,0.06)',
+                                    cursor: 'pointer', transition: 'all 0.2s',
+                                    '&:hover': { bgcolor: isSelected ? '#0f172a' : 'rgba(0,0,0,0.08)' }
+                                  }}
+                                />
+                              );
+                            })}
+                          </Box>
+                        </Box>
+
+                        {/* 3. Format Picker (The 5 Lenses) */}
+                        <Box sx={{ mb: 3.5 }}>
+                          <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 1 }}>
+                            2. Article Format (The Editorial Lens)
+                          </Typography>
+                          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(5, 1fr)' }, gap: 1.5 }}>
+                            {formatsList.map(fmt => {
+                              const meta = FORMAT_CONFIG[fmt];
+                              const isSelected = selectedFormat === fmt;
+                              return (
+                                <Box
+                                  key={fmt}
+                                  onClick={() => setSelectedFormat(fmt)}
+                                  sx={{
+                                    p: 2, borderRadius: '16px', cursor: 'pointer', transition: 'all 0.2s',
+                                    bgcolor: isSelected ? alpha(meta.color, 0.1) : 'rgba(0,0,0,0.02)',
+                                    border: `2px solid ${isSelected ? meta.color : 'rgba(0,0,0,0.06)'}`,
+                                    display: 'flex', flexDirection: 'column', gap: 0.5,
+                                    '&:hover': { borderColor: meta.color, transform: 'translateY(-2px)' }
+                                  }}
+                                >
+                                  <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: isSelected ? meta.color : '#0f172a' }}>
+                                    {meta.emoji} {meta.label}
+                                  </Typography>
+                                  <Typography sx={{ fontSize: '0.75rem', color: '#64748b', lineHeight: 1.3 }}>
+                                    {meta.desc}
+                                  </Typography>
+                                </Box>
+                              );
+                            })}
+                          </Box>
+                        </Box>
+
+                        {/* 4. Era Picker (The 3 Timelines) */}
+                        <Box sx={{ mb: 2 }}>
+                          <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 1 }}>
+                            3. Era (The Data & Time State)
+                          </Typography>
+                          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 1.5 }}>
+                            {erasList.map(era => {
+                              const meta = ERA_CONFIG[era];
+                              const isSelected = selectedEra === era;
+                              return (
+                                <Box
+                                  key={era}
+                                  onClick={() => {
+                                    setSelectedEra(era);
+                                    setSelectedTimeframe(era as any);
+                                  }}
+                                  sx={{
+                                    p: 2, borderRadius: '16px', cursor: 'pointer', transition: 'all 0.2s',
+                                    bgcolor: isSelected ? alpha(meta.color, 0.1) : 'rgba(0,0,0,0.02)',
+                                    border: `2px solid ${isSelected ? meta.color : 'rgba(0,0,0,0.06)'}`,
+                                    display: 'flex', flexDirection: 'column', gap: 0.5,
+                                    '&:hover': { borderColor: meta.color, transform: 'translateY(-2px)' }
+                                  }}
+                                >
+                                  <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: isSelected ? meta.color : '#0f172a' }}>
+                                    {meta.emoji} {meta.label}
+                                  </Typography>
+                                  <Typography sx={{ fontSize: '0.75rem', color: '#64748b', lineHeight: 1.3 }}>
+                                    {meta.desc}
+                                  </Typography>
+                                </Box>
+                              );
+                            })}
+                          </Box>
+                        </Box>
+                      </Paper>
+
+                      {/* Header of Framework Blueprint */}
+                      <Box sx={{ textAlign: 'center', mb: 4, pt: 1 }}>
+                        <Typography sx={{ fontWeight: 900, fontSize: '1.6rem', color: '#0f172a', mb: 0.5 }}>
+                          {activeFormatMeta.emoji} {activeFormatMeta.label} · {activeEraMeta.label}
                         </Typography>
-                        <Typography sx={{ color: '#475569', fontSize: '1.05rem', maxWidth: 540, mx: 'auto', lineHeight: 1.7, fontWeight: 500 }}>
-                          This framework defines the optimal block sequence for your <strong style={{ color: era.color }}>{selectedTimeframe}</strong> intelligence briefing. Preview the structure below, then load it.
+                        <Typography sx={{ color: '#64748b', fontSize: '0.95rem', maxWidth: 600, mx: 'auto', fontWeight: 500 }}>
+                          Tailored {currentBlueprint.length}-block SOP framework structured for African agro-intelligence.
                         </Typography>
                       </Box>
 
-                      {/* Timeline Preview */}
-                      <Box sx={{ position: 'relative', pl: { xs: 3, md: 5 }, maxWidth: 800, mx: 'auto' }}>
-                        {/* Vertical line */}
+                      {/* Live Reactive Timeline Preview */}
+                      <Box sx={{ position: 'relative', pl: { xs: 3, md: 5 }, maxWidth: 800, mx: 'auto', mb: 4 }}>
                         <Box sx={{
                           position: 'absolute', left: { xs: 12, md: 20 }, top: 12, bottom: 12,
-                          width: 3, background: `linear-gradient(180deg, ${era.color} 0%, ${alpha(era.color, 0.1)} 100%)`,
+                          width: 3, background: `linear-gradient(180deg, ${activeFormatMeta.color} 0%, ${alpha(activeFormatMeta.color, 0.1)} 100%)`,
                           borderRadius: 2,
                         }} />
 
-                        {framework.map((sop, idx) => {
-                          const bDef = BLOCK_DEFINITIONS[sop.type];
+                        {currentBlueprint.map((sop, idx) => {
+                          const bDef = BLOCK_DEFINITIONS[sop.type] || { label: sop.type, color: activeFormatMeta.color };
                           return (
-                            <Box key={idx} sx={{ display: 'flex', alignItems: 'flex-start', mb: 2.5, position: 'relative' }}>
-                              {/* Dot */}
+                            <Box key={idx} sx={{ display: 'flex', alignItems: 'flex-start', mb: 2, position: 'relative' }}>
                               <Box sx={{
                                 position: 'absolute', left: { xs: -21.5, md: -33.5 },
                                 width: 24, height: 24, borderRadius: '50%',
@@ -1154,50 +1245,46 @@ export default function CreateLearnContentForm({
                               }}>
                                 <Typography sx={{ fontSize: '0.7rem', fontWeight: 900, color: '#0f172a' }}>{idx + 1}</Typography>
                               </Box>
-                              {/* Card */}
                               <Box sx={{
                                 flex: 1, p: 2.5, borderRadius: '16px',
                                 border: `1px solid rgba(0,0,0,0.08)`,
                                 background: `linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.8) 100%)`,
                                 backdropFilter: 'blur(8px)', boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
-                                opacity: 0.9,
                                 transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                                '&:hover': { opacity: 1, transform: 'translateX(4px)', borderColor: alpha(bDef.color, 0.3), boxShadow: `0 8px 24px rgba(0,0,0,0.06)` },
+                                '&:hover': { transform: 'translateX(4px)', borderColor: alpha(bDef.color, 0.3), boxShadow: `0 8px 24px rgba(0,0,0,0.06)` },
                               }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                                  <Typography sx={{ fontWeight: 800, color: '#0f172a', fontSize: '1.05rem', letterSpacing: '-0.01em' }}>{sop.role}</Typography>
-                                  <Chip label={bDef.label} size="small" sx={{ height: 22, fontSize: '0.7rem', bgcolor: alpha(bDef.color, 0.15), color: bDef.color, fontWeight: 800, border: `1px solid ${alpha(bDef.color, 0.2)}` }} />
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
+                                  <Typography sx={{ fontWeight: 800, color: '#0f172a', fontSize: '1rem' }}>{sop.role}</Typography>
+                                  <Chip label={bDef.label} size="small" sx={{ height: 20, fontSize: '0.68rem', bgcolor: alpha(bDef.color, 0.15), color: bDef.color, fontWeight: 800 }} />
                                 </Box>
-                                <Typography sx={{ color: '#475569', fontSize: '0.9rem', lineHeight: 1.5, fontWeight: 500 }}>{sop.desc}</Typography>
+                                <Typography sx={{ color: '#475569', fontSize: '0.85rem', lineHeight: 1.4 }}>{sop.desc}</Typography>
                               </Box>
                             </Box>
                           );
                         })}
                       </Box>
 
-                      {/* CTA */}
-                      <Box sx={{ textAlign: 'center', mt: 6 }}>
-                        <Alert severity="info" sx={{ textAlign: 'left', maxWidth: 500, mx: 'auto', mb: 3, borderRadius: '16px', '& .MuiAlert-message': { fontWeight: 600, color: '#0f172a' }, bgcolor: 'rgba(59,130,246,0.1)' }}>
-                          This is the suggested structure, but you can add and rearrange blocks as needed after loading.
-                        </Alert>
+                      {/* CTA to Load Framework */}
+                      <Box sx={{ textAlign: 'center', mt: 4 }}>
                         <Button
                           variant="contained"
-                          onClick={applyFramework}
+                          onClick={() => applyFramework(selectedFormat, selectedEra)}
                           startIcon={<SparkleIcon />}
                           sx={{
-                            bgcolor: era.color, color: '#fff', fontWeight: 800, px: 6, py: 2, borderRadius: '20px',
-                            fontSize: '1.1rem', letterSpacing: '0.02em',
-                            boxShadow: `0 8px 24px ${alpha(era.color, 0.4)}`,
-                            '&:hover': { bgcolor: alpha(era.color, 0.9), transform: 'translateY(-3px)', boxShadow: `0 12px 32px ${alpha(era.color, 0.5)}` },
-                            transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                            bgcolor: activeFormatMeta.color, color: '#fff', fontWeight: 800, px: 6, py: 1.8, borderRadius: '18px',
+                            fontSize: '1.05rem', letterSpacing: '0.01em',
+                            boxShadow: `0 8px 24px ${alpha(activeFormatMeta.color, 0.4)}`,
+                            '&:hover': { bgcolor: alpha(activeFormatMeta.color, 0.9), transform: 'translateY(-2px)', boxShadow: `0 12px 32px ${alpha(activeFormatMeta.color, 0.5)}` },
+                            transition: 'all 0.2s',
                           }}
                         >
-                          Load This Framework
+                          🚀 Load This Framework ({currentBlueprint.length} Blocks)
                         </Button>
                       </Box>
                     </Box>
                   );
                 })()}
+
 
                 {/* ΓöÇΓöÇΓöÇ ACTIVE BLOCK CANVAS ΓöÇΓöÇΓöÇ */}
                 {blocks.length > 0 && (
