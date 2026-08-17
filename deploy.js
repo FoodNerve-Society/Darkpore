@@ -16,38 +16,41 @@ async function deploy() {
     execSync('npx tsc --noEmit', { stdio: 'inherit' });
     console.log("✅ TypeScript check passed cleanly (0 errors).");
 
-    // 3. Get commit message if provided in arguments
+    // 3. Get commit message from CLI args or generate a clear one
     const customMsg = process.argv.slice(2).filter(a => !a.startsWith('-')).join(' ').trim();
     const commitMsg = customMsg || `feat: production deploy at ${new Date().toISOString()}`;
 
-    // 4. Commit any uncommitted changes on the active branch
+    // 4. Check active branch and commit any changes
+    const currentBranch = execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
     const status = execSync('git status --porcelain').toString();
     if (status.trim().length > 0) {
-      console.log("\nUncommitted changes detected. Committing...");
+      console.log(`\nUncommitted changes detected on branch '${currentBranch}'. Committing...`);
       execSync('git add .');
       execSync(`git commit -m "${commitMsg.replace(/"/g, '\\"')}"`);
     }
 
-    // 5. Complete bidirectional sync between dev & main
-    console.log("\n[3/4] Synchronizing 'main' and 'dev' branches...");
-    
-    // Switch to main and push
+    // 5. Merge active branch into main and push to origin/main (PRODUCTION)
+    console.log("\n[3/4] Deploying to Production ('main')...");
     execSync('git checkout main', { stdio: 'inherit' });
-    console.log("Pushing 'main' to GitHub origin (triggering Vercel deployment)...");
+    if (currentBranch !== 'main') {
+      execSync(`git merge ${currentBranch} -m "chore: merge ${currentBranch} into main for production"`, { stdio: 'inherit' });
+    }
+    console.log("Pushing 'main' to origin/main (triggers Vercel Production)...");
     execSync('git push origin main', { stdio: 'inherit' });
 
-    // Sync main back to dev
+    // 6. Synchronize dev branch
+    console.log("\n[4/4] Synchronizing 'dev' branch...");
     execSync('git checkout dev', { stdio: 'inherit' });
-    execSync('git merge main -m "chore: sync main back to dev"', { stdio: 'inherit' });
+    execSync('git merge main -m "chore: sync main into dev"', { stdio: 'inherit' });
     execSync('git push origin dev', { stdio: 'inherit' });
 
-    // Return to main as default
-    execSync('git checkout main', { stdio: 'inherit' });
+    // 7. Return to original branch
+    execSync(`git checkout ${currentBranch}`, { stdio: 'inherit' });
 
     console.log("\n=========================================");
     console.log("   DEPLOYMENT TRIGGERED SUCCESSFULLY! 🚀");
-    console.log("   Commits pushed to origin/main & origin/dev.");
-    console.log("   Vercel is now building 'main'.");
+    console.log("   Production: pushed to origin/main");
+    console.log("   Preview:    pushed to origin/dev");
     console.log("=========================================");
 
   } catch (error) {
