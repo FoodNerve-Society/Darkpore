@@ -548,13 +548,26 @@ export default function CreateLearnContentForm({
       if (initialTaxonomy.targetDate) setTargetDate(initialTaxonomy.targetDate);
       if (initialTaxonomy.title) setTitle(initialTaxonomy.title);
       if (initialTaxonomy.description) setDescription(initialTaxonomy.description);
+
+      if (blocks.length === 0 && initialTaxonomy.format && initialTaxonomy.timeframe) {
+        const blueprint = getBlueprint(initialTaxonomy.format, initialTaxonomy.timeframe as any);
+        if (blueprint && blueprint.length > 0) {
+          const initialBlocks = blueprint.map((b, idx) => ({
+            id: Math.random().toString(36).substring(7),
+            type: b.type,
+            content: idx === 0 && initialTaxonomy.description ? { point1: initialTaxonomy.description } : {}
+          }));
+          setBlocks(initialBlocks);
+        }
+      }
+
       setStep(3); // Jump directly to builder
     }
   }, [initialTaxonomy, initialType]);
 
   useEffect(() => {
     if (initialDraftData) {
-      setType(initialDraftData.type as any);
+      setType(initialDraftData.type || (initialType as any) || 'article');
       if (initialDraftData.title) setTitle(initialDraftData.title || '');
       if (initialDraftData.description) setDescription(initialDraftData.description || '');
       if (initialDraftData.commodity) setSelectedCommodity(initialDraftData.commodity);
@@ -1906,56 +1919,82 @@ export default function CreateLearnContentForm({
                 )}
               </Box>
             ) : (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                <Typography variant="h5" sx={{ fontWeight: 900 }}>Content Details</Typography>
-                
-                <PremiumTextField 
-                  colorTheme={activeThemeColor} 
-                  label="Title" 
-                  value={title} 
-                  onChange={e => setTitle(e.target.value)} 
-                  fullWidth 
-                />
-                <PremiumTextField 
-                  colorTheme={activeThemeColor} 
-                  label="Description" 
-                  value={description} 
-                  onChange={e => setDescription(e.target.value)} 
-                  fullWidth 
-                  multiline 
-                  rows={3} 
-                />
-
-                <Box sx={{ mb: 2, width: { xs: '100%', md: '50%' } }}>
-                  <PremiumTextField
-                    colorTheme={activeThemeColor}
-                    label="Scheduled Publish Date (Optional)"
-                    type="datetime-local"
-                    fullWidth
-                    slotProps={{ inputLabel: { shrink: true } }}
-                    value={targetDate}
-                    onChange={(e) => setTargetDate(e.target.value)}
-                  />
-                  <Typography variant="caption" sx={{ color: 'text.secondary', ml: 1 }}>
-                    Leave blank to publish immediately or keep as an unscheduled draft.
-                  </Typography>
+              <Paper
+                elevation={0}
+                sx={{
+                  p: { xs: 4, sm: 6, md: 8 },
+                  borderRadius: '24px',
+                  background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.02) 0%, rgba(15, 23, 42, 0.05) 100%)',
+                  backdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(15, 23, 42, 0.08)',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.03)',
+                  textAlign: 'center',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  maxWidth: 680,
+                  mx: 'auto',
+                  my: 4
+                }}
+              >
+                <Box sx={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: '20px',
+                  bgcolor: alpha(ACCENT, 0.12),
+                  color: ACCENT_DARK,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  mb: 3,
+                  border: `1px solid ${alpha(ACCENT, 0.25)}`,
+                  boxShadow: `0 8px 24px ${alpha(ACCENT, 0.15)}`
+                }}>
+                  <SparkleIcon sx={{ fontSize: 32 }} />
                 </Box>
 
-                {(type === 'video' || type === 'livestream') && (
-                  <PremiumTextField colorTheme={activeThemeColor} label={type === 'livestream' ? "Livestream URL" : "Video URL"} value={videoUrl} onChange={e => setVideoUrl(e.target.value)} fullWidth />
-                )}
-                {type === 'report' && (
-                  <PremiumTextField colorTheme={activeThemeColor} label="PDF URL" value={reportPdfUrl} onChange={e => setReportPdfUrl(e.target.value)} fullWidth />
-                )}
-
-                <PremiumTextField 
-                  colorTheme={activeThemeColor} 
-                  label="Thumbnail URL (Optional)" 
-                  value={thumbnailUrl} 
-                  onChange={e => setThumbnailUrl(e.target.value)} 
-                  fullWidth 
+                <Chip
+                  label="COMING SOON"
+                  size="small"
+                  sx={{
+                    bgcolor: alpha(ACCENT, 0.1),
+                    color: ACCENT_DARK,
+                    fontWeight: 900,
+                    fontSize: '0.72rem',
+                    letterSpacing: '0.06em',
+                    mb: 2,
+                    border: `1px solid ${alpha(ACCENT, 0.25)}`
+                  }}
                 />
-              </Box>
+
+                <Typography variant="h4" sx={{ fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em', mb: 1.5, fontSize: { xs: '1.4rem', sm: '1.85rem' } }}>
+                  This feature is not ready yet
+                </Typography>
+
+                <Typography sx={{ color: '#64748b', fontSize: '0.95rem', lineHeight: 1.6, maxWidth: 460, mb: 4, fontWeight: 500 }}>
+                  We are still working on this studio. For now, you can write and publish Articles and Intelligence Briefs.
+                </Typography>
+
+                <Button
+                  onClick={() => onCancel?.()}
+                  variant="contained"
+                  sx={{
+                    bgcolor: '#0f172a',
+                    color: '#fff',
+                    fontWeight: 800,
+                    borderRadius: '12px',
+                    px: 3.5,
+                    py: 1.2,
+                    textTransform: 'none',
+                    fontSize: '0.9rem',
+                    boxShadow: '0 4px 16px rgba(15, 23, 42, 0.15)',
+                    '&:hover': { bgcolor: '#1e293b' }
+                  }}
+                >
+                  ← Back to Studio
+                </Button>
+              </Paper>
             )}
           </Box>
         )}

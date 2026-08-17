@@ -31,7 +31,7 @@ import { commoditiesList, getCommodityMeta } from '@/lib/cms/commodities';
 import { getISOWeek, startOfISOWeek, addDays, format, getYear } from 'date-fns';
 import { CATEGORY_MAP } from '@/lib/config/editorialMatrix';
 import { getDailyEditorialIntel, regenerateCustomAnglesAction, ArticleInsightItem } from '@/lib/actions/editorialMatrix';
-import { FORMAT_CONFIG, ERA_CONFIG, ArticleFormat, ArticleEra } from '@/lib/config/articleBlueprints';
+import { FORMAT_CONFIG, ERA_CONFIG, ArticleFormat, ArticleEra, getBlueprint } from '@/lib/config/articleBlueprints';
 
 const ACCENT = "#f59e0b";
 const ACCENT_DARK = "#d97706";
@@ -167,6 +167,13 @@ export default function CreatorStudioDashboard({
   };
 
   const handleSelectInsight = (item: ArticleInsightItem) => {
+    const blueprint = getBlueprint(item.format, item.era);
+    const initialBlocks = blueprint.map((b, idx) => ({
+      id: Math.random().toString(36).substring(7),
+      type: b.type,
+      content: idx === 0 ? { point1: item.hook } : {}
+    }));
+
     onStartFresh('article', {
       commodity: selectedCommodity,
       category: selectedCategory,
@@ -177,6 +184,7 @@ export default function CreatorStudioDashboard({
       title: item.title,
       description: item.hook,
     }, {
+      type: 'article',
       title: item.title,
       description: item.hook,
       category: selectedCategory,
@@ -185,6 +193,11 @@ export default function CreatorStudioDashboard({
       timeframe: item.era,
       targetDate: selectedTargetDate,
       commodity: selectedCommodity,
+      articleBlocks: initialBlocks.map((b, idx) => ({
+        blockType: b.type,
+        orderIndex: idx,
+        content: b.content
+      }))
     });
   };
 
@@ -199,6 +212,7 @@ export default function CreatorStudioDashboard({
       title: '',
       description: '',
     }, {
+      type: 'article',
       title: '',
       description: '',
       category: selectedCategory,
