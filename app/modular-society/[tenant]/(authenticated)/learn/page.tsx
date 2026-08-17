@@ -2109,6 +2109,8 @@ export default function LearnPage() {
               ? `${profile.prefixes && profile.prefixes.length > 0 ? profile.prefixes.join(' ') + ' ' : ''}${profile.firstName}`
               : (profile?.displayName ? profile.displayName.split(' ')[0] : 'Creative')
           }
+          userSpendableNP={profile?.spendableNP || 0}
+          firebaseUid={profile?.uid}
           drafts={drafts}
           workspaceTabs={workspaceTabs}
           challengesData={tenantConfig.com.homepage.challenges}
