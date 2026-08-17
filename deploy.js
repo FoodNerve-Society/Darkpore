@@ -44,8 +44,8 @@ async function deploy() {
     execSync('git merge main -m "chore: sync main into dev"', { stdio: 'inherit' });
     execSync('git push origin dev', { stdio: 'inherit' });
 
-    // 7. Return to original branch
-    execSync(`git checkout ${currentBranch}`, { stdio: 'inherit' });
+    // 7. Always leave repository on 'main'
+    execSync('git checkout main', { stdio: 'inherit' });
 
     console.log("\n=========================================");
     console.log("   DEPLOYMENT TRIGGERED SUCCESSFULLY! 🚀");
