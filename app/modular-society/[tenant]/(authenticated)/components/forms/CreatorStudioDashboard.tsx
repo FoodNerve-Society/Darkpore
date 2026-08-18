@@ -44,19 +44,23 @@ const slideUpFade = keyframes`
 const START_FRESH_OPTIONS = [
   {
     type: 'article', title: "Intelligence Brief", desc: "Write an in-depth article or report.",
-    icon: <ArticleIcon sx={{ fontSize: 32 }} />, color: "#3b82f6", grad: "linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)"
-  },
-  {
-    type: 'video', title: "Video Insights", desc: "Share short-form video analysis.",
-    icon: <VideoLibraryIcon sx={{ fontSize: 32 }} />, color: "#ef4444", grad: "linear-gradient(135deg, #991b1b 0%, #ef4444 100%)"
+    icon: <ArticleIcon sx={{ fontSize: 32 }} />, color: "#3b82f6", grad: "linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)",
+    readiness: 'live'
   },
   {
     type: 'livestream', title: "Schedule Livestream", desc: "Host a live session.",
-    icon: <LiveTvIcon sx={{ fontSize: 32 }} />, color: "#10b981", grad: "linear-gradient(135deg, #065f46 0%, #10b981 100%)"
+    icon: <LiveTvIcon sx={{ fontSize: 32 }} />, color: "#10b981", grad: "linear-gradient(135deg, #065f46 0%, #10b981 100%)",
+    readiness: 'live'
+  },
+  {
+    type: 'video', title: "Video Insights", desc: "Share short-form video analysis.",
+    icon: <VideoLibraryIcon sx={{ fontSize: 32 }} />, color: "#ef4444", grad: "linear-gradient(135deg, #991b1b 0%, #ef4444 100%)",
+    readiness: 'coming_soon'
   },
   {
     type: 'class', title: "Masterclass", desc: "Create a multi-module learning experience.",
-    icon: <SchoolIcon sx={{ fontSize: 32 }} />, color: "#8b5cf6", grad: "linear-gradient(135deg, #5b21b6 0%, #8b5cf6 100%)"
+    icon: <SchoolIcon sx={{ fontSize: 32 }} />, color: "#8b5cf6", grad: "linear-gradient(135deg, #5b21b6 0%, #8b5cf6 100%)",
+    readiness: 'coming_soon'
   }
 ];
 
@@ -370,9 +374,8 @@ export default function CreatorStudioDashboard({
         width: '100%',
         mb: 6
       }}>
-        {START_FRESH_OPTIONS.map((opt) => {
+        {(expandedStartType ? START_FRESH_OPTIONS.filter(o => o.type === expandedStartType) : START_FRESH_OPTIONS).map((opt) => {
           const isExpanded = expandedStartType === opt.type;
-          const isHidden = expandedStartType !== null && !isExpanded;
           const isActive = true;
 
           return (
@@ -380,26 +383,30 @@ export default function CreatorStudioDashboard({
               key={opt.type}
               elevation={0}
               onClick={() => {
-                if (!expandedStartType && isActive) {
+                if (opt.readiness === 'coming_soon') return;
+                
+                if (opt.type === 'livestream') {
+                  onStartFresh('livestream');
+                } else if (!expandedStartType) {
                   handleOpenCreator(opt.type);
                 }
               }}
               sx={{
-                flex: isExpanded ? '1 1 100%' : (isHidden ? 0 : '1 1 calc(25% - 24px)'),
-                minWidth: isHidden ? 0 : (isExpanded ? '100%' : { xs: 140, sm: 220 }),
-                maxWidth: isHidden ? 0 : (isExpanded ? '100%' : { xs: 140, sm: 280 }),
-                height: isExpanded ? 'auto' : (isHidden ? 0 : { xs: 160, sm: 260 }),
-                opacity: isHidden ? 0 : (isActive ? 1 : 0.65),
-                p: isExpanded ? 0 : (isHidden ? 0 : { xs: 1.5, sm: 2.5, md: 3 }),
+                flex: isExpanded ? '1 1 100%' : '1 1 calc(25% - 24px)',
+                minWidth: isExpanded ? '100%' : { xs: 140, sm: 220 },
+                maxWidth: isExpanded ? '100%' : { xs: 140, sm: 280 },
+                height: isExpanded ? 'auto' : { xs: 160, sm: 260 },
+                opacity: opt.readiness === 'live' ? 1 : 0.65,
+                p: isExpanded ? 0 : { xs: 1.5, sm: 2.5, md: 3 },
                 display: 'flex', flexDirection: 'column',
                 borderRadius: { xs: '16px', sm: '24px' }, 
-                cursor: isExpanded ? 'default' : (isActive ? 'pointer' : 'not-allowed'),
+                cursor: isExpanded ? 'default' : (opt.readiness === 'live' ? 'pointer' : 'not-allowed'),
                 background: isExpanded ? `linear-gradient(135deg, #0f172a 0%, #1e293b 100%)` : opt.grad,
-                border: isHidden ? 'none' : '1px solid rgba(255,255,255,0.15)',
-                boxShadow: isHidden ? 'none' : `0 10px 30px ${alpha(opt.color, 0.2)}`,
+                border: '1px solid rgba(255,255,255,0.15)',
+                boxShadow: `0 10px 30px ${alpha(opt.color, 0.2)}`,
                 position: 'relative', overflow: 'hidden',
-                transition: 'all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                '&:hover': !isExpanded && isActive ? {
+                transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                '&:hover': !isExpanded && opt.readiness === 'live' ? {
                   transform: 'translateY(-6px) scale(1.02)',
                   boxShadow: `0 20px 40px ${alpha(opt.color, 0.35)}`,
                 } : {}
@@ -414,7 +421,14 @@ export default function CreatorStudioDashboard({
                     <Box sx={{ p: 1.2, borderRadius: '14px', bgcolor: 'rgba(255,255,255,0.2)', color: '#fff' }}>
                       {opt.icon}
                     </Box>
-                    <WikiHotspot id={`learn-start-fresh-${opt.type}`} label={opt.title} />
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
+                      {opt.readiness === 'coming_soon' && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: 'rgba(0,0,0,0.2)', px: 1, py: 0.25, borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                          <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, color: 'rgba(255,255,255,0.6)', letterSpacing: '0.05em' }}>COMING SOON</Typography>
+                        </Box>
+                      )}
+                      <WikiHotspot id={`learn-start-fresh-${opt.type}`} label={opt.title} />
+                    </Box>
                   </Box>
                   <Box sx={{ mt: 'auto', zIndex: 1 }}>
                     <Typography sx={{ fontWeight: 900, fontSize: { xs: '0.9rem', sm: '1.15rem' }, color: '#fff', mb: 0.5 }}>
@@ -470,11 +484,24 @@ export default function CreatorStudioDashboard({
                         ))}
                       </Box>
 
-                      <Tooltip title="Minimize">
-                        <IconButton onClick={(e) => { e.stopPropagation(); handleClose(); }} sx={{ color: 'rgba(255,255,255,0.7)', bgcolor: 'rgba(255,255,255,0.06)', '&:hover': { bgcolor: 'rgba(255,255,255,0.15)', color: '#fff' } }}>
-                          <MinimizeIcon />
-                        </IconButton>
-                      </Tooltip>
+                      <Button
+                        size="small"
+                        onClick={(e) => { e.stopPropagation(); handleClose(); }}
+                        sx={{
+                          color: 'rgba(255,255,255,0.8)',
+                          bgcolor: 'rgba(255,255,255,0.08)',
+                          fontWeight: 800,
+                          borderRadius: '12px',
+                          px: 1.8,
+                          py: 0.6,
+                          fontSize: '0.78rem',
+                          textTransform: 'none',
+                          border: '1px solid rgba(255,255,255,0.12)',
+                          '&:hover': { bgcolor: 'rgba(255,255,255,0.18)', color: '#fff' }
+                        }}
+                      >
+                        ✕ All Formats
+                      </Button>
                     </Box>
                   </Box>
 
