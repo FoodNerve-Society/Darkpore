@@ -534,23 +534,22 @@ export default function CreateLearnContentForm({
   const [selectedFormat, setSelectedFormat] = useState<ArticleFormat>('brief');
   const [selectedEra, setSelectedEra] = useState<ArticleEra>('present');
   const [isBlueprintCardFlipped, setIsBlueprintCardFlipped] = useState(false);
+  const [blueprintConfigStep, setBlueprintConfigStep] = useState<1 | 2 | 3>(1);
   const [thumbnailUrl, setThumbnailUrl] = useState('');
 
-  const allSubcategoriesWithOptions = useMemo(() => {
-    const list: Array<{ id: string, title: string, description?: string, categoryId: string, categoryTitle: string }> = [];
-    challenges.forEach(c => {
-      (c.subcategories || []).forEach((s: any) => {
-        list.push({
-          id: s.id,
-          title: s.title,
-          description: s.description || '',
-          categoryId: c.id,
-          categoryTitle: c.title
-        });
-      });
-    });
-    return list;
-  }, [challenges]);
+  const currentSelectedChallenge = useMemo(() => {
+    return challenges.find(c => c.id === selectedCategory) || challenges[0];
+  }, [challenges, selectedCategory]);
+
+  const subcategoriesInSelectedCategory = useMemo(() => {
+    return (currentSelectedChallenge?.subcategories || []).map((s: any) => ({
+      id: s.id,
+      title: s.title,
+      description: s.description || '',
+      categoryId: currentSelectedChallenge?.id || '',
+      categoryTitle: currentSelectedChallenge?.title || ''
+    }));
+  }, [currentSelectedChallenge]);
 
   useEffect(() => {
     if (initialTaxonomy) {
@@ -1105,7 +1104,7 @@ export default function CreateLearnContentForm({
                   const activeFormatMeta = FORMAT_CONFIG[selectedFormat] || FORMAT_CONFIG.brief;
                   const activeEraMeta = ERA_CONFIG[selectedEra] || ERA_CONFIG.present;
                   const currentBlueprint = getBlueprint(selectedFormat, selectedEra);
-                  const selectedSubObj = allSubcategoriesWithOptions.find(s => s.id === selectedSubcategory);
+                  const selectedSubObj = subcategoriesInSelectedCategory.find(s => s.id === selectedSubcategory);
 
                   const formatsList: ArticleFormat[] = ['brief', 'memo', 'playbook', 'comparison', 'culture'];
                   const erasList: ArticleEra[] = ['past', 'present', 'future'];
@@ -1280,129 +1279,272 @@ export default function CreateLearnContentForm({
                               </Tooltip>
                             </Box>
 
+                            {/* Sub-Header / Step Stepper Bar */}
+                            <Box sx={{
+                              display: 'flex', alignItems: 'center', gap: 1,
+                              px: { xs: 2.5, md: 3.5 }, pt: 1.5, pb: 1.5,
+                              borderBottom: '1px solid rgba(0,0,0,0.05)',
+                              bgcolor: 'rgba(0,0,0,0.01)',
+                              overflowX: 'auto',
+                              '&::-webkit-scrollbar': { display: 'none' }
+                            }}>
+                              {[
+                                { step: 1 as const, label: '1. Subcategory', desc: selectedSubObj?.title || 'Not Selected', isDone: !!selectedSubcategory },
+                                { step: 2 as const, label: '2. Format Lens', desc: activeFormatMeta.label, isDone: !!selectedFormat },
+                                { step: 3 as const, label: '3. Timeline Era', desc: activeEraMeta.label, isDone: !!selectedEra },
+                              ].map((s) => {
+                                const isActive = blueprintConfigStep === s.step;
+                                return (
+                                  <Box
+                                    key={s.step}
+                                    onClick={() => setBlueprintConfigStep(s.step)}
+                                    sx={{
+                                      display: 'flex', alignItems: 'center', gap: 1.25, px: 2, py: 0.85, borderRadius: '14px',
+                                      cursor: 'pointer', transition: 'all 0.2s ease', flexShrink: 0,
+                                      bgcolor: isActive ? alpha(activeFormatMeta.color, 0.12) : 'rgba(0,0,0,0.03)',
+                                      border: `1.5px solid ${isActive ? activeFormatMeta.color : 'transparent'}`,
+                                      boxShadow: isActive ? `0 4px 12px ${alpha(activeFormatMeta.color, 0.15)}` : 'none',
+                                      '&:hover': { bgcolor: alpha(activeFormatMeta.color, 0.08) }
+                                    }}
+                                  >
+                                    <Box sx={{
+                                      width: 24, height: 24, borderRadius: '50%',
+                                      bgcolor: s.isDone ? activeFormatMeta.color : (isActive ? alpha(activeFormatMeta.color, 0.2) : 'rgba(0,0,0,0.1)'),
+                                      color: s.isDone ? '#fff' : (isActive ? activeFormatMeta.color : '#64748b'),
+                                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                      fontSize: '0.75rem', fontWeight: 900
+                                    }}>
+                                      {s.isDone ? '✓' : s.step}
+                                    </Box>
+                                    <Box>
+                                      <Typography sx={{ fontWeight: 800, fontSize: '0.82rem', color: isActive ? activeFormatMeta.color : '#0f172a' }}>
+                                        {s.label}
+                                      </Typography>
+                                      <Typography sx={{ fontSize: '0.7rem', color: '#64748b', whiteSpace: 'nowrap', maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 500 }}>
+                                        {s.desc}
+                                      </Typography>
+                                    </Box>
+                                  </Box>
+                                );
+                              })}
+                            </Box>
+
                             {/* Form body */}
                             <Box sx={{ p: { xs: 2.5, md: 4 }, display: 'flex', flexDirection: 'column', gap: 3.5 }}>
                               
-                              {/* 1. Subcategory Autocomplete */}
-                              <Box>
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-                                  <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                    1. Subcategory Focus (Search or Select)
-                                  </Typography>
-                                  {selectedSubcategory && (
-                                    <Chip
-                                      label={selectedSubObj?.title || 'Selected'}
-                                      size="small"
-                                      sx={{ bgcolor: alpha(activeFormatMeta.color, 0.1), color: activeFormatMeta.color, fontWeight: 700, height: 22 }}
-                                    />
-                                  )}
-                                </Box>
-                                <PremiumAutocomplete
-                                  colorTheme={activeFormatMeta.color}
-                                  options={allSubcategoriesWithOptions}
-                                  groupBy={(option) => option.categoryTitle}
-                                  getOptionLabel={(option) => option.title}
-                                  value={allSubcategoriesWithOptions.find(s => s.id === selectedSubcategory) || null}
-                                  onChange={(_, newValue) => {
-                                    if (newValue) {
-                                      setSelectedSubcategory(newValue.id);
-                                      setSelectedCategory(newValue.categoryId);
-                                    }
-                                  }}
-                                  label="Subcategory Focus"
-                                  placeholder="Search subcategories (e.g. Grain aggregation, Cold chain, FX settlement...)"
-                                  fullWidth
-                                />
-                              </Box>
+                              {/* ═══ STEP 1: SUBCATEGORY (FILTERED TO CURRENT CHALLENGE ONLY) ═══ */}
+                              {blueprintConfigStep === 1 && (
+                                <Box sx={{ animation: 'fadeIn 0.25s ease', display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+                                    <Box>
+                                      <Typography sx={{ fontWeight: 800, fontSize: '0.95rem', color: '#0f172a' }}>
+                                        Subcategory Focus for: <span style={{ color: activeFormatMeta.color }}>{currentSelectedChallenge?.title}</span>
+                                      </Typography>
+                                      <Typography sx={{ color: '#64748b', fontSize: '0.8rem', mt: 0.25 }}>
+                                        Showing the {subcategoriesInSelectedCategory.length} subcategories available under this challenge.
+                                      </Typography>
+                                    </Box>
+                                    {selectedSubcategory && (
+                                      <Chip
+                                        label={`Selected: ${selectedSubObj?.title || ''}`}
+                                        size="small"
+                                        sx={{ bgcolor: alpha(activeFormatMeta.color, 0.12), color: activeFormatMeta.color, fontWeight: 800 }}
+                                      />
+                                    )}
+                                  </Box>
 
-                              {/* 2. Format Picker (The 5 Lenses) */}
-                              <Box>
-                                <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 1.5 }}>
-                                  2. Article Format (The Editorial Lens)
-                                </Typography>
-                                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(5, 1fr)' }, gap: 1.5 }}>
-                                  {formatsList.map(fmt => {
-                                    const meta = FORMAT_CONFIG[fmt];
-                                    const isSelected = selectedFormat === fmt;
-                                    return (
-                                      <PremiumCard
-                                        key={fmt}
-                                        variant="interactive"
-                                        baseColor={meta.color}
-                                        onClick={() => setSelectedFormat(fmt)}
-                                        sx={{
-                                          p: 2, borderRadius: '18px',
-                                          bgcolor: isSelected ? alpha(meta.color, 0.12) : 'rgba(255,255,255,0.7)',
-                                          border: `2px solid ${isSelected ? meta.color : 'rgba(0,0,0,0.06)'}`,
-                                          display: 'flex', flexDirection: 'column', gap: 0.5,
-                                          boxShadow: isSelected ? `0 8px 24px ${alpha(meta.color, 0.25)}` : '0 4px 16px rgba(0,0,0,0.03)',
-                                        }}
-                                      >
-                                        <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: isSelected ? meta.color : '#0f172a' }}>
-                                          {meta.emoji} {meta.label}
-                                        </Typography>
-                                        <Typography sx={{ fontSize: '0.75rem', color: '#64748b', lineHeight: 1.3, display: { xs: 'none', md: 'block' } }}>
-                                          {meta.desc}
-                                        </Typography>
-                                      </PremiumCard>
-                                    );
-                                  })}
-                                </Box>
-                              </Box>
+                                  <PremiumAutocomplete
+                                    colorTheme={activeFormatMeta.color}
+                                    options={subcategoriesInSelectedCategory}
+                                    getOptionLabel={(option) => option.title}
+                                    value={subcategoriesInSelectedCategory.find(s => s.id === selectedSubcategory) || null}
+                                    onChange={(_, newValue) => {
+                                      if (newValue) {
+                                        setSelectedSubcategory(newValue.id);
+                                      }
+                                    }}
+                                    label="Search Subcategory"
+                                    placeholder={`Search in ${currentSelectedChallenge?.title}...`}
+                                    fullWidth
+                                  />
 
-                              {/* 3. Era Picker (The 3 Timelines) */}
-                              <Box>
-                                <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 1.5 }}>
-                                  3. Era (The Data & Time State)
-                                </Typography>
-                                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 1.5 }}>
-                                  {erasList.map(era => {
-                                    const meta = ERA_CONFIG[era];
-                                    const isSelected = selectedEra === era;
-                                    return (
-                                      <PremiumCard
-                                        key={era}
-                                        variant="interactive"
-                                        baseColor={meta.color}
-                                        onClick={() => {
-                                          setSelectedEra(era);
-                                          setSelectedTimeframe(era as any);
-                                        }}
-                                        sx={{
-                                          p: 2, borderRadius: '18px',
-                                          bgcolor: isSelected ? alpha(meta.color, 0.12) : 'rgba(255,255,255,0.7)',
-                                          border: `2px solid ${isSelected ? meta.color : 'rgba(0,0,0,0.06)'}`,
-                                          display: 'flex', flexDirection: 'column', gap: 0.5,
-                                          boxShadow: isSelected ? `0 8px 24px ${alpha(meta.color, 0.25)}` : '0 4px 16px rgba(0,0,0,0.03)',
-                                        }}
-                                      >
-                                        <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: isSelected ? meta.color : '#0f172a' }}>
-                                          {meta.emoji} {meta.label}
-                                        </Typography>
-                                        <Typography sx={{ fontSize: '0.75rem', color: '#64748b', lineHeight: 1.3 }}>
-                                          {meta.desc}
-                                        </Typography>
-                                      </PremiumCard>
-                                    );
-                                  })}
-                                </Box>
-                              </Box>
+                                  {/* Quick Clickable Chips for the Challenge Subcategories */}
+                                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, pt: 0.5 }}>
+                                    {subcategoriesInSelectedCategory.map(sub => {
+                                      const isSelected = selectedSubcategory === sub.id;
+                                      return (
+                                        <Chip
+                                          key={sub.id}
+                                          label={sub.title}
+                                          onClick={() => setSelectedSubcategory(sub.id)}
+                                          sx={{
+                                            bgcolor: isSelected ? activeFormatMeta.color : 'rgba(0,0,0,0.04)',
+                                            color: isSelected ? '#fff' : '#334155',
+                                            fontWeight: isSelected ? 800 : 600,
+                                            border: isSelected ? `1px solid ${activeFormatMeta.color}` : '1px solid rgba(0,0,0,0.06)',
+                                            cursor: 'pointer', transition: 'all 0.2s',
+                                            boxShadow: isSelected ? `0 4px 12px ${alpha(activeFormatMeta.color, 0.25)}` : 'none',
+                                            '&:hover': { bgcolor: isSelected ? activeFormatMeta.color : 'rgba(0,0,0,0.08)', transform: 'translateY(-1px)' }
+                                          }}
+                                        />
+                                      );
+                                    })}
+                                  </Box>
 
-                              {/* Done Button */}
-                              <Box sx={{ display: 'flex', justifyContent: 'flex-end', pt: 1 }}>
-                                <Button
-                                  variant="contained"
-                                  onClick={() => setIsBlueprintCardFlipped(false)}
-                                  startIcon={<CheckIcon />}
-                                  sx={{
-                                    bgcolor: activeFormatMeta.color, color: '#fff', fontWeight: 800, px: 4, py: 1.2, borderRadius: '14px',
-                                    boxShadow: `0 4px 16px ${alpha(activeFormatMeta.color, 0.3)}`,
-                                    '&:hover': { bgcolor: alpha(activeFormatMeta.color, 0.9) }
-                                  }}
-                                >
-                                  Lock In Blueprint Parameters
-                                </Button>
-                              </Box>
+                                  {/* Navigation */}
+                                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', pt: 2, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                                    <Button
+                                      variant="contained"
+                                      onClick={() => setBlueprintConfigStep(2)}
+                                      endIcon={<ArrowForwardIcon />}
+                                      sx={{
+                                        bgcolor: activeFormatMeta.color, color: '#fff', fontWeight: 800, px: 3.5, py: 1.2, borderRadius: '14px',
+                                        boxShadow: `0 4px 16px ${alpha(activeFormatMeta.color, 0.3)}`,
+                                        '&:hover': { bgcolor: alpha(activeFormatMeta.color, 0.9) }
+                                      }}
+                                    >
+                                      Continue to Format Lens →
+                                    </Button>
+                                  </Box>
+                                </Box>
+                              )}
+
+                              {/* ═══ STEP 2: FORMAT (THE 5 LENSES) ═══ */}
+                              {blueprintConfigStep === 2 && (
+                                <Box sx={{ animation: 'fadeIn 0.25s ease', display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                                  <Box>
+                                    <Typography sx={{ fontWeight: 800, fontSize: '0.95rem', color: '#0f172a' }}>
+                                      Choose Article Format (The Editorial Lens)
+                                    </Typography>
+                                    <Typography sx={{ color: '#64748b', fontSize: '0.8rem', mt: 0.25 }}>
+                                      Select the narrative structure and analytical lens for your brief.
+                                    </Typography>
+                                  </Box>
+
+                                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(5, 1fr)' }, gap: 1.5 }}>
+                                    {formatsList.map(fmt => {
+                                      const meta = FORMAT_CONFIG[fmt];
+                                      const isSelected = selectedFormat === fmt;
+                                      return (
+                                        <PremiumCard
+                                          key={fmt}
+                                          variant="interactive"
+                                          baseColor={meta.color}
+                                          onClick={() => setSelectedFormat(fmt)}
+                                          sx={{
+                                            p: 2, borderRadius: '18px',
+                                            bgcolor: isSelected ? alpha(meta.color, 0.12) : 'rgba(255,255,255,0.7)',
+                                            border: `2px solid ${isSelected ? meta.color : 'rgba(0,0,0,0.06)'}`,
+                                            display: 'flex', flexDirection: 'column', gap: 0.5,
+                                            boxShadow: isSelected ? `0 8px 24px ${alpha(meta.color, 0.25)}` : '0 4px 16px rgba(0,0,0,0.03)',
+                                          }}
+                                        >
+                                          <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: isSelected ? meta.color : '#0f172a' }}>
+                                            {meta.emoji} {meta.label}
+                                          </Typography>
+                                          <Typography sx={{ fontSize: '0.75rem', color: '#64748b', lineHeight: 1.3, display: { xs: 'none', md: 'block' } }}>
+                                            {meta.desc}
+                                          </Typography>
+                                        </PremiumCard>
+                                      );
+                                    })}
+                                  </Box>
+
+                                  {/* Navigation */}
+                                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: 2, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                                    <Button
+                                      variant="outlined"
+                                      onClick={() => setBlueprintConfigStep(1)}
+                                      startIcon={<ArrowBackIcon />}
+                                      sx={{ borderRadius: '14px', fontWeight: 700, px: 2.5, py: 1, borderColor: 'rgba(0,0,0,0.15)', color: '#475569' }}
+                                    >
+                                      Back
+                                    </Button>
+                                    <Button
+                                      variant="contained"
+                                      onClick={() => setBlueprintConfigStep(3)}
+                                      endIcon={<ArrowForwardIcon />}
+                                      sx={{
+                                        bgcolor: activeFormatMeta.color, color: '#fff', fontWeight: 800, px: 3.5, py: 1.2, borderRadius: '14px',
+                                        boxShadow: `0 4px 16px ${alpha(activeFormatMeta.color, 0.3)}`,
+                                        '&:hover': { bgcolor: alpha(activeFormatMeta.color, 0.9) }
+                                      }}
+                                    >
+                                      Continue to Era →
+                                    </Button>
+                                  </Box>
+                                </Box>
+                              )}
+
+                              {/* ═══ STEP 3: ERA (THE 3 TIMELINES) ═══ */}
+                              {blueprintConfigStep === 3 && (
+                                <Box sx={{ animation: 'fadeIn 0.25s ease', display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                                  <Box>
+                                    <Typography sx={{ fontWeight: 800, fontSize: '0.95rem', color: '#0f172a' }}>
+                                      Select Chronological Era (The Data & Time State)
+                                    </Typography>
+                                    <Typography sx={{ color: '#64748b', fontSize: '0.8rem', mt: 0.25 }}>
+                                      Anchor your analysis in the appropriate timeline horizon.
+                                    </Typography>
+                                  </Box>
+
+                                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 1.5 }}>
+                                    {erasList.map(era => {
+                                      const meta = ERA_CONFIG[era];
+                                      const isSelected = selectedEra === era;
+                                      return (
+                                        <PremiumCard
+                                          key={era}
+                                          variant="interactive"
+                                          baseColor={meta.color}
+                                          onClick={() => {
+                                            setSelectedEra(era);
+                                            setSelectedTimeframe(era as any);
+                                          }}
+                                          sx={{
+                                            p: 2.5, borderRadius: '18px',
+                                            bgcolor: isSelected ? alpha(meta.color, 0.12) : 'rgba(255,255,255,0.7)',
+                                            border: `2px solid ${isSelected ? meta.color : 'rgba(0,0,0,0.06)'}`,
+                                            display: 'flex', flexDirection: 'column', gap: 0.75,
+                                            boxShadow: isSelected ? `0 8px 24px ${alpha(meta.color, 0.25)}` : '0 4px 16px rgba(0,0,0,0.03)',
+                                          }}
+                                        >
+                                          <Typography sx={{ fontWeight: 800, fontSize: '1rem', color: isSelected ? meta.color : '#0f172a' }}>
+                                            {meta.emoji} {meta.label}
+                                          </Typography>
+                                          <Typography sx={{ fontSize: '0.8rem', color: '#64748b', lineHeight: 1.4 }}>
+                                            {meta.desc}
+                                          </Typography>
+                                        </PremiumCard>
+                                      );
+                                    })}
+                                  </Box>
+
+                                  {/* Navigation */}
+                                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: 2, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                                    <Button
+                                      variant="outlined"
+                                      onClick={() => setBlueprintConfigStep(2)}
+                                      startIcon={<ArrowBackIcon />}
+                                      sx={{ borderRadius: '14px', fontWeight: 700, px: 2.5, py: 1, borderColor: 'rgba(0,0,0,0.15)', color: '#475569' }}
+                                    >
+                                      Back to Format
+                                    </Button>
+                                    <Button
+                                      variant="contained"
+                                      onClick={() => setIsBlueprintCardFlipped(false)}
+                                      startIcon={<CheckIcon />}
+                                      sx={{
+                                        bgcolor: activeFormatMeta.color, color: '#fff', fontWeight: 800, px: 4, py: 1.2, borderRadius: '14px',
+                                        boxShadow: `0 4px 16px ${alpha(activeFormatMeta.color, 0.3)}`,
+                                        '&:hover': { bgcolor: alpha(activeFormatMeta.color, 0.9) }
+                                      }}
+                                    >
+                                      Lock In Blueprint Parameters ✓
+                                    </Button>
+                                  </Box>
+                                </Box>
+                              )}
 
                             </Box>
                           </Box>
