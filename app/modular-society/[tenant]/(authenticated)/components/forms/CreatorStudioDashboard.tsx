@@ -32,7 +32,7 @@ import { getISOWeek, startOfISOWeek, addDays, format, getYear } from 'date-fns';
 import { CATEGORY_MAP } from '@/lib/config/editorialMatrix';
 import { getDailyEditorialIntel, regenerateCustomAnglesAction, ArticleInsightItem } from '@/lib/actions/editorialMatrix';
 import { FORMAT_CONFIG, ERA_CONFIG, ArticleFormat, ArticleEra } from '@/lib/config/articleBlueprints';
-
+import { fetchGlobalLivestreamArticles, fetchGlobalJobs } from '@/lib/actions/learn';
 const ACCENT = "#f59e0b";
 const ACCENT_DARK = "#d97706";
 
@@ -120,24 +120,35 @@ export default function CreatorStudioDashboard({
 
   const activeOption = START_FRESH_OPTIONS.find(o => o.type === expandedStartType);
 
-  const handleOpenCreator = (type: string) => {
-    setExpandedStartType(type);
-    setMatrixStep(1);
-    setSelectedWeek(currentWeek);
-    setSelectedYear(currentYear);
-    const idx = (currentWeek - 1) % commoditiesList.length;
-    setSelectedCommodity(commoditiesList[idx]);
-    setLegacyCategory('');
-    setLegacySubcategory('');
-  };
+  // ═══════════════════════════════════════════════════════════
+  // LIVESTREAM 3-STEP WIZARD STATE
+  // ═══════════════════════════════════════════════════════════
+  const [lsStep, setLsStep] = useState<1 | 2 | 3>(1);
+  const [lsEngine, setLsEngine] = useState<'the_breakdown' | 'the_masterclass' | 'the_opportunity_desk' | null>(null);
+  const [lsAnchorArticleId, setLsAnchorArticleId] = useState<string | null>(null);
+  const [lsAnchorJobIds, setLsAnchorJobIds] = useState<string[]>([]);
+  
+  // Real DB state
+  const [lsArticles, setLsArticles] = useState<any[]>([]);
+  const [lsJobs, setLsJobs] = useState<any[]>([]);
+  const [lsLoadingDB, setLsLoadingDB] = useState(false);
 
-  const handleClose = () => {
-    setExpandedStartType(null);
-    setMatrixStep(1);
-    setLegacyCategory('');
-    setLegacySubcategory('');
-  };
-
+  useEffect(() => {
+    if (expandedStartType === 'livestream' && lsEngine) {
+      setLsLoadingDB(true);
+      Promise.all([
+        fetchGlobalLivestreamArticles(lsEngine),
+        fetchGlobalJobs()
+      ]).then(([articles, jobs]) => {
+        setLsArticles(articles);
+        setLsJobs(jobs);
+        setLsLoadingDB(false);
+      }).catch(err => {
+        console.error('Failed to fetch livestream data:', err);
+        setLsLoadingDB(false);
+      });
+    }
+  }, [expandedStartType, lsEngine]);
   // ───────────────────────────────────────────────────────────
   // FETCH INSIGHTS FOR STEP 3
   // ───────────────────────────────────────────────────────────
@@ -155,6 +166,32 @@ export default function CreatorStudioDashboard({
       setLoadingInsights(false);
     }
   }, []);
+
+  const handleOpenCreator = (type: string) => {
+    setExpandedStartType(type);
+    if (type === 'livestream') {
+      setLsStep(1);
+      setLsEngine(null);
+      setLsAnchorArticleId(null);
+      setLsAnchorJobIds([]);
+    } else {
+      setMatrixStep(1);
+      setSelectedWeek(currentWeek);
+      setSelectedYear(currentYear);
+      const idx = (currentWeek - 1) % commoditiesList.length;
+      setSelectedCommodity(commoditiesList[idx]);
+    }
+    setLegacyCategory('');
+    setLegacySubcategory('');
+  };
+
+  const handleClose = () => {
+    setExpandedStartType(null);
+    setMatrixStep(1);
+    setLsStep(1);
+    setLegacyCategory('');
+    setLegacySubcategory('');
+  };
 
   const handleSelectCommodityAndWeek = (week: number, commodity: string) => {
     setSelectedWeek(week);
@@ -385,9 +422,7 @@ export default function CreatorStudioDashboard({
               onClick={() => {
                 if (opt.readiness === 'coming_soon') return;
                 
-                if (opt.type === 'livestream') {
-                  onStartFresh('livestream');
-                } else if (!expandedStartType) {
+                if (!expandedStartType) {
                   handleOpenCreator(opt.type);
                 }
               }}
@@ -445,23 +480,165 @@ export default function CreatorStudioDashboard({
                 /* ============================================================== */
                 <Box sx={{ p: { xs: 2.5, sm: 4, md: 5 }, width: '100%', position: 'relative' }}>
                   
-                  {/* Top Bar */}
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Box sx={{ p: 1.2, borderRadius: '14px', bgcolor: 'rgba(255,255,255,0.15)', color: '#fff' }}>
-                        {opt.icon}
-                      </Box>
-                      <Box>
-                        <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                          Intelligence Briefing Studio
-                        </Typography>
-                        <Typography variant="h5" sx={{ fontWeight: 900, color: '#fff', mt: 0.2 }}>
-                          {matrixStep === 1 && "1. Choose Commodity & Week"}
-                          {matrixStep === 2 && "2. Select Daily Strategic Pillar"}
-                          {matrixStep === 3 && "3. Pick Your Intelligence Briefing Angle"}
-                        </Typography>
-                      </Box>
+                  {opt.type === 'livestream' ? (
+                    // ───────────────────────────────────────────────────────────
+                    // LIVESTREAM 3-STEP WIZARD
+                    // ───────────────────────────────────────────────────────────
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <Box sx={{ p: 1.2, borderRadius: '14px', bgcolor: 'rgba(255,255,255,0.15)', color: '#fff' }}>
+                              {opt.icon}
+                            </Box>
+                            <Box>
+                              <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                Livestream Broadcast Studio
+                              </Typography>
+                              <Typography variant="h5" sx={{ fontWeight: 900, color: '#fff', mt: 0.2 }}>
+                                {lsStep === 1 && "1. Select Community Engine"}
+                                {lsStep === 2 && "2. Anchor Your Article"}
+                                {lsStep === 3 && "3. Anchor Jobs & Finalize"}
+                              </Typography>
+                            </Box>
+                          </Box>
+                          
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 1 }}>
+                              {[1, 2, 3].map(stepNum => (
+                                <Box
+                                  key={stepNum}
+                                  onClick={() => stepNum < lsStep && setLsStep(stepNum as any)}
+                                  sx={{
+                                    width: 28, height: 28, borderRadius: '50%',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    bgcolor: lsStep === stepNum ? '#10b981' : lsStep > stepNum ? 'rgba(16,185,129,0.5)' : 'rgba(255,255,255,0.1)',
+                                    color: '#fff', fontSize: '0.75rem', fontWeight: 800,
+                                    cursor: stepNum < lsStep ? 'pointer' : 'default',
+                                    transition: 'all 0.2s'
+                                  }}
+                                >
+                                  {stepNum}
+                                </Box>
+                              ))}
+                            </Box>
+                            <Button onClick={(e) => { e.stopPropagation(); handleClose(); }} sx={{ minWidth: 0, p: 1, borderRadius: '12px', color: 'rgba(255,255,255,0.5)', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)', color: '#fff' } }}>✕</Button>
+                          </Box>
+                       </Box>
+
+                       {lsStep === 1 && (
+                         <Box>
+                           <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 500, mb: 3 }}>
+                             Select the strategic engine for your broadcast. This will smart-filter the available articles.
+                           </Typography>
+                           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' }, gap: 3 }}>
+                             {[
+                               { id: 'the_breakdown', icon: '📊', title: 'The Breakdown', desc: 'Edutainment & Storytelling', tags: ['Culture', 'Autopsies', 'Benchmarks'] },
+                               { id: 'the_masterclass', icon: '🧠', title: 'The Masterclass', desc: 'Tactical Upskilling', tags: ['Playbooks', 'Foresight Briefs'] },
+                               { id: 'the_opportunity_desk', icon: '💼', title: 'The Opportunity Desk', desc: 'Money & Execution', tags: ['Battlefield Reports', 'Memos'] },
+                             ].map(engine => (
+                               <Paper
+                                 key={engine.id}
+                                 onClick={() => { setLsEngine(engine.id as any); setLsStep(2); }}
+                                 sx={{
+                                   p: 3, borderRadius: '16px', bgcolor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)',
+                                   cursor: 'pointer', transition: 'all 0.2s',
+                                   '&:hover': { bgcolor: 'rgba(255,255,255,0.06)', transform: 'translateY(-4px)', borderColor: 'rgba(255,255,255,0.3)' }
+                                 }}
+                               >
+                                 <Typography sx={{ fontSize: '2.5rem', mb: 1 }}>{engine.icon}</Typography>
+                                 <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: '1.2rem', mb: 0.5 }}>{engine.title}</Typography>
+                                 <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 500, fontSize: '0.85rem', mb: 2 }}>{engine.desc}</Typography>
+                                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                                   {engine.tags.map(t => (
+                                     <Chip key={t} label={t} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.8)', fontSize: '0.7rem', fontWeight: 700 }} />
+                                   ))}
+                                 </Box>
+                               </Paper>
+                             ))}
+                           </Box>
+                         </Box>
+                       )}
+
+                       {lsStep === 2 && (
+                         <Box sx={{ minHeight: 300 }}>
+                           <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 500, mb: 3 }}>
+                             Select the Anchor Article. We've filtered the global database to only show formats compatible with <strong style={{ color: '#fff' }}>{lsEngine}</strong>.
+                           </Typography>
+                           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                             {/* GLOBAL ARTICLES FROM DB */}
+                             {lsLoadingDB ? (
+                               <Box sx={{ py: 4, display: 'flex', justifyContent: 'center' }}><CircularProgress size={32} sx={{ color: '#10b981' }} /></Box>
+                             ) : lsArticles.length === 0 ? (
+                               <Typography sx={{ color: 'rgba(255,255,255,0.5)', py: 2 }}>No suitable articles found for this engine in the database.</Typography>
+                             ) : lsArticles.map((art) => (
+                               <Paper key={art.id} onClick={() => { setLsAnchorArticleId(art.id); setLsStep(3); }} sx={{ p: 2.5, borderRadius: '12px', bgcolor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' }, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                 <Box>
+                                   <Typography sx={{ color: '#fff', fontWeight: 700, mb: 0.5 }}>{art.title}</Typography>
+                                   <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem' }}>Anchoring research by {art.authorName || 'FoodNerve Intelligence'}</Typography>
+                                 </Box>
+                                 <Chip label={art.subcategory || 'Article'} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.1)', color: '#fff', fontWeight: 700, textTransform: 'capitalize' }} />
+                               </Paper>
+                             ))}
+                           </Box>
+                         </Box>
+                       )}
+
+                       {lsStep === 3 && (
+                         <Box sx={{ minHeight: 300 }}>
+                           <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: '1.2rem', mb: 1 }}>Attach Anchor Jobs (Optional)</Typography>
+                           <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem', mb: 3 }}>
+                             Select open roles to display during your broadcast. Essential for the Talent Liquidity engine.
+                           </Typography>
+                           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2, mb: 4 }}>
+                             {lsLoadingDB ? (
+                               <Box sx={{ py: 4, display: 'flex', justifyContent: 'center', gridColumn: '1 / -1' }}><CircularProgress size={32} sx={{ color: '#10b981' }} /></Box>
+                             ) : lsJobs.length === 0 ? (
+                               <Typography sx={{ color: 'rgba(255,255,255,0.5)', gridColumn: '1 / -1' }}>No active jobs found in the global talent exchange.</Typography>
+                             ) : lsJobs.map(job => (
+                               <Paper 
+                                 key={job.id} 
+                                 onClick={() => setLsAnchorJobIds(prev => prev.includes(job.id) ? prev.filter(x => x !== job.id) : [...prev, job.id])} 
+                                 sx={{ p: 2, bgcolor: lsAnchorJobIds.includes(job.id) ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.05)', border: '1px solid', borderColor: lsAnchorJobIds.includes(job.id) ? '#10b981' : 'rgba(255,255,255,0.1)', cursor: 'pointer', borderRadius: '12px', '&:hover': { bgcolor: lsAnchorJobIds.includes(job.id) ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.08)' } }}
+                               >
+                                 <Typography sx={{ color: '#fff', fontWeight: 700 }}>{job.title}</Typography>
+                                 <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem' }}>{job.organization?.name || 'Company'}</Typography>
+                               </Paper>
+                             ))}
+                           </Box>
+                           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 4, pt: 3, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                             <Button
+                               variant="contained"
+                               onClick={() => onStartFresh('livestream', { lsEngine, lsAnchorArticleId, lsAnchorJobIds })}
+                               sx={{ bgcolor: '#fff', color: '#000', fontWeight: 800, py: 1.5, px: 4, borderRadius: '12px', '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' } }}
+                             >
+                               Generate Studio & Rundown
+                             </Button>
+                           </Box>
+                         </Box>
+                       )}
                     </Box>
+                  ) : (
+                    // ───────────────────────────────────────────────────────────
+                    // ARTICLE 3-STEP WIZARD (EXISTING)
+                    // ───────────────────────────────────────────────────────────
+                    <Box>
+                      {/* Top Bar */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <Box sx={{ p: 1.2, borderRadius: '14px', bgcolor: 'rgba(255,255,255,0.15)', color: '#fff' }}>
+                            {opt.icon}
+                          </Box>
+                          <Box>
+                            <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                              Intelligence Briefing Studio
+                            </Typography>
+                            <Typography variant="h5" sx={{ fontWeight: 900, color: '#fff', mt: 0.2 }}>
+                              {matrixStep === 1 && "1. Choose Commodity & Week"}
+                              {matrixStep === 2 && "2. Select Daily Strategic Pillar"}
+                              {matrixStep === 3 && "3. Pick Your Intelligence Briefing Angle"}
+                            </Typography>
+                          </Box>
+                        </Box>
 
                     {/* Step Progress & Minimize */}
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -777,6 +954,9 @@ export default function CreatorStudioDashboard({
                           })}
                         </Box>
                       )}
+                    </Box>
+                  )}
+                  
                     </Box>
                   )}
 

@@ -427,3 +427,65 @@ export async function fetchLivestreamContentPool(userId: string, orgId: string |
   
   return { articles, jobs };
 }
+
+export async function fetchGlobalLivestreamArticles(engine: 'the_breakdown' | 'the_masterclass' | 'the_opportunity_desk') {
+  let orConditions: any[] = [];
+  
+  if (engine === 'the_breakdown') {
+    orConditions = [
+      { subcategory: 'culture', timeframe: { in: ['present', 'future'] } },
+      { subcategory: 'brief', timeframe: 'past' },
+      { subcategory: 'comparison', timeframe: { in: ['past', 'present', 'future'] } }
+    ];
+  } else if (engine === 'the_masterclass') {
+    orConditions = [
+      { subcategory: 'playbook', timeframe: { in: ['present', 'future'] } },
+      { subcategory: 'brief', timeframe: 'future' }
+    ];
+  } else if (engine === 'the_opportunity_desk') {
+    orConditions = [
+      { subcategory: 'brief', timeframe: 'present' },
+      { subcategory: 'memo', timeframe: { in: ['present', 'future'] } }
+    ];
+  }
+
+  const articles = await prisma.learnContent.findMany({
+    where: {
+      type: 'article',
+      status: 'published',
+      OR: orConditions
+    },
+    select: {
+      id: true,
+      title: true,
+      authorName: true,
+      subcategory: true,
+      timeframe: true
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 20
+  });
+
+  return articles;
+}
+
+export async function fetchGlobalJobs() {
+  const jobs = await prisma.tradeListing.findMany({
+    where: {
+      category: 'jobs',
+      status: 'active'
+    },
+    select: {
+      id: true,
+      title: true,
+      organization: {
+        select: {
+          name: true
+        }
+      }
+    },
+    orderBy: { postedAt: 'desc' },
+    take: 20
+  });
+  return jobs;
+}
