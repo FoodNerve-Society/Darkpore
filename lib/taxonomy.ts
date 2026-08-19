@@ -44,15 +44,7 @@ export const CATEGORY_OPTIONS = Object.entries(TAXONOMY).map(([influencer, actor
   return [influencer, ...actors.map(actor => `  ↳ ${actor}`)];
 }).flat();
 
-export const JOB_FUNCTIONS = [
-  "Agronomy & Farm Operations",
-  "Engineering & Technology (Software, IoT, Mechanical)",
-  "Supply Chain & Logistics",
-  "Sales, Marketing & Communications",
-  "Finance & Accounting",
-  "Legal & Compliance",
-  "HR & Administration",
-  "Research & Development (R&D)",
-  "Quality Assurance & Food Safety",
-  "Executive & Management"
-];
+export const VALUE_CHAIN_ACTORS = Object.values(TAXONOMY).flat();
+
+export const JOB_FUNCTIONS = VALUE_CHAIN_ACTORS;
+

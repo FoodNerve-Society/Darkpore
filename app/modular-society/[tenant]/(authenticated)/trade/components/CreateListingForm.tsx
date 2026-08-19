@@ -58,7 +58,7 @@ import ImageIcon from "@mui/icons-material/Image";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { Country, State, City } from 'country-state-city';
-import { CATEGORY_OPTIONS, JOB_FUNCTIONS } from "@/lib/taxonomy";
+import { CATEGORY_OPTIONS, JOB_FUNCTIONS, VALUE_CHAIN_ACTORS } from "@/lib/taxonomy";
 import { commoditiesList } from "@/lib/cms/commodities";
 import { differenceInMonths, differenceInDays, addMonths } from 'date-fns';
 
@@ -1598,7 +1598,7 @@ export default function CreateListingForm({
                                 ) : (
                                   <>
                                     <Box sx={{ flex: 1 }}>
-                                      <PremiumAutocomplete colorTheme={color} label="Job Function / Dept *" options={JOB_FUNCTIONS} value={jobFunction} onChange={(e, val) => setJobFunction(val as string)} />
+                                      <PremiumAutocomplete colorTheme={color} label="Value Chain Actor / Function *" options={VALUE_CHAIN_ACTORS} value={jobFunction} onChange={(e, val) => setJobFunction(val as string)} />
                                     </Box>
                                     <Box sx={{ flex: 1 }}>
                                       <PremiumAutocomplete colorTheme={color} label="Commodity / Crop Focus (Optional)" options={commoditiesList} value={sector} onChange={(e, val) => setSector(val as string)} />

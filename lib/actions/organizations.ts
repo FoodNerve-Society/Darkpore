@@ -75,3 +75,30 @@ export async function getPublicOrganization(slug: string) {
         return { success: false, error: e.message };
     }
 }
+
+export async function searchExternalOrganizations(query: string, userId?: string, role?: string) {
+    try {
+        if (!query || !query.trim()) return [];
+        const orgs = await prisma.organization.findMany({
+            where: {
+                name: { contains: query.trim() }
+            },
+            select: {
+                id: true,
+                name: true,
+                logoUrl: true,
+                rank: true,
+                isPlatformOwner: true,
+                country: true,
+                state: true,
+                lga: true
+            },
+            take: 20
+        });
+        return orgs;
+    } catch (e: any) {
+        console.error('searchExternalOrganizations error:', e);
+        return [];
+    }
+}
+
