@@ -42,6 +42,7 @@ import {
   Share as ShareIcon,
   Image as ImageIcon,
   Build as BuildIcon,
+  Edit as EditIcon,
 } from '@mui/icons-material';
 import { keyframes } from '@mui/system';
 import {
@@ -1135,9 +1136,9 @@ export default function CreateLearnContentForm({
                               position: isBlueprintCardFlipped ? 'absolute' : 'relative',
                               width: '100%', top: 0,
                               borderRadius: '24px',
-                              border: `1px solid ${isBlueprintFilled ? alpha(activeFormatMeta.color, 0.8) : alpha(activeFormatMeta.color, 0.18)}`,
+                              border: `1.5px solid ${isBlueprintFilled ? alpha(activeFormatMeta.color, 0.8) : alpha(activeFormatMeta.color, 0.18)}`,
                               background: isBlueprintFilled 
-                                ? `linear-gradient(135deg, ${activeFormatMeta.color} 0%, ${alpha(activeFormatMeta.color, 0.85)} 100%)`
+                                ? `linear-gradient(135deg, ${activeFormatMeta.color} 0%, ${alpha(activeFormatMeta.color, 0.88)} 100%)`
                                 : `linear-gradient(to right, ${alpha(activeFormatMeta.color, 0.2)} ${blueprintFillPercent}%, rgba(255,255,255,0.95) ${blueprintFillPercent}%, rgba(248,250,252,0.9) 100%)`,
                               backdropFilter: 'blur(16px)',
                               boxShadow: isBlueprintFilled ? `0 16px 40px ${alpha(activeFormatMeta.color, 0.35)}` : `0 8px 32px rgba(0,0,0,0.04)`,
@@ -1155,7 +1156,7 @@ export default function CreateLearnContentForm({
                             <Typography sx={{ 
                               position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', 
                               fontWeight: 900, fontSize: { xs: '1.8rem', md: '3.2rem' }, 
-                              color: isBlueprintFilled ? 'rgba(255,255,255,0.14)' : alpha(activeFormatMeta.color, 0.08), pointerEvents: 'none', letterSpacing: '0.05em',
+                              color: isBlueprintFilled ? 'rgba(255,255,255,0.12)' : alpha(activeFormatMeta.color, 0.08), pointerEvents: 'none', letterSpacing: '0.05em',
                               textTransform: 'uppercase', whiteSpace: 'nowrap', zIndex: 0
                             }}>
                               {isBlueprintFilled ? 'BLUEPRINT CONFIGURED' : `${blueprintFilledCount} / 3 CONFIGURED`}
@@ -1168,64 +1169,68 @@ export default function CreateLearnContentForm({
                                 background: `linear-gradient(180deg, ${alpha(activeFormatMeta.color, 0.6)} 0%, ${alpha(activeFormatMeta.color, 0.15)} 100%)`,
                               }} />
 
-                              <Box sx={{ p: { xs: 2.5, md: 3.5 }, flex: 1, display: 'flex', alignItems: 'center', gap: 2.5, flexWrap: 'wrap' }}>
-                                {/* Number/Icon badge */}
-                                <Box sx={{
-                                  width: 52, height: 52, borderRadius: '16px', flexShrink: 0,
-                                  bgcolor: isBlueprintFilled ? 'rgba(255,255,255,0.22)' : alpha(activeFormatMeta.color, 0.1),
-                                  border: isBlueprintFilled ? '1px solid rgba(255,255,255,0.35)' : `1px solid ${alpha(activeFormatMeta.color, 0.25)}`,
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  boxShadow: isBlueprintFilled ? '0 4px 16px rgba(0,0,0,0.1)' : 'none',
-                                }}>
-                                  <SparkleIcon sx={{ fontSize: 26, color: isBlueprintFilled ? '#fff' : activeFormatMeta.color }} />
-                                </Box>
+                              <Box sx={{ p: { xs: 2.5, md: 3.5 }, flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                {/* Top Row: Icon + Title + Tap to Edit Badge */}
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                    <Box sx={{
+                                      width: 48, height: 48, borderRadius: '14px', flexShrink: 0,
+                                      bgcolor: isBlueprintFilled ? 'rgba(255,255,255,0.22)' : alpha(activeFormatMeta.color, 0.1),
+                                      border: isBlueprintFilled ? '1px solid rgba(255,255,255,0.35)' : `1px solid ${alpha(activeFormatMeta.color, 0.25)}`,
+                                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                      boxShadow: isBlueprintFilled ? '0 4px 16px rgba(0,0,0,0.1)' : 'none',
+                                    }}>
+                                      <SparkleIcon sx={{ fontSize: 24, color: isBlueprintFilled ? '#fff' : activeFormatMeta.color }} />
+                                    </Box>
 
-                                {/* Main Info */}
-                                <Box sx={{ flex: 1, minWidth: 220 }}>
-                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5, flexWrap: 'wrap' }}>
-                                    <Typography sx={{ fontWeight: 900, color: isBlueprintFilled ? '#fff' : '#0f172a', fontSize: { xs: '1.15rem', md: '1.3rem' }, letterSpacing: '-0.01em' }}>
-                                      {isBlueprintFilled ? `${activeFormatMeta.emoji} ${activeFormatMeta.label} · ${activeEraMeta.label}` : 'Editorial Blueprint Setup'}
-                                    </Typography>
-                                    <Chip
-                                      label={isBlueprintFilled ? 'Ready to Load' : `${blueprintFilledCount}/3 Selected`}
-                                      size="small"
-                                      sx={{
-                                        height: 24, fontSize: '0.75rem', fontWeight: 800,
-                                        bgcolor: isBlueprintFilled ? 'rgba(255,255,255,0.25)' : alpha(activeFormatMeta.color, 0.12),
-                                        color: isBlueprintFilled ? '#fff' : activeFormatMeta.color,
-                                        border: `1px solid ${isBlueprintFilled ? 'rgba(255,255,255,0.35)' : alpha(activeFormatMeta.color, 0.25)}`
-                                      }}
-                                    />
+                                    <Box sx={{ flex: 1, minWidth: 220 }}>
+                                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flexWrap: 'wrap' }}>
+                                        <Typography sx={{ fontWeight: 900, color: isBlueprintFilled ? '#fff' : '#0f172a', fontSize: { xs: '1.15rem', md: '1.25rem' }, letterSpacing: '-0.01em', lineHeight: 1.2 }}>
+                                          {isBlueprintFilled ? `${activeFormatMeta.emoji} ${activeFormatMeta.label} · ${activeEraMeta.label} Era` : 'Editorial Blueprint Setup'}
+                                        </Typography>
+
+                                        {isBlueprintFilled && selectedSubObj?.title && (
+                                          <Chip
+                                            icon={<span style={{ fontSize: '0.9rem', marginLeft: '6px' }}>🎯</span>}
+                                            label={<span><strong>Focus:</strong> {selectedSubObj.title}</span>}
+                                            size="small"
+                                            sx={{
+                                              height: 24, fontSize: '0.74rem', fontWeight: 600,
+                                              bgcolor: 'rgba(255,255,255,0.22)', color: '#fff',
+                                              border: '1px solid rgba(255,255,255,0.35)',
+                                              '& .MuiChip-label': { px: 1 }
+                                            }}
+                                          />
+                                        )}
+                                      </Box>
+
+                                      <Typography sx={{ color: isBlueprintFilled ? 'rgba(255,255,255,0.92)' : '#64748b', fontSize: '0.86rem', fontWeight: 500, mt: 0.5 }}>
+                                        {isBlueprintFilled 
+                                          ? (MATRIX_DESCRIPTIONS[`${selectedFormat}_${selectedEra}`] || activeFormatMeta.desc)
+                                          : 'Tap this block to configure subcategory focus, editorial lens & timeline era'}
+                                      </Typography>
+                                    </Box>
                                   </Box>
 
-                                  <Typography sx={{ color: isBlueprintFilled ? 'rgba(255,255,255,0.92)' : '#64748b', fontSize: '0.95rem', fontWeight: 500 }}>
-                                    {isBlueprintFilled 
-                                      ? `Targeting: ${selectedSubObj?.title || 'Selected Subcategory'} (${currentChallenge?.title}) — tap to tune parameters`
-                                      : 'Tap this block to configure subcategory focus, editorial lens & timeline era'}
-                                  </Typography>
-                                </Box>
-
-                                {/* Action Button */}
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }} onClick={(e) => e.stopPropagation()}>
-                                  <Button
-                                    variant="contained"
-                                    onClick={() => setIsBlueprintCardFlipped(true)}
-                                    sx={{
-                                      bgcolor: isBlueprintFilled ? 'rgba(255,255,255,0.2)' : activeFormatMeta.color,
-                                      color: '#fff',
-                                      fontWeight: 800,
-                                      borderRadius: '14px',
-                                      px: 2.5,
-                                      py: 1,
-                                      fontSize: '0.85rem',
-                                      border: isBlueprintFilled ? '1px solid rgba(255,255,255,0.3)' : 'none',
-                                      '&:hover': {
-                                        bgcolor: isBlueprintFilled ? 'rgba(255,255,255,0.3)' : alpha(activeFormatMeta.color, 0.9),
-                                      }
-                                    }}
-                                  >
-                                    {isBlueprintFilled ? 'Tune Settings' : 'Configure Blueprint'}
-                                  </Button>
+                                  {/* Tap to Edit Indicator */}
+                                  <Box sx={{
+                                    display: 'flex', alignItems: 'center', gap: 0.75,
+                                    px: 1.75, py: 0.75, borderRadius: '12px',
+                                    bgcolor: isBlueprintFilled ? 'rgba(255,255,255,0.2)' : alpha(activeFormatMeta.color, 0.1),
+                                    border: `1px solid ${isBlueprintFilled ? 'rgba(255,255,255,0.35)' : alpha(activeFormatMeta.color, 0.25)}`,
+                                    color: isBlueprintFilled ? '#fff' : activeFormatMeta.color,
+                                    backdropFilter: 'blur(8px)',
+                                    transition: 'all 0.2s',
+                                    '&:hover': {
+                                      bgcolor: isBlueprintFilled ? 'rgba(255,255,255,0.3)' : alpha(activeFormatMeta.color, 0.18),
+                                      transform: 'scale(1.02)'
+                                    }
+                                  }}>
+                                    <EditIcon sx={{ fontSize: 16 }} />
+                                    <Typography sx={{ fontSize: '0.8rem', fontWeight: 800 }}>
+                                      {isBlueprintFilled ? 'Tap to Edit' : 'Tap to Configure'}
+                                    </Typography>
+                                  </Box>
                                 </Box>
                               </Box>
                             </Box>
