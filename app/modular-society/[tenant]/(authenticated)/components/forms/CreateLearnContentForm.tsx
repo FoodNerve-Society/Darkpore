@@ -291,6 +291,7 @@ import {
   getBlueprint, 
   FORMAT_CONFIG, 
   ERA_CONFIG, 
+  MATRIX_DESCRIPTIONS,
   ArticleFormat, 
   ArticleEra, 
   SopBlock, 
@@ -1438,16 +1439,16 @@ export default function CreateLearnContentForm({
                                 </Box>
                               )}
 
-                              {/* ═══ STEP 2: THE 15 EDITORIAL LENSES MATRIX ═══ */}
+                              {/* ═══ STEP 2: THE 15 EDITORIAL LENSES MATRIX (SEPARATED BY ERA) ═══ */}
                               {blueprintConfigStep === 2 && (
-                                <Box sx={{ animation: 'fadeIn 0.25s ease', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                <Box sx={{ animation: 'fadeIn 0.25s ease', display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
                                     <Box>
                                       <Typography sx={{ fontWeight: 900, fontSize: '1.05rem', color: '#0f172a' }}>
                                         Select from the 15 Editorial Matrix Lenses
                                       </Typography>
                                       <Typography sx={{ color: '#64748b', fontSize: '0.82rem', mt: 0.25 }}>
-                                        Targeting: <strong style={{ color: '#0f172a' }}>{selectedSubObj?.title || 'Selected Subcategory'}</strong>. Choose a lens below.
+                                        Targeting: <strong style={{ color: '#0f172a' }}>{selectedSubObj?.title || 'Selected Subcategory'}</strong>. Lenses are organized across the 3 timeline horizons.
                                       </Typography>
                                     </Box>
                                     {isBlueprintFilled && (
@@ -1459,12 +1460,12 @@ export default function CreateLearnContentForm({
                                     )}
                                   </Box>
 
-                                  {/* The 15 Combinations Grid (5 Formats x 3 Eras) */}
+                                  {/* Scrollable Container with Era-Separated Sections */}
                                   <Box sx={{
-                                    display: 'grid',
-                                    gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
-                                    gap: 1.5,
-                                    maxHeight: '490px',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: 3,
+                                    maxHeight: '520px',
                                     overflowY: 'auto',
                                     pr: 1,
                                     '&::-webkit-scrollbar': { width: '6px' },
@@ -1473,85 +1474,133 @@ export default function CreateLearnContentForm({
                                   }}>
                                     {erasList.map(era => {
                                       const eraMeta = ERA_CONFIG[era];
-                                      return formatsList.map(fmt => {
-                                        const fmtMeta = FORMAT_CONFIG[fmt];
-                                        const isSelected = selectedFormat === fmt && selectedEra === era;
-                                        const blueprint = getBlueprint(fmt, era);
+                                      const isEraSelected = selectedEra === era;
 
-                                        return (
-                                          <Box
-                                            key={`${fmt}-${era}`}
-                                            onClick={() => {
-                                              setSelectedFormat(fmt);
-                                              setSelectedEra(era);
-                                              setSelectedTimeframe(era as any);
-                                            }}
-                                            sx={{
-                                              p: 2,
-                                              borderRadius: '18px',
-                                              bgcolor: isSelected ? alpha(fmtMeta.color, 0.08) : '#ffffff',
-                                              border: `2px solid ${isSelected ? fmtMeta.color : 'rgba(0,0,0,0.06)'}`,
-                                              boxShadow: isSelected ? `0 8px 24px ${alpha(fmtMeta.color, 0.25)}` : '0 2px 10px rgba(0,0,0,0.02)',
-                                              display: 'flex',
-                                              flexDirection: 'column',
-                                              gap: 1,
-                                              cursor: 'pointer',
-                                              position: 'relative',
-                                              transition: 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                                              '&:hover': {
-                                                transform: 'translateY(-2px)',
-                                                borderColor: isSelected ? fmtMeta.color : alpha(fmtMeta.color, 0.4),
-                                                boxShadow: `0 8px 20px ${alpha(fmtMeta.color, 0.15)}`
-                                              }
-                                            }}
-                                          >
-                                            {/* Header: Format + Era Badge + Radio */}
-                                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
-                                              <Typography sx={{ fontWeight: 800, fontSize: '0.92rem', color: isSelected ? fmtMeta.color : '#0f172a', display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                                                <span>{fmtMeta.emoji}</span> {fmtMeta.label}
-                                              </Typography>
-
-                                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                                                <Chip
-                                                  label={`${eraMeta.emoji} ${eraMeta.label}`}
-                                                  size="small"
-                                                  sx={{
-                                                    height: 20, fontSize: '0.68rem', fontWeight: 800,
-                                                    bgcolor: isSelected ? alpha(fmtMeta.color, 0.15) : alpha(eraMeta.color, 0.1),
-                                                    color: isSelected ? fmtMeta.color : eraMeta.color,
-                                                    border: `1px solid ${isSelected ? alpha(fmtMeta.color, 0.3) : alpha(eraMeta.color, 0.2)}`
-                                                  }}
-                                                />
-                                                <Box sx={{
-                                                  width: 16, height: 16, borderRadius: '50%',
-                                                  bgcolor: isSelected ? fmtMeta.color : 'transparent',
-                                                  border: isSelected ? 'none' : '2px solid #cbd5e1',
-                                                  display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                                }}>
-                                                  {isSelected && (
-                                                    <CheckIcon sx={{ fontSize: 12, color: '#fff', fontWeight: 900 }} />
-                                                  )}
-                                                </Box>
+                                      return (
+                                        <Box
+                                          key={era}
+                                          sx={{
+                                            p: { xs: 2, md: 2.5 },
+                                            borderRadius: '22px',
+                                            bgcolor: isEraSelected ? alpha(eraMeta.color, 0.03) : 'rgba(0,0,0,0.015)',
+                                            border: `1.5px solid ${isEraSelected ? alpha(eraMeta.color, 0.25) : 'rgba(0,0,0,0.05)'}`,
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            gap: 1.75,
+                                            transition: 'all 0.2s ease'
+                                          }}
+                                        >
+                                          {/* Era Group Header Bar */}
+                                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                              <Box sx={{
+                                                width: 28, height: 28, borderRadius: '8px',
+                                                bgcolor: alpha(eraMeta.color, 0.12), color: eraMeta.color,
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                fontSize: '1rem', fontWeight: 900
+                                              }}>
+                                                {eraMeta.emoji}
                                               </Box>
-                                            </Box>
-
-                                            {/* Description */}
-                                            <Typography sx={{ fontSize: '0.74rem', color: '#64748b', lineHeight: 1.35 }}>
-                                              {fmtMeta.desc}
-                                            </Typography>
-
-                                            {/* Footer: Block count */}
-                                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 'auto', pt: 0.75, borderTop: '1px dashed rgba(0,0,0,0.06)' }}>
-                                              <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: isSelected ? fmtMeta.color : '#94a3b8' }}>
-                                                {blueprint.length} SOP Blocks
+                                              <Typography sx={{ fontWeight: 900, fontSize: '0.98rem', color: '#0f172a' }}>
+                                                {eraMeta.label} Horizon
                                               </Typography>
-                                              <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: isSelected ? fmtMeta.color : '#94a3b8' }}>
-                                                {isSelected ? 'Active Lens ✓' : 'Tap to select'}
+                                              <Typography sx={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 500, display: { xs: 'none', sm: 'inline' } }}>
+                                                • {eraMeta.desc}
                                               </Typography>
                                             </Box>
+
+                                            {isEraSelected && (
+                                              <Chip
+                                                label="Active Horizon"
+                                                size="small"
+                                                sx={{
+                                                  height: 20, fontSize: '0.68rem', fontWeight: 800,
+                                                  bgcolor: alpha(eraMeta.color, 0.15), color: eraMeta.color,
+                                                  border: `1px solid ${alpha(eraMeta.color, 0.3)}`
+                                                }}
+                                              />
+                                            )}
                                           </Box>
-                                        );
-                                      });
+
+                                          {/* Grid of the 5 Formats for this specific Era */}
+                                          <Box sx={{
+                                            display: 'grid',
+                                            gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)', lg: 'repeat(5, 1fr)' },
+                                            gap: 1.5
+                                          }}>
+                                            {formatsList.map(fmt => {
+                                              const fmtMeta = FORMAT_CONFIG[fmt];
+                                              const isSelected = selectedFormat === fmt && selectedEra === era;
+                                              const blueprint = getBlueprint(fmt, era);
+
+                                              return (
+                                                <Box
+                                                  key={`${fmt}-${era}`}
+                                                  onClick={() => {
+                                                    setSelectedFormat(fmt);
+                                                    setSelectedEra(era);
+                                                    setSelectedTimeframe(era as any);
+                                                  }}
+                                                  sx={{
+                                                    p: 1.75,
+                                                    borderRadius: '16px',
+                                                    bgcolor: isSelected ? alpha(fmtMeta.color, 0.08) : '#ffffff',
+                                                    border: `2px solid ${isSelected ? fmtMeta.color : 'rgba(0,0,0,0.06)'}`,
+                                                    boxShadow: isSelected ? `0 8px 24px ${alpha(fmtMeta.color, 0.25)}` : '0 2px 8px rgba(0,0,0,0.02)',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    gap: 1,
+                                                    cursor: 'pointer',
+                                                    position: 'relative',
+                                                    transition: 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                                                    '&:hover': {
+                                                      transform: 'translateY(-2px)',
+                                                      borderColor: isSelected ? fmtMeta.color : alpha(fmtMeta.color, 0.4),
+                                                      boxShadow: `0 8px 18px ${alpha(fmtMeta.color, 0.15)}`
+                                                    }
+                                                  }}
+                                                >
+                                                  {/* Header: Format + Radio */}
+                                                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 0.5 }}>
+                                                    <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: isSelected ? fmtMeta.color : '#0f172a', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                      <span>{fmtMeta.emoji}</span> {fmtMeta.label}
+                                                    </Typography>
+
+                                                    <Box sx={{
+                                                      width: 16, height: 16, borderRadius: '50%',
+                                                      bgcolor: isSelected ? fmtMeta.color : 'transparent',
+                                                      border: isSelected ? 'none' : '2px solid #cbd5e1',
+                                                      display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                                    }}>
+                                                      {isSelected && (
+                                                        <CheckIcon sx={{ fontSize: 12, color: '#fff', fontWeight: 900 }} />
+                                                      )}
+                                                    </Box>
+                                                  </Box>
+
+                                                  {/* Merged Description */}
+                                                  <Typography sx={{
+                                                    fontSize: '0.73rem', color: '#64748b', lineHeight: 1.35,
+                                                    display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden'
+                                                  }}>
+                                                    {MATRIX_DESCRIPTIONS[`${fmt}_${era}`] || fmtMeta.desc}
+                                                  </Typography>
+
+                                                  {/* Footer: Block count */}
+                                                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 'auto', pt: 0.75, borderTop: '1px dashed rgba(0,0,0,0.06)' }}>
+                                                    <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: isSelected ? fmtMeta.color : '#94a3b8' }}>
+                                                      {blueprint.length} Blocks
+                                                    </Typography>
+                                                    <Typography sx={{ fontSize: '0.66rem', fontWeight: 800, color: isSelected ? fmtMeta.color : '#94a3b8' }}>
+                                                      {isSelected ? 'Active ✓' : 'Select'}
+                                                    </Typography>
+                                                  </Box>
+                                                </Box>
+                                              );
+                                            })}
+                                          </Box>
+                                        </Box>
+                                      );
                                     })}
                                   </Box>
                                 </Box>

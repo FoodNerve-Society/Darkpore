@@ -22,35 +22,35 @@ export interface SopBlock {
 
 export const FORMAT_CONFIG: Record<ArticleFormat, { label: string; icon: string; emoji: string; color: string; desc: string }> = {
   brief: {
-    label: 'Market Brief',
+    label: 'Brief',
     icon: 'Article',
     emoji: '📑',
     color: '#3b82f6',
     desc: 'Systemic market focus. What is breaking or working, and why?',
   },
   memo: {
-    label: 'Investment Memo',
+    label: 'Memo',
     icon: 'TrendingUp',
     emoji: '💼',
     color: '#10b981',
     desc: 'Capital allocation focus. Deal-flow, TAM, IRR, and M&A buyouts.',
   },
   playbook: {
-    label: 'Operator Playbook',
+    label: 'Playbook',
     icon: 'Build',
     emoji: '🛠️',
     color: '#f59e0b',
     desc: 'Tactical operator focus. Step-by-step SOPs, teardowns, and survival hacks.',
   },
   comparison: {
-    label: 'Head-to-Head Comparison',
+    label: 'Comparison',
     icon: 'CompareArrows',
     emoji: '⚖️',
     color: '#8b5cf6',
     desc: 'Head-to-head benchmark across technologies, locations, or key actors.',
   },
   culture: {
-    label: 'Cultural & Human Ground',
+    label: 'Culture',
     icon: 'People',
     emoji: '🌾',
     color: '#ec4899',
@@ -60,23 +60,45 @@ export const FORMAT_CONFIG: Record<ArticleFormat, { label: string; icon: string;
 
 export const ERA_CONFIG: Record<ArticleEra, { label: string; emoji: string; color: string; desc: string }> = {
   past: {
-    label: 'The Autopsy',
-    emoji: '🔴',
+    label: 'Past',
+    emoji: '⏳',
     color: '#ef4444',
-    desc: 'Historical autopsies. Why initiatives failed or succeeded prior to 2026.',
+    desc: 'Historical autopsy and legacy analysis.',
   },
   present: {
-    label: 'The Battlefield Report',
-    emoji: '🟢',
+    label: 'Present',
+    emoji: '⚡',
     color: '#10b981',
-    desc: 'The reality today. How operators are surviving current market shocks.',
+    desc: 'Real-time market dynamics and current reality.',
   },
   future: {
-    label: 'The 2030 Horizon',
-    emoji: '🔵',
+    label: 'Future',
+    emoji: '🔮',
     color: '#3b82f6',
-    desc: 'The forward thesis. Emerging technologies, R&D, and 2030 scale.',
+    desc: 'Forward-looking roadmap and 2030 predictions.',
   },
+};
+
+export const MATRIX_DESCRIPTIONS: Record<`${ArticleFormat}_${ArticleEra}`, string> = {
+  brief_past: 'A retrospective brief on what happened in the past, analyzing root causes and historical precedent.',
+  brief_present: 'A real-time market brief breaking down current supply-demand dynamics, pricing spreads, and immediate bottlenecks.',
+  brief_future: 'A forward-looking market brief forecasting future commodity cycles, policy shifts, and supply disruption.',
+
+  memo_past: 'An executive investment memo conducting an autopsy on prior capital allocation, deal structures, and lost returns.',
+  memo_present: 'An actionable investment memo delivering live thesis, unit economics, and capital deployment opportunities today.',
+  memo_future: 'A strategic investment memo modeling 2030 venture horizons, TAM expansion, and long-term risk exposure.',
+
+  playbook_past: 'A forensic operator playbook examining past execution mistakes, stranded equipment, and hard-learned SOP lessons.',
+  playbook_present: 'A step-by-step operator playbook for immediate execution, margin defense, and practical field survival.',
+  playbook_future: 'A transformative operator playbook for building future-ready operations, automation, and next-gen protocols.',
+
+  comparison_past: 'A head-to-head comparison studying historical models that failed versus those that endured.',
+  comparison_present: 'A side-by-side comparison benchmarking active market players, competing logistics corridors, and cost structures.',
+  comparison_future: 'A comparative scenario analysis evaluating competing emerging technologies, policies, and roadmap trajectories.',
+
+  culture_past: 'A cultural deep-dive examining traditional agrarian norms, generational practices, and historical community dynamics.',
+  culture_present: 'A sociological analysis exploring the reality of labor psychology, urban migration, and informal trader habits today.',
+  culture_future: 'A cultural vision mapping emerging demographics, youth adoption of agtech, and future labor paradigms.',
 };
 
 // ═══════════════════════════════════════════════════════════════
