@@ -2921,6 +2921,7 @@ export default function CreateLearnContentForm({
                                     articleSubcategory={subcategoriesInSelectedCategory.find(s => s.id === selectedSubcategory)?.title || selectedSubcategory}
                                     colorTheme={color}
                                     userId={profile?.uid}
+                                    userOrgs={profile?.organizations || []}
                                     onSelectJob={(jobData) => {
                                       setBlocks(blocks.map(blk => blk.id === b.id ? {
                                         ...blk,

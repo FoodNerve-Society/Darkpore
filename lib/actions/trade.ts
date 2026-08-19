@@ -17,6 +17,7 @@ export interface CreateTradeListingPayload {
   status?: string;
   metadata?: any;
   organizationId?: string | null;
+  commodity?: string;
   expiresAt?: string | Date | null;
 }
 
@@ -141,7 +142,7 @@ export async function createTradeListing(data: CreateTradeListingPayload) {
       priceOrAsk: data.priceOrAsk || '0',
       location: data.location,
       lga: data.lga || '',
-      commodity: metadata.sector || undefined,
+      commodity: data.commodity || metadata.sector || undefined,
       postedById: data.postedById,
       imageUrl: data.imageUrl,
       nervePointsCost: data.nervePointsCost || 0,

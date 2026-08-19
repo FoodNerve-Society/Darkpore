@@ -16,28 +16,37 @@ import {
   Modal,
   ToggleButtonGroup,
   ToggleButton,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
+  Tooltip,
 } from '@mui/material';
 import {
   Search as SearchIcon,
   Work as WorkIcon,
   VolunteerActivism as VolunteerIcon,
-  MonetizationOn as DealIcon,
   CheckCircle as CheckCircleIcon,
   Close as CloseIcon,
   SwapHoriz as SwapIcon,
   Edit as EditIcon,
   Add as AddIcon,
   OpenInNew as OpenInNewIcon,
-  FilterList as FilterListIcon,
+  Business as BusinessIcon,
+  LocationOn as LocationIcon,
+  MailOutlined as MailIcon,
+  Link as LinkIcon,
+  AttachMoney as MoneyIcon,
+  CalendarToday as CalendarIcon,
 } from '@mui/icons-material';
 import { getEcosystemEmbedOptions, createTradeListing } from '@/lib/actions/trade';
+import { JOB_FUNCTIONS } from '@/lib/taxonomy';
 import PremiumTextField from '@/components/PremiumTextField';
 import PremiumAutocomplete from '@/components/PremiumAutocomplete';
 
 export interface EcosystemEmbedItem {
   id: string;
   title: string;
-  category: string; // 'jobs' | 'volunteer' | 'deal'
+  category: string; // 'jobs' | 'volunteer'
   commodity?: string;
   organization: string;
   organizationLogo?: string;
@@ -69,6 +78,7 @@ export interface EcosystemJobPickerProps {
   articleSubcategory?: string;
   colorTheme?: string;
   userId?: string;
+  userOrgs?: Array<{ id: string; name: string; logoUrl?: string; rank?: number }>;
   onSelectJob: (jobData: {
     title: string;
     organization: string;
@@ -86,170 +96,214 @@ export interface EcosystemJobPickerProps {
 export const EcosystemJobPicker: React.FC<EcosystemJobPickerProps> = ({
   blockId,
   content,
-  articleCommodity,
-  articleCategory,
-  articleSubcategory,
+  articleCommodity = '',
+  articleCategory = '',
+  articleSubcategory = '',
   colorTheme = '#6366f1',
   userId,
+  userOrgs = [],
   onSelectJob,
   onUpdateField,
   onClear,
 }) => {
   const [jobs, setJobs] = useState<EcosystemEmbedItem[]>([]);
-  const [deals, setDeals] = useState<EcosystemEmbedItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  
-  // Top Ecosystem Type: 'jobs' | 'volunteer' | 'deals'
-  const [activeTab, setActiveTab] = useState<'jobs' | 'volunteer' | 'deals'>(
-    content.embedType === 'deal' ? 'deals' : 'jobs'
+
+  // Top Tabs: Paid Jobs vs Volunteering
+  const [activeCategory, setActiveCategory] = useState<'jobs' | 'volunteer'>('jobs');
+
+  // The 4 Distinct Taxonomy Filter Pills: 'commodity' | 'category' | 'subcategory' | 'all'
+  const [activeFilterPill, setActiveFilterPill] = useState<'commodity' | 'category' | 'subcategory' | 'all'>(
+    articleSubcategory ? 'subcategory' : articleCommodity ? 'commodity' : 'all'
   );
 
-  // Taxonomy Filter: 'match' (matches article commodity/cat/subcat) or 'all'
-  const [taxonomyFilter, setTaxonomyFilter] = useState<'match' | 'all'>('match');
   const [isSearching, setIsSearching] = useState(!content.title);
   const [isCustomMode, setIsCustomMode] = useState(false);
   const [showQuickCreateModal, setShowQuickCreateModal] = useState(false);
 
-  // Quick Create Form State
+  // ── Quick Create Modal State ──
+  const [hiringEntityType, setHiringEntityType] = useState<'my-org' | 'external'>(
+    userOrgs.length > 0 ? 'my-org' : 'external'
+  );
+  const [selectedMyOrgId, setSelectedMyOrgId] = useState<string>(userOrgs[0]?.id || '');
+  const [externalOrgName, setExternalOrgName] = useState('');
   const [newJobTitle, setNewJobTitle] = useState('');
-  const [newJobOrg, setNewJobOrg] = useState('');
-  const [newJobLocation, setNewJobLocation] = useState(articleSubcategory ? `${articleSubcategory} Region` : 'Nigeria');
+  const [newJobFunction, setNewJobFunction] = useState(JOB_FUNCTIONS[0] || 'Agronomy & Farm Operations');
+  const [newJobCommodity, setNewJobCommodity] = useState(articleCommodity || '');
+  const [newJobLocation, setNewJobLocation] = useState('Nigeria');
   const [newJobWorkModel, setNewJobWorkModel] = useState('hybrid');
-  const [newJobSalary, setNewJobSalary] = useState('');
+  const [newJobCurrency, setNewJobCurrency] = useState('NGN');
+  const [newJobMinSalary, setNewJobMinSalary] = useState('');
+  const [newJobMaxSalary, setNewJobMaxSalary] = useState('');
+  const [newJobNpAmount, setNewJobNpAmount] = useState('');
+  const [newJobDeadline, setNewJobDeadline] = useState('');
+  const [newJobAppMethod, setNewJobAppMethod] = useState<'email' | 'external'>('email');
+  const [newJobAppEmail, setNewJobAppEmail] = useState('');
+  const [newJobAppUrl, setNewJobAppUrl] = useState('');
   const [isCreatingJob, setIsCreatingJob] = useState(false);
 
-  // Fetch jobs and deals on mount
+  // Load jobs from TradeListing
   useEffect(() => {
     let isMounted = true;
-    const fetchOptions = async () => {
+    const fetchJobs = async () => {
       setLoading(true);
       try {
         const res = await getEcosystemEmbedOptions();
         if (res.success && isMounted) {
           setJobs(res.jobs || []);
-          setDeals(res.deals || []);
         }
       } catch (err) {
-        console.error('Failed to load ecosystem options for picker:', err);
+        console.error('Failed to load ecosystem jobs:', err);
       } finally {
         if (isMounted) setLoading(false);
       }
     };
-    fetchOptions();
+    fetchJobs();
     return () => {
       isMounted = false;
     };
   }, []);
 
-  // Filter listings based on activeTab, taxonomy, and search query
-  const displayedItems = useMemo(() => {
-    // 1. Pick pool by tab
-    let pool: EcosystemEmbedItem[] = [];
-    if (activeTab === 'deals') {
-      pool = deals;
-    } else if (activeTab === 'volunteer') {
-      pool = jobs.filter((j) => j.category === 'volunteer');
-    } else {
-      pool = jobs.filter((j) => j.category === 'jobs');
-    }
+  // Filter listings based on category, filter pill, and search
+  const filteredJobs = useMemo(() => {
+    // 1. Filter by Paid Jobs vs Volunteering
+    let pool = jobs.filter((j) => j.category === activeCategory);
 
     // 2. Search query filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       pool = pool.filter(
-        (item) =>
-          item.title.toLowerCase().includes(q) ||
-          item.organization.toLowerCase().includes(q) ||
-          item.location.toLowerCase().includes(q) ||
-          (item.commodity && item.commodity.toLowerCase().includes(q)) ||
-          (item.jobFunction && item.jobFunction.toLowerCase().includes(q))
+        (j) =>
+          j.title.toLowerCase().includes(q) ||
+          j.organization.toLowerCase().includes(q) ||
+          j.location.toLowerCase().includes(q) ||
+          (j.commodity && j.commodity.toLowerCase().includes(q)) ||
+          (j.jobFunction && j.jobFunction.toLowerCase().includes(q))
       );
     }
 
-    // 3. Taxonomy Match filter (Commodity, Category, Subcategory)
-    if (taxonomyFilter === 'match') {
-      const commSlug = articleCommodity?.toLowerCase() || '';
-      const catSlug = articleCategory?.toLowerCase() || '';
-      const subSlug = articleSubcategory?.toLowerCase() || '';
+    // 3. The 4 Discrete Filter Pills
+    const commSlug = articleCommodity.toLowerCase().trim();
+    const catSlug = articleCategory.toLowerCase().trim();
+    const subSlug = articleSubcategory.toLowerCase().trim();
 
-      const matched = pool.filter((item) => {
-        // Match commodity
-        const matchComm = commSlug && item.commodity && (item.commodity.toLowerCase().includes(commSlug) || commSlug.includes(item.commodity.toLowerCase()));
-        // Match subcategory
-        const matchSub = subSlug && item.subcategories?.some((s) => s.toLowerCase().includes(subSlug) || subSlug.includes(s.toLowerCase()));
-        // Match category/challenge
-        const matchCat = catSlug && item.challenges?.some((c) => c.toLowerCase().includes(catSlug) || catSlug.includes(c.toLowerCase()));
-        // Match in title
-        const matchTitle = (subSlug && item.title.toLowerCase().includes(subSlug)) || (commSlug && item.title.toLowerCase().includes(commSlug));
-
-        return matchComm || matchSub || matchCat || matchTitle;
+    if (activeFilterPill === 'subcategory' && subSlug) {
+      const matched = pool.filter((j) => {
+        const inSub = j.subcategories?.some((s) => s.toLowerCase().includes(subSlug) || subSlug.includes(s.toLowerCase()));
+        const inTitle = j.title.toLowerCase().includes(subSlug);
+        return inSub || inTitle;
       });
+      return matched;
+    }
 
-      // If matches exist, return them; otherwise return full pool so the author is never blocked
-      if (matched.length > 0) {
-        return matched;
-      }
+    if (activeFilterPill === 'category' && catSlug) {
+      const matched = pool.filter((j) => {
+        const inCat = j.challenges?.some((c) => c.toLowerCase().includes(catSlug) || catSlug.includes(c.toLowerCase()));
+        const inTitle = j.title.toLowerCase().includes(catSlug);
+        return inCat || inTitle;
+      });
+      return matched;
+    }
+
+    if (activeFilterPill === 'commodity' && commSlug) {
+      const matched = pool.filter((j) => {
+        const inComm = j.commodity && (j.commodity.toLowerCase().includes(commSlug) || commSlug.includes(j.commodity.toLowerCase()));
+        const inTitle = j.title.toLowerCase().includes(commSlug);
+        return inComm || inTitle;
+      });
+      return matched;
     }
 
     return pool;
-  }, [jobs, deals, activeTab, taxonomyFilter, searchQuery, articleCommodity, articleCategory, articleSubcategory]);
+  }, [jobs, activeCategory, activeFilterPill, searchQuery, articleCommodity, articleCategory, articleSubcategory]);
 
-  const handleSelect = (item: EcosystemEmbedItem) => {
-    const isDeal = item.category === 'deal';
+  const handleSelectJob = (job: EcosystemEmbedItem) => {
     onSelectJob({
-      title: item.title,
-      organization: item.organization,
-      location: isDeal ? item.location : `${item.location} (${item.workModel})`,
-      compensationOrTarget: item.compensationText || 'Competitive Allocation',
-      ctaText: isDeal ? 'View Deal Room' : item.category === 'volunteer' ? 'Volunteer for Role' : 'Apply for Position',
-      ctaLink: item.url,
-      jobId: item.id,
-      embedType: isDeal ? 'deal' : 'job',
+      title: job.title,
+      organization: job.organization,
+      location: `${job.location} (${job.workModel})`,
+      compensationOrTarget: job.compensationText || 'Competitive Compensation',
+      ctaText: job.category === 'volunteer' ? 'Volunteer for Role' : 'Apply for Position',
+      ctaLink: job.url || `/careers/${job.id}`,
+      jobId: job.id,
+      embedType: 'job',
     });
     setIsSearching(false);
   };
 
-  const handleQuickCreateJob = async () => {
-    if (!newJobTitle.trim() || !newJobOrg.trim()) return;
+  const handleQuickCreate = async () => {
+    if (!newJobTitle.trim()) return;
+
+    let orgName = '';
+    let orgId: string | undefined = undefined;
+
+    if (hiringEntityType === 'my-org') {
+      const myOrg = userOrgs.find((o) => o.id === selectedMyOrgId) || userOrgs[0];
+      orgName = myOrg?.name || 'My Organization';
+      orgId = myOrg?.id;
+    } else {
+      orgName = externalOrgName.trim() || 'Hiring Organization';
+    }
+
     setIsCreatingJob(true);
     try {
+      const isVol = activeCategory === 'volunteer';
+      const formattedSalary = isVol
+        ? `${newJobNpAmount || '500'} NP`
+        : newJobMinSalary && newJobMaxSalary
+        ? `${newJobCurrency} ${Number(newJobMinSalary).toLocaleString()} - ${newJobCurrency} ${Number(newJobMaxSalary).toLocaleString()}`
+        : `${newJobCurrency} ${newJobMinSalary || 'Competitive'}`;
+
       const payload: any = {
-        category: activeTab === 'volunteer' ? 'volunteer' : 'jobs',
+        category: activeCategory,
         title: newJobTitle.trim(),
-        description: `Active listing for ${newJobTitle.trim()} at ${newJobOrg.trim()}. Relevant to ${articleCommodity || ''} ${articleSubcategory || ''}.`,
-        priceOrAsk: newJobSalary.trim() || 'Competitive',
+        description: `Active role for ${newJobTitle.trim()} at ${orgName}. Focus: ${newJobCommodity || articleCommodity || 'Agricultural Innovation'}.`,
+        priceOrAsk: formattedSalary,
         location: newJobLocation.trim(),
-        lga: '',
+        commodity: newJobCommodity.trim() || articleCommodity || undefined,
         status: 'active',
         postedById: userId || 'system',
+        organizationId: orgId,
+        expiresAt: newJobDeadline ? new Date(newJobDeadline).toISOString() : undefined,
         metadata: {
-          externalEntityName: newJobOrg.trim(),
-          isExternal: true,
+          isExternal: hiringEntityType === 'external',
+          externalEntityName: hiringEntityType === 'external' ? orgName : undefined,
           workModel: newJobWorkModel,
-          sector: articleCommodity || undefined,
-          organizationChallenges: articleCategory ? [articleCategory] : [],
-          organizationSubcategories: articleSubcategory ? [articleSubcategory] : [],
+          jobFunction: newJobFunction,
+          sector: newJobCommodity.trim() || articleCommodity || undefined,
+          jobChallenges: articleCategory ? [articleCategory] : [],
+          jobSubcategories: articleSubcategory ? [articleSubcategory] : [],
+          currency: newJobCurrency,
+          minSalary: newJobMinSalary ? Number(newJobMinSalary) : undefined,
+          maxSalary: newJobMaxSalary ? Number(newJobMaxSalary) : undefined,
+          npAmount: isVol && newJobNpAmount ? Number(newJobNpAmount) : undefined,
+          applicationMethod: newJobAppMethod,
+          applicationEmail: newJobAppMethod === 'email' ? newJobAppEmail.trim() : undefined,
+          applicationUrl: newJobAppMethod === 'external' ? newJobAppUrl.trim() : undefined,
+          externalButtonText: 'Apply for Position',
         },
       };
 
       const res = await createTradeListing(payload);
       const createdId = res.listing?.id || 'new-job';
+
       const newItem: EcosystemEmbedItem = {
         id: createdId,
         title: newJobTitle.trim(),
-        category: activeTab === 'volunteer' ? 'volunteer' : 'jobs',
-        commodity: articleCommodity || '',
-        organization: newJobOrg.trim(),
+        category: activeCategory,
+        commodity: newJobCommodity.trim() || articleCommodity,
+        organization: orgName,
         location: newJobLocation.trim(),
         workModel: newJobWorkModel,
-        compensationText: newJobSalary.trim() || 'Competitive',
+        jobFunction: newJobFunction,
+        compensationText: formattedSalary,
         url: `/careers/${createdId}`,
         subcategories: articleSubcategory ? [articleSubcategory] : [],
       };
 
       setJobs((prev) => [newItem, ...prev]);
-      handleSelect(newItem);
+      handleSelectJob(newItem);
       setShowQuickCreateModal(false);
     } catch (err) {
       console.error('Error quick creating job:', err);
@@ -258,12 +312,12 @@ export const EcosystemJobPicker: React.FC<EcosystemJobPickerProps> = ({
     }
   };
 
-  const hasAttachedItem = !!content.title;
+  const hasAttachedJob = !!content.title;
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-      {/* ── ATTACHED ITEM PREVIEW CARD ── */}
-      {hasAttachedItem && !isSearching ? (
+      {/* ── ATTACHED JOB PREVIEW CARD ── */}
+      {hasAttachedJob && !isSearching ? (
         <Paper
           elevation={0}
           sx={{
@@ -281,7 +335,7 @@ export const EcosystemJobPicker: React.FC<EcosystemJobPickerProps> = ({
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <Chip
                 icon={<CheckCircleIcon sx={{ fontSize: '16px !important', color: `${colorTheme} !important` }} />}
-                label={content.embedType === 'deal' ? 'Attached Deal Room SPV' : 'Attached Live Job'}
+                label="Attached Live Role"
                 size="small"
                 sx={{
                   bgcolor: alpha(colorTheme, 0.12),
@@ -313,7 +367,7 @@ export const EcosystemJobPicker: React.FC<EcosystemJobPickerProps> = ({
                   '&:hover': { borderColor: colorTheme, bgcolor: alpha(colorTheme, 0.05) },
                 }}
               >
-                Change Listing
+                Change Role
               </Button>
               <Button
                 size="small"
@@ -403,13 +457,13 @@ export const EcosystemJobPicker: React.FC<EcosystemJobPickerProps> = ({
       ) : (
         /* ── SEARCH & ATTACH BROWSER ── */
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {/* Top Tabs: Jobs, Volunteering, Deal Room */}
+          {/* Top Tabs: Paid Jobs vs Volunteering */}
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
             <ToggleButtonGroup
-              value={activeTab}
+              value={activeCategory}
               exclusive
               onChange={(e, val) => {
-                if (val) setActiveTab(val);
+                if (val) setActiveCategory(val);
               }}
               size="small"
               sx={{
@@ -419,7 +473,7 @@ export const EcosystemJobPicker: React.FC<EcosystemJobPickerProps> = ({
                 '& .MuiToggleButton-root': {
                   border: 'none',
                   borderRadius: '10px !important',
-                  px: 2,
+                  px: 2.5,
                   py: 0.75,
                   fontWeight: 800,
                   fontSize: '0.8rem',
@@ -439,11 +493,7 @@ export const EcosystemJobPicker: React.FC<EcosystemJobPickerProps> = ({
               </ToggleButton>
               <ToggleButton value="volunteer">
                 <VolunteerIcon sx={{ fontSize: 16, mr: 0.75 }} />
-                Volunteering
-              </ToggleButton>
-              <ToggleButton value="deals">
-                <DealIcon sx={{ fontSize: 16, mr: 0.75 }} />
-                Deal Room & SPVs
+                Volunteering (NP)
               </ToggleButton>
             </ToggleButtonGroup>
 
@@ -463,19 +513,15 @@ export const EcosystemJobPicker: React.FC<EcosystemJobPickerProps> = ({
                 '&:hover': { bgcolor: alpha(colorTheme, 0.9) },
               }}
             >
-              {activeTab === 'deals' ? 'Create Deal Note' : 'Post New Job'}
+              Post New Role & Attach
             </Button>
           </Box>
 
-          {/* Search Bar */}
+          {/* Search Input */}
           <TextField
             fullWidth
             size="small"
-            placeholder={
-              activeTab === 'deals'
-                ? 'Search active deal room campaigns or SPVs...'
-                : 'Search active roles by title, company, commodity, or city...'
-            }
+            placeholder="Search active roles by title, department, company, or state..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             slotProps={{
@@ -505,46 +551,77 @@ export const EcosystemJobPicker: React.FC<EcosystemJobPickerProps> = ({
             }}
           />
 
-          {/* Streamlined Taxonomy Filters: Match Article vs Browse All */}
+          {/* ── THE 4 DISCRETE FILTER PILLS ── */}
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+            {articleCommodity && (
+              <Chip
+                label={`🌾 Commodity: ${articleCommodity}`}
+                size="small"
+                onClick={() => setActiveFilterPill('commodity')}
+                sx={{
+                  fontWeight: 800,
+                  fontSize: '0.75rem',
+                  bgcolor: activeFilterPill === 'commodity' ? alpha(colorTheme, 0.15) : '#f1f5f9',
+                  color: activeFilterPill === 'commodity' ? colorTheme : '#475569',
+                  border: activeFilterPill === 'commodity' ? `1px solid ${colorTheme}` : '1px solid transparent',
+                  cursor: 'pointer',
+                }}
+              />
+            )}
+
+            {articleCategory && (
+              <Chip
+                label={`🏷️ Category: ${articleCategory}`}
+                size="small"
+                onClick={() => setActiveFilterPill('category')}
+                sx={{
+                  fontWeight: 800,
+                  fontSize: '0.75rem',
+                  bgcolor: activeFilterPill === 'category' ? alpha(colorTheme, 0.15) : '#f1f5f9',
+                  color: activeFilterPill === 'category' ? colorTheme : '#475569',
+                  border: activeFilterPill === 'category' ? `1px solid ${colorTheme}` : '1px solid transparent',
+                  cursor: 'pointer',
+                }}
+              />
+            )}
+
+            {articleSubcategory && (
+              <Chip
+                label={`⚡ Subcategory: ${articleSubcategory}`}
+                size="small"
+                onClick={() => setActiveFilterPill('subcategory')}
+                sx={{
+                  fontWeight: 800,
+                  fontSize: '0.75rem',
+                  bgcolor: activeFilterPill === 'subcategory' ? alpha(colorTheme, 0.15) : '#f1f5f9',
+                  color: activeFilterPill === 'subcategory' ? colorTheme : '#475569',
+                  border: activeFilterPill === 'subcategory' ? `1px solid ${colorTheme}` : '1px solid transparent',
+                  cursor: 'pointer',
+                }}
+              />
+            )}
+
             <Chip
-              label={
-                articleSubcategory || articleCommodity
-                  ? `🎯 Match Article (${[articleCommodity, articleSubcategory].filter(Boolean).join(' · ')})`
-                  : '🎯 Match Article Context'
-              }
+              label="🌐 All Roles"
               size="small"
-              onClick={() => setTaxonomyFilter('match')}
-              sx={{
-                fontWeight: 800,
-                fontSize: '0.75rem',
-                bgcolor: taxonomyFilter === 'match' ? alpha(colorTheme, 0.15) : '#f1f5f9',
-                color: taxonomyFilter === 'match' ? colorTheme : '#475569',
-                border: taxonomyFilter === 'match' ? `1px solid ${colorTheme}` : '1px solid transparent',
-                cursor: 'pointer',
-              }}
-            />
-            <Chip
-              label="🌐 Browse All Available"
-              size="small"
-              onClick={() => setTaxonomyFilter('all')}
+              onClick={() => setActiveFilterPill('all')}
               sx={{
                 fontWeight: 700,
                 fontSize: '0.75rem',
-                bgcolor: taxonomyFilter === 'all' ? alpha(colorTheme, 0.15) : '#f1f5f9',
-                color: taxonomyFilter === 'all' ? colorTheme : '#475569',
-                border: taxonomyFilter === 'all' ? `1px solid ${colorTheme}` : '1px solid transparent',
+                bgcolor: activeFilterPill === 'all' ? alpha(colorTheme, 0.15) : '#f1f5f9',
+                color: activeFilterPill === 'all' ? colorTheme : '#475569',
+                border: activeFilterPill === 'all' ? `1px solid ${colorTheme}` : '1px solid transparent',
                 cursor: 'pointer',
               }}
             />
           </Box>
 
-          {/* Listings List Feed */}
+          {/* Job Feed */}
           {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
               <CircularProgress size={28} sx={{ color: colorTheme }} />
             </Box>
-          ) : displayedItems.length === 0 ? (
+          ) : filteredJobs.length === 0 ? (
             <Paper
               elevation={0}
               sx={{
@@ -556,10 +633,10 @@ export const EcosystemJobPicker: React.FC<EcosystemJobPickerProps> = ({
               }}
             >
               <Typography sx={{ fontWeight: 700, color: '#64748b', fontSize: '0.9rem', mb: 1 }}>
-                No listings found matching this filter
+                No active roles found matching this filter
               </Typography>
               <Typography sx={{ fontSize: '0.8rem', color: '#94a3b8', mb: 2 }}>
-                Switch to &ldquo;Browse All&rdquo; or post a new opportunity directly.
+                Switch to &ldquo;All Roles&rdquo; or post a new role for your organization.
               </Typography>
               <Button
                 size="small"
@@ -574,7 +651,7 @@ export const EcosystemJobPicker: React.FC<EcosystemJobPickerProps> = ({
                   color: colorTheme,
                 }}
               >
-                Post New Listing
+                Post New Role
               </Button>
             </Paper>
           ) : (
@@ -588,9 +665,9 @@ export const EcosystemJobPicker: React.FC<EcosystemJobPickerProps> = ({
                 pr: 0.5,
               }}
             >
-              {displayedItems.map((item) => (
+              {filteredJobs.map((job) => (
                 <Paper
-                  key={item.id}
+                  key={job.id}
                   elevation={0}
                   sx={{
                     p: 2,
@@ -611,7 +688,7 @@ export const EcosystemJobPicker: React.FC<EcosystemJobPickerProps> = ({
                 >
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75, flex: 1, minWidth: 0 }}>
                     <Avatar
-                      src={item.organizationLogo}
+                      src={job.organizationLogo}
                       sx={{
                         width: 40,
                         height: 40,
@@ -622,7 +699,7 @@ export const EcosystemJobPicker: React.FC<EcosystemJobPickerProps> = ({
                         borderRadius: '10px',
                       }}
                     >
-                      {item.organization ? item.organization.charAt(0).toUpperCase() : 'E'}
+                      {job.organization ? job.organization.charAt(0).toUpperCase() : 'J'}
                     </Avatar>
 
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, minWidth: 0 }}>
@@ -636,24 +713,24 @@ export const EcosystemJobPicker: React.FC<EcosystemJobPickerProps> = ({
                           textOverflow: 'ellipsis',
                         }}
                       >
-                        {item.title}
+                        {job.title}
                       </Typography>
 
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
                         <Typography sx={{ fontWeight: 600, fontSize: '0.8rem', color: '#475569' }}>
-                          {item.organization}
+                          {job.organization}
                         </Typography>
-                        {item.commodity && (
+                        {job.commodity && (
                           <Typography sx={{ fontSize: '0.78rem', color: '#64748b' }}>
-                            🌾 {item.commodity}
+                            🌾 {job.commodity}
                           </Typography>
                         )}
                         <Typography sx={{ fontSize: '0.78rem', color: '#64748b' }}>
-                          📍 {item.location}
+                          📍 {job.location} {job.workModel && `(${job.workModel})`}
                         </Typography>
-                        {item.compensationText && (
+                        {job.compensationText && (
                           <Typography sx={{ fontWeight: 700, fontSize: '0.78rem', color: colorTheme }}>
-                            💰 {item.compensationText}
+                            💰 {job.compensationText}
                           </Typography>
                         )}
                       </Box>
@@ -663,7 +740,7 @@ export const EcosystemJobPicker: React.FC<EcosystemJobPickerProps> = ({
                   <Button
                     size="small"
                     variant="contained"
-                    onClick={() => handleSelect(item)}
+                    onClick={() => handleSelectJob(job)}
                     sx={{
                       bgcolor: colorTheme,
                       color: '#fff',
@@ -684,28 +761,28 @@ export const EcosystemJobPicker: React.FC<EcosystemJobPickerProps> = ({
             </Box>
           )}
 
-          {/* Manual Entry Fallback */}
+          {/* Manual Entry Override */}
           <Box sx={{ pt: 1, display: 'flex', justifyContent: 'center' }}>
             <Button
               size="small"
               variant="text"
               onClick={() => {
                 onSelectJob({
-                  title: 'New Ecosystem Opportunity',
-                  organization: 'Ecosystem Entity',
+                  title: 'New Position',
+                  organization: 'Ecosystem Organization',
                   location: 'Pan-African',
                   compensationOrTarget: 'Competitive',
-                  ctaText: activeTab === 'deals' ? 'Access Data Room' : 'Apply Now',
-                  ctaLink: activeTab === 'deals' ? '/support' : '/careers',
+                  ctaText: 'Apply Now',
+                  ctaLink: '/careers',
                   jobId: 'manual',
-                  embedType: activeTab === 'deals' ? 'deal' : 'job',
+                  embedType: 'job',
                 });
                 setIsSearching(false);
                 setIsCustomMode(true);
               }}
               sx={{ color: '#64748b', fontSize: '0.78rem', textTransform: 'none', fontWeight: 600 }}
             >
-              Or type custom deal / role details manually ✏️
+              Or type custom role details manually ✏️
             </Button>
           </Box>
         </Box>
@@ -721,7 +798,9 @@ export const EcosystemJobPicker: React.FC<EcosystemJobPickerProps> = ({
           elevation={4}
           sx={{
             width: '100%',
-            maxWidth: 520,
+            maxWidth: 580,
+            maxHeight: '90vh',
+            overflowY: 'auto',
             p: 3.5,
             borderRadius: '24px',
             bgcolor: '#ffffff',
@@ -732,9 +811,9 @@ export const EcosystemJobPicker: React.FC<EcosystemJobPickerProps> = ({
         >
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              {activeTab === 'deals' ? <DealIcon sx={{ color: colorTheme }} /> : <WorkIcon sx={{ color: colorTheme }} />}
-              <Typography sx={{ fontWeight: 900, fontSize: '1.15rem', color: '#0f172a' }}>
-                {activeTab === 'deals' ? 'Create Deal Room Opportunity' : 'Post New Job & Attach'}
+              <WorkIcon sx={{ color: colorTheme }} />
+              <Typography sx={{ fontWeight: 900, fontSize: '1.2rem', color: '#0f172a' }}>
+                Post New Job & Attach
               </Typography>
             </Box>
             <IconButton size="small" onClick={() => setShowQuickCreateModal(false)}>
@@ -742,32 +821,103 @@ export const EcosystemJobPicker: React.FC<EcosystemJobPickerProps> = ({
             </IconButton>
           </Box>
 
-          <Typography sx={{ fontSize: '0.85rem', color: '#64748b' }}>
-            This opportunity will be published to the ecosystem database and instantly attached to this article.
+          <Typography sx={{ fontSize: '0.85rem', color: '#64748b', lineHeight: 1.5 }}>
+            This opportunity will be published directly to the FoodNerve Careers database and instantly locked into this article.
           </Typography>
 
+          {/* Hiring Entity Selector */}
+          <Box sx={{ p: 2, borderRadius: '16px', bgcolor: '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            <Typography sx={{ fontWeight: 800, fontSize: '0.8rem', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              1. Hiring Entity
+            </Typography>
+            <RadioGroup
+              row
+              value={hiringEntityType}
+              onChange={(e) => setHiringEntityType(e.target.value as any)}
+            >
+              <FormControlLabel
+                value="my-org"
+                control={<Radio size="small" sx={{ color: colorTheme, '&.Mui-checked': { color: colorTheme } }} />}
+                label={<Typography sx={{ fontSize: '0.85rem', fontWeight: 700 }}>My Organization</Typography>}
+              />
+              <FormControlLabel
+                value="external"
+                control={<Radio size="small" sx={{ color: colorTheme, '&.Mui-checked': { color: colorTheme } }} />}
+                label={<Typography sx={{ fontSize: '0.85rem', fontWeight: 700 }}>External Company</Typography>}
+              />
+            </RadioGroup>
+
+            {hiringEntityType === 'my-org' ? (
+              userOrgs.length > 0 ? (
+                <PremiumAutocomplete
+                  label="Select Your Organization"
+                  value={userOrgs.find((o) => o.id === selectedMyOrgId)?.name || userOrgs[0].name}
+                  options={userOrgs.map((o) => o.name)}
+                  onChange={(e, val) => {
+                    const matched = userOrgs.find((o) => o.name === val);
+                    if (matched) setSelectedMyOrgId(matched.id);
+                  }}
+                  colorTheme={colorTheme}
+                />
+              ) : (
+                <Typography sx={{ fontSize: '0.8rem', color: '#ef4444', fontWeight: 600 }}>
+                  You do not have a claimed organization yet. Switch to &ldquo;External Company&rdquo; or register your organization in settings.
+                </Typography>
+              )
+            ) : (
+              <PremiumTextField
+                colorTheme={colorTheme}
+                label="External Company / Entity Name *"
+                placeholder="e.g. Olam Agri, AFEX, Flour Mills"
+                value={externalOrgName}
+                onChange={(e) => setExternalOrgName(e.target.value)}
+              />
+            )}
+          </Box>
+
+          {/* Role Mandate & Function */}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Typography sx={{ fontWeight: 800, fontSize: '0.8rem', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              2. Role & Department
+            </Typography>
+
             <PremiumTextField
               colorTheme={colorTheme}
-              label={activeTab === 'deals' ? 'Deal / SPV Title' : 'Job Role Title'}
-              placeholder={activeTab === 'deals' ? 'e.g. ₦500M Off-Taker SPV: Middle Belt Maize' : 'e.g. Cold-Chain Operations Lead'}
+              label="Job Role Title *"
+              placeholder="e.g. Senior Cold-Chain Agronomist"
               value={newJobTitle}
               onChange={(e) => setNewJobTitle(e.target.value)}
             />
 
-            <PremiumTextField
-              colorTheme={colorTheme}
-              label="Hiring / Issuing Entity"
-              placeholder="e.g. AgroNerve Logistics Ltd"
-              value={newJobOrg}
-              onChange={(e) => setNewJobOrg(e.target.value)}
-            />
-
-            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+              <PremiumAutocomplete
+                label="Department / Function *"
+                value={newJobFunction}
+                options={JOB_FUNCTIONS}
+                onChange={(e, val: any) => setNewJobFunction(val || JOB_FUNCTIONS[0])}
+                colorTheme={colorTheme}
+              />
               <PremiumTextField
                 colorTheme={colorTheme}
-                label="Location (State / Region)"
-                placeholder="e.g. Kano & Kaduna"
+                label="Commodity / Value Chain"
+                placeholder="e.g. Soybeans, Maize, Cassava"
+                value={newJobCommodity}
+                onChange={(e) => setNewJobCommodity(e.target.value)}
+              />
+            </Box>
+          </Box>
+
+          {/* Geography & Work Model */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Typography sx={{ fontWeight: 800, fontSize: '0.8rem', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              3. Location & Work Setup
+            </Typography>
+
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+              <PremiumTextField
+                colorTheme={colorTheme}
+                label="Location (State / City) *"
+                placeholder="e.g. Kano & Kaduna State"
                 value={newJobLocation}
                 onChange={(e) => setNewJobLocation(e.target.value)}
               />
@@ -779,16 +929,102 @@ export const EcosystemJobPicker: React.FC<EcosystemJobPickerProps> = ({
                 colorTheme={colorTheme}
               />
             </Box>
+          </Box>
+
+          {/* Terms & Compensation */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Typography sx={{ fontWeight: 800, fontSize: '0.8rem', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              4. Compensation & Deadline
+            </Typography>
+
+            {activeCategory === 'volunteer' ? (
+              <PremiumTextField
+                colorTheme={colorTheme}
+                label="NervePoints (NP) Reward"
+                placeholder="e.g. 500"
+                value={newJobNpAmount}
+                onChange={(e) => setNewJobNpAmount(e.target.value)}
+              />
+            ) : (
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 2fr 2fr' }, gap: 2 }}>
+                <PremiumAutocomplete
+                  label="Currency"
+                  value={newJobCurrency}
+                  options={['NGN', 'USD', 'EUR', 'GBP', 'KES', 'ZAR', 'GHS']}
+                  onChange={(e, val: any) => setNewJobCurrency(val || 'NGN')}
+                  colorTheme={colorTheme}
+                />
+                <PremiumTextField
+                  colorTheme={colorTheme}
+                  label="Min Salary"
+                  placeholder="e.g. 350000"
+                  value={newJobMinSalary}
+                  onChange={(e) => setNewJobMinSalary(e.target.value)}
+                />
+                <PremiumTextField
+                  colorTheme={colorTheme}
+                  label="Max Salary"
+                  placeholder="e.g. 500000"
+                  value={newJobMaxSalary}
+                  onChange={(e) => setNewJobMaxSalary(e.target.value)}
+                />
+              </Box>
+            )}
 
             <PremiumTextField
               colorTheme={colorTheme}
-              label={activeTab === 'deals' ? 'Fund Target / IRR' : 'Salary Range / Compensation'}
-              placeholder={activeTab === 'deals' ? 'e.g. 24% Net IRR · ₦500M Facility' : 'e.g. ₦12M - ₦18M / yr'}
-              value={newJobSalary}
-              onChange={(e) => setNewJobSalary(e.target.value)}
+              label="Application Deadline (Optional)"
+              type="date"
+              value={newJobDeadline}
+              onChange={(e) => setNewJobDeadline(e.target.value)}
+              slotProps={{ inputLabel: { shrink: true } }}
             />
           </Box>
 
+          {/* Application Method */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Typography sx={{ fontWeight: 800, fontSize: '0.8rem', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              5. How Candidates Apply
+            </Typography>
+
+            <RadioGroup
+              row
+              value={newJobAppMethod}
+              onChange={(e) => setNewJobAppMethod(e.target.value as any)}
+            >
+              <FormControlLabel
+                value="email"
+                control={<Radio size="small" sx={{ color: colorTheme, '&.Mui-checked': { color: colorTheme } }} />}
+                label={<Typography sx={{ fontSize: '0.85rem', fontWeight: 700 }}>Direct Email</Typography>}
+              />
+              <FormControlLabel
+                value="external"
+                control={<Radio size="small" sx={{ color: colorTheme, '&.Mui-checked': { color: colorTheme } }} />}
+                label={<Typography sx={{ fontSize: '0.85rem', fontWeight: 700 }}>External Careers Link</Typography>}
+              />
+            </RadioGroup>
+
+            {newJobAppMethod === 'email' ? (
+              <PremiumTextField
+                colorTheme={colorTheme}
+                label="Application Email *"
+                placeholder="careers@company.com"
+                type="email"
+                value={newJobAppEmail}
+                onChange={(e) => setNewJobAppEmail(e.target.value)}
+              />
+            ) : (
+              <PremiumTextField
+                colorTheme={colorTheme}
+                label="External Application URL *"
+                placeholder="https://company.com/careers/lead"
+                value={newJobAppUrl}
+                onChange={(e) => setNewJobAppUrl(e.target.value)}
+              />
+            )}
+          </Box>
+
+          {/* Footer Actions */}
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, pt: 1 }}>
             <Button
               variant="text"
@@ -799,8 +1035,8 @@ export const EcosystemJobPicker: React.FC<EcosystemJobPickerProps> = ({
             </Button>
             <Button
               variant="contained"
-              onClick={handleQuickCreateJob}
-              disabled={!newJobTitle.trim() || !newJobOrg.trim() || isCreatingJob}
+              onClick={handleQuickCreate}
+              disabled={!newJobTitle.trim() || isCreatingJob || (hiringEntityType === 'external' && !externalOrgName.trim())}
               sx={{
                 bgcolor: colorTheme,
                 color: '#fff',

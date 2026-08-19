@@ -59,6 +59,7 @@ import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { Country, State, City } from 'country-state-city';
 import { CATEGORY_OPTIONS, JOB_FUNCTIONS } from "@/lib/taxonomy";
+import { commoditiesList } from "@/lib/cms/commodities";
 import { differenceInMonths, differenceInDays, addMonths } from 'date-fns';
 
 const EMERALD = "#10b981";
@@ -1016,6 +1017,7 @@ export default function CreateListingForm({
         title, 
         description, 
         priceOrAsk: isVolunteer ? (npAmount || "0") : `${currency} ${minSalary} - ${maxSalary}`, 
+        commodity: sector || undefined,
         location: locationString, 
         lga: selectedCity?.name || "", 
         postedById: profile?.uid || "anon", 
@@ -1584,15 +1586,24 @@ export default function CreateListingForm({
                           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                               <PremiumTextField colorTheme={color} fullWidth label="Listing Title *" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Senior Agronomist" />
                               <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', sm: 'row' } }}>
-                                {!(isJob || isVolunteer) && (
-                                  <Box sx={{ flex: 1 }}>
-                                    <PremiumAutocomplete colorTheme={color} label="Sector / Category *" options={CATEGORY_OPTIONS} value={sector} onChange={(e, val) => setSector(val as string)} />
-                                  </Box>
-                                )}
-                                {(isJob || isVolunteer) && (
-                                  <Box sx={{ flex: 1 }}>
-                                    <PremiumAutocomplete colorTheme={color} label="Job Function / Dept *" options={JOB_FUNCTIONS} value={jobFunction} onChange={(e, val) => setJobFunction(val as string)} />
-                                  </Box>
+                                {!(isJob || isVolunteer) ? (
+                                  <>
+                                    <Box sx={{ flex: 1 }}>
+                                      <PremiumAutocomplete colorTheme={color} label="Sector / Category *" options={CATEGORY_OPTIONS} value={sector} onChange={(e, val) => setSector(val as string)} />
+                                    </Box>
+                                    <Box sx={{ flex: 1 }}>
+                                      <PremiumAutocomplete colorTheme={color} label="Commodity / Value Chain (Optional)" options={commoditiesList} value={sector} onChange={(e, val) => setSector(val as string)} />
+                                    </Box>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Box sx={{ flex: 1 }}>
+                                      <PremiumAutocomplete colorTheme={color} label="Job Function / Dept *" options={JOB_FUNCTIONS} value={jobFunction} onChange={(e, val) => setJobFunction(val as string)} />
+                                    </Box>
+                                    <Box sx={{ flex: 1 }}>
+                                      <PremiumAutocomplete colorTheme={color} label="Commodity / Crop Focus (Optional)" options={commoditiesList} value={sector} onChange={(e, val) => setSector(val as string)} />
+                                    </Box>
+                                  </>
                                 )}
                               </Box>
                               
