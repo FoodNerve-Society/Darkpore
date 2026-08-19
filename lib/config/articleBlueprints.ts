@@ -11,7 +11,13 @@ export type BlockType =
   | 'live_poll' 
   | 'data_embed' 
   | 'strategic_directive' 
-  | 'call_to_action';
+  | 'call_to_action'
+  | 'comparison_matrix'
+  | 'unit_economics_card'
+  | 'protocol_steps'
+  | 'timeline_tracker'
+  | 'persona_dossier'
+  | 'ecosystem_embed';
 
 export interface SopBlock {
   type: BlockType;
@@ -108,40 +114,45 @@ export const MATRIX_DESCRIPTIONS: Record<`${ArticleFormat}_${ArticleEra}`, strin
 export const SOP_BLUEPRINTS: Record<`${ArticleFormat}_${ArticleEra}`, SopBlock[]> = {
   // ── 1. BRIEF (SYSTEMIC MARKET) ─────────────────────────────
   brief_past: [
-    { type: 'subheading', role: 'The Spiky Title', desc: 'Hook the reader by explicitly naming the systemic failure and location.', hint: 'Why Nigeria\'s $500M Rice Initiative Collapsed in 2023' },
-    { type: 'highlight_card', role: 'The Autopsy Metric', desc: 'The undeniable stat that proves the collapse.', hint: '82% of anchor loan defaults' },
-    { type: 'exec_summary', role: 'Systemic TL;DR', desc: 'Deliver the core argument instantly for policy and trade executives.', hint: 'Three crisp takeaway bullets' },
-    { type: 'myth_fact', role: 'The Disconnect', desc: 'Contrasting what Abuja believed with what occurred on the farm.', hint: 'Belief: Subsidies drive yields vs Reality: Arbitrage' },
-    { type: 'core_interactive', role: 'The Breakdown Mechanics', desc: 'Root cause analysis of the systemic supply-chain rupture.', hint: 'Where did the physical commodity leak?' },
-    { type: 'pull_quote', role: 'The Operator Truth', desc: 'Raw testimony from aggregators or trade participants.', hint: 'Quote from a local cooperative president' },
-    { type: 'media', role: 'Evidence Gallery', desc: 'Photographic or data chart evidence of the failure.', hint: 'Chart showing abandoned processing units' },
-    { type: 'strategic_directive', role: 'The Commander\'s Intent', desc: 'Strict directives on what never to repeat in policy or trade.', hint: 'Directives for policymakers and DFIs' },
-    { type: 'live_poll', role: 'Ecosystem Pulse Check', desc: 'Engage readers on whether this systemic flaw still lingers.', hint: 'Is this structural flaw still present in your state?' },
-    { type: 'call_to_action', role: 'Ecosystem Access CTA', desc: 'Direct readers to the FoodNerve Deal Room & Intelligence Network.', hint: 'Select Macro CTA' },
+    { type: 'subheading', role: 'The Action-Spiky Title', desc: 'Hook the reader by explicitly naming the systemic failure, location, and action.', hint: 'The $500M Rice Collapse: Why Nigeria\'s Anchor Borrowers Imploded in 2023' },
+    { type: 'highlight_card', role: 'The Time of Death', desc: 'Grim image + Total financial or physical yield loss metric.', hint: '82% default rate across ₦400B in disbursed credit' },
+    { type: 'timeline_tracker', role: 'The Collapse Sequence', desc: 'A 3-node visual timeline mapping exactly when the dominoes fell.', hint: '2021: Subsidy Launch ➔ 2023: Currency Shock ➔ 2024: Mass Default' },
+    { type: 'exec_summary', role: 'The Post-Mortem TL;DR', desc: '3 Bullets: The Original Promise, The Friction Point, The Loss.', hint: 'Three crisp post-mortem takeaway bullets' },
+    { type: 'myth_fact', role: 'The Historical Disconnect', desc: 'What central planners believed vs. the brutal reality on the ground.', hint: 'Belief: Subsidies drive yields vs Reality: Arbitrage & diversion' },
+    { type: 'core_interactive', role: 'Meat 1: The Breakdown', desc: 'The exact economic and operational mechanics of the systemic failure.', hint: 'Where did the physical commodity and money leak?' },
+    { type: 'pull_quote', role: 'The Burned Operator', desc: 'Raw emotional testimony from the victim of the failed policy.', hint: 'Quote from a smallholder aggregator whose inventory was seized' },
+    { type: 'media', role: 'The Evidence Gallery', desc: 'Photographic proof of abandoned infrastructure or crashed charts.', hint: 'Photos of rusted silos and abandoned tractors' },
+    { type: 'core_interactive', role: 'Meat 2: The Collateral Damage', desc: 'How the failure rippled down the entire regional supply chain.', hint: 'The cascading bank debt and off-taker bankruptcies' },
+    { type: 'strategic_directive', role: 'The Commander\'s Intent', desc: 'Terminal UI: Strict commands on policies and practices to dismantle today.', hint: 'Directives for policymakers, DFIs, and fund managers' },
+    { type: 'call_to_action', role: 'The Global Banner', desc: 'Join the ecosystem intelligence network to avoid these fatal blind spots.', hint: 'Select Platform Growth Banner' },
   ],
   brief_present: [
-    { type: 'subheading', role: 'The Spiky Title', desc: 'Name the current systemic crisis and who is absorbing the shock.', hint: 'How Middle Belt Grain Truckers Are Surviving ₦1,200/L Fuel' },
-    { type: 'highlight_card', role: 'The 2026 Macro-Trigger', desc: 'The killer metric driving the crisis right now.', hint: '340% increase in haulage costs since 2024' },
-    { type: 'exec_summary', role: 'Battlefield TL;DR', desc: 'Key operational takeaways for immediate decision-makers.', hint: 'Three urgent takeaway bullets' },
-    { type: 'pull_quote', role: 'The Ground Truth', desc: 'Raw quote from an active value-chain operator.', hint: 'Quote from an active logistics broker' },
-    { type: 'core_interactive', role: 'The Survival Hack', desc: 'Detail the undocumented workaround operators are using to stay solvent.', hint: 'How are aggregators pooling diesel generators?' },
-    { type: 'media', role: 'The Data Proof', desc: 'Supporting price index or logistics route diagram.', hint: 'Price spread map from Kano to Lagos' },
-    { type: 'core_interactive', role: 'Winners vs. Crushed', desc: 'Clear breakdown of who is capturing margin versus who is going bankrupt.', hint: 'Off-takers vs smallholder brokers' },
-    { type: 'strategic_directive', role: 'The Commander\'s Intent', desc: 'Aggressive commands on where to deploy capital or fix bottlenecks today.', hint: 'Immediate actions for trade syndicates' },
-    { type: 'live_poll', role: 'Battlefield Poll', desc: 'Survey real-time sentiment from industry readers.', hint: 'Are you passing haulage inflation to retail buyers?' },
-    { type: 'call_to_action', role: 'Platform Growth CTA', desc: 'Connect readers into the active FoodNerve trading network.', hint: 'Select Macro CTA' },
+    { type: 'subheading', role: 'The Action-Spiky Title', desc: 'The 2026 paradox, affected actors, and the urgent survival command.', hint: 'The ₦1,400/L Fuel Reality: Why Kano Grain Truckers Are Surviving via Nocturnal Haulage' },
+    { type: 'highlight_card', role: 'The 2026 Macro-Trigger', desc: 'Tense image + today\'s bleeding-edge inflationary or yield stat.', hint: '340% increase in haulage costs since Q1 2025' },
+    { type: 'pull_quote', role: 'The Front-Line Dispatch', desc: 'Frantic quote from a CEO or operator bleeding cash right now for massive FOMO.', hint: '"If our trucks stay parked for 48 hours, the margin on 30 tonnes is wiped out."' },
+    { type: 'exec_summary', role: 'The Sit-Rep TL;DR', desc: '3 Bullets: The Crisis, The Underground Workaround, The Market Shift.', hint: 'Three urgent battlefield takeaway bullets' },
+    { type: 'myth_fact', role: 'The Operational Disconnect', desc: 'Official government/corporate narrative vs. the underground reality.', hint: 'Official: Rail is operational vs Reality: 98% still on trucks' },
+    { type: 'core_interactive', role: 'Meat 1: The Hacker\'s Survival Guide', desc: 'How operators are bypassing broken gatekeepers to stay solvent.', hint: 'The undocumented logistics pooling and nocturnal transit routes' },
+    { type: 'media', role: 'The Proof of Concept', desc: 'Photos, manifests, or price charts proving the survival hack works.', hint: 'Waybill comparison and route GPS data' },
+    { type: 'core_interactive', role: 'Meat 2: Winners vs. Crushed', desc: 'Who is capturing margin versus who is being wiped out.', hint: 'Direct-to-mill aggregators vs traditional middlemen' },
+    { type: 'ecosystem_embed', role: 'The Active Crisis Market', desc: 'Live job listing, talent bounty, or deal room opportunity to solve the crisis.', hint: 'Embed an active Logistics Lead role or Fleet Bounty' },
+    { type: 'strategic_directive', role: 'The Commander\'s Intent', desc: 'Terminal UI: Immediate commands on where to deploy capital and hedge today.', hint: 'Directives for trade syndicates and purchasing directors' },
+    { type: 'live_poll', role: 'The Pulse Check', desc: 'Real-time industry poll on whether peers are adopting the workaround.', hint: 'Are you actively deploying this nocturnal haulage hack?' },
+    { type: 'call_to_action', role: 'The Global Banner', desc: 'Connect into the active FoodNerve trading and liquidity engine.', hint: 'Select Platform Growth Banner' },
   ],
   brief_future: [
-    { type: 'subheading', role: 'The Spiky Title', desc: 'Name the paradigm shift and the 2030 arrival date.', hint: 'Why Solar Micro-Grids Will Decentralize 60% of Grain Milling by 2030' },
-    { type: 'highlight_card', role: 'The Horizon Metric', desc: 'The projected market transformation metric.', hint: '$1.4B decentralized milling TAM by 2030' },
-    { type: 'exec_summary', role: 'The 2030 Thesis TL;DR', desc: 'Three core pillars of the transformation.', hint: 'Three future projection bullets' },
-    { type: 'myth_fact', role: 'The Transition Myth', desc: 'Debunking why incumbents think the old way will survive.', hint: 'Myth: Grid power will stabilize first' },
-    { type: 'core_interactive', role: 'Mechanism of Disruption', desc: 'Technical and economic explanation of how the shift scales.', hint: 'Capex payback curve of lithium storage in rural hubs' },
-    { type: 'media', role: 'The Architecture Blueprint', desc: 'Schematic or forward-looking adoption curve.', hint: 'Deployment roadmap diagram' },
-    { type: 'core_interactive', role: 'African Friction & Reality', desc: 'Realistic roadblocks (bad roads, tariffs) and how pioneers bypass them.', hint: 'How to handle local customs and currency risk' },
-    { type: 'strategic_directive', role: 'The Strategic Play', desc: 'Where forward-thinking funds and builders must position capital now.', hint: 'Invest in distributed power infrastructure today' },
-    { type: 'live_poll', role: 'Horizon Consensus Poll', desc: 'Poll the community on adoption timelines.', hint: 'Will solar milling reach 50% adoption before 2030?' },
-    { type: 'call_to_action', role: 'Ecosystem CTA', desc: 'Join the FoodNerve R&D & Innovation Working Group.', hint: 'Select Macro CTA' },
+    { type: 'subheading', role: 'The Action-Spiky Title', desc: 'Dying paradigm, 2030 breakthrough tech, and strategic pivot command.', hint: 'The End of Diesel Milling: Why Solar Micro-Grids Will Decentralize 65% of Northern Grain by 2030' },
+    { type: 'highlight_card', role: 'The Horizon Projection', desc: 'High-tech image + the exact year and market volume of commercial scale.', hint: '$1.8B decentralized milling TAM by 2030' },
+    { type: 'exec_summary', role: 'The Strategic Forecast TL;DR', desc: '3 Bullets: The Dying Paradigm, The Disruption Mechanism, The 2030 Impact.', hint: 'Three future horizon projection bullets' },
+    { type: 'timeline_tracker', role: 'The Road to 2030', desc: 'A 3-node investment roadmap from R&D pilot to market monopoly.', hint: '2026: Sub-kW Inverter Pilots ➔ 2028: Pay-As-You-Go Scale ➔ 2030: Grid Dominance' },
+    { type: 'myth_fact', role: 'The Adoption Disconnect', desc: 'Conservative NGO/incumbent timelines vs. aggressive tech scaling.', hint: 'Myth: Rural farmers cannot afford CAPEX vs Reality: PAYG financing' },
+    { type: 'media', role: 'The Blueprint', desc: 'Schematic, CAD diagram, or UI mockup of the future technology.', hint: 'Modular solar milling container schematic' },
+    { type: 'core_interactive', role: 'Meat 1: The Mechanism of Disruption', desc: 'How the technology alters unit economics and crushes incumbents.', hint: 'Levelized Cost of Energy (LCOE) comparison vs diesel' },
+    { type: 'pull_quote', role: 'The Visionary', desc: 'Direct quote from the AgTech founder or pioneer building the future.', hint: '"We aren\'t selling solar panels; we are selling guaranteed milling uptime."' },
+    { type: 'core_interactive', role: 'Meat 2: The Global South Roadblocks', desc: 'Ground realities (tariffs, bad roads, currency) and how pioneers bypass them.', hint: 'Navigating component import clearance and battery degradation' },
+    { type: 'strategic_directive', role: 'The Commander\'s Intent', desc: 'Terminal UI: Strict commands on which startups to acquire and seed today.', hint: 'Early-stage venture mandates and equipment financing rules' },
+    { type: 'live_poll', role: 'The Pulse Check', desc: 'Engage readers on when they believe commercial parity will be reached.', hint: 'When will solar milling undercut diesel across 50% of the North?' },
+    { type: 'call_to_action', role: 'The Global Banner', desc: 'Join the FoodNerve R&D, Deal Room & Venture Working Group.', hint: 'Select Platform Growth Banner' },
   ],
 
   // ── 2. MEMO (CAPITAL ALLOCATION / VC / DEALS) ──────────────

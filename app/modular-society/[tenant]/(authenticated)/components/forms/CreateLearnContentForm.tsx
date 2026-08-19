@@ -311,6 +311,12 @@ const BLOCK_DEFINITIONS: Record<BlockType, { label: string, color: string }> = {
   data_embed: { label: 'Embedded Data', color: '#14b8a6' },
   strategic_directive: { label: 'Strategic Directive', color: '#111827' },
   call_to_action: { label: 'Call to Action', color: '#f59e0b' },
+  comparison_matrix: { label: 'Showdown Table', color: '#8b5cf6' },
+  unit_economics_card: { label: 'Financial Dashboard', color: '#10b981' },
+  protocol_steps: { label: 'Action Checklist', color: '#f59e0b' },
+  timeline_tracker: { label: 'Timeline Tracker', color: '#3b82f6' },
+  persona_dossier: { label: 'Ground Dossier', color: '#ec4899' },
+  ecosystem_embed: { label: 'Ecosystem Bridge', color: '#6366f1' },
 };
 
 
@@ -442,6 +448,14 @@ export default function CreateLearnContentForm({
       case 'highlight_card': return !!b.content.imageUrl && !!b.content.caption;
       case 'data_embed': return !!b.content.iframeUrl;
       case 'live_poll': return !!b.content.question && !!b.content.options;
+      case 'strategic_directive': return !!b.content.urgencyLevel && !!b.content.targetPersona;
+      case 'call_to_action': return !!b.content.macroCtaId;
+      case 'comparison_matrix': return !!b.content.optionAName && !!b.content.optionBName;
+      case 'unit_economics_card': return !!b.content.tam || !!b.content.targetIrr;
+      case 'protocol_steps': return Array.isArray(b.content.steps) && b.content.steps.length > 0;
+      case 'timeline_tracker': return Array.isArray(b.content.milestones) && b.content.milestones.length > 0;
+      case 'persona_dossier': return !!b.content.name && !!b.content.fieldQuote;
+      case 'ecosystem_embed': return !!b.content.title && !!b.content.ctaLink;
       default: return false;
     }
   };
@@ -734,6 +748,33 @@ export default function CreateLearnContentForm({
     if (bType === 'exec_summary') newBlock.content = { points: '' };
     if (bType === 'core_interactive') newBlock.content = { bionicText: '', anchorQuestion: '', imageUrl: '' };
     if (bType === 'subheading') newBlock.content = { text: '' };
+    if (bType === 'comparison_matrix') newBlock.content = { 
+      optionAName: '', optionBName: '', winnerVerdict: '', 
+      rows: [
+        { criterion: 'CAPEX', optionAValue: '', optionBValue: '', winner: 'A' },
+        { criterion: 'OPEX / mo', optionAValue: '', optionBValue: '', winner: 'B' },
+        { criterion: 'Payback Period', optionAValue: '', optionBValue: '', winner: 'A' }
+      ] 
+    };
+    if (bType === 'unit_economics_card') newBlock.content = { 
+      tam: '', targetIrr: '', ticketSize: '', paybackPeriod: '', grossMargin: '', primaryRisk: '', dealThesis: '' 
+    };
+    if (bType === 'protocol_steps') newBlock.content = { 
+      steps: [
+        { stepNumber: 1, title: 'Isolate & Inspect Hardware', role: 'Operations Lead', timeWindow: 'Day 1', description: '', checklist: ['Verify power source is isolated', 'Document serial numbers'] }
+      ] 
+    };
+    if (bType === 'timeline_tracker') newBlock.content = { 
+      milestones: [
+        { dateOrYear: 'Phase 1', title: 'Initiation & Infrastructure', description: '', status: 'Milestone' }
+      ] 
+    };
+    if (bType === 'persona_dossier') newBlock.content = { 
+      name: '', roleAndLocation: '', age: '', monthlyTurnover: '', bio: '', fieldQuote: '', avatarUrl: '' 
+    };
+    if (bType === 'ecosystem_embed') newBlock.content = { 
+      embedType: 'job', title: '', organization: '', location: '', compensationOrTarget: '', ctaText: 'Apply Now', ctaLink: '' 
+    };
     
     setBlocks([...blocks, newBlock]);
   };
@@ -777,6 +818,33 @@ export default function CreateLearnContentForm({
       if (sop.type === 'subheading') Object.assign(content, { text: title || '' });
       if (sop.type === 'highlight_card') Object.assign(content, { imageUrl: '', caption: '' });
       if (sop.type === 'media') Object.assign(content, { mediaUrl: '', caption: '' });
+      if (sop.type === 'comparison_matrix') Object.assign(content, { 
+        optionAName: '', optionBName: '', winnerVerdict: '', 
+        rows: [
+          { criterion: 'CAPEX', optionAValue: '', optionBValue: '', winner: 'A' },
+          { criterion: 'OPEX / mo', optionAValue: '', optionBValue: '', winner: 'B' },
+          { criterion: 'Payback Period', optionAValue: '', optionBValue: '', winner: 'A' }
+        ] 
+      });
+      if (sop.type === 'unit_economics_card') Object.assign(content, { 
+        tam: '', targetIrr: '', ticketSize: '', paybackPeriod: '', grossMargin: '', primaryRisk: '', dealThesis: '' 
+      });
+      if (sop.type === 'protocol_steps') Object.assign(content, { 
+        steps: [
+          { stepNumber: 1, title: 'Initial Setup & Triage', role: 'Lead Operator', timeWindow: 'Day 1', description: '', checklist: ['Verify field safety protocols', 'Log baseline metrics'] }
+        ] 
+      });
+      if (sop.type === 'timeline_tracker') Object.assign(content, { 
+        milestones: [
+          { dateOrYear: 'Milestone 1', title: 'Primary Catalyst', description: '', status: 'Trigger' }
+        ] 
+      });
+      if (sop.type === 'persona_dossier') Object.assign(content, { 
+        name: '', roleAndLocation: '', age: '', monthlyTurnover: '', bio: '', fieldQuote: '', avatarUrl: '' 
+      });
+      if (sop.type === 'ecosystem_embed') Object.assign(content, { 
+        embedType: 'job', title: '', organization: '', location: '', compensationOrTarget: '', ctaText: 'Apply Now', ctaLink: '' 
+      });
       return { id: Math.random().toString(), type: sop.type, content, role: sop.role, sopDesc: sop.desc, sopHint: sop.hint };
     });
     setBlocks(newBlocks);
@@ -835,6 +903,38 @@ export default function CreateLearnContentForm({
         break;
       case 'call_to_action': 
         total = 1; if (c.macroCtaId || c.text) filled = 1; break;
+      case 'comparison_matrix':
+        total = 3;
+        if (c.optionAName) filled++;
+        if (c.optionBName) filled++;
+        if (Array.isArray(c.rows) && c.rows.length > 0) filled++;
+        break;
+      case 'unit_economics_card':
+        total = 3;
+        if (c.tam) filled++;
+        if (c.targetIrr) filled++;
+        if (c.primaryRisk || c.paybackPeriod || c.grossMargin) filled++;
+        break;
+      case 'protocol_steps':
+        total = 1;
+        if (Array.isArray(c.steps) && c.steps.length > 0 && c.steps.some((s: any) => s.title)) filled = 1;
+        break;
+      case 'timeline_tracker':
+        total = 1;
+        if (Array.isArray(c.milestones) && c.milestones.length > 0 && c.milestones.some((m: any) => m.title)) filled = 1;
+        break;
+      case 'persona_dossier':
+        total = 3;
+        if (c.name) filled++;
+        if (c.roleAndLocation || c.monthlyTurnover) filled++;
+        if (c.fieldQuote || c.bio) filled++;
+        break;
+      case 'ecosystem_embed':
+        total = 3;
+        if (c.title) filled++;
+        if (c.organization || c.location) filled++;
+        if (c.ctaLink || c.ctaText) filled++;
+        break;
       default: 
         total = 1; if (Object.values(c).some(v => !!v)) filled = 1; break;
     }
@@ -2347,6 +2447,532 @@ export default function CreateLearnContentForm({
                                     </Box>
                                     <Box sx={{ flex: 1, borderRadius: '14px', overflow: 'hidden', bgcolor: 'rgba(0,0,0,0.03)', border: '1px dashed rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 120 }}>
                                       <Typography sx={{ color: '#94a3b8', fontSize: '0.8rem', fontWeight: 600, textAlign: 'center', px: 2 }}>{b.content.embedUrl ? 'Data Embed Active' : 'Embed Preview'}</Typography>
+                                    </Box>
+                                  </Box>
+                                )}
+                                {b.type === 'comparison_matrix' && (
+                                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+                                      <PremiumTextField
+                                        colorTheme={color}
+                                        fullWidth label="Option A Name (e.g. Solar Milling)"
+                                        placeholder="Solar Milling (Decentralized)"
+                                        value={b.content.optionAName || ''}
+                                        onChange={e => updateBlock(b.id, 'optionAName', e.target.value)}
+                                      />
+                                      <PremiumTextField
+                                        colorTheme={color}
+                                        fullWidth label="Option B Name (e.g. Diesel Milling)"
+                                        placeholder="Diesel Generator Milling"
+                                        value={b.content.optionBName || ''}
+                                        onChange={e => updateBlock(b.id, 'optionBName', e.target.value)}
+                                      />
+                                    </Box>
+
+                                    <Typography sx={{ fontSize: '0.82rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                      Comparison Criteria Breakdown
+                                    </Typography>
+
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                                      {(b.content.rows || []).map((row: any, rIdx: number) => (
+                                        <Box key={rIdx} sx={{ p: 2, borderRadius: '14px', bgcolor: alpha(color, 0.03), border: `1px solid ${alpha(color, 0.15)}`, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                                            <PremiumTextField
+                                              colorTheme={color}
+                                              size="small"
+                                              label={`Criterion ${rIdx + 1} (e.g. CAPEX)`}
+                                              value={row.criterion || ''}
+                                              onChange={e => {
+                                                const nextRows = [...(b.content.rows || [])];
+                                                nextRows[rIdx].criterion = e.target.value;
+                                                updateBlock(b.id, 'rows', nextRows);
+                                              }}
+                                              sx={{ flex: 2 }}
+                                            />
+                                            <PremiumAutocomplete
+                                              label="Advantage"
+                                              size="small"
+                                              value={row.winner || 'Tie'}
+                                              options={[{ label: `Option A (${b.content.optionAName || 'A'})`, value: 'A' }, { label: `Option B (${b.content.optionBName || 'B'})`, value: 'B' }, { label: 'Equal / Tie', value: 'Tie' }]}
+                                              onChange={(e, val: any) => {
+                                                const nextRows = [...(b.content.rows || [])];
+                                                nextRows[rIdx].winner = val?.value || val;
+                                                updateBlock(b.id, 'rows', nextRows);
+                                              }}
+                                              colorTheme={color}
+                                              sx={{ flex: 1.2 }}
+                                            />
+                                            {rIdx > 0 && (
+                                              <IconButton size="small" color="error" onClick={() => {
+                                                const nextRows = (b.content.rows || []).filter((_: any, i: number) => i !== rIdx);
+                                                updateBlock(b.id, 'rows', nextRows);
+                                              }}>
+                                                <DeleteIcon fontSize="small" />
+                                              </IconButton>
+                                            )}
+                                          </Box>
+                                          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+                                            <PremiumTextField
+                                              colorTheme={color}
+                                              size="small"
+                                              label={`Option A (${b.content.optionAName || 'A'})`}
+                                              placeholder="$12,000 upfront"
+                                              value={row.optionAValue || ''}
+                                              onChange={e => {
+                                                const nextRows = [...(b.content.rows || [])];
+                                                nextRows[rIdx].optionAValue = e.target.value;
+                                                updateBlock(b.id, 'rows', nextRows);
+                                              }}
+                                            />
+                                            <PremiumTextField
+                                              colorTheme={color}
+                                              size="small"
+                                              label={`Option B (${b.content.optionBName || 'B'})`}
+                                              placeholder="$4,500 + $800/mo diesel"
+                                              value={row.optionBValue || ''}
+                                              onChange={e => {
+                                                const nextRows = [...(b.content.rows || [])];
+                                                nextRows[rIdx].optionBValue = e.target.value;
+                                                updateBlock(b.id, 'rows', nextRows);
+                                              }}
+                                            />
+                                          </Box>
+                                        </Box>
+                                      ))}
+
+                                      <Button
+                                        onClick={() => {
+                                          const nextRows = [...(b.content.rows || []), { criterion: '', optionAValue: '', optionBValue: '', winner: 'A' }];
+                                          updateBlock(b.id, 'rows', nextRows);
+                                        }}
+                                        sx={{
+                                          alignSelf: 'flex-start', borderRadius: '12px', textTransform: 'none', fontWeight: 700,
+                                          px: 2.5, py: 1, bgcolor: alpha(color, 0.08), color, border: `1px dashed ${alpha(color, 0.3)}`,
+                                          '&:hover': { bgcolor: alpha(color, 0.15) }
+                                        }}
+                                      >
+                                        + Add Comparison Row
+                                      </Button>
+                                    </Box>
+
+                                    <PremiumTextField
+                                      colorTheme={color}
+                                      fullWidth
+                                      label="Winner Verdict / Strategic Takeaway"
+                                      placeholder="Solar milling reaches breakeven in month 14 and insulates operators from fuel shocks."
+                                      value={b.content.winnerVerdict || ''}
+                                      onChange={e => updateBlock(b.id, 'winnerVerdict', e.target.value)}
+                                    />
+                                  </Box>
+                                )}
+                                {b.type === 'unit_economics_card' && (
+                                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(3, 1fr)' }, gap: 2 }}>
+                                      <PremiumTextField
+                                        colorTheme={color}
+                                        label="TAM (Addressable Market)"
+                                        placeholder="$450M West Africa"
+                                        value={b.content.tam || ''}
+                                        onChange={e => updateBlock(b.id, 'tam', e.target.value)}
+                                      />
+                                      <PremiumTextField
+                                        colorTheme={color}
+                                        label="Target IRR"
+                                        placeholder="32.5%"
+                                        value={b.content.targetIrr || ''}
+                                        onChange={e => updateBlock(b.id, 'targetIrr', e.target.value)}
+                                      />
+                                      <PremiumTextField
+                                        colorTheme={color}
+                                        label="Ticket / Deal Size"
+                                        placeholder="$500k - $2M"
+                                        value={b.content.ticketSize || ''}
+                                        onChange={e => updateBlock(b.id, 'ticketSize', e.target.value)}
+                                      />
+                                      <PremiumTextField
+                                        colorTheme={color}
+                                        label="Gross Margin"
+                                        placeholder="44%"
+                                        value={b.content.grossMargin || ''}
+                                        onChange={e => updateBlock(b.id, 'grossMargin', e.target.value)}
+                                      />
+                                      <PremiumTextField
+                                        colorTheme={color}
+                                        label="Payback Period"
+                                        placeholder="18 - 24 Months"
+                                        value={b.content.paybackPeriod || ''}
+                                        onChange={e => updateBlock(b.id, 'paybackPeriod', e.target.value)}
+                                      />
+                                      <PremiumTextField
+                                        colorTheme={color}
+                                        label="Primary Downside Risk"
+                                        placeholder="FX devaluation & off-taker default"
+                                        value={b.content.primaryRisk || ''}
+                                        onChange={e => updateBlock(b.id, 'primaryRisk', e.target.value)}
+                                      />
+                                    </Box>
+
+                                    <PremiumMarkdownEditor
+                                      colorTheme={color}
+                                      fullWidth multiline rows={3}
+                                      label="Investment Thesis & Margin Engine"
+                                      placeholder="Why this unit economic structure creates defensible alpha in the current market..."
+                                      value={b.content.dealThesis || ''}
+                                      onChange={(e: any) => updateBlock(b.id, 'dealThesis', e.target.value)}
+                                    />
+                                  </Box>
+                                )}
+                                {b.type === 'protocol_steps' && (
+                                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                                    {(b.content.steps || []).map((step: any, sIdx: number) => (
+                                      <Box key={sIdx} sx={{ p: 2.5, borderRadius: '16px', bgcolor: alpha(color, 0.03), border: `1px solid ${alpha(color, 0.15)}`, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                                          <Typography sx={{ fontWeight: 900, color: color, fontSize: '0.95rem' }}>
+                                            Step {sIdx + 1}
+                                          </Typography>
+                                          {sIdx > 0 && (
+                                            <IconButton size="small" color="error" onClick={() => {
+                                              const nextSteps = (b.content.steps || []).filter((_: any, i: number) => i !== sIdx);
+                                              updateBlock(b.id, 'steps', nextSteps);
+                                            }}>
+                                              <DeleteIcon fontSize="small" />
+                                            </IconButton>
+                                          )}
+                                        </Box>
+
+                                        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '2fr 1fr 1fr' }, gap: 1.5 }}>
+                                          <PremiumTextField
+                                            colorTheme={color}
+                                            size="small"
+                                            label="Step Action Title"
+                                            placeholder="Isolate Cold Storage Compressor"
+                                            value={step.title || ''}
+                                            onChange={e => {
+                                              const nextSteps = [...(b.content.steps || [])];
+                                              nextSteps[sIdx].title = e.target.value;
+                                              updateBlock(b.id, 'steps', nextSteps);
+                                            }}
+                                          />
+                                          <PremiumTextField
+                                            colorTheme={color}
+                                            size="small"
+                                            label="Assigned Role"
+                                            placeholder="Field Engineer"
+                                            value={step.role || ''}
+                                            onChange={e => {
+                                              const nextSteps = [...(b.content.steps || [])];
+                                              nextSteps[sIdx].role = e.target.value;
+                                              updateBlock(b.id, 'steps', nextSteps);
+                                            }}
+                                          />
+                                          <PremiumTextField
+                                            colorTheme={color}
+                                            size="small"
+                                            label="Time Window"
+                                            placeholder="Day 1 (08:00)"
+                                            value={step.timeWindow || ''}
+                                            onChange={e => {
+                                              const nextSteps = [...(b.content.steps || [])];
+                                              nextSteps[sIdx].timeWindow = e.target.value;
+                                              updateBlock(b.id, 'steps', nextSteps);
+                                            }}
+                                          />
+                                        </Box>
+
+                                        <PremiumMarkdownEditor
+                                          colorTheme={color}
+                                          fullWidth multiline rows={2}
+                                          label="Step Execution Protocol Details"
+                                          placeholder="Specific operational teardown instructions..."
+                                          value={step.description || ''}
+                                          onChange={(e: any) => {
+                                            const nextSteps = [...(b.content.steps || [])];
+                                            nextSteps[sIdx].description = e.target.value;
+                                            updateBlock(b.id, 'steps', nextSteps);
+                                          }}
+                                        />
+
+                                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                          <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
+                                            Checklist Items
+                                          </Typography>
+                                          {(step.checklist || []).map((chk: string, cIdx: number) => (
+                                            <Box key={cIdx} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                              <PremiumTextField
+                                                colorTheme={color}
+                                                size="small"
+                                                fullWidth
+                                                placeholder={`Action item ${cIdx + 1}`}
+                                                value={chk}
+                                                onChange={e => {
+                                                  const nextSteps = [...(b.content.steps || [])];
+                                                  nextSteps[sIdx].checklist = [...(nextSteps[sIdx].checklist || [])];
+                                                  nextSteps[sIdx].checklist[cIdx] = e.target.value;
+                                                  updateBlock(b.id, 'steps', nextSteps);
+                                                }}
+                                              />
+                                              {cIdx > 0 && (
+                                                <IconButton size="small" onClick={() => {
+                                                  const nextSteps = [...(b.content.steps || [])];
+                                                  nextSteps[sIdx].checklist = (nextSteps[sIdx].checklist || []).filter((_: any, i: number) => i !== cIdx);
+                                                  updateBlock(b.id, 'steps', nextSteps);
+                                                }}>
+                                                  <DeleteIcon fontSize="small" />
+                                                </IconButton>
+                                              )}
+                                            </Box>
+                                          ))}
+                                          <Button
+                                            size="small"
+                                            onClick={() => {
+                                              const nextSteps = [...(b.content.steps || [])];
+                                              nextSteps[sIdx].checklist = [...(nextSteps[sIdx].checklist || []), ''];
+                                              updateBlock(b.id, 'steps', nextSteps);
+                                            }}
+                                            sx={{ alignSelf: 'flex-start', fontSize: '0.75rem', textTransform: 'none', fontWeight: 700, color }}
+                                          >
+                                            + Add Checklist Item
+                                          </Button>
+                                        </Box>
+                                      </Box>
+                                    ))}
+
+                                    <Button
+                                      onClick={() => {
+                                        const nextSteps = [...(b.content.steps || []), { stepNumber: (b.content.steps || []).length + 1, title: '', role: '', timeWindow: '', description: '', checklist: [''] }];
+                                        updateBlock(b.id, 'steps', nextSteps);
+                                      }}
+                                      sx={{
+                                        alignSelf: 'flex-start', borderRadius: '12px', textTransform: 'none', fontWeight: 700,
+                                        px: 3, py: 1.25, bgcolor: alpha(color, 0.08), color, border: `1px dashed ${alpha(color, 0.3)}`,
+                                        '&:hover': { bgcolor: alpha(color, 0.15) }
+                                      }}
+                                    >
+                                      + Add Execution Step
+                                    </Button>
+                                  </Box>
+                                )}
+                                {b.type === 'timeline_tracker' && (
+                                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                                    {(b.content.milestones || []).map((m: any, mIdx: number) => (
+                                      <Box key={mIdx} sx={{ p: 2, borderRadius: '14px', bgcolor: alpha(color, 0.03), border: `1px solid ${alpha(color, 0.15)}`, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                                          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 2fr 1fr' }, gap: 1.5, flex: 1 }}>
+                                            <PremiumTextField
+                                              colorTheme={color}
+                                              size="small"
+                                              label="Year / Date / Phase"
+                                              placeholder="Q1 2023 / 2030 Horizon"
+                                              value={m.dateOrYear || ''}
+                                              onChange={e => {
+                                                const nextM = [...(b.content.milestones || [])];
+                                                nextM[mIdx].dateOrYear = e.target.value;
+                                                updateBlock(b.id, 'milestones', nextM);
+                                              }}
+                                            />
+                                            <PremiumTextField
+                                              colorTheme={color}
+                                              size="small"
+                                              label="Milestone Event Title"
+                                              placeholder="Anchor Borrowers Default Wave"
+                                              value={m.title || ''}
+                                              onChange={e => {
+                                                const nextM = [...(b.content.milestones || [])];
+                                                nextM[mIdx].title = e.target.value;
+                                                updateBlock(b.id, 'milestones', nextM);
+                                              }}
+                                            />
+                                            <PremiumTextField
+                                              colorTheme={color}
+                                              size="small"
+                                              label="Status Tag"
+                                              placeholder="Failure Trigger / Milestone"
+                                              value={m.status || ''}
+                                              onChange={e => {
+                                                const nextM = [...(b.content.milestones || [])];
+                                                nextM[mIdx].status = e.target.value;
+                                                updateBlock(b.id, 'milestones', nextM);
+                                              }}
+                                            />
+                                          </Box>
+                                          {mIdx > 0 && (
+                                            <IconButton size="small" color="error" onClick={() => {
+                                              const nextM = (b.content.milestones || []).filter((_: any, i: number) => i !== mIdx);
+                                              updateBlock(b.id, 'milestones', nextM);
+                                            }}>
+                                              <DeleteIcon fontSize="small" />
+                                            </IconButton>
+                                          )}
+                                        </Box>
+                                        <PremiumMarkdownEditor
+                                          colorTheme={color}
+                                          fullWidth multiline rows={2}
+                                          label="Milestone Description & Significance"
+                                          placeholder="What happened at this point in the timeline..."
+                                          value={m.description || ''}
+                                          onChange={(e: any) => {
+                                            const nextM = [...(b.content.milestones || [])];
+                                            nextM[mIdx].description = e.target.value;
+                                            updateBlock(b.id, 'milestones', nextM);
+                                          }}
+                                        />
+                                      </Box>
+                                    ))}
+
+                                    <Button
+                                      onClick={() => {
+                                        const nextM = [...(b.content.milestones || []), { dateOrYear: '', title: '', description: '', status: '' }];
+                                        updateBlock(b.id, 'milestones', nextM);
+                                      }}
+                                      sx={{
+                                        alignSelf: 'flex-start', borderRadius: '12px', textTransform: 'none', fontWeight: 700,
+                                        px: 3, py: 1.25, bgcolor: alpha(color, 0.08), color, border: `1px dashed ${alpha(color, 0.3)}`,
+                                        '&:hover': { bgcolor: alpha(color, 0.15) }
+                                      }}
+                                    >
+                                      + Add Timeline Milestone
+                                    </Button>
+                                  </Box>
+                                )}
+                                {b.type === 'persona_dossier' && (
+                                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '2fr 1fr 1fr' }, gap: 2 }}>
+                                      <PremiumTextField
+                                        colorTheme={color}
+                                        label="Operator / Trader Full Name"
+                                        placeholder="Hajiya Amina Bello"
+                                        value={b.content.name || ''}
+                                        onChange={e => updateBlock(b.id, 'name', e.target.value)}
+                                      />
+                                      <PremiumTextField
+                                        colorTheme={color}
+                                        label="Role & Location"
+                                        placeholder="Onion Aggregator, Kano"
+                                        value={b.content.roleAndLocation || ''}
+                                        onChange={e => updateBlock(b.id, 'roleAndLocation', e.target.value)}
+                                      />
+                                      <PremiumTextField
+                                        colorTheme={color}
+                                        label="Monthly Turnover / Volume"
+                                        placeholder="4,200 Bags / ₦48M"
+                                        value={b.content.monthlyTurnover || ''}
+                                        onChange={e => updateBlock(b.id, 'monthlyTurnover', e.target.value)}
+                                      />
+                                    </Box>
+
+                                    <PremiumMarkdownEditor
+                                      colorTheme={color}
+                                      fullWidth multiline rows={3}
+                                      label="Raw Field Quote (Voice of the Ground)"
+                                      placeholder="Direct unvarnished testimony from the operator..."
+                                      value={b.content.fieldQuote || ''}
+                                      onChange={(e: any) => updateBlock(b.id, 'fieldQuote', e.target.value)}
+                                    />
+
+                                    <PremiumMarkdownEditor
+                                      colorTheme={color}
+                                      fullWidth multiline rows={2}
+                                      label="Background & Operating Reality"
+                                      placeholder="Context on their operations, family labor, and local network..."
+                                      value={b.content.bio || ''}
+                                      onChange={(e: any) => updateBlock(b.id, 'bio', e.target.value)}
+                                    />
+
+                                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                                      <Box sx={{ flex: 1 }}>
+                                        {mediaUrlMode[b.id] ? (
+                                          <PremiumTextField
+                                            colorTheme={color}
+                                            fullWidth label="Avatar/Photo URL"
+                                            placeholder="https://..."
+                                            value={b.content.avatarUrl || ''}
+                                            onChange={e => updateBlock(b.id, 'avatarUrl', e.target.value)}
+                                          />
+                                        ) : (
+                                          <Button
+                                            component="label" fullWidth
+                                            sx={{ height: 56, borderRadius: '14px', borderStyle: 'dashed', borderWidth: 2, color, borderColor: alpha(color, 0.4), '&:hover': { borderColor: color, bgcolor: alpha(color, 0.05) }, justifyContent: 'flex-start', px: 2 }}
+                                          >
+                                            <input type="file" hidden accept="image/*" onChange={(e) => { if (e.target.files?.[0]) handleImageUpload(b.id, 'avatarUrl', e.target.files[0]); }} />
+                                            {uploading ? <CircularProgress size={24} color="inherit" /> : (
+                                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                                <UploadIcon />
+                                                <Typography sx={{ fontWeight: 700, textTransform: 'none' }}>Upload Persona Photo</Typography>
+                                              </Box>
+                                            )}
+                                          </Button>
+                                        )}
+                                      </Box>
+                                      <Tooltip title={mediaUrlMode[b.id] ? "Switch to Upload" : "Paste URL instead"}>
+                                        <IconButton onClick={(e) => { e.stopPropagation(); toggleUrlMode(b.id); }} sx={{ bgcolor: alpha(color, 0.1), color, '&:hover': { bgcolor: alpha(color, 0.2) }, width: 48, height: 48, borderRadius: '14px', flexShrink: 0 }}>
+                                          {mediaUrlMode[b.id] ? <UploadIcon /> : <LinkIcon />}
+                                        </IconButton>
+                                      </Tooltip>
+                                    </Box>
+                                  </Box>
+                                )}
+                                {b.type === 'ecosystem_embed' && (
+                                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 2fr' }, gap: 2 }}>
+                                      <PremiumAutocomplete
+                                        label="Embed Type"
+                                        value={b.content.embedType || 'job'}
+                                        options={[
+                                          { label: '💼 Active Job Listing', value: 'job' },
+                                          { label: '💰 Deal Room Opportunity', value: 'deal' },
+                                          { label: '🌾 Verified Cooperative / Supplier', value: 'cooperative' }
+                                        ]}
+                                        onChange={(event, val: any) => updateBlock(b.id, 'embedType', val?.value || val)}
+                                        colorTheme={color}
+                                      />
+                                      <PremiumTextField
+                                        colorTheme={color}
+                                        label="Listing / Deal Title"
+                                        placeholder="Senior Agronomist & Field Lead"
+                                        value={b.content.title || ''}
+                                        onChange={e => updateBlock(b.id, 'title', e.target.value)}
+                                      />
+                                    </Box>
+
+                                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' }, gap: 2 }}>
+                                      <PremiumTextField
+                                        colorTheme={color}
+                                        label="Organization / Entity"
+                                        placeholder="AgroNerve Logistics Ltd"
+                                        value={b.content.organization || ''}
+                                        onChange={e => updateBlock(b.id, 'organization', e.target.value)}
+                                      />
+                                      <PremiumTextField
+                                        colorTheme={color}
+                                        label="Location"
+                                        placeholder="Kano & Kaduna State"
+                                        value={b.content.location || ''}
+                                        onChange={e => updateBlock(b.id, 'location', e.target.value)}
+                                      />
+                                      <PremiumTextField
+                                        colorTheme={color}
+                                        label="Salary Range / Fund Target"
+                                        placeholder="₦12M - ₦18M / yr"
+                                        value={b.content.compensationOrTarget || ''}
+                                        onChange={e => updateBlock(b.id, 'compensationOrTarget', e.target.value)}
+                                      />
+                                    </Box>
+
+                                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 2fr' }, gap: 2 }}>
+                                      <PremiumTextField
+                                        colorTheme={color}
+                                        label="Button CTA Text"
+                                        placeholder="Apply for Position"
+                                        value={b.content.ctaText || 'Apply Now'}
+                                        onChange={e => updateBlock(b.id, 'ctaText', e.target.value)}
+                                      />
+                                      <PremiumTextField
+                                        colorTheme={color}
+                                        label="CTA Link URL"
+                                        placeholder="/careers/senior-agronomist"
+                                        value={b.content.ctaLink || ''}
+                                        onChange={e => updateBlock(b.id, 'ctaLink', e.target.value)}
+                                      />
                                     </Box>
                                   </Box>
                                 )}
