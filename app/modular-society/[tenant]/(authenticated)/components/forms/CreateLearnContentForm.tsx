@@ -1259,12 +1259,16 @@ export default function CreateLearnContentForm({
                               }}>
                                 <SparkleIcon sx={{ fontSize: 20, color: activeFormatMeta.color }} />
                               </Box>
-                              <Box sx={{ flex: 1 }}>
-                                <Typography sx={{ fontWeight: 800, color: '#0f172a', fontSize: '1.15rem' }}>
-                                  Editorial Blueprint Configuration
+                              <Box sx={{ flex: 1, minWidth: 0 }}>
+                                <Typography sx={{ fontWeight: 800, color: '#0f172a', fontSize: '1.1rem', lineHeight: 1.25 }}>
+                                  {blueprintConfigStep === 1
+                                    ? `1. Select Subcategory (${currentSelectedChallenge?.title || 'Challenge'})`
+                                    : `2. Choose Editorial Lens (${selectedSubObj?.title || 'Subcategory'})`}
                                 </Typography>
-                                <Typography sx={{ color: '#64748b', fontSize: '0.85rem', fontWeight: 500 }}>
-                                  Set your subcategory focus, editorial lens & chronological era
+                                <Typography sx={{ color: '#64748b', fontSize: '0.82rem', fontWeight: 500, mt: 0.25 }}>
+                                  {blueprintConfigStep === 1
+                                    ? 'Tap any subcategory card below to choose your strategic focal point.'
+                                    : `Targeting: ${selectedSubObj?.title || 'Selected Subcategory'} · Pick a format across Past, Present, or Future Era.`}
                                 </Typography>
                               </Box>
                               <Tooltip title="Done Configuring">
@@ -1288,24 +1292,6 @@ export default function CreateLearnContentForm({
                               {/* ═══ STEP 1: SUBCATEGORY FOCUS (HORIZONTAL IMAGE CARDS) ═══ */}
                               {blueprintConfigStep === 1 && (
                                 <Box sx={{ animation: 'fadeIn 0.25s ease', display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
-                                    <Box>
-                                      <Typography sx={{ fontWeight: 900, fontSize: '1.05rem', color: '#0f172a' }}>
-                                        Select Subcategory Focus for: <span style={{ color: activeFormatMeta.color }}>{currentSelectedChallenge?.title}</span>
-                                      </Typography>
-                                      <Typography sx={{ color: '#64748b', fontSize: '0.82rem', mt: 0.25 }}>
-                                        Tap a subcategory card below to choose your strategic focal point.
-                                      </Typography>
-                                    </Box>
-                                    {selectedSubcategory && (
-                                      <Chip
-                                        label={`Selected: ${selectedSubObj?.title || ''}`}
-                                        size="small"
-                                        sx={{ bgcolor: alpha(activeFormatMeta.color, 0.12), color: activeFormatMeta.color, fontWeight: 800, border: `1px solid ${alpha(activeFormatMeta.color, 0.3)}` }}
-                                      />
-                                    )}
-                                  </Box>
-
                                   {/* Subcategories Grid of Horizontal Cards */}
                                   <Box sx={{
                                     display: 'grid',
@@ -1441,30 +1427,12 @@ export default function CreateLearnContentForm({
 
                               {/* ═══ STEP 2: THE 15 EDITORIAL LENSES MATRIX (SEPARATED BY ERA) ═══ */}
                               {blueprintConfigStep === 2 && (
-                                <Box sx={{ animation: 'fadeIn 0.25s ease', display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
-                                    <Box>
-                                      <Typography sx={{ fontWeight: 900, fontSize: '1.05rem', color: '#0f172a' }}>
-                                        Select from the 15 Editorial Matrix Lenses
-                                      </Typography>
-                                      <Typography sx={{ color: '#64748b', fontSize: '0.82rem', mt: 0.25 }}>
-                                        Targeting: <strong style={{ color: '#0f172a' }}>{selectedSubObj?.title || 'Selected Subcategory'}</strong>. Lenses are organized across the 3 timeline horizons.
-                                      </Typography>
-                                    </Box>
-                                    {isBlueprintFilled && (
-                                      <Chip
-                                        label={`Active: ${activeFormatMeta.emoji} ${activeFormatMeta.label} · ${activeEraMeta.label}`}
-                                        size="small"
-                                        sx={{ bgcolor: alpha(activeFormatMeta.color, 0.12), color: activeFormatMeta.color, fontWeight: 800, border: `1px solid ${alpha(activeFormatMeta.color, 0.3)}` }}
-                                      />
-                                    )}
-                                  </Box>
-
+                                <Box sx={{ animation: 'fadeIn 0.25s ease', display: 'flex', flexDirection: 'column', gap: 2 }}>
                                   {/* Scrollable Container with Era-Separated Sections */}
                                   <Box sx={{
                                     display: 'flex',
                                     flexDirection: 'column',
-                                    gap: 3,
+                                    gap: 2.5,
                                     maxHeight: '520px',
                                     overflowY: 'auto',
                                     pr: 1,
@@ -1502,7 +1470,7 @@ export default function CreateLearnContentForm({
                                                 {eraMeta.emoji}
                                               </Box>
                                               <Typography sx={{ fontWeight: 900, fontSize: '0.98rem', color: '#0f172a' }}>
-                                                {eraMeta.label} Horizon
+                                                {eraMeta.label} Era
                                               </Typography>
                                               <Typography sx={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 500, display: { xs: 'none', sm: 'inline' } }}>
                                                 • {eraMeta.desc}
@@ -1511,7 +1479,7 @@ export default function CreateLearnContentForm({
 
                                             {isEraSelected && (
                                               <Chip
-                                                label="Active Horizon"
+                                                label="Active Era"
                                                 size="small"
                                                 sx={{
                                                   height: 20, fontSize: '0.68rem', fontWeight: 800,
