@@ -75,6 +75,7 @@ import PremiumAutocomplete from '@/components/PremiumAutocomplete';
 import PremiumButton from '@/components/PremiumButton';
 import PremiumMarkdownEditor from '@/components/PremiumMarkdownEditor';
 import PremiumVideoPlayer from '@/components/learn/blocks/PremiumVideoPlayer';
+import EcosystemJobPicker from '@/components/learn/EcosystemJobPicker';
 
 // ----------------------------------------------------------------------
 // POLL OPTIONS EDITOR
@@ -2912,69 +2913,40 @@ export default function CreateLearnContentForm({
                                   </Box>
                                 )}
                                 {b.type === 'ecosystem_embed' && (
-                                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 2fr' }, gap: 2 }}>
-                                      <PremiumAutocomplete
-                                        label="Embed Type"
-                                        value={b.content.embedType || 'job'}
-                                        options={[
-                                          { label: '💼 Active Job Listing', value: 'job' },
-                                          { label: '💰 Deal Room Opportunity', value: 'deal' },
-                                          { label: '🌾 Verified Cooperative / Supplier', value: 'cooperative' }
-                                        ]}
-                                        onChange={(event, val: any) => updateBlock(b.id, 'embedType', val?.value || val)}
-                                        colorTheme={color}
-                                      />
-                                      <PremiumTextField
-                                        colorTheme={color}
-                                        label="Listing / Deal Title"
-                                        placeholder="Senior Agronomist & Field Lead"
-                                        value={b.content.title || ''}
-                                        onChange={e => updateBlock(b.id, 'title', e.target.value)}
-                                      />
-                                    </Box>
-
-                                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' }, gap: 2 }}>
-                                      <PremiumTextField
-                                        colorTheme={color}
-                                        label="Organization / Entity"
-                                        placeholder="AgroNerve Logistics Ltd"
-                                        value={b.content.organization || ''}
-                                        onChange={e => updateBlock(b.id, 'organization', e.target.value)}
-                                      />
-                                      <PremiumTextField
-                                        colorTheme={color}
-                                        label="Location"
-                                        placeholder="Kano & Kaduna State"
-                                        value={b.content.location || ''}
-                                        onChange={e => updateBlock(b.id, 'location', e.target.value)}
-                                      />
-                                      <PremiumTextField
-                                        colorTheme={color}
-                                        label="Salary Range / Fund Target"
-                                        placeholder="₦12M - ₦18M / yr"
-                                        value={b.content.compensationOrTarget || ''}
-                                        onChange={e => updateBlock(b.id, 'compensationOrTarget', e.target.value)}
-                                      />
-                                    </Box>
-
-                                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 2fr' }, gap: 2 }}>
-                                      <PremiumTextField
-                                        colorTheme={color}
-                                        label="Button CTA Text"
-                                        placeholder="Apply for Position"
-                                        value={b.content.ctaText || 'Apply Now'}
-                                        onChange={e => updateBlock(b.id, 'ctaText', e.target.value)}
-                                      />
-                                      <PremiumTextField
-                                        colorTheme={color}
-                                        label="CTA Link URL"
-                                        placeholder="/careers/senior-agronomist"
-                                        value={b.content.ctaLink || ''}
-                                        onChange={e => updateBlock(b.id, 'ctaLink', e.target.value)}
-                                      />
-                                    </Box>
-                                  </Box>
+                                  <EcosystemJobPicker
+                                    blockId={b.id}
+                                    content={b.content}
+                                    articleCommodity={selectedCommodity}
+                                    articleCategory={selectedCategory}
+                                    articleSubcategory={subcategoriesInSelectedCategory.find(s => s.id === selectedSubcategory)?.title || selectedSubcategory}
+                                    colorTheme={color}
+                                    userId={profile?.uid}
+                                    onSelectJob={(jobData) => {
+                                      setBlocks(blocks.map(blk => blk.id === b.id ? {
+                                        ...blk,
+                                        content: {
+                                          ...blk.content,
+                                          ...jobData
+                                        }
+                                      } : blk));
+                                    }}
+                                    onUpdateField={(key, val) => updateBlock(b.id, key, val)}
+                                    onClear={() => {
+                                      setBlocks(blocks.map(blk => blk.id === b.id ? {
+                                        ...blk,
+                                        content: {
+                                          embedType: 'job',
+                                          title: '',
+                                          organization: '',
+                                          location: '',
+                                          compensationOrTarget: '',
+                                          ctaText: 'Apply Now',
+                                          ctaLink: '',
+                                          jobId: ''
+                                        }
+                                      } : blk));
+                                    }}
+                                  />
                                 )}
                               </Box>
                             </Box>
