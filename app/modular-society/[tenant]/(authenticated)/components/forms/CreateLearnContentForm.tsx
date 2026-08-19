@@ -534,7 +534,7 @@ export default function CreateLearnContentForm({
   const [selectedFormat, setSelectedFormat] = useState<ArticleFormat>('brief');
   const [selectedEra, setSelectedEra] = useState<ArticleEra>('present');
   const [isBlueprintCardFlipped, setIsBlueprintCardFlipped] = useState(false);
-  const [blueprintConfigStep, setBlueprintConfigStep] = useState<1 | 2 | 3>(1);
+  const [blueprintConfigStep, setBlueprintConfigStep] = useState<1 | 2>(1);
   const [thumbnailUrl, setThumbnailUrl] = useState('');
 
   const currentSelectedChallenge = useMemo(() => {
@@ -545,7 +545,9 @@ export default function CreateLearnContentForm({
     return (currentSelectedChallenge?.subcategories || []).map((s: any) => ({
       id: s.id,
       title: s.title,
-      description: s.description || '',
+      description: s.desc || s.description || '',
+      imageUrl: s.imageUrl || currentSelectedChallenge?.imageUrl || '',
+      groupName: s.groupName || '',
       categoryId: currentSelectedChallenge?.id || '',
       categoryTitle: currentSelectedChallenge?.title || ''
     }));
@@ -1279,272 +1281,401 @@ export default function CreateLearnContentForm({
                               </Tooltip>
                             </Box>
 
-                            {/* Sub-Header / Step Stepper Bar */}
-                            <Box sx={{
-                              display: 'flex', alignItems: 'center', gap: 1,
-                              px: { xs: 2.5, md: 3.5 }, pt: 1.5, pb: 1.5,
-                              borderBottom: '1px solid rgba(0,0,0,0.05)',
-                              bgcolor: 'rgba(0,0,0,0.01)',
-                              overflowX: 'auto',
-                              '&::-webkit-scrollbar': { display: 'none' }
-                            }}>
-                              {[
-                                { step: 1 as const, label: '1. Subcategory', desc: selectedSubObj?.title || 'Not Selected', isDone: !!selectedSubcategory },
-                                { step: 2 as const, label: '2. Format Lens', desc: activeFormatMeta.label, isDone: !!selectedFormat },
-                                { step: 3 as const, label: '3. Timeline Era', desc: activeEraMeta.label, isDone: !!selectedEra },
-                              ].map((s) => {
-                                const isActive = blueprintConfigStep === s.step;
-                                return (
-                                  <Box
-                                    key={s.step}
-                                    onClick={() => setBlueprintConfigStep(s.step)}
-                                    sx={{
-                                      display: 'flex', alignItems: 'center', gap: 1.25, px: 2, py: 0.85, borderRadius: '14px',
-                                      cursor: 'pointer', transition: 'all 0.2s ease', flexShrink: 0,
-                                      bgcolor: isActive ? alpha(activeFormatMeta.color, 0.12) : 'rgba(0,0,0,0.03)',
-                                      border: `1.5px solid ${isActive ? activeFormatMeta.color : 'transparent'}`,
-                                      boxShadow: isActive ? `0 4px 12px ${alpha(activeFormatMeta.color, 0.15)}` : 'none',
-                                      '&:hover': { bgcolor: alpha(activeFormatMeta.color, 0.08) }
-                                    }}
-                                  >
-                                    <Box sx={{
-                                      width: 24, height: 24, borderRadius: '50%',
-                                      bgcolor: s.isDone ? activeFormatMeta.color : (isActive ? alpha(activeFormatMeta.color, 0.2) : 'rgba(0,0,0,0.1)'),
-                                      color: s.isDone ? '#fff' : (isActive ? activeFormatMeta.color : '#64748b'),
-                                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                      fontSize: '0.75rem', fontWeight: 900
-                                    }}>
-                                      {s.isDone ? '✓' : s.step}
-                                    </Box>
-                                    <Box>
-                                      <Typography sx={{ fontWeight: 800, fontSize: '0.82rem', color: isActive ? activeFormatMeta.color : '#0f172a' }}>
-                                        {s.label}
-                                      </Typography>
-                                      <Typography sx={{ fontSize: '0.7rem', color: '#64748b', whiteSpace: 'nowrap', maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 500 }}>
-                                        {s.desc}
-                                      </Typography>
-                                    </Box>
-                                  </Box>
-                                );
-                              })}
-                            </Box>
-
                             {/* Form body */}
-                            <Box sx={{ p: { xs: 2.5, md: 4 }, display: 'flex', flexDirection: 'column', gap: 3.5 }}>
+                            <Box sx={{ p: { xs: 2.5, md: 3.5 }, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                               
-                              {/* ═══ STEP 1: SUBCATEGORY (FILTERED TO CURRENT CHALLENGE ONLY) ═══ */}
+                              {/* ═══ STEP 1: SUBCATEGORY FOCUS (HORIZONTAL IMAGE CARDS) ═══ */}
                               {blueprintConfigStep === 1 && (
-                                <Box sx={{ animation: 'fadeIn 0.25s ease', display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                                <Box sx={{ animation: 'fadeIn 0.25s ease', display: 'flex', flexDirection: 'column', gap: 2 }}>
                                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
                                     <Box>
-                                      <Typography sx={{ fontWeight: 800, fontSize: '0.95rem', color: '#0f172a' }}>
-                                        Subcategory Focus for: <span style={{ color: activeFormatMeta.color }}>{currentSelectedChallenge?.title}</span>
+                                      <Typography sx={{ fontWeight: 900, fontSize: '1.05rem', color: '#0f172a' }}>
+                                        Select Subcategory Focus for: <span style={{ color: activeFormatMeta.color }}>{currentSelectedChallenge?.title}</span>
                                       </Typography>
-                                      <Typography sx={{ color: '#64748b', fontSize: '0.8rem', mt: 0.25 }}>
-                                        Showing the {subcategoriesInSelectedCategory.length} subcategories available under this challenge.
+                                      <Typography sx={{ color: '#64748b', fontSize: '0.82rem', mt: 0.25 }}>
+                                        Tap a subcategory card below to choose your strategic focal point.
                                       </Typography>
                                     </Box>
                                     {selectedSubcategory && (
                                       <Chip
                                         label={`Selected: ${selectedSubObj?.title || ''}`}
                                         size="small"
-                                        sx={{ bgcolor: alpha(activeFormatMeta.color, 0.12), color: activeFormatMeta.color, fontWeight: 800 }}
+                                        sx={{ bgcolor: alpha(activeFormatMeta.color, 0.12), color: activeFormatMeta.color, fontWeight: 800, border: `1px solid ${alpha(activeFormatMeta.color, 0.3)}` }}
                                       />
                                     )}
                                   </Box>
 
-                                  <PremiumAutocomplete
-                                    colorTheme={activeFormatMeta.color}
-                                    options={subcategoriesInSelectedCategory}
-                                    getOptionLabel={(option) => option.title}
-                                    value={subcategoriesInSelectedCategory.find(s => s.id === selectedSubcategory) || null}
-                                    onChange={(_, newValue) => {
-                                      if (newValue) {
-                                        setSelectedSubcategory(newValue.id);
-                                      }
-                                    }}
-                                    label="Search Subcategory"
-                                    placeholder={`Search in ${currentSelectedChallenge?.title}...`}
-                                    fullWidth
-                                  />
-
-                                  {/* Quick Clickable Chips for the Challenge Subcategories */}
-                                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, pt: 0.5 }}>
-                                    {subcategoriesInSelectedCategory.map(sub => {
+                                  {/* Subcategories Grid of Horizontal Cards */}
+                                  <Box sx={{
+                                    display: 'grid',
+                                    gridTemplateColumns: { xs: '1fr', lg: 'repeat(2, 1fr)' },
+                                    gap: 1.75,
+                                    maxHeight: '490px',
+                                    overflowY: 'auto',
+                                    pr: 1,
+                                    '&::-webkit-scrollbar': { width: '6px' },
+                                    '&::-webkit-scrollbar-track': { background: 'transparent' },
+                                    '&::-webkit-scrollbar-thumb': { background: alpha(activeFormatMeta.color, 0.2), borderRadius: '10px' }
+                                  }}>
+                                    {subcategoriesInSelectedCategory.map((sub) => {
                                       const isSelected = selectedSubcategory === sub.id;
                                       return (
-                                        <Chip
+                                        <Box
                                           key={sub.id}
-                                          label={sub.title}
-                                          onClick={() => setSelectedSubcategory(sub.id)}
-                                          sx={{
-                                            bgcolor: isSelected ? activeFormatMeta.color : 'rgba(0,0,0,0.04)',
-                                            color: isSelected ? '#fff' : '#334155',
-                                            fontWeight: isSelected ? 800 : 600,
-                                            border: isSelected ? `1px solid ${activeFormatMeta.color}` : '1px solid rgba(0,0,0,0.06)',
-                                            cursor: 'pointer', transition: 'all 0.2s',
-                                            boxShadow: isSelected ? `0 4px 12px ${alpha(activeFormatMeta.color, 0.25)}` : 'none',
-                                            '&:hover': { bgcolor: isSelected ? activeFormatMeta.color : 'rgba(0,0,0,0.08)', transform: 'translateY(-1px)' }
+                                          onClick={() => {
+                                            setSelectedSubcategory(sub.id);
+                                            setTimeout(() => {
+                                              setBlueprintConfigStep(2);
+                                            }, 120);
                                           }}
-                                        />
+                                          sx={{
+                                            display: 'flex',
+                                            flexDirection: 'row',
+                                            borderRadius: '18px',
+                                            border: `2px solid ${isSelected ? activeFormatMeta.color : 'rgba(0,0,0,0.06)'}`,
+                                            bgcolor: isSelected ? alpha(activeFormatMeta.color, 0.06) : '#ffffff',
+                                            boxShadow: isSelected ? `0 8px 24px ${alpha(activeFormatMeta.color, 0.22)}` : '0 2px 10px rgba(0,0,0,0.03)',
+                                            overflow: 'hidden',
+                                            cursor: 'pointer',
+                                            position: 'relative',
+                                            transition: 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                                            '&:hover': {
+                                              transform: 'translateY(-2px)',
+                                              borderColor: isSelected ? activeFormatMeta.color : alpha(activeFormatMeta.color, 0.4),
+                                              boxShadow: `0 8px 20px ${alpha(activeFormatMeta.color, 0.15)}`
+                                            }
+                                          }}
+                                        >
+                                          {/* Left: Image on side */}
+                                          <Box sx={{
+                                            width: { xs: 100, sm: 120 },
+                                            minWidth: { xs: 100, sm: 120 },
+                                            position: 'relative',
+                                            bgcolor: 'rgba(0,0,0,0.04)',
+                                            overflow: 'hidden'
+                                          }}>
+                                            {sub.imageUrl ? (
+                                              <img
+                                                src={sub.imageUrl}
+                                                alt={sub.title}
+                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                onError={(e) => {
+                                                  (e.currentTarget as HTMLElement).style.display = 'none';
+                                                }}
+                                              />
+                                            ) : (
+                                              <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: alpha(activeFormatMeta.color, 0.08) }}>
+                                                <Typography sx={{ fontSize: '1.6rem' }}>🌱</Typography>
+                                              </Box>
+                                            )}
+                                            <Box sx={{
+                                              position: 'absolute', inset: 0,
+                                              background: 'linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.12) 100%)'
+                                            }} />
+                                          </Box>
+
+                                          {/* Right: Text & Selection */}
+                                          <Box sx={{ p: 1.75, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minWidth: 0 }}>
+                                            <Box>
+                                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 0.5 }}>
+                                                {sub.groupName ? (
+                                                  <Chip
+                                                    label={sub.groupName}
+                                                    size="small"
+                                                    sx={{
+                                                      bgcolor: isSelected ? alpha(activeFormatMeta.color, 0.15) : 'rgba(0,0,0,0.05)',
+                                                      color: isSelected ? activeFormatMeta.color : '#64748b',
+                                                      fontSize: '0.66rem',
+                                                      fontWeight: 800,
+                                                      height: 19
+                                                    }}
+                                                  />
+                                                ) : <Box />}
+
+                                                {/* Sleek Selection Radio Pill */}
+                                                <Box sx={{
+                                                  display: 'flex', alignItems: 'center', gap: 0.5,
+                                                  px: 1, py: 0.25, borderRadius: '12px',
+                                                  bgcolor: isSelected ? activeFormatMeta.color : 'rgba(0,0,0,0.04)',
+                                                  color: isSelected ? '#fff' : '#94a3b8',
+                                                  transition: 'all 0.2s'
+                                                }}>
+                                                  <Box sx={{
+                                                    width: 14, height: 14, borderRadius: '50%',
+                                                    bgcolor: isSelected ? '#fff' : 'transparent',
+                                                    border: isSelected ? 'none' : '2px solid #cbd5e1',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                                  }}>
+                                                    {isSelected && (
+                                                      <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: activeFormatMeta.color }} />
+                                                    )}
+                                                  </Box>
+                                                  <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: isSelected ? '#fff' : '#64748b' }}>
+                                                    {isSelected ? 'Selected' : 'Select'}
+                                                  </Typography>
+                                                </Box>
+                                              </Box>
+
+                                              <Typography sx={{
+                                                fontWeight: 800, fontSize: '0.94rem', color: isSelected ? activeFormatMeta.color : '#0f172a',
+                                                lineHeight: 1.25, mb: 0.5
+                                              }}>
+                                                {sub.title}
+                                              </Typography>
+
+                                              <Typography sx={{
+                                                color: '#64748b', fontSize: '0.76rem', lineHeight: 1.35,
+                                                display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'
+                                              }}>
+                                                {sub.description || 'Core strategic pathway under this challenge.'}
+                                              </Typography>
+                                            </Box>
+                                          </Box>
+                                        </Box>
                                       );
                                     })}
-                                  </Box>
-
-                                  {/* Navigation */}
-                                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', pt: 2, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-                                    <Button
-                                      variant="contained"
-                                      onClick={() => setBlueprintConfigStep(2)}
-                                      endIcon={<ArrowForwardIcon />}
-                                      sx={{
-                                        bgcolor: activeFormatMeta.color, color: '#fff', fontWeight: 800, px: 3.5, py: 1.2, borderRadius: '14px',
-                                        boxShadow: `0 4px 16px ${alpha(activeFormatMeta.color, 0.3)}`,
-                                        '&:hover': { bgcolor: alpha(activeFormatMeta.color, 0.9) }
-                                      }}
-                                    >
-                                      Continue to Format Lens →
-                                    </Button>
                                   </Box>
                                 </Box>
                               )}
 
-                              {/* ═══ STEP 2: FORMAT (THE 5 LENSES) ═══ */}
+                              {/* ═══ STEP 2: THE 15 EDITORIAL LENSES MATRIX ═══ */}
                               {blueprintConfigStep === 2 && (
-                                <Box sx={{ animation: 'fadeIn 0.25s ease', display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                                  <Box>
-                                    <Typography sx={{ fontWeight: 800, fontSize: '0.95rem', color: '#0f172a' }}>
-                                      Choose Article Format (The Editorial Lens)
-                                    </Typography>
-                                    <Typography sx={{ color: '#64748b', fontSize: '0.8rem', mt: 0.25 }}>
-                                      Select the narrative structure and analytical lens for your brief.
-                                    </Typography>
+                                <Box sx={{ animation: 'fadeIn 0.25s ease', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+                                    <Box>
+                                      <Typography sx={{ fontWeight: 900, fontSize: '1.05rem', color: '#0f172a' }}>
+                                        Select from the 15 Editorial Matrix Lenses
+                                      </Typography>
+                                      <Typography sx={{ color: '#64748b', fontSize: '0.82rem', mt: 0.25 }}>
+                                        Targeting: <strong style={{ color: '#0f172a' }}>{selectedSubObj?.title || 'Selected Subcategory'}</strong>. Choose a lens below.
+                                      </Typography>
+                                    </Box>
+                                    {isBlueprintFilled && (
+                                      <Chip
+                                        label={`Active: ${activeFormatMeta.emoji} ${activeFormatMeta.label} · ${activeEraMeta.label}`}
+                                        size="small"
+                                        sx={{ bgcolor: alpha(activeFormatMeta.color, 0.12), color: activeFormatMeta.color, fontWeight: 800, border: `1px solid ${alpha(activeFormatMeta.color, 0.3)}` }}
+                                      />
+                                    )}
                                   </Box>
 
-                                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(5, 1fr)' }, gap: 1.5 }}>
-                                    {formatsList.map(fmt => {
-                                      const meta = FORMAT_CONFIG[fmt];
-                                      const isSelected = selectedFormat === fmt;
-                                      return (
-                                        <PremiumCard
-                                          key={fmt}
-                                          variant="interactive"
-                                          baseColor={meta.color}
-                                          onClick={() => setSelectedFormat(fmt)}
-                                          sx={{
-                                            p: 2, borderRadius: '18px',
-                                            bgcolor: isSelected ? alpha(meta.color, 0.12) : 'rgba(255,255,255,0.7)',
-                                            border: `2px solid ${isSelected ? meta.color : 'rgba(0,0,0,0.06)'}`,
-                                            display: 'flex', flexDirection: 'column', gap: 0.5,
-                                            boxShadow: isSelected ? `0 8px 24px ${alpha(meta.color, 0.25)}` : '0 4px 16px rgba(0,0,0,0.03)',
-                                          }}
-                                        >
-                                          <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: isSelected ? meta.color : '#0f172a' }}>
-                                            {meta.emoji} {meta.label}
-                                          </Typography>
-                                          <Typography sx={{ fontSize: '0.75rem', color: '#64748b', lineHeight: 1.3, display: { xs: 'none', md: 'block' } }}>
-                                            {meta.desc}
-                                          </Typography>
-                                        </PremiumCard>
-                                      );
+                                  {/* The 15 Combinations Grid (5 Formats x 3 Eras) */}
+                                  <Box sx={{
+                                    display: 'grid',
+                                    gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
+                                    gap: 1.5,
+                                    maxHeight: '490px',
+                                    overflowY: 'auto',
+                                    pr: 1,
+                                    '&::-webkit-scrollbar': { width: '6px' },
+                                    '&::-webkit-scrollbar-track': { background: 'transparent' },
+                                    '&::-webkit-scrollbar-thumb': { background: alpha(activeFormatMeta.color, 0.2), borderRadius: '10px' }
+                                  }}>
+                                    {erasList.map(era => {
+                                      const eraMeta = ERA_CONFIG[era];
+                                      return formatsList.map(fmt => {
+                                        const fmtMeta = FORMAT_CONFIG[fmt];
+                                        const isSelected = selectedFormat === fmt && selectedEra === era;
+                                        const blueprint = getBlueprint(fmt, era);
+
+                                        return (
+                                          <Box
+                                            key={`${fmt}-${era}`}
+                                            onClick={() => {
+                                              setSelectedFormat(fmt);
+                                              setSelectedEra(era);
+                                              setSelectedTimeframe(era as any);
+                                            }}
+                                            sx={{
+                                              p: 2,
+                                              borderRadius: '18px',
+                                              bgcolor: isSelected ? alpha(fmtMeta.color, 0.08) : '#ffffff',
+                                              border: `2px solid ${isSelected ? fmtMeta.color : 'rgba(0,0,0,0.06)'}`,
+                                              boxShadow: isSelected ? `0 8px 24px ${alpha(fmtMeta.color, 0.25)}` : '0 2px 10px rgba(0,0,0,0.02)',
+                                              display: 'flex',
+                                              flexDirection: 'column',
+                                              gap: 1,
+                                              cursor: 'pointer',
+                                              position: 'relative',
+                                              transition: 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                                              '&:hover': {
+                                                transform: 'translateY(-2px)',
+                                                borderColor: isSelected ? fmtMeta.color : alpha(fmtMeta.color, 0.4),
+                                                boxShadow: `0 8px 20px ${alpha(fmtMeta.color, 0.15)}`
+                                              }
+                                            }}
+                                          >
+                                            {/* Header: Format + Era Badge + Radio */}
+                                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                                              <Typography sx={{ fontWeight: 800, fontSize: '0.92rem', color: isSelected ? fmtMeta.color : '#0f172a', display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                                <span>{fmtMeta.emoji}</span> {fmtMeta.label}
+                                              </Typography>
+
+                                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                                <Chip
+                                                  label={`${eraMeta.emoji} ${eraMeta.label}`}
+                                                  size="small"
+                                                  sx={{
+                                                    height: 20, fontSize: '0.68rem', fontWeight: 800,
+                                                    bgcolor: isSelected ? alpha(fmtMeta.color, 0.15) : alpha(eraMeta.color, 0.1),
+                                                    color: isSelected ? fmtMeta.color : eraMeta.color,
+                                                    border: `1px solid ${isSelected ? alpha(fmtMeta.color, 0.3) : alpha(eraMeta.color, 0.2)}`
+                                                  }}
+                                                />
+                                                <Box sx={{
+                                                  width: 16, height: 16, borderRadius: '50%',
+                                                  bgcolor: isSelected ? fmtMeta.color : 'transparent',
+                                                  border: isSelected ? 'none' : '2px solid #cbd5e1',
+                                                  display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                                }}>
+                                                  {isSelected && (
+                                                    <CheckIcon sx={{ fontSize: 12, color: '#fff', fontWeight: 900 }} />
+                                                  )}
+                                                </Box>
+                                              </Box>
+                                            </Box>
+
+                                            {/* Description */}
+                                            <Typography sx={{ fontSize: '0.74rem', color: '#64748b', lineHeight: 1.35 }}>
+                                              {fmtMeta.desc}
+                                            </Typography>
+
+                                            {/* Footer: Block count */}
+                                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 'auto', pt: 0.75, borderTop: '1px dashed rgba(0,0,0,0.06)' }}>
+                                              <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: isSelected ? fmtMeta.color : '#94a3b8' }}>
+                                                {blueprint.length} SOP Blocks
+                                              </Typography>
+                                              <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: isSelected ? fmtMeta.color : '#94a3b8' }}>
+                                                {isSelected ? 'Active Lens ✓' : 'Tap to select'}
+                                              </Typography>
+                                            </Box>
+                                          </Box>
+                                        );
+                                      });
                                     })}
                                   </Box>
+                                </Box>
+                              )}
 
-                                  {/* Navigation */}
-                                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: 2, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                              {/* ═══ UNIFIED BOTTOM ACTION & PROGRESS CONTAINER ═══ */}
+                              <Box sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                flexWrap: 'wrap',
+                                gap: 2,
+                                pt: 2,
+                                borderTop: '1px solid rgba(0,0,0,0.06)'
+                              }}>
+                                {/* Left: Back button or selection status */}
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                  {blueprintConfigStep === 2 ? (
                                     <Button
                                       variant="outlined"
                                       onClick={() => setBlueprintConfigStep(1)}
-                                      startIcon={<ArrowBackIcon />}
-                                      sx={{ borderRadius: '14px', fontWeight: 700, px: 2.5, py: 1, borderColor: 'rgba(0,0,0,0.15)', color: '#475569' }}
+                                      startIcon={<ArrowBackIcon sx={{ fontSize: 18 }} />}
+                                      sx={{
+                                        borderRadius: '12px', fontWeight: 700, px: 2.5, py: 0.8,
+                                        borderColor: 'rgba(0,0,0,0.15)', color: '#475569',
+                                        bgcolor: '#fff',
+                                        '&:hover': { bgcolor: 'rgba(0,0,0,0.04)', borderColor: 'rgba(0,0,0,0.25)' }
+                                      }}
                                     >
                                       Back
                                     </Button>
+                                  ) : (
+                                    <Typography sx={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>
+                                      {selectedSubcategory ? `Selected: ${selectedSubObj?.title}` : 'Tap a subcategory to proceed'}
+                                    </Typography>
+                                  )}
+                                </Box>
+
+                                {/* Center: Integrated Compact Progress Stepper */}
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                                  <Box
+                                    onClick={() => setBlueprintConfigStep(1)}
+                                    sx={{
+                                      display: 'flex', alignItems: 'center', gap: 0.75, px: 1.5, py: 0.5, borderRadius: '20px',
+                                      cursor: 'pointer',
+                                      bgcolor: blueprintConfigStep === 1 ? alpha(activeFormatMeta.color, 0.12) : 'rgba(0,0,0,0.04)',
+                                      border: `1px solid ${blueprintConfigStep === 1 ? activeFormatMeta.color : 'transparent'}`,
+                                      transition: 'all 0.2s'
+                                    }}
+                                  >
+                                    <Box sx={{
+                                      width: 18, height: 18, borderRadius: '50%',
+                                      bgcolor: selectedSubcategory ? activeFormatMeta.color : (blueprintConfigStep === 1 ? alpha(activeFormatMeta.color, 0.3) : 'rgba(0,0,0,0.15)'),
+                                      color: selectedSubcategory ? '#fff' : (blueprintConfigStep === 1 ? activeFormatMeta.color : '#64748b'),
+                                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                      fontSize: '0.68rem', fontWeight: 900
+                                    }}>
+                                      {selectedSubcategory ? '✓' : '1'}
+                                    </Box>
+                                    <Typography sx={{ fontSize: '0.76rem', fontWeight: 800, color: blueprintConfigStep === 1 ? activeFormatMeta.color : '#64748b' }}>
+                                      Subcategory
+                                    </Typography>
+                                  </Box>
+
+                                  <Box sx={{ width: 14, height: 2, bgcolor: isBlueprintFilled ? activeFormatMeta.color : 'rgba(0,0,0,0.1)' }} />
+
+                                  <Box
+                                    onClick={() => { if (selectedSubcategory) setBlueprintConfigStep(2); }}
+                                    sx={{
+                                      display: 'flex', alignItems: 'center', gap: 0.75, px: 1.5, py: 0.5, borderRadius: '20px',
+                                      cursor: selectedSubcategory ? 'pointer' : 'default',
+                                      bgcolor: blueprintConfigStep === 2 ? alpha(activeFormatMeta.color, 0.12) : 'rgba(0,0,0,0.04)',
+                                      border: `1px solid ${blueprintConfigStep === 2 ? activeFormatMeta.color : 'transparent'}`,
+                                      transition: 'all 0.2s',
+                                      opacity: selectedSubcategory ? 1 : 0.6
+                                    }}
+                                  >
+                                    <Box sx={{
+                                      width: 18, height: 18, borderRadius: '50%',
+                                      bgcolor: isBlueprintFilled ? activeFormatMeta.color : (blueprintConfigStep === 2 ? alpha(activeFormatMeta.color, 0.3) : 'rgba(0,0,0,0.15)'),
+                                      color: isBlueprintFilled ? '#fff' : (blueprintConfigStep === 2 ? activeFormatMeta.color : '#64748b'),
+                                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                      fontSize: '0.68rem', fontWeight: 900
+                                    }}>
+                                      {isBlueprintFilled ? '✓' : '2'}
+                                    </Box>
+                                    <Typography sx={{ fontSize: '0.76rem', fontWeight: 800, color: blueprintConfigStep === 2 ? activeFormatMeta.color : '#64748b' }}>
+                                      15 Lenses
+                                    </Typography>
+                                  </Box>
+                                </Box>
+
+                                {/* Right: Next / Save Action Button */}
+                                <Box>
+                                  {blueprintConfigStep === 1 ? (
                                     <Button
                                       variant="contained"
-                                      onClick={() => setBlueprintConfigStep(3)}
-                                      endIcon={<ArrowForwardIcon />}
+                                      disabled={!selectedSubcategory}
+                                      onClick={() => setBlueprintConfigStep(2)}
+                                      endIcon={<ArrowForwardIcon sx={{ fontSize: 18 }} />}
                                       sx={{
-                                        bgcolor: activeFormatMeta.color, color: '#fff', fontWeight: 800, px: 3.5, py: 1.2, borderRadius: '14px',
-                                        boxShadow: `0 4px 16px ${alpha(activeFormatMeta.color, 0.3)}`,
+                                        bgcolor: activeFormatMeta.color, color: '#fff', fontWeight: 800, px: 3.5, py: 0.85, borderRadius: '12px',
+                                        boxShadow: `0 4px 14px ${alpha(activeFormatMeta.color, 0.3)}`,
                                         '&:hover': { bgcolor: alpha(activeFormatMeta.color, 0.9) }
                                       }}
                                     >
-                                      Continue to Era →
+                                      Next
                                     </Button>
-                                  </Box>
-                                </Box>
-                              )}
-
-                              {/* ═══ STEP 3: ERA (THE 3 TIMELINES) ═══ */}
-                              {blueprintConfigStep === 3 && (
-                                <Box sx={{ animation: 'fadeIn 0.25s ease', display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                                  <Box>
-                                    <Typography sx={{ fontWeight: 800, fontSize: '0.95rem', color: '#0f172a' }}>
-                                      Select Chronological Era (The Data & Time State)
-                                    </Typography>
-                                    <Typography sx={{ color: '#64748b', fontSize: '0.8rem', mt: 0.25 }}>
-                                      Anchor your analysis in the appropriate timeline horizon.
-                                    </Typography>
-                                  </Box>
-
-                                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 1.5 }}>
-                                    {erasList.map(era => {
-                                      const meta = ERA_CONFIG[era];
-                                      const isSelected = selectedEra === era;
-                                      return (
-                                        <PremiumCard
-                                          key={era}
-                                          variant="interactive"
-                                          baseColor={meta.color}
-                                          onClick={() => {
-                                            setSelectedEra(era);
-                                            setSelectedTimeframe(era as any);
-                                          }}
-                                          sx={{
-                                            p: 2.5, borderRadius: '18px',
-                                            bgcolor: isSelected ? alpha(meta.color, 0.12) : 'rgba(255,255,255,0.7)',
-                                            border: `2px solid ${isSelected ? meta.color : 'rgba(0,0,0,0.06)'}`,
-                                            display: 'flex', flexDirection: 'column', gap: 0.75,
-                                            boxShadow: isSelected ? `0 8px 24px ${alpha(meta.color, 0.25)}` : '0 4px 16px rgba(0,0,0,0.03)',
-                                          }}
-                                        >
-                                          <Typography sx={{ fontWeight: 800, fontSize: '1rem', color: isSelected ? meta.color : '#0f172a' }}>
-                                            {meta.emoji} {meta.label}
-                                          </Typography>
-                                          <Typography sx={{ fontSize: '0.8rem', color: '#64748b', lineHeight: 1.4 }}>
-                                            {meta.desc}
-                                          </Typography>
-                                        </PremiumCard>
-                                      );
-                                    })}
-                                  </Box>
-
-                                  {/* Navigation */}
-                                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: 2, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-                                    <Button
-                                      variant="outlined"
-                                      onClick={() => setBlueprintConfigStep(2)}
-                                      startIcon={<ArrowBackIcon />}
-                                      sx={{ borderRadius: '14px', fontWeight: 700, px: 2.5, py: 1, borderColor: 'rgba(0,0,0,0.15)', color: '#475569' }}
-                                    >
-                                      Back to Format
-                                    </Button>
+                                  ) : (
                                     <Button
                                       variant="contained"
                                       onClick={() => setIsBlueprintCardFlipped(false)}
-                                      startIcon={<CheckIcon />}
+                                      startIcon={<CheckIcon sx={{ fontSize: 18 }} />}
                                       sx={{
-                                        bgcolor: activeFormatMeta.color, color: '#fff', fontWeight: 800, px: 4, py: 1.2, borderRadius: '14px',
-                                        boxShadow: `0 4px 16px ${alpha(activeFormatMeta.color, 0.3)}`,
+                                        bgcolor: activeFormatMeta.color, color: '#fff', fontWeight: 800, px: 4, py: 0.85, borderRadius: '12px',
+                                        boxShadow: `0 4px 14px ${alpha(activeFormatMeta.color, 0.3)}`,
                                         '&:hover': { bgcolor: alpha(activeFormatMeta.color, 0.9) }
                                       }}
                                     >
-                                      Lock In Blueprint Parameters ✓
+                                      Save
                                     </Button>
-                                  </Box>
+                                  )}
                                 </Box>
-                              )}
+                              </Box>
 
                             </Box>
                           </Box>
