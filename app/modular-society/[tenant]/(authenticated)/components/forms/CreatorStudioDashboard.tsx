@@ -103,6 +103,7 @@ export default function CreatorStudioDashboard({
   });
   const [selectedCategory, setSelectedCategory] = useState<string>('land');
   const [selectedTargetDate, setSelectedTargetDate] = useState<string>(() => currentDate.toISOString());
+  const [focusedDayIdx, setFocusedDayIdx] = useState<number>(0);
   
   // Step 3 Insights State
   const [insights, setInsights] = useState<ArticleInsightItem[]>([]);
@@ -196,6 +197,7 @@ export default function CreatorStudioDashboard({
   const handleSelectCommodityAndWeek = (week: number, commodity: string) => {
     setSelectedWeek(week);
     setSelectedCommodity(commodity);
+    setFocusedDayIdx(0);
     setMatrixStep(2);
   };
 
@@ -294,6 +296,24 @@ export default function CreatorStudioDashboard({
       challenge,
     };
   });
+
+  // Auto-scroll Step 2 active day into center view
+  useEffect(() => {
+    if (matrixStep === 2) {
+      const todayFormatted = format(currentDate, 'yyyy-MM-dd');
+      const todayIdx = weekDays.findIndex(d => format(d.date, 'yyyy-MM-dd') === todayFormatted);
+      const targetIdx = todayIdx !== -1 ? todayIdx : 0;
+      setFocusedDayIdx(targetIdx);
+
+      const timer = setTimeout(() => {
+        const activeEl = document.getElementById(`step2-day-${targetIdx}`);
+        if (activeEl) {
+          activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [matrixStep, selectedWeek, selectedYear]);
 
   const handleFastIngest = () => {
     setFastIngestError('');
@@ -439,7 +459,7 @@ export default function CreatorStudioDashboard({
                 background: isExpanded ? `linear-gradient(135deg, #0f172a 0%, #1e293b 100%)` : opt.grad,
                 border: '1px solid rgba(255,255,255,0.15)',
                 boxShadow: `0 10px 30px ${alpha(opt.color, 0.2)}`,
-                position: 'relative', overflow: 'hidden',
+                position: 'relative', overflow: isExpanded ? 'visible' : 'hidden',
                 transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)',
                 '&:hover': !isExpanded && opt.readiness === 'live' ? {
                   transform: 'translateY(-6px) scale(1.02)',
@@ -619,217 +639,398 @@ export default function CreatorStudioDashboard({
                     </Box>
                   ) : (
                     // ───────────────────────────────────────────────────────────
-                    // ARTICLE 3-STEP WIZARD (EXISTING)
+                    // ARTICLE 3-STEP WIZARD
                     // ───────────────────────────────────────────────────────────
-                    <Box>
-                      {/* Top Bar */}
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                          <Box sx={{ p: 1.2, borderRadius: '14px', bgcolor: 'rgba(255,255,255,0.15)', color: '#fff' }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                      {/* Container Header & Minimize Button (TradeListingStudio style) */}
+                      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: { xs: 1, sm: 2 } }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1.5, sm: 2 } }}>
+                          {matrixStep > 1 && (
+                            <IconButton
+                              onClick={() => setMatrixStep((matrixStep - 1) as any)}
+                              size="small"
+                              sx={{
+                                color: '#fff',
+                                bgcolor: 'rgba(255,255,255,0.08)',
+                                border: '1px solid rgba(255,255,255,0.12)',
+                                '&:hover': { bgcolor: 'rgba(255,255,255,0.16)' }
+                              }}
+                            >
+                              <ArrowBackIcon sx={{ fontSize: 16 }} />
+                            </IconButton>
+                          )}
+                          <Box sx={{ p: 1, borderRadius: '12px', bgcolor: 'rgba(255,255,255,0.2)', color: '#fff' }}>
                             {opt.icon}
                           </Box>
                           <Box>
-                            <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                              Intelligence Briefing Studio
+                            <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: { xs: '0.75rem', sm: '0.85rem' }, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>
+                              {opt.title} Setup {matrixStep > 1 && `· Week ${selectedWeek}: ${selectedCommodity}`}
                             </Typography>
-                            <Typography variant="h5" sx={{ fontWeight: 900, color: '#fff', mt: 0.2 }}>
-                              {matrixStep === 1 && "1. Choose Commodity & Week"}
-                              {matrixStep === 2 && "2. Select Daily Strategic Pillar"}
-                              {matrixStep === 3 && "3. Pick Your Intelligence Briefing Angle"}
+                            <Typography variant="h5" sx={{ fontWeight: 900, letterSpacing: '-0.02em', color: '#fff', mt: 0.5, fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
+                              {matrixStep === 1 ? "Ready to create?" : matrixStep === 2 ? "Select Daily Strategic Pillar" : "Pick Editorial Angle"}
                             </Typography>
                           </Box>
                         </Box>
-
-                    {/* Step Progress & Minimize */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 1 }}>
-                        {[1, 2, 3].map(stepNum => (
-                          <Box
-                            key={stepNum}
-                            onClick={() => stepNum < matrixStep && setMatrixStep(stepNum as any)}
-                            sx={{
-                              width: 28, height: 28, borderRadius: '50%',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              bgcolor: matrixStep === stepNum ? ACCENT : matrixStep > stepNum ? '#10b981' : 'rgba(255,255,255,0.1)',
-                              color: '#fff', fontSize: '0.75rem', fontWeight: 800,
-                              cursor: stepNum < matrixStep ? 'pointer' : 'default',
-                              transition: 'all 0.2s'
-                            }}
+                        <Tooltip title="Minimize">
+                          <IconButton
+                            onClick={(e) => { e.stopPropagation(); handleClose(); }}
+                            sx={{ color: 'rgba(255,255,255,0.8)', bgcolor: 'rgba(0,0,0,0.15)', '&:hover': { bgcolor: 'rgba(0,0,0,0.3)', color: '#fff' } }}
                           >
-                            {matrixStep > stepNum ? '✓' : stepNum}
-                          </Box>
-                        ))}
+                            <MinimizeIcon />
+                          </IconButton>
+                        </Tooltip>
                       </Box>
 
-                      <Button
-                        size="small"
-                        onClick={(e) => { e.stopPropagation(); handleClose(); }}
-                        sx={{
-                          color: 'rgba(255,255,255,0.8)',
-                          bgcolor: 'rgba(255,255,255,0.08)',
-                          fontWeight: 800,
-                          borderRadius: '12px',
-                          px: 1.8,
-                          py: 0.6,
-                          fontSize: '0.78rem',
-                          textTransform: 'none',
-                          border: '1px solid rgba(255,255,255,0.12)',
-                          '&:hover': { bgcolor: 'rgba(255,255,255,0.18)', color: '#fff' }
-                        }}
-                      >
-                        ✕ All Formats
-                      </Button>
-                    </Box>
-                  </Box>
-
                   {/* ──────────────────────────────────────────────────────────── */}
-                  {/* STEP 1: COMMODITY & WEEK SELECTION                           */}
+                  {/* STEP 1: COMMODITY & WEEK SELECTION (BENTO GRID VIEW)         */}
                   {/* ──────────────────────────────────────────────────────────── */}
                   {matrixStep === 1 && (
-                    <Box sx={{ animation: `${slideUpFade} 0.4s ease` }}>
-                      <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem', mb: 3, fontWeight: 500 }}>
-                        Every week in FoodNerve focuses on a single agro-commodity asset. Select the active week or target an upcoming cycle.
-                      </Typography>
+                    <Box sx={{ animation: `${slideUpFade} 0.3s ease` }}>
+                      {/* Bento Grid: Prominent Hero Tile for Active Week + Upcoming Tiles */}
+                      <Box sx={{
+                        display: 'grid',
+                        gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
+                        gap: 2,
+                        height: 'auto',
+                        overflow: 'visible',
+                        py: 1,
+                        px: 0.5,
+                        pb: 2,
+                      }}>
+                        {(() => {
+                          const activeIdx = (currentWeek - 1) % commoditiesList.length;
+                          const activeComm = commoditiesList[activeIdx];
+                          const activeMeta = getCommodityMeta(activeComm);
+                          const activeStart = startOfISOWeek(new Date(selectedYear, 0, 4 + (currentWeek - 1) * 7));
+                          const activeEnd = addDays(activeStart, 6);
+                          const activeDateStr = `${format(activeStart, 'MMM d')} – ${format(activeEnd, 'MMM d')}`;
 
-                      {/* HERO CARD: Active Commodity of the Week */}
-                      {(() => {
-                        const activeIdx = (currentWeek - 1) % commoditiesList.length;
-                        const activeComm = commoditiesList[activeIdx];
-                        const meta = getCommodityMeta(activeComm);
-                        return (
-                          <Paper
-                            elevation={0}
-                            onClick={() => handleSelectCommodityAndWeek(currentWeek, activeComm)}
-                            sx={{
-                              p: { xs: 3, md: 4 }, mb: 4, borderRadius: '24px',
-                              background: `linear-gradient(135deg, ${alpha(meta.color, 0.25)} 0%, rgba(15, 23, 42, 0.8) 100%)`,
-                              border: `2px solid ${alpha(meta.color, 0.6)}`,
-                              boxShadow: `0 12px 36px ${alpha(meta.color, 0.3)}`,
-                              cursor: 'pointer', transition: 'all 0.3s',
-                              '&:hover': { transform: 'translateY(-3px)', borderColor: meta.color, boxShadow: `0 16px 48px ${alpha(meta.color, 0.45)}` }
-                            }}
-                          >
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-                              <Chip
-                                label={`🌟 ACTIVE WEEK ${currentWeek} COMMODITY`}
-                                size="small"
-                                sx={{ bgcolor: meta.color, color: '#fff', fontWeight: 900, fontSize: '0.75rem' }}
-                              />
-                              <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem', fontWeight: 600 }}>
-                                Live Editorial Focus
-                              </Typography>
-                            </Box>
-                            <Typography variant="h4" sx={{ fontWeight: 900, color: '#fff', letterSpacing: '-0.02em', mb: 1 }}>
-                              {activeComm}
-                            </Typography>
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                              <Chip label={meta.category} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: '#fff', fontWeight: 700 }} />
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#fff', fontWeight: 800, fontSize: '0.9rem' }}>
-                                Write for Week {currentWeek} <ArrowForwardIcon sx={{ fontSize: 14 }} />
-                              </Box>
-                            </Box>
-                          </Paper>
-                        );
-                      })()}
+                          // All upcoming commodities sorted chronologically
+                          const upcomingList = commoditiesList.map((comm, idx) => {
+                            let offset = idx - activeIdx;
+                            if (offset <= 0) offset += commoditiesList.length;
+                            const targetWeek = currentWeek + offset;
+                            const wStart = startOfISOWeek(new Date(selectedYear, 0, 4 + (targetWeek - 1) * 7));
+                            const wEnd = addDays(wStart, 6);
+                            const dateRangeStr = `${format(wStart, 'MMM d')} – ${format(wEnd, 'MMM d')}`;
+                            const meta = getCommodityMeta(comm);
+                            return { comm, targetWeek, dateRangeStr, meta, offset };
+                          }).sort((a, b) => a.offset - b.offset);
 
-                      {/* UPCOMING WEEKS CAROUSEL */}
-                      <Typography sx={{ color: 'rgba(255,255,255,0.8)', fontWeight: 800, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 2 }}>
-                        Upcoming Weeks (Schedule in Advance)
-                      </Typography>
-
-                      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(4, 1fr)' }, gap: 2 }}>
-                        {[1, 2, 3, 4].map(offset => {
-                          const futWeek = currentWeek + offset;
-                          const futIdx = (futWeek - 1) % commoditiesList.length;
-                          const futComm = commoditiesList[futIdx];
-                          const meta = getCommodityMeta(futComm);
                           return (
-                            <Paper
-                              key={futWeek}
-                              elevation={0}
-                              onClick={() => handleSelectCommodityAndWeek(futWeek, futComm)}
-                              sx={{
-                                p: 2.5, borderRadius: '18px',
-                                background: 'rgba(255,255,255,0.04)',
-                                border: '1px solid rgba(255,255,255,0.1)',
-                                cursor: 'pointer', transition: 'all 0.3s',
-                                '&:hover': { bgcolor: 'rgba(255,255,255,0.08)', borderColor: meta.color, transform: 'translateY(-2px)' }
-                              }}
-                            >
-                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                                <Typography sx={{ color: meta.color, fontWeight: 900, fontSize: '0.8rem' }}>
-                                  Week {futWeek}
-                                </Typography>
-                                <Typography sx={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.7rem' }}>
-                                  Cyclic
-                                </Typography>
-                              </Box>
-                              <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: '0.95rem', mb: 1, minHeight: 44 }}>
-                                {futComm}
-                              </Typography>
-                              <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem', fontWeight: 500 }}>
-                                Subject to bidding override
-                              </Typography>
-                            </Paper>
+                            <>
+                              {/* ── BENTO HERO TILE: DISTINCT ACTIVE WEEK CARD ── */}
+                              <Paper
+                                elevation={0}
+                                onClick={() => handleSelectCommodityAndWeek(currentWeek, activeComm)}
+                                sx={{
+                                  gridColumn: { xs: '1 / -1', md: 'span 2' },
+                                  minHeight: { xs: 200, md: 220 },
+                                  borderRadius: '24px',
+                                  position: 'relative',
+                                  overflow: 'hidden',
+                                  cursor: 'pointer',
+                                  border: '2px solid #3b82f6',
+                                  boxShadow: '0 0 35px rgba(59, 130, 246, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                                  transition: 'all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  justifyContent: 'space-between',
+                                  p: { xs: 2.5, sm: 3 },
+                                  '&:hover': {
+                                    transform: 'translateY(-4px) scale(1.01)',
+                                    borderColor: '#60a5fa',
+                                    boxShadow: '0 16px 40px rgba(59, 130, 246, 0.5)',
+                                    '& .hero-bg': { transform: 'scale(1.08)' }
+                                  }
+                                }}
+                              >
+                                {/* Background Image */}
+                                <Box
+                                  className="hero-bg"
+                                  sx={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    right: 0,
+                                    bottom: 0,
+                                    backgroundImage: `url(${activeMeta.imageUrl})`,
+                                    backgroundSize: 'cover',
+                                    backgroundPosition: 'center',
+                                    transition: 'transform 0.6s ease',
+                                    zIndex: 0,
+                                  }}
+                                />
+
+                                {/* Dark Gradient Vignette */}
+                                <Box sx={{
+                                  position: 'absolute',
+                                  top: 0,
+                                  left: 0,
+                                  right: 0,
+                                  bottom: 0,
+                                  background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.5) 50%, rgba(15, 23, 42, 0.85) 100%)',
+                                  zIndex: 1,
+                                }} />
+
+                                {/* Top Badges */}
+                                <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <Chip
+                                      label={`⚡ ACTIVE WEEK ${currentWeek}`}
+                                      size="small"
+                                      sx={{
+                                        bgcolor: '#3b82f6',
+                                        color: '#fff',
+                                        fontWeight: 900,
+                                        fontSize: '0.72rem',
+                                        height: 24,
+                                        boxShadow: '0 4px 12px rgba(59, 130, 246, 0.5)'
+                                      }}
+                                    />
+                                    <Chip
+                                      label="LIVE FOCUS"
+                                      size="small"
+                                      sx={{
+                                        bgcolor: 'rgba(59, 130, 246, 0.2)',
+                                        color: '#93c5fd',
+                                        fontWeight: 800,
+                                        fontSize: '0.68rem',
+                                        height: 24,
+                                        border: '1px solid rgba(59, 130, 246, 0.4)'
+                                      }}
+                                    />
+                                  </Box>
+                                  <Typography sx={{ color: '#93c5fd', fontSize: '0.8rem', fontWeight: 700 }}>
+                                    {activeDateStr}
+                                  </Typography>
+                                </Box>
+
+                                {/* Bottom Title & Trigger */}
+                                <Box sx={{ position: 'relative', zIndex: 2, mt: 'auto', pt: 2 }}>
+                                  <Typography variant="h4" sx={{
+                                    color: '#fff',
+                                    fontWeight: 900,
+                                    letterSpacing: '-0.02em',
+                                    lineHeight: 1.15,
+                                    fontSize: { xs: '1.35rem', sm: '1.65rem' },
+                                    textShadow: '0 4px 14px rgba(0,0,0,0.7)'
+                                  }}>
+                                    {activeComm}
+                                  </Typography>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, color: '#93c5fd', fontWeight: 800, fontSize: '0.82rem', mt: 0.75 }}>
+                                    Select Active Cycle <ArrowForwardArrow sx={{ fontSize: 15 }} />
+                                  </Box>
+                                </Box>
+                              </Paper>
+
+                              {/* ── BENTO UPCOMING TILES ── */}
+                              {upcomingList.map((item) => (
+                                <Paper
+                                  key={`${item.comm}-${item.targetWeek}`}
+                                  elevation={0}
+                                  onClick={() => handleSelectCommodityAndWeek(item.targetWeek, item.comm)}
+                                  sx={{
+                                    height: 160,
+                                    borderRadius: '20px',
+                                    position: 'relative',
+                                    overflow: 'hidden',
+                                    cursor: 'pointer',
+                                    border: '1px solid rgba(255,255,255,0.12)',
+                                    transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    justifyContent: 'space-between',
+                                    p: 2,
+                                    '&:hover': {
+                                      transform: 'translateY(-3px) scale(1.02)',
+                                      borderColor: 'rgba(255,255,255,0.35)',
+                                      boxShadow: '0 12px 30px rgba(0,0,0,0.4)',
+                                      '& .bento-bg': { transform: 'scale(1.08)' }
+                                    }
+                                  }}
+                                >
+                                  {/* Background Image */}
+                                  <Box
+                                    className="bento-bg"
+                                    sx={{
+                                      position: 'absolute',
+                                      top: 0,
+                                      left: 0,
+                                      right: 0,
+                                      bottom: 0,
+                                      backgroundImage: `url(${item.meta.imageUrl})`,
+                                      backgroundSize: 'cover',
+                                      backgroundPosition: 'center',
+                                      transition: 'transform 0.5s ease',
+                                      zIndex: 0,
+                                    }}
+                                  />
+
+                                  {/* Dark Vignette Overlay */}
+                                  <Box sx={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    right: 0,
+                                    bottom: 0,
+                                    background: 'linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.35) 50%, rgba(0, 0, 0, 0.65) 100%)',
+                                    zIndex: 1,
+                                  }} />
+
+                                  {/* Top Bar: Week + Date Range */}
+                                  <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: '0.75rem', letterSpacing: '0.02em' }}>
+                                      Week {item.targetWeek}
+                                    </Typography>
+                                    <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem', fontWeight: 600 }}>
+                                      {item.dateRangeStr}
+                                    </Typography>
+                                  </Box>
+
+                                  {/* Bottom: Commodity Title */}
+                                  <Box sx={{ position: 'relative', zIndex: 2 }}>
+                                    <Typography sx={{
+                                      color: '#fff',
+                                      fontWeight: 900,
+                                      fontSize: '0.95rem',
+                                      lineHeight: 1.3,
+                                      letterSpacing: '-0.01em',
+                                      textShadow: '0 2px 4px rgba(0,0,0,0.6)'
+                                    }}>
+                                      {item.comm}
+                                    </Typography>
+                                  </Box>
+                                </Paper>
+                              ))}
+                            </>
                           );
-                        })}
+                        })()}
                       </Box>
                     </Box>
                   )}
 
                   {/* ──────────────────────────────────────────────────────────── */}
-                  {/* STEP 2: 7 DAILY STRATEGIC PILLARS                            */}
+                  {/* STEP 2: 7 DAILY STRATEGIC PILLARS (3D PERSPECTIVE STACK)     */}
                   {/* ──────────────────────────────────────────────────────────── */}
                   {matrixStep === 2 && (
-                    <Box sx={{ animation: `${slideUpFade} 0.4s ease` }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3, pb: 2, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                        <Button onClick={() => setMatrixStep(1)} size="small" sx={{ color: 'rgba(255,255,255,0.6)', textTransform: 'none', fontWeight: 700 }}>
-                          ← Change Week / Commodity
-                        </Button>
-                        <Typography sx={{ color: 'rgba(255,255,255,0.3)' }}>|</Typography>
-                        <Chip label={`Week ${selectedWeek}: ${selectedCommodity}`} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: '#fff', fontWeight: 800 }} />
-                      </Box>
-
-                      <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem', mb: 3, fontWeight: 500 }}>
-                        Select the daily strategic pillar. Your article will be automatically scheduled on the Ecosystem Calendar for this date.
-                      </Typography>
-
-                      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(7, 1fr)' }, gap: 2 }}>
-                        {weekDays.map(item => {
+                    <Box sx={{ animation: `${slideUpFade} 0.3s ease` }}>
+                      {/* 3D Perspective Stacking Accordion Container */}
+                      <Box 
+                        id="step2-scroll-container"
+                        sx={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 1.5,
+                          perspective: '1200px',
+                          py: 2,
+                          px: 1,
+                          pb: 3,
+                          height: 'auto',
+                          overflow: 'visible',
+                        }}
+                      >
+                        <Box sx={{ height: 8, flexShrink: 0 }} />
+                        {weekDays.map((item, idx) => {
+                          const distance = Math.abs(idx - focusedDayIdx);
+                          const isFocused = distance === 0;
+                          const cardWidth = isFocused ? '100%' : `${Math.max(86, 100 - (distance * 3.5))}%`;
+                          const tiltDirection = idx < focusedDayIdx ? -1 : 1;
+                          const tiltDegree = isFocused ? 0 : distance * 2.5 * tiltDirection;
                           const isToday = format(item.date, 'yyyy-MM-dd') === format(currentDate, 'yyyy-MM-dd');
+
                           return (
                             <Paper
                               key={item.dayOfWeek}
+                              id={`step2-day-${idx}`}
                               elevation={0}
+                              onMouseEnter={() => setFocusedDayIdx(idx)}
                               onClick={() => handleSelectDayCategory(item.category, item.date)}
                               sx={{
-                                p: 2, borderRadius: '18px',
-                                background: isToday
-                                  ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(15, 23, 42, 0.9) 100%)'
-                                  : 'rgba(255,255,255,0.04)',
-                                border: `1px solid ${isToday ? alpha(ACCENT, 0.6) : 'rgba(255,255,255,0.1)'}`,
-                                cursor: 'pointer', transition: 'all 0.3s',
-                                display: 'flex', flexDirection: 'column',
-                                '&:hover': { borderColor: ACCENT, transform: 'translateY(-3px)', bgcolor: 'rgba(255,255,255,0.08)' }
+                                width: cardWidth,
+                                mx: 'auto',
+                                borderRadius: '18px',
+                                p: { xs: 2, sm: 2.25 },
+                                bgcolor: isFocused
+                                  ? 'rgba(59, 130, 246, 0.16)'
+                                  : (isToday ? 'rgba(245, 158, 11, 0.08)' : 'rgba(255,255,255,0.03)'),
+                                border: '1.5px solid',
+                                borderColor: isFocused
+                                  ? '#3b82f6'
+                                  : (isToday ? 'rgba(245, 158, 11, 0.35)' : 'rgba(255,255,255,0.08)'),
+                                boxShadow: isFocused ? '0 12px 30px rgba(59, 130, 246, 0.25)' : 'none',
+                                cursor: 'pointer',
+                                transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                                transform: isFocused ? 'scale(1.02)' : `rotateX(${tiltDegree}deg)`,
+                                transformOrigin: 'center center',
+                                zIndex: 10 - distance,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                '&:hover': {
+                                  bgcolor: isFocused ? 'rgba(59, 130, 246, 0.22)' : 'rgba(255,255,255,0.07)',
+                                  borderColor: '#60a5fa',
+                                  transform: isFocused ? 'scale(1.02)' : `rotateX(${tiltDegree * 0.5}deg) translateY(-2px)`
+                                }
                               }}
                             >
-                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                                <Typography sx={{ color: isToday ? ACCENT : 'rgba(255,255,255,0.6)', fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase' }}>
-                                  {item.dayName.slice(0, 3)}
-                                </Typography>
-                                {isToday && (
-                                  <Chip label="TODAY" size="small" sx={{ height: 18, fontSize: '0.6rem', bgcolor: ACCENT, color: '#fff', fontWeight: 900 }} />
-                                )}
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                {/* Day Date Block */}
+                                <Box sx={{
+                                  width: 46,
+                                  height: 46,
+                                  borderRadius: '12px',
+                                  bgcolor: isFocused ? '#3b82f6' : (isToday ? '#f59e0b' : 'rgba(255,255,255,0.08)'),
+                                  color: '#fff',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  flexShrink: 0,
+                                  boxShadow: isFocused ? '0 4px 12px rgba(59, 130, 246, 0.4)' : 'none'
+                                }}>
+                                  <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', lineHeight: 1 }}>
+                                    {item.dayName.slice(0, 3)}
+                                  </Typography>
+                                  <Typography sx={{ fontSize: '1rem', fontWeight: 900, lineHeight: 1.1, mt: 0.25 }}>
+                                    {item.date.getDate()}
+                                  </Typography>
+                                </Box>
+
+                                <Box>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.25 }}>
+                                    <Typography sx={{ color: isFocused ? '#93c5fd' : 'rgba(255,255,255,0.5)', fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                                      {item.category}
+                                    </Typography>
+                                    {isToday && (
+                                      <Chip label="TODAY" size="small" sx={{ height: 18, fontSize: '0.62rem', bgcolor: '#f59e0b', color: '#fff', fontWeight: 900 }} />
+                                    )}
+                                  </Box>
+                                  <Typography variant="h6" sx={{ color: '#fff', fontWeight: 900, fontSize: { xs: '0.95rem', sm: '1.05rem' }, lineHeight: 1.2 }}>
+                                    {item.challenge.title}
+                                  </Typography>
+                                </Box>
                               </Box>
-                              <Typography sx={{ color: '#fff', fontWeight: 900, fontSize: '1rem', mb: 0.5 }}>
-                                {item.challenge.title}
-                              </Typography>
-                              <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.72rem', fontWeight: 600, mt: 'auto', pt: 2 }}>
-                                📅 {item.dateFormatted}
-                              </Typography>
+
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexShrink: 0 }}>
+                                <Typography sx={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.75rem', fontWeight: 600, display: { xs: 'none', sm: 'block' } }}>
+                                  {item.dateFormatted}
+                                </Typography>
+                                <Box sx={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 0.5,
+                                  color: isFocused ? '#93c5fd' : 'rgba(255,255,255,0.4)',
+                                  fontSize: '0.8rem',
+                                  fontWeight: 800
+                                }}>
+                                  <ArrowForwardArrow sx={{ fontSize: 16 }} />
+                                </Box>
+                              </Box>
                             </Paper>
                           );
                         })}
+                        <Box sx={{ height: 16, flexShrink: 0 }} />
                       </Box>
                     </Box>
                   )}
@@ -842,10 +1043,6 @@ export default function CreatorStudioDashboard({
                       {/* Sub Header & Actions */}
                       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { xs: 'flex-start', md: 'center' }, justifyContent: 'space-between', gap: 2, mb: 3, pb: 2, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-                          <Button onClick={() => setMatrixStep(2)} size="small" sx={{ color: 'rgba(255,255,255,0.6)', textTransform: 'none', fontWeight: 700 }}>
-                            ← Change Day
-                          </Button>
-                          <Typography sx={{ color: 'rgba(255,255,255,0.3)' }}>|</Typography>
                           <Chip label={`🌾 ${selectedCommodity}`} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: '#fff', fontWeight: 800 }} />
                           <Chip label={`💼 ${selectedCategory.toUpperCase()}`} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: '#fff', fontWeight: 800 }} />
                           <Chip label={`📅 ${format(new Date(selectedTargetDate), 'MMM d, yyyy')}`} size="small" sx={{ bgcolor: alpha(ACCENT, 0.2), color: ACCENT, fontWeight: 800 }} />
