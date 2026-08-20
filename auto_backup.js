@@ -35,7 +35,14 @@ function runBackup() {
     const commitMsg = `chore(auto-backup): state saved at ${timestamp} [skip ci]`;
     execSync(`git commit -m "${commitMsg}"`);
     
-    // Push changes to dev branch
+    // Pull remote changes first to integrate any external commits seamlessly
+    try {
+      execSync('git pull --rebase --autostash origin dev', { stdio: 'ignore' });
+    } catch (pullErr) {
+      console.log(`[${timestamp}] Notice: Continuing with push...`);
+    }
+
+    // Push changes to dev branch safely
     console.log(`[${timestamp}] Pushing to dev branch...`);
     execSync('git push -u origin dev');
     

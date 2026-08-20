@@ -5,13 +5,13 @@ import { getISOWeek, getDay } from 'date-fns'; // We will use date-fns for stand
 // The 7 days mapped to our 7 core categories
 // getDay() returns 0 for Sunday, 1 for Monday, etc.
 export const CATEGORY_MAP: Record<number, string> = {
-  1: 'land',         // Monday
-  2: 'capital',      // Tuesday
-  3: 'inputs',       // Wednesday
-  4: 'energy',       // Thursday
-  5: 'insecurity',   // Friday
-  6: 'loss',         // Saturday
-  0: 'protein',      // Sunday
+  1: 'capital',            // Monday: Financial Exclusion & Access to Capital
+  2: 'land',               // Tuesday: Obstacles to Farm / Land Access & Tenure
+  3: 'inputs',             // Wednesday: Reduced Yields from Under-Used Agro Inputs & Feed
+  4: 'energy',             // Thursday: Energy Poverty
+  5: 'insecurity',         // Friday: Insecurity & Deliberate Human Threats
+  6: 'harvest-to-market',   // Saturday: Post-Harvest Systems & Market Access
+  0: 'people',             // Sunday: People & Human Capital
 };
 
 /**

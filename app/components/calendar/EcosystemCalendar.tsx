@@ -18,15 +18,27 @@ import CloseFullscreenIcon from '@mui/icons-material/CloseFullscreen';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
-import { getCalendarEvents } from '@/app/actions/calendar';
+import Link from 'next/link';
+import { getCalendarEvents } from '@/lib/actions/calendar';
 import { getMatrixForWeekClient, getCommodityBiddingLeaderboard, placeCommodityBid } from '@/lib/actions/matrix';
 import { CalendarEvent } from '@prisma/client';
 import AddEventSidebar from './AddEventSidebar';
 import CommodityWatermark from './CommodityWatermark';
+import SubcategorySquircleScroller from './SubcategorySquircleScroller';
 import { useSociety } from '@/context/SocietyContext';
 import { commoditiesList, getCommodityMeta } from '@/lib/cms/commodities';
+import { foodChallenges } from '@/lib/cms/food/challenges';
+import { CATEGORY_MAP } from '@/lib/config/editorialMatrix';
 
 export type ViewMode = 'month' | 'week' | 'day';
+
+function getWeekNumber(d: Date) {
+  const date = new Date(d.getTime());
+  date.setHours(0, 0, 0, 0);
+  date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+  const week1 = new Date(date.getFullYear(), 0, 4);
+  return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+}
 
 interface EcosystemCalendarProps {
   tenantId: string;
@@ -47,8 +59,12 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
   const [loading, setLoading] = useState(true);
   const [isAddingEvent, setIsAddingEvent] = useState(false);
 
-  // Matrix State
-  const [activeCommodity, setActiveCommodity] = useState<string | null>(null);
+  // Matrix State - Instant synchronous initial commodity based on ISO week
+  const [activeCommodity, setActiveCommodity] = useState<string>(() => {
+    const initDate = initialDate || new Date();
+    const isoWeek = getWeekNumber(initDate);
+    return commoditiesList[(isoWeek - 1) % commoditiesList.length] || commoditiesList[0];
+  });
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [biddingCommodity, setBiddingCommodity] = useState<string>('');
   const [biddingAmount, setBiddingAmount] = useState<number>(0);
@@ -88,12 +104,11 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
 
   useEffect(() => {
     async function loadEvents() {
-      setLoading(true);
       try {
         const data = await getCalendarEvents(tenantId);
         
         // Inject mock data for visualization
-        const today = currentDate; // use currentDate so mocks always appear in current view
+        const today = currentDate;
         const y = today.getFullYear();
         const m = today.getMonth();
         const mockEvents: any[] = [
@@ -107,29 +122,38 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
         setEvents([...data, ...mockEvents]);
       } catch (err) {
         console.error("Failed to load events", err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
     loadEvents();
-  }, [tenantId, currentDate.getMonth()]); // Wait, if we change months we might need to load. Ideally we load a range.
+  }, [tenantId, currentDate.getMonth()]);
 
-  // Fetch matrix data for current week and next week bids
+  // Fetch matrix data for current week and next week bids in parallel with 0ms visual delay
   useEffect(() => {
+    // 1. Immediately apply algorithmic commodity to eliminate loading delay
+    const viewedIsoWeek = getWeekNumber(currentDate);
+    const fallbackCommodity = commoditiesList[(viewedIsoWeek - 1) % commoditiesList.length] || commoditiesList[0];
+    setActiveCommodity(fallbackCommodity);
+
     async function loadMatrixData() {
       try {
-        // 1. Get active commodity for the currently viewed date
-        const matrixData = await getMatrixForWeekClient(currentDate.toISOString());
-        if (matrixData) {
-          setActiveCommodity(matrixData.commodity);
-        }
-
-        // 2. Load leaderboard for Next Week
         const currentIsoWeek = getWeekNumber(new Date());
         const targetWeek = currentIsoWeek + 1 > 52 ? 1 : currentIsoWeek + 1;
         const targetYear = currentIsoWeek + 1 > 52 ? currentDate.getFullYear() + 1 : currentDate.getFullYear();
-        
-        const bids = await getCommodityBiddingLeaderboard(targetYear, targetWeek);
-        setLeaderboard(bids);
+
+        // 2. Fetch overrides and bidding leaderboard in parallel
+        const [matrixData, bids] = await Promise.all([
+          getMatrixForWeekClient(currentDate.toISOString()),
+          getCommodityBiddingLeaderboard(targetYear, targetWeek)
+        ]);
+
+        if (matrixData?.commodity) {
+          setActiveCommodity(matrixData.commodity);
+        }
+        if (bids) {
+          setLeaderboard(bids);
+        }
       } catch (err) {
         console.error("Failed to load matrix data", err);
       }
@@ -257,14 +281,6 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
     if (visibility === 'organization') return 'Organization';
     if (visibility === 'personal') return 'Personal';
     return 'Event';
-  };
-
-  const getWeekNumber = (d: Date) => {
-    const date = new Date(d.getTime());
-    date.setHours(0, 0, 0, 0);
-    date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
-    const week1 = new Date(date.getFullYear(), 0, 4);
-    return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
   };
 
   const getOrdinal = (n: number) => {
@@ -1107,8 +1123,9 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
 
               const isToday = d.toDateString() === new Date().toDateString();
               const dayEvents = getEventsForDate(d);
-              const CATEGORY_DISPLAY: Record<number, string> = { 1: 'LAND', 2: 'CAPITAL', 3: 'INPUTS', 4: 'ENERGY', 5: 'INSECURITY', 6: 'LOSS', 0: 'PROTEIN' };
-              const matrixCategory = CATEGORY_DISPLAY[d.getDay()];
+              const categorySlug = CATEGORY_MAP[d.getDay()] || 'capital';
+              const categoryChallenge = foodChallenges.find(c => c.id === categorySlug);
+              const matrixCategory = categoryChallenge?.title || categorySlug.toUpperCase();
               
               const showExpanded = isSelected && (isAccordionExpanded || viewMode === 'day');
               
@@ -1329,8 +1346,32 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
                       transition={{ duration: 0.3, ease: 'easeInOut' }}
                       sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pt: 0.5, borderTop: '1px dashed rgba(0,0,0,0.08)', overflow: 'hidden' }}
                     >
+                      {/* CMS Subcategories & Daily Focus Section */}
+                      {categoryChallenge && (
+                        <Box sx={{ 
+                          p: 1.5, 
+                          bgcolor: alpha(primaryColor, 0.03), 
+                          borderRadius: 3.5, 
+                          border: `1px solid ${alpha(primaryColor, 0.1)}`,
+                          display: 'flex', flexDirection: 'column', gap: 1
+                        }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, px: 0.5 }}>
+                            <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: primaryColor, boxShadow: `0 0 8px ${primaryColor}` }} />
+                            <Typography variant="caption" sx={{ fontWeight: 900, color: '#0f172a', letterSpacing: '0.04em', textTransform: 'uppercase', fontSize: '0.68rem' }}>
+                              10 Daily Focus Tracks
+                            </Typography>
+                          </Box>
+                          
+                          <SubcategorySquircleScroller 
+                            challengeId={categoryChallenge.id} 
+                            subcategories={categoryChallenge.subcategories} 
+                            primaryColor={primaryColor} 
+                          />
+                        </Box>
+                      )}
+
                       {dayEvents.length === 0 ? (
-                        <Typography variant="body2" sx={{ color: 'text.secondary', fontStyle: 'italic', pt: 1, pl: 1 }}>No events scheduled for this day.</Typography>
+                        <Typography variant="body2" sx={{ color: 'text.secondary', fontStyle: 'italic', pt: 0.5, pl: 1, fontSize: '0.8rem' }}>No events scheduled for this day.</Typography>
                       ) : (
                         dayEvents.slice(0, 5).map(event => {
                           const dotColor = getIntentColor(event.dateType);

@@ -16,6 +16,12 @@ import { QuickPollBlock } from './blocks/QuickPollBlock';
 import { EmbeddedDataBlock } from './blocks/EmbeddedDataBlock';
 import { StrategicDirectiveBlock } from './blocks/StrategicDirectiveBlock';
 import { CallToActionBlock } from './blocks/CallToActionBlock';
+import { ComparisonMatrixBlock } from './blocks/ComparisonMatrixBlock';
+import { UnitEconomicsCardBlock } from './blocks/UnitEconomicsCardBlock';
+import { ProtocolStepsBlock } from './blocks/ProtocolStepsBlock';
+import { TimelineTrackerBlock } from './blocks/TimelineTrackerBlock';
+import { PersonaDossierBlock } from './blocks/PersonaDossierBlock';
+import { EcosystemEmbedBlock } from './blocks/EcosystemEmbedBlock';
 import { QuoteCardGeneratorModal } from './social/QuoteCardGeneratorModal';
 
 type ArticleBlockRendererProps = {
@@ -62,6 +68,12 @@ export const ArticleBlockRenderer: React.FC<ArticleBlockRendererProps> = ({ bloc
       case 'strategic_directive': return <StrategicDirectiveBlock content={parsedContent} themeMode={themeMode} accentColor={accentColor} />;
       case 'data_embed': return <EmbeddedDataBlock content={parsedContent} themeMode={themeMode} accentColor={accentColor} />;
       case 'call_to_action': return <CallToActionBlock content={parsedContent} themeMode={themeMode} accentColor={accentColor} />;
+      case 'comparison_matrix': return <ComparisonMatrixBlock content={parsedContent} themeMode={themeMode} accentColor={accentColor} />;
+      case 'unit_economics_card': return <UnitEconomicsCardBlock content={parsedContent} themeMode={themeMode} accentColor={accentColor} />;
+      case 'protocol_steps': return <ProtocolStepsBlock content={parsedContent} themeMode={themeMode} accentColor={accentColor} />;
+      case 'timeline_tracker': return <TimelineTrackerBlock content={parsedContent} themeMode={themeMode} accentColor={accentColor} />;
+      case 'persona_dossier': return <PersonaDossierBlock content={parsedContent} themeMode={themeMode} accentColor={accentColor} />;
+      case 'ecosystem_embed': return <EcosystemEmbedBlock content={parsedContent} themeMode={themeMode} accentColor={accentColor} />;
       default: return null;
     }
   };

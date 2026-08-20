@@ -79,6 +79,7 @@ export type Person = {
 export type SubcategoryData = {
   id: string;
   title: string;
+  shortName?: string;
   groupName?: string;
   desc: string;
   longDesc?: string;

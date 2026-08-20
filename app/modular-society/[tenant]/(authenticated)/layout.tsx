@@ -24,6 +24,7 @@ import MiniAuthModal from './components/MiniAuthModal';
 import UpdatesFeed from './components/UpdatesFeed';
 import { WikiOverlayProvider } from '@/context/WikiOverlayContext';
 import { CalendarOverlayProvider } from '@/context/CalendarOverlayContext';
+import { PromptAssistantProvider } from '@/context/PromptAssistantContext';
 
 const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
   const { user, profile, loading, needsOnboarding, isUpdatesOpen, setUpdatesOpen } = useSociety();
@@ -141,7 +142,8 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
   return (
     <WikiOverlayProvider>
       <CalendarOverlayProvider>
-      <Box sx={{ display: 'flex', height: '100dvh', flexDirection: isMobile ? 'column' : 'row', position: 'relative', bgcolor: '#f8fafc', overflow: 'hidden', perspective: '1200px' }}>
+        <PromptAssistantProvider>
+          <Box sx={{ display: 'flex', height: '100dvh', flexDirection: isMobile ? 'column' : 'row', position: 'relative', bgcolor: '#f8fafc', overflow: 'hidden', perspective: '1200px' }}>
 
         {/* --- DYNAMIC BACKGROUND LAYER --- */}
       <Box sx={{
@@ -317,7 +319,8 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
           tenant={tenant}
         />
       )}
-      </Box>
+          </Box>
+        </PromptAssistantProvider>
       </CalendarOverlayProvider>
     </WikiOverlayProvider>
   );

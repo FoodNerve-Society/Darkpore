@@ -6,7 +6,7 @@ import {
   Box, Typography, TextField, Button, Chip, 
   CircularProgress, alpha, IconButton, Tooltip,
   Dialog, DialogTitle, DialogContent, DialogActions, DialogContentText, Alert,
-  Divider, Avatar, Paper
+  Divider, Avatar, Paper, Autocomplete
 } from '@mui/material';
 import {
   Article as ArticleIcon,
@@ -41,6 +41,8 @@ import {
   BookmarkBorder as BookmarkBorderIcon,
   Share as ShareIcon,
   Image as ImageIcon,
+  Build as BuildIcon,
+  Edit as EditIcon,
 } from '@mui/icons-material';
 import { keyframes } from '@mui/system';
 import {
@@ -73,6 +75,7 @@ import PremiumAutocomplete from '@/components/PremiumAutocomplete';
 import PremiumButton from '@/components/PremiumButton';
 import PremiumMarkdownEditor from '@/components/PremiumMarkdownEditor';
 import PremiumVideoPlayer from '@/components/learn/blocks/PremiumVideoPlayer';
+import EcosystemJobPicker from '@/components/learn/EcosystemJobPicker';
 
 // ----------------------------------------------------------------------
 // POLL OPTIONS EDITOR
@@ -290,6 +293,7 @@ import {
   getBlueprint, 
   FORMAT_CONFIG, 
   ERA_CONFIG, 
+  MATRIX_DESCRIPTIONS,
   ArticleFormat, 
   ArticleEra, 
   SopBlock, 
@@ -308,6 +312,12 @@ const BLOCK_DEFINITIONS: Record<BlockType, { label: string, color: string }> = {
   data_embed: { label: 'Embedded Data', color: '#14b8a6' },
   strategic_directive: { label: 'Strategic Directive', color: '#111827' },
   call_to_action: { label: 'Call to Action', color: '#f59e0b' },
+  comparison_matrix: { label: 'Showdown Table', color: '#8b5cf6' },
+  unit_economics_card: { label: 'Financial Dashboard', color: '#10b981' },
+  protocol_steps: { label: 'Action Checklist', color: '#f59e0b' },
+  timeline_tracker: { label: 'Timeline Tracker', color: '#3b82f6' },
+  persona_dossier: { label: 'Ground Dossier', color: '#ec4899' },
+  ecosystem_embed: { label: 'Ecosystem Bridge', color: '#6366f1' },
 };
 
 
@@ -439,6 +449,14 @@ export default function CreateLearnContentForm({
       case 'highlight_card': return !!b.content.imageUrl && !!b.content.caption;
       case 'data_embed': return !!b.content.iframeUrl;
       case 'live_poll': return !!b.content.question && !!b.content.options;
+      case 'strategic_directive': return !!b.content.urgencyLevel && !!b.content.targetPersona;
+      case 'call_to_action': return !!b.content.macroCtaId;
+      case 'comparison_matrix': return !!b.content.optionAName && !!b.content.optionBName;
+      case 'unit_economics_card': return !!b.content.tam || !!b.content.targetIrr;
+      case 'protocol_steps': return Array.isArray(b.content.steps) && b.content.steps.length > 0;
+      case 'timeline_tracker': return Array.isArray(b.content.milestones) && b.content.milestones.length > 0;
+      case 'persona_dossier': return !!b.content.name && !!b.content.fieldQuote;
+      case 'ecosystem_embed': return !!b.content.title && !!b.content.ctaLink;
       default: return false;
     }
   };
@@ -532,7 +550,25 @@ export default function CreateLearnContentForm({
   const [selectedCommodity, setSelectedCommodity] = useState<string>('Soybeans, Nuts and Meals');
   const [selectedFormat, setSelectedFormat] = useState<ArticleFormat>('brief');
   const [selectedEra, setSelectedEra] = useState<ArticleEra>('present');
+  const [isBlueprintCardFlipped, setIsBlueprintCardFlipped] = useState(false);
+  const [blueprintConfigStep, setBlueprintConfigStep] = useState<1 | 2>(1);
   const [thumbnailUrl, setThumbnailUrl] = useState('');
+
+  const currentSelectedChallenge = useMemo(() => {
+    return challenges.find(c => c.id === selectedCategory) || challenges[0];
+  }, [challenges, selectedCategory]);
+
+  const subcategoriesInSelectedCategory = useMemo(() => {
+    return (currentSelectedChallenge?.subcategories || []).map((s: any) => ({
+      id: s.id,
+      title: s.title,
+      description: s.desc || s.description || '',
+      imageUrl: s.imageUrl || currentSelectedChallenge?.imageUrl || '',
+      groupName: s.groupName || '',
+      categoryId: currentSelectedChallenge?.id || '',
+      categoryTitle: currentSelectedChallenge?.title || ''
+    }));
+  }, [currentSelectedChallenge]);
 
   useEffect(() => {
     if (initialTaxonomy) {
@@ -567,7 +603,11 @@ export default function CreateLearnContentForm({
 
   useEffect(() => {
     if (initialDraftData) {
+<<<<<<< HEAD
       setType(initialDraftData.type || (initialType as any) || 'article');
+=======
+      if (initialDraftData.type) setType(initialDraftData.type as any);
+>>>>>>> dev
       if (initialDraftData.title) setTitle(initialDraftData.title || '');
       if (initialDraftData.description) setDescription(initialDraftData.description || '');
       if (initialDraftData.commodity) setSelectedCommodity(initialDraftData.commodity);
@@ -726,6 +766,33 @@ export default function CreateLearnContentForm({
     if (bType === 'exec_summary') newBlock.content = { points: '' };
     if (bType === 'core_interactive') newBlock.content = { bionicText: '', anchorQuestion: '', imageUrl: '' };
     if (bType === 'subheading') newBlock.content = { text: '' };
+    if (bType === 'comparison_matrix') newBlock.content = { 
+      optionAName: '', optionBName: '', winnerVerdict: '', 
+      rows: [
+        { criterion: 'CAPEX', optionAValue: '', optionBValue: '', winner: 'A' },
+        { criterion: 'OPEX / mo', optionAValue: '', optionBValue: '', winner: 'B' },
+        { criterion: 'Payback Period', optionAValue: '', optionBValue: '', winner: 'A' }
+      ] 
+    };
+    if (bType === 'unit_economics_card') newBlock.content = { 
+      tam: '', targetIrr: '', ticketSize: '', paybackPeriod: '', grossMargin: '', primaryRisk: '', dealThesis: '' 
+    };
+    if (bType === 'protocol_steps') newBlock.content = { 
+      steps: [
+        { stepNumber: 1, title: 'Isolate & Inspect Hardware', role: 'Operations Lead', timeWindow: 'Day 1', description: '', checklist: ['Verify power source is isolated', 'Document serial numbers'] }
+      ] 
+    };
+    if (bType === 'timeline_tracker') newBlock.content = { 
+      milestones: [
+        { dateOrYear: 'Phase 1', title: 'Initiation & Infrastructure', description: '', status: 'Milestone' }
+      ] 
+    };
+    if (bType === 'persona_dossier') newBlock.content = { 
+      name: '', roleAndLocation: '', age: '', monthlyTurnover: '', bio: '', fieldQuote: '', avatarUrl: '' 
+    };
+    if (bType === 'ecosystem_embed') newBlock.content = { 
+      embedType: 'job', title: '', organization: '', location: '', compensationOrTarget: '', ctaText: 'Apply Now', ctaLink: '' 
+    };
     
     setBlocks([...blocks, newBlock]);
   };
@@ -769,6 +836,33 @@ export default function CreateLearnContentForm({
       if (sop.type === 'subheading') Object.assign(content, { text: title || '' });
       if (sop.type === 'highlight_card') Object.assign(content, { imageUrl: '', caption: '' });
       if (sop.type === 'media') Object.assign(content, { mediaUrl: '', caption: '' });
+      if (sop.type === 'comparison_matrix') Object.assign(content, { 
+        optionAName: '', optionBName: '', winnerVerdict: '', 
+        rows: [
+          { criterion: 'CAPEX', optionAValue: '', optionBValue: '', winner: 'A' },
+          { criterion: 'OPEX / mo', optionAValue: '', optionBValue: '', winner: 'B' },
+          { criterion: 'Payback Period', optionAValue: '', optionBValue: '', winner: 'A' }
+        ] 
+      });
+      if (sop.type === 'unit_economics_card') Object.assign(content, { 
+        tam: '', targetIrr: '', ticketSize: '', paybackPeriod: '', grossMargin: '', primaryRisk: '', dealThesis: '' 
+      });
+      if (sop.type === 'protocol_steps') Object.assign(content, { 
+        steps: [
+          { stepNumber: 1, title: 'Initial Setup & Triage', role: 'Lead Operator', timeWindow: 'Day 1', description: '', checklist: ['Verify field safety protocols', 'Log baseline metrics'] }
+        ] 
+      });
+      if (sop.type === 'timeline_tracker') Object.assign(content, { 
+        milestones: [
+          { dateOrYear: 'Milestone 1', title: 'Primary Catalyst', description: '', status: 'Trigger' }
+        ] 
+      });
+      if (sop.type === 'persona_dossier') Object.assign(content, { 
+        name: '', roleAndLocation: '', age: '', monthlyTurnover: '', bio: '', fieldQuote: '', avatarUrl: '' 
+      });
+      if (sop.type === 'ecosystem_embed') Object.assign(content, { 
+        embedType: 'job', title: '', organization: '', location: '', compensationOrTarget: '', ctaText: 'Apply Now', ctaLink: '' 
+      });
       return { id: Math.random().toString(), type: sop.type, content, role: sop.role, sopDesc: sop.desc, sopHint: sop.hint };
     });
     setBlocks(newBlocks);
@@ -827,6 +921,38 @@ export default function CreateLearnContentForm({
         break;
       case 'call_to_action': 
         total = 1; if (c.macroCtaId || c.text) filled = 1; break;
+      case 'comparison_matrix':
+        total = 3;
+        if (c.optionAName) filled++;
+        if (c.optionBName) filled++;
+        if (Array.isArray(c.rows) && c.rows.length > 0) filled++;
+        break;
+      case 'unit_economics_card':
+        total = 3;
+        if (c.tam) filled++;
+        if (c.targetIrr) filled++;
+        if (c.primaryRisk || c.paybackPeriod || c.grossMargin) filled++;
+        break;
+      case 'protocol_steps':
+        total = 1;
+        if (Array.isArray(c.steps) && c.steps.length > 0 && c.steps.some((s: any) => s.title)) filled = 1;
+        break;
+      case 'timeline_tracker':
+        total = 1;
+        if (Array.isArray(c.milestones) && c.milestones.length > 0 && c.milestones.some((m: any) => m.title)) filled = 1;
+        break;
+      case 'persona_dossier':
+        total = 3;
+        if (c.name) filled++;
+        if (c.roleAndLocation || c.monthlyTurnover) filled++;
+        if (c.fieldQuote || c.bio) filled++;
+        break;
+      case 'ecosystem_embed':
+        total = 3;
+        if (c.title) filled++;
+        if (c.organization || c.location) filled++;
+        if (c.ctaLink || c.ctaText) filled++;
+        break;
       default: 
         total = 1; if (Object.values(c).some(v => !!v)) filled = 1; break;
     }
@@ -1093,139 +1219,608 @@ export default function CreateLearnContentForm({
                   );
                 })()}
 
-                {/* ═══════════════════════ EMPTY STATE: BLUEPRINT SETUP & LOADER STATION ═══════════════════════ */}
+                {/* ═══════════════════════ EMPTY STATE: 3D BLUEPRINT FLIP BLOCK & LOADER ═══════════════════════ */}
                 {blocks.length === 0 && (() => {
                   const currentChallenge = challenges.find(c => c.id === selectedCategory) || challenges[0];
                   const subcategoriesList = currentChallenge?.subcategories || [];
                   const activeFormatMeta = FORMAT_CONFIG[selectedFormat] || FORMAT_CONFIG.brief;
                   const activeEraMeta = ERA_CONFIG[selectedEra] || ERA_CONFIG.present;
                   const currentBlueprint = getBlueprint(selectedFormat, selectedEra);
+                  const selectedSubObj = subcategoriesInSelectedCategory.find(s => s.id === selectedSubcategory);
 
                   const formatsList: ArticleFormat[] = ['brief', 'memo', 'playbook', 'comparison', 'culture'];
                   const erasList: ArticleEra[] = ['past', 'present', 'future'];
 
+                  const blueprintFilledCount = (selectedSubcategory ? 1 : 0) + (selectedFormat ? 1 : 0) + (selectedEra ? 1 : 0);
+                  const isBlueprintFilled = blueprintFilledCount === 3;
+                  const blueprintFillPercent = Math.round((blueprintFilledCount / 3) * 100);
+
                   return (
                     <Box sx={{ mb: 6, animation: 'fadeIn 0.3s ease' }}>
-                      {/* Title & Setup Controls Card */}
-                      <Paper
-                        elevation={0}
-                        sx={{
-                          p: { xs: 3, md: 4 }, mb: 4, borderRadius: '24px',
-                          border: '1px solid rgba(0,0,0,0.08)',
-                          bgcolor: '#ffffff',
-                          boxShadow: '0 8px 30px rgba(0,0,0,0.04)'
-                        }}
-                      >
-                        {/* 1. Article Headline */}
-                        <Box sx={{ mb: 3.5 }}>
-                          <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 1 }}>
-                            Article Title
-                          </Typography>
-                          <PremiumTextField
-                            colorTheme={activeFormatMeta.color}
-                            placeholder="e.g. Structuring a ₦500M Off-Taker SPV: Unit Economics for Soybeans"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            fullWidth
-                          />
-                        </Box>
+                      {/* 3D Flipping Blueprint Configuration Block */}
+                      <Box sx={{ perspective: '1600px', mb: 4 }}>
+                        <Box sx={{
+                          position: 'relative',
+                          transition: 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                          transformStyle: 'preserve-3d',
+                          transformOrigin: 'center center',
+                          transform: isBlueprintCardFlipped ? 'rotateX(-180deg)' : 'none',
+                        }}>
+                          {/* ═══ FRONT FACE (SUMMARY & COMPLETED STATE) ═══ */}
+                          <Box
+                            onClick={() => !isBlueprintCardFlipped && setIsBlueprintCardFlipped(true)}
+                            sx={{
+                              backfaceVisibility: 'hidden',
+                              position: isBlueprintCardFlipped ? 'absolute' : 'relative',
+                              width: '100%', top: 0,
+                              borderRadius: '24px',
+                              border: `1.5px solid ${isBlueprintFilled ? alpha(activeFormatMeta.color, 0.8) : alpha(activeFormatMeta.color, 0.18)}`,
+                              background: isBlueprintFilled 
+                                ? `linear-gradient(135deg, ${activeFormatMeta.color} 0%, ${alpha(activeFormatMeta.color, 0.88)} 100%)`
+                                : `linear-gradient(to right, ${alpha(activeFormatMeta.color, 0.2)} ${blueprintFillPercent}%, rgba(255,255,255,0.95) ${blueprintFillPercent}%, rgba(248,250,252,0.9) 100%)`,
+                              backdropFilter: 'blur(16px)',
+                              boxShadow: isBlueprintFilled ? `0 16px 40px ${alpha(activeFormatMeta.color, 0.35)}` : `0 8px 32px rgba(0,0,0,0.04)`,
+                              overflow: 'hidden',
+                              cursor: 'pointer',
+                              transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                              '&:hover': {
+                                borderColor: isBlueprintFilled ? activeFormatMeta.color : alpha(activeFormatMeta.color, 0.6),
+                                boxShadow: isBlueprintFilled ? `0 20px 50px ${alpha(activeFormatMeta.color, 0.45)}` : `0 12px 48px rgba(0,0,0,0.08)`,
+                                transform: 'translateY(-2px)'
+                              },
+                            }}
+                          >
+                            {/* Watermark */}
+                            <Typography sx={{ 
+                              position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', 
+                              fontWeight: 900, fontSize: { xs: '1.8rem', md: '3.2rem' }, 
+                              color: isBlueprintFilled ? 'rgba(255,255,255,0.12)' : alpha(activeFormatMeta.color, 0.08), pointerEvents: 'none', letterSpacing: '0.05em',
+                              textTransform: 'uppercase', whiteSpace: 'nowrap', zIndex: 0
+                            }}>
+                              {isBlueprintFilled ? 'BLUEPRINT CONFIGURED' : `${blueprintFilledCount} / 3 CONFIGURED`}
+                            </Typography>
 
-                        {/* 2. Subcategory Picker */}
-                        <Box sx={{ mb: 3.5 }}>
-                          <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 1 }}>
-                            1. Subcategory Focus (10 Available in {currentChallenge?.title})
-                          </Typography>
-                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                            {subcategoriesList.map(sub => {
-                              const isSelected = selectedSubcategory === sub.id;
-                              return (
-                                <Chip
-                                  key={sub.id}
-                                  label={sub.title}
-                                  onClick={() => setSelectedSubcategory(sub.id)}
-                                  sx={{
-                                    bgcolor: isSelected ? '#0f172a' : 'rgba(0,0,0,0.04)',
-                                    color: isSelected ? '#fff' : '#334155',
-                                    fontWeight: isSelected ? 800 : 600,
-                                    border: isSelected ? '1px solid #0f172a' : '1px solid rgba(0,0,0,0.06)',
-                                    cursor: 'pointer', transition: 'all 0.2s',
-                                    '&:hover': { bgcolor: isSelected ? '#0f172a' : 'rgba(0,0,0,0.08)' }
-                                  }}
-                                />
-                              );
-                            })}
+                            <Box sx={{ display: 'flex', alignItems: 'stretch', position: 'relative', zIndex: 1 }}>
+                              {/* Left accent bar */}
+                              <Box sx={{
+                                width: isBlueprintFilled ? 0 : 6, flexShrink: 0,
+                                background: `linear-gradient(180deg, ${alpha(activeFormatMeta.color, 0.6)} 0%, ${alpha(activeFormatMeta.color, 0.15)} 100%)`,
+                              }} />
+
+                              <Box sx={{ p: { xs: 2.5, md: 3.5 }, flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                {/* Top Row: Icon + Title + Tap to Edit Badge */}
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                    <Box sx={{
+                                      width: 48, height: 48, borderRadius: '14px', flexShrink: 0,
+                                      bgcolor: isBlueprintFilled ? 'rgba(255,255,255,0.22)' : alpha(activeFormatMeta.color, 0.1),
+                                      border: isBlueprintFilled ? '1px solid rgba(255,255,255,0.35)' : `1px solid ${alpha(activeFormatMeta.color, 0.25)}`,
+                                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                      boxShadow: isBlueprintFilled ? '0 4px 16px rgba(0,0,0,0.1)' : 'none',
+                                    }}>
+                                      <SparkleIcon sx={{ fontSize: 24, color: isBlueprintFilled ? '#fff' : activeFormatMeta.color }} />
+                                    </Box>
+
+                                    <Box sx={{ flex: 1, minWidth: 220 }}>
+                                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flexWrap: 'wrap' }}>
+                                        <Typography sx={{ fontWeight: 900, color: isBlueprintFilled ? '#fff' : '#0f172a', fontSize: { xs: '1.15rem', md: '1.25rem' }, letterSpacing: '-0.01em', lineHeight: 1.2 }}>
+                                          {isBlueprintFilled ? `${activeFormatMeta.emoji} ${activeFormatMeta.label} · ${activeEraMeta.label} Era` : 'Editorial Blueprint Setup'}
+                                        </Typography>
+
+                                        {isBlueprintFilled && selectedSubObj?.title && (
+                                          <Chip
+                                            icon={<span style={{ fontSize: '0.9rem', marginLeft: '6px' }}>🎯</span>}
+                                            label={<span><strong>Focus:</strong> {selectedSubObj.title}</span>}
+                                            size="small"
+                                            sx={{
+                                              height: 24, fontSize: '0.74rem', fontWeight: 600,
+                                              bgcolor: 'rgba(255,255,255,0.22)', color: '#fff',
+                                              border: '1px solid rgba(255,255,255,0.35)',
+                                              '& .MuiChip-label': { px: 1 }
+                                            }}
+                                          />
+                                        )}
+                                      </Box>
+
+                                      <Typography sx={{ color: isBlueprintFilled ? 'rgba(255,255,255,0.92)' : '#64748b', fontSize: '0.86rem', fontWeight: 500, mt: 0.5 }}>
+                                        {isBlueprintFilled 
+                                          ? (MATRIX_DESCRIPTIONS[`${selectedFormat}_${selectedEra}`] || activeFormatMeta.desc)
+                                          : 'Tap this block to configure subcategory focus, editorial lens & timeline era'}
+                                      </Typography>
+                                    </Box>
+                                  </Box>
+
+                                  {/* Tap to Edit Indicator */}
+                                  <Box sx={{
+                                    display: 'flex', alignItems: 'center', gap: 0.75,
+                                    px: 1.75, py: 0.75, borderRadius: '12px',
+                                    bgcolor: isBlueprintFilled ? 'rgba(255,255,255,0.2)' : alpha(activeFormatMeta.color, 0.1),
+                                    border: `1px solid ${isBlueprintFilled ? 'rgba(255,255,255,0.35)' : alpha(activeFormatMeta.color, 0.25)}`,
+                                    color: isBlueprintFilled ? '#fff' : activeFormatMeta.color,
+                                    backdropFilter: 'blur(8px)',
+                                    transition: 'all 0.2s',
+                                    '&:hover': {
+                                      bgcolor: isBlueprintFilled ? 'rgba(255,255,255,0.3)' : alpha(activeFormatMeta.color, 0.18),
+                                      transform: 'scale(1.02)'
+                                    }
+                                  }}>
+                                    <EditIcon sx={{ fontSize: 16 }} />
+                                    <Typography sx={{ fontSize: '0.8rem', fontWeight: 800 }}>
+                                      {isBlueprintFilled ? 'Tap to Edit' : 'Tap to Configure'}
+                                    </Typography>
+                                  </Box>
+                                </Box>
+                              </Box>
+                            </Box>
                           </Box>
-                        </Box>
 
-                        {/* 3. Format Picker (The 5 Lenses) */}
-                        <Box sx={{ mb: 3.5 }}>
-                          <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 1 }}>
-                            2. Article Format (The Editorial Lens)
-                          </Typography>
-                          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(5, 1fr)' }, gap: 1.5 }}>
-                            {formatsList.map(fmt => {
-                              const meta = FORMAT_CONFIG[fmt];
-                              const isSelected = selectedFormat === fmt;
-                              return (
-                                <Box
-                                  key={fmt}
-                                  onClick={() => setSelectedFormat(fmt)}
+                          {/* ═══ BACK FACE (FORM CONFIGURATOR) ═══ */}
+                          <Box sx={{
+                            backfaceVisibility: 'hidden',
+                            transform: 'rotateX(-180deg)',
+                            position: isBlueprintCardFlipped ? 'relative' : 'absolute',
+                            width: '100%', top: 0,
+                            borderRadius: '24px',
+                            border: `1px solid ${alpha(activeFormatMeta.color, 0.4)}`,
+                            background: `linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(248,250,252,0.98) 100%)`,
+                            backdropFilter: 'blur(20px)',
+                            boxShadow: `0 20px 50px rgba(0,0,0,0.08)`,
+                            overflow: 'hidden',
+                          }}>
+                            {/* Header */}
+                            <Box sx={{
+                              display: 'flex', alignItems: 'center', gap: 2,
+                              px: { xs: 2.5, md: 3.5 }, py: 2.5,
+                              borderBottom: '1px solid rgba(0,0,0,0.06)',
+                              background: alpha(activeFormatMeta.color, 0.05),
+                            }}>
+                              <Box sx={{
+                                width: 36, height: 36, borderRadius: '12px',
+                                bgcolor: alpha(activeFormatMeta.color, 0.15),
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                border: `1px solid ${alpha(activeFormatMeta.color, 0.2)}`
+                              }}>
+                                <SparkleIcon sx={{ fontSize: 20, color: activeFormatMeta.color }} />
+                              </Box>
+                              <Box sx={{ flex: 1, minWidth: 0 }}>
+                                <Typography sx={{ fontWeight: 800, color: '#0f172a', fontSize: '1.1rem', lineHeight: 1.25 }}>
+                                  {blueprintConfigStep === 1
+                                    ? `1. Select Subcategory (${currentSelectedChallenge?.title || 'Challenge'})`
+                                    : `2. Choose Editorial Lens (${selectedSubObj?.title || 'Subcategory'})`}
+                                </Typography>
+                                <Typography sx={{ color: '#64748b', fontSize: '0.82rem', fontWeight: 500, mt: 0.25 }}>
+                                  {blueprintConfigStep === 1
+                                    ? 'Tap any subcategory card below to choose your strategic focal point.'
+                                    : `Targeting: ${selectedSubObj?.title || 'Selected Subcategory'} · Pick a format across Past, Present, or Future Era.`}
+                                </Typography>
+                              </Box>
+                              <Tooltip title="Done Configuring">
+                                <IconButton
+                                  size="medium"
+                                  onClick={() => setIsBlueprintCardFlipped(false)}
                                   sx={{
-                                    p: 2, borderRadius: '16px', cursor: 'pointer', transition: 'all 0.2s',
-                                    bgcolor: isSelected ? alpha(meta.color, 0.1) : 'rgba(0,0,0,0.02)',
-                                    border: `2px solid ${isSelected ? meta.color : 'rgba(0,0,0,0.06)'}`,
-                                    display: 'flex', flexDirection: 'column', gap: 0.5,
-                                    '&:hover': { borderColor: meta.color, transform: 'translateY(-2px)' }
+                                    bgcolor: activeFormatMeta.color, color: '#fff',
+                                    boxShadow: `0 4px 12px ${alpha(activeFormatMeta.color, 0.3)}`,
+                                    '&:hover': { bgcolor: alpha(activeFormatMeta.color, 0.9), transform: 'scale(1.05)' },
                                   }}
                                 >
-                                  <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: isSelected ? meta.color : '#0f172a' }}>
-                                    {meta.emoji} {meta.label}
-                                  </Typography>
-                                  <Typography sx={{ fontSize: '0.75rem', color: '#64748b', lineHeight: 1.3 }}>
-                                    {meta.desc}
-                                  </Typography>
-                                </Box>
-                              );
-                            })}
-                          </Box>
-                        </Box>
+                                  <CheckIcon sx={{ fontSize: 22, fontWeight: 900 }} />
+                                </IconButton>
+                              </Tooltip>
+                            </Box>
 
-                        {/* 4. Era Picker (The 3 Timelines) */}
-                        <Box sx={{ mb: 2 }}>
-                          <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 1 }}>
-                            3. Era (The Data & Time State)
-                          </Typography>
-                          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 1.5 }}>
-                            {erasList.map(era => {
-                              const meta = ERA_CONFIG[era];
-                              const isSelected = selectedEra === era;
-                              return (
-                                <Box
-                                  key={era}
-                                  onClick={() => {
-                                    setSelectedEra(era);
-                                    setSelectedTimeframe(era as any);
-                                  }}
-                                  sx={{
-                                    p: 2, borderRadius: '16px', cursor: 'pointer', transition: 'all 0.2s',
-                                    bgcolor: isSelected ? alpha(meta.color, 0.1) : 'rgba(0,0,0,0.02)',
-                                    border: `2px solid ${isSelected ? meta.color : 'rgba(0,0,0,0.06)'}`,
-                                    display: 'flex', flexDirection: 'column', gap: 0.5,
-                                    '&:hover': { borderColor: meta.color, transform: 'translateY(-2px)' }
-                                  }}
-                                >
-                                  <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: isSelected ? meta.color : '#0f172a' }}>
-                                    {meta.emoji} {meta.label}
-                                  </Typography>
-                                  <Typography sx={{ fontSize: '0.75rem', color: '#64748b', lineHeight: 1.3 }}>
-                                    {meta.desc}
-                                  </Typography>
+                            {/* Form body */}
+                            <Box sx={{ p: { xs: 2.5, md: 3.5 }, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                              
+                              {/* ═══ STEP 1: SUBCATEGORY FOCUS (HORIZONTAL IMAGE CARDS) ═══ */}
+                              {blueprintConfigStep === 1 && (
+                                <Box sx={{ animation: 'fadeIn 0.25s ease', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                  {/* Subcategories Grid of Horizontal Cards */}
+                                  <Box sx={{
+                                    display: 'grid',
+                                    gridTemplateColumns: { xs: '1fr', lg: 'repeat(2, 1fr)' },
+                                    gap: 1.75,
+                                    maxHeight: '490px',
+                                    overflowY: 'auto',
+                                    pr: 1,
+                                    '&::-webkit-scrollbar': { width: '6px' },
+                                    '&::-webkit-scrollbar-track': { background: 'transparent' },
+                                    '&::-webkit-scrollbar-thumb': { background: alpha(activeFormatMeta.color, 0.2), borderRadius: '10px' }
+                                  }}>
+                                    {subcategoriesInSelectedCategory.map((sub) => {
+                                      const isSelected = selectedSubcategory === sub.id;
+                                      return (
+                                        <Box
+                                          key={sub.id}
+                                          onClick={() => {
+                                            setSelectedSubcategory(sub.id);
+                                            setTimeout(() => {
+                                              setBlueprintConfigStep(2);
+                                            }, 120);
+                                          }}
+                                          sx={{
+                                            display: 'flex',
+                                            flexDirection: 'row',
+                                            borderRadius: '18px',
+                                            border: `2px solid ${isSelected ? activeFormatMeta.color : 'rgba(0,0,0,0.06)'}`,
+                                            bgcolor: isSelected ? alpha(activeFormatMeta.color, 0.06) : '#ffffff',
+                                            boxShadow: isSelected ? `0 8px 24px ${alpha(activeFormatMeta.color, 0.22)}` : '0 2px 10px rgba(0,0,0,0.03)',
+                                            overflow: 'hidden',
+                                            cursor: 'pointer',
+                                            position: 'relative',
+                                            transition: 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                                            '&:hover': {
+                                              transform: 'translateY(-2px)',
+                                              borderColor: isSelected ? activeFormatMeta.color : alpha(activeFormatMeta.color, 0.4),
+                                              boxShadow: `0 8px 20px ${alpha(activeFormatMeta.color, 0.15)}`
+                                            }
+                                          }}
+                                        >
+                                          {/* Left: Image on side */}
+                                          <Box sx={{
+                                            width: { xs: 100, sm: 120 },
+                                            minWidth: { xs: 100, sm: 120 },
+                                            position: 'relative',
+                                            bgcolor: 'rgba(0,0,0,0.04)',
+                                            overflow: 'hidden'
+                                          }}>
+                                            {sub.imageUrl ? (
+                                              <img
+                                                src={sub.imageUrl}
+                                                alt={sub.title}
+                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                onError={(e) => {
+                                                  (e.currentTarget as HTMLElement).style.display = 'none';
+                                                }}
+                                              />
+                                            ) : (
+                                              <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: alpha(activeFormatMeta.color, 0.08) }}>
+                                                <Typography sx={{ fontSize: '1.6rem' }}>🌱</Typography>
+                                              </Box>
+                                            )}
+                                            <Box sx={{
+                                              position: 'absolute', inset: 0,
+                                              background: 'linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.12) 100%)'
+                                            }} />
+                                          </Box>
+
+                                          {/* Right: Text & Selection */}
+                                          <Box sx={{ p: 1.75, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minWidth: 0 }}>
+                                            <Box>
+                                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 0.5 }}>
+                                                {sub.groupName ? (
+                                                  <Chip
+                                                    label={sub.groupName}
+                                                    size="small"
+                                                    sx={{
+                                                      bgcolor: isSelected ? alpha(activeFormatMeta.color, 0.15) : 'rgba(0,0,0,0.05)',
+                                                      color: isSelected ? activeFormatMeta.color : '#64748b',
+                                                      fontSize: '0.66rem',
+                                                      fontWeight: 800,
+                                                      height: 19
+                                                    }}
+                                                  />
+                                                ) : <Box />}
+
+                                                {/* Sleek Selection Radio Pill */}
+                                                <Box sx={{
+                                                  display: 'flex', alignItems: 'center', gap: 0.5,
+                                                  px: 1, py: 0.25, borderRadius: '12px',
+                                                  bgcolor: isSelected ? activeFormatMeta.color : 'rgba(0,0,0,0.04)',
+                                                  color: isSelected ? '#fff' : '#94a3b8',
+                                                  transition: 'all 0.2s'
+                                                }}>
+                                                  <Box sx={{
+                                                    width: 14, height: 14, borderRadius: '50%',
+                                                    bgcolor: isSelected ? '#fff' : 'transparent',
+                                                    border: isSelected ? 'none' : '2px solid #cbd5e1',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                                  }}>
+                                                    {isSelected && (
+                                                      <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: activeFormatMeta.color }} />
+                                                    )}
+                                                  </Box>
+                                                  <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: isSelected ? '#fff' : '#64748b' }}>
+                                                    {isSelected ? 'Selected' : 'Select'}
+                                                  </Typography>
+                                                </Box>
+                                              </Box>
+
+                                              <Typography sx={{
+                                                fontWeight: 800, fontSize: '0.94rem', color: isSelected ? activeFormatMeta.color : '#0f172a',
+                                                lineHeight: 1.25, mb: 0.5
+                                              }}>
+                                                {sub.title}
+                                              </Typography>
+
+                                              <Typography sx={{
+                                                color: '#64748b', fontSize: '0.76rem', lineHeight: 1.35,
+                                                display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'
+                                              }}>
+                                                {sub.description || 'Core strategic pathway under this challenge.'}
+                                              </Typography>
+                                            </Box>
+                                          </Box>
+                                        </Box>
+                                      );
+                                    })}
+                                  </Box>
                                 </Box>
-                              );
-                            })}
+                              )}
+
+                              {/* ═══ STEP 2: THE 15 EDITORIAL LENSES MATRIX (SEPARATED BY ERA) ═══ */}
+                              {blueprintConfigStep === 2 && (
+                                <Box sx={{ animation: 'fadeIn 0.25s ease', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                  {/* Scrollable Container with Era-Separated Sections */}
+                                  <Box sx={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: 2.5,
+                                    maxHeight: '520px',
+                                    overflowY: 'auto',
+                                    pr: 1,
+                                    '&::-webkit-scrollbar': { width: '6px' },
+                                    '&::-webkit-scrollbar-track': { background: 'transparent' },
+                                    '&::-webkit-scrollbar-thumb': { background: alpha(activeFormatMeta.color, 0.2), borderRadius: '10px' }
+                                  }}>
+                                    {erasList.map(era => {
+                                      const eraMeta = ERA_CONFIG[era];
+                                      const isEraSelected = selectedEra === era;
+
+                                      return (
+                                        <Box
+                                          key={era}
+                                          sx={{
+                                            p: { xs: 2, md: 2.5 },
+                                            borderRadius: '22px',
+                                            bgcolor: isEraSelected ? alpha(eraMeta.color, 0.03) : 'rgba(0,0,0,0.015)',
+                                            border: `1.5px solid ${isEraSelected ? alpha(eraMeta.color, 0.25) : 'rgba(0,0,0,0.05)'}`,
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            gap: 1.75,
+                                            transition: 'all 0.2s ease'
+                                          }}
+                                        >
+                                          {/* Era Group Header Bar */}
+                                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                              <Box sx={{
+                                                width: 28, height: 28, borderRadius: '8px',
+                                                bgcolor: alpha(eraMeta.color, 0.12), color: eraMeta.color,
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                fontSize: '1rem', fontWeight: 900
+                                              }}>
+                                                {eraMeta.emoji}
+                                              </Box>
+                                              <Typography sx={{ fontWeight: 900, fontSize: '0.98rem', color: '#0f172a' }}>
+                                                {eraMeta.label} Era
+                                              </Typography>
+                                              <Typography sx={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 500, display: { xs: 'none', sm: 'inline' } }}>
+                                                • {eraMeta.desc}
+                                              </Typography>
+                                            </Box>
+
+                                            {isEraSelected && (
+                                              <Chip
+                                                label="Active Era"
+                                                size="small"
+                                                sx={{
+                                                  height: 20, fontSize: '0.68rem', fontWeight: 800,
+                                                  bgcolor: alpha(eraMeta.color, 0.15), color: eraMeta.color,
+                                                  border: `1px solid ${alpha(eraMeta.color, 0.3)}`
+                                                }}
+                                              />
+                                            )}
+                                          </Box>
+
+                                          {/* Grid of the 5 Formats for this specific Era */}
+                                          <Box sx={{
+                                            display: 'grid',
+                                            gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)', lg: 'repeat(5, 1fr)' },
+                                            gap: 1.5
+                                          }}>
+                                            {formatsList.map(fmt => {
+                                              const fmtMeta = FORMAT_CONFIG[fmt];
+                                              const isSelected = selectedFormat === fmt && selectedEra === era;
+                                              const blueprint = getBlueprint(fmt, era);
+
+                                              return (
+                                                <Box
+                                                  key={`${fmt}-${era}`}
+                                                  onClick={() => {
+                                                    setSelectedFormat(fmt);
+                                                    setSelectedEra(era);
+                                                    setSelectedTimeframe(era as any);
+                                                  }}
+                                                  sx={{
+                                                    p: 1.75,
+                                                    borderRadius: '16px',
+                                                    bgcolor: isSelected ? alpha(fmtMeta.color, 0.08) : '#ffffff',
+                                                    border: `2px solid ${isSelected ? fmtMeta.color : 'rgba(0,0,0,0.06)'}`,
+                                                    boxShadow: isSelected ? `0 8px 24px ${alpha(fmtMeta.color, 0.25)}` : '0 2px 8px rgba(0,0,0,0.02)',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    gap: 1,
+                                                    cursor: 'pointer',
+                                                    position: 'relative',
+                                                    transition: 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                                                    '&:hover': {
+                                                      transform: 'translateY(-2px)',
+                                                      borderColor: isSelected ? fmtMeta.color : alpha(fmtMeta.color, 0.4),
+                                                      boxShadow: `0 8px 18px ${alpha(fmtMeta.color, 0.15)}`
+                                                    }
+                                                  }}
+                                                >
+                                                  {/* Header: Format + Radio */}
+                                                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 0.5 }}>
+                                                    <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: isSelected ? fmtMeta.color : '#0f172a', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                      <span>{fmtMeta.emoji}</span> {fmtMeta.label}
+                                                    </Typography>
+
+                                                    <Box sx={{
+                                                      width: 16, height: 16, borderRadius: '50%',
+                                                      bgcolor: isSelected ? fmtMeta.color : 'transparent',
+                                                      border: isSelected ? 'none' : '2px solid #cbd5e1',
+                                                      display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                                    }}>
+                                                      {isSelected && (
+                                                        <CheckIcon sx={{ fontSize: 12, color: '#fff', fontWeight: 900 }} />
+                                                      )}
+                                                    </Box>
+                                                  </Box>
+
+                                                  {/* Merged Description */}
+                                                  <Typography sx={{
+                                                    fontSize: '0.73rem', color: '#64748b', lineHeight: 1.35,
+                                                    display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden'
+                                                  }}>
+                                                    {MATRIX_DESCRIPTIONS[`${fmt}_${era}`] || fmtMeta.desc}
+                                                  </Typography>
+
+                                                  {/* Footer: Block count */}
+                                                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 'auto', pt: 0.75, borderTop: '1px dashed rgba(0,0,0,0.06)' }}>
+                                                    <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: isSelected ? fmtMeta.color : '#94a3b8' }}>
+                                                      {blueprint.length} Blocks
+                                                    </Typography>
+                                                    <Typography sx={{ fontSize: '0.66rem', fontWeight: 800, color: isSelected ? fmtMeta.color : '#94a3b8' }}>
+                                                      {isSelected ? 'Active ✓' : 'Select'}
+                                                    </Typography>
+                                                  </Box>
+                                                </Box>
+                                              );
+                                            })}
+                                          </Box>
+                                        </Box>
+                                      );
+                                    })}
+                                  </Box>
+                                </Box>
+                              )}
+
+                              {/* ═══ UNIFIED BOTTOM ACTION & PROGRESS CONTAINER ═══ */}
+                              <Box sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                flexWrap: 'wrap',
+                                gap: 2,
+                                pt: 2,
+                                borderTop: '1px solid rgba(0,0,0,0.06)'
+                              }}>
+                                {/* Left: Back button or selection status */}
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                  {blueprintConfigStep === 2 ? (
+                                    <Button
+                                      variant="outlined"
+                                      onClick={() => setBlueprintConfigStep(1)}
+                                      startIcon={<ArrowBackIcon sx={{ fontSize: 18 }} />}
+                                      sx={{
+                                        borderRadius: '12px', fontWeight: 700, px: 2.5, py: 0.8,
+                                        borderColor: 'rgba(0,0,0,0.15)', color: '#475569',
+                                        bgcolor: '#fff',
+                                        '&:hover': { bgcolor: 'rgba(0,0,0,0.04)', borderColor: 'rgba(0,0,0,0.25)' }
+                                      }}
+                                    >
+                                      Back
+                                    </Button>
+                                  ) : (
+                                    <Typography sx={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>
+                                      {selectedSubcategory ? `Selected: ${selectedSubObj?.title}` : 'Tap a subcategory to proceed'}
+                                    </Typography>
+                                  )}
+                                </Box>
+
+                                {/* Center: Integrated Compact Progress Stepper */}
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                                  <Box
+                                    onClick={() => setBlueprintConfigStep(1)}
+                                    sx={{
+                                      display: 'flex', alignItems: 'center', gap: 0.75, px: 1.5, py: 0.5, borderRadius: '20px',
+                                      cursor: 'pointer',
+                                      bgcolor: blueprintConfigStep === 1 ? alpha(activeFormatMeta.color, 0.12) : 'rgba(0,0,0,0.04)',
+                                      border: `1px solid ${blueprintConfigStep === 1 ? activeFormatMeta.color : 'transparent'}`,
+                                      transition: 'all 0.2s'
+                                    }}
+                                  >
+                                    <Box sx={{
+                                      width: 18, height: 18, borderRadius: '50%',
+                                      bgcolor: selectedSubcategory ? activeFormatMeta.color : (blueprintConfigStep === 1 ? alpha(activeFormatMeta.color, 0.3) : 'rgba(0,0,0,0.15)'),
+                                      color: selectedSubcategory ? '#fff' : (blueprintConfigStep === 1 ? activeFormatMeta.color : '#64748b'),
+                                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                      fontSize: '0.68rem', fontWeight: 900
+                                    }}>
+                                      {selectedSubcategory ? '✓' : '1'}
+                                    </Box>
+                                    <Typography sx={{ fontSize: '0.76rem', fontWeight: 800, color: blueprintConfigStep === 1 ? activeFormatMeta.color : '#64748b' }}>
+                                      Subcategory
+                                    </Typography>
+                                  </Box>
+
+                                  <Box sx={{ width: 14, height: 2, bgcolor: isBlueprintFilled ? activeFormatMeta.color : 'rgba(0,0,0,0.1)' }} />
+
+                                  <Box
+                                    onClick={() => { if (selectedSubcategory) setBlueprintConfigStep(2); }}
+                                    sx={{
+                                      display: 'flex', alignItems: 'center', gap: 0.75, px: 1.5, py: 0.5, borderRadius: '20px',
+                                      cursor: selectedSubcategory ? 'pointer' : 'default',
+                                      bgcolor: blueprintConfigStep === 2 ? alpha(activeFormatMeta.color, 0.12) : 'rgba(0,0,0,0.04)',
+                                      border: `1px solid ${blueprintConfigStep === 2 ? activeFormatMeta.color : 'transparent'}`,
+                                      transition: 'all 0.2s',
+                                      opacity: selectedSubcategory ? 1 : 0.6
+                                    }}
+                                  >
+                                    <Box sx={{
+                                      width: 18, height: 18, borderRadius: '50%',
+                                      bgcolor: isBlueprintFilled ? activeFormatMeta.color : (blueprintConfigStep === 2 ? alpha(activeFormatMeta.color, 0.3) : 'rgba(0,0,0,0.15)'),
+                                      color: isBlueprintFilled ? '#fff' : (blueprintConfigStep === 2 ? activeFormatMeta.color : '#64748b'),
+                                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                      fontSize: '0.68rem', fontWeight: 900
+                                    }}>
+                                      {isBlueprintFilled ? '✓' : '2'}
+                                    </Box>
+                                    <Typography sx={{ fontSize: '0.76rem', fontWeight: 800, color: blueprintConfigStep === 2 ? activeFormatMeta.color : '#64748b' }}>
+                                      15 Lenses
+                                    </Typography>
+                                  </Box>
+                                </Box>
+
+                                {/* Right: Next / Save Action Button */}
+                                <Box>
+                                  {blueprintConfigStep === 1 ? (
+                                    <Button
+                                      variant="contained"
+                                      disabled={!selectedSubcategory}
+                                      onClick={() => setBlueprintConfigStep(2)}
+                                      endIcon={<ArrowForwardIcon sx={{ fontSize: 18 }} />}
+                                      sx={{
+                                        bgcolor: activeFormatMeta.color, color: '#fff', fontWeight: 800, px: 3.5, py: 0.85, borderRadius: '12px',
+                                        boxShadow: `0 4px 14px ${alpha(activeFormatMeta.color, 0.3)}`,
+                                        '&:hover': { bgcolor: alpha(activeFormatMeta.color, 0.9) }
+                                      }}
+                                    >
+                                      Next
+                                    </Button>
+                                  ) : (
+                                    <Button
+                                      variant="contained"
+                                      onClick={() => setIsBlueprintCardFlipped(false)}
+                                      startIcon={<CheckIcon sx={{ fontSize: 18 }} />}
+                                      sx={{
+                                        bgcolor: activeFormatMeta.color, color: '#fff', fontWeight: 800, px: 4, py: 0.85, borderRadius: '12px',
+                                        boxShadow: `0 4px 14px ${alpha(activeFormatMeta.color, 0.3)}`,
+                                        '&:hover': { bgcolor: alpha(activeFormatMeta.color, 0.9) }
+                                      }}
+                                    >
+                                      Save
+                                    </Button>
+                                  )}
+                                </Box>
+                              </Box>
+
+                            </Box>
                           </Box>
                         </Box>
-                      </Paper>
+                      </Box>
 
                       {/* Header of Framework Blueprint */}
                       <Box sx={{ textAlign: 'center', mb: 4, pt: 1 }}>
@@ -1258,20 +1853,21 @@ export default function CreateLearnContentForm({
                               }}>
                                 <Typography sx={{ fontSize: '0.7rem', fontWeight: 900, color: '#0f172a' }}>{idx + 1}</Typography>
                               </Box>
-                              <Box sx={{
-                                flex: 1, p: 2.5, borderRadius: '16px',
-                                border: `1px solid rgba(0,0,0,0.08)`,
-                                background: `linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.8) 100%)`,
-                                backdropFilter: 'blur(8px)', boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
-                                transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                                '&:hover': { transform: 'translateX(4px)', borderColor: alpha(bDef.color, 0.3), boxShadow: `0 8px 24px rgba(0,0,0,0.06)` },
-                              }}>
+                              <PremiumCard
+                                variant="glass"
+                                baseColor={bDef.color}
+                                sx={{
+                                  flex: 1, p: 2.5, borderRadius: '18px',
+                                  transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                                  '&:hover': { transform: 'translateX(6px)', borderColor: alpha(bDef.color, 0.4), boxShadow: `0 8px 24px ${alpha(bDef.color, 0.12)}` },
+                                }}
+                              >
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
                                   <Typography sx={{ fontWeight: 800, color: '#0f172a', fontSize: '1rem' }}>{sop.role}</Typography>
                                   <Chip label={bDef.label} size="small" sx={{ height: 20, fontSize: '0.68rem', bgcolor: alpha(bDef.color, 0.15), color: bDef.color, fontWeight: 800 }} />
                                 </Box>
                                 <Typography sx={{ color: '#475569', fontSize: '0.85rem', lineHeight: 1.4 }}>{sop.desc}</Typography>
-                              </Box>
+                              </PremiumCard>
                             </Box>
                           );
                         })}
@@ -1872,6 +2468,504 @@ export default function CreateLearnContentForm({
                                     </Box>
                                   </Box>
                                 )}
+                                {b.type === 'comparison_matrix' && (
+                                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+                                      <PremiumTextField
+                                        colorTheme={color}
+                                        fullWidth label="Option A Name (e.g. Solar Milling)"
+                                        placeholder="Solar Milling (Decentralized)"
+                                        value={b.content.optionAName || ''}
+                                        onChange={e => updateBlock(b.id, 'optionAName', e.target.value)}
+                                      />
+                                      <PremiumTextField
+                                        colorTheme={color}
+                                        fullWidth label="Option B Name (e.g. Diesel Milling)"
+                                        placeholder="Diesel Generator Milling"
+                                        value={b.content.optionBName || ''}
+                                        onChange={e => updateBlock(b.id, 'optionBName', e.target.value)}
+                                      />
+                                    </Box>
+
+                                    <Typography sx={{ fontSize: '0.82rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                      Comparison Criteria Breakdown
+                                    </Typography>
+
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                                      {(b.content.rows || []).map((row: any, rIdx: number) => (
+                                        <Box key={rIdx} sx={{ p: 2, borderRadius: '14px', bgcolor: alpha(color, 0.03), border: `1px solid ${alpha(color, 0.15)}`, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                                            <PremiumTextField
+                                              colorTheme={color}
+                                              size="small"
+                                              label={`Criterion ${rIdx + 1} (e.g. CAPEX)`}
+                                              value={row.criterion || ''}
+                                              onChange={e => {
+                                                const nextRows = [...(b.content.rows || [])];
+                                                nextRows[rIdx].criterion = e.target.value;
+                                                updateBlock(b.id, 'rows', nextRows);
+                                              }}
+                                              sx={{ flex: 2 }}
+                                            />
+                                            <PremiumAutocomplete
+                                              label="Advantage"
+                                              size="small"
+                                              value={row.winner || 'Tie'}
+                                              options={[{ label: `Option A (${b.content.optionAName || 'A'})`, value: 'A' }, { label: `Option B (${b.content.optionBName || 'B'})`, value: 'B' }, { label: 'Equal / Tie', value: 'Tie' }]}
+                                              onChange={(e, val: any) => {
+                                                const nextRows = [...(b.content.rows || [])];
+                                                nextRows[rIdx].winner = val?.value || val;
+                                                updateBlock(b.id, 'rows', nextRows);
+                                              }}
+                                              colorTheme={color}
+                                              sx={{ flex: 1.2 }}
+                                            />
+                                            {rIdx > 0 && (
+                                              <IconButton size="small" color="error" onClick={() => {
+                                                const nextRows = (b.content.rows || []).filter((_: any, i: number) => i !== rIdx);
+                                                updateBlock(b.id, 'rows', nextRows);
+                                              }}>
+                                                <DeleteIcon fontSize="small" />
+                                              </IconButton>
+                                            )}
+                                          </Box>
+                                          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+                                            <PremiumTextField
+                                              colorTheme={color}
+                                              size="small"
+                                              label={`Option A (${b.content.optionAName || 'A'})`}
+                                              placeholder="$12,000 upfront"
+                                              value={row.optionAValue || ''}
+                                              onChange={e => {
+                                                const nextRows = [...(b.content.rows || [])];
+                                                nextRows[rIdx].optionAValue = e.target.value;
+                                                updateBlock(b.id, 'rows', nextRows);
+                                              }}
+                                            />
+                                            <PremiumTextField
+                                              colorTheme={color}
+                                              size="small"
+                                              label={`Option B (${b.content.optionBName || 'B'})`}
+                                              placeholder="$4,500 + $800/mo diesel"
+                                              value={row.optionBValue || ''}
+                                              onChange={e => {
+                                                const nextRows = [...(b.content.rows || [])];
+                                                nextRows[rIdx].optionBValue = e.target.value;
+                                                updateBlock(b.id, 'rows', nextRows);
+                                              }}
+                                            />
+                                          </Box>
+                                        </Box>
+                                      ))}
+
+                                      <Button
+                                        onClick={() => {
+                                          const nextRows = [...(b.content.rows || []), { criterion: '', optionAValue: '', optionBValue: '', winner: 'A' }];
+                                          updateBlock(b.id, 'rows', nextRows);
+                                        }}
+                                        sx={{
+                                          alignSelf: 'flex-start', borderRadius: '12px', textTransform: 'none', fontWeight: 700,
+                                          px: 2.5, py: 1, bgcolor: alpha(color, 0.08), color, border: `1px dashed ${alpha(color, 0.3)}`,
+                                          '&:hover': { bgcolor: alpha(color, 0.15) }
+                                        }}
+                                      >
+                                        + Add Comparison Row
+                                      </Button>
+                                    </Box>
+
+                                    <PremiumTextField
+                                      colorTheme={color}
+                                      fullWidth
+                                      label="Winner Verdict / Strategic Takeaway"
+                                      placeholder="Solar milling reaches breakeven in month 14 and insulates operators from fuel shocks."
+                                      value={b.content.winnerVerdict || ''}
+                                      onChange={e => updateBlock(b.id, 'winnerVerdict', e.target.value)}
+                                    />
+                                  </Box>
+                                )}
+                                {b.type === 'unit_economics_card' && (
+                                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(3, 1fr)' }, gap: 2 }}>
+                                      <PremiumTextField
+                                        colorTheme={color}
+                                        label="TAM (Addressable Market)"
+                                        placeholder="$450M West Africa"
+                                        value={b.content.tam || ''}
+                                        onChange={e => updateBlock(b.id, 'tam', e.target.value)}
+                                      />
+                                      <PremiumTextField
+                                        colorTheme={color}
+                                        label="Target IRR"
+                                        placeholder="32.5%"
+                                        value={b.content.targetIrr || ''}
+                                        onChange={e => updateBlock(b.id, 'targetIrr', e.target.value)}
+                                      />
+                                      <PremiumTextField
+                                        colorTheme={color}
+                                        label="Ticket / Deal Size"
+                                        placeholder="$500k - $2M"
+                                        value={b.content.ticketSize || ''}
+                                        onChange={e => updateBlock(b.id, 'ticketSize', e.target.value)}
+                                      />
+                                      <PremiumTextField
+                                        colorTheme={color}
+                                        label="Gross Margin"
+                                        placeholder="44%"
+                                        value={b.content.grossMargin || ''}
+                                        onChange={e => updateBlock(b.id, 'grossMargin', e.target.value)}
+                                      />
+                                      <PremiumTextField
+                                        colorTheme={color}
+                                        label="Payback Period"
+                                        placeholder="18 - 24 Months"
+                                        value={b.content.paybackPeriod || ''}
+                                        onChange={e => updateBlock(b.id, 'paybackPeriod', e.target.value)}
+                                      />
+                                      <PremiumTextField
+                                        colorTheme={color}
+                                        label="Primary Downside Risk"
+                                        placeholder="FX devaluation & off-taker default"
+                                        value={b.content.primaryRisk || ''}
+                                        onChange={e => updateBlock(b.id, 'primaryRisk', e.target.value)}
+                                      />
+                                    </Box>
+
+                                    <PremiumMarkdownEditor
+                                      colorTheme={color}
+                                      fullWidth multiline rows={3}
+                                      label="Investment Thesis & Margin Engine"
+                                      placeholder="Why this unit economic structure creates defensible alpha in the current market..."
+                                      value={b.content.dealThesis || ''}
+                                      onChange={(e: any) => updateBlock(b.id, 'dealThesis', e.target.value)}
+                                    />
+                                  </Box>
+                                )}
+                                {b.type === 'protocol_steps' && (
+                                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                                    {(b.content.steps || []).map((step: any, sIdx: number) => (
+                                      <Box key={sIdx} sx={{ p: 2.5, borderRadius: '16px', bgcolor: alpha(color, 0.03), border: `1px solid ${alpha(color, 0.15)}`, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                                          <Typography sx={{ fontWeight: 900, color: color, fontSize: '0.95rem' }}>
+                                            Step {sIdx + 1}
+                                          </Typography>
+                                          {sIdx > 0 && (
+                                            <IconButton size="small" color="error" onClick={() => {
+                                              const nextSteps = (b.content.steps || []).filter((_: any, i: number) => i !== sIdx);
+                                              updateBlock(b.id, 'steps', nextSteps);
+                                            }}>
+                                              <DeleteIcon fontSize="small" />
+                                            </IconButton>
+                                          )}
+                                        </Box>
+
+                                        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '2fr 1fr 1fr' }, gap: 1.5 }}>
+                                          <PremiumTextField
+                                            colorTheme={color}
+                                            size="small"
+                                            label="Step Action Title"
+                                            placeholder="Isolate Cold Storage Compressor"
+                                            value={step.title || ''}
+                                            onChange={e => {
+                                              const nextSteps = [...(b.content.steps || [])];
+                                              nextSteps[sIdx].title = e.target.value;
+                                              updateBlock(b.id, 'steps', nextSteps);
+                                            }}
+                                          />
+                                          <PremiumTextField
+                                            colorTheme={color}
+                                            size="small"
+                                            label="Assigned Role"
+                                            placeholder="Field Engineer"
+                                            value={step.role || ''}
+                                            onChange={e => {
+                                              const nextSteps = [...(b.content.steps || [])];
+                                              nextSteps[sIdx].role = e.target.value;
+                                              updateBlock(b.id, 'steps', nextSteps);
+                                            }}
+                                          />
+                                          <PremiumTextField
+                                            colorTheme={color}
+                                            size="small"
+                                            label="Time Window"
+                                            placeholder="Day 1 (08:00)"
+                                            value={step.timeWindow || ''}
+                                            onChange={e => {
+                                              const nextSteps = [...(b.content.steps || [])];
+                                              nextSteps[sIdx].timeWindow = e.target.value;
+                                              updateBlock(b.id, 'steps', nextSteps);
+                                            }}
+                                          />
+                                        </Box>
+
+                                        <PremiumMarkdownEditor
+                                          colorTheme={color}
+                                          fullWidth multiline rows={2}
+                                          label="Step Execution Protocol Details"
+                                          placeholder="Specific operational teardown instructions..."
+                                          value={step.description || ''}
+                                          onChange={(e: any) => {
+                                            const nextSteps = [...(b.content.steps || [])];
+                                            nextSteps[sIdx].description = e.target.value;
+                                            updateBlock(b.id, 'steps', nextSteps);
+                                          }}
+                                        />
+
+                                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                          <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
+                                            Checklist Items
+                                          </Typography>
+                                          {(step.checklist || []).map((chk: string, cIdx: number) => (
+                                            <Box key={cIdx} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                              <PremiumTextField
+                                                colorTheme={color}
+                                                size="small"
+                                                fullWidth
+                                                placeholder={`Action item ${cIdx + 1}`}
+                                                value={chk}
+                                                onChange={e => {
+                                                  const nextSteps = [...(b.content.steps || [])];
+                                                  nextSteps[sIdx].checklist = [...(nextSteps[sIdx].checklist || [])];
+                                                  nextSteps[sIdx].checklist[cIdx] = e.target.value;
+                                                  updateBlock(b.id, 'steps', nextSteps);
+                                                }}
+                                              />
+                                              {cIdx > 0 && (
+                                                <IconButton size="small" onClick={() => {
+                                                  const nextSteps = [...(b.content.steps || [])];
+                                                  nextSteps[sIdx].checklist = (nextSteps[sIdx].checklist || []).filter((_: any, i: number) => i !== cIdx);
+                                                  updateBlock(b.id, 'steps', nextSteps);
+                                                }}>
+                                                  <DeleteIcon fontSize="small" />
+                                                </IconButton>
+                                              )}
+                                            </Box>
+                                          ))}
+                                          <Button
+                                            size="small"
+                                            onClick={() => {
+                                              const nextSteps = [...(b.content.steps || [])];
+                                              nextSteps[sIdx].checklist = [...(nextSteps[sIdx].checklist || []), ''];
+                                              updateBlock(b.id, 'steps', nextSteps);
+                                            }}
+                                            sx={{ alignSelf: 'flex-start', fontSize: '0.75rem', textTransform: 'none', fontWeight: 700, color }}
+                                          >
+                                            + Add Checklist Item
+                                          </Button>
+                                        </Box>
+                                      </Box>
+                                    ))}
+
+                                    <Button
+                                      onClick={() => {
+                                        const nextSteps = [...(b.content.steps || []), { stepNumber: (b.content.steps || []).length + 1, title: '', role: '', timeWindow: '', description: '', checklist: [''] }];
+                                        updateBlock(b.id, 'steps', nextSteps);
+                                      }}
+                                      sx={{
+                                        alignSelf: 'flex-start', borderRadius: '12px', textTransform: 'none', fontWeight: 700,
+                                        px: 3, py: 1.25, bgcolor: alpha(color, 0.08), color, border: `1px dashed ${alpha(color, 0.3)}`,
+                                        '&:hover': { bgcolor: alpha(color, 0.15) }
+                                      }}
+                                    >
+                                      + Add Execution Step
+                                    </Button>
+                                  </Box>
+                                )}
+                                {b.type === 'timeline_tracker' && (
+                                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                                    {(b.content.milestones || []).map((m: any, mIdx: number) => (
+                                      <Box key={mIdx} sx={{ p: 2, borderRadius: '14px', bgcolor: alpha(color, 0.03), border: `1px solid ${alpha(color, 0.15)}`, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                                          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 2fr 1fr' }, gap: 1.5, flex: 1 }}>
+                                            <PremiumTextField
+                                              colorTheme={color}
+                                              size="small"
+                                              label="Year / Date / Phase"
+                                              placeholder="Q1 2023 / 2030 Horizon"
+                                              value={m.dateOrYear || ''}
+                                              onChange={e => {
+                                                const nextM = [...(b.content.milestones || [])];
+                                                nextM[mIdx].dateOrYear = e.target.value;
+                                                updateBlock(b.id, 'milestones', nextM);
+                                              }}
+                                            />
+                                            <PremiumTextField
+                                              colorTheme={color}
+                                              size="small"
+                                              label="Milestone Event Title"
+                                              placeholder="Anchor Borrowers Default Wave"
+                                              value={m.title || ''}
+                                              onChange={e => {
+                                                const nextM = [...(b.content.milestones || [])];
+                                                nextM[mIdx].title = e.target.value;
+                                                updateBlock(b.id, 'milestones', nextM);
+                                              }}
+                                            />
+                                            <PremiumTextField
+                                              colorTheme={color}
+                                              size="small"
+                                              label="Status Tag"
+                                              placeholder="Failure Trigger / Milestone"
+                                              value={m.status || ''}
+                                              onChange={e => {
+                                                const nextM = [...(b.content.milestones || [])];
+                                                nextM[mIdx].status = e.target.value;
+                                                updateBlock(b.id, 'milestones', nextM);
+                                              }}
+                                            />
+                                          </Box>
+                                          {mIdx > 0 && (
+                                            <IconButton size="small" color="error" onClick={() => {
+                                              const nextM = (b.content.milestones || []).filter((_: any, i: number) => i !== mIdx);
+                                              updateBlock(b.id, 'milestones', nextM);
+                                            }}>
+                                              <DeleteIcon fontSize="small" />
+                                            </IconButton>
+                                          )}
+                                        </Box>
+                                        <PremiumMarkdownEditor
+                                          colorTheme={color}
+                                          fullWidth multiline rows={2}
+                                          label="Milestone Description & Significance"
+                                          placeholder="What happened at this point in the timeline..."
+                                          value={m.description || ''}
+                                          onChange={(e: any) => {
+                                            const nextM = [...(b.content.milestones || [])];
+                                            nextM[mIdx].description = e.target.value;
+                                            updateBlock(b.id, 'milestones', nextM);
+                                          }}
+                                        />
+                                      </Box>
+                                    ))}
+
+                                    <Button
+                                      onClick={() => {
+                                        const nextM = [...(b.content.milestones || []), { dateOrYear: '', title: '', description: '', status: '' }];
+                                        updateBlock(b.id, 'milestones', nextM);
+                                      }}
+                                      sx={{
+                                        alignSelf: 'flex-start', borderRadius: '12px', textTransform: 'none', fontWeight: 700,
+                                        px: 3, py: 1.25, bgcolor: alpha(color, 0.08), color, border: `1px dashed ${alpha(color, 0.3)}`,
+                                        '&:hover': { bgcolor: alpha(color, 0.15) }
+                                      }}
+                                    >
+                                      + Add Timeline Milestone
+                                    </Button>
+                                  </Box>
+                                )}
+                                {b.type === 'persona_dossier' && (
+                                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '2fr 1fr 1fr' }, gap: 2 }}>
+                                      <PremiumTextField
+                                        colorTheme={color}
+                                        label="Operator / Trader Full Name"
+                                        placeholder="Hajiya Amina Bello"
+                                        value={b.content.name || ''}
+                                        onChange={e => updateBlock(b.id, 'name', e.target.value)}
+                                      />
+                                      <PremiumTextField
+                                        colorTheme={color}
+                                        label="Role & Location"
+                                        placeholder="Onion Aggregator, Kano"
+                                        value={b.content.roleAndLocation || ''}
+                                        onChange={e => updateBlock(b.id, 'roleAndLocation', e.target.value)}
+                                      />
+                                      <PremiumTextField
+                                        colorTheme={color}
+                                        label="Monthly Turnover / Volume"
+                                        placeholder="4,200 Bags / ₦48M"
+                                        value={b.content.monthlyTurnover || ''}
+                                        onChange={e => updateBlock(b.id, 'monthlyTurnover', e.target.value)}
+                                      />
+                                    </Box>
+
+                                    <PremiumMarkdownEditor
+                                      colorTheme={color}
+                                      fullWidth multiline rows={3}
+                                      label="Raw Field Quote (Voice of the Ground)"
+                                      placeholder="Direct unvarnished testimony from the operator..."
+                                      value={b.content.fieldQuote || ''}
+                                      onChange={(e: any) => updateBlock(b.id, 'fieldQuote', e.target.value)}
+                                    />
+
+                                    <PremiumMarkdownEditor
+                                      colorTheme={color}
+                                      fullWidth multiline rows={2}
+                                      label="Background & Operating Reality"
+                                      placeholder="Context on their operations, family labor, and local network..."
+                                      value={b.content.bio || ''}
+                                      onChange={(e: any) => updateBlock(b.id, 'bio', e.target.value)}
+                                    />
+
+                                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                                      <Box sx={{ flex: 1 }}>
+                                        {mediaUrlMode[b.id] ? (
+                                          <PremiumTextField
+                                            colorTheme={color}
+                                            fullWidth label="Avatar/Photo URL"
+                                            placeholder="https://..."
+                                            value={b.content.avatarUrl || ''}
+                                            onChange={e => updateBlock(b.id, 'avatarUrl', e.target.value)}
+                                          />
+                                        ) : (
+                                          <Button
+                                            component="label" fullWidth
+                                            sx={{ height: 56, borderRadius: '14px', borderStyle: 'dashed', borderWidth: 2, color, borderColor: alpha(color, 0.4), '&:hover': { borderColor: color, bgcolor: alpha(color, 0.05) }, justifyContent: 'flex-start', px: 2 }}
+                                          >
+                                            <input type="file" hidden accept="image/*" onChange={(e) => { if (e.target.files?.[0]) handleImageUpload(b.id, 'avatarUrl', e.target.files[0]); }} />
+                                            {uploading ? <CircularProgress size={24} color="inherit" /> : (
+                                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                                <UploadIcon />
+                                                <Typography sx={{ fontWeight: 700, textTransform: 'none' }}>Upload Persona Photo</Typography>
+                                              </Box>
+                                            )}
+                                          </Button>
+                                        )}
+                                      </Box>
+                                      <Tooltip title={mediaUrlMode[b.id] ? "Switch to Upload" : "Paste URL instead"}>
+                                        <IconButton onClick={(e) => { e.stopPropagation(); toggleUrlMode(b.id); }} sx={{ bgcolor: alpha(color, 0.1), color, '&:hover': { bgcolor: alpha(color, 0.2) }, width: 48, height: 48, borderRadius: '14px', flexShrink: 0 }}>
+                                          {mediaUrlMode[b.id] ? <UploadIcon /> : <LinkIcon />}
+                                        </IconButton>
+                                      </Tooltip>
+                                    </Box>
+                                  </Box>
+                                )}
+                                {b.type === 'ecosystem_embed' && (
+                                  <EcosystemJobPicker
+                                    blockId={b.id}
+                                    content={b.content}
+                                    articleCommodity={selectedCommodity}
+                                    articleCategory={selectedCategory}
+                                    articleSubcategory={subcategoriesInSelectedCategory.find(s => s.id === selectedSubcategory)?.title || selectedSubcategory}
+                                    colorTheme={color}
+                                    userId={profile?.uid}
+                                    userOrgs={profile?.organizations || []}
+                                    onSelectJob={(jobData) => {
+                                      setBlocks(blocks.map(blk => blk.id === b.id ? {
+                                        ...blk,
+                                        content: {
+                                          ...blk.content,
+                                          ...jobData
+                                        }
+                                      } : blk));
+                                    }}
+                                    onUpdateField={(key, val) => updateBlock(b.id, key, val)}
+                                    onClear={() => {
+                                      setBlocks(blocks.map(blk => blk.id === b.id ? {
+                                        ...blk,
+                                        content: {
+                                          embedType: 'job',
+                                          title: '',
+                                          organization: '',
+                                          location: '',
+                                          compensationOrTarget: '',
+                                          ctaText: 'Apply Now',
+                                          ctaLink: '',
+                                          jobId: ''
+                                        }
+                                      } : blk));
+                                    }}
+                                  />
+                                )}
                               </Box>
                             </Box>
                                   </Box>
@@ -1919,6 +3013,7 @@ export default function CreateLearnContentForm({
                 )}
               </Box>
             ) : (
+<<<<<<< HEAD
               <Paper
                 elevation={0}
                 sx={{
@@ -1995,6 +3090,31 @@ export default function CreateLearnContentForm({
                   ← Back to Studio
                 </Button>
               </Paper>
+=======
+              <Box sx={{ animation: 'fadeIn 0.3s', maxWidth: 600, mx: 'auto', width: '100%', mt: 8, textAlign: 'center' }}>
+                <Paper sx={{ p: 6, borderRadius: '32px', bgcolor: 'rgba(255,255,255,0.7)', border: '1px solid rgba(0,0,0,0.06)', backdropFilter: 'blur(20px)', boxShadow: '0 20px 40px rgba(0,0,0,0.04)' }}>
+                  <Box sx={{ width: 80, height: 80, borderRadius: '24px', bgcolor: 'rgba(0,0,0,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 3 }}>
+                    <BuildIcon sx={{ fontSize: 40, color: '#64748b' }} />
+                  </Box>
+                  <Typography variant="h4" sx={{ fontWeight: 900, mb: 1.5, color: '#0f172a', letterSpacing: '-0.02em' }}>
+                    Space Not Yet Built
+                  </Typography>
+                  <Typography sx={{ color: '#475569', mb: 4, fontWeight: 500, fontSize: '1.05rem', maxWidth: 400, mx: 'auto' }}>
+                    The builder for this content type is currently under construction in the FoodNerve ecosystem.
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    onClick={() => onCancel?.()}
+                    sx={{
+                      bgcolor: '#0f172a', color: '#fff', px: 4, py: 1.5, borderRadius: '16px', fontWeight: 800,
+                      '&:hover': { bgcolor: '#1e293b', transform: 'translateY(-2px)' }
+                    }}
+                  >
+                    Go Back to Studio
+                  </Button>
+                </Paper>
+              </Box>
+>>>>>>> dev
             )}
           </Box>
         )}

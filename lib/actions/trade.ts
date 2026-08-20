@@ -17,6 +17,7 @@ export interface CreateTradeListingPayload {
   status?: string;
   metadata?: any;
   organizationId?: string | null;
+  commodity?: string;
   expiresAt?: string | Date | null;
 }
 
@@ -141,7 +142,7 @@ export async function createTradeListing(data: CreateTradeListingPayload) {
       priceOrAsk: data.priceOrAsk || '0',
       location: data.location,
       lga: data.lga || '',
-      commodity: metadata.sector || undefined,
+      commodity: data.commodity || metadata.sector || undefined,
       postedById: data.postedById,
       imageUrl: data.imageUrl,
       nervePointsCost: data.nervePointsCost || 0,
@@ -550,6 +551,142 @@ export async function cullBackTradeListing(listingId: string, userId: string, ta
 }
 
 /**
+ * Fetches active ecosystem listings (jobs, volunteering, and deal room campaigns)
+ * with commodity, category, and subcategory metadata for Learn article embeds.
+ */
+export async function getEcosystemEmbedOptions(options?: {
+  searchQuery?: string;
+  limit?: number;
+}) {
+  try {
+    const where: any = {
+      status: 'active',
+      category: { in: ['jobs', 'volunteer'] },
+    };
+
+    if (options?.searchQuery && options.searchQuery.trim()) {
+      const q = options.searchQuery.trim();
+      where.OR = [
+        { title: { contains: q } },
+        { description: { contains: q } },
+        { location: { contains: q } },
+        { commodity: { contains: q } },
+        { jobFunction: { contains: q } },
+        { organization: { name: { contains: q } } }
+      ];
+    }
+
+    const [rawJobs, rawCampaigns] = await Promise.all([
+      prisma.tradeListing.findMany({
+        where,
+        take: options?.limit || 50,
+        orderBy: { postedAt: 'desc' },
+        include: {
+          organization: {
+            select: { id: true, name: true, logoUrl: true, isPlatformOwner: true, verified: true }
+          },
+          postedBy: {
+            select: { id: true, name: true, avatarUrl: true }
+          }
+        }
+      }),
+      prisma.campaign.findMany({
+        where: {
+          status: 'funding',
+          ...(options?.searchQuery && options.searchQuery.trim() ? {
+            OR: [
+              { title: { contains: options.searchQuery.trim() } },
+              { description: { contains: options.searchQuery.trim() } },
+              { originTag: { contains: options.searchQuery.trim() } },
+            ]
+          } : {})
+        },
+        take: 30,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          organization: {
+            select: { id: true, name: true, logoUrl: true }
+          }
+        }
+      })
+    ]);
+
+    const jobs = rawJobs.map((j) => {
+      let challenges: string[] = [];
+      try {
+        if (j.challenges) challenges = JSON.parse(j.challenges);
+      } catch (e) {}
+
+      let subcategories: string[] = [];
+      try {
+        if (j.subcategories) subcategories = JSON.parse(j.subcategories);
+      } catch (e) {}
+
+      let compText = '';
+      if (j.compType === 'fiat' && (j.minSalary || j.maxSalary)) {
+        const curr = j.currency || '₦';
+        if (j.minSalary && j.maxSalary) {
+          compText = `${curr}${j.minSalary.toLocaleString()} - ${curr}${j.maxSalary.toLocaleString()}`;
+        } else if (j.minSalary) {
+          compText = `${curr}${j.minSalary.toLocaleString()}+`;
+        } else {
+          compText = `Up to ${curr}${j.maxSalary?.toLocaleString()}`;
+        }
+        if (j.duration) compText += ` (${j.duration})`;
+      } else if (j.npReward) {
+        compText = `${j.npReward.toLocaleString()} NP Reward`;
+      } else if (j.priceOrAsk) {
+        compText = j.priceOrAsk;
+      }
+
+      return {
+        id: j.id,
+        title: j.title,
+        category: j.category, // 'jobs' | 'volunteer'
+        commodity: j.commodity || '',
+        organization: j.organization?.name || (j.jobSource === 'internal_foodnerve' ? 'FoodNerve Core' : 'Independent Operator'),
+        organizationLogo: j.organization?.logoUrl || '',
+        location: j.location || 'Pan-African',
+        workModel: j.workModel || 'onsite',
+        jobFunction: j.jobFunction || 'AgTech',
+        challenges,
+        subcategories,
+        compType: j.compType || 'fiat',
+        compensationText: compText,
+        url: `/careers/${j.id}`,
+        postedAt: j.postedAt.toISOString(),
+      };
+    });
+
+    const deals = rawCampaigns.map((c) => {
+      const pct = c.goalAmount > 0 ? Math.round((c.raisedAmount / c.goalAmount) * 100) : 0;
+      return {
+        id: c.id,
+        title: c.title,
+        category: 'deal',
+        commodity: c.originTag || '',
+        organization: c.organization?.name || 'Deal Syndicate / SPV',
+        organizationLogo: c.organization?.logoUrl || '',
+        location: 'Pan-African Deal Room',
+        workModel: `${c.tier?.toUpperCase() || 'VENTURE'} SPV`,
+        jobFunction: 'Capital Allocation',
+        challenges: [],
+        subcategories: [],
+        compType: 'deal',
+        compensationText: `Target: ₦${c.goalAmount.toLocaleString()} (${pct}% Funded)`,
+        url: `/support/${c.id}`,
+        postedAt: c.createdAt.toISOString(),
+      };
+    });
+
+    return { success: true, jobs, deals };
+  } catch (error: any) {
+    console.error('Failed to get ecosystem embed options:', error);
+    return { success: false, error: error?.message || 'Failed to fetch options', jobs: [], deals: [] };
+  }
+}
+
+/**
  * Fetches a single trade listing by ID for form editing/hydration.
  */
 export async function getTradeListingById(listingId: string) {
@@ -572,5 +709,3 @@ export async function getTradeListingById(listingId: string) {
     return { success: false, error: error?.message || 'Failed to fetch listing.' };
   }
 }
-
-

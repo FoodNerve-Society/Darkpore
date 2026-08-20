@@ -16,7 +16,7 @@ import { motion } from 'framer-motion';
 import PremiumTextField from '@/components/PremiumTextField';
 import PremiumAutocomplete from '@/components/PremiumAutocomplete';
 import { VALUE_CHAIN_ACTORS } from '@/lib/cms';
-import { submitLead } from '@/app/actions/leads';
+import { submitLead } from '@/lib/actions/leads';
 
 const cardSx = (flipped: boolean, isFront: boolean) => ({
   position: 'absolute',

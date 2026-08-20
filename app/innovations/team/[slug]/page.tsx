@@ -10,7 +10,7 @@ import WorkHistoryIcon from '@mui/icons-material/WorkHistory';
 import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import TwitterIcon from '@mui/icons-material/Twitter';
 
-export default async function PersonProfilePage({ params }: { params: { slug: string } }) {
+export default async function TeamMemberProfilePage({ params }: { params: { slug: string } }) {
   const { slug } = await params;
   const headersList = await headers();
   const rawTenantId = headersList.get('x-tenant-id') || 'food';
@@ -39,9 +39,9 @@ export default async function PersonProfilePage({ params }: { params: { slug: st
       }}>
         <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 5, height: '100%' }}>
           <Box sx={{ position: 'absolute', top: { xs: 100, md: 120 } }}>
-            <Link href="/people" passHref style={{ textDecoration: 'none' }}>
+            <Link href="/team" passHref style={{ textDecoration: 'none' }}>
               <Button startIcon={<ArrowBackIcon />} sx={{ color: 'rgba(255,255,255,0.8)', bgcolor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)', '&:hover': { color: 'white', bgcolor: 'rgba(0,0,0,0.6)' } }}>
-                Back to Directory
+                Back to Team
               </Button>
             </Link>
           </Box>

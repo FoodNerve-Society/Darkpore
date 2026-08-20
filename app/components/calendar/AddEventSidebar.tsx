@@ -20,7 +20,7 @@ import PremiumAutocomplete from '@/components/PremiumAutocomplete';
 import PremiumDatePicker from '@/components/PremiumDatePicker';
 import PremiumTimePicker from '@/components/PremiumTimePicker';
 import PremiumSwitch from '@/components/PremiumSwitch';
-import { scheduleCalendarEvent } from '@/app/actions/calendar';
+import { scheduleCalendarEvent } from '@/lib/actions/calendar';
 import { ECOSYSTEM_EVENT_TYPES } from '@/lib/config/eventTypes';
 
 import { getTenantConfig, ERAS, FOOD_TYPES, VALUE_CHAIN_ACTORS } from '@/lib/cms';
