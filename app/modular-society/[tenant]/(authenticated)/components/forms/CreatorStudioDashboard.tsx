@@ -52,6 +52,7 @@ import {
 } from '@mui/icons-material';
 import { keyframes } from '@mui/system';
 import WikiHotspot from '@/components/wiki/WikiHotspot';
+import PremiumMarkdownEditor from '@/components/PremiumMarkdownEditor';
 import WorkspaceContentManager from '@/app/components/studio/WorkspaceContentManager';
 import { commoditiesList, getCommodityMeta } from '@/lib/cms/commodities';
 import { getISOWeek, startOfISOWeek, addDays, format, getYear } from 'date-fns';
@@ -446,6 +447,20 @@ export default function CreatorStudioDashboard({
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
       navigator.clipboard.writeText(text);
       setCopiedPromptTab(tabKey);
+
+      // Auto-check the corresponding pre-prompt action checklist item
+      const actionKey = tabKey === 'doc1a' ? 'act_copy_1a' : tabKey === 'doc1b' ? 'act_copy_1b' : tabKey === 'doc1c' ? 'act_copy_1c' : null;
+      if (actionKey) {
+        setWikiChecklist(prev => {
+          const next = { ...prev, [actionKey]: true };
+          if (typeof window !== 'undefined') {
+            const key = `editorial_sop_tasks_${selectedCommodity}_${selectedCategory}`;
+            localStorage.setItem(key, JSON.stringify(next));
+          }
+          return next;
+        });
+      }
+
       setTimeout(() => setCopiedPromptTab(null), 2000);
     }
   };
@@ -1633,151 +1648,125 @@ export default function CreatorStudioDashboard({
 
                           <Divider sx={{ borderColor: 'rgba(0,0,0,0.08)' }} />
 
-                          {/* Callout Alert Block */}
-                          <Alert severity="info" sx={{ borderRadius: '16px', border: '1px solid rgba(59, 130, 246, 0.25)', bgcolor: 'rgba(59, 130, 246, 0.04)', '& .MuiAlert-message': { width: '100%' } }}>
-                            <AlertTitle sx={{ fontWeight: 800, color: '#1e40af', mb: 0.5 }}>Human-in-the-Loop Intelligence SOP</AlertTitle>
-                            <Typography sx={{ fontSize: '0.88rem', color: '#1e3a8a', lineHeight: 1.55 }}>
-                              Execute this sequential 3-turn intelligence pipeline on your preferred LLM (ChatGPT, Claude 3.7, or Gemini Flash), then paste your generated outlines into Step 4 to immediately classify and render them into the Studio.
-                            </Typography>
-                          </Alert>
-
-                          {/* In This Section (Quick Jump Navigation Card) */}
-                          <Box sx={{
-                            p: 2.5,
-                            background: 'linear-gradient(135deg, rgba(248, 250, 252, 0.8), rgba(241, 245, 249, 0.5))',
-                            backdropFilter: 'blur(20px)',
+                          {/* How This Sidebar Works - Outcome & Workflow Guide */}
+                          <Paper sx={{
+                            p: { xs: 2.5, sm: 3 },
                             borderRadius: '20px',
-                            border: '1px solid rgba(226, 232, 240, 0.8)',
-                            boxShadow: '0 4px 16px rgba(0,0,0,0.03)'
+                            border: '1px solid rgba(59, 130, 246, 0.22)',
+                            background: 'linear-gradient(135deg, rgba(239, 246, 255, 0.95), rgba(248, 250, 252, 0.95))',
+                            boxShadow: '0 4px 16px rgba(59, 130, 246, 0.06)'
                           }}>
-                            <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <FolderIcon sx={{ fontSize: 16, color: '#3b82f6' }} /> In This SOP
-                            </Typography>
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                              {[
-                                { label: '1. Macro-Geo Context', id: 'wiki-step-1', icon: '📄' },
-                                { label: '2. Drucker OSINT', id: 'wiki-step-2', icon: '🧠' },
-                                { label: '3. Spectrum Outlines', id: 'wiki-step-3', icon: '📊' },
-                                { label: '4. Fast Ingest & Render', id: 'wiki-step-4', icon: '⚡' },
-                              ].map(item => (
-                                <Box
-                                  key={item.id}
-                                  onClick={() => {
-                                    const el = document.getElementById(item.id);
-                                    if (el) el.scrollIntoView({ behavior: 'smooth' });
-                                  }}
-                                  sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 1,
-                                    bgcolor: '#ffffff',
-                                    border: '1px solid rgba(0,0,0,0.06)',
-                                    fontWeight: 700,
-                                    color: '#0f172a',
-                                    fontSize: '0.82rem',
-                                    py: 0.8,
-                                    px: 2,
-                                    borderRadius: '12px',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s',
-                                    boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
-                                    '&:hover': {
-                                      transform: 'translateY(-2px)',
-                                      boxShadow: '0 8px 16px rgba(59, 130, 246, 0.15)',
-                                      borderColor: 'rgba(59, 130, 246, 0.3)',
-                                      color: '#2563eb'
-                                    }
-                                  }}
-                                >
-                                  <span>{item.icon}</span> {item.label}
-                                </Box>
-                              ))}
-                            </Box>
-                          </Box>
-
-                          {/* ── CHECKLIST BLOCK (Exact WikiReader ChecklistBlock style) ── */}
-                          <Box sx={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: 1,
-                            p: 2,
-                            border: '1px solid rgba(0,0,0,0.08)',
-                            borderRadius: '20px',
-                            bgcolor: 'rgba(0,0,0,0.02)'
-                          }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 0.5, mb: 0.5 }}>
-                              <Typography sx={{ fontSize: '0.82rem', fontWeight: 800, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                📋 SOP Action Checklist
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                              <Box sx={{ width: 32, height: 32, borderRadius: '10px', bgcolor: '#3b82f6', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <BoltIcon sx={{ fontSize: 18 }} />
+                              </Box>
+                              <Typography sx={{ fontWeight: 900, color: '#1e3a8a', fontSize: '1.05rem' }}>
+                                What You Gain & How It Works
                               </Typography>
-                              <Chip
-                                label={`${Object.values(wikiChecklist).filter(Boolean).length} / 6 Complete`}
-                                size="small"
-                                sx={{
-                                  bgcolor: Object.values(wikiChecklist).filter(Boolean).length === 6 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-                                  color: Object.values(wikiChecklist).filter(Boolean).length === 6 ? '#059669' : '#b45309',
-                                  fontWeight: 800,
-                                  fontSize: '0.72rem'
-                                }}
-                              />
                             </Box>
+                            
+                            <Typography sx={{ fontSize: '0.88rem', color: '#334155', lineHeight: 1.65, mb: 2 }}>
+                              By following this simple 3-turn guide in <strong>ChatGPT</strong>, <strong>Claude</strong>, or <strong>Gemini</strong>, you will produce <strong>10–12 deeply researched, high-impact article briefs</strong> covering Nigerian logistics bottlenecks, pricing arbitrage, and investment structures. Each prompt builds on the last—simply copy the prompts below, paste the responses into the scratchpads, and hit <strong>Ingest</strong> in Step 4 to turn them into live, clickable cards in your Studio ready to write.
+                            </Typography>
 
-                            {[
-                              { id: 'task_geo_prompt', text: '1. Copy & Run Macro-Geo Prompt 1a in LLM (Seeds 5 micro-geographies)' },
-                              { id: 'task_geo_verify', text: `2. Review & Verify Nigerian trade nodes & transit hubs for ${selectedCommodity}` },
-                              { id: 'task_drucker_prompt', text: '3. Execute Peter Drucker OSINT Prompt 1b (10 innovation vectors)' },
-                              { id: 'task_drucker_asymmetry', text: '4. Extract 10 operational incongruities & informal market spreads' },
-                              { id: 'task_spectrum_synthesize', text: '5. Execute Cognitive Spectrum Outlines Generator Prompt 1c (12 briefs)' },
-                              { id: 'task_fast_ingest', text: '6. Paste Document 1c markdown into Fast Ingest & Render Studio Cards' },
-                            ].map((item) => {
-                              const isChecked = !!wikiChecklist[item.id];
-                              return (
-                                <Box
-                                  key={item.id}
-                                  onClick={() => toggleChecklistItem(item.id)}
-                                  sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    p: 1.5,
-                                    borderRadius: '12px',
-                                    cursor: 'pointer',
-                                    bgcolor: isChecked ? 'rgba(16, 185, 129, 0.06)' : '#ffffff',
-                                    border: isChecked ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(0,0,0,0.06)',
-                                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                                    '&:hover': {
-                                      bgcolor: isChecked ? 'rgba(16, 185, 129, 0.1)' : 'rgba(0,0,0,0.03)',
-                                      borderColor: isChecked ? 'rgba(16, 185, 129, 0.5)' : '#cbd5e1'
-                                    }
-                                  }}
-                                >
-                                  <Box sx={{
-                                    width: 22, height: 22, borderRadius: '7px',
-                                    border: '2px solid',
-                                    borderColor: isChecked ? '#10b981' : '#cbd5e1',
-                                    bgcolor: isChecked ? '#10b981' : 'transparent',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    mr: 1.5, flexShrink: 0,
-                                    transition: 'all 0.2s'
-                                  }}>
-                                    {isChecked && (
-                                      <svg width="12" height="9" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M1 5L5 9L13 1" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                                      </svg>
-                                    )}
+                            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr' }, gap: 1.5 }}>
+                              <Box sx={{ p: 1.75, bgcolor: '#ffffff', borderRadius: '14px', border: '1px solid rgba(59, 130, 246, 0.15)', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+                                <Typography sx={{ fontWeight: 800, color: '#2563eb', fontSize: '0.82rem', mb: 0.5 }}>
+                                  1. Copy & Run
+                                </Typography>
+                                <Typography sx={{ fontSize: '0.78rem', color: '#64748b', lineHeight: 1.45 }}>
+                                  Copy Prompts 1a, 1b, and 1c sequentially into <strong>ChatGPT</strong>, <strong>Claude</strong>, or <strong>Gemini</strong>.
+                                </Typography>
+                              </Box>
+
+                              <Box sx={{ p: 1.75, bgcolor: '#ffffff', borderRadius: '14px', border: '1px solid rgba(245, 158, 11, 0.2)', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+                                <Typography sx={{ fontWeight: 800, color: '#b45309', fontSize: '0.82rem', mb: 0.5 }}>
+                                  2. Paste & Chain
+                                </Typography>
+                                <Typography sx={{ fontSize: '0.78rem', color: '#64748b', lineHeight: 1.45 }}>
+                                  Paste each AI answer into the scratchpads so the next prompt automatically carries the context forward.
+                                </Typography>
+                              </Box>
+
+                              <Box sx={{ p: 1.75, bgcolor: '#ffffff', borderRadius: '14px', border: '1px solid rgba(16, 185, 129, 0.2)', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+                                <Typography sx={{ fontWeight: 800, color: '#059669', fontSize: '0.82rem', mb: 0.5 }}>
+                                  3. Ingest & Write
+                                </Typography>
+                                <Typography sx={{ fontSize: '0.78rem', color: '#64748b', lineHeight: 1.45 }}>
+                                  Paste your final 10–12 article outlines into Step 4 to immediately render ready-to-write cards in the Studio.
+                                </Typography>
+                              </Box>
+                            </Box>
+                          </Paper>
+
+                          {/* ──────────────────────────────────────────────────────────── */}
+                          {/* STEP 0: SET UP YOUR AI WORKSPACE                            */}
+                          {/* ──────────────────────────────────────────────────────────── */}
+                          <Box id="wiki-step-0" sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, scrollMarginTop: '80px' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                              <Box sx={{ width: 28, height: 28, borderRadius: '50%', bgcolor: '#64748b', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.85rem' }}>
+                                0
+                              </Box>
+                              <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>
+                                Step 0: Set Up Your AI Workspace 🛠️
+                              </Typography>
+                            </Box>
+                            <Typography sx={{ color: '#475569', fontSize: '0.9rem', lineHeight: 1.55 }}>
+                              Before generating prompts, prepare your external AI chat session:
+                            </Typography>
+
+                            {/* Checklist Block (Regular) */}
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 2, border: '1px solid rgba(0,0,0,0.08)', borderRadius: '16px', bgcolor: 'rgba(0,0,0,0.02)' }}>
+                              {[
+                                { id: 'chk0_portal', text: 'Open your preferred AI app (ChatGPT, Claude, or Gemini) in a new browser tab.' },
+                                { id: 'chk0_model', text: 'Select the latest, most capable reasoning model available.' },
+                                { id: 'chk0_session', text: 'Start a completely fresh, empty chat session (do not mix previous topics).' },
+                              ].map(item => {
+                                const isChecked = !!wikiChecklist[item.id];
+                                return (
+                                  <Box
+                                    key={item.id}
+                                    onClick={() => toggleChecklistItem(item.id)}
+                                    sx={{
+                                      display: 'flex', alignItems: 'center', p: 1.25, borderRadius: '12px', cursor: 'pointer',
+                                      bgcolor: isChecked ? 'rgba(16, 185, 129, 0.06)' : '#ffffff',
+                                      border: isChecked ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(0,0,0,0.06)',
+                                      transition: 'all 0.2s',
+                                      '&:hover': { bgcolor: isChecked ? 'rgba(16, 185, 129, 0.1)' : 'rgba(0,0,0,0.03)' }
+                                    }}
+                                  >
+                                    <Box sx={{
+                                      width: 22, height: 22, borderRadius: '7px',
+                                      border: '2px solid',
+                                      borderColor: isChecked ? '#10b981' : '#cbd5e1',
+                                      bgcolor: isChecked ? '#10b981' : 'transparent',
+                                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                      mr: 1.5, flexShrink: 0,
+                                      transition: 'all 0.2s'
+                                    }}>
+                                      {isChecked && (
+                                        <svg width="12" height="9" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                          <path d="M1 5L5 9L13 1" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                        </svg>
+                                      )}
+                                    </Box>
+                                    <Typography sx={{
+                                      fontSize: '0.86rem',
+                                      color: isChecked ? '#94a3b8' : '#1e293b',
+                                      textDecoration: isChecked ? 'line-through' : 'none',
+                                      fontWeight: isChecked ? 500 : 700,
+                                      transition: 'all 0.2s',
+                                      lineHeight: 1.4
+                                    }}>
+                                      {item.text}
+                                    </Typography>
                                   </Box>
-                                  <Typography sx={{
-                                    fontSize: '0.88rem',
-                                    color: isChecked ? '#94a3b8' : '#1e293b',
-                                    textDecoration: isChecked ? 'line-through' : 'none',
-                                    fontWeight: isChecked ? 500 : 700,
-                                    transition: 'all 0.2s',
-                                    lineHeight: 1.4
-                                  }}>
-                                    {item.text}
-                                  </Typography>
-                                </Box>
-                              );
-                            })}
+                                );
+                              })}
+                            </Box>
                           </Box>
+
+                          <Divider sx={{ borderColor: 'rgba(0,0,0,0.06)' }} />
 
                           {/* ──────────────────────────────────────────────────────────── */}
                           {/* STEP 1: MACRO-GEO & TEMPORAL CONTEXT (TURN 1)               */}
@@ -1788,14 +1777,61 @@ export default function CreatorStudioDashboard({
                                 1
                               </Box>
                               <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>
-                                1. Macro-Geography & Temporal Context (Turn 1)
+                                Step 1: Macro-Geography & Temporal Context (Turn 1) 💡
                               </Typography>
                             </Box>
                             <Typography sx={{ color: '#475569', fontSize: '0.9rem', lineHeight: 1.55 }}>
                               Prompts the AI to map 5 micro-geographies, 3 historical eras, and real transit hubs across Nigeria for <strong>{selectedCommodity}</strong>.
                             </Typography>
 
-                            {/* PromptBuilderBlock Terminal (Exact WikiReader style) */}
+                            {/* Pre-Prompt Action Checklist */}
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 1.5, border: '1px solid rgba(59, 130, 246, 0.25)', borderRadius: '14px', bgcolor: 'rgba(59, 130, 246, 0.03)' }}>
+                              {[
+                                { id: 'act_copy_1a', text: '1. Click "Copy Executable Prompt 1a" below, paste it into your active AI chat, and press Enter to generate.' }
+                              ].map(item => {
+                                const isChecked = !!wikiChecklist[item.id];
+                                return (
+                                  <Box
+                                    key={item.id}
+                                    onClick={() => toggleChecklistItem(item.id)}
+                                    sx={{
+                                      display: 'flex', alignItems: 'center', p: 1, borderRadius: '10px', cursor: 'pointer',
+                                      bgcolor: isChecked ? 'rgba(16, 185, 129, 0.06)' : '#ffffff',
+                                      border: isChecked ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(59, 130, 246, 0.15)',
+                                      transition: 'all 0.2s',
+                                      '&:hover': { bgcolor: isChecked ? 'rgba(16, 185, 129, 0.1)' : 'rgba(59, 130, 246, 0.06)' }
+                                    }}
+                                  >
+                                    <Box sx={{
+                                      width: 20, height: 20, borderRadius: '6px',
+                                      border: '2px solid',
+                                      borderColor: isChecked ? '#10b981' : '#3b82f6',
+                                      bgcolor: isChecked ? '#10b981' : 'transparent',
+                                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                      mr: 1.25, flexShrink: 0,
+                                      transition: 'all 0.2s'
+                                    }}>
+                                      {isChecked && (
+                                        <svg width="10" height="8" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                          <path d="M1 5L5 9L13 1" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                        </svg>
+                                      )}
+                                    </Box>
+                                    <Typography sx={{
+                                      fontSize: '0.84rem',
+                                      color: isChecked ? '#94a3b8' : '#1e293b',
+                                      textDecoration: isChecked ? 'line-through' : 'none',
+                                      fontWeight: isChecked ? 500 : 700,
+                                      lineHeight: 1.4
+                                    }}>
+                                      {item.text}
+                                    </Typography>
+                                  </Box>
+                                );
+                              })}
+                            </Box>
+
+                            {/* PromptBuilderBlock Terminal */}
                             {copiedPromptTab === 'doc1a' ? (
                               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2, bgcolor: 'rgba(59, 130, 246, 0.06)', borderRadius: '16px', border: '1px solid rgba(59, 130, 246, 0.25)' }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
@@ -1852,29 +1888,75 @@ export default function CreatorStudioDashboard({
                               </Box>
                             )}
 
-                            {/* Response Sandbox */}
-                            <Box sx={{ p: 2, bgcolor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px' }}>
-                              <Typography sx={{ color: '#334155', fontSize: '0.8rem', fontWeight: 700, mb: 1 }}>
-                                Paste Turn 1 LLM Response (Auto-injected into Turn 2):
+                            {/* Verification Checklist (Important) */}
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 2, border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '16px', bgcolor: 'rgba(245, 158, 11, 0.04)' }}>
+                              <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#b45309', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                ⚡ Verify AI Output for Step 1:
                               </Typography>
-                              <TextField
-                                multiline
-                                rows={2}
+                              {[
+                                { id: 'chk1_hubs', text: `Did the AI identify exactly 5 Nigerian micro-geographies & trade hubs for ${selectedCommodity}?` },
+                                { id: 'chk1_eras', text: 'Did it establish the 3 temporal eras (Past Autopsy, Present Battlefield, Future Foresight)?' },
+                              ].map(item => {
+                                const isChecked = !!wikiChecklist[item.id];
+                                return (
+                                  <Box
+                                    key={item.id}
+                                    onClick={() => toggleChecklistItem(item.id)}
+                                    sx={{
+                                      display: 'flex', alignItems: 'center', p: 1.25, borderRadius: '12px', cursor: 'pointer',
+                                      bgcolor: isChecked ? 'rgba(16, 185, 129, 0.06)' : '#ffffff',
+                                      border: isChecked ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(245, 158, 11, 0.2)',
+                                      transition: 'all 0.2s',
+                                      '&:hover': { bgcolor: isChecked ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.08)' }
+                                    }}
+                                  >
+                                    <Box sx={{
+                                      width: 22, height: 22, borderRadius: '7px',
+                                      border: '2px solid',
+                                      borderColor: isChecked ? '#10b981' : '#f59e0b',
+                                      bgcolor: isChecked ? '#10b981' : 'transparent',
+                                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                      mr: 1.5, flexShrink: 0,
+                                      transition: 'all 0.2s'
+                                    }}>
+                                      {isChecked && (
+                                        <svg width="12" height="9" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                          <path d="M1 5L5 9L13 1" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                        </svg>
+                                      )}
+                                    </Box>
+                                    <Typography sx={{
+                                      fontSize: '0.86rem',
+                                      color: isChecked ? '#94a3b8' : '#1e293b',
+                                      textDecoration: isChecked ? 'line-through' : 'none',
+                                      fontWeight: isChecked ? 500 : 700,
+                                      transition: 'all 0.2s',
+                                      lineHeight: 1.4
+                                    }}>
+                                      {item.text}
+                                    </Typography>
+                                  </Box>
+                                );
+                              })}
+                            </Box>
+
+                            {/* Turn 1 Scratchpad Block */}
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                              <Typography variant="overline" sx={{ color: '#14b8a6', fontWeight: 800, letterSpacing: '0.06em', lineHeight: 1, display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                                📝 Step 1 Scratchpad · Macro-Geo Output
+                              </Typography>
+                              <Box sx={{ p: 1.5, bgcolor: 'rgba(20, 184, 166, 0.05)', border: '1px solid rgba(20, 184, 166, 0.2)', borderRadius: '12px' }}>
+                                <Typography sx={{ color: '#0f766e', fontSize: '0.82rem', lineHeight: 1.5 }}>
+                                  <strong>Auto-Saving Workspace:</strong> Paste your Turn 1 LLM response here. It is saved in real-time and dynamically injected into Step 2&apos;s Drucker OSINT prompt.
+                                </Typography>
+                              </Box>
+                              <PremiumMarkdownEditor
+                                colorTheme="#14b8a6"
+                                minRows={3}
                                 fullWidth
-                                placeholder="Paste your Document 1a response here..."
+                                placeholder="Paste your Document 1a macro-geography response here..."
                                 value={custom1aOutput || rawPrompts?.doc1aOutput || ''}
-                                onChange={(e) => setCustom1aOutput(e.target.value)}
-                                sx={{
-                                  bgcolor: '#ffffff',
-                                  borderRadius: '10px',
-                                  '& .MuiOutlinedInput-root': {
-                                    fontSize: '0.82rem',
-                                    fontFamily: '"JetBrains Mono", monospace',
-                                    color: '#0f172a',
-                                    '& fieldset': { borderColor: '#cbd5e1' },
-                                    '&:hover fieldset': { borderColor: '#3b82f6' },
-                                  }
-                                }}
+                                onChange={(e: any) => setCustom1aOutput(e.target.value)}
                               />
                             </Box>
                           </Box>
@@ -1891,7 +1973,7 @@ export default function CreatorStudioDashboard({
                                   2
                                 </Box>
                                 <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>
-                                  2. Drucker Innovation OSINT Engine (Turn 2)
+                                  Step 2: Drucker Innovation OSINT Engine (Turn 2) 🧠
                                 </Typography>
                               </Box>
                               <Chip
@@ -1903,6 +1985,53 @@ export default function CreatorStudioDashboard({
                             <Typography sx={{ color: '#475569', fontSize: '0.9rem', lineHeight: 1.55 }}>
                               Applies 10 Peter Drucker innovation vectors (Unexpected Failures, Process Incongruities, Regulatory Surprises) specifically tailored to Nigerian value chains.
                             </Typography>
+
+                            {/* Pre-Prompt Action Checklist */}
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 1.5, border: '1px solid rgba(245, 158, 11, 0.25)', borderRadius: '14px', bgcolor: 'rgba(245, 158, 11, 0.03)' }}>
+                              {[
+                                { id: 'act_copy_1b', text: '1. Click "Copy Executable Prompt 1b" below (with Step 1 auto-injected), paste it into your AI chat, and press Enter to generate.' }
+                              ].map(item => {
+                                const isChecked = !!wikiChecklist[item.id];
+                                return (
+                                  <Box
+                                    key={item.id}
+                                    onClick={() => toggleChecklistItem(item.id)}
+                                    sx={{
+                                      display: 'flex', alignItems: 'center', p: 1, borderRadius: '10px', cursor: 'pointer',
+                                      bgcolor: isChecked ? 'rgba(16, 185, 129, 0.06)' : '#ffffff',
+                                      border: isChecked ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(245, 158, 11, 0.2)',
+                                      transition: 'all 0.2s',
+                                      '&:hover': { bgcolor: isChecked ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.08)' }
+                                    }}
+                                  >
+                                    <Box sx={{
+                                      width: 20, height: 20, borderRadius: '6px',
+                                      border: '2px solid',
+                                      borderColor: isChecked ? '#10b981' : '#f59e0b',
+                                      bgcolor: isChecked ? '#10b981' : 'transparent',
+                                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                      mr: 1.25, flexShrink: 0,
+                                      transition: 'all 0.2s'
+                                    }}>
+                                      {isChecked && (
+                                        <svg width="10" height="8" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                          <path d="M1 5L5 9L13 1" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                        </svg>
+                                      )}
+                                    </Box>
+                                    <Typography sx={{
+                                      fontSize: '0.84rem',
+                                      color: isChecked ? '#94a3b8' : '#1e293b',
+                                      textDecoration: isChecked ? 'line-through' : 'none',
+                                      fontWeight: isChecked ? 500 : 700,
+                                      lineHeight: 1.4
+                                    }}>
+                                      {item.text}
+                                    </Typography>
+                                  </Box>
+                                );
+                              })}
+                            </Box>
 
                             {/* PromptBuilderBlock Terminal */}
                             {copiedPromptTab === 'doc1b' ? (
@@ -1961,29 +2090,75 @@ export default function CreatorStudioDashboard({
                               </Box>
                             )}
 
-                            {/* Response Sandbox */}
-                            <Box sx={{ p: 2, bgcolor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px' }}>
-                              <Typography sx={{ color: '#334155', fontSize: '0.8rem', fontWeight: 700, mb: 1 }}>
-                                Paste Turn 2 LLM Response (Auto-injected into Turn 3):
+                            {/* Verification Checklist (Important) */}
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 2, border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '16px', bgcolor: 'rgba(245, 158, 11, 0.04)' }}>
+                              <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#b45309', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                ⚡ Verify AI Output for Step 2:
                               </Typography>
-                              <TextField
-                                multiline
-                                rows={2}
+                              {[
+                                { id: 'chk2_vectors', text: 'Did the AI generate 10 distinct Drucker innovation vectors?' },
+                                { id: 'chk2_asymmetry', text: 'Did it identify informal fuel spreads, trucking union minimums & arbitrage gangs?' },
+                              ].map(item => {
+                                const isChecked = !!wikiChecklist[item.id];
+                                return (
+                                  <Box
+                                    key={item.id}
+                                    onClick={() => toggleChecklistItem(item.id)}
+                                    sx={{
+                                      display: 'flex', alignItems: 'center', p: 1.25, borderRadius: '12px', cursor: 'pointer',
+                                      bgcolor: isChecked ? 'rgba(16, 185, 129, 0.06)' : '#ffffff',
+                                      border: isChecked ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(245, 158, 11, 0.2)',
+                                      transition: 'all 0.2s',
+                                      '&:hover': { bgcolor: isChecked ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.08)' }
+                                    }}
+                                  >
+                                    <Box sx={{
+                                      width: 22, height: 22, borderRadius: '7px',
+                                      border: '2px solid',
+                                      borderColor: isChecked ? '#10b981' : '#f59e0b',
+                                      bgcolor: isChecked ? '#10b981' : 'transparent',
+                                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                      mr: 1.5, flexShrink: 0,
+                                      transition: 'all 0.2s'
+                                    }}>
+                                      {isChecked && (
+                                        <svg width="12" height="9" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                          <path d="M1 5L5 9L13 1" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                        </svg>
+                                      )}
+                                    </Box>
+                                    <Typography sx={{
+                                      fontSize: '0.86rem',
+                                      color: isChecked ? '#94a3b8' : '#1e293b',
+                                      textDecoration: isChecked ? 'line-through' : 'none',
+                                      fontWeight: isChecked ? 500 : 700,
+                                      transition: 'all 0.2s',
+                                      lineHeight: 1.4
+                                    }}>
+                                      {item.text}
+                                    </Typography>
+                                  </Box>
+                                );
+                              })}
+                            </Box>
+
+                            {/* Turn 2 Scratchpad Block */}
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                              <Typography variant="overline" sx={{ color: '#14b8a6', fontWeight: 800, letterSpacing: '0.06em', lineHeight: 1, display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                                📝 Step 2 Scratchpad · Drucker OSINT Vectors Output
+                              </Typography>
+                              <Box sx={{ p: 1.5, bgcolor: 'rgba(20, 184, 166, 0.05)', border: '1px solid rgba(20, 184, 166, 0.2)', borderRadius: '12px' }}>
+                                <Typography sx={{ color: '#0f766e', fontSize: '0.82rem', lineHeight: 1.5 }}>
+                                  <strong>Auto-Saving Workspace:</strong> Paste your Turn 2 LLM response here. It is saved in real-time and dynamically injected into Step 3&apos;s Cognitive Spectrum Generator.
+                                </Typography>
+                              </Box>
+                              <PremiumMarkdownEditor
+                                colorTheme="#14b8a6"
+                                minRows={3}
                                 fullWidth
                                 placeholder="Paste your Document 1b innovation vectors here..."
                                 value={custom1bOutput || rawPrompts?.doc1bOutput || ''}
-                                onChange={(e) => setCustom1bOutput(e.target.value)}
-                                sx={{
-                                  bgcolor: '#ffffff',
-                                  borderRadius: '10px',
-                                  '& .MuiOutlinedInput-root': {
-                                    fontSize: '0.82rem',
-                                    fontFamily: '"JetBrains Mono", monospace',
-                                    color: '#0f172a',
-                                    '& fieldset': { borderColor: '#cbd5e1' },
-                                    '&:hover fieldset': { borderColor: '#f59e0b' },
-                                  }
-                                }}
+                                onChange={(e: any) => setCustom1bOutput(e.target.value)}
                               />
                             </Box>
                           </Box>
@@ -2000,7 +2175,7 @@ export default function CreatorStudioDashboard({
                                   3
                                 </Box>
                                 <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>
-                                  3. Cognitive Spectrum Synthesizer (Turn 3)
+                                  Step 3: Cognitive Spectrum Synthesizer (Turn 3) 📊
                                 </Typography>
                               </Box>
                               <Chip
@@ -2012,6 +2187,53 @@ export default function CreatorStudioDashboard({
                             <Typography sx={{ color: '#475569', fontSize: '0.9rem', lineHeight: 1.55 }}>
                               Generates the final 10–12 structured article briefs mapped systematically across the 6 Cognitive Spectrum ranks.
                             </Typography>
+
+                            {/* Pre-Prompt Action Checklist */}
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 1.5, border: '1px solid rgba(168, 85, 247, 0.25)', borderRadius: '14px', bgcolor: 'rgba(168, 85, 247, 0.03)' }}>
+                              {[
+                                { id: 'act_copy_1c', text: '1. Click "Copy Executable Prompt 1c" below (with full OSINT chained), paste it into your AI chat, and press Enter to generate.' }
+                              ].map(item => {
+                                const isChecked = !!wikiChecklist[item.id];
+                                return (
+                                  <Box
+                                    key={item.id}
+                                    onClick={() => toggleChecklistItem(item.id)}
+                                    sx={{
+                                      display: 'flex', alignItems: 'center', p: 1, borderRadius: '10px', cursor: 'pointer',
+                                      bgcolor: isChecked ? 'rgba(16, 185, 129, 0.06)' : '#ffffff',
+                                      border: isChecked ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(168, 85, 247, 0.2)',
+                                      transition: 'all 0.2s',
+                                      '&:hover': { bgcolor: isChecked ? 'rgba(16, 185, 129, 0.1)' : 'rgba(168, 85, 247, 0.08)' }
+                                    }}
+                                  >
+                                    <Box sx={{
+                                      width: 20, height: 20, borderRadius: '6px',
+                                      border: '2px solid',
+                                      borderColor: isChecked ? '#10b981' : '#a855f7',
+                                      bgcolor: isChecked ? '#10b981' : 'transparent',
+                                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                      mr: 1.25, flexShrink: 0,
+                                      transition: 'all 0.2s'
+                                    }}>
+                                      {isChecked && (
+                                        <svg width="10" height="8" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                          <path d="M1 5L5 9L13 1" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                        </svg>
+                                      )}
+                                    </Box>
+                                    <Typography sx={{
+                                      fontSize: '0.84rem',
+                                      color: isChecked ? '#94a3b8' : '#1e293b',
+                                      textDecoration: isChecked ? 'line-through' : 'none',
+                                      fontWeight: isChecked ? 500 : 700,
+                                      lineHeight: 1.4
+                                    }}>
+                                      {item.text}
+                                    </Typography>
+                                  </Box>
+                                );
+                              })}
+                            </Box>
 
                             {/* PromptBuilderBlock Terminal */}
                             {copiedPromptTab === 'doc1c' ? (
@@ -2070,31 +2292,77 @@ export default function CreatorStudioDashboard({
                               </Box>
                             )}
 
-                            {/* Response Sandbox */}
-                            <Box sx={{ p: 2, bgcolor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px' }}>
-                              <Typography sx={{ color: '#334155', fontSize: '0.8rem', fontWeight: 700, mb: 1 }}>
-                                Paste Turn 3 Response (Ready to forward into Step 4):
+                            {/* Verification Checklist (Important) */}
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 2, border: '1px solid rgba(168, 85, 247, 0.3)', borderRadius: '16px', bgcolor: 'rgba(168, 85, 247, 0.04)' }}>
+                              <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#7e22ce', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                ⚡ Verify AI Output for Step 3:
                               </Typography>
-                              <TextField
-                                multiline
-                                rows={2}
+                              {[
+                                { id: 'chk3_ranks', text: 'Did the AI produce 10–12 briefs across the 6 Cognitive Spectrum ranks?' },
+                                { id: 'chk3_headers', text: 'Does EACH brief begin with a complete [SYSTEM_METADATA] header block?' },
+                              ].map(item => {
+                                const isChecked = !!wikiChecklist[item.id];
+                                return (
+                                  <Box
+                                    key={item.id}
+                                    onClick={() => toggleChecklistItem(item.id)}
+                                    sx={{
+                                      display: 'flex', alignItems: 'center', p: 1.25, borderRadius: '12px', cursor: 'pointer',
+                                      bgcolor: isChecked ? 'rgba(16, 185, 129, 0.06)' : '#ffffff',
+                                      border: isChecked ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(168, 85, 247, 0.2)',
+                                      transition: 'all 0.2s',
+                                      '&:hover': { bgcolor: isChecked ? 'rgba(16, 185, 129, 0.1)' : 'rgba(168, 85, 247, 0.08)' }
+                                    }}
+                                  >
+                                    <Box sx={{
+                                      width: 22, height: 22, borderRadius: '7px',
+                                      border: '2px solid',
+                                      borderColor: isChecked ? '#10b981' : '#a855f7',
+                                      bgcolor: isChecked ? '#10b981' : 'transparent',
+                                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                      mr: 1.5, flexShrink: 0,
+                                      transition: 'all 0.2s'
+                                    }}>
+                                      {isChecked && (
+                                        <svg width="12" height="9" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                          <path d="M1 5L5 9L13 1" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                        </svg>
+                                      )}
+                                    </Box>
+                                    <Typography sx={{
+                                      fontSize: '0.86rem',
+                                      color: isChecked ? '#94a3b8' : '#1e293b',
+                                      textDecoration: isChecked ? 'line-through' : 'none',
+                                      fontWeight: isChecked ? 500 : 700,
+                                      transition: 'all 0.2s',
+                                      lineHeight: 1.4
+                                    }}>
+                                      {item.text}
+                                    </Typography>
+                                  </Box>
+                                );
+                              })}
+                            </Box>
+
+                            {/* Turn 3 Scratchpad Block */}
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                              <Typography variant="overline" sx={{ color: '#14b8a6', fontWeight: 800, letterSpacing: '0.06em', lineHeight: 1, display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                                📝 Step 3 Scratchpad · Cognitive Spectrum Outlines Output
+                              </Typography>
+                              <Box sx={{ p: 1.5, bgcolor: 'rgba(20, 184, 166, 0.05)', border: '1px solid rgba(20, 184, 166, 0.2)', borderRadius: '12px' }}>
+                                <Typography sx={{ color: '#0f766e', fontSize: '0.82rem', lineHeight: 1.5 }}>
+                                  <strong>Auto-Saving Workspace:</strong> Paste your 10–12 generated article outlines here. When ready, it automatically feeds into Step 4 for studio card rendering.
+                                </Typography>
+                              </Box>
+                              <PremiumMarkdownEditor
+                                colorTheme="#14b8a6"
+                                minRows={4}
                                 fullWidth
                                 placeholder="Paste your Document 1c markdown outlines here..."
                                 value={custom1cOutput || rawPrompts?.doc1cOutput || ''}
-                                onChange={(e) => {
+                                onChange={(e: any) => {
                                   setCustom1cOutput(e.target.value);
                                   setCustomIngestMarkdown(e.target.value);
-                                }}
-                                sx={{
-                                  bgcolor: '#ffffff',
-                                  borderRadius: '10px',
-                                  '& .MuiOutlinedInput-root': {
-                                    fontSize: '0.82rem',
-                                    fontFamily: '"JetBrains Mono", monospace',
-                                    color: '#0f172a',
-                                    '& fieldset': { borderColor: '#cbd5e1' },
-                                    '&:hover fieldset': { borderColor: '#a855f7' },
-                                  }
                                 }}
                               />
                             </Box>
@@ -2112,7 +2380,7 @@ export default function CreatorStudioDashboard({
                                   4
                                 </Box>
                                 <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>
-                                  4. Fast Ingest Scratchpad & Studio Parser
+                                  Step 4: Fast Ingest Scratchpad & Studio Parser ⚡
                                 </Typography>
                               </Box>
 
@@ -2131,27 +2399,72 @@ export default function CreatorStudioDashboard({
                               Paste your raw Document 1c markdown text below. The parser validates the metadata in real time and automatically renders each brief into your Studio cards.
                             </Typography>
 
-                            <TextField
-                              multiline
-                              rows={8}
-                              fullWidth
-                              placeholder={`---\n**[SYSTEM_METADATA]**\n* Category_ID: Land\n* Subcategory_ID: Sole Farmland Ownership\n* Commodity: ${selectedCommodity}\n* Format_Type: Brief\n* Era: Present\n* Location: Dawanau Hub, Kano\n* Spectrum_Rank: #1 (The Bleeding Neck)\n* Target_Persona: Agri-VCs & Haulers\n\n### Title...\n\n**Description:**\n* Bullet 1...\n* Bullet 2...\n---`}
-                              value={customIngestMarkdown}
-                              onChange={(e) => setCustomIngestMarkdown(e.target.value)}
-                              sx={{
-                                bgcolor: '#f8fafc',
-                                borderRadius: '14px',
-                                '& .MuiOutlinedInput-root': {
-                                  color: '#0f172a',
-                                  fontSize: '0.82rem',
-                                  fontFamily: '"JetBrains Mono", monospace',
-                                  lineHeight: 1.6,
-                                  '& fieldset': { borderColor: '#cbd5e1' },
-                                  '&:hover fieldset': { borderColor: '#10b981' },
-                                  '&.Mui-focused fieldset': { borderColor: '#10b981' }
-                                }
-                              }}
-                            />
+                            {/* Step 4 Scratchpad Block */}
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                              <Typography variant="overline" sx={{ color: '#10b981', fontWeight: 800, letterSpacing: '0.06em', lineHeight: 1, display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                                📝 Step 4 Scratchpad · Final Markdown Outlines
+                              </Typography>
+                              <PremiumMarkdownEditor
+                                colorTheme="#10b981"
+                                minRows={6}
+                                fullWidth
+                                placeholder={`---\n**[SYSTEM_METADATA]**\n* Category_ID: Land\n* Subcategory_ID: Sole Farmland Ownership\n* Commodity: ${selectedCommodity}\n* Format_Type: Brief\n* Era: Present\n* Location: Dawanau Hub, Kano\n* Spectrum_Rank: #1 (The Bleeding Neck)\n* Target_Persona: Agri-VCs & Haulers\n\n### Title...\n\n**Description:**\n* Bullet 1...\n* Bullet 2...\n---`}
+                                value={customIngestMarkdown}
+                                onChange={(e: any) => setCustomIngestMarkdown(e.target.value)}
+                              />
+                            </Box>
+
+                            {/* Verification Checklist (Regular) */}
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 2, border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '16px', bgcolor: 'rgba(16, 185, 129, 0.04)' }}>
+                              <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                📋 Ingest Verification Checklist:
+                              </Typography>
+                              {[
+                                { id: 'chk4_validate', text: 'All 12 briefs successfully parsed and mapped into the 6 Cognitive Spectrum categories.' },
+                                { id: 'chk4_draft', text: 'Ready to select a brief and click "Write This Brief" to begin drafting your article in the Studio.' },
+                              ].map(item => {
+                                const isChecked = !!wikiChecklist[item.id];
+                                return (
+                                  <Box
+                                    key={item.id}
+                                    onClick={() => toggleChecklistItem(item.id)}
+                                    sx={{
+                                      display: 'flex', alignItems: 'center', p: 1.25, borderRadius: '12px', cursor: 'pointer',
+                                      bgcolor: isChecked ? 'rgba(16, 185, 129, 0.06)' : '#ffffff',
+                                      border: isChecked ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(16, 185, 129, 0.2)',
+                                      transition: 'all 0.2s',
+                                      '&:hover': { bgcolor: isChecked ? 'rgba(16, 185, 129, 0.1)' : 'rgba(16, 185, 129, 0.08)' }
+                                    }}
+                                  >
+                                    <Box sx={{
+                                      width: 22, height: 22, borderRadius: '7px',
+                                      border: '2px solid',
+                                      borderColor: isChecked ? '#10b981' : '#10b981',
+                                      bgcolor: isChecked ? '#10b981' : 'transparent',
+                                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                      mr: 1.5, flexShrink: 0,
+                                      transition: 'all 0.2s'
+                                    }}>
+                                      {isChecked && (
+                                        <svg width="12" height="9" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                          <path d="M1 5L5 9L13 1" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                        </svg>
+                                      )}
+                                    </Box>
+                                    <Typography sx={{
+                                      fontSize: '0.86rem',
+                                      color: isChecked ? '#94a3b8' : '#1e293b',
+                                      textDecoration: isChecked ? 'line-through' : 'none',
+                                      fontWeight: isChecked ? 500 : 700,
+                                      transition: 'all 0.2s',
+                                      lineHeight: 1.4
+                                    }}>
+                                      {item.text}
+                                    </Typography>
+                                  </Box>
+                                );
+                              })}
+                            </Box>
 
                             {/* Live Detection Pill Banner */}
                             {liveParsedBriefs.length > 0 && (
