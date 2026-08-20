@@ -1,5 +1,8 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Box, Typography, Paper, Chip, IconButton, alpha, Tooltip, CircularProgress, Button } from '@mui/material';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import {
+  Box, Typography, Paper, Chip, IconButton, alpha, Tooltip, CircularProgress, Button,
+  Dialog, DialogTitle, DialogContent, Tabs, Tab, TextField
+} from '@mui/material';
 import {
   Article as ArticleIcon,
   VideoLibrary as VideoLibraryIcon,
@@ -23,6 +26,22 @@ import {
   Refresh as RefreshIcon,
   Lock as LockIcon,
   Spa as SpaIcon,
+  ContentCopy as ContentCopyIcon,
+  Terminal as TerminalIcon,
+  FilterList as FilterListIcon,
+  Check as CheckIcon,
+  LocationOn as LocationIcon,
+  AccountCircle as AccountCircleIcon,
+  MonetizationOn as MonetizationIcon,
+  SmartToy as SmartToyIcon,
+  Bolt as BoltIcon,
+  Input as InputIcon,
+  Output as OutputIcon,
+  Send as SendIcon,
+  Code as CodeIcon,
+  Lightbulb as LightbulbIcon,
+  AutoFixHigh as AutoFixHighIcon,
+  Storage as StorageIcon,
 } from '@mui/icons-material';
 import { keyframes } from '@mui/system';
 import WikiHotspot from '@/components/wiki/WikiHotspot';
@@ -33,6 +52,8 @@ import { CATEGORY_MAP } from '@/lib/config/editorialMatrix';
 import { getDailyEditorialIntel, regenerateCustomAnglesAction, ArticleInsightItem } from '@/lib/actions/editorialMatrix';
 import { FORMAT_CONFIG, ERA_CONFIG, ArticleFormat, ArticleEra } from '@/lib/config/articleBlueprints';
 import { fetchGlobalLivestreamArticles, fetchGlobalJobs } from '@/lib/actions/learn';
+import { parseDoc1cArticles, buildDoc1aPrompt, buildDoc1bPrompt, buildDoc1cPrompt } from '@/lib/config/editorialPrompts';
+import { foodChallenges } from '@/lib/cms/food/challenges';
 const ACCENT = "#f59e0b";
 const ACCENT_DARK = "#d97706";
 
@@ -63,6 +84,26 @@ const START_FRESH_OPTIONS = [
     readiness: 'coming_soon'
   }
 ];
+
+const SPECTRUM_CONFIG: Record<string, { label: string; shortLabel: string; color: string; emoji: string; bg: string }> = {
+  '1': { label: 'The Bleeding Neck', shortLabel: '#1 Bleeding Neck', color: '#3b82f6', emoji: '🔵', bg: 'rgba(59, 130, 246, 0.15)' },
+  '2': { label: 'Institutional Pivot', shortLabel: '#2 Institutional Pivot', color: '#f59e0b', emoji: '🟡', bg: 'rgba(245, 158, 11, 0.15)' },
+  '3': { label: 'The Grassroots Hack', shortLabel: '#3 Grassroots Hack', color: '#f59e0b', emoji: '🟡', bg: 'rgba(245, 158, 11, 0.15)' },
+  '4': { label: 'The R&D Horizon', shortLabel: '#4 R&D Horizon', color: '#10b981', emoji: '🟢', bg: 'rgba(16, 185, 129, 0.15)' },
+  '5': { label: 'The Macro Threat', shortLabel: '#5 Macro Threat', color: '#10b981', emoji: '🟢', bg: 'rgba(16, 185, 129, 0.15)' },
+  '6': { label: 'The Black Swan', shortLabel: '#6 Black Swan', color: '#a855f7', emoji: '🟣', bg: 'rgba(168, 85, 247, 0.15)' },
+};
+
+function getSpectrumMeta(spectrumRank?: string) {
+  if (!spectrumRank) return SPECTRUM_CONFIG['1'];
+  if (spectrumRank.includes('1') || spectrumRank.toLowerCase().includes('bleeding')) return SPECTRUM_CONFIG['1'];
+  if (spectrumRank.includes('2') || spectrumRank.toLowerCase().includes('institutional')) return SPECTRUM_CONFIG['2'];
+  if (spectrumRank.includes('3') || spectrumRank.toLowerCase().includes('grassroots')) return SPECTRUM_CONFIG['3'];
+  if (spectrumRank.includes('4') || spectrumRank.toLowerCase().includes('r&d') || spectrumRank.toLowerCase().includes('horizon')) return SPECTRUM_CONFIG['4'];
+  if (spectrumRank.includes('5') || spectrumRank.toLowerCase().includes('macro') || spectrumRank.toLowerCase().includes('threat')) return SPECTRUM_CONFIG['5'];
+  if (spectrumRank.includes('6') || spectrumRank.toLowerCase().includes('black') || spectrumRank.toLowerCase().includes('swan')) return SPECTRUM_CONFIG['6'];
+  return SPECTRUM_CONFIG['1'];
+}
 
 export default function CreatorStudioDashboard({
   drafts = [],
@@ -110,6 +151,68 @@ export default function CreatorStudioDashboard({
   const [loadingInsights, setLoadingInsights] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [regenerateError, setRegenerateError] = useState<string | null>(null);
+  const [spectrumFilter, setSpectrumFilter] = useState<string>('all');
+
+  // Step 3 Prompts & Interactive Relay Terminal State
+  const [rawPrompts, setRawPrompts] = useState<{
+    doc1aPrompt: string;
+    doc1aOutput: string;
+    doc1bPrompt: string;
+    doc1bOutput: string;
+    doc1cPrompt: string;
+    doc1cOutput: string;
+  } | null>(null);
+  const [promptTerminalOpen, setPromptTerminalOpen] = useState(false);
+  const [promptTabIdx, setPromptTabIdx] = useState(0);
+  const [copiedPromptTab, setCopiedPromptTab] = useState<string | null>(null);
+  const [custom1aOutput, setCustom1aOutput] = useState('');
+  const [custom1bOutput, setCustom1bOutput] = useState('');
+  const [custom1cOutput, setCustom1cOutput] = useState('');
+  const [customIngestMarkdown, setCustomIngestMarkdown] = useState('');
+  const [customIngestError, setCustomIngestError] = useState('');
+
+  // Live Dynamic Chaining Prompts
+  const effective1aOutput = custom1aOutput.trim() || rawPrompts?.doc1aOutput || '';
+  const effective1bOutput = custom1bOutput.trim() || rawPrompts?.doc1bOutput || '';
+  const effective1cOutput = custom1cOutput.trim() || rawPrompts?.doc1cOutput || '';
+
+  const activeChallenge = foodChallenges.find(c => c.id === selectedCategory) || foodChallenges[0];
+  const activeSubsList = useMemo(() => (activeChallenge?.subcategories || []).map(s => ({ title: s.title, desc: s.desc })), [activeChallenge]);
+  const currentMonthYearStr = useMemo(() => format(new Date(selectedTargetDate), 'MMMM yyyy'), [selectedTargetDate]);
+
+  const compiledPrompt1a = useMemo(() => {
+    return rawPrompts?.doc1aPrompt || buildDoc1aPrompt({
+      category: activeChallenge?.title || selectedCategory,
+      commodity: selectedCommodity,
+      subcategoriesList: activeSubsList,
+      currentMonthYear: currentMonthYearStr,
+    });
+  }, [rawPrompts?.doc1aPrompt, activeChallenge, selectedCategory, selectedCommodity, activeSubsList, currentMonthYearStr]);
+
+  const compiledPrompt1b = useMemo(() => {
+    return buildDoc1bPrompt({
+      commodity: selectedCommodity,
+      currentMonthYear: currentMonthYearStr,
+      doc1aOutput: effective1aOutput || '[PASTE YOUR DOCUMENT 1A OUTPUT BELOW TO AUTO-INJECT]',
+      subcategoriesList: activeSubsList,
+    });
+  }, [selectedCommodity, currentMonthYearStr, effective1aOutput, activeSubsList]);
+
+  const compiledPrompt1c = useMemo(() => {
+    return buildDoc1cPrompt({
+      doc1aOutput: effective1aOutput || '[PASTE YOUR DOCUMENT 1A OUTPUT IN TURN 1/2 TO AUTO-INJECT]',
+      doc1bOutput: effective1bOutput || '[PASTE YOUR DOCUMENT 1B OUTPUT IN TURN 2 TO AUTO-INJECT]',
+    });
+  }, [effective1aOutput, effective1bOutput]);
+
+  const liveParsedBriefs = useMemo(() => {
+    if (!customIngestMarkdown.trim()) return [];
+    try {
+      return parseDoc1cArticles(customIngestMarkdown, selectedCommodity);
+    } catch {
+      return [];
+    }
+  }, [customIngestMarkdown, selectedCommodity]);
 
   // Non-article legacy wizard state
   const [legacyCategory, setLegacyCategory] = useState('');
@@ -150,6 +253,7 @@ export default function CreatorStudioDashboard({
       });
     }
   }, [expandedStartType, lsEngine]);
+
   // ───────────────────────────────────────────────────────────
   // FETCH INSIGHTS FOR STEP 3
   // ───────────────────────────────────────────────────────────
@@ -158,11 +262,20 @@ export default function CreatorStudioDashboard({
     setRegenerateError(null);
     try {
       const res = await getDailyEditorialIntel(dateStr);
-      if (res && res.insights) {
+      if (res && res.insights && res.insights.length > 0) {
         setInsights(res.insights);
+      } else {
+        setInsights([]);
+      }
+      if (res?.prompts) {
+        setRawPrompts(res.prompts);
+      }
+      if (!res?.success && res?.error) {
+        setRegenerateError(res.error);
       }
     } catch (e: any) {
       console.error('Failed to fetch daily editorial intel', e);
+      setRegenerateError(e?.message || 'Error connecting to editorial intelligence service.');
     } finally {
       setLoadingInsights(false);
     }
@@ -266,6 +379,9 @@ export default function CreatorStudioDashboard({
 
       if (res.success && res.insights) {
         setInsights(res.insights);
+        if (res.prompts) {
+          setRawPrompts(res.prompts);
+        }
       } else {
         setRegenerateError(res.error || 'Failed to regenerate angles.');
       }
@@ -273,6 +389,33 @@ export default function CreatorStudioDashboard({
       setRegenerateError(e.message || 'Error connecting to regeneration service.');
     } finally {
       setRegenerating(false);
+    }
+  };
+
+  const handleFastIngestCustomOutlines = () => {
+    setCustomIngestError('');
+    if (!customIngestMarkdown.trim()) {
+      setCustomIngestError('Please paste Document 1c Markdown payload.');
+      return;
+    }
+    try {
+      const parsed = parseDoc1cArticles(customIngestMarkdown, selectedCommodity);
+      if (!parsed || parsed.length === 0) {
+        throw new Error('No valid article outlines found. Ensure your text follows the [SYSTEM_METADATA] format separated by ---');
+      }
+      setInsights(parsed as any);
+      setPromptTerminalOpen(false);
+      setCustomIngestMarkdown('');
+    } catch (err: any) {
+      setCustomIngestError(err.message || 'Failed to parse custom article outlines.');
+    }
+  };
+
+  const handleCopyPromptText = (text: string, tabKey: string) => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      setCopiedPromptTab(tabKey);
+      setTimeout(() => setCopiedPromptTab(null), 2000);
     }
   };
 
@@ -1041,14 +1184,25 @@ export default function CreatorStudioDashboard({
                   {matrixStep === 3 && (
                     <Box sx={{ animation: `${slideUpFade} 0.4s ease` }}>
                       {/* Sub Header & Actions */}
-                      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { xs: 'flex-start', md: 'center' }, justifyContent: 'space-between', gap: 2, mb: 3, pb: 2, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { xs: 'flex-start', md: 'center' }, justifyContent: 'space-between', gap: 2, mb: 2.5, pb: 2, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-                          <Chip label={`🌾 ${selectedCommodity}`} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: '#fff', fontWeight: 800 }} />
-                          <Chip label={`💼 ${selectedCategory.toUpperCase()}`} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: '#fff', fontWeight: 800 }} />
+                          <Chip label={`🌾 ${selectedCommodity}`} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.12)', color: '#fff', fontWeight: 800 }} />
+                          <Chip label={`💼 ${selectedCategory.toUpperCase()}`} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.12)', color: '#fff', fontWeight: 800 }} />
                           <Chip label={`📅 ${format(new Date(selectedTargetDate), 'MMM d, yyyy')}`} size="small" sx={{ bgcolor: alpha(ACCENT, 0.2), color: ACCENT, fontWeight: 800 }} />
                         </Box>
 
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                          <Button
+                            onClick={() => setPromptTerminalOpen(true)}
+                            startIcon={<TerminalIcon sx={{ fontSize: 16 }} />}
+                            sx={{
+                              bgcolor: 'rgba(59, 130, 246, 0.15)', color: '#93c5fd', border: '1px solid rgba(59, 130, 246, 0.35)',
+                              borderRadius: '12px', fontWeight: 800, textTransform: 'none', px: 2, fontSize: '0.8rem',
+                              '&:hover': { bgcolor: 'rgba(59, 130, 246, 0.25)' }
+                            }}
+                          >
+                            ⚡ AI Prompt Terminal & Ingest
+                          </Button>
                           <Button
                             onClick={handleRegenerate}
                             disabled={regenerating || loadingInsights}
@@ -1059,7 +1213,7 @@ export default function CreatorStudioDashboard({
                               '&:hover': { bgcolor: 'rgba(245, 158, 11, 0.25)' }
                             }}
                           >
-                            {regenerating ? "Regenerating..." : "Regenerate Angles (50 NP)"}
+                            {regenerating ? "Regenerating..." : "Regenerate (50 NP)"}
                           </Button>
                           <Button
                             onClick={handleStartCustomArticle}
@@ -1076,81 +1230,550 @@ export default function CreatorStudioDashboard({
                       </Box>
 
                       {regenerateError && (
-                        <Typography sx={{ color: '#ef4444', fontWeight: 700, fontSize: '0.85rem', mb: 2 }}>
-                          {regenerateError}
-                        </Typography>
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            p: 2.5,
+                            mb: 3,
+                            borderRadius: '16px',
+                            bgcolor: 'rgba(239, 68, 68, 0.08)',
+                            border: '1.5px solid rgba(239, 68, 68, 0.3)',
+                            display: 'flex',
+                            flexDirection: { xs: 'column', sm: 'row' },
+                            alignItems: { xs: 'flex-start', sm: 'center' },
+                            justifyContent: 'space-between',
+                            gap: 2,
+                          }}
+                        >
+                          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                            <Box sx={{ p: 1, borderRadius: '10px', bgcolor: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', mt: '2px', flexShrink: 0 }}>
+                              ⚠️
+                            </Box>
+                            <Box>
+                              <Typography sx={{ color: '#fca5a5', fontWeight: 800, fontSize: '0.92rem', mb: 0.25 }}>
+                                AI Intelligence Pipeline Notice
+                              </Typography>
+                              <Typography sx={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.82rem', lineHeight: 1.5 }}>
+                                {regenerateError}
+                              </Typography>
+                            </Box>
+                          </Box>
+                          <Button
+                            size="small"
+                            onClick={() => setPromptTerminalOpen(true)}
+                            startIcon={<TerminalIcon sx={{ fontSize: 16 }} />}
+                            sx={{
+                              bgcolor: '#3b82f6', color: '#fff', fontWeight: 800, textTransform: 'none', px: 2, py: 0.75, borderRadius: '10px', flexShrink: 0,
+                              '&:hover': { bgcolor: '#2563eb' }
+                            }}
+                          >
+                            Open Prompt Terminal
+                          </Button>
+                        </Paper>
                       )}
+
+                      {/* Cognitive Spectrum Filter Chips */}
+                      <Box sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        overflowX: 'auto',
+                        pb: 2,
+                        mb: 2.5,
+                        '&::-webkit-scrollbar': { height: '4px' },
+                        '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(255,255,255,0.15)', borderRadius: 2 }
+                      }}>
+                        <Chip
+                          label={`All Angles (${insights.length})`}
+                          onClick={() => setSpectrumFilter('all')}
+                          sx={{
+                            cursor: 'pointer',
+                            fontWeight: 800,
+                            fontSize: '0.75rem',
+                            bgcolor: spectrumFilter === 'all' ? '#fff' : 'rgba(255,255,255,0.06)',
+                            color: spectrumFilter === 'all' ? '#000' : 'rgba(255,255,255,0.7)',
+                            border: '1px solid',
+                            borderColor: spectrumFilter === 'all' ? '#fff' : 'rgba(255,255,255,0.1)',
+                            '&:hover': { bgcolor: spectrumFilter === 'all' ? '#fff' : 'rgba(255,255,255,0.12)' }
+                          }}
+                        />
+                        {Object.entries(SPECTRUM_CONFIG).map(([rankKey, meta]) => {
+                          const isSelected = spectrumFilter === rankKey;
+                          return (
+                            <Chip
+                              key={rankKey}
+                              label={`${meta.emoji} ${meta.shortLabel}`}
+                              onClick={() => setSpectrumFilter(isSelected ? 'all' : rankKey)}
+                              sx={{
+                                cursor: 'pointer',
+                                fontWeight: 800,
+                                fontSize: '0.72rem',
+                                bgcolor: isSelected ? meta.color : meta.bg,
+                                color: isSelected ? '#fff' : meta.color,
+                                border: '1px solid',
+                                borderColor: isSelected ? meta.color : alpha(meta.color, 0.3),
+                                '&:hover': { bgcolor: isSelected ? meta.color : alpha(meta.color, 0.25) }
+                              }}
+                            />
+                          );
+                        })}
+                      </Box>
 
                       {loadingInsights ? (
-                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 8 }}>
-                          <CircularProgress size={36} sx={{ color: ACCENT, mb: 2 }} />
-                          <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>
-                            Loading curated editorial angles for {selectedCommodity}...
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 10 }}>
+                          <CircularProgress size={40} sx={{ color: ACCENT, mb: 2 }} />
+                          <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: '1rem', mb: 0.5 }}>
+                            Running Gemini 3.7 Flash Intelligence Engine...
+                          </Typography>
+                          <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem' }}>
+                            Synthesizing 5 Micro-Geographies ➔ 6 Cognitive Spectrums ➔ 10–12 Briefs
                           </Typography>
                         </Box>
+                      ) : insights.length === 0 ? (
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            p: { xs: 3, md: 5 },
+                            borderRadius: '24px',
+                            bgcolor: 'rgba(255,255,255,0.03)',
+                            border: '1.5px dashed rgba(255,255,255,0.15)',
+                            textAlign: 'center',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: 2,
+                            my: 3
+                          }}
+                        >
+                          <Box sx={{ p: 2, borderRadius: '16px', bgcolor: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa' }}>
+                            <TerminalIcon sx={{ fontSize: 36 }} />
+                          </Box>
+                          <Box sx={{ maxWidth: '600px' }}>
+                            <Typography variant="h6" sx={{ color: '#fff', fontWeight: 900, mb: 0.5 }}>
+                              AI Intelligence Pipeline Ready
+                            </Typography>
+                            <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', lineHeight: 1.6 }}>
+                              {regenerateError || `The 3-stage prompts for ${selectedCommodity} have been compiled. You can open the AI Prompt Terminal to copy the prompts, run them in your external LLM, or paste custom outlines.`}
+                            </Typography>
+                          </Box>
+
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap', justifyContent: 'center', mt: 1 }}>
+                            <Button
+                              variant="contained"
+                              onClick={() => setPromptTerminalOpen(true)}
+                              startIcon={<TerminalIcon />}
+                              sx={{
+                                bgcolor: '#3b82f6',
+                                color: '#fff',
+                                fontWeight: 800,
+                                px: 3,
+                                py: 1,
+                                borderRadius: '12px',
+                                textTransform: 'none',
+                                '&:hover': { bgcolor: '#2563eb' }
+                              }}
+                            >
+                              Open AI Prompt Terminal & Copy
+                            </Button>
+                            <Button
+                              variant="outlined"
+                              onClick={handleStartCustomArticle}
+                              sx={{
+                                color: '#fff',
+                                borderColor: 'rgba(255,255,255,0.25)',
+                                fontWeight: 700,
+                                px: 3,
+                                py: 1,
+                                borderRadius: '12px',
+                                textTransform: 'none',
+                                '&:hover': { borderColor: '#fff', bgcolor: 'rgba(255,255,255,0.05)' }
+                              }}
+                            >
+                              ✍️ Write with Custom Title
+                            </Button>
+                          </Box>
+                        </Paper>
                       ) : (
-                        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2.5 }}>
-                          {insights.map((item) => {
-                            const fMeta = FORMAT_CONFIG[item.format] || FORMAT_CONFIG.brief;
-                            const eMeta = ERA_CONFIG[item.era] || ERA_CONFIG.present;
-                            return (
-                              <Paper
-                                key={item.id}
-                                elevation={0}
-                                onClick={() => handleSelectInsight(item)}
-                                sx={{
-                                  p: 3, borderRadius: '20px',
-                                  background: 'rgba(255,255,255,0.04)',
-                                  border: '1px solid rgba(255,255,255,0.08)',
-                                  cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                                  display: 'flex', flexDirection: 'column',
-                                  '&:hover': {
-                                    bgcolor: 'rgba(255,255,255,0.08)',
-                                    borderColor: fMeta.color,
-                                    transform: 'translateY(-3px)',
-                                    boxShadow: `0 12px 32px ${alpha(fMeta.color, 0.25)}`
-                                  }
-                                }}
-                              >
-                                {/* Top Format & Subcategory Badge */}
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 1.5, flexWrap: 'wrap' }}>
-                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <Chip
-                                      label={`${fMeta.emoji} ${fMeta.label}`}
-                                      size="small"
-                                      sx={{ bgcolor: alpha(fMeta.color, 0.2), color: fMeta.color, fontWeight: 800, fontSize: '0.72rem', border: `1px solid ${alpha(fMeta.color, 0.3)}` }}
-                                    />
-                                    <Chip
-                                      label={`${eMeta.emoji} ${eMeta.label}`}
-                                      size="small"
-                                      sx={{ bgcolor: alpha(eMeta.color, 0.15), color: eMeta.color, fontWeight: 700, fontSize: '0.7rem' }}
-                                    />
+                        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' }, gap: 2.5, pb: 4 }}>
+                          {insights
+                            .filter(item => {
+                              if (spectrumFilter === 'all') return true;
+                              const rankMeta = getSpectrumMeta(item.spectrumRank);
+                              return rankMeta.shortLabel.includes(spectrumFilter) || (item.spectrumRank && item.spectrumRank.includes(spectrumFilter));
+                            })
+                            .map((item, idx) => {
+                              const fMeta = FORMAT_CONFIG[item.format] || FORMAT_CONFIG.brief;
+                              const eMeta = ERA_CONFIG[item.era] || ERA_CONFIG.present;
+                              const sMeta = getSpectrumMeta(item.spectrumRank);
+
+                              return (
+                                <Paper
+                                  key={item.id || `insight-${idx}`}
+                                  elevation={0}
+                                  onClick={() => handleSelectInsight(item)}
+                                  sx={{
+                                    p: 3,
+                                    borderRadius: '22px',
+                                    background: 'rgba(255,255,255,0.035)',
+                                    border: '1.5px solid rgba(255,255,255,0.08)',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    justifyContent: 'space-between',
+                                    '&:hover': {
+                                      bgcolor: 'rgba(255,255,255,0.07)',
+                                      borderColor: sMeta.color,
+                                      transform: 'translateY(-4px)',
+                                      boxShadow: `0 16px 36px ${alpha(sMeta.color, 0.22)}`
+                                    }
+                                  }}
+                                >
+                                  <Box>
+                                    {/* Top Spectrum & Format Badges */}
+                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 1.5, flexWrap: 'wrap' }}>
+                                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                        <Chip
+                                          label={`${sMeta.emoji} ${item.spectrumRank || sMeta.label}`}
+                                          size="small"
+                                          sx={{ bgcolor: sMeta.bg, color: sMeta.color, fontWeight: 900, fontSize: '0.72rem', border: `1px solid ${alpha(sMeta.color, 0.35)}` }}
+                                        />
+                                        <Chip
+                                          label={`${fMeta.emoji} ${fMeta.label}`}
+                                          size="small"
+                                          sx={{ bgcolor: alpha(fMeta.color, 0.2), color: fMeta.color, fontWeight: 800, fontSize: '0.7rem' }}
+                                        />
+                                        <Chip
+                                          label={`${eMeta.emoji} ${eMeta.label}`}
+                                          size="small"
+                                          sx={{ bgcolor: alpha(eMeta.color, 0.15), color: eMeta.color, fontWeight: 700, fontSize: '0.68rem' }}
+                                        />
+                                      </Box>
+                                      {item.subcategoryTitle && (
+                                        <Chip
+                                          label={item.subcategoryTitle}
+                                          size="small"
+                                          sx={{ bgcolor: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)', fontWeight: 600, fontSize: '0.68rem' }}
+                                        />
+                                      )}
+                                    </Box>
+
+                                    {/* Location & Persona Sub-Bar */}
+                                    {(item.location || item.targetPersona) && (
+                                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5, flexWrap: 'wrap' }}>
+                                        {item.location && (
+                                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#93c5fd', fontSize: '0.75rem', fontWeight: 700 }}>
+                                            <LocationIcon sx={{ fontSize: 13 }} />
+                                            {item.location}
+                                          </Box>
+                                        )}
+                                        {item.targetPersona && (
+                                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#fbbf24', fontSize: '0.75rem', fontWeight: 700 }}>
+                                            <AccountCircleIcon sx={{ fontSize: 13 }} />
+                                            {item.targetPersona}
+                                          </Box>
+                                        )}
+                                      </Box>
+                                    )}
+
+                                    {/* Dynamic Institutional Title */}
+                                    <Typography sx={{ color: '#fff', fontWeight: 900, fontSize: '1.15rem', lineHeight: 1.35, mb: 1.5, letterSpacing: '-0.015em' }}>
+                                      {item.title}
+                                    </Typography>
+
+                                    {/* 6-Sentence Formula Description */}
+                                    {item.descriptionSentences && item.descriptionSentences.length > 0 ? (
+                                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, mb: 2 }}>
+                                        {item.descriptionSentences.map((sentence, sIdx) => {
+                                          const isWhoProfits = sIdx === 5 || sentence.toLowerCase().includes('profit') || sentence.toLowerCase().includes('cartel') || sentence.toLowerCase().includes('syndicate');
+                                          return (
+                                            <Box
+                                              key={sIdx}
+                                              sx={{
+                                                display: 'flex',
+                                                alignItems: 'flex-start',
+                                                gap: 1,
+                                                p: isWhoProfits ? 1 : 0,
+                                                borderRadius: isWhoProfits ? '8px' : 0,
+                                                bgcolor: isWhoProfits ? 'rgba(239, 68, 68, 0.08)' : 'transparent',
+                                                border: isWhoProfits ? '1px solid rgba(239, 68, 68, 0.25)' : 'none',
+                                              }}
+                                            >
+                                              <Typography sx={{ color: isWhoProfits ? '#ef4444' : 'rgba(255,255,255,0.4)', fontSize: '0.75rem', fontWeight: 800, mt: '2px', flexShrink: 0 }}>
+                                                {isWhoProfits ? '⚖️' : `•`}
+                                              </Typography>
+                                              <Typography sx={{ color: isWhoProfits ? '#fca5a5' : 'rgba(255,255,255,0.7)', fontSize: '0.82rem', lineHeight: 1.45, fontWeight: isWhoProfits ? 700 : 500 }}>
+                                                {sentence}
+                                              </Typography>
+                                            </Box>
+                                          );
+                                        })}
+                                      </Box>
+                                    ) : (
+                                      <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', lineHeight: 1.5, mb: 2, fontWeight: 500 }}>
+                                        {item.hook}
+                                      </Typography>
+                                    )}
                                   </Box>
-                                  <Chip
-                                    label={item.subcategoryTitle}
-                                    size="small"
-                                    sx={{ bgcolor: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)', fontWeight: 600, fontSize: '0.7rem' }}
-                                  />
-                                </Box>
 
-                                {/* Title */}
-                                <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: '1.05rem', lineHeight: 1.4, mb: 1, letterSpacing: '-0.01em' }}>
-                                  {item.title}
-                                </Typography>
-
-                                {/* Hook */}
-                                <Typography sx={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.85rem', lineHeight: 1.5, mb: 2, fontWeight: 500 }}>
-                                  {item.hook}
-                                </Typography>
-
-                                <Box sx={{ mt: 'auto', pt: 1.5, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', color: fMeta.color, fontWeight: 800, fontSize: '0.82rem', gap: 0.5 }}>
-                                  Write This Brief <ArrowForwardIcon sx={{ fontSize: 13 }} />
-                                </Box>
-                              </Paper>
-                            );
-                          })}
+                                  {/* Bottom CTA Action Bar */}
+                                  <Box sx={{ mt: 'auto', pt: 2, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <Typography sx={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', fontWeight: 600 }}>
+                                      {item.format?.toUpperCase()} · {item.era?.toUpperCase()}
+                                    </Typography>
+                                    <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, color: sMeta.color, fontWeight: 800, fontSize: '0.85rem' }}>
+                                      Write This Brief <ArrowForwardIcon sx={{ fontSize: 13 }} />
+                                    </Box>
+                                  </Box>
+                                </Paper>
+                              );
+                            })}
                         </Box>
                       )}
+
+                      {/* ═══════════════════════════════════════════════════════════ */}
+                      {/* AI PROMPT TERMINAL & CUSTOM INGEST DIALOG                   */}
+                      {/* ═══════════════════════════════════════════════════════════ */}
+                      <Dialog
+                        open={promptTerminalOpen}
+                        onClose={() => setPromptTerminalOpen(false)}
+                        maxWidth="md"
+                        fullWidth
+                        slotProps={{
+                          paper: {
+                            sx: {
+                              bgcolor: '#0f172a',
+                              backgroundImage: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+                              border: '1px solid rgba(255,255,255,0.15)',
+                              borderRadius: '24px',
+                              color: '#fff',
+                              p: 1
+                            }
+                          }
+                        }}
+                      >
+                        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Box sx={{ p: 1, borderRadius: '10px', bgcolor: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa' }}>
+                              <TerminalIcon />
+                            </Box>
+                            <Box>
+                              <Typography variant="h6" sx={{ fontWeight: 900, color: '#fff' }}>
+                                AI Prompt Terminal & Custom Ingest
+                              </Typography>
+                              <Typography sx={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)' }}>
+                                View exact compiled daily prompts or fast-ingest external research outlines.
+                              </Typography>
+                            </Box>
+                          </Box>
+                          <IconButton onClick={() => setPromptTerminalOpen(false)} sx={{ color: 'rgba(255,255,255,0.6)' }}>
+                            <CloseIcon />
+                          </IconButton>
+                        </DialogTitle>
+
+                        <DialogContent sx={{ pt: 1 }}>
+                          <Tabs
+                            value={promptTabIdx}
+                            onChange={(_, val) => setPromptTabIdx(val)}
+                            sx={{
+                              borderBottom: '1px solid rgba(255,255,255,0.1)',
+                              mb: 2.5,
+                              '& .MuiTab-root': { color: 'rgba(255,255,255,0.6)', fontWeight: 700, textTransform: 'none', fontSize: '0.85rem' },
+                              '& .Mui-selected': { color: '#60a5fa !important', fontWeight: 900 }
+                            }}
+                          >
+                            <Tab label="📄 Doc 1a (Geo & Eras)" />
+                            <Tab label="📄 Doc 1b (Drucker OSINT)" />
+                            <Tab label="📄 Doc 1c (Outlines)" />
+                            <Tab label="⚡ Fast Ingest Outlines" />
+                          </Tabs>
+
+                          {/* Tab 0: Document 1a */}
+                          {promptTabIdx === 0 && (
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Typography sx={{ color: '#93c5fd', fontWeight: 800, fontSize: '0.85rem' }}>
+                                  Document 1a: Macro-Geo & Temporal Context Prompt
+                                </Typography>
+                                <Button
+                                  size="small"
+                                  startIcon={copiedPromptTab === 'doc1a' ? <CheckIcon /> : <ContentCopyIcon />}
+                                  onClick={() => handleCopyPromptText(rawPrompts?.doc1aPrompt || buildDoc1aPrompt({
+                                    category: selectedCategory,
+                                    commodity: selectedCommodity,
+                                    subcategoriesList: (foodChallenges.find(c => c.id === selectedCategory)?.subcategories || []).map(s => ({ title: s.title, desc: s.desc })),
+                                    currentMonthYear: format(new Date(selectedTargetDate), 'MMMM yyyy'),
+                                  }), 'doc1a')}
+                                  sx={{ bgcolor: 'rgba(255,255,255,0.08)', color: '#fff', textTransform: 'none', fontWeight: 700, borderRadius: '8px' }}
+                                >
+                                  {copiedPromptTab === 'doc1a' ? 'Copied!' : 'Copy Prompt 1a'}
+                                </Button>
+                              </Box>
+
+                              <Paper sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.5)', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)', maxHeight: '300px', overflowY: 'auto' }}>
+                                <Typography component="pre" sx={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.78rem', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
+                                  {rawPrompts?.doc1aPrompt || buildDoc1aPrompt({
+                                    category: selectedCategory,
+                                    commodity: selectedCommodity,
+                                    subcategoriesList: (foodChallenges.find(c => c.id === selectedCategory)?.subcategories || []).map(s => ({ title: s.title, desc: s.desc })),
+                                    currentMonthYear: format(new Date(selectedTargetDate), 'MMMM yyyy'),
+                                  })}
+                                </Typography>
+                              </Paper>
+
+                              {rawPrompts?.doc1aOutput && (
+                                <Box>
+                                  <Typography sx={{ color: '#34d399', fontWeight: 800, fontSize: '0.8rem', mb: 1 }}>
+                                    Raw Output Received (Turn 1):
+                                  </Typography>
+                                  <Paper sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.35)', borderRadius: '14px', border: '1px solid rgba(52, 211, 153, 0.2)', maxHeight: '200px', overflowY: 'auto' }}>
+                                    <Typography component="pre" sx={{ color: '#a7f3d0', fontSize: '0.78rem', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
+                                      {rawPrompts.doc1aOutput}
+                                    </Typography>
+                                  </Paper>
+                                </Box>
+                              )}
+                            </Box>
+                          )}
+
+                          {/* Tab 1: Document 1b */}
+                          {promptTabIdx === 1 && (
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Typography sx={{ color: '#fbbf24', fontWeight: 800, fontSize: '0.85rem' }}>
+                                  Document 1b: Drucker Innovation OSINT Engine Prompt (Pre-Injected with 1a)
+                                </Typography>
+                                <Button
+                                  size="small"
+                                  startIcon={copiedPromptTab === 'doc1b' ? <CheckIcon /> : <ContentCopyIcon />}
+                                  onClick={() => handleCopyPromptText(rawPrompts?.doc1bPrompt || buildDoc1bPrompt({
+                                    commodity: selectedCommodity,
+                                    currentMonthYear: format(new Date(selectedTargetDate), 'MMMM yyyy'),
+                                    doc1aOutput: rawPrompts?.doc1aOutput || '[Run Turn 1 to populate Doc 1a output]',
+                                    subcategoriesList: (foodChallenges.find(c => c.id === selectedCategory)?.subcategories || []).map(s => ({ title: s.title, desc: s.desc })),
+                                  }), 'doc1b')}
+                                  sx={{ bgcolor: 'rgba(255,255,255,0.08)', color: '#fff', textTransform: 'none', fontWeight: 700, borderRadius: '8px' }}
+                                >
+                                  {copiedPromptTab === 'doc1b' ? 'Copied!' : 'Copy Prompt 1b'}
+                                </Button>
+                              </Box>
+
+                              <Paper sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.5)', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)', maxHeight: '300px', overflowY: 'auto' }}>
+                                <Typography component="pre" sx={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.78rem', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
+                                  {rawPrompts?.doc1bPrompt || buildDoc1bPrompt({
+                                    commodity: selectedCommodity,
+                                    currentMonthYear: format(new Date(selectedTargetDate), 'MMMM yyyy'),
+                                    doc1aOutput: rawPrompts?.doc1aOutput || '[Run Turn 1 to populate Doc 1a output]',
+                                    subcategoriesList: (foodChallenges.find(c => c.id === selectedCategory)?.subcategories || []).map(s => ({ title: s.title, desc: s.desc })),
+                                  })}
+                                </Typography>
+                              </Paper>
+
+                              {rawPrompts?.doc1bOutput && (
+                                <Box>
+                                  <Typography sx={{ color: '#34d399', fontWeight: 800, fontSize: '0.8rem', mb: 1 }}>
+                                    Raw Output Received (Turn 2):
+                                  </Typography>
+                                  <Paper sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.35)', borderRadius: '14px', border: '1px solid rgba(52, 211, 153, 0.2)', maxHeight: '200px', overflowY: 'auto' }}>
+                                    <Typography component="pre" sx={{ color: '#a7f3d0', fontSize: '0.78rem', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
+                                      {rawPrompts.doc1bOutput}
+                                    </Typography>
+                                  </Paper>
+                                </Box>
+                              )}
+                            </Box>
+                          )}
+
+                          {/* Tab 2: Document 1c */}
+                          {promptTabIdx === 2 && (
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Typography sx={{ color: '#a855f7', fontWeight: 800, fontSize: '0.85rem' }}>
+                                  Document 1c: Spectrum Synthesizer & Outline Generator (Pre-Injected with 1a & 1b)
+                                </Typography>
+                                <Button
+                                  size="small"
+                                  startIcon={copiedPromptTab === 'doc1c' ? <CheckIcon /> : <ContentCopyIcon />}
+                                  onClick={() => handleCopyPromptText(rawPrompts?.doc1cPrompt || buildDoc1cPrompt({
+                                    doc1aOutput: rawPrompts?.doc1aOutput || '[Run Turn 1 to populate Doc 1a output]',
+                                    doc1bOutput: rawPrompts?.doc1bOutput || '[Run Turn 2 to populate Doc 1b output]',
+                                  }), 'doc1c')}
+                                  sx={{ bgcolor: 'rgba(255,255,255,0.08)', color: '#fff', textTransform: 'none', fontWeight: 700, borderRadius: '8px' }}
+                                >
+                                  {copiedPromptTab === 'doc1c' ? 'Copied!' : 'Copy Standalone Prompt 1c'}
+                                </Button>
+                              </Box>
+
+                              <Paper sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.5)', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)', maxHeight: '300px', overflowY: 'auto' }}>
+                                <Typography component="pre" sx={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.78rem', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
+                                  {rawPrompts?.doc1cPrompt || buildDoc1cPrompt({
+                                    doc1aOutput: rawPrompts?.doc1aOutput || '[Run Turn 1 to populate Doc 1a output]',
+                                    doc1bOutput: rawPrompts?.doc1bOutput || '[Run Turn 2 to populate Doc 1b output]',
+                                  })}
+                                </Typography>
+                              </Paper>
+
+                              {rawPrompts?.doc1cOutput && (
+                                <Box>
+                                  <Typography sx={{ color: '#34d399', fontWeight: 800, fontSize: '0.8rem', mb: 1 }}>
+                                    Raw Output Outlines (Turn 3):
+                                  </Typography>
+                                  <Paper sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.35)', borderRadius: '14px', border: '1px solid rgba(52, 211, 153, 0.2)', maxHeight: '200px', overflowY: 'auto' }}>
+                                    <Typography component="pre" sx={{ color: '#a7f3d0', fontSize: '0.78rem', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
+                                      {rawPrompts.doc1cOutput}
+                                    </Typography>
+                                  </Paper>
+                                </Box>
+                              )}
+                            </Box>
+                          )}
+
+                          {/* Tab 3: Fast Ingest Custom Outlines */}
+                          {promptTabIdx === 3 && (
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                              <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>
+                                Paste raw Markdown output generated from Document 1c (following the <code>[SYSTEM_METADATA]</code> syntax separated by <code>---</code>) to instantly parse and render custom article briefs:
+                              </Typography>
+
+                              <TextField
+                                multiline
+                                rows={8}
+                                fullWidth
+                                placeholder={`---\n**[SYSTEM_METADATA]**\n* Category_ID: Land\n* Subcategory_ID: Sole Farmland Ownership\n* Commodity: ${selectedCommodity}\n* Format_Type: Brief\n* Era: Present\n* Location: Dawanau Hub, Kano\n* Spectrum_Rank: #1 (The Bleeding Neck)\n* Target_Persona: Agri-VCs\n\n### The ₦1,200/L Fuel Trap: How Haulers Bypass Squeeze\n\n**Description:**\n* Core problem...\n* Mechanics...\n---`}
+                                value={customIngestMarkdown}
+                                onChange={(e) => setCustomIngestMarkdown(e.target.value)}
+                                sx={{
+                                  bgcolor: 'rgba(0,0,0,0.4)',
+                                  borderRadius: '12px',
+                                  '& .MuiOutlinedInput-root': {
+                                    color: '#fff',
+                                    fontSize: '0.85rem',
+                                    fontFamily: 'monospace',
+                                    '& fieldset': { borderColor: 'rgba(255,255,255,0.15)' },
+                                    '&:hover fieldset': { borderColor: '#60a5fa' },
+                                  }
+                                }}
+                              />
+
+                              {customIngestError && (
+                                <Typography sx={{ color: '#ef4444', fontWeight: 700, fontSize: '0.82rem' }}>
+                                  {customIngestError}
+                                </Typography>
+                              )}
+
+                              <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5 }}>
+                                <Button
+                                  variant="contained"
+                                  onClick={handleFastIngestCustomOutlines}
+                                  sx={{ bgcolor: '#3b82f6', color: '#fff', fontWeight: 800, px: 3, borderRadius: '10px', textTransform: 'none', '&:hover': { bgcolor: '#2563eb' } }}
+                                >
+                                  Parse & Render Outlines ➔
+                                </Button>
+                              </Box>
+                            </Box>
+                          )}
+                        </DialogContent>
+                      </Dialog>
                     </Box>
                   )}
                   
