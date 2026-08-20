@@ -422,7 +422,7 @@ export function buildDoc1bPrompt(params: {
   return DOC_1B_MASTER_PROMPT
     .replace(/\{\{commodity\}\}/g, params.commodity)
     .replace(/\{\{current_month_year\}\}/g, params.currentMonthYear)
-    .replace(/\{\{doc_1a_output\}\}/g, params.doc1aOutput || '[Insert Document 1a Output Here]')
+    .replace(/\{\{doc_1a_output\}\}/g, params.doc1aOutput || '[Refer to the 5 Micro-Geographies & Temporal Anchors from Document 1a generated above in this chat]')
     .replace(/\{\{subcategories_list\}\}/g, subcatsFormatted);
 }
 
@@ -434,8 +434,8 @@ export function buildDoc1cPrompt(params: {
   doc1bOutput: string;
 }): string {
   return DOC_1C_MASTER_PROMPT
-    .replace(/\{\{doc_1a_output\}\}/g, params.doc1aOutput || '[Insert Document 1a Output Here]')
-    .replace(/\{\{doc_1b_output\}\}/g, params.doc1bOutput || '[Insert Document 1b Output Here]');
+    .replace(/\{\{doc_1a_output\}\}/g, params.doc1aOutput || '[Refer to the 5 Micro-Geographies from Document 1a generated above in this chat]')
+    .replace(/\{\{doc_1b_output\}\}/g, params.doc1bOutput || '[Refer to the 10 Innovation Vectors & Spectrum findings from Document 1b generated above in this chat]');
 }
 
 /**
