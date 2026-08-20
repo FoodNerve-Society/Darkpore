@@ -2,8 +2,128 @@ import { ChallengeData } from '../types';
 
 export const foodChallenges: ChallengeData[] = [
   {
+    id: 'capital',
+    title: 'Financial Exclusion & Access to Capital',
+    desc: 'Accelerating rural liquidity, credit access, and structured agricultural financing.',
+    longDesc: 'Bridging the agricultural financing divide by architecting structured capital pathways. We coordinate blended finance mechanisms including grassroots microcredit, statutory compliance optimization, cross-border remittances, instant digital payment rails, risk management, asset leasing, supplier financing, and institutional capital markets.',
+    imageUrl: '/images/challenges/capital.webp',
+    stats: { activeSolutions: 18, capitalDeployed: '$14.2M', communitySize: '3,100+' },
+    subcategories: [
+      // GROUP 1: Basic Liquidity & Savings
+      {
+        id: 'savings-and-asset-building',
+        shortName: 'Savings and Asset Building',
+        title: 'Savings & Asset Building (Savings, Wealth Accumulation & Tangible Assets)',
+        groupName: 'Basic Liquidity & Savings',
+        desc: 'Personal wealth accumulation, rural savings mobilization, and tangible asset-building strategies shielding farm households from seasonal shocks.',
+        imageUrl: '/images/subcategories/savings.webp',
+        updates: [], learningMaterials: [],
+        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
+      },
+      // GROUP 2: Inclusive Debt & Microcredit
+      {
+        id: 'credit-and-loans',
+        shortName: 'Credit & Loans',
+        title: 'Credit & Loans (Rotating Savings, VSLAs, SACCOs, MFBs & Digital Credit)',
+        groupName: 'Inclusive Debt & Microcredit',
+        desc: 'Inclusive credit channels spanning informal rotating clubs (Esusu, Ajo, Susu), member-owned vehicles (Chamas, VSLA, SACCOs, Cooperatives), microfinance banks, and instant digital microloans.',
+        imageUrl: '/images/subcategories/cooperatives.webp',
+        updates: [], learningMaterials: [],
+        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
+      },
+      // GROUP 3: Policy, Levies & Compliance
+      {
+        id: 'tax-and-levies-compliance',
+        shortName: 'Tax & Levies Compliance',
+        title: 'Tax & Levies Compliance (Taxes, Levies, Informal Tolls & Regulatory Costs)',
+        groupName: 'Policy, Levies & Compliance',
+        desc: 'Navigating multiple taxation, informal transit levies, market dues, traditional authority tolls, regulatory fees, compliance burdens, and statutory agricultural tax incentives.',
+        imageUrl: '/images/subcategories/advisory.webp',
+        updates: [], learningMaterials: [],
+        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
+      },
+      // GROUP 4: Cross-Border & Direct Liquidity
+      {
+        id: 'remittances-services',
+        shortName: 'Remittances Services',
+        title: 'Remittances Services & Cash Transfers (Corridors, Diasporas & Mobile Cash)',
+        groupName: 'Cross-Border & Direct Liquidity',
+        desc: 'Cross-border remittance corridors, diaspora capital inflows, direct humanitarian cash transfers, and mobile cash rails fueling rural economic activity.',
+        imageUrl: '/images/subcategories/remittances.webp',
+        updates: [], learningMaterials: [],
+        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
+      },
+      // GROUP 5: Payment Rails & Gateways
+      {
+        id: 'payments-and-gateways',
+        shortName: 'Payments & Gateways',
+        title: 'Payments & Instant Digital Gateways (USSD, POS & Instant Settlement Rails)',
+        groupName: 'Payment Rails & Gateways',
+        desc: 'Real-time settlement rails, merchant payment gateways, USSD offline wallets, and interoperable digital POS infrastructure for agricultural commerce.',
+        imageUrl: '/images/subcategories/payments.webp',
+        updates: [], learningMaterials: [],
+        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
+      },
+      // GROUP 6: Risk Mitigation & Protection
+      {
+        id: 'insurance-and-risk-management',
+        shortName: 'Insurance & Risk Management',
+        title: 'Insurance & Risk Management (Parametric, Yield & Enterprise Protection)',
+        groupName: 'Risk Mitigation & Protection',
+        desc: 'Comprehensive agricultural insurance, parametric weather-index coverage, crop yield guarantees, livestock indemnity, and enterprise risk management protocols.',
+        imageUrl: '/images/subcategories/insurance.webp',
+        updates: [], learningMaterials: [],
+        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
+      },
+      // GROUP 7: Long-Term Wealth Preservation
+      {
+        id: 'pension-products',
+        shortName: 'Pension Products',
+        title: 'Pension Products (Micro-Pensions & Informal Retirement Savings)',
+        groupName: 'Long-Term Wealth Preservation',
+        desc: 'Voluntary micro-pensions, informal sector retirement savings, and dedicated long-term wealth preservation schemes tailored for smallholders and agri-traders.',
+        imageUrl: '/images/subcategories/pensions.webp',
+        updates: [], learningMaterials: [],
+        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
+      },
+      // GROUP 8: Asset & Equipment Financing
+      {
+        id: 'lease-to-own-financing',
+        shortName: 'Lease-to-Own Financing',
+        title: 'Lease-to-Own Asset Financing (PAYG, Machinery & Equipment Leasing)',
+        groupName: 'Asset & Equipment Financing',
+        desc: 'Flexible lease-to-own equipment contracts, pay-as-you-go (PAYG) asset financing, and milestone-based repayments for tractors, solar irrigation, and machinery.',
+        imageUrl: '/images/subcategories/payg.webp',
+        updates: [], learningMaterials: [],
+        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
+      },
+      // GROUP 9: Value Chain & Trade Financing
+      {
+        id: 'suppliers-and-offtakers-financing',
+        shortName: 'Suppliers & Offtakers Financing',
+        title: 'Suppliers & Off-Takers Financing (Trade Credit, Invoicing & Purchase Advances)',
+        groupName: 'Value Chain & Trade Financing',
+        desc: 'Buyer-led trade credit, supplier invoice discounting, off-taker working capital advances, and input financing tied to guaranteed purchase contracts.',
+        imageUrl: '/images/subcategories/inventory.webp',
+        updates: [], learningMaterials: [],
+        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
+      },
+      // GROUP 10: Institutional & Equity Capital
+      {
+        id: 'capital-markets',
+        shortName: 'Capital Markets',
+        title: 'Capital Markets & Investment Funds (PE, VC, Debt Funds & Commodity Bonds)',
+        groupName: 'Institutional & Equity Capital',
+        desc: 'Institutional capital mobilization through public equity, corporate bonds, private equity, private debt funds, venture capital, and commodity-linked financial instruments.',
+        imageUrl: '/images/subcategories/advisory.webp',
+        updates: [], learningMaterials: [],
+        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
+      }
+    ]
+  },
+  {
     id: 'land',
-    title: '2. Obstacles to Farm / Land Access & Tenure',
+    title: 'Obstacles to Farm / Land Access & Tenure',
     desc: 'Unlocking agricultural land access, tenure security, title registration, and dispute resolution.',
     longDesc: 'Unlocking agricultural land access, tenure security, title registration, and dispute resolution across customary, public, and private property frameworks in Africa to secure long-term productive farming assets.',
     imageUrl: '/images/challenges/land.webp',
@@ -12,6 +132,7 @@ export const foodChallenges: ChallengeData[] = [
       // GROUP 1: Property Acquisition & Freehold
       {
         id: 'owning-land',
+        shortName: 'Owning Land',
         title: 'Owning Land (Land & Property Ownership)',
         groupName: 'Property Acquisition & Freehold',
         desc: 'Fee-simple freehold land acquisition, real estate transfer rights, and legal documentation securing permanent agricultural property ownership.',
@@ -35,6 +156,7 @@ export const foodChallenges: ChallengeData[] = [
       // GROUP 2: Tenancy & Commercial Leasing
       {
         id: 'renting-spaces',
+        shortName: 'Renting Spaces',
         title: 'Renting Spaces (Leasing & Rental)',
         groupName: 'Tenancy & Commercial Leasing',
         desc: 'Short, medium, and long-term agricultural leases, greenhouse facility rentals, and commercial processing ground-rent agreements.',
@@ -44,7 +166,8 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 3: Public & Institutional Concessions
       {
-        id: 'public-land-allocation',
+        id: 'getting-public-land',
+        shortName: 'Getting Public Land',
         title: 'Getting Public Land (Public Land Allocation & Concessions)',
         groupName: 'Public & Institutional Concessions',
         desc: 'Government agricultural land allocations, state farm reserves, special agro-processing zones (SAPZ), and long-term sovereign concessions.',
@@ -54,7 +177,8 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 4: Customary & Indigenous Rights
       {
-        id: 'ancestral-customary-lands',
+        id: 'ancestral-lands',
+        shortName: 'Ancestral Lands',
         title: 'Ancestral Lands (Customary, Communal & Indigenous Access)',
         groupName: 'Customary & Indigenous Rights',
         desc: 'Navigating customary tenure, indigenous stool land rights, traditional authority protocols, community trust frameworks, and family land inheritance.',
@@ -64,7 +188,8 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 5: Collaborative & Shared Facilities
       {
-        id: 'sharing-land-premises',
+        id: 'sharing-land',
+        shortName: 'Sharing Land',
         title: 'Sharing Land (Shared Land & Premises)',
         groupName: 'Collaborative & Shared Facilities',
         desc: 'Collaborative farming syndicates, shared aggregation yards, co-located processing hubs, and fractional cooperative land-sharing schemes.',
@@ -75,6 +200,7 @@ export const foodChallenges: ChallengeData[] = [
       // GROUP 6: Financing & Affordability
       {
         id: 'affording-land',
+        shortName: 'Affording Land',
         title: 'Affording Land (Land & Premises Affordability)',
         groupName: 'Financing & Affordability',
         desc: 'Overcoming speculative real estate pricing, rural land inflation, and financing barriers through subsidized purchase schemes and blended micro-leases.',
@@ -84,7 +210,8 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 7: Titling & Cadastral Perfection
       {
-        id: 'registering-land-titles',
+        id: 'registering-land',
+        shortName: 'Registering Land',
         title: 'Registering Land (Titles, Registration & Property Records)',
         groupName: 'Titling & Cadastral Perfection',
         desc: 'Certificate of Occupancy (C of O), cadastral surveying, deed registration, governor’s consent, and digital land title perfection.',
@@ -94,7 +221,8 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 8: Planning & Environmental Zoning
       {
-        id: 'zoning-permitted-use',
+        id: 'zoning-land',
+        shortName: 'Zoning Land',
         title: 'Zoning Land (Zoning & Permitted Use)',
         groupName: 'Planning & Environmental Zoning',
         desc: 'Agricultural master-plan zoning compliance, environmental impact assessments (EIA), greenbelt conservation, and peri-urban permitted use rights.',
@@ -104,7 +232,8 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 9: Statutory Permits & Compliance
       {
-        id: 'land-permits-approvals',
+        id: 'land-permits',
+        shortName: 'Land Permits',
         title: 'Land Permits (Construction, Conversion & Occupancy Approvals)',
         groupName: 'Statutory Permits & Compliance',
         desc: 'Securing farm infrastructure building permits, agro-processing facility conversion rights, water extraction licenses, and commercial occupancy approvals.',
@@ -114,7 +243,8 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 10: Legal Defense & Conflict Resolution
       {
-        id: 'eviction-property-disputes',
+        id: 'eviction-and-disputes',
+        shortName: 'Eviction & Disputes',
         title: 'Eviction & Disputes (Eviction, Displacement & Property Disputes)',
         groupName: 'Legal Defense & Conflict Resolution',
         desc: 'Legal defense against arbitrary evictions, boundary disputes, communal title clashes, and institutional alternative dispute resolution (ADR) mechanisms.',
@@ -125,118 +255,8 @@ export const foodChallenges: ChallengeData[] = [
     ]
   },
   {
-    id: 'capital',
-    title: '1. Financial Exclusion & Access to Capital',
-    desc: 'Accelerating rural liquidity, credit access, and structured agricultural financing.',
-    longDesc: 'Bridging the agricultural financing divide by architecting structured capital pathways. We coordinate blended finance mechanisms including grassroots microcredit, statutory compliance optimization, cross-border remittances, instant digital payment rails, risk management, asset leasing, supplier financing, and institutional capital markets.',
-    imageUrl: '/images/challenges/capital.webp',
-    stats: { activeSolutions: 18, capitalDeployed: '$14.2M', communitySize: '3,100+' },
-    subcategories: [
-      // GROUP 1: Basic Liquidity & Savings
-      {
-        id: 'savings-asset-building',
-        title: 'Savings & Asset Building',
-        groupName: 'Basic Liquidity & Savings',
-        desc: 'Personal wealth accumulation, rural savings mobilization, and tangible asset-building strategies shielding farm households from seasonal shocks.',
-        imageUrl: '/images/subcategories/savings.webp',
-        updates: [], learningMaterials: [],
-        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
-      },
-      // GROUP 2: Inclusive Debt & Microcredit
-      {
-        id: 'credit-loans',
-        title: 'Credit & Loans',
-        groupName: 'Inclusive Debt & Microcredit',
-        desc: 'Inclusive credit channels spanning informal rotating clubs (Esusu, Ajo, Susu), member-owned vehicles (Chamas, VSLA, SACCOs, Cooperatives), microfinance banks, and instant digital microloans.',
-        imageUrl: '/images/subcategories/cooperatives.webp',
-        updates: [], learningMaterials: [],
-        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
-      },
-      // GROUP 3: Policy, Levies & Compliance
-      {
-        id: 'tax-levies-compliance',
-        title: 'Tax & Levies Compliance',
-        groupName: 'Policy, Levies & Compliance',
-        desc: 'Navigating multiple taxation, informal transit levies, market dues, traditional authority tolls, regulatory fees, compliance burdens, and statutory agricultural tax incentives.',
-        imageUrl: '/images/subcategories/advisory.webp',
-        updates: [], learningMaterials: [],
-        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
-      },
-      // GROUP 4: Cross-Border & Direct Liquidity
-      {
-        id: 'remittances-transfers',
-        title: 'Remittances Services & Cash Transfers',
-        groupName: 'Cross-Border & Direct Liquidity',
-        desc: 'Cross-border remittance corridors, diaspora capital inflows, direct humanitarian cash transfers, and mobile cash rails fueling rural economic activity.',
-        imageUrl: '/images/subcategories/remittances.webp',
-        updates: [], learningMaterials: [],
-        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
-      },
-      // GROUP 5: Payment Rails & Gateways
-      {
-        id: 'payments-digital-gateways',
-        title: 'Payments & Instant Digital Gateways',
-        groupName: 'Payment Rails & Gateways',
-        desc: 'Real-time settlement rails, merchant payment gateways, USSD offline wallets, and interoperable digital POS infrastructure for agricultural commerce.',
-        imageUrl: '/images/subcategories/payments.webp',
-        updates: [], learningMaterials: [],
-        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
-      },
-      // GROUP 6: Risk Mitigation & Protection
-      {
-        id: 'insurance-risk-management',
-        title: 'Insurance & Risk Management',
-        groupName: 'Risk Mitigation & Protection',
-        desc: 'Comprehensive agricultural insurance, parametric weather-index coverage, crop yield guarantees, livestock indemnity, and enterprise risk management protocols.',
-        imageUrl: '/images/subcategories/insurance.webp',
-        updates: [], learningMaterials: [],
-        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
-      },
-      // GROUP 7: Long-Term Wealth Preservation
-      {
-        id: 'pension-products',
-        title: 'Safe Third-Pillar Pension Products',
-        groupName: 'Long-Term Wealth Preservation',
-        desc: 'Voluntary micro-pensions, informal sector retirement savings, and dedicated long-term wealth preservation schemes tailored for smallholders and agri-traders.',
-        imageUrl: '/images/subcategories/pensions.webp',
-        updates: [], learningMaterials: [],
-        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
-      },
-      // GROUP 8: Asset & Equipment Financing
-      {
-        id: 'lease-to-own-financing',
-        title: 'Lease-to-Own Asset Financing Models',
-        groupName: 'Asset & Equipment Financing',
-        desc: 'Flexible lease-to-own equipment contracts, pay-as-you-go (PAYG) asset financing, and milestone-based repayments for tractors, solar irrigation, and machinery.',
-        imageUrl: '/images/subcategories/payg.webp',
-        updates: [], learningMaterials: [],
-        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
-      },
-      // GROUP 9: Value Chain & Trade Financing
-      {
-        id: 'suppliers-offtakers-financing',
-        title: 'Suppliers & Off-Takers Financing',
-        groupName: 'Value Chain & Trade Financing',
-        desc: 'Buyer-led trade credit, supplier invoice discounting, off-taker working capital advances, and input financing tied to guaranteed purchase contracts.',
-        imageUrl: '/images/subcategories/inventory.webp',
-        updates: [], learningMaterials: [],
-        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
-      },
-      // GROUP 10: Institutional & Equity Capital
-      {
-        id: 'capital-markets-investment',
-        title: 'Capital Markets & Investment Funds',
-        groupName: 'Institutional & Equity Capital',
-        desc: 'Institutional capital mobilization through public equity, corporate bonds, private equity, private debt funds, venture capital, and commodity-linked financial instruments.',
-        imageUrl: '/images/subcategories/advisory.webp',
-        updates: [], learningMaterials: [],
-        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
-      }
-    ]
-  },
-  {
     id: 'inputs',
-    title: '3. Reduced Yields from Under-Used Agro Inputs & Feed',
+    title: 'Reduced Yields from Under-Used Agro Inputs & Feed',
     desc: 'Closing yield gaps through certified seeds, soil nutrition, plant protection, livestock genetics, and mechanization.',
     longDesc: 'Overcoming yield gaps by streamlining access to certified planting materials, soil nutrition, plant protection, livestock genetics, veterinary health, irrigation water, machinery, and trusted extension advisory to multiply baseline farmgate productivity.',
     imageUrl: '/images/challenges/inputs.webp',
@@ -245,7 +265,8 @@ export const foodChallenges: ChallengeData[] = [
       // GROUP 1: Plant Genetics & Seed Systems
       {
         id: 'getting-seeds',
-        title: 'Getting Seeds (Breeding, Seeds & Planting Materials)',
+        shortName: 'Getting Seeds',
+        title: 'Getting Seeds (Crop Breeding, Seeds & Planting Materials)',
         groupName: 'Plant Genetics & Seed Systems',
         desc: 'Sourcing certified hybrid seeds, drought-resilient cultivars, tissue-culture suckers, and quality stem cuttings.',
         imageUrl: '/images/subcategories/improved-crop-breeding.webp',
@@ -255,6 +276,7 @@ export const foodChallenges: ChallengeData[] = [
       // GROUP 2: Soil Health & Crop Nutrition
       {
         id: 'feeding-the-soil',
+        shortName: 'Feeding the Soil',
         title: 'Feeding the Soil (Fertilizers & Soil Nutrition)',
         groupName: 'Soil Health & Crop Nutrition',
         desc: 'Soil testing, customized blended NPK formulations, liquid bio-fertilizers, agricultural lime, and organic composts.',
@@ -265,7 +287,8 @@ export const foodChallenges: ChallengeData[] = [
       // GROUP 3: Crop Protection & Biosecurity
       {
         id: 'protecting-crops',
-        title: 'Protecting Crops (Pesticides & Plant Health)',
+        shortName: 'Protecting Crops',
+        title: 'Protecting Crops (Pesticides, Biological Controls & Plant Health)',
         groupName: 'Crop Protection & Biosecurity',
         desc: 'Integrated pest management (IPM), biological controls, safe crop protectants, fungicides, and targeted weed control.',
         imageUrl: '/images/subcategories/pesticides.webp',
@@ -275,7 +298,8 @@ export const foodChallenges: ChallengeData[] = [
       // GROUP 4: Livestock & Aquaculture Genetics
       {
         id: 'breeding-animals',
-        title: 'Breeding Animals (Breeds, Chicks & Fingerlings)',
+        shortName: 'Breeding Animals',
+        title: 'Breeding Animals (Breeds, Day-Old Chicks & Fingerlings)',
         groupName: 'Livestock & Aquaculture Genetics',
         desc: 'High-yield poultry day-old chicks (DOC), aquaculture fingerlings/juveniles, pedigree cattle/goats, and artificial insemination.',
         imageUrl: '/images/subcategories/drought-resistant-seeds.webp',
@@ -285,6 +309,7 @@ export const foodChallenges: ChallengeData[] = [
       // GROUP 5: Livestock & Aquaculture Nutrition
       {
         id: 'feeding-animals',
+        shortName: 'Feeding Animals',
         title: 'Feeding Animals (Animal Feed, Fodder & Nutrition)',
         groupName: 'Livestock & Aquaculture Nutrition',
         desc: 'High-protein commercial livestock feed, silage, hydroponic fodder, floating aquafeed pellets, and mineral supplements.',
@@ -295,6 +320,7 @@ export const foodChallenges: ChallengeData[] = [
       // GROUP 6: Veterinary & Biosecurity
       {
         id: 'animal-health',
+        shortName: 'Animal Health',
         title: 'Animal Health (Veterinary Medicines & Vaccines)',
         groupName: 'Veterinary & Biosecurity',
         desc: 'Preventative livestock vaccination protocols, veterinary pharmaceuticals, pest control dips, and herd disease surveillance.',
@@ -305,6 +331,7 @@ export const foodChallenges: ChallengeData[] = [
       // GROUP 7: Irrigation & Water Systems
       {
         id: 'getting-water',
+        shortName: 'Getting Water',
         title: 'Getting Water (Irrigation & Production Water)',
         groupName: 'Irrigation & Water Systems',
         desc: 'Agricultural borehole drilling, solar-powered drip irrigation kits, center pivots, water harvesting, and canal drainage.',
@@ -314,7 +341,8 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 8: Farm Power & Mechanization
       {
-        id: 'machines-equipment',
+        id: 'machines',
+        shortName: 'Machines',
         title: 'Machines (Machinery, Tools & Draught Power)',
         groupName: 'Farm Power & Mechanization',
         desc: 'Two-wheel and four-wheel tractors, motorized tillers, combine harvesters, artisanal hand tools, and animal traction.',
@@ -325,6 +353,7 @@ export const foodChallenges: ChallengeData[] = [
       // GROUP 9: Agronomic Advisory & Extension
       {
         id: 'dear-foodnerve',
+        shortName: 'Dear FoodNerve',
         title: 'Dear FoodNerve (Extension & Technical Advisory)',
         groupName: 'Agronomic Advisory & Extension',
         desc: 'On-demand agronomic advisory, field diagnostics, pest outbreak alerts, soil-crop matching guides, and producer support.',
@@ -335,7 +364,8 @@ export const foodChallenges: ChallengeData[] = [
       // GROUP 10: Quality Assurance & Input Markets
       {
         id: 'finding-inputs',
-        title: 'Finding Inputs (Supply, Quality & Regulation)',
+        shortName: 'Finding Inputs',
+        title: 'Finding Inputs (Supply, Quality, Standards & Regulation)',
         groupName: 'Quality Assurance & Input Markets',
         desc: 'Certified input dealer networks, anti-counterfeit seed/fertilizer verification, regulatory standards, and last-mile agro-dealers.',
         imageUrl: '/images/subcategories/insecticides.webp',
@@ -346,7 +376,7 @@ export const foodChallenges: ChallengeData[] = [
   },
   {
     id: 'energy',
-    title: '4. Energy Poverty',
+    title: 'Energy Poverty',
     desc: 'Eradicating energy poverty across agricultural generation, fuels, storage, and distribution.',
     longDesc: 'Eradicating agricultural power deficits through utility grid expansion, solar mini-grids, captive on-site power, clean gas supply, solid biomass, battery storage, distribution networks, reliability assurance, and cost reduction across Africa.',
     imageUrl: '/images/challenges/energy.webp',
@@ -354,7 +384,8 @@ export const foodChallenges: ChallengeData[] = [
     subcategories: [
       // GROUP 1: Utility & Grid Interconnection
       {
-        id: 'grid-power-access',
+        id: 'grid-power',
+        shortName: 'Grid Power',
         title: 'Grid Power (Centralized Electricity Access & Connections)',
         groupName: 'Utility & Grid Interconnection',
         desc: 'Securing national grid connections, industrial tariff classifications, dedicated feeders, and high-voltage transformer drops for processing mills.',
@@ -364,7 +395,8 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 2: Decentralized Community Power
       {
-        id: 'mini-grids-community',
+        id: 'mini-grids',
+        shortName: 'Mini-Grids',
         title: 'Mini-Grids (Local & Community Electricity Systems)',
         groupName: 'Decentralized Community Power',
         desc: 'Solar-hybrid, hydro, and biomass mini-grids powering agricultural clusters, irrigation cooperatives, and rural cottage industries.',
@@ -374,7 +406,8 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 3: Captive & Standalone Generation
       {
-        id: 'onsite-power-generation',
+        id: 'on-site-power',
+        shortName: 'On-Site Power',
         title: 'On-Site Power (Standalone & Self-Generation Systems)',
         groupName: 'Captive & Standalone Generation',
         desc: 'Captive rooftop/ground solar PV arrays, wind generation, biomass gasifiers, and standalone industrial generators.',
@@ -384,7 +417,8 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 4: Liquid Hydrocarbons & Biofuels
       {
-        id: 'liquid-fuels-petrol-diesel',
+        id: 'petrol-and-diesel',
+        shortName: 'Petrol & Diesel',
         title: 'Petrol & Diesel (Liquid Fuels, Kerosene & Biofuels)',
         groupName: 'Liquid Hydrocarbons & Biofuels',
         desc: 'Bulk farmgate diesel procurement, petrol supply for smallholder equipment, kerosene, ethanol, and biodiesel blending.',
@@ -394,7 +428,8 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 5: Gaseous Fuels & Clean Thermal
       {
-        id: 'gas-supply-biogas',
+        id: 'gas-supply',
+        shortName: 'Gas Supply',
         title: 'Gas Supply (LPG, Natural Gas & Biogas)',
         groupName: 'Gaseous Fuels & Clean Thermal',
         desc: 'Commercial LPG cylinder distribution, piped natural gas (PNG), compressed natural gas (CNG), and farmstead anaerobic biogas digesters.',
@@ -404,7 +439,8 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 6: Solid Fuels & Biomass Energy
       {
-        id: 'firewood-solid-fuels',
+        id: 'firewood-and-solid-fuels',
+        shortName: 'Firewood & Solid Fuels',
         title: 'Firewood & Solid Fuels (Charcoal & Crop Residues)',
         groupName: 'Solid Fuels & Biomass Energy',
         desc: 'Sustainable charcoal briquettes, crop residue pelletization, palm kernel shell boilers, and fuel-wood alternatives for commercial agro-heating.',
@@ -414,7 +450,8 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 7: Energy Storage & Backup Systems
       {
-        id: 'batteries-energy-storage',
+        id: 'batteries-and-backup',
+        shortName: 'Batteries & Backup',
         title: 'Batteries & Backup (Energy Storage & Emergency Power)',
         groupName: 'Energy Storage & Backup Systems',
         desc: 'Industrial Lithium Iron Phosphate (LiFePO4) battery packs, thermal energy storage, solar inverters, and automated emergency backup systems.',
@@ -424,7 +461,8 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 8: Transmission & Delivery Rails
       {
-        id: 'energy-distribution-infra',
+        id: 'energy-distribution',
+        shortName: 'Energy Distribution',
         title: 'Energy Distribution (Transmission & Last-Mile Delivery)',
         groupName: 'Transmission & Delivery Rails',
         desc: 'Last-mile distribution poles, three-phase transformers, underground cabling, and energy-as-a-service rural delivery infrastructure.',
@@ -434,7 +472,8 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 9: Grid Quality & Power Reliability
       {
-        id: 'reliable-energy-quality',
+        id: 'reliable-energy',
+        shortName: 'Reliable Energy',
         title: 'Reliable Energy (Continuity, Quality & Capacity)',
         groupName: 'Grid Quality & Power Reliability',
         desc: 'Voltage stabilization, harmonic filtering, industrial surge protection, uninterrupted uptime, and peak capacity management.',
@@ -444,7 +483,8 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 10: Tariffs, Economics & Affordability
       {
-        id: 'energy-costs-tariffs',
+        id: 'energy-costs',
+        shortName: 'Energy Costs',
         title: 'Energy Costs (Tariffs, Fuel Prices & Operating Costs)',
         groupName: 'Tariffs, Economics & Affordability',
         desc: 'Mitigating high DisCo band tariffs, off-grid power levelized cost of energy (LCOE) optimization, connection subsidies, and fuel hedging.',
@@ -456,7 +496,7 @@ export const foodChallenges: ChallengeData[] = [
   },
   {
     id: 'insecurity',
-    title: '5. Insecurity & Deliberate Human Threats',
+    title: 'Insecurity & Deliberate Human Threats',
     desc: 'Mitigating physical violence, insurgencies, resource conflicts, asset theft, and cyber disruptions.',
     longDesc: 'Neutralizing physical, environmental, and digital threats to African food systems—including insurgencies, banditry, resource conflicts, asset theft, maritime piracy, pollution, and cyber disruption to guarantee uninterrupted agricultural production and trade.',
     imageUrl: '/images/challenges/insecurity.webp',
@@ -464,7 +504,8 @@ export const foodChallenges: ChallengeData[] = [
     subcategories: [
       // GROUP 1: Violent Extremism & Insurgency
       {
-        id: 'jihadism-insurgency',
+        id: 'jihadism',
+        shortName: 'Jihadism',
         title: 'Jihadism (Jihadist Insurgency, Territorial Control & Extremist Governance)',
         groupName: 'Violent Extremism & Insurgency',
         desc: 'Countering extremist territorial control, agrarian taxation extortion, forced conscription, and insurgent blockades of fertile river basins.',
@@ -473,7 +514,8 @@ export const foodChallenges: ChallengeData[] = [
         sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
       },
       {
-        id: 'terrorism-attacks',
+        id: 'terrorism',
+        shortName: 'Terrorism',
         title: 'Terrorism (Terrorist Attacks & Violent Extremism)',
         groupName: 'Violent Extremism & Insurgency',
         desc: 'Protecting open-air commodity markets, grain silos, and transport hubs against explosive attacks, suicide bombings, and asymmetrical violence.',
@@ -483,8 +525,9 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 2: State Instability & Warfare
       {
-        id: 'war-armed-conflict',
-        title: 'War (Interstate War, Civil War, Rebellion & Separatist Conflict)',
+        id: 'war',
+        shortName: 'War',
+        title: 'War (Interstate War, Civil War, Rebellion & Violent Separatist Conflict)',
         groupName: 'State Instability & Warfare',
         desc: 'Mitigating supply chain breakdown, civilian displacement, and scorched-earth devastation caused by civil war and violent separatist conflicts.',
         imageUrl: '/images/subcategories/secessionist-agitations.webp',
@@ -493,7 +536,8 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 3: Organized Crime & Banditry
       {
-        id: 'banditry-organised-crime',
+        id: 'banditry-and-organised-crime',
+        shortName: 'Banditry & Organised Crime',
         title: 'Banditry & Organised Crime (Armed Raids, Trafficking & Smuggling)',
         groupName: 'Organized Crime & Banditry',
         desc: 'Combating rural armed militias, transnational smuggling routes, arms trafficking, and violent raids on isolated farming settlements.',
@@ -504,6 +548,7 @@ export const foodChallenges: ChallengeData[] = [
       // GROUP 4: Agro-Ecological Resource Clashes
       {
         id: 'resource-conflicts',
+        shortName: 'Resource Conflicts',
         title: 'Resource Conflicts (Farmer-Herder Land, Water & Grazing Disputes)',
         groupName: 'Agro-Ecological Resource Clashes',
         desc: 'Resolving violent clashes over transhumance stock routes, dry-season grazing reserves, river basin water rights, and arable crop encroachment.',
@@ -513,7 +558,8 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 5: Criminal Coercion & Extortion
       {
-        id: 'kidnapping-extortion',
+        id: 'kidnapping-and-extortion',
+        shortName: 'Kidnapping & Extortion',
         title: 'Kidnapping & Extortion (Abduction, Ransom & Protection Payments)',
         groupName: 'Criminal Coercion & Extortion',
         desc: 'Neutralizing commercial kidnapping rings targeting commercial farm managers, haulage drivers, and illegal protection levies demanded at harvest.',
@@ -523,8 +569,9 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 6: Asset Protection & Rural Theft
       {
-        id: 'theft-asset-looting',
-        title: 'Theft (Cattle Rustling & Theft of Crops, Equipment & Assets)',
+        id: 'theft',
+        shortName: 'Theft',
+        title: 'Theft (Cattle Rustling & Theft of Livestock, Crops & Assets)',
         groupName: 'Asset Protection & Rural Theft',
         desc: 'Stopping organized cattle rustling raids, night-time farm produce harvesting theft, solar pump vandalization, and in-transit cargo hijacking.',
         imageUrl: '/images/subcategories/cattle-rustling.webp',
@@ -533,7 +580,8 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 7: Maritime & Coastal Security
       {
-        id: 'piracy-maritime-threats',
+        id: 'piracy',
+        shortName: 'Piracy',
         title: 'Piracy (Piracy, Armed Robbery at Sea & Fishing Threats)',
         groupName: 'Maritime & Coastal Security',
         desc: 'Safeguarding commercial trawlers, artisanal canoe fleets, and coastal food trade vessels from armed pirates in territorial and international waters.',
@@ -543,7 +591,8 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 8: Environmental Destruction & Pollution
       {
-        id: 'pipeline-vandalism-pollution',
+        id: 'oil-pipeline-vandalism',
+        shortName: 'Oil Pipeline Vandalism',
         title: 'Oil Pipeline Vandalism (Oil Spills, Farmland Pollution & Contamination)',
         groupName: 'Environmental Destruction & Pollution',
         desc: 'Remediation and legal defense against crude oil spills, illegal bunkering fires, poisoned aquaculture ponds, and heavy metal agricultural pollution.',
@@ -553,8 +602,9 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 9: Cyber & Supply Chain Defense
       {
-        id: 'cyberattacks-digital-threats',
-        title: 'Cyberattacks (Cyber Insecurity, Ransomware, Digital Fraud & Disruption)',
+        id: 'cyberattacks',
+        shortName: 'Cyberattacks',
+        title: 'Cyberattacks (Cyber Insecurity, Ransomware, Fraud & Disruption)',
         groupName: 'Cyber & Supply Chain Defense',
         desc: 'Securing digital grain warehouse receipts, cold storage IoT telemetry, commodity trading platforms, and agricultural fintech settlement rails.',
         imageUrl: '/images/subcategories/ritual-killings.webp',
@@ -565,7 +615,7 @@ export const foodChallenges: ChallengeData[] = [
   },
   {
     id: 'harvest-to-market',
-    title: '6. Post-Harvest Systems & Market Access',
+    title: 'Post-Harvest Systems & Market Access',
     desc: 'Halting food loss through modern storage, cold chains, processing, packaging, and structured off-take markets.',
     longDesc: 'Transforming African farmgate produce into shelf-stable, high-value commercial goods through modern harvesting, hermetic storage, cold-chain refrigeration, industrial processing, quality packaging, food safety certification, streamlined aggregation, and structured off-take markets.',
     imageUrl: '/images/challenges/loss.webp',
@@ -573,8 +623,9 @@ export const foodChallenges: ChallengeData[] = [
     subcategories: [
       // GROUP 1: First-Mile Harvest Operations
       {
-        id: 'harvesting-handling',
-        title: 'Harvesting & Handling (Timing, Sorting & First-Mile)',
+        id: 'harvesting-and-handling',
+        shortName: 'Harvesting & Handling',
+        title: 'Harvesting & Handling (Harvest Timing, Collection, Sorting & First-Mile Handling)',
         groupName: 'First-Mile Harvest Operations',
         desc: 'Optimal harvest maturity indexing, gentle field collection, automated optical sorting, field de-stoning, and standardized plastic crate handling.',
         imageUrl: '/images/subcategories/tomato.webp',
@@ -583,8 +634,9 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 2: Preservation & Shelf-Life Extension
       {
-        id: 'preservation-methods',
-        title: 'Preservation (Drying, Curing, Smoking & Fermentation)',
+        id: 'preservation',
+        shortName: 'Preservation',
+        title: 'Preservation (Drying, Curing, Smoking, Fermentation & Shelf-Life)',
         groupName: 'Preservation & Shelf-Life Extension',
         desc: 'Commercial solar hybrid dryers, fish smoking kilns, root crop curing chambers, and controlled microbial fermentation technologies.',
         imageUrl: '/images/subcategories/pepper.webp',
@@ -593,8 +645,9 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 3: Dry Storage & Inventory Systems
       {
-        id: 'storage-warehousing',
-        title: 'Storage (Warehouses, Silos & Hermetic Systems)',
+        id: 'storage',
+        shortName: 'Storage',
+        title: 'Storage (Warehouses, Silos, Crates & Hermetic Storage)',
         groupName: 'Dry Storage & Inventory Systems',
         desc: 'Hermetic Purdue Improved Crop Storage (PICS) bags, galvanized grain silos, pest-proof warehouses, and collateral management systems.',
         imageUrl: '/images/subcategories/maize.webp',
@@ -603,8 +656,9 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 4: Cold-Chain & Fresh Preservation
       {
-        id: 'cold-chain-refrigeration',
-        title: 'Cold Chain (Refrigeration & Temperature Control)',
+        id: 'cold-chain',
+        shortName: 'Cold Chain',
+        title: 'Cold Chain (Refrigeration, Freezing & Chilled Logistics)',
         groupName: 'Cold-Chain & Fresh Preservation',
         desc: 'Evaporative cooling chambers, off-grid solar cold hubs, commercial blast freezers, and temperature-monitored refrigerated transport fleets.',
         imageUrl: '/images/subcategories/potato.webp',
@@ -613,8 +667,9 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 5: Industrial Value Addition
       {
-        id: 'processing-value-addition',
-        title: 'Processing (Primary Transformation & Manufacturing)',
+        id: 'processing',
+        shortName: 'Processing',
+        title: 'Processing (Primary Processing, Manufacturing & Value Addition)',
         groupName: 'Industrial Value Addition',
         desc: 'Grain milling, cassava starch/flour processing, fruit juicing/pulping lines, oilseed pressing, and culinary food manufacturing plants.',
         imageUrl: '/images/subcategories/cassava.webp',
@@ -623,8 +678,9 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 6: Packaging & Presentation
       {
-        id: 'packaging-presentation',
-        title: 'Packaging (Materials, Labelling & Protection)',
+        id: 'packaging',
+        shortName: 'Packaging',
+        title: 'Packaging (Packaging Materials, Protection, Sizing & Labelling)',
         groupName: 'Packaging & Presentation',
         desc: 'Multi-layer barrier pouches, vacuum packaging, corrugated produce cartons, automated sealing lines, and retail branding/labeling.',
         imageUrl: '/images/subcategories/rice.webp',
@@ -633,8 +689,9 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 7: Quality Assurance & Certification
       {
-        id: 'food-safety-standards',
-        title: 'Food Safety & Standards (QA, Testing & Traceability)',
+        id: 'food-safety-and-standards',
+        shortName: 'Food Safety & Standards',
+        title: 'Food Safety & Standards (Quality Assurance, Testing & Traceability)',
         groupName: 'Quality Assurance & Certification',
         desc: 'Rapid mycotoxin/aflatoxin test strips, pesticide residue screening, NAFDAC/SON certification, and GS1 digital QR code traceability.',
         imageUrl: '/images/subcategories/beans.webp',
@@ -643,8 +700,9 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 8: Agri-Logistics & Freight
       {
-        id: 'aggregation-logistics',
-        title: 'Aggregation & Logistics (Bulking & Last-Mile Delivery)',
+        id: 'aggregation-and-logistics',
+        shortName: 'Aggregation & Logistics',
+        title: 'Aggregation & Logistics (Collection Centres, Bulking & Last-Mile Delivery)',
         groupName: 'Agri-Logistics & Freight',
         desc: 'Rural aggregation hubs, freight consolidation networks, return-trip backhaul matching, and temperature-monitored urban last-mile distribution.',
         imageUrl: '/images/subcategories/yam.webp',
@@ -653,8 +711,9 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 9: Market Access & Off-Take
       {
-        id: 'market-access-trade',
-        title: 'Market Access (Buyers, Price Discovery & Contracts)',
+        id: 'market-access',
+        shortName: 'Market Access',
+        title: 'Market Access (Market Infrastructure, Buyers, Price Discovery & Contracts)',
         groupName: 'Market Access & Off-Take',
         desc: 'Real-time commodity spot price discovery, formal off-take purchase contracts, supermarket supply programs, and cross-border AfCFTA trade.',
         imageUrl: '/images/subcategories/sorghum.webp',
@@ -663,8 +722,9 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 10: Circular Food Systems & Recovery
       {
-        id: 'food-recovery-circular',
-        title: 'Food Recovery (Surplus Redistribution & Recycling)',
+        id: 'food-recovery',
+        shortName: 'Food Recovery',
+        title: 'Food Recovery (Surplus Redistribution, By-Product Use & Recycling)',
         groupName: 'Circular Food Systems & Recovery',
         desc: 'Surplus crop redistribution to food rescue networks, spent grain livestock feed valorization, fruit peel bio-extracts, and insect protein upcycling.',
         imageUrl: '/images/subcategories/mango.webp',
@@ -675,7 +735,7 @@ export const foodChallenges: ChallengeData[] = [
   },
   {
     id: 'people',
-    title: '7. People & Human Capital',
+    title: 'People & Human Capital',
     desc: 'Empowering the workforce, talent, leadership, and enterprises powering the African food system.',
     longDesc: 'Powering the African food economy by nurturing human potential—through academy training, continuous upskilling, apprenticeships, talent recruitment, executive leadership, ethical management, enterprise succession, family renewal, and decent work standards.',
     imageUrl: '/images/challenges/protein.webp',
@@ -683,8 +743,9 @@ export const foodChallenges: ChallengeData[] = [
     subcategories: [
       // GROUP 1: Education & Entry Pathways
       {
-        id: 'careers-academy',
-        title: 'Careers (FoodNerve Academy & Entry Pathways)',
+        id: 'careers',
+        shortName: 'Careers',
+        title: 'Careers (Career Discovery, FoodNerve Academy & Entry Pathways)',
         groupName: 'Education & Entry Pathways',
         desc: 'Foundational courses, curriculum certification, career orientation, and structured entry pathways into modern agriculture.',
         imageUrl: '/images/subcategories/chicken-and-eggs.webp',
@@ -693,8 +754,9 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 2: Skills & Emerging Capabilities
       {
-        id: 'future-skills-upskilling',
-        title: 'Future Skills (Continuous Upskilling & Adaptation)',
+        id: 'future-skills',
+        shortName: 'Future Skills',
+        title: 'Future Skills (Continuous Upskilling, Reskilling & Emerging Capabilities)',
         groupName: 'Skills & Emerging Capabilities',
         desc: 'Reskilling and upskilling programs in precision agronomy, drone operations, post-harvest engineering, and climate adaptation.',
         imageUrl: '/images/subcategories/beef.webp',
@@ -704,7 +766,8 @@ export const foodChallenges: ChallengeData[] = [
       // GROUP 3: Experiential & Work-Based Learning
       {
         id: 'gaining-experience',
-        title: 'Gaining Experience (Internships & Mentorship)',
+        shortName: 'Gaining Experience',
+        title: 'Gaining Experience (Internships, Apprenticeships, Fellowships & Mentorship)',
         groupName: 'Experiential & Work-Based Learning',
         desc: 'Hands-on farm apprenticeships, academic internships, enterprise fellowships, and 1-on-1 industry mentorship programs.',
         imageUrl: '/images/subcategories/lamb-and-ram.webp',
@@ -713,8 +776,9 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 4: Job Placement & Careers
       {
-        id: 'getting-hired-jobs',
-        title: 'Getting Hired (Jobs, Placements & Pathways)',
+        id: 'getting-hired',
+        shortName: 'Getting Hired',
+        title: 'Getting Hired (Jobs, Applications, Assessments & Placements)',
         groupName: 'Job Placement & Careers',
         desc: 'Verified candidate job applications, practical skills assessments, interview preparation, and direct employment placements.',
         imageUrl: '/images/subcategories/pork.webp',
@@ -723,8 +787,9 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 5: Employer Recruitment & Sourcing
       {
-        id: 'hiring-talent-workforce',
-        title: 'Hiring Talent (Recruitment & Workforce Planning)',
+        id: 'hiring-talent',
+        shortName: 'Hiring Talent',
+        title: 'Hiring Talent (Recruitment, Candidate Search & Workforce Planning)',
         groupName: 'Employer Recruitment & Sourcing',
         desc: 'Employer job broadcasting, AI-driven candidate matching, seasonal workforce planning, and labor regulation compliance.',
         imageUrl: '/images/subcategories/dairy.webp',
@@ -733,8 +798,9 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 6: Executive Search & Governance
       {
-        id: 'hiring-leaders-executives',
-        title: 'Hiring Leaders (Executive Search & Board Appointments)',
+        id: 'hiring-leaders',
+        shortName: 'Hiring Leaders',
+        title: 'Hiring Leaders (Executive Search, C-Suite Recruitment & Board Appointments)',
         groupName: 'Executive Search & Governance',
         desc: 'C-suite agricultural headhunting, farm general manager searches, technical director vetting, and board appointments.',
         imageUrl: '/images/subcategories/fish.webp',
@@ -743,8 +809,9 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 7: People Management & Leadership
       {
-        id: 'growing-managing-people',
-        title: 'Growing & Managing People (Culture, Coaching & Retention)',
+        id: 'growing-and-managing-people',
+        shortName: 'Growing & Managing People',
+        title: 'Growing & Managing People (Corporate Culture, Coaching & Retention)',
         groupName: 'People Management & Leadership',
         desc: 'Building high-performance workplace cultures, frontline manager coaching, career mobility paths, and talent retention.',
         imageUrl: '/images/subcategories/shellfish.webp',
@@ -753,8 +820,9 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 8: Enterprise Building & Succession
       {
-        id: 'building-enterprises-legacies',
-        title: 'Building Enterprises & Legacies (Entrepreneurship & Succession)',
+        id: 'building-enterprises-and-legacies',
+        shortName: 'Building Enterprises & Legacies',
+        title: 'Building Enterprises & Legacies (Entrepreneurship, Governance & Succession)',
         groupName: 'Enterprise Building & Succession',
         desc: 'Agri-entrepreneurship acceleration, family business governance frameworks, equity alliances, and multi-generational succession.',
         imageUrl: '/images/subcategories/cephalopods.webp',
@@ -763,8 +831,9 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 9: Family & Social Wellbeing
       {
-        id: 'love-family-renewal',
-        title: 'Love & Family (Belonging & Intergenerational Renewal)',
+        id: 'love-and-family',
+        shortName: 'Love & Family',
+        title: 'Love & Family (Relationships, Marriage & Intergenerational Renewal)',
         groupName: 'Family & Social Wellbeing',
         desc: 'Supporting rural family formation, work-life balance for agrarian households, social cohesion, and generational youth renewal.',
         imageUrl: '/images/subcategories/beans-and-lentils.webp',
@@ -773,8 +842,9 @@ export const foodChallenges: ChallengeData[] = [
       },
       // GROUP 10: Labor Standards & Worker Dignity
       {
-        id: 'decent-work-labor-rights',
-        title: 'Decent Work (Fair Wages, Safety & Labor Rights)',
+        id: 'decent-work',
+        shortName: 'Decent Work',
+        title: 'Decent Work (Salaries, Benefits, Safety & Worker Rights)',
         groupName: 'Labor Standards & Worker Dignity',
         desc: 'Fair compensation benchmarks, farm safety protocols (PPE), formal written contracts, and inclusive labor protections.',
         imageUrl: '/images/subcategories/nuts-and-seeds.webp',

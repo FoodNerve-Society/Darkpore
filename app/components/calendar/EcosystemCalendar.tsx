@@ -18,13 +18,16 @@ import CloseFullscreenIcon from '@mui/icons-material/CloseFullscreen';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
-import { getCalendarEvents } from '@/app/actions/calendar';
+import Link from 'next/link';
+import { getCalendarEvents } from '@/lib/actions/calendar';
 import { getMatrixForWeekClient, getCommodityBiddingLeaderboard, placeCommodityBid } from '@/lib/actions/matrix';
 import { CalendarEvent } from '@prisma/client';
 import AddEventSidebar from './AddEventSidebar';
 import CommodityWatermark from './CommodityWatermark';
 import { useSociety } from '@/context/SocietyContext';
 import { commoditiesList, getCommodityMeta } from '@/lib/cms/commodities';
+import { foodChallenges } from '@/lib/cms/food/challenges';
+import { CATEGORY_MAP } from '@/lib/config/editorialMatrix';
 
 export type ViewMode = 'month' | 'week' | 'day';
 
@@ -1107,8 +1110,9 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
 
               const isToday = d.toDateString() === new Date().toDateString();
               const dayEvents = getEventsForDate(d);
-              const CATEGORY_DISPLAY: Record<number, string> = { 1: 'LAND', 2: 'CAPITAL', 3: 'INPUTS', 4: 'ENERGY', 5: 'INSECURITY', 6: 'LOSS', 0: 'PROTEIN' };
-              const matrixCategory = CATEGORY_DISPLAY[d.getDay()];
+              const categorySlug = CATEGORY_MAP[d.getDay()] || 'capital';
+              const categoryChallenge = foodChallenges.find(c => c.id === categorySlug);
+              const matrixCategory = categoryChallenge?.title || categorySlug.toUpperCase();
               
               const showExpanded = isSelected && (isAccordionExpanded || viewMode === 'day');
               
@@ -1329,8 +1333,60 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
                       transition={{ duration: 0.3, ease: 'easeInOut' }}
                       sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pt: 0.5, borderTop: '1px dashed rgba(0,0,0,0.08)', overflow: 'hidden' }}
                     >
+                      {/* CMS Subcategories & Daily Focus Section */}
+                      {categoryChallenge && (
+                        <Box sx={{ 
+                          p: 1.75, 
+                          bgcolor: alpha(primaryColor, 0.04), 
+                          borderRadius: 3, 
+                          border: `1px solid ${alpha(primaryColor, 0.12)}`,
+                          display: 'flex', flexDirection: 'column', gap: 1
+                        }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                              <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: primaryColor }} />
+                              <Typography variant="caption" sx={{ fontWeight: 900, color: '#0f172a', letterSpacing: '0.02em', textTransform: 'uppercase', fontSize: '0.7rem' }}>
+                                10 Daily Focus Tracks
+                              </Typography>
+                            </Box>
+                            <Link 
+                              href={`/${categoryChallenge.id}`} 
+                              onClick={(e) => e.stopPropagation()} 
+                              style={{ textDecoration: 'none' }}
+                            >
+                              <Typography variant="caption" sx={{ fontWeight: 800, color: primaryColor, display: 'inline-flex', alignItems: 'center', gap: 0.25, fontSize: '0.7rem', '&:hover': { textDecoration: 'underline' } }}>
+                                Hub <ArrowForwardIcon sx={{ fontSize: 11 }} />
+                              </Typography>
+                            </Link>
+                          </Box>
+                          
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.6 }}>
+                            {categoryChallenge.subcategories.map(subcat => (
+                              <Link 
+                                key={subcat.id} 
+                                href={`/${categoryChallenge.id}/${subcat.id}`} 
+                                onClick={(e) => e.stopPropagation()} 
+                                style={{ textDecoration: 'none' }}
+                              >
+                                <Box sx={{ 
+                                  px: 1.1, py: 0.35, borderRadius: 10,
+                                  bgcolor: 'white', 
+                                  border: '1px solid rgba(0,0,0,0.08)',
+                                  fontSize: '0.7rem', fontWeight: 700, color: '#334155',
+                                  transition: 'all 0.15s ease',
+                                  boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                                  '&:hover': { bgcolor: alpha(primaryColor, 0.08), borderColor: primaryColor, color: primaryColor, transform: 'translateY(-1px)' }
+                                }}>
+                                  {subcat.shortName || subcat.title}
+                                </Box>
+                              </Link>
+                            ))}
+                          </Box>
+                        </Box>
+                      )}
+
                       {dayEvents.length === 0 ? (
-                        <Typography variant="body2" sx={{ color: 'text.secondary', fontStyle: 'italic', pt: 1, pl: 1 }}>No events scheduled for this day.</Typography>
+                        <Typography variant="body2" sx={{ color: 'text.secondary', fontStyle: 'italic', pt: 0.5, pl: 1, fontSize: '0.8rem' }}>No events scheduled for this day.</Typography>
                       ) : (
                         dayEvents.slice(0, 5).map(event => {
                           const dotColor = getIntentColor(event.dateType);
