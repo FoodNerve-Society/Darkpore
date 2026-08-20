@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { headers } from 'next/headers';
 import { getTenantConfig } from '@/lib/cms';
 
-export default async function PeopleDirectoryPage() {
+export default async function TeamDirectoryPage() {
   const headersList = await headers();
   const rawTenantId = headersList.get('x-tenant-id') || 'food';
   const tenantId = rawTenantId.includes('energy') ? 'energy' : 'food';
@@ -18,7 +18,7 @@ export default async function PeopleDirectoryPage() {
           LEADERSHIP & EXPERTS
         </Typography>
         <Typography variant="h2" sx={{ fontWeight: 900, mb: 3 }}>
-          The People Behind {tenant.name}
+          The Team Behind {tenant.name}
         </Typography>
         <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.6)', mb: 8, maxWidth: 600 }}>
           Meet the operators, engineers, and strategists deploying capital and infrastructure across the ecosystem.
@@ -27,7 +27,7 @@ export default async function PeopleDirectoryPage() {
         <Grid container spacing={4}>
           {people.map((person, idx) => (
             <Grid size={{ xs: 12, sm: 6, md: 4 }} key={idx}>
-              <Link href={`/people/${person.slug}`} passHref style={{ textDecoration: 'none' }}>
+              <Link href={`/team/${person.slug}`} passHref style={{ textDecoration: 'none' }}>
                 <Card sx={{ 
                   bgcolor: 'rgba(255,255,255,0.03)', 
                   border: '1px solid rgba(255,255,255,0.1)', 

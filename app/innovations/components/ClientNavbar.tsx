@@ -48,7 +48,7 @@ export default function ClientNavbar({ tenantName, orgDomain }: { tenantName: st
 
   // Extract the current challenge or top route from the URL
   const pathSegments = pathname.split('/').filter(Boolean);
-  const knownTopRoutes = ['challenges', 'projects', 'learn', 'categories', 'careers', 'people'];
+  const knownTopRoutes = ['challenges', 'projects', 'learn', 'categories', 'careers', 'team'];
   const currentChallenge = pathSegments.length > 0 && !knownTopRoutes.includes(pathSegments[0])
     ? pathSegments[0]
     : null;

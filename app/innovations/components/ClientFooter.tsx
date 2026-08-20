@@ -40,7 +40,7 @@ export default function ClientFooter({ tenantName, tenantDomain, orgDomain, soci
     { label: 'Challenges', path: '/challenges' },
     { label: 'Projects', path: '/projects' },
     { label: 'Insights', path: '/learn' },
-    { label: 'Our People', path: '/people' },
+    { label: 'Our Team', path: '/team' },
   ];
 
   return (
