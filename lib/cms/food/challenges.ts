@@ -3,119 +3,121 @@ import { ChallengeData } from '../types';
 export const foodChallenges: ChallengeData[] = [
   {
     id: 'land',
-    title: '1. Land',
-    desc: 'Access, mechanization, and soil regeneration pathways.',
-    longDesc: 'Land is the fundamental challenge in African agriculture. We are addressing the fragmentation of arable land through diverse pathways including sole ownership, shared LLCs, long-term ground leases, and short-term crop-share agreements to unlock millions of hectares.',
+    title: '2. Obstacles to Farm / Land Access & Tenure',
+    desc: 'Unlocking agricultural land access, tenure security, title registration, and dispute resolution.',
+    longDesc: 'Unlocking agricultural land access, tenure security, title registration, and dispute resolution across customary, public, and private property frameworks in Africa to secure long-term productive farming assets.',
     imageUrl: '/images/challenges/land.webp',
     stats: { activeSolutions: 12, capitalDeployed: '$4.2M', communitySize: '2,400+' },
     subcategories: [
-      // GROUP 1: Sole Farmland Ownership
+      // GROUP 1: Property Acquisition & Freehold
       {
-        id: 'third-party-mortgage',
-        title: 'Third-Party Mortgage',
-        groupName: 'Sole Farmland Ownership',
-        desc: 'Traditional lending and commercial mortgage pathways to accelerate sole farmland ownership.',
+        id: 'owning-land',
+        title: 'Owning Land (Land & Property Ownership)',
+        groupName: 'Property Acquisition & Freehold',
+        desc: 'Fee-simple freehold land acquisition, real estate transfer rights, and legal documentation securing permanent agricultural property ownership.',
         imageUrl: '/images/subcategories/third-party-mortgage.webp',
         updates: [
-          { id: 'mortgage-upd-1', title: 'NAMT Taskforce Meeting: Standardizing Interest Rates', section: 'community', date: new Date().toISOString(), importance: 'high', linkText: 'View Agenda', summary: 'The National Agrarian Mortgage Taskforce is convening this week to negotiate subsidized rates with top-tier commercial banks.' },
-          { id: 'mortgage-upd-2', title: 'AgriFi Launches Zero-Down Mortgage Product', section: 'innovations', date: new Date().toISOString(), importance: 'normal', linkText: 'Read Announcement', summary: 'AgriFi just secured $5M to roll out a zero-down mortgage product specifically for youth farmers backed by off-taker guarantees.' },
-          { id: 'mortgage-upd-3', title: 'Whitepaper: Risk Assessment in Agrarian Mortgages', section: 'library', date: new Date().toISOString(), importance: 'normal', linkText: 'Download PDF', summary: 'A comprehensive 40-page report outlining the new AI-driven underwriting standards for unbanked rural farmers.' },
-          { id: 'mortgage-upd-4', title: 'Bankers & Farmers Mixer Event - Lagos', section: 'activities', date: new Date().toISOString(), importance: 'high', linkText: 'RSVP Now', summary: 'Join 50+ commercial lenders and 200+ cooperative leaders for a direct networking and deal-making session.' },
-          { id: 'mortgage-upd-5', title: 'Live AMA: Securing Your First Farmland Mortgage', section: 'livestreams', date: new Date().toISOString(), importance: 'high', linkText: 'Set Reminder', summary: 'Expert credit officers break down exactly what they look for in a farm business plan before approving a mortgage.' },
-          { id: 'mortgage-upd-6', title: 'Credit Risk Analyst needed at AgriFi', section: 'jobs', date: new Date().toISOString(), importance: 'normal', linkText: 'Apply Here', summary: 'AgriFi is hiring a senior credit analyst with deep experience in agricultural value chains.' },
+          { id: 'mortgage-upd-1', title: 'Taskforce Meeting: Land Title Acquisition Reforms', section: 'community', date: new Date().toISOString(), importance: 'high', linkText: 'View Agenda', summary: 'Convening agricultural legal experts and state land registries to streamline private land acquisition processes.' },
+          { id: 'mortgage-upd-2', title: 'TitleDeed.ng Launches Digital Farmland Verification', section: 'innovations', date: new Date().toISOString(), importance: 'normal', linkText: 'Read Announcement', summary: 'AI-assisted satellite surveying and deed verification now live for private agricultural land buyers.' },
         ],
         learningMaterials: [
-          { slug: 'understanding-amortization', title: 'Understanding Amortization Schedules', type: 'article', previewText: 'Learn how your mortgage principal and interest are structured over a 15-year term.', isPremium: false, dateAdded: new Date().toISOString(), thumbnailUrl: '' }
+          { slug: 'understanding-land-ownership', title: 'Navigating Farmland Ownership & Freeholds', type: 'article', previewText: 'Key legal steps and due diligence required when purchasing agricultural land in Nigeria.', isPremium: false, dateAdded: new Date().toISOString(), thumbnailUrl: '' }
         ],
         sections: { 
-          innovations: {title:'Innovations',content:'Tracking emerging fintech solutions and alternative credit scoring models designed to bypass traditional collateral requirements.'}, 
-          library: {title:'Library',content:'Open-source underwriting templates, risk assessment models, and historical default rate data.'}, 
-          community: {title:'Community',content:'Join the National Agrarian Mortgage Taskforce (NAMT) to lobby for subsidized interest rates and standardized terms.'}, 
-          activities: {title:'Activities',content:'Local bootcamps on credit readiness and financial literacy for cooperative leaders.'}, 
-          livestreams: {title:'Livestreams',content:'Weekly breakdowns of successful mortgage applications and interviews with lenders.'}, 
-          jobs: {title:'Jobs',content:'Open roles at agricultural banks, fintech startups, and credit bureaus.'} 
+          innovations: {title:'Innovations',content:'Tracking emerging prop-tech and legal-tech solutions streamlining private agricultural land acquisitions.'}, 
+          library: {title:'Library',content:'Standard sale agreements, deed transfer templates, and legal due diligence checklists.'}, 
+          community: {title:'Community',content:'Join agrarian legal taskforces to advocate for lower stamp duties and standardized land transfer processes.'}, 
+          activities: {title:'Activities',content:'Workshops on freehold title verification and navigating land registry bureaucracies.'}, 
+          livestreams: {title:'Livestreams',content:'Interactive sessions with agricultural property attorneys and seasoned landowners.'}, 
+          jobs: {title:'Jobs',content:'Open roles for conveyancing lawyers, cadastral surveyors, and land acquisition specialists.'} 
         }
       },
+      // GROUP 2: Tenancy & Commercial Leasing
       {
-        id: 'installment-sale',
-        title: 'Installment-Sale',
-        groupName: 'Sole Farmland Ownership',
-        desc: 'By current owners pathway to sole farmland ownership.',
-        imageUrl: '/images/subcategories/installment-sale.webp',
-        updates: [], learningMaterials: [],
-        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
-      },
-      {
-        id: 'crowdfunding',
-        title: 'Crowdfunding',
-        groupName: 'Sole Farmland Ownership',
-        desc: 'Crowdfunding pathway to sole farmland ownership.',
-        imageUrl: '/images/subcategories/crowdfunding.webp',
-        updates: [], learningMaterials: [],
-        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
-      },
-      {
-        id: 'cdfi-lending',
-        title: 'Community Based Lending',
-        groupName: 'Sole Farmland Ownership',
-        desc: 'CDFI pathway to sole farmland ownership.',
-        imageUrl: '/images/subcategories/cdfi-lending.webp',
-        updates: [], learningMaterials: [],
-        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
-      },
-      // GROUP 2: Shared Farmland Ownership
-      {
-        id: 'llc-shared-ownership',
-        title: 'LLC Pathway',
-        groupName: 'Shared Farmland Ownership',
-        desc: 'LLC pathway to shared farmland ownership.',
-        imageUrl: '/images/subcategories/llc-shared-ownership.webp',
-        updates: [], learningMaterials: [],
-        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
-      },
-      {
-        id: 'cooperative-ownership',
-        title: 'Cooperative Pathway',
-        groupName: 'Shared Farmland Ownership',
-        desc: 'Cooperative pathway to shared farmland ownership.',
-        imageUrl: '/images/subcategories/cooperative-ownership.webp',
-        updates: [], learningMaterials: [],
-        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
-      },
-      // GROUP 3: Long Term Farmland Use
-      {
-        id: 'ground-lease',
-        title: 'Ground-Lease (40-99 Yrs)',
-        groupName: 'Long Term Farmland Use',
-        desc: 'Ground-lease pathway to long term farmland use.',
+        id: 'renting-spaces',
+        title: 'Renting Spaces (Leasing & Rental)',
+        groupName: 'Tenancy & Commercial Leasing',
+        desc: 'Short, medium, and long-term agricultural leases, greenhouse facility rentals, and commercial processing ground-rent agreements.',
         imageUrl: '/images/subcategories/ground-lease.webp',
         updates: [], learningMaterials: [],
         sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
       },
+      // GROUP 3: Public & Institutional Concessions
       {
-        id: 'conservation-easement',
-        title: 'Conservation Easement',
-        groupName: 'Long Term Farmland Use',
-        desc: 'Agricultural conservation easement pathway to long term use.',
+        id: 'public-land-allocation',
+        title: 'Getting Public Land (Public Land Allocation & Concessions)',
+        groupName: 'Public & Institutional Concessions',
+        desc: 'Government agricultural land allocations, state farm reserves, special agro-processing zones (SAPZ), and long-term sovereign concessions.',
         imageUrl: '/images/subcategories/conservation-easement.webp',
         updates: [], learningMaterials: [],
         sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
       },
-      // GROUP 4: Short / Medium Term Farmland Use
+      // GROUP 4: Customary & Indigenous Rights
       {
-        id: 'cash-lease',
-        title: 'Cash Lease (Short Term)',
-        groupName: 'Short / Medium Term Farmland Use',
-        desc: 'Cash lease pathway to short term farmland use.',
+        id: 'ancestral-customary-lands',
+        title: 'Ancestral Lands (Customary, Communal & Indigenous Access)',
+        groupName: 'Customary & Indigenous Rights',
+        desc: 'Navigating customary tenure, indigenous stool land rights, traditional authority protocols, community trust frameworks, and family land inheritance.',
+        imageUrl: '/images/subcategories/cdfi-lending.webp',
+        updates: [], learningMaterials: [],
+        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
+      },
+      // GROUP 5: Collaborative & Shared Facilities
+      {
+        id: 'sharing-land-premises',
+        title: 'Sharing Land (Shared Land & Premises)',
+        groupName: 'Collaborative & Shared Facilities',
+        desc: 'Collaborative farming syndicates, shared aggregation yards, co-located processing hubs, and fractional cooperative land-sharing schemes.',
+        imageUrl: '/images/subcategories/llc-shared-ownership.webp',
+        updates: [], learningMaterials: [],
+        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
+      },
+      // GROUP 6: Financing & Affordability
+      {
+        id: 'affording-land',
+        title: 'Affording Land (Land & Premises Affordability)',
+        groupName: 'Financing & Affordability',
+        desc: 'Overcoming speculative real estate pricing, rural land inflation, and financing barriers through subsidized purchase schemes and blended micro-leases.',
+        imageUrl: '/images/subcategories/crowdfunding.webp',
+        updates: [], learningMaterials: [],
+        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
+      },
+      // GROUP 7: Titling & Cadastral Perfection
+      {
+        id: 'registering-land-titles',
+        title: 'Registering Land (Titles, Registration & Property Records)',
+        groupName: 'Titling & Cadastral Perfection',
+        desc: 'Certificate of Occupancy (C of O), cadastral surveying, deed registration, governor’s consent, and digital land title perfection.',
+        imageUrl: '/images/subcategories/installment-sale.webp',
+        updates: [], learningMaterials: [],
+        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
+      },
+      // GROUP 8: Planning & Environmental Zoning
+      {
+        id: 'zoning-permitted-use',
+        title: 'Zoning Land (Zoning & Permitted Use)',
+        groupName: 'Planning & Environmental Zoning',
+        desc: 'Agricultural master-plan zoning compliance, environmental impact assessments (EIA), greenbelt conservation, and peri-urban permitted use rights.',
         imageUrl: '/images/subcategories/cash-lease.webp',
         updates: [], learningMaterials: [],
         sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
       },
+      // GROUP 9: Statutory Permits & Compliance
       {
-        id: 'crop-share-lease',
-        title: 'Crop-Share Lease',
-        groupName: 'Short / Medium Term Farmland Use',
-        desc: 'Crop-share lease pathway to medium term farmland use.',
+        id: 'land-permits-approvals',
+        title: 'Land Permits (Construction, Conversion & Occupancy Approvals)',
+        groupName: 'Statutory Permits & Compliance',
+        desc: 'Securing farm infrastructure building permits, agro-processing facility conversion rights, water extraction licenses, and commercial occupancy approvals.',
+        imageUrl: '/images/subcategories/cooperative-ownership.webp',
+        updates: [], learningMaterials: [],
+        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
+      },
+      // GROUP 10: Legal Defense & Conflict Resolution
+      {
+        id: 'eviction-property-disputes',
+        title: 'Eviction & Disputes (Eviction, Displacement & Property Disputes)',
+        groupName: 'Legal Defense & Conflict Resolution',
+        desc: 'Legal defense against arbitrary evictions, boundary disputes, communal title clashes, and institutional alternative dispute resolution (ADR) mechanisms.',
         imageUrl: '/images/subcategories/crop-share-lease.webp',
         updates: [], learningMaterials: [],
         sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
@@ -124,103 +126,109 @@ export const foodChallenges: ChallengeData[] = [
   },
   {
     id: 'capital',
-    title: '2. Capital',
-    desc: 'Unlocking capital via subsidies, credit, and grants.',
-    longDesc: 'Bridging the agricultural financing gap by architecting structured capital pathways. We coordinate blended finance mechanisms including government subsidies, commercial credit, foreign direct investment, and impact grants to empower scalable farming operations.',
+    title: '1. Financial Exclusion & Access to Capital',
+    desc: 'Accelerating rural liquidity, credit access, and structured agricultural financing.',
+    longDesc: 'Bridging the agricultural financing divide by architecting structured capital pathways. We coordinate blended finance mechanisms including grassroots microcredit, statutory compliance optimization, cross-border remittances, instant digital payment rails, risk management, asset leasing, supplier financing, and institutional capital markets.',
     imageUrl: '/images/challenges/capital.webp',
-    stats: { activeSolutions: 10, capitalDeployed: '$12.8M', communitySize: '1,800+' },
+    stats: { activeSolutions: 18, capitalDeployed: '$14.2M', communitySize: '3,100+' },
     subcategories: [
-      // GROUP 1
+      // GROUP 1: Basic Liquidity & Savings
       {
-        id: 'savings',
-        title: 'Personal Savings',
-        groupName: 'Basic Liquidity & Transactions',
-        desc: 'Unlocking personal savings for rural operators.',
+        id: 'savings-asset-building',
+        title: 'Savings & Asset Building',
+        groupName: 'Basic Liquidity & Savings',
+        desc: 'Personal wealth accumulation, rural savings mobilization, and tangible asset-building strategies shielding farm households from seasonal shocks.',
         imageUrl: '/images/subcategories/savings.webp',
         updates: [], learningMaterials: [],
         sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
       },
+      // GROUP 2: Inclusive Debt & Microcredit
       {
-        id: 'remittances',
-        title: 'Remittances',
-        groupName: 'Basic Liquidity & Transactions',
-        desc: 'Remittance services and direct cash transfers.',
-        imageUrl: '/images/subcategories/remittances.webp',
-        updates: [], learningMaterials: [],
-        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
-      },
-      {
-        id: 'payments',
-        title: 'Payments',
-        groupName: 'Basic Liquidity & Transactions',
-        desc: 'Payment accounts and gateways for seamless transactions.',
-        imageUrl: '/images/subcategories/payments.webp',
-        updates: [], learningMaterials: [],
-        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
-      },
-      // GROUP 2
-      {
-        id: 'cooperatives',
-        title: 'Cooperatives (Esusu)',
-        groupName: 'Grassroots Borrowing',
-        desc: 'Rotating savings and credit clubs for local liquidity.',
+        id: 'credit-loans',
+        title: 'Credit & Loans',
+        groupName: 'Inclusive Debt & Microcredit',
+        desc: 'Inclusive credit channels spanning informal rotating clubs (Esusu, Ajo, Susu), member-owned vehicles (Chamas, VSLA, SACCOs, Cooperatives), microfinance banks, and instant digital microloans.',
         imageUrl: '/images/subcategories/cooperatives.webp',
         updates: [], learningMaterials: [],
         sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
       },
+      // GROUP 3: Policy, Levies & Compliance
       {
-        id: 'microcredit',
-        title: 'Micro-Credit',
-        groupName: 'Grassroots Borrowing',
-        desc: 'Accessible small loans for operational growth.',
-        imageUrl: '/images/subcategories/microcredit.webp',
-        updates: [], learningMaterials: [],
-        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
-      },
-      // GROUP 3
-      {
-        id: 'insurance',
-        title: 'Insurance',
-        groupName: 'Risk Mitigation & Future-Proofing',
-        desc: 'Crop protection and livelihood insurance.',
-        imageUrl: '/images/subcategories/insurance.webp',
-        updates: [], learningMaterials: [],
-        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
-      },
-      {
-        id: 'pensions',
-        title: 'Pensions',
-        groupName: 'Risk Mitigation & Future-Proofing',
-        desc: 'Safe third-pillar pension products for generational wealth.',
-        imageUrl: '/images/subcategories/pensions.webp',
-        updates: [], learningMaterials: [],
-        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
-      },
-      {
-        id: 'advisory',
-        title: 'Financial Advisory',
-        groupName: 'Risk Mitigation & Future-Proofing',
-        desc: 'ERP and financial literacy assistance.',
+        id: 'tax-levies-compliance',
+        title: 'Tax & Levies Compliance',
+        groupName: 'Policy, Levies & Compliance',
+        desc: 'Navigating multiple taxation, informal transit levies, market dues, traditional authority tolls, regulatory fees, compliance burdens, and statutory agricultural tax incentives.',
         imageUrl: '/images/subcategories/advisory.webp',
         updates: [], learningMaterials: [],
         sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
       },
-      // GROUP 4
+      // GROUP 4: Cross-Border & Direct Liquidity
       {
-        id: 'payg',
-        title: 'Installments (PAYG)',
-        groupName: 'B2B & Advanced Structuring',
-        desc: 'Installmental-pay and lease-to-own equipment models.',
+        id: 'remittances-transfers',
+        title: 'Remittances Services & Cash Transfers',
+        groupName: 'Cross-Border & Direct Liquidity',
+        desc: 'Cross-border remittance corridors, diaspora capital inflows, direct humanitarian cash transfers, and mobile cash rails fueling rural economic activity.',
+        imageUrl: '/images/subcategories/remittances.webp',
+        updates: [], learningMaterials: [],
+        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
+      },
+      // GROUP 5: Payment Rails & Gateways
+      {
+        id: 'payments-digital-gateways',
+        title: 'Payments & Instant Digital Gateways',
+        groupName: 'Payment Rails & Gateways',
+        desc: 'Real-time settlement rails, merchant payment gateways, USSD offline wallets, and interoperable digital POS infrastructure for agricultural commerce.',
+        imageUrl: '/images/subcategories/payments.webp',
+        updates: [], learningMaterials: [],
+        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
+      },
+      // GROUP 6: Risk Mitigation & Protection
+      {
+        id: 'insurance-risk-management',
+        title: 'Insurance & Risk Management',
+        groupName: 'Risk Mitigation & Protection',
+        desc: 'Comprehensive agricultural insurance, parametric weather-index coverage, crop yield guarantees, livestock indemnity, and enterprise risk management protocols.',
+        imageUrl: '/images/subcategories/insurance.webp',
+        updates: [], learningMaterials: [],
+        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
+      },
+      // GROUP 7: Long-Term Wealth Preservation
+      {
+        id: 'pension-products',
+        title: 'Safe Third-Pillar Pension Products',
+        groupName: 'Long-Term Wealth Preservation',
+        desc: 'Voluntary micro-pensions, informal sector retirement savings, and dedicated long-term wealth preservation schemes tailored for smallholders and agri-traders.',
+        imageUrl: '/images/subcategories/pensions.webp',
+        updates: [], learningMaterials: [],
+        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
+      },
+      // GROUP 8: Asset & Equipment Financing
+      {
+        id: 'lease-to-own-financing',
+        title: 'Lease-to-Own Asset Financing Models',
+        groupName: 'Asset & Equipment Financing',
+        desc: 'Flexible lease-to-own equipment contracts, pay-as-you-go (PAYG) asset financing, and milestone-based repayments for tractors, solar irrigation, and machinery.',
         imageUrl: '/images/subcategories/payg.webp',
         updates: [], learningMaterials: [],
         sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
       },
+      // GROUP 9: Value Chain & Trade Financing
       {
-        id: 'inventory',
-        title: 'Inventory Financing',
-        groupName: 'B2B & Advanced Structuring',
-        desc: 'Supply chain and warehousing liquidity.',
+        id: 'suppliers-offtakers-financing',
+        title: 'Suppliers & Off-Takers Financing',
+        groupName: 'Value Chain & Trade Financing',
+        desc: 'Buyer-led trade credit, supplier invoice discounting, off-taker working capital advances, and input financing tied to guaranteed purchase contracts.',
         imageUrl: '/images/subcategories/inventory.webp',
+        updates: [], learningMaterials: [],
+        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
+      },
+      // GROUP 10: Institutional & Equity Capital
+      {
+        id: 'capital-markets-investment',
+        title: 'Capital Markets & Investment Funds',
+        groupName: 'Institutional & Equity Capital',
+        desc: 'Institutional capital mobilization through public equity, corporate bonds, private equity, private debt funds, venture capital, and commodity-linked financial instruments.',
+        imageUrl: '/images/subcategories/advisory.webp',
         updates: [], learningMaterials: [],
         sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
       }
@@ -228,102 +236,103 @@ export const foodChallenges: ChallengeData[] = [
   },
   {
     id: 'inputs',
-    title: '3. Inputs',
-    desc: 'Optimizing seeds, fertilizers, and mechanized power.',
-    longDesc: 'Overcoming reduced yields by streamlining access to critical agro-inputs. We focus on drought-resistant seed breeding, advanced crop protection, animal feed optimization, and deploying mechanized farm equipment to multiply baseline productivity.',
+    title: '3. Reduced Yields from Under-Used Agro Inputs & Feed',
+    desc: 'Closing yield gaps through certified seeds, soil-specific fertilizers, crop protection, and mechanization.',
+    longDesc: 'Closing Africa\'s crop and livestock yield gaps by accelerating access to certified high-yielding seeds, soil-specific fertilizers, targeted crop protection, optimized animal feed, and scaled tractor mechanization to multiply baseline farmgate productivity.',
     imageUrl: '/images/challenges/inputs.webp',
     stats: { activeSolutions: 15, capitalDeployed: '$5.0M', communitySize: '1,200+' },
     subcategories: [
-      // GROUP 1: Seeds & Yield Enhancement
+      // GROUP 1: Seeds & Genetic Potential
       {
         id: 'improved-crop-breeding',
         title: 'Improved Crop Breeding',
-        groupName: 'Seeds & Yield Enhancement',
-        desc: 'Advanced crop breeding techniques.',
+        groupName: 'Seeds & Genetic Potential',
+        desc: 'Advanced plant genetics, hybrid seed varieties, and biofortified cultivars bred for high harvest index and regional pest tolerance.',
         imageUrl: '/images/subcategories/improved-crop-breeding.webp',
         updates: [], learningMaterials: [],
         sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
       },
       {
         id: 'drought-resistant-seeds',
-        title: 'Drought Resistant Seeds',
-        groupName: 'Seeds & Yield Enhancement',
-        desc: 'Development of drought-resistant seed varieties.',
+        title: 'Drought-Resistant Seeds',
+        groupName: 'Seeds & Genetic Potential',
+        desc: 'Early-maturing, heat-tolerant, and water-efficient seed varieties designed to withstand rainfall volatility and climate shifts.',
         imageUrl: '/images/subcategories/drought-resistant-seeds.webp',
         updates: [], learningMaterials: [],
         sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
       },
+      // GROUP 2: Soil Health & Crop Nutrition
       {
         id: 'fertilizers',
-        title: 'Fertilizers',
-        groupName: 'Seeds & Yield Enhancement',
-        desc: 'Organic and synthetic fertilizer supply chains.',
+        title: 'Fertilizers & Soil Nutrients',
+        groupName: 'Soil Health & Crop Nutrition',
+        desc: 'Blended inorganic NPK formulations, liquid foliar feeds, micro-dosing techniques, and organic composts restoring depleted soil micro-nutrients.',
         imageUrl: '/images/subcategories/fertilizers.webp',
         updates: [], learningMaterials: [],
         sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
       },
-      // GROUP 2: Crop Protection
+      // GROUP 3: Crop Protection & Biosecurity
       {
         id: 'pesticides',
-        title: 'Pesticides',
-        groupName: 'Crop Protection',
-        desc: 'Safe and effective pesticide applications.',
+        title: 'Pesticides & Integrated Pest Management',
+        groupName: 'Crop Protection & Biosecurity',
+        desc: 'Broad-spectrum crop protectants, bio-pesticides, and IPM protocols suppressing devastating farmgate pest infestations safely.',
         imageUrl: '/images/subcategories/pesticides.webp',
         updates: [], learningMaterials: [],
         sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
       },
       {
         id: 'herbicides',
-        title: 'Herbicides',
-        groupName: 'Crop Protection',
-        desc: 'Targeted herbicide formulations.',
+        title: 'Herbicides & Weed Control',
+        groupName: 'Crop Protection & Biosecurity',
+        desc: 'Pre-emergence and post-emergence selective herbicides minimizing labor-intensive hand weeding and protecting vegetative canopy growth.',
         imageUrl: '/images/subcategories/herbicides.webp',
         updates: [], learningMaterials: [],
         sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
       },
       {
         id: 'fungicides',
-        title: 'Fungicides',
-        groupName: 'Crop Protection',
-        desc: 'Fungal disease control mechanisms.',
+        title: 'Fungicides & Disease Control',
+        groupName: 'Crop Protection & Biosecurity',
+        desc: 'Systemic and contact fungicidal treatments safeguarding crops against blights, rusts, downy mildew, and soil-borne fungal pathogens.',
         imageUrl: '/images/subcategories/fungicides.webp',
         updates: [], learningMaterials: [],
         sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
       },
       {
         id: 'insecticides',
-        title: 'Insecticides',
-        groupName: 'Crop Protection',
-        desc: 'Integrated pest management strategies.',
+        title: 'Insecticides & Vector Suppression',
+        groupName: 'Crop Protection & Biosecurity',
+        desc: 'Targeted insecticide formulations combating armyworms, stem borers, bollworms, whiteflies, and destructive locust swarms.',
         imageUrl: '/images/subcategories/insecticides.webp',
         updates: [], learningMaterials: [],
         sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
       },
-      // GROUP 3: Livestock Feed
+      // GROUP 4: Livestock & Aquaculture Nutrition
       {
         id: 'animal-feed',
-        title: 'Animal Feed',
-        groupName: 'Livestock Feed',
-        desc: 'High-yield nutritional feed for livestock.',
+        title: 'Animal Feed & Nutritional Supplements',
+        groupName: 'Livestock & Aquaculture Nutrition',
+        desc: 'High-protein livestock feeds, commercial poultry mashes, extruded floating aquafeed, and mineral premixes maximizing feed conversion ratios.',
         imageUrl: '/images/subcategories/animal-feed.webp',
         updates: [], learningMaterials: [],
         sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
       },
-      // GROUP 4: Farm Power & Mechanization
+      // GROUP 5: Farm Power & Mechanization
       {
         id: 'mechanized-farm-equipment',
         title: 'Mechanized Farm Equipment',
         groupName: 'Farm Power & Mechanization',
-        desc: 'Tractors and heavy farm machinery.',
+        desc: 'Two-wheel and four-wheel tractors, rotary tillers, automated seeders, boom sprayers, and combine harvesters scaling commercial acreage per operator.',
         imageUrl: '/images/subcategories/mechanized-farm-equipment.webp',
         updates: [], learningMaterials: [],
         sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
       },
       {
         id: 'draught-animal-power',
-        title: 'Draught-Animal Power',
+        title: 'Draught-Animal Power & Traction',
         groupName: 'Farm Power & Mechanization',
-        desc: 'Using draught animals for efficient farm power.',
+        desc: 'Work oxen, draught animal harnesses, animal-drawn plows, and carts providing low-cost tillage and haulage for smallholder plots.',
         imageUrl: '/images/subcategories/draught-animal-power.webp',
         updates: [], learningMaterials: [],
         sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
@@ -332,102 +341,107 @@ export const foodChallenges: ChallengeData[] = [
   },
   {
     id: 'energy',
-    title: '4. Energy',
-    desc: 'Eradicating energy poverty across the supply chain.',
-    longDesc: 'Resolving the critical energy deficit that cripples agro-processing. We are tackling lighting, thermal/cold chain demands, and operational power gaps to ensure continuous, energy-efficient manufacturing, storage, and irrigation.',
+    title: '4. Energy Poverty',
+    desc: 'Eliminating energy poverty across agro-processing, cold chains, and mechanized farming.',
+    longDesc: 'Eliminating agricultural energy deficits by deploying decentralized solar, clean cooking fuels, cold-chain refrigeration, mini-grid agro-processing, solar irrigation, and sustainable logistics power to ensure continuous food preservation and value addition.',
     imageUrl: '/images/challenges/energy.webp',
     stats: { activeSolutions: 18, capitalDeployed: '$7.4M', communitySize: '1,500+' },
     subcategories: [
-      // GROUP 1: Domestic & Communication Energy
+      // GROUP 1: Domestic & Base Energy
       {
-        id: 'lighting',
+        id: 'lighting-poverty',
         title: 'Lighting Poverty',
-        groupName: 'Domestic & Communication Energy',
-        desc: 'Access to sustainable lighting solutions.',
+        groupName: 'Domestic & Base Energy',
+        desc: 'Decentralized solar home systems, solar lanterns, and farmstead micro-lighting replacing hazardous kerosene in rural farming settlements.',
         imageUrl: '/images/subcategories/lighting.webp',
         updates: [], learningMaterials: [],
         sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
       },
+      // GROUP 2: Thermal & Clean Cooking Energy
       {
-        id: 'ict',
-        title: 'ICT Poverty',
-        groupName: 'Domestic & Communication Energy',
-        desc: 'Energy for information and communication tech.',
-        imageUrl: '/images/subcategories/ict.webp',
-        updates: [], learningMaterials: [],
-        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
-      },
-      // GROUP 2: Thermal & Cold Chain Energy
-      {
-        id: 'cooking-fuel',
+        id: 'cooking-fuel-poverty',
         title: 'Cooking Fuel Poverty',
-        groupName: 'Thermal & Cold Chain Energy',
-        desc: 'Clean and accessible cooking fuels.',
+        groupName: 'Thermal & Clean Cooking Energy',
+        desc: 'Clean biomass briquettes, biogas digesters, ethanol stoves, and LPG adoption eliminating reliance on unsustainable firewood and charcoal.',
         imageUrl: '/images/subcategories/cooking-fuel.webp',
         updates: [], learningMaterials: [],
         sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
       },
       {
-        id: 'heating-fuel',
+        id: 'heating-fuel-poverty',
         title: 'Heating Fuel Poverty',
-        groupName: 'Thermal & Cold Chain Energy',
-        desc: 'Energy for greenhouse and livestock heating.',
+        groupName: 'Thermal & Clean Cooking Energy',
+        desc: 'Energy-efficient thermal solutions, biomass heaters, and solar thermal collectors for poultry brooding, livestock rearing, and greenhouse climate control.',
         imageUrl: '/images/subcategories/heating-fuel.webp',
         updates: [], learningMaterials: [],
         sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
       },
+      // GROUP 3: Cold-Chain & Storage Power
       {
-        id: 'storage-refrigeration',
-        title: 'Storage & Refrigeration',
-        groupName: 'Thermal & Cold Chain Energy',
-        desc: 'Cold chain energy infrastructure.',
+        id: 'storage-refrigeration-energy',
+        title: 'Storage & Refrigeration Energy Poverty',
+        groupName: 'Cold-Chain & Storage Power',
+        desc: 'Off-grid solar cold rooms, evaporative cooling chambers, and thermal-battery refrigeration preventing perishable produce spoilage at aggregation hubs.',
         imageUrl: '/images/subcategories/storage-refrigeration.webp',
         updates: [], learningMaterials: [],
         sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
       },
-      // GROUP 3: Agricultural Operations Energy
+      // GROUP 4: Agro-Industrial & Mechanical Power
       {
-        id: 'processing-manufacturing',
-        title: 'Processing & Manufacturing',
-        groupName: 'Agricultural Operations Energy',
-        desc: 'Energy for agro-processing.',
+        id: 'processing-manufacturing-energy',
+        title: 'Processing & Manufacturing Energy Poverty',
+        groupName: 'Agro-Industrial & Mechanical Power',
+        desc: 'Renewable mini-grids, three-phase agro-industrial power, biomass steam boilers, and electric grain milling reducing diesel reliance.',
         imageUrl: '/images/subcategories/processing-manufacturing.webp',
         updates: [], learningMaterials: [],
         sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
       },
+      // GROUP 5: Water & Irrigation Power
       {
-        id: 'water-supply-irrigation',
-        title: 'Water-Supply & Irrigation',
-        groupName: 'Agricultural Operations Energy',
-        desc: 'Energy for large scale irrigation.',
+        id: 'water-supply-irrigation-energy',
+        title: 'Water-Supply & Irrigation Energy Poverty',
+        groupName: 'Water & Irrigation Power',
+        desc: 'Solar-powered submersible pumps, pressurized drip irrigation systems, and surface water pumping eliminating expensive petrol generators.',
         imageUrl: '/images/subcategories/water-supply-irrigation.webp',
         updates: [], learningMaterials: [],
         sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
       },
+      // GROUP 6: Agri-Logistics & Mobility
       {
-        id: 'transportation',
-        title: 'Transportation Energy',
-        groupName: 'Agricultural Operations Energy',
-        desc: 'Fueling agricultural logistics.',
+        id: 'transportation-energy-poverty',
+        title: 'Transportation Energy Poverty',
+        groupName: 'Agri-Logistics & Mobility',
+        desc: 'Electric cargo tricycles, retrofitted EV farm trucks, bio-CNG conversion, and fuel-efficient haulage fleets cutting farmgate transport costs.',
         imageUrl: '/images/subcategories/transportation.webp',
         updates: [], learningMaterials: [],
         sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
       },
+      // GROUP 7: Field Power & Mechanization
       {
-        id: 'harvesting',
-        title: 'Harvesting Energy',
-        groupName: 'Agricultural Operations Energy',
-        desc: 'Power for mechanized harvesting.',
+        id: 'harvesting-energy-poverty',
+        title: 'Harvesting Energy Poverty',
+        groupName: 'Field Power & Mechanization',
+        desc: 'Mechanical reapers, portable electric threshers, battery-powered crop cutters, and combine harvesters eliminating manual harvesting bottlenecks.',
         imageUrl: '/images/subcategories/harvesting.webp',
         updates: [], learningMaterials: [],
         sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
       },
-      // GROUP 4: Energy Efficiency & Systems
+      // GROUP 8: Digital Infrastructure Power
+      {
+        id: 'ict-energy-poverty',
+        title: 'ICT & Communication Energy Poverty',
+        groupName: 'Digital Infrastructure Power',
+        desc: 'Dedicated solar power supplies for rural telecom masts, smartphone charging hubs, IoT farm sensors, and digital marketplace terminals.',
+        imageUrl: '/images/subcategories/ict.webp',
+        updates: [], learningMaterials: [],
+        sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }
+      },
+      // GROUP 9: Energy Efficiency & Grid Systems
       {
         id: 'energy-inefficiency',
-        title: 'Energy Inefficiency',
-        groupName: 'Energy Efficiency & Systems',
-        desc: 'Systemic energy loss prevention.',
+        title: 'Energy-Inefficiency & Systemic Losses',
+        groupName: 'Energy Efficiency & Grid Systems',
+        desc: 'Energy audit protocols, variable frequency drives (VFDs), power factor correction, and waste-heat recovery systems optimizing industrial processing efficiency.',
         imageUrl: '/images/subcategories/energy-inefficiency.webp',
         updates: [], learningMaterials: [],
         sections: { innovations: {title:'Innovations',content:''}, library: {title:'Library',content:''}, community: {title:'Community',content:''}, activities: {title:'Activities',content:''}, livestreams: {title:'Livestreams',content:''}, jobs: {title:'Jobs',content:''} }

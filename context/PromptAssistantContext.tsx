@@ -23,6 +23,29 @@ import {
   parseDoc1cArticles
 } from '@/lib/config/editorialPrompts';
 import { foodChallenges } from '@/lib/cms/food/challenges';
+import { keyframes } from '@mui/system';
+
+const pulseGlow = keyframes`
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.4), 0 0 30px rgba(59, 130, 246, 0.25);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(16, 185, 129, 0.75), 0 0 45px rgba(59, 130, 246, 0.45);
+    transform: scale(1.04);
+  }
+`;
+
+const beaconRadar = keyframes`
+  0% { transform: scale(0.9); opacity: 0.9; }
+  70% { transform: scale(2.2); opacity: 0; }
+  100% { transform: scale(0.9); opacity: 0; }
+`;
+
+const ambientSheen = keyframes`
+  0% { transform: translateX(-150%) skewX(-25deg); }
+  50%, 100% { transform: translateX(250%) skewX(-25deg); }
+`;
 
 export interface PromptAssistantOpenOptions {
   commodity?: string;
@@ -327,15 +350,15 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
       {children}
 
       {/* ═══════════════════════════════════════════════════════════ */}
-      {/* FLOATING RESPID/RESPAWN DOCK (WHEN MINIMIZED/CLOSED)        */}
+      {/* MINIMAL LIQUID GLASS FLOATING DOCK                          */}
       {/* ═══════════════════════════════════════════════════════════ */}
       <AnimatePresence>
         {!isOpen && isDockVisible && (
           <motion.div
-            initial={{ opacity: 0, y: 30, scale: 0.9 }}
+            initial={{ opacity: 0, y: 20, scale: 0.92 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 30, scale: 0.9 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            exit={{ opacity: 0, y: 20, scale: 0.92 }}
+            transition={{ type: 'spring', stiffness: 450, damping: 30 }}
             style={{
               position: 'fixed',
               bottom: isMobile ? 86 : 24,
@@ -344,73 +367,80 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
             }}
           >
             <Paper
-              elevation={8}
+              elevation={0}
+              onClick={maximizeAssistant}
               sx={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 1.5,
-                py: 1,
-                px: 2,
-                borderRadius: '50px',
-                background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.92) 0%, rgba(30, 41, 59, 0.95) 100%)',
-                backdropFilter: 'blur(16px)',
-                border: '1px solid rgba(255, 255, 255, 0.18)',
-                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.35), 0 0 20px rgba(16, 185, 129, 0.25)',
+                gap: 1.25,
+                py: 0.85,
+                px: 1.6,
+                borderRadius: '999px',
+                background: 'rgba(15, 23, 42, 0.78)',
+                backdropFilter: 'blur(20px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                border: '1px solid rgba(255, 255, 255, 0.14)',
+                boxShadow: '0 12px 32px rgba(0, 0, 0, 0.4), inset 0 1px 1px 0 rgba(255, 255, 255, 0.2)',
                 color: '#fff',
                 cursor: 'pointer',
-                transition: 'all 0.25s ease',
+                transition: 'all 0.2s ease',
                 '&:hover': {
                   transform: 'translateY(-2px)',
-                  boxShadow: '0 14px 36px rgba(0, 0, 0, 0.45), 0 0 26px rgba(16, 185, 129, 0.4)',
-                  borderColor: 'rgba(16, 185, 129, 0.5)',
+                  background: 'rgba(15, 23, 42, 0.88)',
+                  borderColor: 'rgba(255, 255, 255, 0.25)',
+                  boxShadow: '0 16px 36px rgba(0, 0, 0, 0.5), inset 0 1px 1px 0 rgba(255, 255, 255, 0.3)',
                 }
               }}
-              onClick={maximizeAssistant}
             >
-              {/* Pulsing AI Indicator Icon */}
+              {/* Minimal AI Sparkle Icon with Soft Glow */}
               <Box
                 sx={{
-                  width: 30,
-                  height: 30,
+                  width: 26,
+                  height: 26,
                   borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  bgcolor: 'rgba(16, 185, 129, 0.2)',
+                  border: '1px solid rgba(16, 185, 129, 0.4)',
+                  color: '#10b981',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 0 12px rgba(16, 185, 129, 0.6)',
+                  flexShrink: 0,
                 }}
               >
-                <AutoAwesomeIcon sx={{ fontSize: 16, color: '#fff' }} />
+                <AutoAwesomeIcon sx={{ fontSize: 14 }} />
               </Box>
 
-              {/* Text Meta */}
-              <Box sx={{ display: 'flex', flexDirection: 'column', textAlign: 'left', pr: 0.5 }}>
-                <Typography sx={{ fontSize: '0.78rem', fontWeight: 900, color: '#f8fafc', lineHeight: 1.1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  AI Assistant <span style={{ color: '#10b981' }}>·</span> {selectedCommodity}
-                </Typography>
-                <Typography sx={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 600 }}>
-                  {selectedCategory.toUpperCase()} · Click to expand
-                </Typography>
-              </Box>
+              {/* Minimal Clean 1-Line Meta */}
+              <Typography sx={{
+                fontSize: '0.8rem',
+                fontWeight: 700,
+                color: '#f8fafc',
+                letterSpacing: '-0.01em',
+                whiteSpace: 'nowrap',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.6
+              }}>
+                <span>AI Assistant</span>
+                <span style={{ color: 'rgba(255,255,255,0.3)' }}>·</span>
+                <span style={{ color: '#fbbf24', fontWeight: 600 }}>{selectedCommodity}</span>
+              </Typography>
 
-              {/* Expand Icon Button */}
-              <IconButton
-                size="small"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  maximizeAssistant();
-                }}
+              {/* Minimal Expand Icon */}
+              <Box
                 sx={{
-                  color: '#10b981',
-                  bgcolor: 'rgba(16, 185, 129, 0.15)',
-                  p: 0.6,
-                  '&:hover': { bgcolor: 'rgba(16, 185, 129, 0.3)' }
+                  display: 'flex',
+                  alignItems: 'center',
+                  color: 'rgba(255, 255, 255, 0.5)',
+                  ml: 0.2,
+                  transition: 'color 0.2s',
+                  '&:hover': { color: '#fff' }
                 }}
               >
-                <OpenInFullIcon sx={{ fontSize: 14 }} />
-              </IconButton>
+                <OpenInFullIcon sx={{ fontSize: 12 }} />
+              </Box>
 
-              {/* Dismiss (X) Button */}
+              {/* Minimal Dismiss (X) */}
               <IconButton
                 size="small"
                 onClick={(e) => {
@@ -418,12 +448,16 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
                   dismissDock();
                 }}
                 sx={{
-                  color: '#64748b',
-                  p: 0.6,
-                  '&:hover': { color: '#ef4444', bgcolor: 'rgba(239, 68, 68, 0.15)' }
+                  color: 'rgba(255, 255, 255, 0.4)',
+                  p: 0.35,
+                  ml: -0.5,
+                  '&:hover': {
+                    color: '#ef4444',
+                    bgcolor: 'rgba(239, 68, 68, 0.15)',
+                  }
                 }}
               >
-                <CloseIcon sx={{ fontSize: 14 }} />
+                <CloseIcon sx={{ fontSize: 13 }} />
               </IconButton>
             </Paper>
           </motion.div>
