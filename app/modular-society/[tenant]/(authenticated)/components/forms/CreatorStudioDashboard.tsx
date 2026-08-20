@@ -180,14 +180,41 @@ export default function CreatorStudioDashboard({
   const [customIngestError, setCustomIngestError] = useState('');
   const [wikiChecklist, setWikiChecklist] = useState<Record<string, boolean>>({});
 
-  // Load checklist on commodity / category change
+  // Load checklist and scratchpads on commodity / category change
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const key = `editorial_sop_tasks_${selectedCommodity}_${selectedCategory}`;
+      const checklistKey = `editorial_sop_tasks_${selectedCommodity}_${selectedCategory}`;
+      const scratchpadKey = `editorial_sop_scratchpad_${selectedCommodity}_${selectedCategory}`;
       try {
-        const saved = localStorage.getItem(key);
-        if (saved) setWikiChecklist(JSON.parse(saved));
+        const savedChecklist = localStorage.getItem(checklistKey);
+        if (savedChecklist) setWikiChecklist(JSON.parse(savedChecklist));
         else setWikiChecklist({});
+
+        const savedScratchpad = localStorage.getItem(scratchpadKey);
+        if (savedScratchpad) {
+          const parsed = JSON.parse(savedScratchpad);
+          setCustom1aOutput(parsed.doc1a || '');
+          setCustom1bOutput(parsed.doc1b || '');
+          setCustom1cOutput(parsed.doc1c || '');
+          setCustomIngestMarkdown(parsed.ingest || parsed.doc1c || '');
+        } else {
+          setCustom1aOutput('');
+          setCustom1bOutput('');
+          setCustom1cOutput('');
+          setCustomIngestMarkdown('');
+        }
+      } catch {}
+    }
+  }, [selectedCommodity, selectedCategory]);
+
+  const saveScratchpadToStorage = useCallback((data: { doc1a?: string; doc1b?: string; doc1c?: string; ingest?: string }) => {
+    if (typeof window !== 'undefined') {
+      const scratchpadKey = `editorial_sop_scratchpad_${selectedCommodity}_${selectedCategory}`;
+      try {
+        const existing = localStorage.getItem(scratchpadKey);
+        const parsed = existing ? JSON.parse(existing) : {};
+        const updated = { ...parsed, ...data };
+        localStorage.setItem(scratchpadKey, JSON.stringify(updated));
       } catch {}
     }
   }, [selectedCommodity, selectedCategory]);
@@ -1598,194 +1625,108 @@ export default function CreatorStudioDashboard({
                           }
                         }}
                       >
-                        {/* ── STICKY WORKSPACE NAVBAR (Exact WikiReader style) ── */}
+                        {/* ── STICKY TOP NAVBAR ── */}
                         <Box sx={{
                           position: 'sticky',
                           top: 0,
                           zIndex: 20,
-                          bgcolor: 'rgba(255, 255, 255, 0.92)',
+                          bgcolor: 'rgba(255, 255, 255, 0.95)',
                           backdropFilter: 'blur(16px)',
                           borderBottom: '1px solid rgba(0,0,0,0.08)',
-                          px: { xs: 2, sm: 3.5 },
+                          px: { xs: 2, sm: 3 },
                           py: 1.5,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'space-between'
                         }}>
-                          <Breadcrumbs separator={<NavigateNextIcon fontSize="small" sx={{ color: '#94a3b8' }} />} aria-label="breadcrumb">
-                            <Box sx={{ display: 'flex', alignItems: 'center', color: '#64748b', fontSize: '0.85rem', fontWeight: 600 }}>
-                              <DocIcon sx={{ mr: 0.5, fontSize: 16, color: '#3b82f6' }} /> Omni-Wiki
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Box sx={{ width: 32, height: 32, borderRadius: '8px', bgcolor: '#3b82f6', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <BoltIcon sx={{ fontSize: 18 }} />
                             </Box>
-                            <Typography sx={{ color: '#64748b', fontSize: '0.85rem', fontWeight: 600 }}>
-                              Editorial Studio
-                            </Typography>
-                            <Typography sx={{ color: '#0f172a', fontSize: '0.85rem', fontWeight: 800 }}>
-                              SOP: Intelligence Relay
-                            </Typography>
-                          </Breadcrumbs>
+                            <Box>
+                              <Typography sx={{ color: '#0f172a', fontSize: '0.95rem', fontWeight: 800, lineHeight: 1.2 }}>
+                                AI Prompt Assistant
+                              </Typography>
+                              <Typography sx={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 500 }}>
+                                Sequential Market Intelligence Generator
+                              </Typography>
+                            </Box>
+                          </Box>
 
-                          <IconButton onClick={() => setPromptTerminalOpen(false)} sx={{ color: '#64748b', '&:hover': { color: '#0f172a', bgcolor: 'rgba(0,0,0,0.05)' } }}>
+                          <IconButton onClick={() => setPromptTerminalOpen(false)} size="small" sx={{ color: '#64748b', '&:hover': { color: '#0f172a', bgcolor: 'rgba(0,0,0,0.05)' } }}>
                             <CloseIcon sx={{ fontSize: 20 }} />
                           </IconButton>
                         </Box>
 
-                        {/* ── SCROLLABLE WIKI DOCUMENT BODY ── */}
-                        <Box sx={{ flex: 1, overflowY: 'auto', p: { xs: 2.5, sm: 4.5 }, display: 'flex', flexDirection: 'column', gap: 3.5 }}>
+                        {/* ── SCROLLABLE DOCUMENT BODY ── */}
+                        <Box sx={{ flex: 1, overflowY: 'auto', p: { xs: 2.5, sm: 4 }, display: 'flex', flexDirection: 'column', gap: 4 }}>
 
-                          {/* Document Title Header Block */}
-                          <Box>
-                            <Typography variant="h4" sx={{ fontWeight: 900, color: '#0f172a', letterSpacing: '-0.025em', mb: 1.5, lineHeight: 1.25 }}>
-                              Editorial Intelligence & Prompt Chaining SOP
-                            </Typography>
-                            
-                            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
-                              <Chip label={`🌾 Commodity: ${selectedCommodity}`} size="small" sx={{ bgcolor: 'rgba(16, 185, 129, 0.1)', color: '#059669', fontWeight: 700, borderRadius: '8px' }} />
-                              <Chip label={`💼 ${selectedCategory.toUpperCase()}`} size="small" sx={{ bgcolor: 'rgba(59, 130, 246, 0.1)', color: '#2563eb', fontWeight: 700, borderRadius: '8px' }} />
-                              <Chip label={`📅 ${format(new Date(selectedTargetDate), 'MMMM d, yyyy')}`} size="small" sx={{ bgcolor: 'rgba(0,0,0,0.05)', color: '#475569', fontWeight: 600, borderRadius: '8px' }} />
-                              <Chip label="⚡ Interactive SOP" size="small" sx={{ bgcolor: 'rgba(245, 158, 11, 0.1)', color: '#b45309', fontWeight: 700, borderRadius: '8px' }} />
-                            </Box>
-                          </Box>
-
-                          <Divider sx={{ borderColor: 'rgba(0,0,0,0.08)' }} />
-
-                          {/* How This Sidebar Works - Outcome & Workflow Guide */}
-                          <Paper sx={{
-                            p: { xs: 2.5, sm: 3 },
-                            borderRadius: '20px',
-                            border: '1px solid rgba(59, 130, 246, 0.22)',
-                            background: 'linear-gradient(135deg, rgba(239, 246, 255, 0.95), rgba(248, 250, 252, 0.95))',
-                            boxShadow: '0 4px 16px rgba(59, 130, 246, 0.06)'
+                          {/* Scope Metadata List */}
+                          <Box sx={{
+                            p: 2.5,
+                            bgcolor: '#ffffff',
+                            border: '1px solid rgba(0,0,0,0.08)',
+                            borderRadius: '18px',
+                            boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 1.5
                           }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                              <Box sx={{ width: 32, height: 32, borderRadius: '10px', bgcolor: '#3b82f6', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <BoltIcon sx={{ fontSize: 18 }} />
-                              </Box>
-                              <Typography sx={{ fontWeight: 900, color: '#1e3a8a', fontSize: '1.05rem' }}>
-                                What You Gain & How It Works
-                              </Typography>
-                            </Box>
-                            
-                            <Typography sx={{ fontSize: '0.88rem', color: '#334155', lineHeight: 1.65, mb: 2 }}>
-                              By following this simple 3-turn guide in <strong>ChatGPT</strong>, <strong>Claude</strong>, or <strong>Gemini</strong>, you will produce <strong>10–12 deeply researched, high-impact article briefs</strong> covering Nigerian logistics bottlenecks, pricing arbitrage, and investment structures. Each prompt builds on the last—simply copy the prompts below, paste the responses into the scratchpads, and hit <strong>Ingest</strong> in Step 4 to turn them into live, clickable cards in your Studio ready to write.
+                            <Typography sx={{ fontSize: '0.74rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                              Scope
                             </Typography>
-
-                            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr' }, gap: 1.5 }}>
-                              <Box sx={{ p: 1.75, bgcolor: '#ffffff', borderRadius: '14px', border: '1px solid rgba(59, 130, 246, 0.15)', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-                                <Typography sx={{ fontWeight: 800, color: '#2563eb', fontSize: '0.82rem', mb: 0.5 }}>
-                                  1. Copy & Run
-                                </Typography>
-                                <Typography sx={{ fontSize: '0.78rem', color: '#64748b', lineHeight: 1.45 }}>
-                                  Copy Prompts 1a, 1b, and 1c sequentially into <strong>ChatGPT</strong>, <strong>Claude</strong>, or <strong>Gemini</strong>.
-                                </Typography>
-                              </Box>
-
-                              <Box sx={{ p: 1.75, bgcolor: '#ffffff', borderRadius: '14px', border: '1px solid rgba(245, 158, 11, 0.2)', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-                                <Typography sx={{ fontWeight: 800, color: '#b45309', fontSize: '0.82rem', mb: 0.5 }}>
-                                  2. Paste & Chain
-                                </Typography>
-                                <Typography sx={{ fontSize: '0.78rem', color: '#64748b', lineHeight: 1.45 }}>
-                                  Paste each AI answer into the scratchpads so the next prompt automatically carries the context forward.
+                            <Box component="ul" sx={{ m: 0, p: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+                              <Box component="li" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.86rem' }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#475569', fontWeight: 600 }}>
+                                  <span>🌾</span> Commodity
+                                </Box>
+                                <Typography sx={{ fontWeight: 800, color: '#059669', bgcolor: 'rgba(16, 185, 129, 0.1)', px: 1.4, py: 0.35, borderRadius: '8px', fontSize: '0.82rem' }}>
+                                  {selectedCommodity}
                                 </Typography>
                               </Box>
 
-                              <Box sx={{ p: 1.75, bgcolor: '#ffffff', borderRadius: '14px', border: '1px solid rgba(16, 185, 129, 0.2)', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-                                <Typography sx={{ fontWeight: 800, color: '#059669', fontSize: '0.82rem', mb: 0.5 }}>
-                                  3. Ingest & Write
-                                </Typography>
-                                <Typography sx={{ fontSize: '0.78rem', color: '#64748b', lineHeight: 1.45 }}>
-                                  Paste your final 10–12 article outlines into Step 4 to immediately render ready-to-write cards in the Studio.
+                              <Box component="li" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.86rem' }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#475569', fontWeight: 600 }}>
+                                  <span>💼</span> Category
+                                </Box>
+                                <Typography sx={{ fontWeight: 800, color: '#2563eb', bgcolor: 'rgba(59, 130, 246, 0.1)', px: 1.4, py: 0.35, borderRadius: '8px', fontSize: '0.82rem' }}>
+                                  {selectedCategory.toUpperCase()}
                                 </Typography>
                               </Box>
-                            </Box>
-                          </Paper>
 
-                          {/* ──────────────────────────────────────────────────────────── */}
-                          {/* STEP 0: SET UP YOUR AI WORKSPACE                            */}
-                          {/* ──────────────────────────────────────────────────────────── */}
-                          <Box id="wiki-step-0" sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, scrollMarginTop: '80px' }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                              <Box sx={{ width: 28, height: 28, borderRadius: '50%', bgcolor: '#64748b', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.85rem' }}>
-                                0
+                              <Box component="li" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.86rem' }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#475569', fontWeight: 600 }}>
+                                  <span>📅</span> Target Publishing Date
+                                </Box>
+                                <Typography sx={{ fontWeight: 700, color: '#334155', fontSize: '0.84rem' }}>
+                                  {format(new Date(selectedTargetDate), 'MMMM d, yyyy')}
+                                </Typography>
                               </Box>
-                              <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>
-                                Step 0: Set Up Your AI Workspace 🛠️
-                              </Typography>
-                            </Box>
-                            <Typography sx={{ color: '#475569', fontSize: '0.9rem', lineHeight: 1.55 }}>
-                              Before generating prompts, prepare your external AI chat session:
-                            </Typography>
-
-                            {/* Checklist Block (Regular) */}
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 2, border: '1px solid rgba(0,0,0,0.08)', borderRadius: '16px', bgcolor: 'rgba(0,0,0,0.02)' }}>
-                              {[
-                                { id: 'chk0_portal', text: 'Open your preferred AI app (ChatGPT, Claude, or Gemini) in a new browser tab.' },
-                                { id: 'chk0_model', text: 'Select the latest, most capable reasoning model available.' },
-                                { id: 'chk0_session', text: 'Start a completely fresh, empty chat session (do not mix previous topics).' },
-                              ].map(item => {
-                                const isChecked = !!wikiChecklist[item.id];
-                                return (
-                                  <Box
-                                    key={item.id}
-                                    onClick={() => toggleChecklistItem(item.id)}
-                                    sx={{
-                                      display: 'flex', alignItems: 'center', p: 1.25, borderRadius: '12px', cursor: 'pointer',
-                                      bgcolor: isChecked ? 'rgba(16, 185, 129, 0.06)' : '#ffffff',
-                                      border: isChecked ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(0,0,0,0.06)',
-                                      transition: 'all 0.2s',
-                                      '&:hover': { bgcolor: isChecked ? 'rgba(16, 185, 129, 0.1)' : 'rgba(0,0,0,0.03)' }
-                                    }}
-                                  >
-                                    <Box sx={{
-                                      width: 22, height: 22, borderRadius: '7px',
-                                      border: '2px solid',
-                                      borderColor: isChecked ? '#10b981' : '#cbd5e1',
-                                      bgcolor: isChecked ? '#10b981' : 'transparent',
-                                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                      mr: 1.5, flexShrink: 0,
-                                      transition: 'all 0.2s'
-                                    }}>
-                                      {isChecked && (
-                                        <svg width="12" height="9" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                          <path d="M1 5L5 9L13 1" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                                        </svg>
-                                      )}
-                                    </Box>
-                                    <Typography sx={{
-                                      fontSize: '0.86rem',
-                                      color: isChecked ? '#94a3b8' : '#1e293b',
-                                      textDecoration: isChecked ? 'line-through' : 'none',
-                                      fontWeight: isChecked ? 500 : 700,
-                                      transition: 'all 0.2s',
-                                      lineHeight: 1.4
-                                    }}>
-                                      {item.text}
-                                    </Typography>
-                                  </Box>
-                                );
-                              })}
                             </Box>
                           </Box>
 
-                          <Divider sx={{ borderColor: 'rgba(0,0,0,0.06)' }} />
+                          {/* Quick 1-Line Instruction Banner */}
+                          <Box sx={{ p: 2, bgcolor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Typography sx={{ fontSize: '0.86rem', color: '#1e40af', lineHeight: 1.6 }}>
+                              ⚡ <strong>How it works:</strong> Open <strong>ChatGPT</strong>, <strong>Claude</strong>, or <strong>Gemini</strong> in a new tab. Copy Prompts 1, 2 & 3 in order, paste the responses into the scratchpads, then ingest your briefs in Step 4 to populate your Studio.
+                            </Typography>
+                          </Box>
 
                           {/* ──────────────────────────────────────────────────────────── */}
-                          {/* STEP 1: MACRO-GEO & TEMPORAL CONTEXT (TURN 1)               */}
+                          {/* STEP 1: TRADE HUBS & GEOGRAPHY (TURN 1)                      */}
                           {/* ──────────────────────────────────────────────────────────── */}
-                          <Box id="wiki-step-1" sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, scrollMarginTop: '80px' }}>
+                          <Box id="wiki-step-1" sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, scrollMarginTop: '80px' }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                              <Box sx={{ width: 28, height: 28, borderRadius: '50%', bgcolor: '#3b82f6', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.85rem' }}>
+                              <Box sx={{ width: 30, height: 30, borderRadius: '50%', bgcolor: '#3b82f6', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.88rem' }}>
                                 1
                               </Box>
                               <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>
-                                Step 1: Macro-Geography & Temporal Context (Turn 1) 💡
+                                Step 1: Trade Hubs & Geography (Turn 1) 💡
                               </Typography>
                             </Box>
-                            <Typography sx={{ color: '#475569', fontSize: '0.9rem', lineHeight: 1.55 }}>
-                              Prompts the AI to map 5 micro-geographies, 3 historical eras, and real transit hubs across Nigeria for <strong>{selectedCommodity}</strong>.
-                            </Typography>
 
                             {/* Pre-Prompt Action Checklist */}
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 1.5, border: '1px solid rgba(59, 130, 246, 0.25)', borderRadius: '14px', bgcolor: 'rgba(59, 130, 246, 0.03)' }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 1.75, border: '1px solid rgba(59, 130, 246, 0.25)', borderRadius: '14px', bgcolor: 'rgba(59, 130, 246, 0.03)' }}>
                               {[
                                 { id: 'act_copy_1a', text: '1. Click "Copy Executable Prompt 1a" below, paste it into your active AI chat, and press Enter to generate.' }
                               ].map(item => {
@@ -1795,7 +1736,7 @@ export default function CreatorStudioDashboard({
                                     key={item.id}
                                     onClick={() => toggleChecklistItem(item.id)}
                                     sx={{
-                                      display: 'flex', alignItems: 'center', p: 1, borderRadius: '10px', cursor: 'pointer',
+                                      display: 'flex', alignItems: 'center', p: 1.25, borderRadius: '10px', cursor: 'pointer',
                                       bgcolor: isChecked ? 'rgba(16, 185, 129, 0.06)' : '#ffffff',
                                       border: isChecked ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(59, 130, 246, 0.15)',
                                       transition: 'all 0.2s',
@@ -1818,11 +1759,11 @@ export default function CreatorStudioDashboard({
                                       )}
                                     </Box>
                                     <Typography sx={{
-                                      fontSize: '0.84rem',
+                                      fontSize: '0.85rem',
                                       color: isChecked ? '#94a3b8' : '#1e293b',
                                       textDecoration: isChecked ? 'line-through' : 'none',
                                       fontWeight: isChecked ? 500 : 700,
-                                      lineHeight: 1.4
+                                      lineHeight: 1.45
                                     }}>
                                       {item.text}
                                     </Typography>
@@ -1833,7 +1774,7 @@ export default function CreatorStudioDashboard({
 
                             {/* PromptBuilderBlock Terminal */}
                             {copiedPromptTab === 'doc1a' ? (
-                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2, bgcolor: 'rgba(59, 130, 246, 0.06)', borderRadius: '16px', border: '1px solid rgba(59, 130, 246, 0.25)' }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2.25, bgcolor: 'rgba(59, 130, 246, 0.06)', borderRadius: '16px', border: '1px solid rgba(59, 130, 246, 0.25)' }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
                                   <CheckCircleIcon sx={{ color: '#3b82f6' }} />
                                   <Typography sx={{ color: '#1e40af', fontWeight: 700, fontSize: '0.9rem' }}>
@@ -1845,8 +1786,8 @@ export default function CreatorStudioDashboard({
                                 </Button>
                               </Box>
                             ) : (
-                              <Box sx={{ position: 'relative', bgcolor: '#0f172a', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }}>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2.5, py: 1.5, bgcolor: '#1e293b', borderBottom: '1px solid #334155' }}>
+                              <Box sx={{ position: 'relative', bgcolor: '#0f172a', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 10px 28px rgba(0,0,0,0.15)' }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2.5, py: 1.75, bgcolor: '#1e293b', borderBottom: '1px solid #334155' }}>
                                   <Box sx={{ display: 'flex', gap: 1 }}>
                                     <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: '#ef4444' }} />
                                     <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: '#f59e0b' }} />
@@ -1864,7 +1805,7 @@ export default function CreatorStudioDashboard({
                                   </Typography>
                                 </Box>
 
-                                <Box sx={{ display: 'flex', justifyContent: 'center', p: 2, pt: 1, bgcolor: '#1e293b', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'center', p: 2, pt: 1.25, bgcolor: '#1e293b', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                                   <Button
                                     onClick={() => handleCopyPromptText(compiledPrompt1a, 'doc1a')}
                                     sx={{
@@ -1889,7 +1830,7 @@ export default function CreatorStudioDashboard({
                             )}
 
                             {/* Verification Checklist (Important) */}
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 2, border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '16px', bgcolor: 'rgba(245, 158, 11, 0.04)' }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, p: 2.25, border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '16px', bgcolor: 'rgba(245, 158, 11, 0.04)' }}>
                               <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#b45309', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                                 ⚡ Verify AI Output for Step 1:
                               </Typography>
@@ -1941,12 +1882,12 @@ export default function CreatorStudioDashboard({
                             </Box>
 
                             {/* Turn 1 Scratchpad Block */}
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
                               <Typography variant="overline" sx={{ color: '#14b8a6', fontWeight: 800, letterSpacing: '0.06em', lineHeight: 1, display: 'flex', alignItems: 'center', gap: 0.8 }}>
                                 📝 Step 1 Scratchpad · Macro-Geo Output
                               </Typography>
-                              <Box sx={{ p: 1.5, bgcolor: 'rgba(20, 184, 166, 0.05)', border: '1px solid rgba(20, 184, 166, 0.2)', borderRadius: '12px' }}>
-                                <Typography sx={{ color: '#0f766e', fontSize: '0.82rem', lineHeight: 1.5 }}>
+                              <Box sx={{ p: 1.75, bgcolor: 'rgba(20, 184, 166, 0.05)', border: '1px solid rgba(20, 184, 166, 0.2)', borderRadius: '14px' }}>
+                                <Typography sx={{ color: '#0f766e', fontSize: '0.82rem', lineHeight: 1.55 }}>
                                   <strong>Auto-Saving Workspace:</strong> Paste your Turn 1 LLM response here. It is saved in real-time and dynamically injected into Step 2&apos;s Drucker OSINT prompt.
                                 </Typography>
                               </Box>
@@ -1956,24 +1897,27 @@ export default function CreatorStudioDashboard({
                                 fullWidth
                                 placeholder="Paste your Document 1a macro-geography response here..."
                                 value={custom1aOutput || rawPrompts?.doc1aOutput || ''}
-                                onChange={(e: any) => setCustom1aOutput(e.target.value)}
+                                onChange={(e: any) => {
+                                  setCustom1aOutput(e.target.value);
+                                  saveScratchpadToStorage({ doc1a: e.target.value });
+                                }}
                               />
                             </Box>
                           </Box>
 
-                          <Divider sx={{ borderColor: 'rgba(0,0,0,0.06)' }} />
+                          <Divider sx={{ borderColor: 'rgba(0,0,0,0.08)', my: 1.5 }} />
 
                           {/* ──────────────────────────────────────────────────────────── */}
                           {/* STEP 2: DRUCKER INNOVATION OSINT ENGINE (TURN 2)            */}
                           {/* ──────────────────────────────────────────────────────────── */}
-                          <Box id="wiki-step-2" sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, scrollMarginTop: '80px' }}>
+                          <Box id="wiki-step-2" sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, scrollMarginTop: '80px' }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                <Box sx={{ width: 28, height: 28, borderRadius: '50%', bgcolor: '#f59e0b', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.85rem' }}>
+                                <Box sx={{ width: 30, height: 30, borderRadius: '50%', bgcolor: '#f59e0b', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.88rem' }}>
                                   2
                                 </Box>
                                 <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>
-                                  Step 2: Drucker Innovation OSINT Engine (Turn 2) 🧠
+                                  Step 2: Market Disruptions & Costs (Turn 2) 🧠
                                 </Typography>
                               </Box>
                               <Chip
@@ -1982,12 +1926,9 @@ export default function CreatorStudioDashboard({
                                 sx={{ bgcolor: effective1aOutput ? 'rgba(16, 185, 129, 0.12)' : 'rgba(245, 158, 11, 0.12)', color: effective1aOutput ? '#059669' : '#b45309', fontWeight: 800, fontSize: '0.72rem' }}
                               />
                             </Box>
-                            <Typography sx={{ color: '#475569', fontSize: '0.9rem', lineHeight: 1.55 }}>
-                              Applies 10 Peter Drucker innovation vectors (Unexpected Failures, Process Incongruities, Regulatory Surprises) specifically tailored to Nigerian value chains.
-                            </Typography>
 
                             {/* Pre-Prompt Action Checklist */}
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 1.5, border: '1px solid rgba(245, 158, 11, 0.25)', borderRadius: '14px', bgcolor: 'rgba(245, 158, 11, 0.03)' }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 1.75, border: '1px solid rgba(245, 158, 11, 0.25)', borderRadius: '14px', bgcolor: 'rgba(245, 158, 11, 0.03)' }}>
                               {[
                                 { id: 'act_copy_1b', text: '1. Click "Copy Executable Prompt 1b" below (with Step 1 auto-injected), paste it into your AI chat, and press Enter to generate.' }
                               ].map(item => {
@@ -1997,7 +1938,7 @@ export default function CreatorStudioDashboard({
                                     key={item.id}
                                     onClick={() => toggleChecklistItem(item.id)}
                                     sx={{
-                                      display: 'flex', alignItems: 'center', p: 1, borderRadius: '10px', cursor: 'pointer',
+                                      display: 'flex', alignItems: 'center', p: 1.25, borderRadius: '10px', cursor: 'pointer',
                                       bgcolor: isChecked ? 'rgba(16, 185, 129, 0.06)' : '#ffffff',
                                       border: isChecked ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(245, 158, 11, 0.2)',
                                       transition: 'all 0.2s',
@@ -2020,11 +1961,11 @@ export default function CreatorStudioDashboard({
                                       )}
                                     </Box>
                                     <Typography sx={{
-                                      fontSize: '0.84rem',
+                                      fontSize: '0.85rem',
                                       color: isChecked ? '#94a3b8' : '#1e293b',
                                       textDecoration: isChecked ? 'line-through' : 'none',
                                       fontWeight: isChecked ? 500 : 700,
-                                      lineHeight: 1.4
+                                      lineHeight: 1.45
                                     }}>
                                       {item.text}
                                     </Typography>
@@ -2035,7 +1976,7 @@ export default function CreatorStudioDashboard({
 
                             {/* PromptBuilderBlock Terminal */}
                             {copiedPromptTab === 'doc1b' ? (
-                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2, bgcolor: 'rgba(245, 158, 11, 0.08)', borderRadius: '16px', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2.25, bgcolor: 'rgba(245, 158, 11, 0.08)', borderRadius: '16px', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
                                   <CheckCircleIcon sx={{ color: '#f59e0b' }} />
                                   <Typography sx={{ color: '#b45309', fontWeight: 700, fontSize: '0.9rem' }}>
@@ -2047,8 +1988,8 @@ export default function CreatorStudioDashboard({
                                 </Button>
                               </Box>
                             ) : (
-                              <Box sx={{ position: 'relative', bgcolor: '#0f172a', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }}>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2.5, py: 1.5, bgcolor: '#1e293b', borderBottom: '1px solid #334155' }}>
+                              <Box sx={{ position: 'relative', bgcolor: '#0f172a', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 10px 28px rgba(0,0,0,0.15)' }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2.5, py: 1.75, bgcolor: '#1e293b', borderBottom: '1px solid #334155' }}>
                                   <Box sx={{ display: 'flex', gap: 1 }}>
                                     <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: '#ef4444' }} />
                                     <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: '#f59e0b' }} />
@@ -2066,7 +2007,7 @@ export default function CreatorStudioDashboard({
                                   </Typography>
                                 </Box>
 
-                                <Box sx={{ display: 'flex', justifyContent: 'center', p: 2, pt: 1, bgcolor: '#1e293b', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'center', p: 2, pt: 1.25, bgcolor: '#1e293b', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                                   <Button
                                     onClick={() => handleCopyPromptText(compiledPrompt1b, 'doc1b')}
                                     sx={{
@@ -2091,7 +2032,7 @@ export default function CreatorStudioDashboard({
                             )}
 
                             {/* Verification Checklist (Important) */}
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 2, border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '16px', bgcolor: 'rgba(245, 158, 11, 0.04)' }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, p: 2.25, border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '16px', bgcolor: 'rgba(245, 158, 11, 0.04)' }}>
                               <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#b45309', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                                 ⚡ Verify AI Output for Step 2:
                               </Typography>
@@ -2143,12 +2084,12 @@ export default function CreatorStudioDashboard({
                             </Box>
 
                             {/* Turn 2 Scratchpad Block */}
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
                               <Typography variant="overline" sx={{ color: '#14b8a6', fontWeight: 800, letterSpacing: '0.06em', lineHeight: 1, display: 'flex', alignItems: 'center', gap: 0.8 }}>
                                 📝 Step 2 Scratchpad · Drucker OSINT Vectors Output
                               </Typography>
-                              <Box sx={{ p: 1.5, bgcolor: 'rgba(20, 184, 166, 0.05)', border: '1px solid rgba(20, 184, 166, 0.2)', borderRadius: '12px' }}>
-                                <Typography sx={{ color: '#0f766e', fontSize: '0.82rem', lineHeight: 1.5 }}>
+                              <Box sx={{ p: 1.75, bgcolor: 'rgba(20, 184, 166, 0.05)', border: '1px solid rgba(20, 184, 166, 0.2)', borderRadius: '14px' }}>
+                                <Typography sx={{ color: '#0f766e', fontSize: '0.82rem', lineHeight: 1.55 }}>
                                   <strong>Auto-Saving Workspace:</strong> Paste your Turn 2 LLM response here. It is saved in real-time and dynamically injected into Step 3&apos;s Cognitive Spectrum Generator.
                                 </Typography>
                               </Box>
@@ -2158,38 +2099,117 @@ export default function CreatorStudioDashboard({
                                 fullWidth
                                 placeholder="Paste your Document 1b innovation vectors here..."
                                 value={custom1bOutput || rawPrompts?.doc1bOutput || ''}
-                                onChange={(e: any) => setCustom1bOutput(e.target.value)}
+                                onChange={(e: any) => {
+                                  setCustom1bOutput(e.target.value);
+                                  saveScratchpadToStorage({ doc1b: e.target.value });
+                                }}
                               />
                             </Box>
                           </Box>
 
-                          <Divider sx={{ borderColor: 'rgba(0,0,0,0.06)' }} />
+                          <Divider sx={{ borderColor: 'rgba(0,0,0,0.08)', my: 1.5 }} />
 
                           {/* ──────────────────────────────────────────────────────────── */}
                           {/* STEP 3: SPECTRUM SYNTHESIZER & OUTLINES (TURN 3)            */}
                           {/* ──────────────────────────────────────────────────────────── */}
-                          <Box id="wiki-step-3" sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, scrollMarginTop: '80px' }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+                          <Box id="wiki-step-3" sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, scrollMarginTop: '80px' }}>
+                            {/* Step 3 Header */}
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                <Box sx={{ width: 28, height: 28, borderRadius: '50%', bgcolor: '#a855f7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.85rem' }}>
+                                <Box sx={{
+                                  width: 32,
+                                  height: 32,
+                                  borderRadius: '50%',
+                                  background: 'linear-gradient(135deg, #a855f7 0%, #7c3aed 100%)',
+                                  color: '#fff',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontWeight: 900,
+                                  fontSize: '0.9rem',
+                                  boxShadow: '0 4px 12px rgba(168, 85, 247, 0.35)'
+                                }}>
                                   3
                                 </Box>
-                                <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>
-                                  Step 3: Cognitive Spectrum Synthesizer (Turn 3) 📊
-                                </Typography>
+                                <Box>
+                                  <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
+                                    Step 3: Generate 10–12 Article Briefs (Turn 3) 📊
+                                  </Typography>
+                                  <Typography sx={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 600 }}>
+                                    Synthesizes Macro-Geo + Drucker OSINT across 6 Nigerian market angles
+                                  </Typography>
+                                </Box>
                               </Box>
+
                               <Chip
-                                label={effective1bOutput ? "🟢 Full OSINT Chained" : "🟡 Standalone Mode"}
+                                icon={<AutoAwesomeIcon sx={{ fontSize: '14px !important', color: effective1bOutput ? '#059669 !important' : '#7e22ce !important' }} />}
+                                label={effective1bOutput && effective1aOutput ? "🟢 Turn 1 & 2 Chained" : effective1aOutput ? "🟡 Turn 1 Chained" : "🟣 Standalone Mode"}
                                 size="small"
-                                sx={{ bgcolor: effective1bOutput ? 'rgba(16, 185, 129, 0.12)' : 'rgba(168, 85, 247, 0.12)', color: effective1bOutput ? '#059669' : '#7e22ce', fontWeight: 800, fontSize: '0.72rem' }}
+                                sx={{
+                                  bgcolor: effective1bOutput ? 'rgba(16, 185, 129, 0.12)' : 'rgba(168, 85, 247, 0.12)',
+                                  color: effective1bOutput ? '#059669' : '#7e22ce',
+                                  fontWeight: 800,
+                                  fontSize: '0.74rem',
+                                  border: '1px solid',
+                                  borderColor: effective1bOutput ? 'rgba(16, 185, 129, 0.3)' : 'rgba(168, 85, 247, 0.3)'
+                                }}
                               />
                             </Box>
-                            <Typography sx={{ color: '#475569', fontSize: '0.9rem', lineHeight: 1.55 }}>
-                              Generates the final 10–12 structured article briefs mapped systematically across the 6 Cognitive Spectrum ranks.
-                            </Typography>
+
+                            {/* 6 Cognitive Spectrum Market Angles Quick Guide */}
+                            <Box sx={{
+                              p: 2,
+                              bgcolor: '#faf5ff',
+                              border: '1px solid #e9d5ff',
+                              borderRadius: '16px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: 1.5
+                            }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Typography sx={{ fontSize: '0.76rem', fontWeight: 900, color: '#7e22ce', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                  <span>🎯</span> The 6 Nigerian Market Angles in this Turn:
+                                </Typography>
+                                <Chip label="10–12 Outlines" size="small" sx={{ bgcolor: 'rgba(168, 85, 247, 0.2)', color: '#6b21a8', fontWeight: 800, fontSize: '0.68rem', height: 20 }} />
+                              </Box>
+
+                              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1 }}>
+                                {[
+                                  { rank: '#1', name: 'The Bleeding Neck', desc: 'Urgent fuel, freight & spoilage squeeze', color: '#ef4444', bg: '#fef2f2', border: '#fecaca', emoji: '🔴' },
+                                  { rank: '#2', name: 'Institutional Pivot', desc: '₦500M+ SPVs, off-taker balance sheets', color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe', emoji: '🏛️' },
+                                  { rank: '#3', name: 'The Grassroots Hack', desc: 'Farmgate aggregation & informal yield hacks', color: '#d97706', bg: '#fffbeb', border: '#fde68a', emoji: '🚜' },
+                                  { rank: '#4', name: 'The R&D Horizon', desc: 'Post-harvest biotech, solar drying & storage', color: '#059669', bg: '#ecfdf5', border: '#a7f3d0', emoji: '🧬' },
+                                  { rank: '#5', name: 'The Macro Threat', desc: 'FX devaluation, interest rates & policy bans', color: '#ea580c', bg: '#fff7ed', border: '#fed7aa', emoji: '⚠️' },
+                                  { rank: '#6', name: 'The Black Swan', desc: 'Informal arbitrage, spot spreads & disruption', color: '#9333ea', bg: '#faf5ff', border: '#e9d5ff', emoji: '🔮' },
+                                ].map(spectrum => (
+                                  <Box
+                                    key={spectrum.rank}
+                                    sx={{
+                                      p: 1.25,
+                                      bgcolor: spectrum.bg,
+                                      border: `1px solid ${spectrum.border}`,
+                                      borderRadius: '12px',
+                                      display: 'flex',
+                                      alignItems: 'flex-start',
+                                      gap: 1.25
+                                    }}
+                                  >
+                                    <Typography sx={{ fontSize: '1rem', lineHeight: 1 }}>{spectrum.emoji}</Typography>
+                                    <Box sx={{ minWidth: 0 }}>
+                                      <Typography sx={{ fontSize: '0.78rem', fontWeight: 800, color: spectrum.color, lineHeight: 1.2 }}>
+                                        {spectrum.rank} {spectrum.name}
+                                      </Typography>
+                                      <Typography sx={{ fontSize: '0.72rem', color: '#475569', fontWeight: 500, lineHeight: 1.3, mt: 0.25 }}>
+                                        {spectrum.desc}
+                                      </Typography>
+                                    </Box>
+                                  </Box>
+                                ))}
+                              </Box>
+                            </Box>
 
                             {/* Pre-Prompt Action Checklist */}
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 1.5, border: '1px solid rgba(168, 85, 247, 0.25)', borderRadius: '14px', bgcolor: 'rgba(168, 85, 247, 0.03)' }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 1.75, border: '1px solid rgba(168, 85, 247, 0.25)', borderRadius: '14px', bgcolor: 'rgba(168, 85, 247, 0.03)' }}>
                               {[
                                 { id: 'act_copy_1c', text: '1. Click "Copy Executable Prompt 1c" below (with full OSINT chained), paste it into your AI chat, and press Enter to generate.' }
                               ].map(item => {
@@ -2199,7 +2219,7 @@ export default function CreatorStudioDashboard({
                                     key={item.id}
                                     onClick={() => toggleChecklistItem(item.id)}
                                     sx={{
-                                      display: 'flex', alignItems: 'center', p: 1, borderRadius: '10px', cursor: 'pointer',
+                                      display: 'flex', alignItems: 'center', p: 1.25, borderRadius: '10px', cursor: 'pointer',
                                       bgcolor: isChecked ? 'rgba(16, 185, 129, 0.06)' : '#ffffff',
                                       border: isChecked ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(168, 85, 247, 0.2)',
                                       transition: 'all 0.2s',
@@ -2222,11 +2242,11 @@ export default function CreatorStudioDashboard({
                                       )}
                                     </Box>
                                     <Typography sx={{
-                                      fontSize: '0.84rem',
+                                      fontSize: '0.85rem',
                                       color: isChecked ? '#94a3b8' : '#1e293b',
                                       textDecoration: isChecked ? 'line-through' : 'none',
                                       fontWeight: isChecked ? 500 : 700,
-                                      lineHeight: 1.4
+                                      lineHeight: 1.45
                                     }}>
                                       {item.text}
                                     </Typography>
@@ -2237,7 +2257,7 @@ export default function CreatorStudioDashboard({
 
                             {/* PromptBuilderBlock Terminal */}
                             {copiedPromptTab === 'doc1c' ? (
-                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2, bgcolor: 'rgba(168, 85, 247, 0.08)', borderRadius: '16px', border: '1px solid rgba(168, 85, 247, 0.3)' }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2.25, bgcolor: 'rgba(168, 85, 247, 0.08)', borderRadius: '16px', border: '1px solid rgba(168, 85, 247, 0.3)' }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
                                   <CheckCircleIcon sx={{ color: '#a855f7' }} />
                                   <Typography sx={{ color: '#7e22ce', fontWeight: 700, fontSize: '0.9rem' }}>
@@ -2249,15 +2269,15 @@ export default function CreatorStudioDashboard({
                                 </Button>
                               </Box>
                             ) : (
-                              <Box sx={{ position: 'relative', bgcolor: '#0f172a', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }}>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2.5, py: 1.5, bgcolor: '#1e293b', borderBottom: '1px solid #334155' }}>
+                              <Box sx={{ position: 'relative', bgcolor: '#0f172a', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 10px 28px rgba(0,0,0,0.15)' }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2.5, py: 1.75, bgcolor: '#1e293b', borderBottom: '1px solid #334155' }}>
                                   <Box sx={{ display: 'flex', gap: 1 }}>
                                     <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: '#ef4444' }} />
                                     <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: '#f59e0b' }} />
                                     <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: '#10b981' }} />
                                   </Box>
                                   <Typography sx={{ color: '#c084fc', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                                    PROMPT BUILDER · TURN 3 (OUTLINES GENERATOR)
+                                    PROMPT BUILDER · TURN 3 (SPECTRUM OUTLINES) · 10–12 BRIEFS
                                   </Typography>
                                   <Box sx={{ width: 33 }} />
                                 </Box>
@@ -2268,21 +2288,21 @@ export default function CreatorStudioDashboard({
                                   </Typography>
                                 </Box>
 
-                                <Box sx={{ display: 'flex', justifyContent: 'center', p: 2, pt: 1, bgcolor: '#1e293b', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'center', p: 2, pt: 1.25, bgcolor: '#1e293b', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                                   <Button
                                     onClick={() => handleCopyPromptText(compiledPrompt1c, 'doc1c')}
                                     sx={{
                                       bgcolor: '#a855f7',
                                       color: '#fff',
                                       borderRadius: '16px',
-                                      py: 1,
-                                      px: 3.5,
+                                      py: 1.1,
+                                      px: 4,
                                       fontWeight: 800,
                                       textTransform: 'none',
-                                      fontSize: '0.85rem',
-                                      boxShadow: '0 4px 12px rgba(168, 85, 247, 0.35)',
+                                      fontSize: '0.88rem',
+                                      boxShadow: '0 4px 16px rgba(168, 85, 247, 0.4)',
                                       transition: 'all 0.2s',
-                                      '&:hover': { bgcolor: '#9333ea', transform: 'translateY(-1px)' }
+                                      '&:hover': { bgcolor: '#9333ea', transform: 'translateY(-1px)', boxShadow: '0 6px 20px rgba(168, 85, 247, 0.5)' }
                                     }}
                                   >
                                     <ContentCopyIcon sx={{ mr: 1, fontSize: 16 }} />
@@ -2293,7 +2313,7 @@ export default function CreatorStudioDashboard({
                             )}
 
                             {/* Verification Checklist (Important) */}
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 2, border: '1px solid rgba(168, 85, 247, 0.3)', borderRadius: '16px', bgcolor: 'rgba(168, 85, 247, 0.04)' }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, p: 2.25, border: '1px solid rgba(168, 85, 247, 0.3)', borderRadius: '16px', bgcolor: 'rgba(168, 85, 247, 0.04)' }}>
                               <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#7e22ce', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                                 ⚡ Verify AI Output for Step 3:
                               </Typography>
@@ -2345,42 +2365,81 @@ export default function CreatorStudioDashboard({
                             </Box>
 
                             {/* Turn 3 Scratchpad Block */}
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                              <Typography variant="overline" sx={{ color: '#14b8a6', fontWeight: 800, letterSpacing: '0.06em', lineHeight: 1, display: 'flex', alignItems: 'center', gap: 0.8 }}>
-                                📝 Step 3 Scratchpad · Cognitive Spectrum Outlines Output
-                              </Typography>
-                              <Box sx={{ p: 1.5, bgcolor: 'rgba(20, 184, 166, 0.05)', border: '1px solid rgba(20, 184, 166, 0.2)', borderRadius: '12px' }}>
-                                <Typography sx={{ color: '#0f766e', fontSize: '0.82rem', lineHeight: 1.5 }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Typography variant="overline" sx={{ color: '#14b8a6', fontWeight: 800, letterSpacing: '0.06em', lineHeight: 1, display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                                  📝 Step 3 Scratchpad · Cognitive Spectrum Outlines Output
+                                </Typography>
+                                {liveParsedBriefs.length > 0 && (
+                                  <Chip
+                                    label={`✓ ${liveParsedBriefs.length} Briefs Detected`}
+                                    size="small"
+                                    sx={{ bgcolor: 'rgba(16, 185, 129, 0.12)', color: '#059669', fontWeight: 800, fontSize: '0.72rem' }}
+                                  />
+                                )}
+                              </Box>
+
+                              <Box sx={{ p: 1.75, bgcolor: 'rgba(20, 184, 166, 0.05)', border: '1px solid rgba(20, 184, 166, 0.2)', borderRadius: '14px' }}>
+                                <Typography sx={{ color: '#0f766e', fontSize: '0.82rem', lineHeight: 1.55 }}>
                                   <strong>Auto-Saving Workspace:</strong> Paste your 10–12 generated article outlines here. When ready, it automatically feeds into Step 4 for studio card rendering.
                                 </Typography>
                               </Box>
+
                               <PremiumMarkdownEditor
-                                colorTheme="#14b8a6"
-                                minRows={4}
+                                colorTheme="#a855f7"
+                                minRows={5}
                                 fullWidth
                                 placeholder="Paste your Document 1c markdown outlines here..."
                                 value={custom1cOutput || rawPrompts?.doc1cOutput || ''}
                                 onChange={(e: any) => {
                                   setCustom1cOutput(e.target.value);
                                   setCustomIngestMarkdown(e.target.value);
+                                  saveScratchpadToStorage({ doc1c: e.target.value, ingest: e.target.value });
                                 }}
                               />
+
+                              {/* Live Spectrum Detection Badge Strip inside Step 3 */}
+                              {liveParsedBriefs.length > 0 && (
+                                <Box sx={{
+                                  p: 1.5,
+                                  bgcolor: '#f0fdf4',
+                                  border: '1px solid #bbf7d0',
+                                  borderRadius: '12px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  flexWrap: 'wrap',
+                                  gap: 1
+                                }}>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <CheckCircleIcon sx={{ color: '#16a34a', fontSize: 18 }} />
+                                    <Typography sx={{ color: '#15803d', fontSize: '0.82rem', fontWeight: 800 }}>
+                                      {liveParsedBriefs.length} Briefs Parsed
+                                    </Typography>
+                                  </Box>
+                                  <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                    {Array.from(new Set(liveParsedBriefs.map(b => b.spectrumRank))).map(rank => (
+                                      <Chip key={rank} label={rank} size="small" sx={{ bgcolor: '#16a34a', color: '#fff', fontSize: '0.65rem', fontWeight: 800, height: 20 }} />
+                                    ))}
+                                  </Box>
+                                </Box>
+                              )}
                             </Box>
                           </Box>
 
-                          <Divider sx={{ borderColor: 'rgba(0,0,0,0.06)' }} />
+                          <Divider sx={{ borderColor: 'rgba(0,0,0,0.08)', my: 1.5 }} />
 
                           {/* ──────────────────────────────────────────────────────────── */}
                           {/* STEP 4: FAST INGEST SCRATCHPAD & STUDIO PARSER              */}
                           {/* ──────────────────────────────────────────────────────────── */}
-                          <Box id="wiki-step-4" sx={{ display: 'flex', flexDirection: 'column', gap: 2, scrollMarginTop: '80px' }}>
+                          <Box id="wiki-step-4" sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, scrollMarginTop: '80px' }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                <Box sx={{ width: 28, height: 28, borderRadius: '50%', bgcolor: '#10b981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.85rem' }}>
+                                <Box sx={{ width: 30, height: 30, borderRadius: '50%', bgcolor: '#10b981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.88rem' }}>
                                   4
                                 </Box>
                                 <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>
-                                  Step 4: Fast Ingest Scratchpad & Studio Parser ⚡
+                                  Step 4: Ingest into Studio Cards ⚡
                                 </Typography>
                               </Box>
 
@@ -2395,12 +2454,8 @@ export default function CreatorStudioDashboard({
                               </Button>
                             </Box>
 
-                            <Typography sx={{ color: '#475569', fontSize: '0.9rem', lineHeight: 1.55 }}>
-                              Paste your raw Document 1c markdown text below. The parser validates the metadata in real time and automatically renders each brief into your Studio cards.
-                            </Typography>
-
                             {/* Step 4 Scratchpad Block */}
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
                               <Typography variant="overline" sx={{ color: '#10b981', fontWeight: 800, letterSpacing: '0.06em', lineHeight: 1, display: 'flex', alignItems: 'center', gap: 0.8 }}>
                                 📝 Step 4 Scratchpad · Final Markdown Outlines
                               </Typography>
@@ -2410,12 +2465,15 @@ export default function CreatorStudioDashboard({
                                 fullWidth
                                 placeholder={`---\n**[SYSTEM_METADATA]**\n* Category_ID: Land\n* Subcategory_ID: Sole Farmland Ownership\n* Commodity: ${selectedCommodity}\n* Format_Type: Brief\n* Era: Present\n* Location: Dawanau Hub, Kano\n* Spectrum_Rank: #1 (The Bleeding Neck)\n* Target_Persona: Agri-VCs & Haulers\n\n### Title...\n\n**Description:**\n* Bullet 1...\n* Bullet 2...\n---`}
                                 value={customIngestMarkdown}
-                                onChange={(e: any) => setCustomIngestMarkdown(e.target.value)}
+                                onChange={(e: any) => {
+                                  setCustomIngestMarkdown(e.target.value);
+                                  saveScratchpadToStorage({ ingest: e.target.value });
+                                }}
                               />
                             </Box>
 
                             {/* Verification Checklist (Regular) */}
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 2, border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '16px', bgcolor: 'rgba(16, 185, 129, 0.04)' }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, p: 2.25, border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '16px', bgcolor: 'rgba(16, 185, 129, 0.04)' }}>
                               <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                                 📋 Ingest Verification Checklist:
                               </Typography>
