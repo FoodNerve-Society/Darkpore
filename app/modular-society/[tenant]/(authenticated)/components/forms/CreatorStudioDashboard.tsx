@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   Box, Typography, Paper, Chip, IconButton, alpha, Tooltip, CircularProgress, Button,
-  Dialog, DialogTitle, DialogContent, Tabs, Tab, TextField
+  Drawer, TextField, Accordion, AccordionSummary, AccordionDetails, Breadcrumbs, Link,
+  Alert, AlertTitle, Divider
 } from '@mui/material';
 import {
   Article as ArticleIcon,
@@ -42,6 +43,12 @@ import {
   Lightbulb as LightbulbIcon,
   AutoFixHigh as AutoFixHighIcon,
   Storage as StorageIcon,
+  MenuBook as MenuBookIcon,
+  ExpandMore as ExpandMoreIcon,
+  Description as DocIcon,
+  NavigateNext as NavigateNextIcon,
+  Folder as FolderIcon,
+  PlayArrow as PlayArrowIcon,
 } from '@mui/icons-material';
 import { keyframes } from '@mui/system';
 import WikiHotspot from '@/components/wiki/WikiHotspot';
@@ -170,6 +177,30 @@ export default function CreatorStudioDashboard({
   const [custom1cOutput, setCustom1cOutput] = useState('');
   const [customIngestMarkdown, setCustomIngestMarkdown] = useState('');
   const [customIngestError, setCustomIngestError] = useState('');
+  const [wikiChecklist, setWikiChecklist] = useState<Record<string, boolean>>({});
+
+  // Load checklist on commodity / category change
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const key = `editorial_sop_tasks_${selectedCommodity}_${selectedCategory}`;
+      try {
+        const saved = localStorage.getItem(key);
+        if (saved) setWikiChecklist(JSON.parse(saved));
+        else setWikiChecklist({});
+      } catch {}
+    }
+  }, [selectedCommodity, selectedCategory]);
+
+  const toggleChecklistItem = (id: string) => {
+    setWikiChecklist(prev => {
+      const next = { ...prev, [id]: !prev[id] };
+      if (typeof window !== 'undefined') {
+        const key = `editorial_sop_tasks_${selectedCommodity}_${selectedCategory}`;
+        localStorage.setItem(key, JSON.stringify(next));
+      }
+      return next;
+    });
+  };
 
   // Live Dynamic Chaining Prompts
   const effective1aOutput = custom1aOutput.trim() || rawPrompts?.doc1aOutput || '';
@@ -1194,15 +1225,16 @@ export default function CreatorStudioDashboard({
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
                           <Button
                             onClick={() => setPromptTerminalOpen(true)}
-                            startIcon={<TerminalIcon sx={{ fontSize: 16 }} />}
+                            startIcon={<MenuBookIcon sx={{ fontSize: 16 }} />}
                             sx={{
                               bgcolor: 'rgba(59, 130, 246, 0.15)', color: '#93c5fd', border: '1px solid rgba(59, 130, 246, 0.35)',
                               borderRadius: '12px', fontWeight: 800, textTransform: 'none', px: 2, fontSize: '0.8rem',
                               '&:hover': { bgcolor: 'rgba(59, 130, 246, 0.25)' }
                             }}
                           >
-                            ⚡ AI Prompt Terminal & Ingest
+                            📖 AI Guide & Step-by-Step SOP
                           </Button>
+                          <WikiHotspot id="creator_studio_relay" label="Editorial Relay SOP" icon="book" />
                           <Button
                             onClick={handleRegenerate}
                             disabled={regenerating || loadingInsights}
@@ -1361,7 +1393,7 @@ export default function CreatorStudioDashboard({
                             <Button
                               variant="contained"
                               onClick={() => setPromptTerminalOpen(true)}
-                              startIcon={<TerminalIcon />}
+                              startIcon={<MenuBookIcon />}
                               sx={{
                                 bgcolor: '#3b82f6',
                                 color: '#fff',
@@ -1373,7 +1405,7 @@ export default function CreatorStudioDashboard({
                                 '&:hover': { bgcolor: '#2563eb' }
                               }}
                             >
-                              Open AI Prompt Terminal & Copy
+                              📖 Open Step-by-Step Relay SOP & Prompts
                             </Button>
                             <Button
                               variant="outlined"
@@ -1532,260 +1564,654 @@ export default function CreatorStudioDashboard({
                       )}
 
                       {/* ═══════════════════════════════════════════════════════════ */}
-                      {/* AI PROMPT TERMINAL & CUSTOM INGEST DIALOG                   */}
+                      {/* AUTHENTIC WIKI-STYLE EDITORIAL RELAY GUIDE (RIGHT SIDEBAR) */}
                       {/* ═══════════════════════════════════════════════════════════ */}
-                      <Dialog
+                      <Drawer
+                        anchor="right"
                         open={promptTerminalOpen}
                         onClose={() => setPromptTerminalOpen(false)}
-                        maxWidth="md"
-                        fullWidth
                         slotProps={{
                           paper: {
                             sx: {
-                              bgcolor: '#0f172a',
-                              backgroundImage: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-                              border: '1px solid rgba(255,255,255,0.15)',
-                              borderRadius: '24px',
-                              color: '#fff',
-                              p: 1
+                              width: { xs: '100%', sm: 600, md: 700 },
+                              bgcolor: '#ffffff',
+                              color: '#0f172a',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              boxShadow: '-10px 0 50px rgba(0,0,0,0.12)',
                             }
                           }
                         }}
                       >
-                        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                            <Box sx={{ p: 1, borderRadius: '10px', bgcolor: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa' }}>
-                              <TerminalIcon />
+                        {/* ── STICKY WORKSPACE NAVBAR (Exact WikiReader style) ── */}
+                        <Box sx={{
+                          position: 'sticky',
+                          top: 0,
+                          zIndex: 20,
+                          bgcolor: 'rgba(255, 255, 255, 0.92)',
+                          backdropFilter: 'blur(16px)',
+                          borderBottom: '1px solid rgba(0,0,0,0.08)',
+                          px: { xs: 2, sm: 3.5 },
+                          py: 1.5,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between'
+                        }}>
+                          <Breadcrumbs separator={<NavigateNextIcon fontSize="small" sx={{ color: '#94a3b8' }} />} aria-label="breadcrumb">
+                            <Box sx={{ display: 'flex', alignItems: 'center', color: '#64748b', fontSize: '0.85rem', fontWeight: 600 }}>
+                              <DocIcon sx={{ mr: 0.5, fontSize: 16, color: '#3b82f6' }} /> Omni-Wiki
                             </Box>
-                            <Box>
-                              <Typography variant="h6" sx={{ fontWeight: 900, color: '#fff' }}>
-                                AI Prompt Terminal & Custom Ingest
-                              </Typography>
-                              <Typography sx={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)' }}>
-                                View exact compiled daily prompts or fast-ingest external research outlines.
-                              </Typography>
+                            <Typography sx={{ color: '#64748b', fontSize: '0.85rem', fontWeight: 600 }}>
+                              Editorial Studio
+                            </Typography>
+                            <Typography sx={{ color: '#0f172a', fontSize: '0.85rem', fontWeight: 800 }}>
+                              SOP: Intelligence Relay
+                            </Typography>
+                          </Breadcrumbs>
+
+                          <IconButton onClick={() => setPromptTerminalOpen(false)} sx={{ color: '#64748b', '&:hover': { color: '#0f172a', bgcolor: 'rgba(0,0,0,0.05)' } }}>
+                            <CloseIcon sx={{ fontSize: 20 }} />
+                          </IconButton>
+                        </Box>
+
+                        {/* ── SCROLLABLE WIKI DOCUMENT BODY ── */}
+                        <Box sx={{ flex: 1, overflowY: 'auto', p: { xs: 2.5, sm: 4.5 }, display: 'flex', flexDirection: 'column', gap: 3.5 }}>
+
+                          {/* Document Title Header Block */}
+                          <Box>
+                            <Typography variant="h4" sx={{ fontWeight: 900, color: '#0f172a', letterSpacing: '-0.025em', mb: 1.5, lineHeight: 1.25 }}>
+                              Editorial Intelligence & Prompt Chaining SOP
+                            </Typography>
+                            
+                            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+                              <Chip label={`🌾 Commodity: ${selectedCommodity}`} size="small" sx={{ bgcolor: 'rgba(16, 185, 129, 0.1)', color: '#059669', fontWeight: 700, borderRadius: '8px' }} />
+                              <Chip label={`💼 ${selectedCategory.toUpperCase()}`} size="small" sx={{ bgcolor: 'rgba(59, 130, 246, 0.1)', color: '#2563eb', fontWeight: 700, borderRadius: '8px' }} />
+                              <Chip label={`📅 ${format(new Date(selectedTargetDate), 'MMMM d, yyyy')}`} size="small" sx={{ bgcolor: 'rgba(0,0,0,0.05)', color: '#475569', fontWeight: 600, borderRadius: '8px' }} />
+                              <Chip label="⚡ Interactive SOP" size="small" sx={{ bgcolor: 'rgba(245, 158, 11, 0.1)', color: '#b45309', fontWeight: 700, borderRadius: '8px' }} />
                             </Box>
                           </Box>
-                          <IconButton onClick={() => setPromptTerminalOpen(false)} sx={{ color: 'rgba(255,255,255,0.6)' }}>
-                            <CloseIcon />
-                          </IconButton>
-                        </DialogTitle>
 
-                        <DialogContent sx={{ pt: 1 }}>
-                          <Tabs
-                            value={promptTabIdx}
-                            onChange={(_, val) => setPromptTabIdx(val)}
-                            sx={{
-                              borderBottom: '1px solid rgba(255,255,255,0.1)',
-                              mb: 2.5,
-                              '& .MuiTab-root': { color: 'rgba(255,255,255,0.6)', fontWeight: 700, textTransform: 'none', fontSize: '0.85rem' },
-                              '& .Mui-selected': { color: '#60a5fa !important', fontWeight: 900 }
-                            }}
-                          >
-                            <Tab label="📄 Doc 1a (Geo & Eras)" />
-                            <Tab label="📄 Doc 1b (Drucker OSINT)" />
-                            <Tab label="📄 Doc 1c (Outlines)" />
-                            <Tab label="⚡ Fast Ingest Outlines" />
-                          </Tabs>
+                          <Divider sx={{ borderColor: 'rgba(0,0,0,0.08)' }} />
 
-                          {/* Tab 0: Document 1a */}
-                          {promptTabIdx === 0 && (
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <Typography sx={{ color: '#93c5fd', fontWeight: 800, fontSize: '0.85rem' }}>
-                                  Document 1a: Macro-Geo & Temporal Context Prompt
-                                </Typography>
-                                <Button
-                                  size="small"
-                                  startIcon={copiedPromptTab === 'doc1a' ? <CheckIcon /> : <ContentCopyIcon />}
-                                  onClick={() => handleCopyPromptText(rawPrompts?.doc1aPrompt || buildDoc1aPrompt({
-                                    category: selectedCategory,
-                                    commodity: selectedCommodity,
-                                    subcategoriesList: (foodChallenges.find(c => c.id === selectedCategory)?.subcategories || []).map(s => ({ title: s.title, desc: s.desc })),
-                                    currentMonthYear: format(new Date(selectedTargetDate), 'MMMM yyyy'),
-                                  }), 'doc1a')}
-                                  sx={{ bgcolor: 'rgba(255,255,255,0.08)', color: '#fff', textTransform: 'none', fontWeight: 700, borderRadius: '8px' }}
+                          {/* Callout Alert Block */}
+                          <Alert severity="info" sx={{ borderRadius: '16px', border: '1px solid rgba(59, 130, 246, 0.25)', bgcolor: 'rgba(59, 130, 246, 0.04)', '& .MuiAlert-message': { width: '100%' } }}>
+                            <AlertTitle sx={{ fontWeight: 800, color: '#1e40af', mb: 0.5 }}>Human-in-the-Loop Intelligence SOP</AlertTitle>
+                            <Typography sx={{ fontSize: '0.88rem', color: '#1e3a8a', lineHeight: 1.55 }}>
+                              Execute this sequential 3-turn intelligence pipeline on your preferred LLM (ChatGPT, Claude 3.7, or Gemini Flash), then paste your generated outlines into Step 4 to immediately classify and render them into the Studio.
+                            </Typography>
+                          </Alert>
+
+                          {/* In This Section (Quick Jump Navigation Card) */}
+                          <Box sx={{
+                            p: 2.5,
+                            background: 'linear-gradient(135deg, rgba(248, 250, 252, 0.8), rgba(241, 245, 249, 0.5))',
+                            backdropFilter: 'blur(20px)',
+                            borderRadius: '20px',
+                            border: '1px solid rgba(226, 232, 240, 0.8)',
+                            boxShadow: '0 4px 16px rgba(0,0,0,0.03)'
+                          }}>
+                            <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <FolderIcon sx={{ fontSize: 16, color: '#3b82f6' }} /> In This SOP
+                            </Typography>
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                              {[
+                                { label: '1. Macro-Geo Context', id: 'wiki-step-1', icon: '📄' },
+                                { label: '2. Drucker OSINT', id: 'wiki-step-2', icon: '🧠' },
+                                { label: '3. Spectrum Outlines', id: 'wiki-step-3', icon: '📊' },
+                                { label: '4. Fast Ingest & Render', id: 'wiki-step-4', icon: '⚡' },
+                              ].map(item => (
+                                <Box
+                                  key={item.id}
+                                  onClick={() => {
+                                    const el = document.getElementById(item.id);
+                                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                                  }}
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 1,
+                                    bgcolor: '#ffffff',
+                                    border: '1px solid rgba(0,0,0,0.06)',
+                                    fontWeight: 700,
+                                    color: '#0f172a',
+                                    fontSize: '0.82rem',
+                                    py: 0.8,
+                                    px: 2,
+                                    borderRadius: '12px',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+                                    '&:hover': {
+                                      transform: 'translateY(-2px)',
+                                      boxShadow: '0 8px 16px rgba(59, 130, 246, 0.15)',
+                                      borderColor: 'rgba(59, 130, 246, 0.3)',
+                                      color: '#2563eb'
+                                    }
+                                  }}
                                 >
-                                  {copiedPromptTab === 'doc1a' ? 'Copied!' : 'Copy Prompt 1a'}
-                                </Button>
-                              </Box>
-
-                              <Paper sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.5)', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)', maxHeight: '300px', overflowY: 'auto' }}>
-                                <Typography component="pre" sx={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.78rem', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
-                                  {rawPrompts?.doc1aPrompt || buildDoc1aPrompt({
-                                    category: selectedCategory,
-                                    commodity: selectedCommodity,
-                                    subcategoriesList: (foodChallenges.find(c => c.id === selectedCategory)?.subcategories || []).map(s => ({ title: s.title, desc: s.desc })),
-                                    currentMonthYear: format(new Date(selectedTargetDate), 'MMMM yyyy'),
-                                  })}
-                                </Typography>
-                              </Paper>
-
-                              {rawPrompts?.doc1aOutput && (
-                                <Box>
-                                  <Typography sx={{ color: '#34d399', fontWeight: 800, fontSize: '0.8rem', mb: 1 }}>
-                                    Raw Output Received (Turn 1):
-                                  </Typography>
-                                  <Paper sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.35)', borderRadius: '14px', border: '1px solid rgba(52, 211, 153, 0.2)', maxHeight: '200px', overflowY: 'auto' }}>
-                                    <Typography component="pre" sx={{ color: '#a7f3d0', fontSize: '0.78rem', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
-                                      {rawPrompts.doc1aOutput}
-                                    </Typography>
-                                  </Paper>
+                                  <span>{item.icon}</span> {item.label}
                                 </Box>
-                              )}
+                              ))}
                             </Box>
-                          )}
+                          </Box>
 
-                          {/* Tab 1: Document 1b */}
-                          {promptTabIdx === 1 && (
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <Typography sx={{ color: '#fbbf24', fontWeight: 800, fontSize: '0.85rem' }}>
-                                  Document 1b: Drucker Innovation OSINT Engine Prompt (Pre-Injected with 1a)
-                                </Typography>
-                                <Button
-                                  size="small"
-                                  startIcon={copiedPromptTab === 'doc1b' ? <CheckIcon /> : <ContentCopyIcon />}
-                                  onClick={() => handleCopyPromptText(rawPrompts?.doc1bPrompt || buildDoc1bPrompt({
-                                    commodity: selectedCommodity,
-                                    currentMonthYear: format(new Date(selectedTargetDate), 'MMMM yyyy'),
-                                    doc1aOutput: rawPrompts?.doc1aOutput || '[Run Turn 1 to populate Doc 1a output]',
-                                    subcategoriesList: (foodChallenges.find(c => c.id === selectedCategory)?.subcategories || []).map(s => ({ title: s.title, desc: s.desc })),
-                                  }), 'doc1b')}
-                                  sx={{ bgcolor: 'rgba(255,255,255,0.08)', color: '#fff', textTransform: 'none', fontWeight: 700, borderRadius: '8px' }}
-                                >
-                                  {copiedPromptTab === 'doc1b' ? 'Copied!' : 'Copy Prompt 1b'}
-                                </Button>
-                              </Box>
-
-                              <Paper sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.5)', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)', maxHeight: '300px', overflowY: 'auto' }}>
-                                <Typography component="pre" sx={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.78rem', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
-                                  {rawPrompts?.doc1bPrompt || buildDoc1bPrompt({
-                                    commodity: selectedCommodity,
-                                    currentMonthYear: format(new Date(selectedTargetDate), 'MMMM yyyy'),
-                                    doc1aOutput: rawPrompts?.doc1aOutput || '[Run Turn 1 to populate Doc 1a output]',
-                                    subcategoriesList: (foodChallenges.find(c => c.id === selectedCategory)?.subcategories || []).map(s => ({ title: s.title, desc: s.desc })),
-                                  })}
-                                </Typography>
-                              </Paper>
-
-                              {rawPrompts?.doc1bOutput && (
-                                <Box>
-                                  <Typography sx={{ color: '#34d399', fontWeight: 800, fontSize: '0.8rem', mb: 1 }}>
-                                    Raw Output Received (Turn 2):
-                                  </Typography>
-                                  <Paper sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.35)', borderRadius: '14px', border: '1px solid rgba(52, 211, 153, 0.2)', maxHeight: '200px', overflowY: 'auto' }}>
-                                    <Typography component="pre" sx={{ color: '#a7f3d0', fontSize: '0.78rem', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
-                                      {rawPrompts.doc1bOutput}
-                                    </Typography>
-                                  </Paper>
-                                </Box>
-                              )}
-                            </Box>
-                          )}
-
-                          {/* Tab 2: Document 1c */}
-                          {promptTabIdx === 2 && (
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <Typography sx={{ color: '#a855f7', fontWeight: 800, fontSize: '0.85rem' }}>
-                                  Document 1c: Spectrum Synthesizer & Outline Generator (Pre-Injected with 1a & 1b)
-                                </Typography>
-                                <Button
-                                  size="small"
-                                  startIcon={copiedPromptTab === 'doc1c' ? <CheckIcon /> : <ContentCopyIcon />}
-                                  onClick={() => handleCopyPromptText(rawPrompts?.doc1cPrompt || buildDoc1cPrompt({
-                                    doc1aOutput: rawPrompts?.doc1aOutput || '[Run Turn 1 to populate Doc 1a output]',
-                                    doc1bOutput: rawPrompts?.doc1bOutput || '[Run Turn 2 to populate Doc 1b output]',
-                                  }), 'doc1c')}
-                                  sx={{ bgcolor: 'rgba(255,255,255,0.08)', color: '#fff', textTransform: 'none', fontWeight: 700, borderRadius: '8px' }}
-                                >
-                                  {copiedPromptTab === 'doc1c' ? 'Copied!' : 'Copy Standalone Prompt 1c'}
-                                </Button>
-                              </Box>
-
-                              <Paper sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.5)', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)', maxHeight: '300px', overflowY: 'auto' }}>
-                                <Typography component="pre" sx={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.78rem', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
-                                  {rawPrompts?.doc1cPrompt || buildDoc1cPrompt({
-                                    doc1aOutput: rawPrompts?.doc1aOutput || '[Run Turn 1 to populate Doc 1a output]',
-                                    doc1bOutput: rawPrompts?.doc1bOutput || '[Run Turn 2 to populate Doc 1b output]',
-                                  })}
-                                </Typography>
-                              </Paper>
-
-                              {rawPrompts?.doc1cOutput && (
-                                <Box>
-                                  <Typography sx={{ color: '#34d399', fontWeight: 800, fontSize: '0.8rem', mb: 1 }}>
-                                    Raw Output Outlines (Turn 3):
-                                  </Typography>
-                                  <Paper sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.35)', borderRadius: '14px', border: '1px solid rgba(52, 211, 153, 0.2)', maxHeight: '200px', overflowY: 'auto' }}>
-                                    <Typography component="pre" sx={{ color: '#a7f3d0', fontSize: '0.78rem', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
-                                      {rawPrompts.doc1cOutput}
-                                    </Typography>
-                                  </Paper>
-                                </Box>
-                              )}
-                            </Box>
-                          )}
-
-                          {/* Tab 3: Fast Ingest Custom Outlines */}
-                          {promptTabIdx === 3 && (
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                              <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>
-                                Paste raw Markdown output generated from Document 1c (following the <code>[SYSTEM_METADATA]</code> syntax separated by <code>---</code>) to instantly parse and render custom article briefs:
+                          {/* ── CHECKLIST BLOCK (Exact WikiReader ChecklistBlock style) ── */}
+                          <Box sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 1,
+                            p: 2,
+                            border: '1px solid rgba(0,0,0,0.08)',
+                            borderRadius: '20px',
+                            bgcolor: 'rgba(0,0,0,0.02)'
+                          }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 0.5, mb: 0.5 }}>
+                              <Typography sx={{ fontSize: '0.82rem', fontWeight: 800, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                📋 SOP Action Checklist
                               </Typography>
+                              <Chip
+                                label={`${Object.values(wikiChecklist).filter(Boolean).length} / 6 Complete`}
+                                size="small"
+                                sx={{
+                                  bgcolor: Object.values(wikiChecklist).filter(Boolean).length === 6 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                                  color: Object.values(wikiChecklist).filter(Boolean).length === 6 ? '#059669' : '#b45309',
+                                  fontWeight: 800,
+                                  fontSize: '0.72rem'
+                                }}
+                              />
+                            </Box>
 
+                            {[
+                              { id: 'task_geo_prompt', text: '1. Copy & Run Macro-Geo Prompt 1a in LLM (Seeds 5 micro-geographies)' },
+                              { id: 'task_geo_verify', text: `2. Review & Verify Nigerian trade nodes & transit hubs for ${selectedCommodity}` },
+                              { id: 'task_drucker_prompt', text: '3. Execute Peter Drucker OSINT Prompt 1b (10 innovation vectors)' },
+                              { id: 'task_drucker_asymmetry', text: '4. Extract 10 operational incongruities & informal market spreads' },
+                              { id: 'task_spectrum_synthesize', text: '5. Execute Cognitive Spectrum Outlines Generator Prompt 1c (12 briefs)' },
+                              { id: 'task_fast_ingest', text: '6. Paste Document 1c markdown into Fast Ingest & Render Studio Cards' },
+                            ].map((item) => {
+                              const isChecked = !!wikiChecklist[item.id];
+                              return (
+                                <Box
+                                  key={item.id}
+                                  onClick={() => toggleChecklistItem(item.id)}
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    p: 1.5,
+                                    borderRadius: '12px',
+                                    cursor: 'pointer',
+                                    bgcolor: isChecked ? 'rgba(16, 185, 129, 0.06)' : '#ffffff',
+                                    border: isChecked ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(0,0,0,0.06)',
+                                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    '&:hover': {
+                                      bgcolor: isChecked ? 'rgba(16, 185, 129, 0.1)' : 'rgba(0,0,0,0.03)',
+                                      borderColor: isChecked ? 'rgba(16, 185, 129, 0.5)' : '#cbd5e1'
+                                    }
+                                  }}
+                                >
+                                  <Box sx={{
+                                    width: 22, height: 22, borderRadius: '7px',
+                                    border: '2px solid',
+                                    borderColor: isChecked ? '#10b981' : '#cbd5e1',
+                                    bgcolor: isChecked ? '#10b981' : 'transparent',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    mr: 1.5, flexShrink: 0,
+                                    transition: 'all 0.2s'
+                                  }}>
+                                    {isChecked && (
+                                      <svg width="12" height="9" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M1 5L5 9L13 1" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                      </svg>
+                                    )}
+                                  </Box>
+                                  <Typography sx={{
+                                    fontSize: '0.88rem',
+                                    color: isChecked ? '#94a3b8' : '#1e293b',
+                                    textDecoration: isChecked ? 'line-through' : 'none',
+                                    fontWeight: isChecked ? 500 : 700,
+                                    transition: 'all 0.2s',
+                                    lineHeight: 1.4
+                                  }}>
+                                    {item.text}
+                                  </Typography>
+                                </Box>
+                              );
+                            })}
+                          </Box>
+
+                          {/* ──────────────────────────────────────────────────────────── */}
+                          {/* STEP 1: MACRO-GEO & TEMPORAL CONTEXT (TURN 1)               */}
+                          {/* ──────────────────────────────────────────────────────────── */}
+                          <Box id="wiki-step-1" sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, scrollMarginTop: '80px' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                              <Box sx={{ width: 28, height: 28, borderRadius: '50%', bgcolor: '#3b82f6', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.85rem' }}>
+                                1
+                              </Box>
+                              <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>
+                                1. Macro-Geography & Temporal Context (Turn 1)
+                              </Typography>
+                            </Box>
+                            <Typography sx={{ color: '#475569', fontSize: '0.9rem', lineHeight: 1.55 }}>
+                              Prompts the AI to map 5 micro-geographies, 3 historical eras, and real transit hubs across Nigeria for <strong>{selectedCommodity}</strong>.
+                            </Typography>
+
+                            {/* PromptBuilderBlock Terminal (Exact WikiReader style) */}
+                            {copiedPromptTab === 'doc1a' ? (
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2, bgcolor: 'rgba(59, 130, 246, 0.06)', borderRadius: '16px', border: '1px solid rgba(59, 130, 246, 0.25)' }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
+                                  <CheckCircleIcon sx={{ color: '#3b82f6' }} />
+                                  <Typography sx={{ color: '#1e40af', fontWeight: 700, fontSize: '0.9rem' }}>
+                                    Prompt 1a Copied to Clipboard!
+                                  </Typography>
+                                </Box>
+                                <Button size="small" onClick={() => setCopiedPromptTab(null)} sx={{ textTransform: 'none', fontWeight: 700, borderRadius: '8px', color: '#2563eb' }}>
+                                  View Prompt Code
+                                </Button>
+                              </Box>
+                            ) : (
+                              <Box sx={{ position: 'relative', bgcolor: '#0f172a', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2.5, py: 1.5, bgcolor: '#1e293b', borderBottom: '1px solid #334155' }}>
+                                  <Box sx={{ display: 'flex', gap: 1 }}>
+                                    <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: '#ef4444' }} />
+                                    <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: '#f59e0b' }} />
+                                    <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: '#10b981' }} />
+                                  </Box>
+                                  <Typography sx={{ color: '#94a3b8', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                                    PROMPT BUILDER · TURN 1 (MACRO-GEO)
+                                  </Typography>
+                                  <Box sx={{ width: 33 }} />
+                                </Box>
+
+                                <Box sx={{ p: 2.5, maxHeight: 180, overflowY: 'auto' }}>
+                                  <Typography component="pre" sx={{ color: '#e2e8f0', fontFamily: '"JetBrains Mono", monospace', fontSize: '0.78rem', m: 0, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                                    {compiledPrompt1a}
+                                  </Typography>
+                                </Box>
+
+                                <Box sx={{ display: 'flex', justifyContent: 'center', p: 2, pt: 1, bgcolor: '#1e293b', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                                  <Button
+                                    onClick={() => handleCopyPromptText(compiledPrompt1a, 'doc1a')}
+                                    sx={{
+                                      bgcolor: '#3b82f6',
+                                      color: '#fff',
+                                      borderRadius: '16px',
+                                      py: 1,
+                                      px: 3.5,
+                                      fontWeight: 800,
+                                      textTransform: 'none',
+                                      fontSize: '0.85rem',
+                                      boxShadow: '0 4px 12px rgba(59, 130, 246, 0.35)',
+                                      transition: 'all 0.2s',
+                                      '&:hover': { bgcolor: '#2563eb', transform: 'translateY(-1px)' }
+                                    }}
+                                  >
+                                    <ContentCopyIcon sx={{ mr: 1, fontSize: 16 }} />
+                                    Copy Executable Prompt 1a
+                                  </Button>
+                                </Box>
+                              </Box>
+                            )}
+
+                            {/* Response Sandbox */}
+                            <Box sx={{ p: 2, bgcolor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px' }}>
+                              <Typography sx={{ color: '#334155', fontSize: '0.8rem', fontWeight: 700, mb: 1 }}>
+                                Paste Turn 1 LLM Response (Auto-injected into Turn 2):
+                              </Typography>
                               <TextField
                                 multiline
-                                rows={8}
+                                rows={2}
                                 fullWidth
-                                placeholder={`---\n**[SYSTEM_METADATA]**\n* Category_ID: Land\n* Subcategory_ID: Sole Farmland Ownership\n* Commodity: ${selectedCommodity}\n* Format_Type: Brief\n* Era: Present\n* Location: Dawanau Hub, Kano\n* Spectrum_Rank: #1 (The Bleeding Neck)\n* Target_Persona: Agri-VCs\n\n### The ₦1,200/L Fuel Trap: How Haulers Bypass Squeeze\n\n**Description:**\n* Core problem...\n* Mechanics...\n---`}
-                                value={customIngestMarkdown}
-                                onChange={(e) => setCustomIngestMarkdown(e.target.value)}
+                                placeholder="Paste your Document 1a response here..."
+                                value={custom1aOutput || rawPrompts?.doc1aOutput || ''}
+                                onChange={(e) => setCustom1aOutput(e.target.value)}
                                 sx={{
-                                  bgcolor: 'rgba(0,0,0,0.4)',
-                                  borderRadius: '12px',
+                                  bgcolor: '#ffffff',
+                                  borderRadius: '10px',
                                   '& .MuiOutlinedInput-root': {
-                                    color: '#fff',
-                                    fontSize: '0.85rem',
-                                    fontFamily: 'monospace',
-                                    '& fieldset': { borderColor: 'rgba(255,255,255,0.15)' },
-                                    '&:hover fieldset': { borderColor: '#60a5fa' },
+                                    fontSize: '0.82rem',
+                                    fontFamily: '"JetBrains Mono", monospace',
+                                    color: '#0f172a',
+                                    '& fieldset': { borderColor: '#cbd5e1' },
+                                    '&:hover fieldset': { borderColor: '#3b82f6' },
                                   }
                                 }}
                               />
+                            </Box>
+                          </Box>
 
-                              {customIngestError && (
-                                <Typography sx={{ color: '#ef4444', fontWeight: 700, fontSize: '0.82rem' }}>
-                                  {customIngestError}
+                          <Divider sx={{ borderColor: 'rgba(0,0,0,0.06)' }} />
+
+                          {/* ──────────────────────────────────────────────────────────── */}
+                          {/* STEP 2: DRUCKER INNOVATION OSINT ENGINE (TURN 2)            */}
+                          {/* ──────────────────────────────────────────────────────────── */}
+                          <Box id="wiki-step-2" sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, scrollMarginTop: '80px' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                <Box sx={{ width: 28, height: 28, borderRadius: '50%', bgcolor: '#f59e0b', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.85rem' }}>
+                                  2
+                                </Box>
+                                <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>
+                                  2. Drucker Innovation OSINT Engine (Turn 2)
                                 </Typography>
-                              )}
+                              </Box>
+                              <Chip
+                                label={effective1aOutput ? "🟢 Doc 1a Injected" : "🟡 Generic Mode"}
+                                size="small"
+                                sx={{ bgcolor: effective1aOutput ? 'rgba(16, 185, 129, 0.12)' : 'rgba(245, 158, 11, 0.12)', color: effective1aOutput ? '#059669' : '#b45309', fontWeight: 800, fontSize: '0.72rem' }}
+                              />
+                            </Box>
+                            <Typography sx={{ color: '#475569', fontSize: '0.9rem', lineHeight: 1.55 }}>
+                              Applies 10 Peter Drucker innovation vectors (Unexpected Failures, Process Incongruities, Regulatory Surprises) specifically tailored to Nigerian value chains.
+                            </Typography>
 
-                              <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5 }}>
-                                <Button
-                                  variant="contained"
-                                  onClick={handleFastIngestCustomOutlines}
-                                  sx={{ bgcolor: '#3b82f6', color: '#fff', fontWeight: 800, px: 3, borderRadius: '10px', textTransform: 'none', '&:hover': { bgcolor: '#2563eb' } }}
-                                >
-                                  Parse & Render Outlines ➔
+                            {/* PromptBuilderBlock Terminal */}
+                            {copiedPromptTab === 'doc1b' ? (
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2, bgcolor: 'rgba(245, 158, 11, 0.08)', borderRadius: '16px', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
+                                  <CheckCircleIcon sx={{ color: '#f59e0b' }} />
+                                  <Typography sx={{ color: '#b45309', fontWeight: 700, fontSize: '0.9rem' }}>
+                                    Prompt 1b Copied to Clipboard!
+                                  </Typography>
+                                </Box>
+                                <Button size="small" onClick={() => setCopiedPromptTab(null)} sx={{ textTransform: 'none', fontWeight: 700, borderRadius: '8px', color: '#b45309' }}>
+                                  View Prompt Code
                                 </Button>
                               </Box>
-                            </Box>
-                          )}
-                        </DialogContent>
-                      </Dialog>
-                    </Box>
-                  )}
-                  
-                    </Box>
-                  )}
+                            ) : (
+                              <Box sx={{ position: 'relative', bgcolor: '#0f172a', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2.5, py: 1.5, bgcolor: '#1e293b', borderBottom: '1px solid #334155' }}>
+                                  <Box sx={{ display: 'flex', gap: 1 }}>
+                                    <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: '#ef4444' }} />
+                                    <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: '#f59e0b' }} />
+                                    <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: '#10b981' }} />
+                                  </Box>
+                                  <Typography sx={{ color: '#fbbf24', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                                    PROMPT BUILDER · TURN 2 (DRUCKER OSINT)
+                                  </Typography>
+                                  <Box sx={{ width: 33 }} />
+                                </Box>
 
+                                <Box sx={{ p: 2.5, maxHeight: 180, overflowY: 'auto' }}>
+                                  <Typography component="pre" sx={{ color: '#fbbf24', fontFamily: '"JetBrains Mono", monospace', fontSize: '0.78rem', m: 0, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                                    {compiledPrompt1b}
+                                  </Typography>
+                                </Box>
+
+                                <Box sx={{ display: 'flex', justifyContent: 'center', p: 2, pt: 1, bgcolor: '#1e293b', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                                  <Button
+                                    onClick={() => handleCopyPromptText(compiledPrompt1b, 'doc1b')}
+                                    sx={{
+                                      bgcolor: '#f59e0b',
+                                      color: '#000',
+                                      borderRadius: '16px',
+                                      py: 1,
+                                      px: 3.5,
+                                      fontWeight: 900,
+                                      textTransform: 'none',
+                                      fontSize: '0.85rem',
+                                      boxShadow: '0 4px 12px rgba(245, 158, 11, 0.35)',
+                                      transition: 'all 0.2s',
+                                      '&:hover': { bgcolor: '#d97706', transform: 'translateY(-1px)' }
+                                    }}
+                                  >
+                                    <ContentCopyIcon sx={{ mr: 1, fontSize: 16 }} />
+                                    Copy Executable Prompt 1b
+                                  </Button>
+                                </Box>
+                              </Box>
+                            )}
+
+                            {/* Response Sandbox */}
+                            <Box sx={{ p: 2, bgcolor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px' }}>
+                              <Typography sx={{ color: '#334155', fontSize: '0.8rem', fontWeight: 700, mb: 1 }}>
+                                Paste Turn 2 LLM Response (Auto-injected into Turn 3):
+                              </Typography>
+                              <TextField
+                                multiline
+                                rows={2}
+                                fullWidth
+                                placeholder="Paste your Document 1b innovation vectors here..."
+                                value={custom1bOutput || rawPrompts?.doc1bOutput || ''}
+                                onChange={(e) => setCustom1bOutput(e.target.value)}
+                                sx={{
+                                  bgcolor: '#ffffff',
+                                  borderRadius: '10px',
+                                  '& .MuiOutlinedInput-root': {
+                                    fontSize: '0.82rem',
+                                    fontFamily: '"JetBrains Mono", monospace',
+                                    color: '#0f172a',
+                                    '& fieldset': { borderColor: '#cbd5e1' },
+                                    '&:hover fieldset': { borderColor: '#f59e0b' },
+                                  }
+                                }}
+                              />
+                            </Box>
+                          </Box>
+
+                          <Divider sx={{ borderColor: 'rgba(0,0,0,0.06)' }} />
+
+                          {/* ──────────────────────────────────────────────────────────── */}
+                          {/* STEP 3: SPECTRUM SYNTHESIZER & OUTLINES (TURN 3)            */}
+                          {/* ──────────────────────────────────────────────────────────── */}
+                          <Box id="wiki-step-3" sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, scrollMarginTop: '80px' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                <Box sx={{ width: 28, height: 28, borderRadius: '50%', bgcolor: '#a855f7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.85rem' }}>
+                                  3
+                                </Box>
+                                <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>
+                                  3. Cognitive Spectrum Synthesizer (Turn 3)
+                                </Typography>
+                              </Box>
+                              <Chip
+                                label={effective1bOutput ? "🟢 Full OSINT Chained" : "🟡 Standalone Mode"}
+                                size="small"
+                                sx={{ bgcolor: effective1bOutput ? 'rgba(16, 185, 129, 0.12)' : 'rgba(168, 85, 247, 0.12)', color: effective1bOutput ? '#059669' : '#7e22ce', fontWeight: 800, fontSize: '0.72rem' }}
+                              />
+                            </Box>
+                            <Typography sx={{ color: '#475569', fontSize: '0.9rem', lineHeight: 1.55 }}>
+                              Generates the final 10–12 structured article briefs mapped systematically across the 6 Cognitive Spectrum ranks.
+                            </Typography>
+
+                            {/* PromptBuilderBlock Terminal */}
+                            {copiedPromptTab === 'doc1c' ? (
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2, bgcolor: 'rgba(168, 85, 247, 0.08)', borderRadius: '16px', border: '1px solid rgba(168, 85, 247, 0.3)' }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
+                                  <CheckCircleIcon sx={{ color: '#a855f7' }} />
+                                  <Typography sx={{ color: '#7e22ce', fontWeight: 700, fontSize: '0.9rem' }}>
+                                    Prompt 1c Copied to Clipboard!
+                                  </Typography>
+                                </Box>
+                                <Button size="small" onClick={() => setCopiedPromptTab(null)} sx={{ textTransform: 'none', fontWeight: 700, borderRadius: '8px', color: '#7e22ce' }}>
+                                  View Prompt Code
+                                </Button>
+                              </Box>
+                            ) : (
+                              <Box sx={{ position: 'relative', bgcolor: '#0f172a', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2.5, py: 1.5, bgcolor: '#1e293b', borderBottom: '1px solid #334155' }}>
+                                  <Box sx={{ display: 'flex', gap: 1 }}>
+                                    <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: '#ef4444' }} />
+                                    <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: '#f59e0b' }} />
+                                    <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: '#10b981' }} />
+                                  </Box>
+                                  <Typography sx={{ color: '#c084fc', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                                    PROMPT BUILDER · TURN 3 (OUTLINES GENERATOR)
+                                  </Typography>
+                                  <Box sx={{ width: 33 }} />
+                                </Box>
+
+                                <Box sx={{ p: 2.5, maxHeight: 180, overflowY: 'auto' }}>
+                                  <Typography component="pre" sx={{ color: '#c084fc', fontFamily: '"JetBrains Mono", monospace', fontSize: '0.78rem', m: 0, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                                    {compiledPrompt1c}
+                                  </Typography>
+                                </Box>
+
+                                <Box sx={{ display: 'flex', justifyContent: 'center', p: 2, pt: 1, bgcolor: '#1e293b', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                                  <Button
+                                    onClick={() => handleCopyPromptText(compiledPrompt1c, 'doc1c')}
+                                    sx={{
+                                      bgcolor: '#a855f7',
+                                      color: '#fff',
+                                      borderRadius: '16px',
+                                      py: 1,
+                                      px: 3.5,
+                                      fontWeight: 800,
+                                      textTransform: 'none',
+                                      fontSize: '0.85rem',
+                                      boxShadow: '0 4px 12px rgba(168, 85, 247, 0.35)',
+                                      transition: 'all 0.2s',
+                                      '&:hover': { bgcolor: '#9333ea', transform: 'translateY(-1px)' }
+                                    }}
+                                  >
+                                    <ContentCopyIcon sx={{ mr: 1, fontSize: 16 }} />
+                                    Copy Executable Prompt 1c
+                                  </Button>
+                                </Box>
+                              </Box>
+                            )}
+
+                            {/* Response Sandbox */}
+                            <Box sx={{ p: 2, bgcolor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px' }}>
+                              <Typography sx={{ color: '#334155', fontSize: '0.8rem', fontWeight: 700, mb: 1 }}>
+                                Paste Turn 3 Response (Ready to forward into Step 4):
+                              </Typography>
+                              <TextField
+                                multiline
+                                rows={2}
+                                fullWidth
+                                placeholder="Paste your Document 1c markdown outlines here..."
+                                value={custom1cOutput || rawPrompts?.doc1cOutput || ''}
+                                onChange={(e) => {
+                                  setCustom1cOutput(e.target.value);
+                                  setCustomIngestMarkdown(e.target.value);
+                                }}
+                                sx={{
+                                  bgcolor: '#ffffff',
+                                  borderRadius: '10px',
+                                  '& .MuiOutlinedInput-root': {
+                                    fontSize: '0.82rem',
+                                    fontFamily: '"JetBrains Mono", monospace',
+                                    color: '#0f172a',
+                                    '& fieldset': { borderColor: '#cbd5e1' },
+                                    '&:hover fieldset': { borderColor: '#a855f7' },
+                                  }
+                                }}
+                              />
+                            </Box>
+                          </Box>
+
+                          <Divider sx={{ borderColor: 'rgba(0,0,0,0.06)' }} />
+
+                          {/* ──────────────────────────────────────────────────────────── */}
+                          {/* STEP 4: FAST INGEST SCRATCHPAD & STUDIO PARSER              */}
+                          {/* ──────────────────────────────────────────────────────────── */}
+                          <Box id="wiki-step-4" sx={{ display: 'flex', flexDirection: 'column', gap: 2, scrollMarginTop: '80px' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                <Box sx={{ width: 28, height: 28, borderRadius: '50%', bgcolor: '#10b981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.85rem' }}>
+                                  4
+                                </Box>
+                                <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>
+                                  4. Fast Ingest Scratchpad & Studio Parser
+                                </Typography>
+                              </Box>
+
+                              <Button
+                                size="small"
+                                onClick={() => {
+                                  setCustomIngestMarkdown(`---\n**[SYSTEM_METADATA]**\n* Category_ID: Land\n* Subcategory_ID: Sole Farmland Ownership\n* Commodity: ${selectedCommodity}\n* Format_Type: Brief\n* Era: Present\n* Location: Dawanau Hub, Kano\n* Spectrum_Rank: #1 (The Bleeding Neck)\n* Target_Persona: Agro-Processors & Haulers\n\n### The ₦1,200/L Fuel Trap: How Haulers Bypass Squeeze\n\n**Description:**\n* In August 2026, diesel prices hit ₦1,200/L along northern transit corridors.\n* Aggregators face a 40% margin squeeze between farmgate and retail.\n* Trucking unions enforce strict freight minimums.\n* Informal fuel arbitrage gangs in Kano capture spot spreads.\n* Off-takers adopt return-trip backhaul contracts to survive.\n* Political Economy: Fuel cartels and logistics middlemen profit while smallholders absorb spoilage.\n---\n**[SYSTEM_METADATA]**\n* Category_ID: Land\n* Subcategory_ID: Sole Farmland Ownership\n* Commodity: ${selectedCommodity}\n* Format_Type: Memo\n* Era: Present\n* Location: Kadawa Irrigation Valley, Kano\n* Spectrum_Rank: #2 (Institutional Pivot)\n* Target_Persona: Agri-VCs & Commercial Lenders\n\n### Structuring a ₦500M Off-Taker SPV: Unit Economics for ${selectedCommodity}\n\n**Description:**\n* Commercial processors require 5,000 MT of steady monthly supply.\n* Spot market price swings create severe procurement defaults.\n* Special Purpose Vehicles isolate credit risk from balance sheets.\n* Escrow mechanisms with commercial banks lock in forward prices.\n* Anchor off-takers achieve a 18% IRR with secured contracts.\n* Political Economy: Institutional financiers and corporate off-takers capture upside risk.\n---`);
+                                }}
+                                sx={{ color: '#059669', border: '1px solid rgba(16, 185, 129, 0.4)', borderRadius: '10px', textTransform: 'none', fontWeight: 800, fontSize: '0.78rem', px: 1.5, py: 0.5, bgcolor: 'rgba(16, 185, 129, 0.05)', '&:hover': { bgcolor: 'rgba(16, 185, 129, 0.12)' } }}
+                              >
+                                📝 Load Sample Schema
+                              </Button>
+                            </Box>
+
+                            <Typography sx={{ color: '#475569', fontSize: '0.9rem', lineHeight: 1.55 }}>
+                              Paste your raw Document 1c markdown text below. The parser validates the metadata in real time and automatically renders each brief into your Studio cards.
+                            </Typography>
+
+                            <TextField
+                              multiline
+                              rows={8}
+                              fullWidth
+                              placeholder={`---\n**[SYSTEM_METADATA]**\n* Category_ID: Land\n* Subcategory_ID: Sole Farmland Ownership\n* Commodity: ${selectedCommodity}\n* Format_Type: Brief\n* Era: Present\n* Location: Dawanau Hub, Kano\n* Spectrum_Rank: #1 (The Bleeding Neck)\n* Target_Persona: Agri-VCs & Haulers\n\n### Title...\n\n**Description:**\n* Bullet 1...\n* Bullet 2...\n---`}
+                              value={customIngestMarkdown}
+                              onChange={(e) => setCustomIngestMarkdown(e.target.value)}
+                              sx={{
+                                bgcolor: '#f8fafc',
+                                borderRadius: '14px',
+                                '& .MuiOutlinedInput-root': {
+                                  color: '#0f172a',
+                                  fontSize: '0.82rem',
+                                  fontFamily: '"JetBrains Mono", monospace',
+                                  lineHeight: 1.6,
+                                  '& fieldset': { borderColor: '#cbd5e1' },
+                                  '&:hover fieldset': { borderColor: '#10b981' },
+                                  '&.Mui-focused fieldset': { borderColor: '#10b981' }
+                                }
+                              }}
+                            />
+
+                            {/* Live Detection Pill Banner */}
+                            {liveParsedBriefs.length > 0 && (
+                              <Paper sx={{ p: 2, bgcolor: '#ecfdf5', borderRadius: '14px', border: '1.5px solid #10b981', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
+                                  <CheckCircleIcon sx={{ color: '#059669', fontSize: 22 }} />
+                                  <Typography sx={{ color: '#065f46', fontWeight: 900, fontSize: '0.9rem' }}>
+                                    ✓ Live Detection: {liveParsedBriefs.length} Valid Briefs Ready to Ingest!
+                                  </Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                  {Array.from(new Set(liveParsedBriefs.map(b => b.spectrumRank))).map(rank => (
+                                    <Chip key={rank} label={rank} size="small" sx={{ bgcolor: '#059669', color: '#fff', fontSize: '0.65rem', fontWeight: 800 }} />
+                                  ))}
+                                </Box>
+                              </Paper>
+                            )}
+
+                            {customIngestError && (
+                              <Alert severity="error" sx={{ borderRadius: '12px' }}>
+                                {customIngestError}
+                              </Alert>
+                            )}
+
+                            {/* Ingest Action CTA */}
+                            <Button
+                              variant="contained"
+                              onClick={handleFastIngestCustomOutlines}
+                              disabled={!customIngestMarkdown.trim()}
+                              startIcon={<BoltIcon />}
+                              sx={{
+                                bgcolor: '#10b981',
+                                color: '#fff',
+                                fontWeight: 900,
+                                py: 1.5,
+                                px: 4,
+                                borderRadius: '16px',
+                                fontSize: '0.95rem',
+                                textTransform: 'none',
+                                boxShadow: '0 4px 20px rgba(16, 185, 129, 0.35)',
+                                '&:hover': { bgcolor: '#059669' },
+                                '&.Mui-disabled': { bgcolor: '#e2e8f0', color: '#94a3b8' }
+                              }}
+                            >
+                              🚀 Ingest & Render {liveParsedBriefs.length ? `${liveParsedBriefs.length} Briefs` : 'Outlines'} into Studio
+                            </Button>
+                          </Box>
+
+                        </Box>
+                      </Drawer>
+                    </Box>
+                  )}
                 </Box>
               )}
-            </Paper>
-          );
-        })}
-      </Box>
+            </Box>
+          )}
+        </Paper>
+      );
+    })}
+  </Box>
 
       {/* ================================================================ */}
       {/* WORKSPACE CONTENT MANAGER                                        */}

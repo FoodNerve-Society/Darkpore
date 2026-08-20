@@ -369,3 +369,103 @@ export async function resetUserWikiState(wikiDocId: string, userId: string) {
     return { success: false, error: error.message };
   }
 }
+
+/**
+ * Ensures the official Editorial Relay SOP is seeded in OmniWikiDoc & Hotspot Registry
+ */
+export async function ensureEditorialRelayWikiDoc(authorId: string) {
+  try {
+    // 1. Ensure Hotspot Registry entry exists
+    await prisma.wikiHotspotRegistry.upsert({
+      where: { id: 'creator_studio_relay' },
+      update: {
+        label: 'Editorial Intelligence & Prompt Chaining SOP',
+        category: 'innovations',
+        subcategory: 'studio'
+      },
+      create: {
+        id: 'creator_studio_relay',
+        label: 'Editorial Intelligence & Prompt Chaining SOP',
+        description: 'Standard operating procedure for multi-turn Drucker OSINT prompt chaining and outline ingest.',
+        category: 'innovations',
+        subcategory: 'studio'
+      }
+    });
+
+    // 2. Ensure OmniWikiDoc exists
+    const blocks: WikiBlock[] = [
+      {
+        id: 'block-header-1',
+        type: 'HEADER',
+        headerLevel: 1,
+        visibility: 'public',
+        content: 'Editorial Intelligence & Prompt Chaining SOP'
+      },
+      {
+        id: 'block-callout-1',
+        type: 'CALLOUT',
+        calloutType: 'info',
+        visibility: 'public',
+        content: 'This SOP outlines the 3-stage intelligence chaining pipeline for creating high-conviction agricultural research briefs across Nigeria. Follow the checklist and executable prompts in sequence.'
+      },
+      {
+        id: 'block-checklist-1',
+        type: 'CHECKLIST',
+        checklistType: 'important',
+        visibility: 'public',
+        content: 'Standard Operating Tasks',
+        checklistItems: [
+          { id: 'task_geo_prompt', text: 'Execute Macro-Geo Prompt 1a in LLM (Seeds 5 micro-geographies & local trading hubs)', checked: false },
+          { id: 'task_geo_verify', text: 'Verify regional transit nodes (e.g., Dawanau, Bodija, Kadawa, Zaria) for current commodity', checked: false },
+          { id: 'task_drucker_prompt', text: 'Execute Peter Drucker Innovation OSINT Prompt 1b (Synthesizes 10 vectors)', checked: false },
+          { id: 'task_drucker_asymmetry', text: 'Confirm operational incongruities & informal fuel/logistics cartels', checked: false },
+          { id: 'task_spectrum_synthesize', text: 'Execute Cognitive Spectrum Outlines Generator Prompt 1c (12 briefs)', checked: false },
+          { id: 'task_fast_ingest', text: 'Paste Document 1c markdown into Fast Ingest to render Studio cards', checked: false }
+        ]
+      },
+      {
+        id: 'block-prompt-1a',
+        type: 'PROMPT_BUILDER',
+        visibility: 'public',
+        content: 'You are the Chief Agricultural Intelligence Officer at FoodNerve...\n\nAnalyze the commodity: {{commodity}} in Nigerian agriculture for {{targetDate}} across 5 distinct micro-geographies and 3 temporal eras.',
+        variables: [
+          { name: 'commodity', label: 'Commodity Name' },
+          { name: 'targetDate', label: 'Target Date / Month' }
+        ]
+      },
+      {
+        id: 'block-scratchpad-1',
+        type: 'SCRATCHPAD',
+        visibility: 'public',
+        content: 'Use this scratchpad to draft notes or capture raw LLM outputs before fast-ingesting into the Studio.'
+      }
+    ];
+
+    const doc = await prisma.omniWikiDoc.upsert({
+      where: { slug: 'editorial-relay-sop' },
+      update: {
+        title: 'Editorial Intelligence & Prompt Chaining SOP',
+        category: 'innovations',
+        isPublic: true,
+        hotspotId: 'creator_studio_relay',
+      },
+      create: {
+        slug: 'editorial-relay-sop',
+        title: 'Editorial Intelligence & Prompt Chaining SOP',
+        category: 'innovations',
+        isPublic: true,
+        allowedRoles: JSON.stringify(['guest', 'member', 'creator', 'admin']),
+        allowedUsers: JSON.stringify([]),
+        blocks: JSON.stringify(blocks),
+        tags: JSON.stringify(['sop', 'editorial', 'prompts', 'intelligence']),
+        authorId,
+        hotspotId: 'creator_studio_relay',
+      }
+    });
+
+    return { success: true, data: doc };
+  } catch (error: any) {
+    console.error('Error ensuring editorial relay wiki doc:', error);
+    return { success: false, error: error.message };
+  }
+}
