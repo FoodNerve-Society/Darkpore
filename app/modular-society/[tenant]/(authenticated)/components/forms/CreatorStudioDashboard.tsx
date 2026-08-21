@@ -50,6 +50,7 @@ import {
   NavigateNext as NavigateNextIcon,
   Folder as FolderIcon,
   PlayArrow as PlayArrowIcon,
+  InfoOutlined as InfoOutlinedIcon,
 } from '@mui/icons-material';
 import { keyframes } from '@mui/system';
 import WikiHotspot from '@/components/wiki/WikiHotspot';
@@ -115,6 +116,40 @@ function getSpectrumMeta(spectrumRank?: string) {
   return SPECTRUM_CONFIG['1'];
 }
 
+function getSpectrumKey(spectrumRank?: string): string {
+  if (!spectrumRank) return '1';
+  if (spectrumRank.includes('1') || spectrumRank.toLowerCase().includes('bleeding')) return '1';
+  if (spectrumRank.includes('2') || spectrumRank.toLowerCase().includes('institutional')) return '2';
+  if (spectrumRank.includes('3') || spectrumRank.toLowerCase().includes('grassroots')) return '3';
+  if (spectrumRank.includes('4') || spectrumRank.toLowerCase().includes('r&d') || spectrumRank.toLowerCase().includes('horizon')) return '4';
+  if (spectrumRank.includes('5') || spectrumRank.toLowerCase().includes('macro') || spectrumRank.toLowerCase().includes('threat')) return '5';
+  if (spectrumRank.includes('6') || spectrumRank.toLowerCase().includes('black') || spectrumRank.toLowerCase().includes('swan')) return '6';
+  return '1';
+}
+
+const RANK_DETAILS = [
+  { rank: '1', name: 'The Bleeding Neck', tag: 'Immediate Crisis', color: '#3b82f6', emoji: '🔵', desc: 'Urgent pain points, shortages, and price shocks needing immediate solutions today.' },
+  { rank: '2', name: 'Institutional Pivot', tag: 'Big Player Moves', color: '#f59e0b', emoji: '🟡', desc: 'Corporate capital allocation, government policies, and major industry shifts.' },
+  { rank: '3', name: 'The Grassroots Hack', tag: 'Operator Hacks', color: '#f59e0b', emoji: '🟡', desc: 'Practical survival tactics and informal workarounds used on the ground by local traders.' },
+  { rank: '4', name: 'The R&D Horizon', tag: 'Yield & Tech Science', color: '#10b981', emoji: '🟢', desc: 'Biological innovations, agronomy breakthroughs, and high-efficiency processing tech.' },
+  { rank: '5', name: 'The Macro Threat', tag: 'Systemic Risks', color: '#10b981', emoji: '🟢', desc: 'Cross-border currency dynamics, regional tariffs, and global climate shifts.' },
+  { rank: '6', name: 'The Black Swan', tag: 'Wildcards & Ruptures', color: '#a855f7', emoji: '🟣', desc: 'Unforeseen outlier events and radical industry flips that rewrite the rules.' },
+];
+
+const FORMAT_DETAILS = [
+  { format: 'Brief', emoji: '📑', color: '#3b82f6', desc: 'Market breakdown: What is breaking or working, and why.' },
+  { format: 'Memo', emoji: '💼', color: '#10b981', desc: 'Investment focus: Deal-flow, unit economics, TAM, and capital returns.' },
+  { format: 'Playbook', emoji: '🛠️', color: '#f59e0b', desc: 'Step-by-step operator guide: Tactical SOPs and survival blueprints.' },
+  { format: 'Comparison', emoji: '⚖️', color: '#8b5cf6', desc: 'Head-to-head benchmark: Comparing regions, tools, or business models.' },
+  { format: 'Culture', emoji: '🌾', color: '#ec4899', desc: 'Human side: Demographics, trader stories, and labor sociology.' },
+];
+
+const ERA_DETAILS = [
+  { era: 'Past', emoji: '⏳', color: '#ef4444', desc: 'Historical lessons and root causes from prior cycles.' },
+  { era: 'Present', emoji: '⚡', color: '#10b981', desc: 'Real-time dynamics: What is happening on the ground right now.' },
+  { era: 'Future', emoji: '🔮', color: '#3b82f6', desc: 'Forward-looking roadmap: Projections, 2030 forecasts, and next trends.' },
+];
+
 export default function CreatorStudioDashboard({
   drafts = [],
   workspaceTabs = [],
@@ -163,6 +198,30 @@ export default function CreatorStudioDashboard({
   const [regenerateError, setRegenerateError] = useState<string | null>(null);
   const [spectrumFilter, setSpectrumFilter] = useState<string>('all');
   const [isRegenerateModalOpen, setIsRegenerateModalOpen] = useState(false);
+  const [hasLaunchedAssistant, setHasLaunchedAssistant] = useState(false);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const [collapsedRanks, setCollapsedRanks] = useState<Record<string, boolean>>({});
+
+  const toggleRankCollapse = useCallback((rankKey: string) => {
+    setCollapsedRanks(prev => ({ ...prev, [rankKey]: !prev[rankKey] }));
+  }, []);
+
+  const insightsByRank = useMemo(() => {
+    const groups: Record<string, ArticleInsightItem[]> = {
+      '1': [],
+      '2': [],
+      '3': [],
+      '4': [],
+      '5': [],
+      '6': [],
+    };
+    insights.forEach(item => {
+      const key = getSpectrumKey(item.spectrumRank);
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(item);
+    });
+    return groups;
+  }, [insights]);
 
   // Step 3 Prompts & Interactive Relay Terminal State
   const [rawPrompts, setRawPrompts] = useState<{
@@ -184,6 +243,24 @@ export default function CreatorStudioDashboard({
       }
     });
   }, [registerIngestHandler]);
+
+  // Hydrate insights from localStorage if previously ingested while on another page or step
+  useEffect(() => {
+    if (matrixStep === 3 && selectedCommodity && selectedCategory && insights.length === 0) {
+      if (typeof window !== 'undefined') {
+        const key = `editorial_ingested_briefs_${selectedCommodity}_${selectedCategory}`;
+        const cached = localStorage.getItem(key);
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setInsights(parsed);
+            }
+          } catch {}
+        }
+      }
+    }
+  }, [matrixStep, selectedCommodity, selectedCategory, insights.length]);
 
   // Non-article legacy wizard state
   const [legacyCategory, setLegacyCategory] = useState('');
@@ -758,9 +835,15 @@ export default function CreatorStudioDashboard({
                                 <Box component="span" sx={{ color: ACCENT, fontWeight: 900, fontSize: { xs: '0.8rem', sm: '0.9rem' }, px: 1, py: 0.2, bgcolor: alpha(ACCENT, 0.12), borderRadius: '8px', border: `1px solid ${alpha(ACCENT, 0.3)}`, lineHeight: 1.2 }}>
                                   {selectedCommodity}
                                 </Box>
-                                <Typography sx={{ color: '#93c5fd', fontSize: { xs: '0.75rem', sm: '0.85rem' }, fontWeight: 700 }}>
-                                  • {weekDays.find(d => d.category === selectedCategory)?.dayName || 'Day'}: {challengesData.find(c => c.id === selectedCategory)?.title || selectedCategory} ({format(new Date(selectedTargetDate), 'MMM d')})
-                                </Typography>
+                                <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75, bgcolor: 'rgba(255,255,255,0.06)', px: 1.2, py: 0.25, borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                  <Typography sx={{ color: '#93c5fd', fontSize: { xs: '0.75rem', sm: '0.82rem' }, fontWeight: 800 }}>
+                                    {challengesData.find(c => c.id === selectedCategory)?.title || selectedCategory}
+                                  </Typography>
+                                  <Typography sx={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem' }}>•</Typography>
+                                  <Typography sx={{ color: 'rgba(255,255,255,0.85)', fontSize: { xs: '0.75rem', sm: '0.82rem' }, fontWeight: 700 }}>
+                                    {weekDays.find(d => d.category === selectedCategory)?.dayName || 'Day'}, {format(new Date(selectedTargetDate), 'MMM d')}
+                                  </Typography>
+                                </Box>
                               </Box>
                             ) : (
                               <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: { xs: '0.75rem', sm: '0.85rem' }, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>
@@ -768,62 +851,33 @@ export default function CreatorStudioDashboard({
                               </Typography>
                             )}
                             <Typography variant="h5" sx={{ fontWeight: 900, letterSpacing: '-0.02em', color: '#fff', fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
-                              {matrixStep === 1 ? "Ready to create?" : matrixStep === 2 ? "Select Daily Strategic Pillar" : "Pick Editorial Angle"}
+                              {matrixStep === 1 ? "Ready to create?" : matrixStep === 2 ? "Select Daily Strategic Pillar" : "Pick one to write on"}
                             </Typography>
                           </Box>
                         </Box>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           {matrixStep === 3 && (
-                            <>
-                              <Tooltip title="AI Prompt Assistant & Relay SOP">
-                                <Button
-                                  size="small"
-                                  onClick={() => openAssistant({
-                                    commodity: selectedCommodity,
-                                    category: selectedCategory,
-                                    targetDate: selectedTargetDate,
-                                    rawPrompts,
-                                  })}
-                                  startIcon={<MenuBookIcon sx={{ fontSize: 16 }} />}
-                                  sx={{
-                                    bgcolor: 'rgba(59, 130, 246, 0.15)',
-                                    color: '#93c5fd',
-                                    border: '1px solid rgba(59, 130, 246, 0.35)',
-                                    borderRadius: '12px',
-                                    fontWeight: 800,
-                                    textTransform: 'none',
-                                    px: 1.75,
-                                    py: 0.7,
-                                    fontSize: '0.78rem',
-                                    '&:hover': { bgcolor: 'rgba(59, 130, 246, 0.25)', borderColor: '#60a5fa' }
-                                  }}
-                                >
-                                  AI Prompt Guide
-                                </Button>
-                              </Tooltip>
-
-                              <Tooltip title="Refresh Trending Angles (50 NP)">
-                                <IconButton 
-                                  onClick={() => setIsRegenerateModalOpen(true)}
-                                  disabled={regenerating || loadingInsights}
-                                  sx={{
-                                    color: ACCENT,
-                                    bgcolor: 'rgba(245, 158, 11, 0.1)',
-                                    border: `1px solid ${alpha(ACCENT, 0.25)}`,
-                                    borderRadius: '12px',
-                                    p: 1.1,
-                                    transition: 'all 0.2s ease',
-                                    '&:hover': {
-                                      bgcolor: 'rgba(245, 158, 11, 0.2)',
-                                      transform: 'rotate(180deg)',
-                                      borderColor: ACCENT,
-                                    }
-                                  }}
-                                >
-                                  {regenerating ? <CircularProgress size={18} color="inherit" /> : <RefreshIcon sx={{ fontSize: 18 }} />}
-                                </IconButton>
-                              </Tooltip>
-                            </>
+                            <Tooltip title="Refresh Trending Angles (50 NP)">
+                              <IconButton 
+                                onClick={() => setIsRegenerateModalOpen(true)}
+                                disabled={regenerating || loadingInsights}
+                                sx={{
+                                  color: ACCENT,
+                                  bgcolor: 'rgba(245, 158, 11, 0.1)',
+                                  border: `1px solid ${alpha(ACCENT, 0.25)}`,
+                                  borderRadius: '12px',
+                                  p: 1.1,
+                                  transition: 'all 0.2s ease',
+                                  '&:hover': {
+                                    bgcolor: 'rgba(245, 158, 11, 0.2)',
+                                    transform: 'rotate(180deg)',
+                                    borderColor: ACCENT,
+                                  }
+                                }}
+                              >
+                                {regenerating ? <CircularProgress size={18} color="inherit" /> : <RefreshIcon sx={{ fontSize: 18 }} />}
+                              </IconButton>
+                            </Tooltip>
                           )}
                           <Tooltip title="Minimize">
                             <IconButton
@@ -1204,132 +1258,513 @@ export default function CreatorStudioDashboard({
                           </Typography>
                         </Box>
                       ) : insights.length === 0 ? (
-                        /* FALLBACK STATE: Clean dedicated card with Write from Scratch */
-                        <Paper
+                        /* FALLBACK STATE: Responsive card - side-by-side on desktop, stacked on mobile */
+                        <Box sx={{ my: 4 }}>
+                          <Paper
                           elevation={0}
                           sx={{
-                            p: { xs: 3, sm: 5 },
-                            borderRadius: '24px',
+                            p: { xs: 3.5, sm: 4.5 },
+                            borderRadius: '32px',
                             bgcolor: 'rgba(255,255,255,0.03)',
                             border: '1px solid rgba(255,255,255,0.08)',
-                            backdropFilter: 'blur(20px)',
-                            textAlign: 'center',
+                            backdropFilter: 'blur(24px)',
+                            boxShadow: '0 24px 60px rgba(0,0,0,0.3)',
                             display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            gap: 2,
-                            my: 3,
-                            maxWidth: 560,
+                            flexDirection: { xs: 'column', md: 'row' },
+                            alignItems: { xs: 'center', md: 'stretch' },
+                            textAlign: { xs: 'center', md: 'left' },
+                            gap: { xs: 3, md: 4.5 },
+                            my: 4,
+                            maxWidth: { xs: 500, md: 740 },
                             mx: 'auto',
+                            transition: 'all 0.3s ease',
                           }}
                         >
-                          <Box sx={{ width: 56, height: 56, borderRadius: '18px', bgcolor: 'rgba(245, 158, 11, 0.12)', color: ACCENT, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <AutoAwesomeIcon sx={{ fontSize: 28 }} />
-                          </Box>
-                          <Box>
-                            <Typography variant="h6" sx={{ color: '#fff', fontWeight: 900, mb: 0.5 }}>
-                              Ready to write on {selectedCommodity}?
-                            </Typography>
-                            <Typography sx={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.85rem', lineHeight: 1.5, maxWidth: 440, mx: 'auto' }}>
-                              No automated titles are cached for this slot yet. Tap the refresh icon above to generate fresh angles, or start directly with your own title.
-                            </Typography>
-                          </Box>
-
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mt: 1 }}>
-                            <Button
-                              variant="contained"
-                              onClick={handleStartCustomArticle}
-                              startIcon={<EditIcon sx={{ fontSize: 16 }} />}
+                          {/* Visual Column: Vertically Stacked Overlapping Squircles representing Commodity x Strategic Pillar */}
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              position: 'relative',
+                              flexShrink: 0,
+                              py: 0.5,
+                            }}
+                          >
+                            {/* Top Squircle: Commodity */}
+                            <Box
                               sx={{
-                                bgcolor: '#fff',
-                                color: '#000',
-                                fontWeight: 800,
-                                px: 3.5,
-                                py: 1.2,
-                                borderRadius: '12px',
-                                textTransform: 'none',
-                                fontSize: '0.88rem',
-                                '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
+                                width: { xs: 104, sm: 118 },
+                                height: { xs: 104, sm: 118 },
+                                borderRadius: '28px',
+                                overflow: 'hidden',
+                                position: 'relative',
+                                backgroundImage: `url(${getCommodityMeta(selectedCommodity)?.imageUrl || 'https://images.unsplash.com/photo-1599940824399-b87987ceb72a?auto=format&fit=crop&w=600&q=80'})`,
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center',
+                                border: '2.5px solid rgba(255,255,255,0.25)',
+                                boxShadow: '0 12px 32px rgba(0,0,0,0.45)',
+                                transform: 'rotate(-3deg)',
+                                zIndex: 1,
+                                transition: 'all 0.3s ease',
+                                '&:hover': { transform: 'rotate(0deg) scale(1.05)', zIndex: 3 },
                               }}
                             >
-                              ✍️ Write from Scratch
-                            </Button>
+                              <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 35%, rgba(0,0,0,0.85) 100%)' }} />
+                              <Typography sx={{ position: 'absolute', bottom: 7, left: 4, right: 4, color: '#fff', fontSize: '0.7rem', fontWeight: 900, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                🌾 {selectedCommodity.split(',')[0]}
+                              </Typography>
+                            </Box>
+
+                            {/* Center Intersection Badge */}
+                            <Box
+                              sx={{
+                                width: 32,
+                                height: 32,
+                                borderRadius: '50%',
+                                bgcolor: '#0f172a',
+                                color: ACCENT,
+                                border: '2px solid rgba(255,255,255,0.35)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '0.85rem',
+                                fontWeight: 900,
+                                zIndex: 2,
+                                my: -2,
+                                boxShadow: '0 4px 16px rgba(0,0,0,0.6)',
+                              }}
+                            >
+                              ×
+                            </Box>
+
+                            {/* Bottom Squircle: Strategic Pillar */}
+                            <Box
+                              sx={{
+                                width: { xs: 104, sm: 118 },
+                                height: { xs: 104, sm: 118 },
+                                borderRadius: '28px',
+                                overflow: 'hidden',
+                                position: 'relative',
+                                backgroundImage: `url(${challengesData.find(c => c.id === selectedCategory)?.imageUrl || '/images/challenges/insecurity.webp'}), linear-gradient(135deg, #1e3a8a, #0f172a)`,
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center',
+                                border: '2.5px solid rgba(255,255,255,0.25)',
+                                boxShadow: '0 12px 32px rgba(0,0,0,0.45)',
+                                transform: 'rotate(3deg)',
+                                zIndex: 1,
+                                transition: 'all 0.3s ease',
+                                '&:hover': { transform: 'rotate(0deg) scale(1.05)', zIndex: 3 },
+                              }}
+                            >
+                              <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 35%, rgba(0,0,0,0.85) 100%)' }} />
+                              <Typography sx={{ position: 'absolute', bottom: 7, left: 4, right: 4, color: '#93c5fd', fontSize: '0.7rem', fontWeight: 900, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                🛡️ {challengesData.find(c => c.id === selectedCategory)?.title?.split('&')[0]?.trim() || selectedCategory}
+                              </Typography>
+                            </Box>
+                          </Box>
+
+                          {/* Content Section: Title, Description & Action Buttons with space-between layout */}
+                          <Box
+                            sx={{
+                              flex: 1,
+                              display: 'flex',
+                              flexDirection: 'column',
+                              justifyContent: 'space-between',
+                              alignItems: { xs: 'center', md: 'flex-start' },
+                              gap: { xs: 2.5, md: 3 },
+                              py: { xs: 0, md: 0.75 },
+                            }}
+                          >
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                              <Typography variant="h5" sx={{ color: '#fff', fontWeight: 900, letterSpacing: '-0.02em', fontSize: { xs: '1.25rem', sm: '1.45rem' } }}>
+                                Get article ideas here
+                              </Typography>
+                              <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.92rem', lineHeight: 1.6, fontWeight: 400 }}>
+                                Spend 1 minute to get fresh, realistic article ideas people want to read, or choose Ignore to write yourself.
+                              </Typography>
+                            </Box>
+
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: { xs: 'center', md: 'flex-start' }, gap: 2, flexWrap: 'wrap' }}>
+                              <Button
+                                variant="contained"
+                                onClick={() => {
+                                  setHasLaunchedAssistant(true);
+                                  openAssistant({
+                                    commodity: selectedCommodity,
+                                    category: selectedCategory,
+                                    targetDate: selectedTargetDate,
+                                    rawPrompts,
+                                  });
+                                }}
+                                endIcon={<ArrowForwardIcon sx={{ fontSize: '14px !important' }} />}
+                                sx={{
+                                  bgcolor: '#fff',
+                                  color: '#000',
+                                  fontWeight: 900,
+                                  px: 3.5,
+                                  py: 1.2,
+                                  borderRadius: '14px',
+                                  textTransform: 'none',
+                                  fontSize: '0.9rem',
+                                  boxShadow: '0 4px 20px rgba(255, 255, 255, 0.2)',
+                                  transition: 'all 0.2s ease',
+                                  '&:hover': {
+                                    bgcolor: 'rgba(255,255,255,0.9)',
+                                    transform: 'translateY(-1px)',
+                                  }
+                                }}
+                              >
+                                Start (~1 min)
+                              </Button>
+                              <Button
+                                variant="text"
+                                onClick={handleStartCustomArticle}
+                                sx={{
+                                  color: 'rgba(255,255,255,0.6)',
+                                  fontWeight: 700,
+                                  px: 3,
+                                  py: 1.2,
+                                  borderRadius: '14px',
+                                  textTransform: 'none',
+                                  fontSize: '0.88rem',
+                                  '&:hover': {
+                                    color: '#fff',
+                                    bgcolor: 'rgba(255,255,255,0.06)',
+                                  }
+                                }}
+                              >
+                                Ignore
+                              </Button>
+                            </Box>
                           </Box>
                         </Paper>
+
+                        {/* SUPPORTIVE ASSISTANT STATUS ALERT (Shows if assistant was launched but articles not yet ingested) */}
+                        {hasLaunchedAssistant && insights.length === 0 && (
+                          <Paper
+                            elevation={0}
+                            sx={{
+                              p: 2,
+                              borderRadius: '16px',
+                              bgcolor: 'rgba(59, 130, 246, 0.08)',
+                              border: '1px solid rgba(59, 130, 246, 0.25)',
+                              maxWidth: { xs: 500, md: 740 },
+                              mx: 'auto',
+                              mt: 2.5,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 1.5,
+                              animation: `${slideUpFade} 0.3s ease`,
+                            }}
+                          >
+                            <InfoOutlinedIcon sx={{ color: '#60a5fa', fontSize: 22, flexShrink: 0 }} />
+                            <Box sx={{ flex: 1 }}>
+                              <Typography sx={{ color: '#bfdbfe', fontSize: '0.84rem', fontWeight: 600, lineHeight: 1.5 }}>
+                                We haven't detected your ingested articles yet. Don't worry — your progress is saved in your browser, and you can resume anytime by clicking <strong>Start</strong> above.
+                              </Typography>
+                            </Box>
+                          </Paper>
+                        )}
+                        </Box>
                       ) : (
-                        /* NORMAL STATE: Cards Grid + Bottom Action Button */
+                        /* NORMAL STATE: Swimlane Grid Grouped by Spectrum Rank + Editorial Framework Guide */
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
-                            {insights.map((item, idx) => {
-                              const fMeta = FORMAT_CONFIG[item.format] || FORMAT_CONFIG.brief;
+                          
+                          {/* EDITORIAL FRAMEWORK & RANKS GUIDE (Collapsible) */}
+                          <Box
+                            sx={{
+                              borderRadius: '20px',
+                              bgcolor: 'rgba(255,255,255,0.03)',
+                              border: '1px solid rgba(255,255,255,0.08)',
+                              backdropFilter: 'blur(16px)',
+                              overflow: 'hidden',
+                              transition: 'all 0.2s ease',
+                            }}
+                          >
+                            <Box
+                              onClick={() => setIsGuideOpen(!isGuideOpen)}
+                              sx={{
+                                p: { xs: 1.75, sm: 2 },
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                cursor: 'pointer',
+                                userSelect: 'none',
+                                '&:hover': { bgcolor: 'rgba(255,255,255,0.04)' }
+                              }}
+                            >
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                <Box sx={{ p: 0.8, borderRadius: '10px', bgcolor: alpha(ACCENT, 0.15), color: ACCENT, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <LightbulbIcon sx={{ fontSize: 18 }} />
+                                </Box>
+                                <Box>
+                                  <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: { xs: '0.88rem', sm: '0.95rem' } }}>
+                                    Editorial Guide: Ranks (1–6), Formats & Eras
+                                  </Typography>
+                                  <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.76rem' }}>
+                                    Learn how the 6 ranks, 5 article types, and 3 time eras shape your articles
+                                  </Typography>
+                                </Box>
+                              </Box>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Chip
+                                  label={isGuideOpen ? "Hide" : "Explore"}
+                                  size="small"
+                                  sx={{
+                                    bgcolor: isGuideOpen ? 'rgba(255,255,255,0.1)' : alpha(ACCENT, 0.15),
+                                    color: isGuideOpen ? '#fff' : ACCENT,
+                                    fontWeight: 800,
+                                    fontSize: '0.72rem',
+                                    height: 24,
+                                    cursor: 'pointer'
+                                  }}
+                                />
+                                <ExpandMoreIcon sx={{ color: 'rgba(255,255,255,0.6)', transform: isGuideOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
+                              </Box>
+                            </Box>
+
+                            {/* Expanded Guide Content */}
+                            {isGuideOpen && (
+                              <Box sx={{ p: { xs: 2, sm: 2.5 }, pt: 0, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                                {/* 1. The 6 Ranks */}
+                                <Box sx={{ mt: 1.5 }}>
+                                  <Typography sx={{ color: ACCENT, fontWeight: 900, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 1 }}>
+                                    🎯 6 Cognitive Spectrum Ranks (Why the order matters)
+                                  </Typography>
+                                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr' }, gap: 1.25 }}>
+                                    {RANK_DETAILS.map(r => (
+                                      <Box key={r.rank} sx={{ p: 1.25, borderRadius: '12px', bgcolor: 'rgba(255,255,255,0.03)', border: `1px solid ${alpha(r.color, 0.2)}` }}>
+                                        <Typography sx={{ color: r.color, fontWeight: 800, fontSize: '0.82rem', mb: 0.25 }}>
+                                          {r.emoji} Rank #{r.rank}: {r.name}
+                                        </Typography>
+                                        <Typography sx={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.74rem', lineHeight: 1.4 }}>
+                                          {r.desc}
+                                        </Typography>
+                                      </Box>
+                                    ))}
+                                  </Box>
+                                </Box>
+
+                                {/* 2. Formats & Eras side by side */}
+                                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1.4fr 1fr' }, gap: 2 }}>
+                                  {/* Formats */}
+                                  <Box>
+                                    <Typography sx={{ color: '#60a5fa', fontWeight: 900, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 1 }}>
+                                      📑 5 Article Types (Formats)
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                                      {FORMAT_DETAILS.map(f => (
+                                        <Box key={f.format} sx={{ p: 1, borderRadius: '10px', bgcolor: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 1 }}>
+                                          <Typography sx={{ fontSize: '0.85rem' }}>{f.emoji}</Typography>
+                                          <Box>
+                                            <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: '0.78rem' }}>{f.format}</Typography>
+                                            <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.72rem' }}>{f.desc}</Typography>
+                                          </Box>
+                                        </Box>
+                                      ))}
+                                    </Box>
+                                  </Box>
+
+                                  {/* Eras */}
+                                  <Box>
+                                    <Typography sx={{ color: '#34d399', fontWeight: 900, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 1 }}>
+                                      ⏳ 3 Time Eras
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                                      {ERA_DETAILS.map(e => (
+                                        <Box key={e.era} sx={{ p: 1, borderRadius: '10px', bgcolor: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 1 }}>
+                                          <Typography sx={{ fontSize: '0.85rem' }}>{e.emoji}</Typography>
+                                          <Box>
+                                            <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: '0.78rem' }}>{e.era}</Typography>
+                                            <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.72rem' }}>{e.desc}</Typography>
+                                          </Box>
+                                        </Box>
+                                      ))}
+                                    </Box>
+                                  </Box>
+                                </Box>
+                              </Box>
+                            )}
+                          </Box>
+
+                          {/* SWIMLANE GRID: Grouped by Spectrum Rank 1 to 6 */}
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                            {RANK_DETAILS.map((rMeta) => {
+                              const rankItems = insightsByRank[rMeta.rank] || [];
+                              if (rankItems.length === 0) return null;
+                              const isCollapsed = !!collapsedRanks[rMeta.rank];
 
                               return (
-                                <Paper
-                                  key={item.id || `insight-${idx}`}
-                                  elevation={0}
-                                  onClick={() => handleSelectInsight(item)}
+                                <Box
+                                  key={`rank-swimlane-${rMeta.rank}`}
                                   sx={{
-                                    p: 2.5,
-                                    borderRadius: '18px',
-                                    bgcolor: 'rgba(255,255,255,0.035)',
-                                    border: '1px solid rgba(255,255,255,0.07)',
-                                    backdropFilter: 'blur(16px)',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+                                    borderRadius: '22px',
+                                    bgcolor: 'rgba(255,255,255,0.02)',
+                                    border: `1px solid ${alpha(rMeta.color, 0.2)}`,
+                                    p: { xs: 1.75, sm: 2.25 },
                                     display: 'flex',
                                     flexDirection: 'column',
-                                    justifyContent: 'space-between',
-                                    gap: 1.5,
-                                    '&:hover': {
-                                      bgcolor: 'rgba(255,255,255,0.07)',
-                                      borderColor: alpha(ACCENT, 0.5),
-                                      transform: 'translateY(-2px)',
-                                      boxShadow: `0 12px 28px rgba(0,0,0,0.2)`,
-                                      '& .card-cta': {
-                                        color: ACCENT,
-                                        transform: 'translateX(3px)',
-                                      }
-                                    }
+                                    gap: 2,
+                                    transition: 'all 0.2s ease',
                                   }}
                                 >
-                                  <Box>
-                                    {/* Top Pill Tags */}
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.2, flexWrap: 'wrap' }}>
+                                  {/* Swimlane Header Dropdown */}
+                                  <Box
+                                    onClick={() => toggleRankCollapse(rMeta.rank)}
+                                    sx={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'space-between',
+                                      cursor: 'pointer',
+                                      userSelect: 'none',
+                                      p: 0.75,
+                                      borderRadius: '12px',
+                                      '&:hover': { bgcolor: 'rgba(255,255,255,0.04)' }
+                                    }}
+                                  >
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <Typography sx={{ fontSize: '1.05rem' }}>{rMeta.emoji}</Typography>
+                                        <Typography sx={{ color: '#fff', fontWeight: 900, fontSize: { xs: '0.92rem', sm: '1.02rem' } }}>
+                                          Rank #{rMeta.rank}: {rMeta.name}
+                                        </Typography>
+                                      </Box>
                                       <Chip
-                                        label={`${fMeta.emoji} ${fMeta.label}`}
+                                        label={`${rankItems.length} ${rankItems.length === 1 ? 'idea' : 'ideas'}`}
                                         size="small"
-                                        sx={{ bgcolor: alpha(fMeta.color, 0.15), color: fMeta.color, fontWeight: 800, fontSize: '0.68rem', height: 22 }}
+                                        sx={{
+                                          bgcolor: alpha(rMeta.color, 0.15),
+                                          color: rMeta.color,
+                                          fontWeight: 800,
+                                          fontSize: '0.72rem',
+                                          height: 22,
+                                          border: `1px solid ${alpha(rMeta.color, 0.3)}`
+                                        }}
                                       />
-                                      {item.subcategoryTitle && (
-                                        <Chip
-                                          label={item.subcategoryTitle}
-                                          size="small"
-                                          sx={{ bgcolor: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.7)', fontWeight: 600, fontSize: '0.68rem', height: 22 }}
-                                        />
-                                      )}
+                                      <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.78rem', display: { xs: 'none', md: 'block' } }}>
+                                        • {rMeta.tag}
+                                      </Typography>
                                     </Box>
 
-                                    {/* Clean Authoritative Title */}
-                                    <Typography sx={{ color: '#fff', fontWeight: 900, fontSize: '1.05rem', lineHeight: 1.35, mb: 1, letterSpacing: '-0.015em' }}>
-                                      {item.title}
-                                    </Typography>
-
-                                    {/* 1-2 sentence hook */}
-                                    <Typography sx={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.8rem', lineHeight: 1.45, fontWeight: 400 }}>
-                                      {item.hook || item.descriptionSentences?.[0] || `Strategic operational brief on ${selectedCommodity}.`}
-                                    </Typography>
-                                  </Box>
-
-                                  {/* Bottom Hover CTA */}
-                                  <Box sx={{ pt: 1, borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                    <Typography sx={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                                      {item.era || 'present'}
-                                    </Typography>
-                                    <Box className="card-cta" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, color: 'rgba(255,255,255,0.6)', fontWeight: 800, fontSize: '0.78rem', transition: 'all 0.2s ease' }}>
-                                      Start Writing <ArrowForwardIcon sx={{ fontSize: 13 }} />
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'rgba(255,255,255,0.6)' }}>
+                                      <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, display: { xs: 'none', sm: 'block' } }}>
+                                        {isCollapsed ? 'Show' : 'Hide'}
+                                      </Typography>
+                                      <ExpandMoreIcon sx={{ transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
                                     </Box>
                                   </Box>
-                                </Paper>
+
+                                  {/* Cards inside Swimlane */}
+                                  {!isCollapsed && (
+                                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
+                                      {rankItems.map((item, idx) => {
+                                        const fMeta = FORMAT_CONFIG[item.format] || FORMAT_CONFIG.brief;
+                                        const eraMeta = ERA_CONFIG[item.era || 'present'] || ERA_CONFIG.present;
+
+                                        return (
+                                          <Paper
+                                            key={item.id || `insight-${rMeta.rank}-${idx}`}
+                                            elevation={0}
+                                            onClick={() => handleSelectInsight(item)}
+                                            sx={{
+                                              p: 2.5,
+                                              borderRadius: '18px',
+                                              bgcolor: 'rgba(255,255,255,0.035)',
+                                              border: '1px solid rgba(255,255,255,0.07)',
+                                              backdropFilter: 'blur(16px)',
+                                              cursor: 'pointer',
+                                              transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+                                              display: 'flex',
+                                              flexDirection: 'column',
+                                              justifyContent: 'space-between',
+                                              gap: 1.5,
+                                              position: 'relative',
+                                              overflow: 'hidden',
+                                              '&:hover': {
+                                                bgcolor: 'rgba(255,255,255,0.07)',
+                                                borderColor: alpha(rMeta.color, 0.5),
+                                                transform: 'translateY(-2px)',
+                                                boxShadow: `0 12px 28px rgba(0,0,0,0.25)`,
+                                                '& .card-cta-bar': {
+                                                  maxHeight: '40px',
+                                                  opacity: 1,
+                                                  mt: 1,
+                                                  pt: 1,
+                                                }
+                                              }
+                                            }}
+                                          >
+                                            <Box>
+                                              {/* Top Pill Tags */}
+                                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.2, flexWrap: 'wrap' }}>
+                                                <Chip
+                                                  label={`${fMeta.emoji} ${fMeta.label}`}
+                                                  size="small"
+                                                  sx={{ bgcolor: alpha(fMeta.color, 0.15), color: fMeta.color, fontWeight: 800, fontSize: '0.68rem', height: 22 }}
+                                                />
+                                                <Chip
+                                                  label={`${eraMeta.emoji} ${eraMeta.label}`}
+                                                  size="small"
+                                                  sx={{ bgcolor: alpha(eraMeta.color, 0.15), color: eraMeta.color, fontWeight: 700, fontSize: '0.68rem', height: 22 }}
+                                                />
+                                                {item.subcategoryTitle && (
+                                                  <Chip
+                                                    label={item.subcategoryTitle}
+                                                    size="small"
+                                                    sx={{ bgcolor: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.7)', fontWeight: 600, fontSize: '0.68rem', height: 22 }}
+                                                  />
+                                                )}
+                                              </Box>
+
+                                              {/* Clean Authoritative Title */}
+                                              <Typography sx={{ color: '#fff', fontWeight: 900, fontSize: '1.02rem', lineHeight: 1.35, mb: 0.75, letterSpacing: '-0.015em' }}>
+                                                {item.title}
+                                              </Typography>
+
+                                              {/* Brief ellipsis hook (clamped to 2 lines) */}
+                                              <Typography
+                                                sx={{
+                                                  color: 'rgba(255,255,255,0.65)',
+                                                  fontSize: '0.8rem',
+                                                  lineHeight: 1.45,
+                                                  fontWeight: 400,
+                                                  display: '-webkit-box',
+                                                  WebkitLineClamp: 2,
+                                                  WebkitBoxOrient: 'vertical',
+                                                  overflow: 'hidden',
+                                                  textOverflow: 'ellipsis',
+                                                }}
+                                              >
+                                                {item.hook || item.descriptionSentences?.[0] || `Strategic operational brief on ${selectedCommodity}.`}
+                                              </Typography>
+                                            </Box>
+
+                                            {/* Start writing text - ONLY visible when interacted with / hovered */}
+                                            <Box
+                                              className="card-cta-bar"
+                                              sx={{
+                                                maxHeight: 0,
+                                                opacity: 0,
+                                                overflow: 'hidden',
+                                                borderTop: '1px solid rgba(255,255,255,0.08)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'flex-end',
+                                                transition: 'all 0.22s ease-in-out',
+                                              }}
+                                            >
+                                              <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, color: rMeta.color, fontWeight: 800, fontSize: '0.78rem' }}>
+                                                Start Writing <ArrowForwardIcon sx={{ fontSize: 13 }} />
+                                              </Box>
+                                            </Box>
+                                          </Paper>
+                                        );
+                                      })}
+                                    </Box>
+                                  )}
+                                </Box>
                               );
                             })}
                           </Box>
@@ -1361,7 +1796,7 @@ export default function CreatorStudioDashboard({
                                 }
                               }}
                             >
-                              ✍️ Craft Your Own Title / Write from Scratch
+                              ✍️ Write your own title
                             </Button>
                           </Box>
                         </Box>

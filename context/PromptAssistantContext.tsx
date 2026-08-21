@@ -12,6 +12,8 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import BoltIcon from '@mui/icons-material/Bolt';
 import RemoveIcon from '@mui/icons-material/Remove';
 import OpenInFullIcon from '@mui/icons-material/OpenInFull';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForwardIos';
+import ContentPasteIcon from '@mui/icons-material/ContentPaste';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -210,6 +212,21 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
       setTimeout(() => setCopiedPromptTab(null), 2000);
     }
   }, [selectedCommodity, selectedCategory]);
+
+  const handlePasteFromClipboard = useCallback(async () => {
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        const text = await navigator.clipboard.readText();
+        if (text && text.trim()) {
+          setCustomIngestMarkdown(text);
+          saveScratchpadToStorage({ ingest: text });
+          setCustomIngestError('');
+        }
+      }
+    } catch (err) {
+      console.error('Failed to read from clipboard', err);
+    }
+  }, [saveScratchpadToStorage]);
 
   const openAssistant = useCallback((opts?: PromptAssistantOpenOptions) => {
     if (opts?.commodity) setSelectedCommodity(opts.commodity);
@@ -513,7 +530,7 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
             </Box>
             <Box>
               <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.2, fontSize: '1.05rem' }}>
-                AI Prompt Assistant
+                Get AI article ideas here
               </Typography>
               <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600 }}>
                 Get 10–12 article titles and insights by the end
@@ -596,11 +613,106 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
             </Box>
           </Box>
 
-          {/* Quick 1-Line Instruction Banner */}
-          <Box sx={{ p: 2, bgcolor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Typography sx={{ fontSize: '0.86rem', color: '#1e40af', lineHeight: 1.6 }}>
-              ⚡ <strong>How it works:</strong> Open <strong>ChatGPT</strong>, <strong>Claude</strong>, or <strong>Gemini</strong> in a new tab. In that <strong>same chat thread</strong>, run Prompts 1, 2 & 3 sequentially. Then copy the final Document 1c output into Step 4 to populate your Studio!
-            </Typography>
+          {/* Motivation & Value Alert Banner: The "Why" */}
+          <Box
+            sx={{
+              p: 2.25,
+              bgcolor: '#f0fdf4',
+              border: '1.5px solid #bbf7d0',
+              borderRadius: '18px',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 1.75,
+              boxShadow: '0 4px 14px rgba(16, 185, 129, 0.08)',
+            }}
+          >
+            <Box
+              sx={{
+                width: 36,
+                height: 36,
+                borderRadius: '10px',
+                bgcolor: '#10b981',
+                color: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+              }}
+            >
+              <BoltIcon sx={{ fontSize: 20 }} />
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <Typography sx={{ color: '#065f46', fontWeight: 900, fontSize: '0.88rem', mb: 0.35 }}>
+                ⚡ Takes 1 Minute • Get ideas people actually want to read
+              </Typography>
+              <Typography sx={{ color: '#047857', fontSize: '0.82rem', lineHeight: 1.55, fontWeight: 500 }}>
+                In just 60 seconds, this flow gives you fresh, realistic article topics based on what is happening right now in the market — so your writing stands out and gets more reads.
+              </Typography>
+            </Box>
+          </Box>
+
+          {/* ──────────────────────────────────────────────────────────── */}
+          {/* STEP 0: WORKFLOW OVERVIEW                                    */}
+          {/* ──────────────────────────────────────────────────────────── */}
+          <Box id="wiki-step-0" sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, scrollMarginTop: '80px' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box sx={{ width: 30, height: 30, borderRadius: '50%', bgcolor: '#0f172a', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.88rem' }}>
+                0
+              </Box>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>
+                Step 0: Workflow Overview
+              </Typography>
+            </Box>
+
+            {/* Step 0 Action Checklist */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 1.75, border: '1px solid rgba(15, 23, 42, 0.15)', borderRadius: '14px', bgcolor: 'rgba(15, 23, 42, 0.02)' }}>
+              {[
+                { id: 'act_sop_0a', text: '1. Open ChatGPT, Claude, or Gemini in a new browser tab.' },
+                { id: 'act_sop_0b', text: '2. In that same chat thread, run Prompts 1, 2, and 3 sequentially.' },
+                { id: 'act_sop_0c', text: '3. Copy the final Document 1c output from your chat and paste it into Step 4 below.' },
+              ].map(item => {
+                const isChecked = !!wikiChecklist[item.id];
+                return (
+                  <Box
+                    key={item.id}
+                    onClick={() => toggleChecklistItem(item.id)}
+                    sx={{
+                      display: 'flex', alignItems: 'center', p: 1.25, borderRadius: '10px', cursor: 'pointer',
+                      bgcolor: isChecked ? 'rgba(16, 185, 129, 0.06)' : '#ffffff',
+                      border: isChecked ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(15, 23, 42, 0.12)',
+                      transition: 'all 0.2s',
+                      '&:hover': { bgcolor: isChecked ? 'rgba(16, 185, 129, 0.1)' : 'rgba(15, 23, 42, 0.05)' }
+                    }}
+                  >
+                    <Box sx={{
+                      width: 20, height: 20, borderRadius: '6px',
+                      border: '2px solid',
+                      borderColor: isChecked ? '#10b981' : '#0f172a',
+                      bgcolor: isChecked ? '#10b981' : 'transparent',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      mr: 1.25, flexShrink: 0,
+                      transition: 'all 0.2s'
+                    }}>
+                      {isChecked && (
+                        <svg width="10" height="8" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M1 5L5 9L13 1" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      )}
+                    </Box>
+                    <Typography sx={{
+                      fontSize: '0.85rem',
+                      color: isChecked ? '#94a3b8' : '#1e293b',
+                      textDecoration: isChecked ? 'line-through' : 'none',
+                      fontWeight: isChecked ? 500 : 700,
+                      lineHeight: 1.45
+                    }}>
+                      {item.text}
+                    </Typography>
+                  </Box>
+                );
+              })}
+            </Box>
           </Box>
 
           {/* ──────────────────────────────────────────────────────────── */}
@@ -1202,10 +1314,84 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
             </Box>
 
             {/* Step 4 Scratchpad Block */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
-              <Typography variant="overline" sx={{ color: '#10b981', fontWeight: 800, letterSpacing: '0.06em', lineHeight: 1, display: 'flex', alignItems: 'center', gap: 0.8 }}>
-                📝 Step 4 Scratchpad · Final Markdown Outlines
-              </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+                <Typography variant="overline" sx={{ color: '#10b981', fontWeight: 800, letterSpacing: '0.06em', lineHeight: 1, display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                  📝 Step 4 Scratchpad · Final Markdown Outlines
+                </Typography>
+                {customIngestMarkdown.trim() ? (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Button
+                      size="small"
+                      onClick={handlePasteFromClipboard}
+                      startIcon={<ContentPasteIcon sx={{ fontSize: '14px !important' }} />}
+                      sx={{
+                        color: '#059669',
+                        bgcolor: 'rgba(16, 185, 129, 0.08)',
+                        fontWeight: 800,
+                        borderRadius: '8px',
+                        px: 1.5,
+                        py: 0.4,
+                        fontSize: '0.78rem',
+                        textTransform: 'none',
+                        '&:hover': { bgcolor: 'rgba(16, 185, 129, 0.15)' }
+                      }}
+                    >
+                      Replace from Clipboard
+                    </Button>
+                    <Button
+                      size="small"
+                      onClick={() => {
+                        setCustomIngestMarkdown('');
+                        saveScratchpadToStorage({ ingest: '' });
+                      }}
+                      sx={{
+                        color: '#94a3b8',
+                        fontWeight: 700,
+                        borderRadius: '8px',
+                        px: 1,
+                        py: 0.4,
+                        fontSize: '0.78rem',
+                        textTransform: 'none',
+                        '&:hover': { color: '#ef4444', bgcolor: 'rgba(239, 68, 68, 0.08)' }
+                      }}
+                    >
+                      Clear
+                    </Button>
+                  </Box>
+                ) : null}
+              </Box>
+
+              {!customIngestMarkdown.trim() && (
+                <Button
+                  variant="outlined"
+                  onClick={handlePasteFromClipboard}
+                  startIcon={<ContentPasteIcon sx={{ fontSize: 20 }} />}
+                  sx={{
+                    py: 2.2,
+                    borderRadius: '16px',
+                    border: '2px dashed #10b981',
+                    bgcolor: 'rgba(16, 185, 129, 0.04)',
+                    color: '#059669',
+                    fontWeight: 900,
+                    fontSize: '0.92rem',
+                    textTransform: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 1.2,
+                    transition: 'all 0.2s',
+                    '&:hover': {
+                      bgcolor: 'rgba(16, 185, 129, 0.1)',
+                      borderColor: '#047857',
+                      transform: 'translateY(-1px)'
+                    }
+                  }}
+                >
+                  Tap to Paste Document 1c from Clipboard
+                </Button>
+              )}
+
               <PremiumMarkdownEditor
                 colorTheme="#10b981"
                 minRows={6}
