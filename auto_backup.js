@@ -10,43 +10,22 @@ function runBackup() {
     // Check if git is initialized
     execSync('git status', { stdio: 'ignore' });
 
-    // Ensure we are on the dev branch
-    try {
-      const currentBranch = execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
-      if (currentBranch !== 'dev') {
-        console.log(`[${timestamp}] Switching to dev branch...`);
-        execSync('git checkout -b dev || git checkout dev', { stdio: 'ignore' });
-      }
-    } catch (e) {
-      console.error("Failed to checkout dev branch:", e.message);
-    }
-
     // Add all changes
     execSync('git add .');
 
     // Check if there are changes to commit
     const status = execSync('git status --porcelain').toString();
-    if (status.trim().length === 0) {
-      console.log(`[${timestamp}] No new changes to backup.`);
-      return;
+    if (status.trim().length > 0) {
+      // Commit changes
+      const commitMsg = `chore(auto-backup): state saved at ${timestamp} [skip ci]`;
+      execSync(`git commit -m "${commitMsg}"`);
     }
 
-    // Commit changes
-    const commitMsg = `chore(auto-backup): state saved at ${timestamp} [skip ci]`;
-    execSync(`git commit -m "${commitMsg}"`);
+    // Push snapshot directly to remote dev branch
+    console.log(`[${timestamp}] Pushing backup to dev branch...`);
+    execSync('git push origin HEAD:dev');
     
-    // Pull remote changes first to integrate any external commits seamlessly
-    try {
-      execSync('git pull --rebase --autostash origin dev', { stdio: 'ignore' });
-    } catch (pullErr) {
-      console.log(`[${timestamp}] Notice: Continuing with push...`);
-    }
-
-    // Push changes to dev branch safely
-    console.log(`[${timestamp}] Pushing to dev branch...`);
-    execSync('git push -u origin dev');
-    
-    console.log(`[${timestamp}] Auto-backup completed successfully.`);
+    console.log(`[${timestamp}] Auto-backup to dev completed successfully.`);
   } catch (error) {
     console.error(`[${timestamp}] Auto-backup failed:`, error.message);
     if (error.stdout) console.error(error.stdout.toString());
