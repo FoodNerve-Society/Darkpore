@@ -59,15 +59,10 @@ import { commoditiesList, getCommodityMeta } from '@/lib/cms/commodities';
 import { getISOWeek, startOfISOWeek, addDays, format, getYear } from 'date-fns';
 import { CATEGORY_MAP } from '@/lib/config/editorialMatrix';
 import { getDailyEditorialIntel, regenerateCustomAnglesAction, ArticleInsightItem } from '@/lib/actions/editorialMatrix';
-<<<<<<< HEAD
-import { FORMAT_CONFIG, ERA_CONFIG, ArticleFormat, ArticleEra, getBlueprint } from '@/lib/config/articleBlueprints';
-
-=======
 import { FORMAT_CONFIG, ERA_CONFIG, ArticleFormat, ArticleEra } from '@/lib/config/articleBlueprints';
 import { fetchGlobalLivestreamArticles, fetchGlobalJobs } from '@/lib/actions/learn';
 import { parseDoc1cArticles, buildDoc1aPrompt, buildDoc1bPrompt, buildDoc1cPrompt } from '@/lib/config/editorialPrompts';
 import { foodChallenges } from '@/lib/cms/food/challenges';
->>>>>>> dev
 const ACCENT = "#f59e0b";
 const ACCENT_DARK = "#d97706";
 
@@ -297,13 +292,6 @@ export default function CreatorStudioDashboard({
   };
 
   const handleSelectInsight = (item: ArticleInsightItem) => {
-    const blueprint = getBlueprint(item.format, item.era);
-    const initialBlocks = blueprint.map((b, idx) => ({
-      id: Math.random().toString(36).substring(7),
-      type: b.type,
-      content: idx === 0 ? { point1: item.hook } : {}
-    }));
-
     onStartFresh('article', {
       commodity: selectedCommodity,
       category: selectedCategory,
@@ -314,7 +302,6 @@ export default function CreatorStudioDashboard({
       title: item.title,
       description: item.hook,
     }, {
-      type: 'article',
       title: item.title,
       description: item.hook,
       category: selectedCategory,
@@ -323,11 +310,6 @@ export default function CreatorStudioDashboard({
       timeframe: item.era,
       targetDate: selectedTargetDate,
       commodity: selectedCommodity,
-      articleBlocks: initialBlocks.map((b, idx) => ({
-        blockType: b.type,
-        orderIndex: idx,
-        content: b.content
-      }))
     });
   };
 
@@ -342,7 +324,6 @@ export default function CreatorStudioDashboard({
       title: '',
       description: '',
     }, {
-      type: 'article',
       title: '',
       description: '',
       category: selectedCategory,
@@ -599,100 +580,11 @@ export default function CreatorStudioDashboard({
                   </Box>
                 </>
               ) : (
+                /* ============================================================== */
+                /* EXPANDED 3-STEP WIZARD                                         */
+                /* ============================================================== */
                 <Box sx={{ p: { xs: 2.5, sm: 4, md: 5 }, width: '100%', position: 'relative' }}>
-                  {/* EXPANDED 3-STEP WIZARD (LIQUID GLASS / ULTRA-PREMIUM) */}
                   
-<<<<<<< HEAD
-                  {/* Top Bar */}
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3.5, pb: 2.5, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Box sx={{ p: 1.2, borderRadius: '14px', bgcolor: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(12px)', color: '#fff' }}>
-                        {opt.icon}
-                      </Box>
-                      <Box>
-                        <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                          Intelligence Briefing Studio
-                        </Typography>
-                        <Typography variant="h5" sx={{ fontWeight: 900, color: '#fff', mt: 0.2, letterSpacing: '-0.02em', fontSize: { xs: '1.2rem', sm: '1.5rem' } }}>
-                          {matrixStep === 1 && "1. Target Commodity & Cycle"}
-                          {matrixStep === 2 && "2. Daily Strategic Pillar"}
-                          {matrixStep === 3 && "3. Curated Briefing Angles"}
-                        </Typography>
-                      </Box>
-                    </Box>
-
-                    {/* Step Stepper & Minimize */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 1 }}>
-                        {[1, 2, 3].map(stepNum => (
-                          <Box
-                            key={stepNum}
-                            onClick={() => stepNum < matrixStep && setMatrixStep(stepNum as any)}
-                            sx={{
-                              width: 30, height: 30, borderRadius: '10px',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              bgcolor: matrixStep === stepNum ? ACCENT : matrixStep > stepNum ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.06)',
-                              border: `1px solid ${matrixStep === stepNum ? ACCENT : matrixStep > stepNum ? '#10b981' : 'rgba(255,255,255,0.1)'}`,
-                              color: matrixStep > stepNum ? '#10b981' : '#fff', fontSize: '0.75rem', fontWeight: 800,
-                              cursor: stepNum < matrixStep ? 'pointer' : 'default',
-                              transition: 'all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)'
-                            }}
-                          >
-                            {matrixStep > stepNum ? '✓' : stepNum}
-                          </Box>
-                        ))}
-                      </Box>
-
-                      <Tooltip title="Minimize">
-                        <IconButton onClick={(e) => { e.stopPropagation(); handleClose(); }} sx={{ color: 'rgba(255,255,255,0.7)', bgcolor: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(8px)', '&:hover': { bgcolor: 'rgba(255,255,255,0.15)', color: '#fff' } }}>
-                          <MinimizeIcon />
-                        </IconButton>
-                      </Tooltip>
-                    </Box>
-                  </Box>
-
-                  {/* ──────────────────────────────────────────────────────────── */}
-                  {/* STEP 1: COMMODITY & WEEK SELECTION                           */}
-                  {/* ──────────────────────────────────────────────────────────── */}
-                  {matrixStep === 1 && (
-                    <Box sx={{ animation: `${slideUpFade} 0.35s ease` }}>
-                      {/* HERO CARD: Active Commodity of the Week */}
-                      {(() => {
-                        const activeIdx = (currentWeek - 1) % commoditiesList.length;
-                        const activeComm = commoditiesList[activeIdx];
-                        const meta = getCommodityMeta(activeComm);
-                        return (
-                          <Paper
-                            elevation={0}
-                            onClick={() => handleSelectCommodityAndWeek(currentWeek, activeComm)}
-                            sx={{
-                              p: { xs: 3, sm: 4 }, mb: 3.5, borderRadius: '22px',
-                              background: `linear-gradient(135deg, ${alpha(meta.color, 0.2)} 0%, rgba(15, 23, 42, 0.65) 100%)`,
-                              backdropFilter: 'blur(20px)',
-                              border: `1.5px solid ${alpha(meta.color, 0.5)}`,
-                              boxShadow: `0 16px 40px ${alpha(meta.color, 0.2)}`,
-                              cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                              position: 'relative', overflow: 'hidden',
-                              '&:hover': { transform: 'translateY(-3px)', borderColor: meta.color, boxShadow: `0 20px 48px ${alpha(meta.color, 0.35)}` }
-                            }}
-                          >
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#10b981', boxShadow: '0 0 10px #10b981' }} />
-                                <Typography sx={{ color: '#10b981', fontWeight: 900, fontSize: '0.75rem', letterSpacing: '0.06em' }}>
-                                  LIVE FOCUS • WEEK {currentWeek}
-                                </Typography>
-                              </Box>
-                              <Chip label={meta.category} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.85)', fontWeight: 700, fontSize: '0.7rem', border: '1px solid rgba(255,255,255,0.15)' }} />
-                            </Box>
-
-                            <Typography variant="h3" sx={{ fontWeight: 900, color: '#fff', letterSpacing: '-0.03em', mb: 2, fontSize: { xs: '1.8rem', sm: '2.5rem' } }}>
-                              {activeComm}
-                            </Typography>
-
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', color: meta.color, fontWeight: 800, fontSize: '0.88rem', gap: 1 }}>
-                              Target Live Focus <ArrowForwardArrow sx={{ fontSize: 16 }} />
-=======
                   {opt.type === 'livestream' ? (
                     // ───────────────────────────────────────────────────────────
                     // LIVESTREAM 3-STEP WIZARD
@@ -733,50 +625,11 @@ export default function CreatorStudioDashboard({
                                   {stepNum}
                                 </Box>
                               ))}
->>>>>>> dev
                             </Box>
                             <Button onClick={(e) => { e.stopPropagation(); handleClose(); }} sx={{ minWidth: 0, p: 1, borderRadius: '12px', color: 'rgba(255,255,255,0.5)', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)', color: '#fff' } }}>✕</Button>
                           </Box>
                        </Box>
 
-<<<<<<< HEAD
-                      {/* UPCOMING CYCLES GRID */}
-                      <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 800, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', mb: 1.5 }}>
-                        Upcoming Cycles
-                      </Typography>
-
-                      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(4, 1fr)' }, gap: 1.5 }}>
-                        {[1, 2, 3, 4].map(offset => {
-                          const futWeek = currentWeek + offset;
-                          const futIdx = (futWeek - 1) % commoditiesList.length;
-                          const futComm = commoditiesList[futIdx];
-                          const meta = getCommodityMeta(futComm);
-                          return (
-                            <Paper
-                              key={futWeek}
-                              elevation={0}
-                              onClick={() => handleSelectCommodityAndWeek(futWeek, futComm)}
-                              sx={{
-                                p: 2, borderRadius: '16px',
-                                background: 'rgba(255,255,255,0.03)',
-                                backdropFilter: 'blur(16px)',
-                                border: '1px solid rgba(255,255,255,0.08)',
-                                cursor: 'pointer', transition: 'all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                '&:hover': { bgcolor: 'rgba(255,255,255,0.07)', borderColor: alpha(meta.color, 0.6), transform: 'translateY(-2px)' }
-                              }}
-                            >
-                              <Box>
-                                <Typography sx={{ color: meta.color, fontWeight: 800, fontSize: '0.72rem', letterSpacing: '0.04em' }}>
-                                  Week {futWeek}
-                                </Typography>
-                                <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: '0.92rem', mt: 0.2 }}>
-                                  {futComm}
-                                </Typography>
-                              </Box>
-                              <ArrowForwardArrow sx={{ fontSize: 14, color: 'rgba(255,255,255,0.3)' }} />
-                            </Paper>
-=======
                        {lsStep === 1 && (
                          <Box>
                            <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 500, mb: 3 }}>
@@ -1136,7 +989,6 @@ export default function CreatorStudioDashboard({
                                 </Paper>
                               ))}
                             </>
->>>>>>> dev
                           );
                         })()}
                       </Box>
@@ -1147,29 +999,6 @@ export default function CreatorStudioDashboard({
                   {/* STEP 2: 7 DAILY STRATEGIC PILLARS (3D PERSPECTIVE STACK)     */}
                   {/* ──────────────────────────────────────────────────────────── */}
                   {matrixStep === 2 && (
-<<<<<<< HEAD
-                    <Box sx={{ animation: `${slideUpFade} 0.35s ease` }}>
-                      {/* Breadcrumb Navigation */}
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5 }}>
-                        <Button 
-                          onClick={() => setMatrixStep(1)} 
-                          size="small" 
-                          startIcon={<ArrowBackIcon sx={{ fontSize: '10px !important' }} />}
-                          sx={{ color: 'rgba(255,255,255,0.7)', textTransform: 'none', fontWeight: 700, fontSize: '0.8rem', bgcolor: 'rgba(255,255,255,0.05)', borderRadius: '10px', px: 1.5, '&:hover': { bgcolor: 'rgba(255,255,255,0.1)', color: '#fff' } }}
-                        >
-                          Change Focus
-                        </Button>
-                        <Chip 
-                          label={`Week ${selectedWeek} • ${selectedCommodity}`} 
-                          size="small" 
-                          sx={{ bgcolor: 'rgba(255,255,255,0.1)', color: '#fff', fontWeight: 800, fontSize: '0.75rem', border: '1px solid rgba(255,255,255,0.15)' }} 
-                        />
-                      </Box>
-
-                      {/* 7 Daily Columns Strip */}
-                      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(7, 1fr)' }, gap: 1.5 }}>
-                        {weekDays.map(item => {
-=======
                     <Box sx={{ animation: `${slideUpFade} 0.3s ease` }}>
                       {/* 3D Perspective Stacking Accordion Container */}
                       <Box 
@@ -1193,7 +1022,6 @@ export default function CreatorStudioDashboard({
                           const cardWidth = isFocused ? '100%' : `${Math.max(86, 100 - (distance * 3.5))}%`;
                           const tiltDirection = idx < focusedDayIdx ? -1 : 1;
                           const tiltDegree = isFocused ? 0 : distance * 2.5 * tiltDirection;
->>>>>>> dev
                           const isToday = format(item.date, 'yyyy-MM-dd') === format(currentDate, 'yyyy-MM-dd');
 
                           return (
@@ -1204,36 +1032,6 @@ export default function CreatorStudioDashboard({
                               onMouseEnter={() => setFocusedDayIdx(idx)}
                               onClick={() => handleSelectDayCategory(item.category, item.date)}
                               sx={{
-<<<<<<< HEAD
-                                p: 2, borderRadius: '16px',
-                                background: isToday
-                                  ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(15, 23, 42, 0.8) 100%)'
-                                  : 'rgba(255,255,255,0.03)',
-                                backdropFilter: 'blur(16px)',
-                                border: `1.5px solid ${isToday ? alpha(ACCENT, 0.7) : 'rgba(255,255,255,0.08)'}`,
-                                boxShadow: isToday ? `0 8px 24px ${alpha(ACCENT, 0.25)}` : 'none',
-                                cursor: 'pointer', transition: 'all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                                display: 'flex', flexDirection: 'column', minHeight: 120,
-                                '&:hover': { borderColor: ACCENT, transform: 'translateY(-3px)', bgcolor: 'rgba(255,255,255,0.08)' }
-                              }}
-                            >
-                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                                <Typography sx={{ color: isToday ? ACCENT : 'rgba(255,255,255,0.5)', fontWeight: 900, fontSize: '0.72rem', letterSpacing: '0.04em' }}>
-                                  {item.dayName.slice(0, 3).toUpperCase()}
-                                </Typography>
-                                {isToday && (
-                                  <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: ACCENT, boxShadow: `0 0 8px ${ACCENT}` }} />
-                                )}
-                              </Box>
-                              
-                              <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: '0.95rem', lineHeight: 1.3, mb: 1 }}>
-                                {item.challenge.title}
-                              </Typography>
-                              
-                              <Typography sx={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.7rem', fontWeight: 600, mt: 'auto' }}>
-                                {format(item.date, 'MMM d')}
-                              </Typography>
-=======
                                 width: cardWidth,
                                 mx: 'auto',
                                 borderRadius: '18px',
@@ -1314,7 +1112,6 @@ export default function CreatorStudioDashboard({
                                   <ArrowForwardArrow sx={{ fontSize: 16 }} />
                                 </Box>
                               </Box>
->>>>>>> dev
                             </Paper>
                           );
                         })}
@@ -1327,24 +1124,8 @@ export default function CreatorStudioDashboard({
                   {/* STEP 3: 10–12 AI ARTICLE BRIEFING ANGLES                     */}
                   {/* ──────────────────────────────────────────────────────────── */}
                   {matrixStep === 3 && (
-                    <Box sx={{ animation: `${slideUpFade} 0.35s ease` }}>
+                    <Box sx={{ animation: `${slideUpFade} 0.4s ease` }}>
                       {/* Sub Header & Actions */}
-<<<<<<< HEAD
-                      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', gap: 1.5, mb: 3, pb: 2, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                          <Button 
-                            onClick={() => setMatrixStep(2)} 
-                            size="small" 
-                            startIcon={<ArrowBackIcon sx={{ fontSize: '10px !important' }} />}
-                            sx={{ color: 'rgba(255,255,255,0.7)', textTransform: 'none', fontWeight: 700, fontSize: '0.75rem', bgcolor: 'rgba(255,255,255,0.05)', borderRadius: '10px', px: 1.2, '&:hover': { bgcolor: 'rgba(255,255,255,0.1)', color: '#fff' } }}
-                          >
-                            Change Day
-                          </Button>
-                          <Chip label={`${selectedCommodity} › ${selectedCategory.toUpperCase()} › ${format(new Date(selectedTargetDate), 'MMM d')}`} size="small" sx={{ bgcolor: alpha(ACCENT, 0.15), color: ACCENT, fontWeight: 800, fontSize: '0.72rem', border: `1px solid ${alpha(ACCENT, 0.3)}` }} />
-                        </Box>
-
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-=======
                       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { xs: 'flex-start', md: 'center' }, justifyContent: 'space-between', gap: 2, mb: 2.5, pb: 2, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
                           <Chip label={`🌾 ${selectedCommodity}`} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.12)', color: '#fff', fontWeight: 800 }} />
@@ -1370,14 +1151,13 @@ export default function CreatorStudioDashboard({
                             📖 AI Guide & Step-by-Step SOP
                           </Button>
                           <WikiHotspot id="creator_studio_relay" label="Editorial Relay SOP" icon="book" />
->>>>>>> dev
                           <Button
                             onClick={handleRegenerate}
                             disabled={regenerating || loadingInsights}
-                            startIcon={regenerating ? <CircularProgress size={14} color="inherit" /> : <RefreshIcon sx={{ fontSize: 16 }} />}
+                            startIcon={regenerating ? <CircularProgress size={16} color="inherit" /> : <RefreshIcon />}
                             sx={{
                               bgcolor: 'rgba(245, 158, 11, 0.15)', color: ACCENT, border: `1px solid ${alpha(ACCENT, 0.3)}`,
-                              borderRadius: '10px', fontWeight: 800, textTransform: 'none', px: 1.5, py: 0.6, fontSize: '0.75rem',
+                              borderRadius: '12px', fontWeight: 800, textTransform: 'none', px: 2, fontSize: '0.8rem',
                               '&:hover': { bgcolor: 'rgba(245, 158, 11, 0.25)' }
                             }}
                           >
@@ -1387,9 +1167,9 @@ export default function CreatorStudioDashboard({
                             onClick={handleStartCustomArticle}
                             variant="outlined"
                             sx={{
-                              color: 'rgba(255,255,255,0.85)', borderColor: 'rgba(255,255,255,0.2)', borderRadius: '10px',
-                              fontWeight: 700, textTransform: 'none', fontSize: '0.75rem', px: 1.5, py: 0.6,
-                              '&:hover': { borderColor: '#fff', bgcolor: 'rgba(255,255,255,0.06)', color: '#fff' }
+                              color: '#fff', borderColor: 'rgba(255,255,255,0.2)', borderRadius: '12px',
+                              fontWeight: 700, textTransform: 'none', fontSize: '0.8rem',
+                              '&:hover': { borderColor: '#fff', bgcolor: 'rgba(255,255,255,0.05)' }
                             }}
                           >
                             ✍️ Custom Title
@@ -1398,11 +1178,6 @@ export default function CreatorStudioDashboard({
                       </Box>
 
                       {regenerateError && (
-<<<<<<< HEAD
-                        <Typography sx={{ color: '#ef4444', fontWeight: 700, fontSize: '0.8rem', mb: 2 }}>
-                          {regenerateError}
-                        </Typography>
-=======
                         <Paper
                           elevation={0}
                           sx={{
@@ -1448,7 +1223,6 @@ export default function CreatorStudioDashboard({
                             Open Prompt Terminal
                           </Button>
                         </Paper>
->>>>>>> dev
                       )}
 
                       {/* Cognitive Spectrum Filter Chips */}
@@ -1499,12 +1273,6 @@ export default function CreatorStudioDashboard({
                       </Box>
 
                       {loadingInsights ? (
-<<<<<<< HEAD
-                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 8 }}>
-                          <CircularProgress size={32} sx={{ color: ACCENT, mb: 2 }} />
-                          <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 600, fontSize: '0.88rem' }}>
-                            Loading curated editorial angles for {selectedCommodity}...
-=======
                         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 10 }}>
                           <CircularProgress size={40} sx={{ color: ACCENT, mb: 2 }} />
                           <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: '1rem', mb: 0.5 }}>
@@ -1512,7 +1280,6 @@ export default function CreatorStudioDashboard({
                           </Typography>
                           <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem' }}>
                             Synthesizing 5 Micro-Geographies ➔ 6 Cognitive Spectrums ➔ 10–12 Briefs
->>>>>>> dev
                           </Typography>
                         </Box>
                       ) : insights.length === 0 ? (
@@ -1585,66 +1352,6 @@ export default function CreatorStudioDashboard({
                           </Box>
                         </Paper>
                       ) : (
-<<<<<<< HEAD
-                        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
-                          {insights.map((item) => {
-                            const fMeta = FORMAT_CONFIG[item.format] || FORMAT_CONFIG.brief;
-                            const eMeta = ERA_CONFIG[item.era] || ERA_CONFIG.present;
-                            return (
-                              <Paper
-                                key={item.id}
-                                elevation={0}
-                                onClick={() => handleSelectInsight(item)}
-                                sx={{
-                                  p: 2.5, borderRadius: '18px',
-                                  background: 'rgba(255,255,255,0.03)',
-                                  backdropFilter: 'blur(20px)',
-                                  border: '1px solid rgba(255,255,255,0.08)',
-                                  cursor: 'pointer', transition: 'all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                                  display: 'flex', flexDirection: 'column',
-                                  position: 'relative', overflow: 'hidden',
-                                  '&:hover': {
-                                    bgcolor: 'rgba(255,255,255,0.06)',
-                                    borderColor: alpha(fMeta.color, 0.7),
-                                    transform: 'translateY(-3px)',
-                                    boxShadow: `0 12px 30px ${alpha(fMeta.color, 0.2)}`
-                                  }
-                                }}
-                              >
-                                {/* Top Format, Era & Subcategory Badges */}
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 1.5, flexWrap: 'wrap' }}>
-                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
-                                    <Chip
-                                      label={`${fMeta.emoji} ${fMeta.label}`}
-                                      size="small"
-                                      sx={{ bgcolor: alpha(fMeta.color, 0.18), color: fMeta.color, fontWeight: 800, fontSize: '0.7rem', border: `1px solid ${alpha(fMeta.color, 0.35)}`, height: 22 }}
-                                    />
-                                    <Chip
-                                      label={`${eMeta.emoji} ${eMeta.label}`}
-                                      size="small"
-                                      sx={{ bgcolor: alpha(eMeta.color, 0.12), color: eMeta.color, fontWeight: 700, fontSize: '0.68rem', height: 22 }}
-                                    />
-                                  </Box>
-                                  <Chip
-                                    label={item.subcategoryTitle}
-                                    size="small"
-                                    sx={{ bgcolor: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.65)', fontWeight: 600, fontSize: '0.68rem', height: 22 }}
-                                  />
-                                </Box>
-
-                                {/* Title */}
-                                <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: '0.98rem', lineHeight: 1.35, mb: 0.8, letterSpacing: '-0.01em' }}>
-                                  {item.title}
-                                </Typography>
-
-                                {/* Hook */}
-                                <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.82rem', lineHeight: 1.45, fontWeight: 500 }}>
-                                  {item.hook}
-                                </Typography>
-                              </Paper>
-                            );
-                          })}
-=======
                         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' }, gap: 2.5, pb: 4 }}>
                           {insights
                             .filter(item => {
@@ -1779,7 +1486,6 @@ export default function CreatorStudioDashboard({
                                 </Paper>
                               );
                             })}
->>>>>>> dev
                         </Box>
                       )}
                     </Box>

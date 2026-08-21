@@ -603,11 +603,7 @@ export default function CreateLearnContentForm({
 
   useEffect(() => {
     if (initialDraftData) {
-<<<<<<< HEAD
       setType(initialDraftData.type || (initialType as any) || 'article');
-=======
-      if (initialDraftData.type) setType(initialDraftData.type as any);
->>>>>>> dev
       if (initialDraftData.title) setTitle(initialDraftData.title || '');
       if (initialDraftData.description) setDescription(initialDraftData.description || '');
       if (initialDraftData.commodity) setSelectedCommodity(initialDraftData.commodity);
@@ -3013,84 +3009,6 @@ export default function CreateLearnContentForm({
                 )}
               </Box>
             ) : (
-<<<<<<< HEAD
-              <Paper
-                elevation={0}
-                sx={{
-                  p: { xs: 4, sm: 6, md: 8 },
-                  borderRadius: '24px',
-                  background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.02) 0%, rgba(15, 23, 42, 0.05) 100%)',
-                  backdropFilter: 'blur(20px)',
-                  border: '1px solid rgba(15, 23, 42, 0.08)',
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.03)',
-                  textAlign: 'center',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  maxWidth: 680,
-                  mx: 'auto',
-                  my: 4
-                }}
-              >
-                <Box sx={{
-                  width: 64,
-                  height: 64,
-                  borderRadius: '20px',
-                  bgcolor: alpha(ACCENT, 0.12),
-                  color: ACCENT_DARK,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  mb: 3,
-                  border: `1px solid ${alpha(ACCENT, 0.25)}`,
-                  boxShadow: `0 8px 24px ${alpha(ACCENT, 0.15)}`
-                }}>
-                  <SparkleIcon sx={{ fontSize: 32 }} />
-                </Box>
-
-                <Chip
-                  label="COMING SOON"
-                  size="small"
-                  sx={{
-                    bgcolor: alpha(ACCENT, 0.1),
-                    color: ACCENT_DARK,
-                    fontWeight: 900,
-                    fontSize: '0.72rem',
-                    letterSpacing: '0.06em',
-                    mb: 2,
-                    border: `1px solid ${alpha(ACCENT, 0.25)}`
-                  }}
-                />
-
-                <Typography variant="h4" sx={{ fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em', mb: 1.5, fontSize: { xs: '1.4rem', sm: '1.85rem' } }}>
-                  This feature is not ready yet
-                </Typography>
-
-                <Typography sx={{ color: '#64748b', fontSize: '0.95rem', lineHeight: 1.6, maxWidth: 460, mb: 4, fontWeight: 500 }}>
-                  We are still working on this studio. For now, you can write and publish Articles and Intelligence Briefs.
-                </Typography>
-
-                <Button
-                  onClick={() => onCancel?.()}
-                  variant="contained"
-                  sx={{
-                    bgcolor: '#0f172a',
-                    color: '#fff',
-                    fontWeight: 800,
-                    borderRadius: '12px',
-                    px: 3.5,
-                    py: 1.2,
-                    textTransform: 'none',
-                    fontSize: '0.9rem',
-                    boxShadow: '0 4px 16px rgba(15, 23, 42, 0.15)',
-                    '&:hover': { bgcolor: '#1e293b' }
-                  }}
-                >
-                  ← Back to Studio
-                </Button>
-              </Paper>
-=======
               <Box sx={{ animation: 'fadeIn 0.3s', maxWidth: 600, mx: 'auto', width: '100%', mt: 8, textAlign: 'center' }}>
                 <Paper sx={{ p: 6, borderRadius: '32px', bgcolor: 'rgba(255,255,255,0.7)', border: '1px solid rgba(0,0,0,0.06)', backdropFilter: 'blur(20px)', boxShadow: '0 20px 40px rgba(0,0,0,0.04)' }}>
                   <Box sx={{ width: 80, height: 80, borderRadius: '24px', bgcolor: 'rgba(0,0,0,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 3 }}>
@@ -3114,7 +3032,6 @@ export default function CreateLearnContentForm({
                   </Button>
                 </Paper>
               </Box>
->>>>>>> dev
             )}
           </Box>
         )}
