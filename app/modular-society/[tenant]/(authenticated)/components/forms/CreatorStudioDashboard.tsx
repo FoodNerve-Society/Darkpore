@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import {
   Box, Typography, Paper, Chip, IconButton, alpha, Tooltip, CircularProgress, Button,
   Drawer, TextField, Accordion, AccordionSummary, AccordionDetails, Breadcrumbs, Link,
-  Alert, AlertTitle, Divider
+  Alert, AlertTitle, Divider, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions
 } from '@mui/material';
 import {
   Article as ArticleIcon,
@@ -16,6 +16,7 @@ import {
   ArrowForward as ArrowForwardArrow,
   Minimize as MinimizeIcon,
   AutoAwesome as AutoAwesomeIcon,
+  Edit as EditIcon,
   ContentPaste as ContentPasteIcon,
   CalendarMonth as CalendarIcon,
   CheckCircle as CheckCircleIcon,
@@ -161,6 +162,7 @@ export default function CreatorStudioDashboard({
   const [regenerating, setRegenerating] = useState(false);
   const [regenerateError, setRegenerateError] = useState<string | null>(null);
   const [spectrumFilter, setSpectrumFilter] = useState<string>('all');
+  const [isRegenerateModalOpen, setIsRegenerateModalOpen] = useState(false);
 
   // Step 3 Prompts & Interactive Relay Terminal State
   const [rawPrompts, setRawPrompts] = useState<{
@@ -1124,214 +1126,124 @@ export default function CreatorStudioDashboard({
                   {/* STEP 3: 10–12 AI ARTICLE BRIEFING ANGLES                     */}
                   {/* ──────────────────────────────────────────────────────────── */}
                   {matrixStep === 3 && (
-                    <Box sx={{ animation: `${slideUpFade} 0.4s ease` }}>
-                      {/* Sub Header & Actions */}
-                      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { xs: 'flex-start', md: 'center' }, justifyContent: 'space-between', gap: 2, mb: 2.5, pb: 2, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-                          <Chip label={`🌾 ${selectedCommodity}`} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.12)', color: '#fff', fontWeight: 800 }} />
-                          <Chip label={`💼 ${selectedCategory.toUpperCase()}`} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.12)', color: '#fff', fontWeight: 800 }} />
-                          <Chip label={`📅 ${format(new Date(selectedTargetDate), 'MMM d, yyyy')}`} size="small" sx={{ bgcolor: alpha(ACCENT, 0.2), color: ACCENT, fontWeight: 800 }} />
-                        </Box>
-
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-                          <Button
-                            onClick={() => openAssistant({
-                              commodity: selectedCommodity,
-                              category: selectedCategory,
-                              targetDate: selectedTargetDate,
-                              rawPrompts,
-                            })}
-                            startIcon={<MenuBookIcon sx={{ fontSize: 16 }} />}
-                            sx={{
-                              bgcolor: 'rgba(59, 130, 246, 0.15)', color: '#93c5fd', border: '1px solid rgba(59, 130, 246, 0.35)',
-                              borderRadius: '12px', fontWeight: 800, textTransform: 'none', px: 2, fontSize: '0.8rem',
-                              '&:hover': { bgcolor: 'rgba(59, 130, 246, 0.25)' }
+                    <Box sx={{ animation: `${slideUpFade} 0.35s ease` }}>
+                      {/* Quiet, Grounded Header */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3, pb: 2, borderBottom: '1px solid rgba(255,255,255,0.08)', gap: 1.5 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          <Button 
+                            onClick={() => setMatrixStep(2)} 
+                            size="small" 
+                            startIcon={<ArrowBackIcon sx={{ fontSize: '12px !important' }} />}
+                            sx={{ 
+                              color: 'rgba(255,255,255,0.7)', 
+                              textTransform: 'none', 
+                              fontWeight: 700, 
+                              fontSize: '0.8rem', 
+                              bgcolor: 'rgba(255,255,255,0.06)', 
+                              borderRadius: '10px', 
+                              px: 1.5, 
+                              py: 0.6,
+                              '&:hover': { bgcolor: 'rgba(255,255,255,0.12)', color: '#fff' } 
                             }}
                           >
-                            📖 AI Guide & Step-by-Step SOP
+                            Back to Days
                           </Button>
-                          <WikiHotspot id="creator_studio_relay" label="Editorial Relay SOP" icon="book" />
-                          <Button
-                            onClick={handleRegenerate}
-                            disabled={regenerating || loadingInsights}
-                            startIcon={regenerating ? <CircularProgress size={16} color="inherit" /> : <RefreshIcon />}
-                            sx={{
-                              bgcolor: 'rgba(245, 158, 11, 0.15)', color: ACCENT, border: `1px solid ${alpha(ACCENT, 0.3)}`,
-                              borderRadius: '12px', fontWeight: 800, textTransform: 'none', px: 2, fontSize: '0.8rem',
-                              '&:hover': { bgcolor: 'rgba(245, 158, 11, 0.25)' }
-                            }}
-                          >
-                            {regenerating ? "Regenerating..." : "Regenerate (50 NP)"}
-                          </Button>
-                          <Button
-                            onClick={handleStartCustomArticle}
-                            variant="outlined"
-                            sx={{
-                              color: '#fff', borderColor: 'rgba(255,255,255,0.2)', borderRadius: '12px',
-                              fontWeight: 700, textTransform: 'none', fontSize: '0.8rem',
-                              '&:hover': { borderColor: '#fff', bgcolor: 'rgba(255,255,255,0.05)' }
-                            }}
-                          >
-                            ✍️ Custom Title
-                          </Button>
-                        </Box>
-                      </Box>
-
-                      {regenerateError && (
-                        <Paper
-                          elevation={0}
-                          sx={{
-                            p: 2.5,
-                            mb: 3,
-                            borderRadius: '16px',
-                            bgcolor: 'rgba(239, 68, 68, 0.08)',
-                            border: '1.5px solid rgba(239, 68, 68, 0.3)',
-                            display: 'flex',
-                            flexDirection: { xs: 'column', sm: 'row' },
-                            alignItems: { xs: 'flex-start', sm: 'center' },
-                            justifyContent: 'space-between',
-                            gap: 2,
-                          }}
-                        >
-                          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
-                            <Box sx={{ p: 1, borderRadius: '10px', bgcolor: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', mt: '2px', flexShrink: 0 }}>
-                              ⚠️
-                            </Box>
-                            <Box>
-                              <Typography sx={{ color: '#fca5a5', fontWeight: 800, fontSize: '0.92rem', mb: 0.25 }}>
-                                AI Intelligence Pipeline Notice
+                          <Box>
+                            <Typography sx={{ color: '#fff', fontWeight: 900, fontSize: { xs: '1.05rem', sm: '1.25rem' }, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
+                              🔥 Trending Titles for {selectedCommodity}
+                              <Typography component="span" sx={{ color: 'rgba(255,255,255,0.5)', fontWeight: 600, fontSize: '0.88rem' }}>
+                                • {weekDays.find(d => d.category === selectedCategory)?.dayName || selectedCategory}
                               </Typography>
-                              <Typography sx={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.82rem', lineHeight: 1.5 }}>
-                                {regenerateError}
-                              </Typography>
-                            </Box>
+                            </Typography>
+                            <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.8rem', mt: 0.25 }}>
+                              Pick a title to start writing, or craft your own from scratch.
+                            </Typography>
                           </Box>
-                          <Button
-                            size="small"
-                            onClick={() => openAssistant({
-                              commodity: selectedCommodity,
-                              category: selectedCategory,
-                              targetDate: selectedTargetDate,
-                              rawPrompts,
-                            })}
-                            startIcon={<TerminalIcon sx={{ fontSize: 16 }} />}
+                        </Box>
+
+                        {/* Top-Right Regenerate Trigger */}
+                        <Tooltip title="Regenerate Fresh AI Angles (50 NP)">
+                          <IconButton 
+                            onClick={() => setIsRegenerateModalOpen(true)}
+                            disabled={regenerating || loadingInsights}
                             sx={{
-                              bgcolor: '#3b82f6', color: '#fff', fontWeight: 800, textTransform: 'none', px: 2, py: 0.75, borderRadius: '10px', flexShrink: 0,
-                              '&:hover': { bgcolor: '#2563eb' }
+                              color: ACCENT,
+                              bgcolor: 'rgba(245, 158, 11, 0.1)',
+                              border: `1px solid ${alpha(ACCENT, 0.25)}`,
+                              borderRadius: '12px',
+                              p: 1.1,
+                              transition: 'all 0.2s ease',
+                              '&:hover': {
+                                bgcolor: 'rgba(245, 158, 11, 0.2)',
+                                transform: 'rotate(180deg)',
+                                borderColor: ACCENT,
+                              }
                             }}
                           >
-                            Open Prompt Terminal
-                          </Button>
-                        </Paper>
-                      )}
-
-                      {/* Cognitive Spectrum Filter Chips */}
-                      <Box sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1,
-                        overflowX: 'auto',
-                        pb: 2,
-                        mb: 2.5,
-                        '&::-webkit-scrollbar': { height: '4px' },
-                        '&::-webkit-scrollbar-thumb': { bgcolor: 'rgba(255,255,255,0.15)', borderRadius: 2 }
-                      }}>
-                        <Chip
-                          label={`All Angles (${insights.length})`}
-                          onClick={() => setSpectrumFilter('all')}
-                          sx={{
-                            cursor: 'pointer',
-                            fontWeight: 800,
-                            fontSize: '0.75rem',
-                            bgcolor: spectrumFilter === 'all' ? '#fff' : 'rgba(255,255,255,0.06)',
-                            color: spectrumFilter === 'all' ? '#000' : 'rgba(255,255,255,0.7)',
-                            border: '1px solid',
-                            borderColor: spectrumFilter === 'all' ? '#fff' : 'rgba(255,255,255,0.1)',
-                            '&:hover': { bgcolor: spectrumFilter === 'all' ? '#fff' : 'rgba(255,255,255,0.12)' }
-                          }}
-                        />
-                        {Object.entries(SPECTRUM_CONFIG).map(([rankKey, meta]) => {
-                          const isSelected = spectrumFilter === rankKey;
-                          return (
-                            <Chip
-                              key={rankKey}
-                              label={`${meta.emoji} ${meta.shortLabel}`}
-                              onClick={() => setSpectrumFilter(isSelected ? 'all' : rankKey)}
-                              sx={{
-                                cursor: 'pointer',
-                                fontWeight: 800,
-                                fontSize: '0.72rem',
-                                bgcolor: isSelected ? meta.color : meta.bg,
-                                color: isSelected ? '#fff' : meta.color,
-                                border: '1px solid',
-                                borderColor: isSelected ? meta.color : alpha(meta.color, 0.3),
-                                '&:hover': { bgcolor: isSelected ? meta.color : alpha(meta.color, 0.25) }
-                              }}
-                            />
-                          );
-                        })}
+                            {regenerating ? <CircularProgress size={18} color="inherit" /> : <RefreshIcon sx={{ fontSize: 18 }} />}
+                          </IconButton>
+                        </Tooltip>
                       </Box>
 
+                      {/* LOADING STATE */}
                       {loadingInsights ? (
-                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 10 }}>
-                          <CircularProgress size={40} sx={{ color: ACCENT, mb: 2 }} />
-                          <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: '1rem', mb: 0.5 }}>
-                            Running Gemini 3.7 Flash Intelligence Engine...
-                          </Typography>
-                          <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem' }}>
-                            Synthesizing 5 Micro-Geographies ➔ 6 Cognitive Spectrums ➔ 10–12 Briefs
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 8 }}>
+                          <CircularProgress size={36} sx={{ color: ACCENT, mb: 2 }} />
+                          <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: '0.95rem' }}>
+                            Loading Trending Editorial Angles...
                           </Typography>
                         </Box>
                       ) : insights.length === 0 ? (
+                        /* FALLBACK STATE: Clean dedicated card */
                         <Paper
                           elevation={0}
                           sx={{
-                            p: { xs: 3, md: 5 },
+                            p: { xs: 3, sm: 5 },
                             borderRadius: '24px',
                             bgcolor: 'rgba(255,255,255,0.03)',
-                            border: '1.5px dashed rgba(255,255,255,0.15)',
+                            border: '1px solid rgba(255,255,255,0.08)',
+                            backdropFilter: 'blur(20px)',
                             textAlign: 'center',
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'center',
                             gap: 2,
-                            my: 3
+                            my: 3,
+                            maxWidth: 580,
+                            mx: 'auto',
                           }}
                         >
-                          <Box sx={{ p: 2, borderRadius: '16px', bgcolor: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa' }}>
-                            <TerminalIcon sx={{ fontSize: 36 }} />
+                          <Box sx={{ width: 56, height: 56, borderRadius: '18px', bgcolor: 'rgba(245, 158, 11, 0.12)', color: ACCENT, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <AutoAwesomeIcon sx={{ fontSize: 28 }} />
                           </Box>
-                          <Box sx={{ maxWidth: '600px' }}>
+                          <Box>
                             <Typography variant="h6" sx={{ color: '#fff', fontWeight: 900, mb: 0.5 }}>
-                              AI Intelligence Pipeline Ready
+                              Ready to write on {selectedCommodity}?
                             </Typography>
-                            <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', lineHeight: 1.6 }}>
-                              {regenerateError || `The 3-stage prompts for ${selectedCommodity} have been compiled. You can open the AI Prompt Terminal to copy the prompts, run them in your external LLM, or paste custom outlines.`}
+                            <Typography sx={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.85rem', lineHeight: 1.5, maxWidth: 440, mx: 'auto' }}>
+                              No automated titles are cached for this slot yet. Generate 10 bespoke angles with AI, or start directly with your own title.
                             </Typography>
                           </Box>
 
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap', justifyContent: 'center', mt: 1 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap', justifyContent: 'center', mt: 1 }}>
                             <Button
                               variant="contained"
-                              onClick={() => openAssistant({
-                                commodity: selectedCommodity,
-                                category: selectedCategory,
-                                targetDate: selectedTargetDate,
-                                rawPrompts,
-                              })}
-                              startIcon={<MenuBookIcon />}
+                              onClick={() => setIsRegenerateModalOpen(true)}
+                              startIcon={<AutoAwesomeIcon sx={{ fontSize: 16 }} />}
                               sx={{
-                                bgcolor: '#3b82f6',
-                                color: '#fff',
-                                fontWeight: 800,
-                                px: 3,
+                                bgcolor: ACCENT,
+                                color: '#000',
+                                fontWeight: 900,
+                                px: 2.5,
                                 py: 1,
                                 borderRadius: '12px',
                                 textTransform: 'none',
-                                '&:hover': { bgcolor: '#2563eb' }
+                                fontSize: '0.85rem',
+                                boxShadow: `0 4px 16px ${alpha(ACCENT, 0.3)}`,
+                                '&:hover': { bgcolor: ACCENT_DARK, color: '#fff' }
                               }}
                             >
-                              📖 Open Step-by-Step Relay SOP & Prompts
+                              Generate 10 Angles (50 NP)
                             </Button>
                             <Button
                               variant="outlined"
@@ -1340,29 +1252,24 @@ export default function CreatorStudioDashboard({
                                 color: '#fff',
                                 borderColor: 'rgba(255,255,255,0.25)',
                                 fontWeight: 700,
-                                px: 3,
+                                px: 2.5,
                                 py: 1,
                                 borderRadius: '12px',
                                 textTransform: 'none',
-                                '&:hover': { borderColor: '#fff', bgcolor: 'rgba(255,255,255,0.05)' }
+                                fontSize: '0.85rem',
+                                '&:hover': { borderColor: '#fff', bgcolor: 'rgba(255,255,255,0.06)' }
                               }}
                             >
-                              ✍️ Write with Custom Title
+                              ✍️ Write from Scratch
                             </Button>
                           </Box>
                         </Paper>
                       ) : (
-                        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' }, gap: 2.5, pb: 4 }}>
-                          {insights
-                            .filter(item => {
-                              if (spectrumFilter === 'all') return true;
-                              const rankMeta = getSpectrumMeta(item.spectrumRank);
-                              return rankMeta.shortLabel.includes(spectrumFilter) || (item.spectrumRank && item.spectrumRank.includes(spectrumFilter));
-                            })
-                            .map((item, idx) => {
+                        /* NORMAL STATE: Cards Grid + Bottom Action Button */
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
+                            {insights.map((item, idx) => {
                               const fMeta = FORMAT_CONFIG[item.format] || FORMAT_CONFIG.brief;
-                              const eMeta = ERA_CONFIG[item.era] || ERA_CONFIG.present;
-                              const sMeta = getSpectrumMeta(item.spectrumRank);
 
                               return (
                                 <Paper
@@ -1370,122 +1277,101 @@ export default function CreatorStudioDashboard({
                                   elevation={0}
                                   onClick={() => handleSelectInsight(item)}
                                   sx={{
-                                    p: 3,
-                                    borderRadius: '22px',
-                                    background: 'rgba(255,255,255,0.035)',
-                                    border: '1.5px solid rgba(255,255,255,0.08)',
+                                    p: 2.5,
+                                    borderRadius: '18px',
+                                    bgcolor: 'rgba(255,255,255,0.035)',
+                                    border: '1px solid rgba(255,255,255,0.07)',
+                                    backdropFilter: 'blur(16px)',
                                     cursor: 'pointer',
-                                    transition: 'all 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
+                                    transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
                                     display: 'flex',
                                     flexDirection: 'column',
                                     justifyContent: 'space-between',
+                                    gap: 1.5,
                                     '&:hover': {
                                       bgcolor: 'rgba(255,255,255,0.07)',
-                                      borderColor: sMeta.color,
-                                      transform: 'translateY(-4px)',
-                                      boxShadow: `0 16px 36px ${alpha(sMeta.color, 0.22)}`
+                                      borderColor: alpha(ACCENT, 0.5),
+                                      transform: 'translateY(-2px)',
+                                      boxShadow: `0 12px 28px rgba(0,0,0,0.2)`,
+                                      '& .card-cta': {
+                                        color: ACCENT,
+                                        transform: 'translateX(3px)',
+                                      }
                                     }
                                   }}
                                 >
                                   <Box>
-                                    {/* Top Spectrum & Format Badges */}
-                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 1.5, flexWrap: 'wrap' }}>
-                                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                                        <Chip
-                                          label={`${sMeta.emoji} ${item.spectrumRank || sMeta.label}`}
-                                          size="small"
-                                          sx={{ bgcolor: sMeta.bg, color: sMeta.color, fontWeight: 900, fontSize: '0.72rem', border: `1px solid ${alpha(sMeta.color, 0.35)}` }}
-                                        />
-                                        <Chip
-                                          label={`${fMeta.emoji} ${fMeta.label}`}
-                                          size="small"
-                                          sx={{ bgcolor: alpha(fMeta.color, 0.2), color: fMeta.color, fontWeight: 800, fontSize: '0.7rem' }}
-                                        />
-                                        <Chip
-                                          label={`${eMeta.emoji} ${eMeta.label}`}
-                                          size="small"
-                                          sx={{ bgcolor: alpha(eMeta.color, 0.15), color: eMeta.color, fontWeight: 700, fontSize: '0.68rem' }}
-                                        />
-                                      </Box>
+                                    {/* Top Pill Tags */}
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.2, flexWrap: 'wrap' }}>
+                                      <Chip
+                                        label={`${fMeta.emoji} ${fMeta.label}`}
+                                        size="small"
+                                        sx={{ bgcolor: alpha(fMeta.color, 0.15), color: fMeta.color, fontWeight: 800, fontSize: '0.68rem', height: 22 }}
+                                      />
                                       {item.subcategoryTitle && (
                                         <Chip
                                           label={item.subcategoryTitle}
                                           size="small"
-                                          sx={{ bgcolor: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)', fontWeight: 600, fontSize: '0.68rem' }}
+                                          sx={{ bgcolor: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.7)', fontWeight: 600, fontSize: '0.68rem', height: 22 }}
                                         />
                                       )}
                                     </Box>
 
-                                    {/* Location & Persona Sub-Bar */}
-                                    {(item.location || item.targetPersona) && (
-                                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5, flexWrap: 'wrap' }}>
-                                        {item.location && (
-                                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#93c5fd', fontSize: '0.75rem', fontWeight: 700 }}>
-                                            <LocationIcon sx={{ fontSize: 13 }} />
-                                            {item.location}
-                                          </Box>
-                                        )}
-                                        {item.targetPersona && (
-                                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: '#fbbf24', fontSize: '0.75rem', fontWeight: 700 }}>
-                                            <AccountCircleIcon sx={{ fontSize: 13 }} />
-                                            {item.targetPersona}
-                                          </Box>
-                                        )}
-                                      </Box>
-                                    )}
-
-                                    {/* Dynamic Institutional Title */}
-                                    <Typography sx={{ color: '#fff', fontWeight: 900, fontSize: '1.15rem', lineHeight: 1.35, mb: 1.5, letterSpacing: '-0.015em' }}>
+                                    {/* Clean Authoritative Title */}
+                                    <Typography sx={{ color: '#fff', fontWeight: 900, fontSize: '1.05rem', lineHeight: 1.35, mb: 1, letterSpacing: '-0.015em' }}>
                                       {item.title}
                                     </Typography>
 
-                                    {/* 6-Sentence Formula Description */}
-                                    {item.descriptionSentences && item.descriptionSentences.length > 0 ? (
-                                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, mb: 2 }}>
-                                        {item.descriptionSentences.map((sentence, sIdx) => {
-                                          const isWhoProfits = sIdx === 5 || sentence.toLowerCase().includes('profit') || sentence.toLowerCase().includes('cartel') || sentence.toLowerCase().includes('syndicate');
-                                          return (
-                                            <Box
-                                              key={sIdx}
-                                              sx={{
-                                                display: 'flex',
-                                                alignItems: 'flex-start',
-                                                gap: 1,
-                                                p: isWhoProfits ? 1 : 0,
-                                                borderRadius: isWhoProfits ? '8px' : 0,
-                                                bgcolor: isWhoProfits ? 'rgba(239, 68, 68, 0.08)' : 'transparent',
-                                                border: isWhoProfits ? '1px solid rgba(239, 68, 68, 0.25)' : 'none',
-                                              }}
-                                            >
-                                              <Typography sx={{ color: isWhoProfits ? '#ef4444' : 'rgba(255,255,255,0.4)', fontSize: '0.75rem', fontWeight: 800, mt: '2px', flexShrink: 0 }}>
-                                                {isWhoProfits ? '⚖️' : `•`}
-                                              </Typography>
-                                              <Typography sx={{ color: isWhoProfits ? '#fca5a5' : 'rgba(255,255,255,0.7)', fontSize: '0.82rem', lineHeight: 1.45, fontWeight: isWhoProfits ? 700 : 500 }}>
-                                                {sentence}
-                                              </Typography>
-                                            </Box>
-                                          );
-                                        })}
-                                      </Box>
-                                    ) : (
-                                      <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', lineHeight: 1.5, mb: 2, fontWeight: 500 }}>
-                                        {item.hook}
-                                      </Typography>
-                                    )}
+                                    {/* 1-2 sentence hook */}
+                                    <Typography sx={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.8rem', lineHeight: 1.45, fontWeight: 400 }}>
+                                      {item.hook || item.descriptionSentences?.[0] || `Strategic operational brief on ${selectedCommodity}.`}
+                                    </Typography>
                                   </Box>
 
-                                  {/* Bottom CTA Action Bar */}
-                                  <Box sx={{ mt: 'auto', pt: 2, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                    <Typography sx={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', fontWeight: 600 }}>
-                                      {item.format?.toUpperCase()} · {item.era?.toUpperCase()}
+                                  {/* Bottom Hover CTA */}
+                                  <Box sx={{ pt: 1, borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <Typography sx={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                                      {item.era || 'present'}
                                     </Typography>
-                                    <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, color: sMeta.color, fontWeight: 800, fontSize: '0.85rem' }}>
-                                      Write This Brief <ArrowForwardIcon sx={{ fontSize: 13 }} />
+                                    <Box className="card-cta" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, color: 'rgba(255,255,255,0.6)', fontWeight: 800, fontSize: '0.78rem', transition: 'all 0.2s ease' }}>
+                                      Start Writing <ArrowForwardIcon sx={{ fontSize: 13 }} />
                                     </Box>
                                   </Box>
                                 </Paper>
                               );
                             })}
+                          </Box>
+
+                          {/* Prominent Bottom Center Button */}
+                          <Box sx={{ display: 'flex', justifyContent: 'center', pt: 1, pb: 2 }}>
+                            <Button
+                              variant="contained"
+                              onClick={handleStartCustomArticle}
+                              startIcon={<EditIcon sx={{ fontSize: 16 }} />}
+                              sx={{
+                                bgcolor: 'rgba(255,255,255,0.08)',
+                                color: '#fff',
+                                border: '1px solid rgba(255,255,255,0.15)',
+                                backdropFilter: 'blur(12px)',
+                                fontWeight: 800,
+                                fontSize: '0.88rem',
+                                px: 3.5,
+                                py: 1.2,
+                                borderRadius: '14px',
+                                textTransform: 'none',
+                                boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                                transition: 'all 0.2s ease',
+                                '&:hover': {
+                                  bgcolor: '#fff',
+                                  color: '#000',
+                                  transform: 'translateY(-2px)',
+                                  boxShadow: '0 8px 24px rgba(255,255,255,0.2)',
+                                }
+                              }}
+                            >
+                              ✍️ Craft Your Own Title / Write from Scratch
+                            </Button>
+                          </Box>
                         </Box>
                       )}
                     </Box>
@@ -1523,6 +1409,83 @@ export default function CreatorStudioDashboard({
           />
         </Box>
       )}
+
+      {/* 50 NP REGENERATE CONFIRMATION MODAL */}
+      <Dialog
+        open={isRegenerateModalOpen}
+        onClose={() => !regenerating && setIsRegenerateModalOpen(false)}
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: '24px',
+              bgcolor: '#0f172a',
+              color: '#fff',
+              border: '1px solid rgba(255,255,255,0.12)',
+              backdropFilter: 'blur(20px)',
+              p: 1.5,
+              maxWidth: 440,
+            }
+          }
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 900, fontSize: '1.2rem', pb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <AutoAwesomeIcon sx={{ color: ACCENT }} /> Regenerate Fresh Angles
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem', lineHeight: 1.5, mb: 2 }}>
+            This will run the AI intelligence engine to generate 10 new, localized editorial angles for <strong>{selectedCommodity}</strong> ({selectedCategory}).
+          </DialogContentText>
+          <Box sx={{ p: 2, borderRadius: '14px', bgcolor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography sx={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>
+              Cost:
+            </Typography>
+            <Typography sx={{ fontSize: '0.95rem', color: ACCENT, fontWeight: 900 }}>
+              50 NP
+            </Typography>
+          </Box>
+          <Box sx={{ mt: 1, px: 0.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography sx={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.5)' }}>
+              Your Balance:
+            </Typography>
+            <Typography sx={{ fontSize: '0.82rem', color: userSpendableNP >= 50 ? '#10b981' : '#ef4444', fontWeight: 800 }}>
+              {userSpendableNP} NP {userSpendableNP < 50 && '(Insufficient balance)'}
+            </Typography>
+          </Box>
+          {regenerateError && (
+            <Alert severity="error" sx={{ mt: 2, bgcolor: 'rgba(239, 68, 68, 0.1)', color: '#fca5a5', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '10px' }}>
+              {regenerateError}
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+          <Button
+            onClick={() => setIsRegenerateModalOpen(false)}
+            disabled={regenerating}
+            sx={{ color: 'rgba(255,255,255,0.6)', textTransform: 'none', fontWeight: 700 }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={async () => {
+              await handleRegenerate();
+              if (!regenerateError) setIsRegenerateModalOpen(false);
+            }}
+            disabled={regenerating || userSpendableNP < 50}
+            variant="contained"
+            sx={{
+              bgcolor: ACCENT,
+              color: '#000',
+              fontWeight: 900,
+              borderRadius: '12px',
+              px: 2.5,
+              textTransform: 'none',
+              '&:hover': { bgcolor: ACCENT_DARK, color: '#fff' }
+            }}
+          >
+            {regenerating ? <CircularProgress size={16} color="inherit" /> : 'Confirm & Regenerate (50 NP)'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
