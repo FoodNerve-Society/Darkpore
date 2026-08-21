@@ -750,39 +750,80 @@ export default function CreatorStudioDashboard({
                             {opt.icon}
                           </Box>
                           <Box>
-                            <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: { xs: '0.75rem', sm: '0.85rem' }, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>
-                              {matrixStep === 3
-                                ? `🔥 Trending Titles for ${selectedCommodity} • ${weekDays.find(d => d.category === selectedCategory)?.dayName || selectedCategory}`
-                                : `${opt.title} Setup ${matrixStep > 1 ? `· Week ${selectedWeek}: ${selectedCommodity}` : ''}`}
-                            </Typography>
-                            <Typography variant="h5" sx={{ fontWeight: 900, letterSpacing: '-0.02em', color: '#fff', mt: 0.5, fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
+                            {matrixStep === 3 ? (
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 0.5 }}>
+                                <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: { xs: '0.75rem', sm: '0.85rem' }, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                                  🔥 Trending Titles for
+                                </Typography>
+                                <Box component="span" sx={{ color: ACCENT, fontWeight: 900, fontSize: { xs: '0.8rem', sm: '0.9rem' }, px: 1, py: 0.2, bgcolor: alpha(ACCENT, 0.12), borderRadius: '8px', border: `1px solid ${alpha(ACCENT, 0.3)}`, lineHeight: 1.2 }}>
+                                  {selectedCommodity}
+                                </Box>
+                                <Typography sx={{ color: '#93c5fd', fontSize: { xs: '0.75rem', sm: '0.85rem' }, fontWeight: 700 }}>
+                                  • {weekDays.find(d => d.category === selectedCategory)?.dayName || 'Day'}: {challengesData.find(c => c.id === selectedCategory)?.title || selectedCategory} ({format(new Date(selectedTargetDate), 'MMM d')})
+                                </Typography>
+                              </Box>
+                            ) : (
+                              <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: { xs: '0.75rem', sm: '0.85rem' }, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>
+                                {opt.title} Setup {matrixStep > 1 && `· Week ${selectedWeek}: ${selectedCommodity}`}
+                              </Typography>
+                            )}
+                            <Typography variant="h5" sx={{ fontWeight: 900, letterSpacing: '-0.02em', color: '#fff', fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
                               {matrixStep === 1 ? "Ready to create?" : matrixStep === 2 ? "Select Daily Strategic Pillar" : "Pick Editorial Angle"}
                             </Typography>
                           </Box>
                         </Box>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           {matrixStep === 3 && (
-                            <Tooltip title="Refresh Trending Angles (50 NP)">
-                              <IconButton 
-                                onClick={() => setIsRegenerateModalOpen(true)}
-                                disabled={regenerating || loadingInsights}
-                                sx={{
-                                  color: ACCENT,
-                                  bgcolor: 'rgba(245, 158, 11, 0.1)',
-                                  border: `1px solid ${alpha(ACCENT, 0.25)}`,
-                                  borderRadius: '12px',
-                                  p: 1.1,
-                                  transition: 'all 0.2s ease',
-                                  '&:hover': {
-                                    bgcolor: 'rgba(245, 158, 11, 0.2)',
-                                    transform: 'rotate(180deg)',
-                                    borderColor: ACCENT,
-                                  }
-                                }}
-                              >
-                                {regenerating ? <CircularProgress size={18} color="inherit" /> : <RefreshIcon sx={{ fontSize: 18 }} />}
-                              </IconButton>
-                            </Tooltip>
+                            <>
+                              <Tooltip title="AI Prompt Assistant & Relay SOP">
+                                <Button
+                                  size="small"
+                                  onClick={() => openAssistant({
+                                    commodity: selectedCommodity,
+                                    category: selectedCategory,
+                                    targetDate: selectedTargetDate,
+                                    rawPrompts,
+                                  })}
+                                  startIcon={<MenuBookIcon sx={{ fontSize: 16 }} />}
+                                  sx={{
+                                    bgcolor: 'rgba(59, 130, 246, 0.15)',
+                                    color: '#93c5fd',
+                                    border: '1px solid rgba(59, 130, 246, 0.35)',
+                                    borderRadius: '12px',
+                                    fontWeight: 800,
+                                    textTransform: 'none',
+                                    px: 1.75,
+                                    py: 0.7,
+                                    fontSize: '0.78rem',
+                                    '&:hover': { bgcolor: 'rgba(59, 130, 246, 0.25)', borderColor: '#60a5fa' }
+                                  }}
+                                >
+                                  AI Prompt Guide
+                                </Button>
+                              </Tooltip>
+
+                              <Tooltip title="Refresh Trending Angles (50 NP)">
+                                <IconButton 
+                                  onClick={() => setIsRegenerateModalOpen(true)}
+                                  disabled={regenerating || loadingInsights}
+                                  sx={{
+                                    color: ACCENT,
+                                    bgcolor: 'rgba(245, 158, 11, 0.1)',
+                                    border: `1px solid ${alpha(ACCENT, 0.25)}`,
+                                    borderRadius: '12px',
+                                    p: 1.1,
+                                    transition: 'all 0.2s ease',
+                                    '&:hover': {
+                                      bgcolor: 'rgba(245, 158, 11, 0.2)',
+                                      transform: 'rotate(180deg)',
+                                      borderColor: ACCENT,
+                                    }
+                                  }}
+                                >
+                                  {regenerating ? <CircularProgress size={18} color="inherit" /> : <RefreshIcon sx={{ fontSize: 18 }} />}
+                                </IconButton>
+                              </Tooltip>
+                            </>
                           )}
                           <Tooltip title="Minimize">
                             <IconButton
