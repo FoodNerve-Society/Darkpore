@@ -751,21 +751,48 @@ export default function CreatorStudioDashboard({
                           </Box>
                           <Box>
                             <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: { xs: '0.75rem', sm: '0.85rem' }, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>
-                              {opt.title} Setup {matrixStep > 1 && `· Week ${selectedWeek}: ${selectedCommodity}`}
+                              {matrixStep === 3
+                                ? `🔥 Trending Titles for ${selectedCommodity} • ${weekDays.find(d => d.category === selectedCategory)?.dayName || selectedCategory}`
+                                : `${opt.title} Setup ${matrixStep > 1 ? `· Week ${selectedWeek}: ${selectedCommodity}` : ''}`}
                             </Typography>
                             <Typography variant="h5" sx={{ fontWeight: 900, letterSpacing: '-0.02em', color: '#fff', mt: 0.5, fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
                               {matrixStep === 1 ? "Ready to create?" : matrixStep === 2 ? "Select Daily Strategic Pillar" : "Pick Editorial Angle"}
                             </Typography>
                           </Box>
                         </Box>
-                        <Tooltip title="Minimize">
-                          <IconButton
-                            onClick={(e) => { e.stopPropagation(); handleClose(); }}
-                            sx={{ color: 'rgba(255,255,255,0.8)', bgcolor: 'rgba(0,0,0,0.15)', '&:hover': { bgcolor: 'rgba(0,0,0,0.3)', color: '#fff' } }}
-                          >
-                            <MinimizeIcon />
-                          </IconButton>
-                        </Tooltip>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          {matrixStep === 3 && (
+                            <Tooltip title="Refresh Trending Angles (50 NP)">
+                              <IconButton 
+                                onClick={() => setIsRegenerateModalOpen(true)}
+                                disabled={regenerating || loadingInsights}
+                                sx={{
+                                  color: ACCENT,
+                                  bgcolor: 'rgba(245, 158, 11, 0.1)',
+                                  border: `1px solid ${alpha(ACCENT, 0.25)}`,
+                                  borderRadius: '12px',
+                                  p: 1.1,
+                                  transition: 'all 0.2s ease',
+                                  '&:hover': {
+                                    bgcolor: 'rgba(245, 158, 11, 0.2)',
+                                    transform: 'rotate(180deg)',
+                                    borderColor: ACCENT,
+                                  }
+                                }}
+                              >
+                                {regenerating ? <CircularProgress size={18} color="inherit" /> : <RefreshIcon sx={{ fontSize: 18 }} />}
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                          <Tooltip title="Minimize">
+                            <IconButton
+                              onClick={(e) => { e.stopPropagation(); handleClose(); }}
+                              sx={{ color: 'rgba(255,255,255,0.8)', bgcolor: 'rgba(0,0,0,0.15)', '&:hover': { bgcolor: 'rgba(0,0,0,0.3)', color: '#fff' } }}
+                            >
+                              <MinimizeIcon />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
                       </Box>
 
                   {/* ──────────────────────────────────────────────────────────── */}
@@ -1126,65 +1153,7 @@ export default function CreatorStudioDashboard({
                   {/* STEP 3: 10–12 AI ARTICLE BRIEFING ANGLES                     */}
                   {/* ──────────────────────────────────────────────────────────── */}
                   {matrixStep === 3 && (
-                    <Box sx={{ animation: `${slideUpFade} 0.35s ease` }}>
-                      {/* Quiet, Grounded Header */}
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3, pb: 2, borderBottom: '1px solid rgba(255,255,255,0.08)', gap: 1.5 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                          <Button 
-                            onClick={() => setMatrixStep(2)} 
-                            size="small" 
-                            startIcon={<ArrowBackIcon sx={{ fontSize: '12px !important' }} />}
-                            sx={{ 
-                              color: 'rgba(255,255,255,0.7)', 
-                              textTransform: 'none', 
-                              fontWeight: 700, 
-                              fontSize: '0.8rem', 
-                              bgcolor: 'rgba(255,255,255,0.06)', 
-                              borderRadius: '10px', 
-                              px: 1.5, 
-                              py: 0.6,
-                              '&:hover': { bgcolor: 'rgba(255,255,255,0.12)', color: '#fff' } 
-                            }}
-                          >
-                            Back to Days
-                          </Button>
-                          <Box>
-                            <Typography sx={{ color: '#fff', fontWeight: 900, fontSize: { xs: '1.05rem', sm: '1.25rem' }, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
-                              🔥 Trending Titles for {selectedCommodity}
-                              <Typography component="span" sx={{ color: 'rgba(255,255,255,0.5)', fontWeight: 600, fontSize: '0.88rem' }}>
-                                • {weekDays.find(d => d.category === selectedCategory)?.dayName || selectedCategory}
-                              </Typography>
-                            </Typography>
-                            <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.8rem', mt: 0.25 }}>
-                              Pick a title to start writing, or craft your own from scratch.
-                            </Typography>
-                          </Box>
-                        </Box>
-
-                        {/* Top-Right Regenerate Trigger */}
-                        <Tooltip title="Regenerate Fresh AI Angles (50 NP)">
-                          <IconButton 
-                            onClick={() => setIsRegenerateModalOpen(true)}
-                            disabled={regenerating || loadingInsights}
-                            sx={{
-                              color: ACCENT,
-                              bgcolor: 'rgba(245, 158, 11, 0.1)',
-                              border: `1px solid ${alpha(ACCENT, 0.25)}`,
-                              borderRadius: '12px',
-                              p: 1.1,
-                              transition: 'all 0.2s ease',
-                              '&:hover': {
-                                bgcolor: 'rgba(245, 158, 11, 0.2)',
-                                transform: 'rotate(180deg)',
-                                borderColor: ACCENT,
-                              }
-                            }}
-                          >
-                            {regenerating ? <CircularProgress size={18} color="inherit" /> : <RefreshIcon sx={{ fontSize: 18 }} />}
-                          </IconButton>
-                        </Tooltip>
-                      </Box>
-
+                    <Box sx={{ animation: `${slideUpFade} 0.35s ease`, mt: 1 }}>
                       {/* LOADING STATE */}
                       {loadingInsights ? (
                         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 8 }}>
@@ -1194,7 +1163,7 @@ export default function CreatorStudioDashboard({
                           </Typography>
                         </Box>
                       ) : insights.length === 0 ? (
-                        /* FALLBACK STATE: Clean dedicated card */
+                        /* FALLBACK STATE: Clean dedicated card with Write from Scratch */
                         <Paper
                           elevation={0}
                           sx={{
@@ -1209,7 +1178,7 @@ export default function CreatorStudioDashboard({
                             alignItems: 'center',
                             gap: 2,
                             my: 3,
-                            maxWidth: 580,
+                            maxWidth: 560,
                             mx: 'auto',
                           }}
                         >
@@ -1221,43 +1190,25 @@ export default function CreatorStudioDashboard({
                               Ready to write on {selectedCommodity}?
                             </Typography>
                             <Typography sx={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.85rem', lineHeight: 1.5, maxWidth: 440, mx: 'auto' }}>
-                              No automated titles are cached for this slot yet. Generate 10 bespoke angles with AI, or start directly with your own title.
+                              No automated titles are cached for this slot yet. Tap the refresh icon above to generate fresh angles, or start directly with your own title.
                             </Typography>
                           </Box>
 
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap', justifyContent: 'center', mt: 1 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mt: 1 }}>
                             <Button
                               variant="contained"
-                              onClick={() => setIsRegenerateModalOpen(true)}
-                              startIcon={<AutoAwesomeIcon sx={{ fontSize: 16 }} />}
-                              sx={{
-                                bgcolor: ACCENT,
-                                color: '#000',
-                                fontWeight: 900,
-                                px: 2.5,
-                                py: 1,
-                                borderRadius: '12px',
-                                textTransform: 'none',
-                                fontSize: '0.85rem',
-                                boxShadow: `0 4px 16px ${alpha(ACCENT, 0.3)}`,
-                                '&:hover': { bgcolor: ACCENT_DARK, color: '#fff' }
-                              }}
-                            >
-                              Generate 10 Angles (50 NP)
-                            </Button>
-                            <Button
-                              variant="outlined"
                               onClick={handleStartCustomArticle}
+                              startIcon={<EditIcon sx={{ fontSize: 16 }} />}
                               sx={{
-                                color: '#fff',
-                                borderColor: 'rgba(255,255,255,0.25)',
-                                fontWeight: 700,
-                                px: 2.5,
-                                py: 1,
+                                bgcolor: '#fff',
+                                color: '#000',
+                                fontWeight: 800,
+                                px: 3.5,
+                                py: 1.2,
                                 borderRadius: '12px',
                                 textTransform: 'none',
-                                fontSize: '0.85rem',
-                                '&:hover': { borderColor: '#fff', bgcolor: 'rgba(255,255,255,0.06)' }
+                                fontSize: '0.88rem',
+                                '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
                               }}
                             >
                               ✍️ Write from Scratch
