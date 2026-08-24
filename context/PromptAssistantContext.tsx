@@ -25,6 +25,7 @@ import {
   parseDoc1cArticles
 } from '@/lib/config/editorialPrompts';
 import { foodChallenges } from '@/lib/cms/food/challenges';
+import { getCommodityMeta } from '@/lib/cms/commodities';
 import { keyframes } from '@mui/system';
 
 const pulseGlow = keyframes`
@@ -502,43 +503,51 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
           }
         }}
       >
-        {/* Sticky Glassmorphism Header */}
+        {/* Sticky Glassmorphism Luxury Header */}
         <Box sx={{
-          p: { xs: 2, sm: 2.75 },
+          px: { xs: 2.25, sm: 3.5 },
+          py: { xs: 2, sm: 2.25 },
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          bgcolor: 'rgba(255, 255, 255, 0.92)',
-          backdropFilter: 'blur(12px)',
-          borderBottom: '1px solid rgba(0,0,0,0.08)',
+          bgcolor: 'rgba(255, 255, 255, 0.88)',
+          backdropFilter: 'blur(20px)',
+          borderBottom: '1px solid rgba(0,0,0,0.06)',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
           position: 'sticky',
           top: 0,
           zIndex: 10
         }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75 }}>
             <Box sx={{
-              width: 40,
-              height: 40,
-              borderRadius: '12px',
-              bgcolor: 'rgba(16, 185, 129, 0.12)',
-              color: '#059669',
+              width: 44,
+              height: 44,
+              borderRadius: '14px',
+              background: 'linear-gradient(135deg, #10b981 0%, #047857 100%)',
+              color: '#ffffff',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              boxShadow: '0 8px 20px rgba(16, 185, 129, 0.35)',
+              border: '1.5px solid rgba(255,255,255,0.4)',
+              flexShrink: 0,
             }}>
-              <AutoAwesomeIcon />
+              <AutoAwesomeIcon sx={{ fontSize: 22 }} />
             </Box>
             <Box>
-              <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.2, fontSize: '1.05rem' }}>
+              <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.25, fontSize: { xs: '1.05rem', sm: '1.18rem' }, letterSpacing: '-0.025em' }}>
                 Get AI article ideas here
               </Typography>
-              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600 }}>
-                Get 10–12 article titles and insights by the end
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 0.35 }}>
+                <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#10b981' }} />
+                <Typography sx={{ color: '#64748b', fontWeight: 600, fontSize: '0.8rem', letterSpacing: '-0.01em' }}>
+                  Get 10–12 article titles and insights by the end
+                </Typography>
+              </Box>
             </Box>
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             {/* Minimize Button */}
             <Button
               size="small"
@@ -546,22 +555,35 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
               startIcon={<RemoveIcon sx={{ fontSize: '16px !important' }} />}
               sx={{
                 bgcolor: 'rgba(0,0,0,0.04)',
-                color: '#475569',
-                borderRadius: '10px',
-                px: 1.25,
-                py: 0.5,
+                color: '#334155',
+                border: '1px solid rgba(0,0,0,0.06)',
+                borderRadius: '12px',
+                px: 1.5,
+                py: 0.6,
                 fontWeight: 700,
                 fontSize: '0.78rem',
                 textTransform: 'none',
-                '&:hover': { bgcolor: 'rgba(0,0,0,0.08)' }
+                transition: 'all 0.2s ease',
+                '&:hover': { bgcolor: 'rgba(0,0,0,0.08)', transform: 'translateY(-1px)' }
               }}
             >
               Minimize
             </Button>
 
             {/* Close Button */}
-            <IconButton onClick={closeAssistant} sx={{ color: '#64748b', bgcolor: 'rgba(0,0,0,0.04)', '&:hover': { bgcolor: 'rgba(0,0,0,0.08)' } }}>
-              <CloseIcon />
+            <IconButton
+              onClick={closeAssistant}
+              sx={{
+                color: '#64748b',
+                bgcolor: 'rgba(0,0,0,0.04)',
+                border: '1px solid rgba(0,0,0,0.06)',
+                borderRadius: '12px',
+                p: 0.85,
+                transition: 'all 0.2s ease',
+                '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', transform: 'scale(1.05)' }
+              }}
+            >
+              <CloseIcon sx={{ fontSize: 20 }} />
             </IconButton>
           </Box>
         </Box>
@@ -569,86 +591,111 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
         {/* Scrollable Body */}
         <Box sx={{ flex: 1, overflowY: 'auto', p: { xs: 2.5, sm: 4 }, display: 'flex', flexDirection: 'column', gap: 4 }}>
 
-          {/* Scope Metadata List */}
-          <Box sx={{
-            p: 2.5,
-            bgcolor: '#ffffff',
-            border: '1px solid rgba(0,0,0,0.08)',
-            borderRadius: '18px',
-            boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 1.75
-          }}>
-            <Typography sx={{ fontSize: '0.78rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              Scope
-            </Typography>
-            <Box component="ul" sx={{ m: 0, p: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 1.25 }}>
-              <Box component="li" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.86rem' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#475569', fontWeight: 600 }}>
-                  <span>🌾</span> Commodity
-                </Box>
-                <Typography sx={{ fontWeight: 800, color: '#059669', bgcolor: 'rgba(16, 185, 129, 0.1)', px: 1.4, py: 0.35, borderRadius: '8px', fontSize: '0.82rem' }}>
-                  {selectedCommodity}
-                </Typography>
-              </Box>
-
-              <Box component="li" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.86rem' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#475569', fontWeight: 600 }}>
-                  <span>💼</span> Category
-                </Box>
-                <Typography sx={{ fontWeight: 800, color: '#2563eb', bgcolor: 'rgba(59, 130, 246, 0.1)', px: 1.4, py: 0.35, borderRadius: '8px', fontSize: '0.82rem' }}>
-                  {selectedCategory.toUpperCase()}
-                </Typography>
-              </Box>
-
-              <Box component="li" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.86rem' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#475569', fontWeight: 600 }}>
-                  <span>📅</span> Target Publishing Date
-                </Box>
-                <Typography sx={{ fontWeight: 700, color: '#334155', fontSize: '0.84rem' }}>
-                  {format(new Date(selectedTargetDate), 'MMMM d, yyyy')}
+          {/* ──────────────────────────────────────────────────────────── */}
+          {/* VISUAL ANCHOR: SIDE-BY-SIDE SQUIRCLE INTERSECTION             */}
+          {/* ──────────────────────────────────────────────────────────── */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              py: { xs: 1.5, sm: 2 },
+            }}
+          >
+            {/* Left Squircle: Commodity */}
+            <Box
+              sx={{
+                width: { xs: 125, sm: 145 },
+                height: { xs: 125, sm: 145 },
+                borderRadius: '32px',
+                overflow: 'hidden',
+                position: 'relative',
+                backgroundImage: `url(${getCommodityMeta(selectedCommodity)?.imageUrl || 'https://images.unsplash.com/photo-1599940824399-b87987ceb72a?auto=format&fit=crop&w=600&q=80'})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                border: '3px solid #ffffff',
+                boxShadow: '0 16px 36px -8px rgba(0,0,0,0.22), 0 4px 12px rgba(0,0,0,0.08)',
+                transform: 'rotate(-3deg)',
+                zIndex: 1,
+                transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                '&:hover': { transform: 'rotate(0deg) scale(1.06)', zIndex: 3, boxShadow: '0 20px 44px -8px rgba(0,0,0,0.3)' },
+              }}
+            >
+              <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 35%, rgba(0,0,0,0.85) 100%)' }} />
+              <Box sx={{
+                position: 'absolute',
+                bottom: 10,
+                left: 8,
+                right: 8,
+                p: '3px 8px',
+                borderRadius: '10px',
+                bgcolor: 'rgba(0,0,0,0.5)',
+                backdropFilter: 'blur(8px)',
+                border: '1px solid rgba(255,255,255,0.15)',
+              }}>
+                <Typography sx={{ color: '#fff', fontSize: '0.74rem', fontWeight: 900, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  🌾 {selectedCommodity.split(',')[0]}
                 </Typography>
               </Box>
             </Box>
-          </Box>
 
-          {/* Motivation & Value Alert Banner: The "Why" */}
-          <Box
-            sx={{
-              p: 2.25,
-              bgcolor: '#f0fdf4',
-              border: '1.5px solid #bbf7d0',
-              borderRadius: '18px',
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: 1.75,
-              boxShadow: '0 4px 14px rgba(16, 185, 129, 0.08)',
-            }}
-          >
+            {/* Center Intersection Badge */}
             <Box
               sx={{
                 width: 36,
                 height: 36,
-                borderRadius: '10px',
-                bgcolor: '#10b981',
-                color: '#fff',
+                borderRadius: '50%',
+                bgcolor: '#0f172a',
+                color: '#f59e0b',
+                border: '3px solid #ffffff',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                flexShrink: 0,
-                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+                fontSize: '0.95rem',
+                fontWeight: 900,
+                zIndex: 2,
+                mx: { xs: -2, sm: -2.5 },
+                boxShadow: '0 6px 18px rgba(0,0,0,0.3)',
               }}
             >
-              <BoltIcon sx={{ fontSize: 20 }} />
+              ×
             </Box>
-            <Box sx={{ flex: 1 }}>
-              <Typography sx={{ color: '#065f46', fontWeight: 900, fontSize: '0.88rem', mb: 0.35 }}>
-                ⚡ Takes 1 Minute • Get ideas people actually want to read
-              </Typography>
-              <Typography sx={{ color: '#047857', fontSize: '0.82rem', lineHeight: 1.55, fontWeight: 500 }}>
-                In just 60 seconds, this flow gives you fresh, realistic article topics based on what is happening right now in the market — so your writing stands out and gets more reads.
-              </Typography>
+
+            {/* Right Squircle: Strategic Pillar */}
+            <Box
+              sx={{
+                width: { xs: 125, sm: 145 },
+                height: { xs: 125, sm: 145 },
+                borderRadius: '32px',
+                overflow: 'hidden',
+                position: 'relative',
+                backgroundImage: `url(${foodChallenges.find(c => c.id.toLowerCase() === selectedCategory.toLowerCase())?.imageUrl || '/images/challenges/insecurity.webp'}), linear-gradient(135deg, #1e3a8a, #0f172a)`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                border: '3px solid #ffffff',
+                boxShadow: '0 16px 36px -8px rgba(0,0,0,0.22), 0 4px 12px rgba(0,0,0,0.08)',
+                transform: 'rotate(3deg)',
+                zIndex: 1,
+                transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                '&:hover': { transform: 'rotate(0deg) scale(1.06)', zIndex: 3, boxShadow: '0 20px 44px -8px rgba(0,0,0,0.3)' },
+              }}
+            >
+              <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 35%, rgba(0,0,0,0.85) 100%)' }} />
+              <Box sx={{
+                position: 'absolute',
+                bottom: 10,
+                left: 8,
+                right: 8,
+                p: '3px 8px',
+                borderRadius: '10px',
+                bgcolor: 'rgba(0,0,0,0.5)',
+                backdropFilter: 'blur(8px)',
+                border: '1px solid rgba(255,255,255,0.15)',
+              }}>
+                <Typography sx={{ color: '#93c5fd', fontSize: '0.74rem', fontWeight: 900, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  🛡️ {foodChallenges.find(c => c.id.toLowerCase() === selectedCategory.toLowerCase())?.title?.split('&')[0]?.trim() || selectedCategory}
+                </Typography>
+              </Box>
             </Box>
           </Box>
 
