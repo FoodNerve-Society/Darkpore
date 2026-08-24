@@ -555,6 +555,18 @@ export default function CreateLearnContentForm({
   const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [articleEditorMode, setArticleEditorMode] = useState<'framework' | 'canvas'>('framework');
 
+  const isSubcategoryMatch = useCallback((sub: { id: string; title: string }, targetVal?: string) => {
+    if (!targetVal) return false;
+    const cleanTarget = targetVal.replace(/\s*\(.*?\)\s*$/, '').trim().toLowerCase();
+    const cleanSubId = (sub.id || '').trim().toLowerCase();
+    const cleanSubTitle = (sub.title || '').replace(/\s*\(.*?\)\s*$/, '').trim().toLowerCase();
+    
+    if (cleanSubId === cleanTarget || cleanSubTitle === cleanTarget) return true;
+    if (cleanTarget.length > 2 && (cleanSubId.includes(cleanTarget) || cleanTarget.includes(cleanSubId))) return true;
+    if (cleanTarget.length > 2 && (cleanSubTitle.includes(cleanTarget) || cleanTarget.includes(cleanSubTitle))) return true;
+    return false;
+  }, []);
+
   const currentSelectedChallenge = useMemo(() => {
     return challenges.find(c => c.id === selectedCategory) || challenges[0];
   }, [challenges, selectedCategory]);
@@ -571,17 +583,47 @@ export default function CreateLearnContentForm({
     }));
   }, [currentSelectedChallenge]);
 
+  const isBlueprintFilled = Boolean(
+    selectedSubcategory && 
+    selectedFormat && 
+    selectedEra
+  );
+  const currentBlueprint = useMemo(() => getBlueprint(selectedFormat, selectedEra) || [], [selectedFormat, selectedEra]);
+  const activeFormatMeta = FORMAT_CONFIG[selectedFormat] || FORMAT_CONFIG.brief;
+  const activeEraMeta = ERA_CONFIG[selectedEra] || ERA_CONFIG.present;
+
   useEffect(() => {
     if (initialTaxonomy) {
       setType((initialType as any) || 'article');
       if (initialTaxonomy.commodity) setSelectedCommodity(initialTaxonomy.commodity);
       if (initialTaxonomy.category) setSelectedCategory(initialTaxonomy.category);
-      if (initialTaxonomy.subcategory) setSelectedSubcategory(initialTaxonomy.subcategory);
-      if (initialTaxonomy.format) setSelectedFormat(initialTaxonomy.format);
-      if (initialTaxonomy.timeframe) {
-        setSelectedTimeframe(initialTaxonomy.timeframe as any);
-        setSelectedEra(initialTaxonomy.timeframe as any);
+      
+      const rawSub = initialTaxonomy.subcategory || (initialTaxonomy as any).subcategoryId;
+      if (rawSub) {
+        const matched = subcategoriesInSelectedCategory.find(s => isSubcategoryMatch(s, rawSub));
+        if (matched) {
+          setSelectedSubcategory(matched.id);
+        } else {
+          setSelectedSubcategory(rawSub);
+        }
       }
+
+      if (initialTaxonomy.format) {
+        const rawFmt = String(initialTaxonomy.format).toLowerCase().trim();
+        const validFmt: ArticleFormat = ['brief', 'memo', 'playbook', 'comparison', 'culture'].includes(rawFmt)
+          ? (rawFmt as ArticleFormat)
+          : 'brief';
+        setSelectedFormat(validFmt);
+      }
+
+      const rawEraSource = initialTaxonomy.timeframe || (initialTaxonomy as any).era;
+      if (rawEraSource) {
+        const rawEraStr = String(rawEraSource).toLowerCase().trim();
+        const validEra: ArticleEra = rawEraStr.includes('past') ? 'past' : rawEraStr.includes('futur') ? 'future' : 'present';
+        setSelectedTimeframe(validEra as any);
+        setSelectedEra(validEra);
+      }
+
       if (initialTaxonomy.targetDate) setTargetDate(initialTaxonomy.targetDate);
       if (initialTaxonomy.title) setTitle(initialTaxonomy.title);
       if (initialTaxonomy.description) setDescription(initialTaxonomy.description);
@@ -591,7 +633,7 @@ export default function CreateLearnContentForm({
       setArticleEditorMode('framework');
       setStep(3); // Jump directly to builder
     }
-  }, [initialTaxonomy, initialType]);
+  }, [initialTaxonomy, initialType, subcategoriesInSelectedCategory, isSubcategoryMatch]);
 
   useEffect(() => {
     if (initialDraftData) {
@@ -600,11 +642,31 @@ export default function CreateLearnContentForm({
       if (initialDraftData.description) setDescription(initialDraftData.description || '');
       if (initialDraftData.commodity) setSelectedCommodity(initialDraftData.commodity);
       if (initialDraftData.category) setSelectedCategory(initialDraftData.category || '');
-      if (initialDraftData.subcategory) setSelectedSubcategory(initialDraftData.subcategory || '');
-      if (initialDraftData.format) setSelectedFormat(initialDraftData.format);
-      if (initialDraftData.timeframe) {
-        setSelectedTimeframe(initialDraftData.timeframe as any);
-        setSelectedEra(initialDraftData.timeframe as any);
+      
+      const rawSub = initialDraftData.subcategory || (initialDraftData as any).subcategoryId;
+      if (rawSub) {
+        const matched = subcategoriesInSelectedCategory.find(s => isSubcategoryMatch(s, rawSub));
+        if (matched) {
+          setSelectedSubcategory(matched.id);
+        } else {
+          setSelectedSubcategory(rawSub);
+        }
+      }
+
+      if (initialDraftData.format) {
+        const rawFmt = String(initialDraftData.format).toLowerCase().trim();
+        const validFmt: ArticleFormat = ['brief', 'memo', 'playbook', 'comparison', 'culture'].includes(rawFmt)
+          ? (rawFmt as ArticleFormat)
+          : 'brief';
+        setSelectedFormat(validFmt);
+      }
+
+      const rawEraSource = initialDraftData.timeframe || (initialDraftData as any).era;
+      if (rawEraSource) {
+        const rawEraStr = String(rawEraSource).toLowerCase().trim();
+        const validEra: ArticleEra = rawEraStr.includes('past') ? 'past' : rawEraStr.includes('futur') ? 'future' : 'present';
+        setSelectedTimeframe(validEra as any);
+        setSelectedEra(validEra);
       }
       
       if (initialDraftData.targetDate) {
@@ -635,7 +697,7 @@ export default function CreateLearnContentForm({
       
       setStep(3); // Jump directly to builder
     }
-  }, [initialDraftData]);
+  }, [initialDraftData, initialType, subcategoriesInSelectedCategory, isSubcategoryMatch]);
 
   // Media fields
   const [videoUrl, setVideoUrl] = useState('');
@@ -1195,55 +1257,29 @@ export default function CreateLearnContentForm({
                         />
                       </Box>
 
-                      {/* Right: Luxury Framework Pill Trigger & Status Badge */}
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-                        {/* Luxury Framework Pill Trigger */}
-                        <Tooltip title={articleEditorMode === 'framework' ? "Viewing Framework Configurator" : "Tap to Edit Blueprint & Editorial Lenses"}>
-                          <Box
-                            onClick={() => setArticleEditorMode(articleEditorMode === 'framework' ? 'canvas' : 'framework')}
-                            sx={{
-                              display: 'flex', alignItems: 'center', gap: 1,
-                              px: 1.75, py: 0.65, borderRadius: '12px',
-                              bgcolor: articleEditorMode === 'framework' ? alpha(fMeta.color, 0.14) : '#fff',
-                              border: `1.5px solid ${articleEditorMode === 'framework' ? fMeta.color : 'rgba(0,0,0,0.1)'}`,
-                              boxShadow: articleEditorMode === 'framework' ? `0 4px 14px ${alpha(fMeta.color, 0.25)}` : '0 2px 8px rgba(0,0,0,0.04)',
-                              cursor: 'pointer',
-                              transition: 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                              '&:hover': {
-                                transform: 'translateY(-1px)',
-                                borderColor: fMeta.color,
-                                boxShadow: `0 4px 14px ${alpha(fMeta.color, 0.25)}`
-                              }
-                            }}
-                          >
-                            <SparkleIcon sx={{ fontSize: 16, color: fMeta.color }} />
-                            <Typography sx={{ fontWeight: 800, fontSize: '0.8rem', color: '#0f172a' }}>
-                              {fMeta.emoji} {fMeta.label} · {eMeta.label} Era
-                            </Typography>
-                            <Box sx={{
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              width: 22, height: 22, borderRadius: '7px',
-                              bgcolor: alpha(fMeta.color, 0.12), color: fMeta.color,
-                              ml: 0.25
-                            }}>
-                              <EditIcon sx={{ fontSize: 13 }} />
-                            </Box>
-                          </Box>
-                        </Tooltip>
-
-                        {/* Right Status Badge */}
+                      {/* Right Status Badge (Merged) */}
+                      <Tooltip title={articleEditorMode === 'framework' ? "Viewing Framework Configurator" : "Tap to Switch to Framework Configurator"}>
                         <Chip 
                           icon={draftId && draftId !== 'new' ? <AccessTimeIcon sx={{ fontSize: 14 }} /> : <AddIcon sx={{ fontSize: 14 }} />}
-                          label={draftId && draftId !== 'new' ? 'EDITING DRAFT' : 'NEW BRIEF'} 
+                          label={`${draftId && draftId !== 'new' ? 'EDITING' : 'NEW'} ${eMeta.label.toUpperCase()} ${fMeta.label.toUpperCase()}`}
+                          onClick={() => setArticleEditorMode(articleEditorMode === 'framework' ? 'canvas' : 'framework')}
                           size="small" 
                           sx={{ 
-                            bgcolor: draftId && draftId !== 'new' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(16, 185, 129, 0.1)', 
-                            color: draftId && draftId !== 'new' ? '#d97706' : '#059669', 
-                            fontWeight: 800, border: `1px solid ${draftId && draftId !== 'new' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)'}`,
-                            px: 1, height: 26, '& .MuiChip-icon': { color: 'inherit' }
+                            bgcolor: draftId && draftId !== 'new' ? 'rgba(245, 158, 11, 0.12)' : alpha(fMeta.color, 0.12), 
+                            color: draftId && draftId !== 'new' ? '#d97706' : fMeta.color, 
+                            fontWeight: 900, 
+                            border: `1.5px solid ${draftId && draftId !== 'new' ? 'rgba(245, 158, 11, 0.3)' : alpha(fMeta.color, 0.35)}`,
+                            px: 1.25, height: 28, fontSize: '0.74rem', letterSpacing: '0.04em',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                            '&:hover': {
+                              transform: 'translateY(-1px)',
+                              boxShadow: `0 4px 12px ${draftId && draftId !== 'new' ? 'rgba(245, 158, 11, 0.2)' : alpha(fMeta.color, 0.25)}`
+                            },
+                            '& .MuiChip-icon': { color: 'inherit' }
                           }} 
                         />
-                      </Box>
+                      </Tooltip>
                     </Box>
                   );
                 })()}
@@ -1255,7 +1291,7 @@ export default function CreateLearnContentForm({
                   const activeFormatMeta = FORMAT_CONFIG[selectedFormat] || FORMAT_CONFIG.brief;
                   const activeEraMeta = ERA_CONFIG[selectedEra] || ERA_CONFIG.present;
                   const currentBlueprint = getBlueprint(selectedFormat, selectedEra);
-                  const selectedSubObj = subcategoriesInSelectedCategory.find(s => s.id === selectedSubcategory);
+                  const selectedSubObj = subcategoriesInSelectedCategory.find(s => s.id === selectedSubcategory || isSubcategoryMatch(s, selectedSubcategory));
 
                   const formatsList: ArticleFormat[] = ['brief', 'memo', 'playbook', 'comparison', 'culture'];
                   const erasList: ArticleEra[] = ['past', 'present', 'future'];
@@ -1457,7 +1493,7 @@ export default function CreateLearnContentForm({
                                     '&::-webkit-scrollbar-thumb': { background: alpha(activeFormatMeta.color, 0.2), borderRadius: '10px' }
                                   }}>
                                     {subcategoriesInSelectedCategory.map((sub) => {
-                                      const isSelected = selectedSubcategory === sub.id;
+                                      const isSelected = selectedSubcategory === sub.id || isSubcategoryMatch(sub, selectedSubcategory);
                                       const rawTitle = sub.title || '';
                                       // Parse: break into main name and bracket description
                                       const bracketMatch = rawTitle.match(/^(.*?)\s*\((.+)\)\s*$/);
@@ -1593,7 +1629,7 @@ export default function CreateLearnContentForm({
                                   }}>
                                     {erasList.map(era => {
                                       const eraMeta = ERA_CONFIG[era];
-                                      const isEraSelected = selectedEra === era;
+                                      const isEraSelected = String(selectedEra).toLowerCase().trim() === String(era).toLowerCase().trim();
 
                                       return (
                                         <Box
@@ -1649,7 +1685,8 @@ export default function CreateLearnContentForm({
                                           }}>
                                             {formatsList.map(fmt => {
                                               const fmtMeta = FORMAT_CONFIG[fmt];
-                                              const isSelected = selectedFormat === fmt && selectedEra === era;
+                                              const isSelected = String(selectedFormat).toLowerCase().trim() === String(fmt).toLowerCase().trim() && 
+                                                                 String(selectedEra).toLowerCase().trim() === String(era).toLowerCase().trim();
                                               const blueprint = getBlueprint(fmt, era);
 
                                               return (
@@ -1919,12 +1956,17 @@ export default function CreateLearnContentForm({
                         )}
                         <Button
                           variant="contained"
+                          disabled={!isBlueprintFilled}
                           onClick={() => applyFramework(selectedFormat, selectedEra)}
                           startIcon={<SparkleIcon />}
                           sx={{
                             bgcolor: activeFormatMeta.color, color: '#fff', fontWeight: 800, px: 5, py: 1.6, borderRadius: '18px',
                             fontSize: '1.05rem', letterSpacing: '0.01em',
-                            boxShadow: `0 8px 24px ${alpha(activeFormatMeta.color, 0.4)}`,
+                            boxShadow: isBlueprintFilled ? `0 8px 24px ${alpha(activeFormatMeta.color, 0.4)}` : 'none',
+                            '&:disabled': {
+                              bgcolor: 'rgba(0,0,0,0.08)',
+                              color: '#94a3b8'
+                            },
                             '&:hover': { bgcolor: alpha(activeFormatMeta.color, 0.9), transform: 'translateY(-2px)', boxShadow: `0 12px 32px ${alpha(activeFormatMeta.color, 0.5)}` },
                             transition: 'all 0.2s',
                           }}
@@ -1944,7 +1986,7 @@ export default function CreateLearnContentForm({
                     {(() => {
                       const fMeta = FORMAT_CONFIG[selectedFormat] || FORMAT_CONFIG.brief;
                       const eMeta = ERA_CONFIG[selectedEra] || ERA_CONFIG.present;
-                      const activeSubObj = subcategoriesInSelectedCategory.find(s => s.id === selectedSubcategory);
+                      const activeSubObj = subcategoriesInSelectedCategory.find(s => s.id === selectedSubcategory || isSubcategoryMatch(s, selectedSubcategory));
 
                       return (
                         <Paper
@@ -2014,29 +2056,29 @@ export default function CreateLearnContentForm({
                           <Button
                             variant="contained"
                             onClick={() => setArticleEditorMode('framework')}
-                            startIcon={<EditIcon sx={{ fontSize: 16 }} />}
+                            startIcon={<EditIcon sx={{ fontSize: 15 }} />}
                             sx={{
                               alignSelf: { xs: 'flex-start', md: 'center' },
-                              borderRadius: '14px',
-                              px: 3,
-                              py: 1.1,
+                              borderRadius: '12px',
+                              px: 2.25,
+                              py: 0.8,
                               fontWeight: 800,
-                              fontSize: '0.84rem',
+                              fontSize: '0.8rem',
                               textTransform: 'none',
                               bgcolor: fMeta.color,
                               color: '#fff',
-                              boxShadow: `0 4px 14px ${alpha(fMeta.color, 0.35)}`,
+                              boxShadow: `0 3px 10px ${alpha(fMeta.color, 0.3)}`,
                               '&:hover': {
                                 bgcolor: alpha(fMeta.color, 0.9),
                                 transform: 'translateY(-1px)',
-                                boxShadow: `0 6px 18px ${alpha(fMeta.color, 0.45)}`
+                                boxShadow: `0 5px 14px ${alpha(fMeta.color, 0.4)}`
                               },
                               transition: 'all 0.2s',
                               position: 'relative',
                               zIndex: 1
                             }}
                           >
-                            Edit Framework & Lenses
+                            Edit
                           </Button>
                         </Paper>
                       );
@@ -3206,10 +3248,59 @@ export default function CreateLearnContentForm({
           >
             Next Step
           </Button>
+        ) : (type === 'article' && articleEditorMode === 'framework') ? (
+          /* ═══ SINGLE CLEAN ACTION IN FRAMEWORK MODE ═══ */
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 2, flexWrap: 'wrap' }}>
+            <Typography sx={{ fontSize: '0.84rem', color: isBlueprintFilled ? '#059669' : '#64748b', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.75 }}>
+              <span>{isBlueprintFilled ? '✓' : '⚠️'}</span>
+              {isBlueprintFilled ? 'Blueprint configured and ready to load' : 'Select a subcategory and editorial lens to unlock framework'}
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              {blocks.length > 0 && (
+                <Button
+                  variant="outlined"
+                  onClick={() => setArticleEditorMode('canvas')}
+                  startIcon={<EditIcon sx={{ fontSize: 16 }} />}
+                  sx={{
+                    borderRadius: '12px', fontWeight: 800, px: 2.75, py: 1,
+                    borderColor: 'rgba(0,0,0,0.15)', color: '#0f172a', bgcolor: '#fff',
+                    '&:hover': { bgcolor: 'rgba(0,0,0,0.04)' }
+                  }}
+                >
+                  Back to Canvas
+                </Button>
+              )}
+              <Button
+                variant="contained"
+                disabled={!isBlueprintFilled}
+                onClick={() => applyFramework(selectedFormat, selectedEra)}
+                startIcon={<SparkleIcon sx={{ fontSize: 18 }} />}
+                sx={{
+                  bgcolor: activeFormatMeta.color,
+                  color: '#fff',
+                  fontWeight: 900,
+                  px: 4, py: 1.1,
+                  borderRadius: '14px',
+                  fontSize: '0.92rem',
+                  boxShadow: isBlueprintFilled ? `0 4px 16px ${alpha(activeFormatMeta.color, 0.35)}` : 'none',
+                  '&:disabled': {
+                    bgcolor: 'rgba(0,0,0,0.08)',
+                    color: '#94a3b8'
+                  },
+                  '&:hover': {
+                    bgcolor: alpha(activeFormatMeta.color, 0.9),
+                    transform: 'translateY(-1px)'
+                  }
+                }}
+              >
+                {blocks.length === 0 ? `🚀 Load Framework (${currentBlueprint.length} Blocks)` : `🔄 Reload Framework (${currentBlueprint.length} Blocks)`}
+              </Button>
+            </Box>
+          </Box>
         ) : (
+          /* ═══ STANDARD ACTIONS IN CANVAS MODE ═══ */
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Button
-              
               onClick={() => setPreviewOpen(true)}
               startIcon={<SparkleIcon sx={{ color: '#8b5cf6' }} />}
               sx={{
