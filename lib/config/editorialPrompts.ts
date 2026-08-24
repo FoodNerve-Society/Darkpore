@@ -146,6 +146,9 @@ Output your entire response inside this single, clean Markdown block:
 *   **Primary Capital Driver:** [Who funds/fails Location 5]
 *   **Primary Actor Affected:** [Main Actor from 20-Array]
 *   **Local Trade-off Required:** [Specific compromise required in Location 5]
+
+---
+👉 **Next Step:** Leave this answer as is. Now go back to the FoodNerve Assistant, copy the **Step 1b** prompt, and paste it into this chat.
 \`\`\`
 `;
 
@@ -278,6 +281,9 @@ Output your entire response inside this single, clean Markdown block:
 *   **Trigger Justification:** [1 sentence explaining WHY these triggers apply].
 *   **OSINT Intelligence:** [4-5 sentences detailing the unexpected, weird, highly surprising edge-case or ancient historical root affecting {{commodity}}.]
 *   **Political Economy (Who Profits):** [Who exactly benefits from this {{commodity}} problem persisting?]
+
+---
+👉 **Next Step:** Leave this answer as is. Now go back to the FoodNerve Assistant, copy the **Step 1c** prompt, and paste it into this chat.
 \`\`\`
 `;
 
@@ -374,6 +380,9 @@ Output ONLY the 10-12 generated outlines. Use this exact syntax:
 ---
 
 [REPEAT FOR ALL 10-12 OUTLINES]
+
+---
+👉 **Next Step:** Copy this entire output, return to the FoodNerve Assistant Step 4, and click Paste to populate your article briefs!
 \`\`\`
 `;
 
