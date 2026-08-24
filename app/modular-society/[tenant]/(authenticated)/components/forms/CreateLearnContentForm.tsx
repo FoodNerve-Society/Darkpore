@@ -320,6 +320,14 @@ const BLOCK_DEFINITIONS: Record<BlockType, { label: string, color: string }> = {
   ecosystem_embed: { label: 'Ecosystem Bridge', color: '#6366f1' },
 };
 
+const FORMAT_SHORT_DESCRIPTIONS: Record<ArticleFormat, string> = {
+  brief: "Systemic market bottlenecks and real-time forces.",
+  memo: "Capital deployment, TAM thesis, and investor returns.",
+  playbook: "Step-by-step field protocols and operator survival SOPs.",
+  comparison: "Rigorous showdown between models, tech, or locations.",
+  culture: "Frontline human stories, labor dynamics, and incentives.",
+};
+
 
 
 // ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
@@ -554,6 +562,44 @@ export default function CreateLearnContentForm({
   const [blueprintConfigStep, setBlueprintConfigStep] = useState<1 | 2>(1);
   const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [articleEditorMode, setArticleEditorMode] = useState<'framework' | 'canvas'>('framework');
+
+  const blueprintFrontCardRef = useRef<HTMLDivElement>(null);
+  const blueprintBackCardRef = useRef<HTMLDivElement>(null);
+
+  const handleSaveBlueprintConfig = useCallback(() => {
+    setIsBlueprintCardFlipped(false);
+    setTimeout(() => {
+      blueprintFrontCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 120);
+  }, []);
+
+  // Smooth scroll to selected item (or top) on step transition
+  useEffect(() => {
+    if (!isBlueprintCardFlipped) return;
+
+    const timeout = setTimeout(() => {
+      if (blueprintConfigStep === 1) {
+        const selectedSubEl = document.querySelector('[data-selected-subcategory="true"]');
+        if (selectedSubEl) {
+          selectedSubEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else if (blueprintBackCardRef.current) {
+          blueprintBackCardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      } else if (blueprintConfigStep === 2) {
+        const selectedLensEl = document.querySelector('[data-selected-lens="true"]');
+        const selectedEraEl = document.querySelector('[data-selected-era="true"]');
+        if (selectedLensEl) {
+          selectedLensEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else if (selectedEraEl) {
+          selectedEraEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else if (blueprintBackCardRef.current) {
+          blueprintBackCardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+    }, 100);
+
+    return () => clearTimeout(timeout);
+  }, [blueprintConfigStep, isBlueprintCardFlipped]);
 
   const normalizeSubcategoryString = (str?: string): string => {
     if (!str) return '';
@@ -1393,6 +1439,7 @@ export default function CreateLearnContentForm({
                         }}>
                           {/* ═══ FRONT FACE (SUMMARY & COMPLETED STATE) ═══ */}
                           <Box
+                            ref={blueprintFrontCardRef}
                             onClick={() => !isBlueprintCardFlipped && setIsBlueprintCardFlipped(true)}
                             sx={{
                               backfaceVisibility: 'hidden',
@@ -1500,18 +1547,21 @@ export default function CreateLearnContentForm({
                           </Box>
 
                           {/* ═══ BACK FACE (FORM CONFIGURATOR) ═══ */}
-                          <Box sx={{
-                            backfaceVisibility: 'hidden',
-                            transform: 'rotateX(-180deg)',
-                            position: isBlueprintCardFlipped ? 'relative' : 'absolute',
-                            width: '100%', top: 0,
-                            borderRadius: '24px',
-                            border: `1px solid ${alpha(activeFormatMeta.color, 0.4)}`,
-                            background: `linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(248,250,252,0.98) 100%)`,
-                            backdropFilter: 'blur(20px)',
-                            boxShadow: `0 20px 50px rgba(0,0,0,0.08)`,
-                            overflow: 'hidden',
-                          }}>
+                          <Box
+                            ref={blueprintBackCardRef}
+                            sx={{
+                              backfaceVisibility: 'hidden',
+                              transform: 'rotateX(-180deg)',
+                              position: isBlueprintCardFlipped ? 'relative' : 'absolute',
+                              width: '100%', top: 0,
+                              borderRadius: '24px',
+                              border: `1px solid ${alpha(activeFormatMeta.color, 0.4)}`,
+                              background: `linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(248,250,252,0.98) 100%)`,
+                              backdropFilter: 'blur(20px)',
+                              boxShadow: `0 20px 50px rgba(0,0,0,0.08)`,
+                              overflow: 'hidden',
+                            }}
+                          >
                             {/* Header */}
                             <Box sx={{
                               display: 'flex', alignItems: 'center', gap: 2,
@@ -1519,34 +1569,39 @@ export default function CreateLearnContentForm({
                               borderBottom: '1px solid rgba(0,0,0,0.06)',
                               background: alpha(activeFormatMeta.color, 0.05),
                             }}>
-                              {/* Top-Left Back / Navigation Icon Button */}
-                              <Tooltip title={blueprintConfigStep === 2 ? "Back to Subcategories" : "Back to Overview"}>
-                                <IconButton
-                                  size="small"
-                                  onClick={() => {
-                                    if (blueprintConfigStep === 2) {
-                                      setBlueprintConfigStep(1);
-                                    } else {
-                                      setIsBlueprintCardFlipped(false);
-                                    }
-                                  }}
-                                  sx={{
-                                    width: 38, height: 38, borderRadius: '12px',
-                                    bgcolor: '#fff',
-                                    color: activeFormatMeta.color,
-                                    border: `1px solid ${alpha(activeFormatMeta.color, 0.25)}`,
-                                    boxShadow: `0 2px 8px rgba(0,0,0,0.04)`,
-                                    transition: 'all 0.2s ease',
-                                    '&:hover': {
-                                      bgcolor: alpha(activeFormatMeta.color, 0.1),
-                                      borderColor: activeFormatMeta.color,
-                                      transform: 'scale(1.06)'
-                                    }
-                                  }}
-                                >
-                                  <ArrowBackIcon sx={{ fontSize: 18, color: activeFormatMeta.color }} />
-                                </IconButton>
-                              </Tooltip>
+                              {/* Top-Left: Back Icon Button (Step 2 Only) or Category Sparkle Badge (Step 1) */}
+                              {blueprintConfigStep === 2 ? (
+                                <Tooltip title="Back to Subcategories">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => setBlueprintConfigStep(1)}
+                                    sx={{
+                                      width: 38, height: 38, borderRadius: '12px',
+                                      bgcolor: '#fff',
+                                      color: activeFormatMeta.color,
+                                      border: `1px solid ${alpha(activeFormatMeta.color, 0.25)}`,
+                                      boxShadow: `0 2px 8px rgba(0,0,0,0.04)`,
+                                      transition: 'all 0.2s ease',
+                                      '&:hover': {
+                                        bgcolor: alpha(activeFormatMeta.color, 0.1),
+                                        borderColor: activeFormatMeta.color,
+                                        transform: 'scale(1.06)'
+                                      }
+                                    }}
+                                  >
+                                    <ArrowBackIcon sx={{ fontSize: 18, color: activeFormatMeta.color }} />
+                                  </IconButton>
+                                </Tooltip>
+                              ) : (
+                                <Box sx={{
+                                  width: 38, height: 38, borderRadius: '12px',
+                                  bgcolor: alpha(activeFormatMeta.color, 0.15),
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  border: `1px solid ${alpha(activeFormatMeta.color, 0.2)}`
+                                }}>
+                                  <SparkleIcon sx={{ fontSize: 20, color: activeFormatMeta.color }} />
+                                </Box>
+                              )}
                               <Box sx={{ flex: 1, minWidth: 0 }}>
                                 <Typography sx={{ fontWeight: 800, color: '#0f172a', fontSize: '1.1rem', lineHeight: 1.25 }}>
                                   {blueprintConfigStep === 1
@@ -1562,7 +1617,7 @@ export default function CreateLearnContentForm({
                               <Tooltip title="Done Configuring">
                                 <IconButton
                                   size="medium"
-                                  onClick={() => setIsBlueprintCardFlipped(false)}
+                                  onClick={handleSaveBlueprintConfig}
                                   sx={{
                                     bgcolor: activeFormatMeta.color, color: '#fff',
                                     boxShadow: `0 4px 12px ${alpha(activeFormatMeta.color, 0.3)}`,
@@ -1598,6 +1653,7 @@ export default function CreateLearnContentForm({
                                       return (
                                         <Box
                                           key={sub.id}
+                                          data-selected-subcategory={isSelected ? "true" : "false"}
                                           onClick={() => {
                                             setSelectedSubcategory(sub.id);
                                             setTimeout(() => {
@@ -1707,149 +1763,201 @@ export default function CreateLearnContentForm({
                                 </Box>
                               )}
 
-                              {/* ═══ STEP 2: THE 15 EDITORIAL LENSES MATRIX (SEPARATED BY ERA) ═══ */}
-                              {blueprintConfigStep === 2 && (
-                                <Box sx={{ animation: 'fadeIn 0.25s ease', display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                  {/* Container with Era-Separated Sections */}
-                                  <Box sx={{
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: 2.5,
-                                    height: 'auto',
-                                  }}>
-                                    {erasList.map(era => {
-                                      const eraMeta = ERA_CONFIG[era];
-                                      const isEraSelected = String(selectedEra).toLowerCase().trim() === String(era).toLowerCase().trim();
+                               {/* ═══ STEP 2: ARTICLE TYPES LIST WITH ERA OPTIONS ═══ */}
+                               {blueprintConfigStep === 2 && (
+                                 <Box sx={{ animation: 'fadeIn 0.25s ease', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                   {/* Informative Guidance Banner */}
+                                   <Box sx={{
+                                     p: 1.5,
+                                     px: 2,
+                                     borderRadius: '14px',
+                                     bgcolor: alpha(activeFormatMeta.color, 0.06),
+                                     border: `1px dashed ${alpha(activeFormatMeta.color, 0.3)}`,
+                                     display: 'flex',
+                                     alignItems: 'center',
+                                     justifyContent: 'space-between',
+                                     flexWrap: 'wrap',
+                                     gap: 1
+                                   }}>
+                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                       <Typography sx={{ fontSize: '0.9rem' }}>💡</Typography>
+                                       <Typography sx={{ fontSize: '0.82rem', fontWeight: 700, color: '#334155' }}>
+                                         Select an <strong>Article Type</strong> below, then choose its <strong>Time Horizon (Era)</strong> to unlock its blueprint blocks.
+                                       </Typography>
+                                     </Box>
+                                     {selectedFormat && selectedEra && (
+                                       <Chip
+                                         label={`Selected: ${activeFormatMeta.label} · ${activeEraMeta.label} Era`}
+                                         size="small"
+                                         sx={{ bgcolor: activeFormatMeta.color, color: '#fff', fontWeight: 800, fontSize: '0.7rem', height: 22 }}
+                                       />
+                                     )}
+                                   </Box>
 
-                                      return (
-                                        <Box
-                                          key={era}
-                                          sx={{
-                                            p: { xs: 2, md: 2.5 },
-                                            borderRadius: '22px',
-                                            bgcolor: isEraSelected ? alpha(eraMeta.color, 0.03) : 'rgba(0,0,0,0.015)',
-                                            border: `1.5px solid ${isEraSelected ? alpha(eraMeta.color, 0.25) : 'rgba(0,0,0,0.05)'}`,
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            gap: 1.75,
-                                            transition: 'all 0.2s ease'
-                                          }}
-                                        >
-                                          {/* Era Group Header Bar */}
-                                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                              <Box sx={{
-                                                width: 28, height: 28, borderRadius: '8px',
-                                                bgcolor: alpha(eraMeta.color, 0.12), color: eraMeta.color,
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                fontSize: '1rem', fontWeight: 900
-                                              }}>
-                                                {eraMeta.emoji}
-                                              </Box>
-                                              <Typography sx={{ fontWeight: 900, fontSize: '0.98rem', color: '#0f172a' }}>
-                                                {eraMeta.label} Era
-                                              </Typography>
-                                              <Typography sx={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 500, display: { xs: 'none', sm: 'inline' } }}>
-                                                • {eraMeta.desc}
-                                              </Typography>
-                                            </Box>
+                                   {/* Vertical List of the 5 Article Types with Era Selectors */}
+                                   <Box sx={{
+                                     display: 'flex',
+                                     flexDirection: 'column',
+                                     gap: 1.75,
+                                     height: 'auto',
+                                   }}>
+                                     {formatsList.map((fmt) => {
+                                       const fmtMeta = FORMAT_CONFIG[fmt];
+                                       const isFormatSelected = String(selectedFormat).toLowerCase().trim() === String(fmt).toLowerCase().trim();
+                                       const shortDesc = FORMAT_SHORT_DESCRIPTIONS[fmt] || fmtMeta.desc;
+                                       const blueprint = getBlueprint(fmt, selectedEra);
 
-                                            {isEraSelected && (
-                                              <Chip
-                                                label="Active Era"
-                                                size="small"
-                                                sx={{
-                                                  height: 20, fontSize: '0.68rem', fontWeight: 800,
-                                                  bgcolor: alpha(eraMeta.color, 0.15), color: eraMeta.color,
-                                                  border: `1px solid ${alpha(eraMeta.color, 0.3)}`
-                                                }}
-                                              />
-                                            )}
-                                          </Box>
+                                       return (
+                                         <Box
+                                           key={fmt}
+                                           data-selected-lens={isFormatSelected ? "true" : "false"}
+                                           onClick={() => {
+                                             setSelectedFormat(fmt);
+                                           }}
+                                           sx={{
+                                             p: { xs: 2, sm: 2.25 },
+                                             borderRadius: '20px',
+                                             border: `2px solid ${isFormatSelected ? fmtMeta.color : 'rgba(0,0,0,0.06)'}`,
+                                             bgcolor: isFormatSelected ? alpha(fmtMeta.color, 0.04) : '#ffffff',
+                                             boxShadow: isFormatSelected ? `0 8px 24px ${alpha(fmtMeta.color, 0.16)}` : '0 2px 8px rgba(0,0,0,0.02)',
+                                             display: 'flex',
+                                             flexDirection: { xs: 'column', md: 'row' },
+                                             alignItems: { xs: 'flex-start', md: 'center' },
+                                             justifyContent: 'space-between',
+                                             gap: 2,
+                                             cursor: 'pointer',
+                                             position: 'relative',
+                                             transition: 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                                             '&:hover': {
+                                               transform: 'translateY(-2px)',
+                                               borderColor: isFormatSelected ? fmtMeta.color : alpha(fmtMeta.color, 0.35),
+                                               boxShadow: `0 8px 20px ${alpha(fmtMeta.color, 0.12)}`
+                                             }
+                                           }}
+                                         >
+                                           {/* Left: Emoji + Format Title + 5-8 word Description + Blueprint count */}
+                                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, minWidth: 0 }}>
+                                             {/* Format Icon Squircle */}
+                                             <Box sx={{
+                                               width: 44, height: 44, borderRadius: '14px',
+                                               bgcolor: alpha(fmtMeta.color, isFormatSelected ? 0.18 : 0.1),
+                                               color: fmtMeta.color,
+                                               display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                               fontSize: '1.35rem', flexShrink: 0,
+                                               border: `1.5px solid ${alpha(fmtMeta.color, isFormatSelected ? 0.4 : 0.2)}`,
+                                               transition: 'all 0.2s'
+                                             }}>
+                                               {fmtMeta.emoji}
+                                             </Box>
 
-                                          {/* Grid of the 5 Formats for this specific Era */}
-                                          <Box sx={{
-                                            display: 'grid',
-                                            gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)', lg: 'repeat(5, 1fr)' },
-                                            gap: 1.5
-                                          }}>
-                                            {formatsList.map(fmt => {
-                                              const fmtMeta = FORMAT_CONFIG[fmt];
-                                              const isSelected = String(selectedFormat).toLowerCase().trim() === String(fmt).toLowerCase().trim() && 
-                                                                 String(selectedEra).toLowerCase().trim() === String(era).toLowerCase().trim();
-                                              const blueprint = getBlueprint(fmt, era);
+                                             <Box sx={{ flex: 1, minWidth: 0 }}>
+                                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                                 <Typography sx={{ fontWeight: 900, fontSize: '1.02rem', color: isFormatSelected ? fmtMeta.color : '#0f172a' }}>
+                                                   {fmtMeta.label}
+                                                 </Typography>
+                                                 {/* Only show block count when this format is selected and has an active era */}
+                                                 {isFormatSelected && selectedEra && (
+                                                   <Chip
+                                                     label={`${blueprint.length} Blocks`}
+                                                     size="small"
+                                                     sx={{
+                                                       height: 20, fontSize: '0.66rem', fontWeight: 800,
+                                                       bgcolor: alpha(fmtMeta.color, 0.15),
+                                                       color: fmtMeta.color,
+                                                     }}
+                                                   />
+                                                 )}
+                                               </Box>
+                                               <Typography sx={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500, mt: 0.25 }}>
+                                                 {shortDesc}
+                                               </Typography>
+                                             </Box>
+                                           </Box>
 
-                                              return (
-                                                <Box
-                                                  key={`${fmt}-${era}`}
-                                                  onClick={() => {
-                                                    setSelectedFormat(fmt);
-                                                    setSelectedEra(era);
-                                                    setSelectedTimeframe(era as any);
-                                                  }}
-                                                  sx={{
-                                                    p: 1.75,
-                                                    borderRadius: '16px',
-                                                    bgcolor: isSelected ? alpha(fmtMeta.color, 0.08) : '#ffffff',
-                                                    border: `2px solid ${isSelected ? fmtMeta.color : 'rgba(0,0,0,0.06)'}`,
-                                                    boxShadow: isSelected ? `0 8px 24px ${alpha(fmtMeta.color, 0.25)}` : '0 2px 8px rgba(0,0,0,0.02)',
-                                                    display: 'flex',
-                                                    flexDirection: 'column',
-                                                    gap: 1,
-                                                    cursor: 'pointer',
-                                                    position: 'relative',
-                                                    transition: 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                                                    '&:hover': {
-                                                      transform: 'translateY(-2px)',
-                                                      borderColor: isSelected ? fmtMeta.color : alpha(fmtMeta.color, 0.4),
-                                                      boxShadow: `0 8px 18px ${alpha(fmtMeta.color, 0.15)}`
-                                                    }
-                                                  }}
-                                                >
-                                                  {/* Header: Format + Radio */}
-                                                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 0.5 }}>
-                                                    <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: isSelected ? fmtMeta.color : '#0f172a', display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                                      <span>{fmtMeta.emoji}</span> {fmtMeta.label}
-                                                    </Typography>
+                                           {/* Right: Era Switcher with Guidance Label */}
+                                           <Box
+                                             onClick={(e) => e.stopPropagation()}
+                                             sx={{
+                                               display: 'flex',
+                                               flexDirection: 'column',
+                                               gap: 0.5,
+                                               width: { xs: '100%', md: 'auto' },
+                                             }}
+                                           >
+                                             <Typography sx={{
+                                               fontSize: '0.66rem',
+                                               fontWeight: 800,
+                                               color: isFormatSelected ? fmtMeta.color : '#94a3b8',
+                                               textTransform: 'uppercase',
+                                               letterSpacing: '0.04em',
+                                               textAlign: { xs: 'left', md: 'right' },
+                                               px: 0.5
+                                             }}>
+                                               {isFormatSelected ? 'Selected Horizon' : 'Choose Era'}
+                                             </Typography>
 
-                                                    <Box sx={{
-                                                      width: 16, height: 16, borderRadius: '50%',
-                                                      bgcolor: isSelected ? fmtMeta.color : 'transparent',
-                                                      border: isSelected ? 'none' : '2px solid #cbd5e1',
-                                                      display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                                    }}>
-                                                      {isSelected && (
-                                                        <CheckIcon sx={{ fontSize: 12, color: '#fff', fontWeight: 900 }} />
-                                                      )}
-                                                    </Box>
-                                                  </Box>
+                                             <Box
+                                               sx={{
+                                                 display: 'flex',
+                                                 alignItems: 'center',
+                                                 gap: 1,
+                                                 bgcolor: isFormatSelected ? alpha(fmtMeta.color, 0.06) : 'rgba(0,0,0,0.03)',
+                                                 p: 0.6,
+                                                 borderRadius: '16px',
+                                                 border: `1px solid ${isFormatSelected ? alpha(fmtMeta.color, 0.2) : 'rgba(0,0,0,0.05)'}`,
+                                                 width: { xs: '100%', md: 'auto' },
+                                                 justifyContent: { xs: 'space-between', md: 'flex-end' }
+                                               }}
+                                             >
+                                               {erasList.map((era) => {
+                                                 const eraMeta = ERA_CONFIG[era];
+                                                 const isEraActive = isFormatSelected && String(selectedEra).toLowerCase().trim() === String(era).toLowerCase().trim();
 
-                                                  {/* Merged Description */}
-                                                  <Typography sx={{
-                                                    fontSize: '0.73rem', color: '#64748b', lineHeight: 1.35,
-                                                    display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden'
-                                                  }}>
-                                                    {MATRIX_DESCRIPTIONS[`${fmt}_${era}`] || fmtMeta.desc}
-                                                  </Typography>
-                                                  {/* Footer: Block count */}
-                                                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 'auto', pt: 0.75, borderTop: '1px dashed rgba(0,0,0,0.06)' }}>
-                                                    <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: isSelected ? fmtMeta.color : '#94a3b8' }}>
-                                                      {blueprint.length} Blocks
-                                                    </Typography>
-                                                    <Typography sx={{ fontSize: '0.66rem', fontWeight: 800, color: isSelected ? fmtMeta.color : '#94a3b8' }}>
-                                                      {isSelected ? 'Active ✓' : 'Select'}
-                                                    </Typography>
-                                                  </Box>
-                                                </Box>
-                                              );
-                                            })}
-                                          </Box>
-                                        </Box>
-                                      );
-                                    })}
-                                  </Box>
-                                </Box>
-                              )}
+                                                 return (
+                                                   <Box
+                                                     key={era}
+                                                     onClick={() => {
+                                                       setSelectedFormat(fmt);
+                                                       setSelectedEra(era);
+                                                       setSelectedTimeframe(era as any);
+                                                     }}
+                                                     sx={{
+                                                       display: 'flex',
+                                                       alignItems: 'center',
+                                                       gap: 0.75,
+                                                       px: { xs: 1.5, sm: 1.75 },
+                                                       py: 0.65,
+                                                       borderRadius: '12px',
+                                                       cursor: 'pointer',
+                                                       bgcolor: isEraActive ? eraMeta.color : '#ffffff',
+                                                       color: isEraActive ? '#ffffff' : '#475569',
+                                                       border: `1.5px solid ${isEraActive ? eraMeta.color : 'rgba(0,0,0,0.08)'}`,
+                                                       boxShadow: isEraActive ? `0 4px 14px ${alpha(eraMeta.color, 0.35)}` : '0 1px 3px rgba(0,0,0,0.02)',
+                                                       transition: 'all 0.18s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                                                       flex: { xs: 1, md: 'none' },
+                                                       justifyContent: 'center',
+                                                       '&:hover': {
+                                                         transform: 'scale(1.03)',
+                                                         borderColor: eraMeta.color,
+                                                         bgcolor: isEraActive ? eraMeta.color : alpha(eraMeta.color, 0.08)
+                                                       }
+                                                     }}
+                                                   >
+                                                     <Typography sx={{ fontSize: '0.85rem' }}>{eraMeta.emoji}</Typography>
+                                                     <Typography sx={{ fontSize: '0.78rem', fontWeight: 800 }}>
+                                                       {eraMeta.label}
+                                                     </Typography>
+                                                   </Box>
+                                                 );
+                                               })}
+                                             </Box>
+                                           </Box>
+                                         </Box>
+                                       );
+                                     })}
+                                   </Box>
+                                 </Box>
+                               )}
 
                               {/* ═══ UNIFIED BOTTOM ACTION & PROGRESS CONTAINER ═══ */}
                               <Box sx={{
@@ -1861,27 +1969,14 @@ export default function CreateLearnContentForm({
                                 pt: 2,
                                 borderTop: '1px solid rgba(0,0,0,0.06)'
                               }}>
-                                {/* Left: Back button or selection status */}
+                                {/* Left: Current selection status label */}
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                  {blueprintConfigStep === 2 ? (
-                                    <Button
-                                      variant="outlined"
-                                      onClick={() => setBlueprintConfigStep(1)}
-                                      startIcon={<ArrowBackIcon sx={{ fontSize: 18 }} />}
-                                      sx={{
-                                        borderRadius: '12px', fontWeight: 700, px: 2.5, py: 0.8,
-                                        borderColor: 'rgba(0,0,0,0.15)', color: '#475569',
-                                        bgcolor: '#fff',
-                                        '&:hover': { bgcolor: 'rgba(0,0,0,0.04)', borderColor: 'rgba(0,0,0,0.25)' }
-                                      }}
-                                    >
-                                      Back
-                                    </Button>
-                                  ) : (
-                                    <Typography sx={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>
-                                      {isSubcategoryValid ? `Selected: ${activeSubcategoryObj?.title}` : 'Tap a subcategory to proceed'}
-                                    </Typography>
-                                  )}
+                                  <Typography sx={{ fontSize: '0.82rem', color: '#64748b', fontWeight: 600 }}>
+                                    {blueprintConfigStep === 1
+                                      ? (isSubcategoryValid ? `Selected: ${activeSubcategoryObj?.title}` : 'Tap a subcategory to proceed')
+                                      : `Selected Lens: ${activeFormatMeta.label} (${activeEraMeta.label})`
+                                    }
+                                  </Typography>
                                 </Box>
 
                                 {/* Center: Integrated Compact Progress Stepper */}
@@ -1957,7 +2052,7 @@ export default function CreateLearnContentForm({
                                   ) : (
                                     <Button
                                       variant="contained"
-                                      onClick={() => setIsBlueprintCardFlipped(false)}
+                                      onClick={handleSaveBlueprintConfig}
                                       startIcon={<CheckIcon sx={{ fontSize: 18 }} />}
                                       sx={{
                                         bgcolor: activeFormatMeta.color, color: '#fff', fontWeight: 800, px: 4, py: 0.85, borderRadius: '12px',

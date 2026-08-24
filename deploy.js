@@ -20,20 +20,36 @@ async function deploy() {
     const customMsg = process.argv.slice(2).filter(a => !a.startsWith('-')).join(' ').trim();
     const commitMsg = customMsg || `feat: production deploy at ${new Date().toISOString()}`;
 
-    // 4. Ensure we are on main
-    execSync('git checkout main', { stdio: 'inherit' });
-
-    // 5. Commit any uncommitted changes on main
+    // 4. Commit any uncommitted changes on the active branch
     const status = execSync('git status --porcelain').toString();
     if (status.trim().length > 0) {
-      console.log("\nUncommitted changes detected on 'main'. Committing...");
+      console.log("\nUncommitted changes detected. Committing...");
       execSync('git add .');
       execSync(`git commit -m "${commitMsg.replace(/"/g, '\\"')}"`);
     }
 
-    // 6. Push to origin main directly for Vercel Production
+    // 5. Detect current branch
+    const currentBranch = execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
+    if (currentBranch === 'dev') {
+      console.log("\nPushing dev branch to origin/dev...");
+      execSync('git push origin dev', { stdio: 'inherit' });
+    }
+
+    // 6. Switch to main and merge dev
+    console.log("\nSwitching to 'main' and merging changes...");
+    execSync('git checkout main', { stdio: 'inherit' });
+    if (currentBranch !== 'main') {
+      execSync(`git merge ${currentBranch} --no-edit`, { stdio: 'inherit' });
+    }
+
+    // 7. Push to origin main directly for Vercel Production
     console.log("\n[3/3] Pushing to origin/main (triggering Vercel Production)...");
     execSync('git push origin main', { stdio: 'inherit' });
+
+    // 8. Return to working branch
+    if (currentBranch !== 'main') {
+      execSync(`git checkout ${currentBranch}`, { stdio: 'inherit' });
+    }
 
     console.log("\n=========================================");
     console.log("   DEPLOYMENT TRIGGERED SUCCESSFULLY! 🚀");
