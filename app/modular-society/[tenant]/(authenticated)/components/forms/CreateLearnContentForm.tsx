@@ -1519,14 +1519,34 @@ export default function CreateLearnContentForm({
                               borderBottom: '1px solid rgba(0,0,0,0.06)',
                               background: alpha(activeFormatMeta.color, 0.05),
                             }}>
-                              <Box sx={{
-                                width: 36, height: 36, borderRadius: '12px',
-                                bgcolor: alpha(activeFormatMeta.color, 0.15),
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                border: `1px solid ${alpha(activeFormatMeta.color, 0.2)}`
-                              }}>
-                                <SparkleIcon sx={{ fontSize: 20, color: activeFormatMeta.color }} />
-                              </Box>
+                              {/* Top-Left Back / Navigation Icon Button */}
+                              <Tooltip title={blueprintConfigStep === 2 ? "Back to Subcategories" : "Back to Overview"}>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => {
+                                    if (blueprintConfigStep === 2) {
+                                      setBlueprintConfigStep(1);
+                                    } else {
+                                      setIsBlueprintCardFlipped(false);
+                                    }
+                                  }}
+                                  sx={{
+                                    width: 38, height: 38, borderRadius: '12px',
+                                    bgcolor: '#fff',
+                                    color: activeFormatMeta.color,
+                                    border: `1px solid ${alpha(activeFormatMeta.color, 0.25)}`,
+                                    boxShadow: `0 2px 8px rgba(0,0,0,0.04)`,
+                                    transition: 'all 0.2s ease',
+                                    '&:hover': {
+                                      bgcolor: alpha(activeFormatMeta.color, 0.1),
+                                      borderColor: activeFormatMeta.color,
+                                      transform: 'scale(1.06)'
+                                    }
+                                  }}
+                                >
+                                  <ArrowBackIcon sx={{ fontSize: 18, color: activeFormatMeta.color }} />
+                                </IconButton>
+                              </Tooltip>
                               <Box sx={{ flex: 1, minWidth: 0 }}>
                                 <Typography sx={{ fontWeight: 800, color: '#0f172a', fontSize: '1.1rem', lineHeight: 1.25 }}>
                                   {blueprintConfigStep === 1
@@ -1565,12 +1585,7 @@ export default function CreateLearnContentForm({
                                     display: 'grid',
                                     gridTemplateColumns: { xs: '1fr', lg: 'repeat(2, 1fr)' },
                                     gap: 2,
-                                    maxHeight: { xs: '540px', md: '640px' },
-                                    overflowY: 'auto',
-                                    pr: 1,
-                                    '&::-webkit-scrollbar': { width: '6px' },
-                                    '&::-webkit-scrollbar-track': { background: 'transparent' },
-                                    '&::-webkit-scrollbar-thumb': { background: alpha(activeFormatMeta.color, 0.2), borderRadius: '10px' }
+                                    height: 'auto',
                                   }}>
                                     {subcategoriesInSelectedCategory.map((sub) => {
                                       const isSelected = selectedSubcategory === sub.id || activeSubcategoryObj?.id === sub.id || isSubcategoryMatch(sub, selectedSubcategory);
@@ -1695,17 +1710,12 @@ export default function CreateLearnContentForm({
                               {/* ═══ STEP 2: THE 15 EDITORIAL LENSES MATRIX (SEPARATED BY ERA) ═══ */}
                               {blueprintConfigStep === 2 && (
                                 <Box sx={{ animation: 'fadeIn 0.25s ease', display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                  {/* Scrollable Container with Era-Separated Sections */}
+                                  {/* Container with Era-Separated Sections */}
                                   <Box sx={{
                                     display: 'flex',
                                     flexDirection: 'column',
                                     gap: 2.5,
-                                    maxHeight: '520px',
-                                    overflowY: 'auto',
-                                    pr: 1,
-                                    '&::-webkit-scrollbar': { width: '6px' },
-                                    '&::-webkit-scrollbar-track': { background: 'transparent' },
-                                    '&::-webkit-scrollbar-thumb': { background: alpha(activeFormatMeta.color, 0.2), borderRadius: '10px' }
+                                    height: 'auto',
                                   }}>
                                     {erasList.map(era => {
                                       const eraMeta = ERA_CONFIG[era];
@@ -1821,7 +1831,6 @@ export default function CreateLearnContentForm({
                                                   }}>
                                                     {MATRIX_DESCRIPTIONS[`${fmt}_${era}`] || fmtMeta.desc}
                                                   </Typography>
-
                                                   {/* Footer: Block count */}
                                                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 'auto', pt: 0.75, borderTop: '1px dashed rgba(0,0,0,0.06)' }}>
                                                     <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: isSelected ? fmtMeta.color : '#94a3b8' }}>

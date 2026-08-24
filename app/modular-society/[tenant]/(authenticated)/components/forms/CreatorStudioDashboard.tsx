@@ -244,9 +244,9 @@ export default function CreatorStudioDashboard({
     });
   }, [registerIngestHandler]);
 
-  // Hydrate insights from localStorage if previously ingested while on another page or step
+  // Hydrate insights strictly for the active (commodity x category) pair
   useEffect(() => {
-    if (matrixStep === 3 && selectedCommodity && selectedCategory && insights.length === 0) {
+    if (matrixStep === 3 && selectedCommodity && selectedCategory) {
       if (typeof window !== 'undefined') {
         const key = `editorial_ingested_briefs_${selectedCommodity}_${selectedCategory}`;
         const cached = localStorage.getItem(key);
@@ -255,12 +255,13 @@ export default function CreatorStudioDashboard({
             const parsed = JSON.parse(cached);
             if (Array.isArray(parsed) && parsed.length > 0) {
               setInsights(parsed);
+              return;
             }
           } catch {}
         }
       }
     }
-  }, [matrixStep, selectedCommodity, selectedCategory, insights.length]);
+  }, [matrixStep, selectedCommodity, selectedCategory]);
 
   // Non-article legacy wizard state
   const [legacyCategory, setLegacyCategory] = useState('');
@@ -305,11 +306,33 @@ export default function CreatorStudioDashboard({
   // ───────────────────────────────────────────────────────────
   // FETCH INSIGHTS FOR STEP 3
   // ───────────────────────────────────────────────────────────
-  const fetchInsightsForMatrixSlot = useCallback(async (dateStr: string) => {
+  const fetchInsightsForMatrixSlot = useCallback(async (dateStr: string, commOverride?: string, catOverride?: string) => {
+    const activeCommodity = commOverride || selectedCommodity;
+    const activeCat = catOverride || selectedCategory;
+
     setLoadingInsights(true);
     setRegenerateError(null);
+    setInsights([]);
+    setRawPrompts(null);
+
+    // 1. Check local storage first for this specific pair
+    if (typeof window !== 'undefined') {
+      const key = `editorial_ingested_briefs_${activeCommodity}_${activeCat}`;
+      const cached = localStorage.getItem(key);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setInsights(parsed);
+            setLoadingInsights(false);
+            return;
+          }
+        } catch {}
+      }
+    }
+
     try {
-      const res = await getDailyEditorialIntel(dateStr);
+      const res = await getDailyEditorialIntel(dateStr, activeCommodity, activeCat);
       if (res && res.insights && res.insights.length > 0) {
         setInsights(res.insights);
       } else {
@@ -327,10 +350,12 @@ export default function CreatorStudioDashboard({
     } finally {
       setLoadingInsights(false);
     }
-  }, []);
+  }, [selectedCommodity, selectedCategory]);
 
   const handleOpenCreator = (type: string) => {
     setExpandedStartType(type);
+    setInsights([]);
+    setRawPrompts(null);
     if (type === 'livestream') {
       setLsStep(1);
       setLsEngine(null);
@@ -351,6 +376,8 @@ export default function CreatorStudioDashboard({
     setExpandedStartType(null);
     setMatrixStep(1);
     setLsStep(1);
+    setInsights([]);
+    setRawPrompts(null);
     setLegacyCategory('');
     setLegacySubcategory('');
   };
@@ -358,16 +385,20 @@ export default function CreatorStudioDashboard({
   const handleSelectCommodityAndWeek = (week: number, commodity: string) => {
     setSelectedWeek(week);
     setSelectedCommodity(commodity);
+    setInsights([]);
+    setRawPrompts(null);
     setFocusedDayIdx(0);
     setMatrixStep(2);
   };
 
   const handleSelectDayCategory = (catId: string, dayDate: Date) => {
     setSelectedCategory(catId);
+    setInsights([]);
+    setRawPrompts(null);
     const isoDate = dayDate.toISOString();
     setSelectedTargetDate(isoDate);
     setMatrixStep(3);
-    fetchInsightsForMatrixSlot(isoDate);
+    fetchInsightsForMatrixSlot(isoDate, selectedCommodity, catId);
   };
 
   const resolveInsightSubcategory = (item: ArticleInsightItem) => {
@@ -437,6 +468,20 @@ export default function CreatorStudioDashboard({
       commodity: selectedCommodity,
     });
   };
+
+  const handleClearSavedBriefs = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      const key = `editorial_ingested_briefs_${selectedCommodity}_${selectedCategory}`;
+      const scratchKey = `editorial_sop_scratchpad_${selectedCommodity}_${selectedCategory}`;
+      const tasksKey = `editorial_sop_tasks_${selectedCommodity}_${selectedCategory}`;
+      localStorage.removeItem(key);
+      localStorage.removeItem(scratchKey);
+      localStorage.removeItem(tasksKey);
+    }
+    setInsights([]);
+    setRawPrompts(null);
+    setHasLaunchedAssistant(false);
+  }, [selectedCommodity, selectedCategory]);
 
   const handleRegenerate = async () => {
     setRegenerating(true);
@@ -1793,8 +1838,8 @@ export default function CreatorStudioDashboard({
                             })}
                           </Box>
 
-                          {/* Prominent Bottom Center Button */}
-                          <Box sx={{ display: 'flex', justifyContent: 'center', pt: 1, pb: 2 }}>
+                          {/* Bottom Action Row: Write Custom Title & Clear Saved Briefs */}
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, pt: 1, pb: 2, flexWrap: 'wrap' }}>
                             <Button
                               variant="contained"
                               onClick={handleStartCustomArticle}
@@ -1821,6 +1866,32 @@ export default function CreatorStudioDashboard({
                               }}
                             >
                               ✍️ Write your own title
+                            </Button>
+
+                            <Button
+                              variant="text"
+                              onClick={handleClearSavedBriefs}
+                              startIcon={<DeleteOutlineIcon sx={{ fontSize: 16, color: '#f87171' }} />}
+                              sx={{
+                                color: '#f87171',
+                                bgcolor: 'rgba(239, 68, 68, 0.08)',
+                                border: '1px solid rgba(239, 68, 68, 0.2)',
+                                backdropFilter: 'blur(12px)',
+                                fontWeight: 700,
+                                fontSize: '0.84rem',
+                                px: 2.5,
+                                py: 1.1,
+                                borderRadius: '14px',
+                                textTransform: 'none',
+                                transition: 'all 0.2s ease',
+                                '&:hover': {
+                                  bgcolor: 'rgba(239, 68, 68, 0.16)',
+                                  borderColor: 'rgba(239, 68, 68, 0.4)',
+                                  transform: 'translateY(-2px)',
+                                }
+                              }}
+                            >
+                              Clear Saved Briefs
                             </Button>
                           </Box>
                         </Box>
