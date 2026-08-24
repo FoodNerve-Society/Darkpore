@@ -457,19 +457,26 @@ export function parseDoc1cArticles(rawText: string, fallbackCommodity = 'Soybean
   const blocks = rawText.split('---').map(b => b.trim()).filter(Boolean);
 
   blocks.forEach((block, idx) => {
-    // Extract metadata
-    const categoryMatch = block.match(/\*\s*Category_ID:\s*([^\n\r*]+)/i);
-    const subcategoryMatch = block.match(/\*\s*Subcategory_ID:\s*([^\n\r*]+)/i);
-    const commodityMatch = block.match(/\*\s*Commodity:\s*([^\n\r*]+)/i);
-    const formatMatch = block.match(/\*\s*Format_Type:\s*([^\n\r*]+)/i);
-    const eraMatch = block.match(/\*\s*Era:\s*([^\n\r*]+)/i);
-    const locationMatch = block.match(/\*\s*Location:\s*([^\n\r*]+)/i);
-    const spectrumMatch = block.match(/\*\s*Spectrum_Rank:\s*([^\n\r*]+)/i);
-    const personaMatch = block.match(/\*\s*Target_Persona:\s*([^\n\r*]+)/i);
+    // Flexible metadata extraction resilient to markdown bolding, hyphens, and syntax variances
+    const categoryMatch = block.match(/[*•-]?\s*\*?\*?Category(?:_ID)?\*?\*?:\s*([^\n\r*]+)/i);
+    const subcategoryMatch = block.match(/[*•-]?\s*\*?\*?Subcategory(?:_ID)?\*?\*?:\s*([^\n\r*]+)/i);
+    const commodityMatch = block.match(/[*•-]?\s*\*?\*?Commodity\*?\*?:\s*([^\n\r*]+)/i);
+    const formatMatch = block.match(/[*•-]?\s*\*?\*?Format(?:_Type)?\*?\*?:\s*([^\n\r*]+)/i);
+    const eraMatch = block.match(/[*•-]?\s*\*?\*?Era\*?\*?:\s*([^\n\r*]+)/i);
+    const locationMatch = block.match(/[*•-]?\s*\*?\*?Location\*?\*?:\s*([^\n\r*]+)/i);
+    const spectrumMatch = block.match(/[*•-]?\s*\*?\*?Spectrum(?:_Rank)?\*?\*?:\s*([^\n\r*]+)/i);
+    const personaMatch = block.match(/[*•-]?\s*\*?\*?Target_Persona\*?\*?:\s*([^\n\r*]+)/i);
+
+    const cleanCategory = categoryMatch ? categoryMatch[1].replace(/[*_`]/g, '').trim() : undefined;
+    const cleanSubcategory = subcategoryMatch ? subcategoryMatch[1].replace(/[*_`]/g, '').trim() : undefined;
+    const cleanCommodity = commodityMatch ? commodityMatch[1].replace(/[*_`]/g, '').trim() : fallbackCommodity;
+    const cleanLocation = locationMatch ? locationMatch[1].replace(/[*_`]/g, '').trim() : 'National Transit Hub';
+    const cleanSpectrum = spectrumMatch ? spectrumMatch[1].replace(/[*_`]/g, '').trim() : `#${(idx % 6) + 1}`;
+    const cleanPersona = personaMatch ? personaMatch[1].replace(/[*_`]/g, '').trim() : 'Agro-Allocators & Operators';
 
     // Extract Title (### ...)
     const titleMatch = block.match(/###\s*([^\n\r]+)/);
-    const title = titleMatch ? titleMatch[1].trim() : `Article Brief #${idx + 1}`;
+    const title = titleMatch ? titleMatch[1].replace(/[*_`]/g, '').trim() : `Article Brief #${idx + 1}`;
 
     // Extract Description bullet points
     const descSectionMatch = block.match(/\*\*Description:\*\*([\s\S]*?)(?:---|$)/i);
@@ -482,13 +489,13 @@ export function parseDoc1cArticles(rawText: string, fallbackCommodity = 'Soybean
     }
 
     // Format normalization
-    const rawFormat = (formatMatch ? formatMatch[1].trim().toLowerCase() : 'brief') as ArticleFormat;
+    const rawFormat = (formatMatch ? formatMatch[1].replace(/[*_`]/g, '').trim().toLowerCase() : 'brief') as ArticleFormat;
     const format: ArticleFormat = ['brief', 'memo', 'playbook', 'comparison', 'culture'].includes(rawFormat)
       ? rawFormat
       : 'brief';
 
     // Era normalization
-    const rawEra = (eraMatch ? eraMatch[1].trim().toLowerCase() : 'present') as ArticleEra;
+    const rawEra = (eraMatch ? eraMatch[1].replace(/[*_`]/g, '').trim().toLowerCase() : 'present') as ArticleEra;
     const era: ArticleEra = ['past', 'present', 'future'].includes(rawEra)
       ? rawEra
       : 'present';
@@ -499,15 +506,15 @@ export function parseDoc1cArticles(rawText: string, fallbackCommodity = 'Soybean
     if (title && (categoryMatch || formatMatch || descLines.length > 0)) {
       outlines.push({
         id: `brief-${Date.now()}-${idx + 1}`,
-        categoryId: categoryMatch ? categoryMatch[1].trim() : undefined,
-        subcategoryId: subcategoryMatch ? subcategoryMatch[1].trim() : undefined,
-        subcategoryTitle: subcategoryMatch ? subcategoryMatch[1].trim() : undefined,
-        commodity: commodityMatch ? commodityMatch[1].trim() : fallbackCommodity,
+        categoryId: cleanCategory,
+        subcategoryId: cleanSubcategory,
+        subcategoryTitle: cleanSubcategory,
+        commodity: cleanCommodity,
         format,
         era,
-        location: locationMatch ? locationMatch[1].trim() : 'National Transit Hub',
-        spectrumRank: spectrumMatch ? spectrumMatch[1].trim() : `#${(idx % 6) + 1}`,
-        targetPersona: personaMatch ? personaMatch[1].trim() : 'Agro-Allocators & Operators',
+        location: cleanLocation,
+        spectrumRank: cleanSpectrum,
+        targetPersona: cleanPersona,
         title,
         descriptionSentences: descLines,
         hook,

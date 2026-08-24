@@ -37,17 +37,20 @@ export interface DailyIntelPayload {
  * Retrieves the 10-12 cached daily article insights for a given date and commodity.
  * If not in database, generates them via the 3-stage Gemini 3.7 Flash pipeline and caches to Turso.
  */
-export async function getDailyEditorialIntel(dateInput?: Date | string): Promise<DailyIntelPayload> {
+export async function getDailyEditorialIntel(dateInput?: Date | string, commodityOverride?: string, categoryOverride?: string): Promise<DailyIntelPayload> {
   const date = dateInput ? new Date(dateInput) : new Date();
   const year = date.getFullYear();
   const week = getISOWeek(date);
   const dayOfWeek = getDay(date);
-  const categoryKey = CATEGORY_MAP[dayOfWeek] || 'land';
+  const categoryKey = categoryOverride || CATEGORY_MAP[dayOfWeek] || 'land';
 
   try {
-    // Get active/winning commodity
-    const matrix = await getEditorialMatrixForDate(date);
-    const commodity = matrix.commodity;
+    // Get active/winning commodity or use explicit override
+    let commodity = commodityOverride;
+    if (!commodity) {
+      const matrix = await getEditorialMatrixForDate(date);
+      commodity = matrix.commodity;
+    }
 
     // Check DB cache
     try {

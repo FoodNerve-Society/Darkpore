@@ -370,11 +370,35 @@ export default function CreatorStudioDashboard({
     fetchInsightsForMatrixSlot(isoDate);
   };
 
+  const resolveInsightSubcategory = (item: ArticleInsightItem) => {
+    if (item.subcategoryId && item.subcategoryId.trim()) {
+      return item.subcategoryId.trim();
+    }
+    if (item.subcategoryTitle && item.subcategoryTitle.trim()) {
+      return item.subcategoryTitle.trim();
+    }
+    // Fallback: match against challenge subcategories if item title/hook mentions one
+    const currentCat = (challengesData || []).find((c: any) => c.id === selectedCategory);
+    if (currentCat?.subcategories && currentCat.subcategories.length > 0) {
+      const match = currentCat.subcategories.find((s: any) => {
+        const cleanSub = (s.title || '').toLowerCase().replace(/\s*\(.*?\)\s*$/, '').trim();
+        const cleanTitle = (item.title || '').toLowerCase();
+        const cleanHook = (item.hook || '').toLowerCase();
+        return (cleanSub.length > 3 && (cleanTitle.includes(cleanSub) || cleanHook.includes(cleanSub)));
+      });
+      if (match) return match.id || match.title;
+      return currentCat.subcategories[0]?.id || currentCat.subcategories[0]?.title || '';
+    }
+    return '';
+  };
+
   const handleSelectInsight = (item: ArticleInsightItem) => {
+    const resolvedSub = resolveInsightSubcategory(item);
+
     onStartFresh('article', {
       commodity: selectedCommodity,
       category: selectedCategory,
-      subcategory: item.subcategoryId,
+      subcategory: resolvedSub,
       format: item.format,
       timeframe: item.era,
       targetDate: selectedTargetDate,
@@ -384,7 +408,7 @@ export default function CreatorStudioDashboard({
       title: item.title,
       description: item.hook,
       category: selectedCategory,
-      subcategory: item.subcategoryId,
+      subcategory: resolvedSub,
       format: item.format,
       timeframe: item.era,
       targetDate: selectedTargetDate,

@@ -555,21 +555,71 @@ export default function CreateLearnContentForm({
   const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [articleEditorMode, setArticleEditorMode] = useState<'framework' | 'canvas'>('framework');
 
-  const isSubcategoryMatch = useCallback((sub: { id: string; title: string }, targetVal?: string) => {
+  const normalizeSubcategoryString = (str?: string): string => {
+    if (!str) return '';
+    return str
+      .toLowerCase()
+      .replace(/^[\s#0-9.-]+/, '') // strip leading numbers like "1.", "01 - ", "#1 "
+      .replace(/\s*\(.*?\)\s*$/, '') // strip trailing brackets
+      .replace(/&/g, ' and ') // normalize & to and
+      .replace(/[^a-z0-9\s]/g, ' ') // replace special chars with spaces
+      .replace(/\s+/g, ' ') // collapse multiple spaces
+      .trim();
+  };
+
+  const isSubcategoryMatch = useCallback((sub: { id: string; title: string; desc?: string; shortName?: string }, targetVal?: string): boolean => {
     if (!targetVal) return false;
-    const cleanTarget = targetVal.replace(/\s*\(.*?\)\s*$/, '').trim().toLowerCase();
-    const cleanSubId = (sub.id || '').trim().toLowerCase();
-    const cleanSubTitle = (sub.title || '').replace(/\s*\(.*?\)\s*$/, '').trim().toLowerCase();
     
-    if (cleanSubId === cleanTarget || cleanSubTitle === cleanTarget) return true;
-    if (cleanTarget.length > 2 && (cleanSubId.includes(cleanTarget) || cleanTarget.includes(cleanSubId))) return true;
-    if (cleanTarget.length > 2 && (cleanSubTitle.includes(cleanTarget) || cleanTarget.includes(cleanSubTitle))) return true;
+    const normTarget = normalizeSubcategoryString(targetVal);
+    if (!normTarget) return false;
+    
+    const normId = normalizeSubcategoryString(sub.id);
+    const normTitle = normalizeSubcategoryString(sub.title);
+    const normShortName = normalizeSubcategoryString((sub as any).shortName);
+    
+    // 1. Exact normalized match
+    if (normId === normTarget || normTitle === normTarget || normShortName === normTarget) return true;
+    
+    // 2. Direct inclusion match
+    if (normTarget.length >= 3) {
+      if (normId && (normId.includes(normTarget) || normTarget.includes(normId))) return true;
+      if (normTitle && (normTitle.includes(normTarget) || normTarget.includes(normTitle))) return true;
+      if (normShortName && (normShortName.includes(normTarget) || normTarget.includes(normShortName))) return true;
+    }
+
+    // 3. Token overlap match
+    const targetWords = normTarget.split(' ').filter(w => w.length > 2 && !['and', 'the', 'for', 'with'].includes(w));
+    const titleWords = normTitle.split(' ').filter(w => w.length > 2 && !['and', 'the', 'for', 'with'].includes(w));
+    if (targetWords.length > 0 && titleWords.length > 0) {
+      const matchingWords = targetWords.filter(tw => titleWords.some(titleW => titleW.includes(tw) || tw.includes(titleW)));
+      if (matchingWords.length >= Math.min(2, targetWords.length)) {
+        return true;
+      }
+    }
+
+    // 4. Raw string inclusion check
+    const rawSubFull = (sub.title || '').toLowerCase();
+    const rawTargetFull = targetVal.toLowerCase();
+    if (rawSubFull.includes(rawTargetFull) || rawTargetFull.includes(rawSubFull)) return true;
+
     return false;
   }, []);
 
+  const resolveChallenge = useCallback((catIdentifier?: string) => {
+    if (!catIdentifier) return challenges[0];
+    const clean = catIdentifier.toLowerCase().trim();
+    const byId = challenges.find(c => c.id.toLowerCase() === clean);
+    if (byId) return byId;
+    const byTitle = challenges.find(c => c.title.toLowerCase() === clean);
+    if (byTitle) return byTitle;
+    const byInc = challenges.find(c => c.title.toLowerCase().includes(clean) || clean.includes(c.title.toLowerCase()) || clean.includes(c.id.toLowerCase()) || c.id.toLowerCase().includes(clean));
+    if (byInc) return byInc;
+    return challenges[0];
+  }, [challenges]);
+
   const currentSelectedChallenge = useMemo(() => {
-    return challenges.find(c => c.id === selectedCategory) || challenges[0];
-  }, [challenges, selectedCategory]);
+    return resolveChallenge(selectedCategory);
+  }, [resolveChallenge, selectedCategory]);
 
   const subcategoriesInSelectedCategory = useMemo(() => {
     return (currentSelectedChallenge?.subcategories || []).map((s: any) => ({
@@ -583,8 +633,14 @@ export default function CreateLearnContentForm({
     }));
   }, [currentSelectedChallenge]);
 
+  const activeSubcategoryObj = useMemo(() => {
+    if (!selectedSubcategory) return null;
+    return subcategoriesInSelectedCategory.find(s => s.id === selectedSubcategory || isSubcategoryMatch(s, selectedSubcategory)) || null;
+  }, [subcategoriesInSelectedCategory, selectedSubcategory, isSubcategoryMatch]);
+
+  const isSubcategoryValid = Boolean(activeSubcategoryObj);
   const isBlueprintFilled = Boolean(
-    selectedSubcategory && 
+    isSubcategoryValid && 
     selectedFormat && 
     selectedEra
   );
@@ -592,48 +648,72 @@ export default function CreateLearnContentForm({
   const activeFormatMeta = FORMAT_CONFIG[selectedFormat] || FORMAT_CONFIG.brief;
   const activeEraMeta = ERA_CONFIG[selectedEra] || ERA_CONFIG.present;
 
+  const initialTaxonomyKey = useMemo(() => {
+    if (!initialTaxonomy) return null;
+    return JSON.stringify(initialTaxonomy);
+  }, [initialTaxonomy]);
+  const prevTaxonomyKeyRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (initialTaxonomy) {
-      setType((initialType as any) || 'article');
-      if (initialTaxonomy.commodity) setSelectedCommodity(initialTaxonomy.commodity);
-      if (initialTaxonomy.category) setSelectedCategory(initialTaxonomy.category);
-      
-      const rawSub = initialTaxonomy.subcategory || (initialTaxonomy as any).subcategoryId;
-      if (rawSub) {
-        const matched = subcategoriesInSelectedCategory.find(s => isSubcategoryMatch(s, rawSub));
-        if (matched) {
-          setSelectedSubcategory(matched.id);
-        } else {
-          setSelectedSubcategory(rawSub);
+    if (!initialTaxonomy || initialTaxonomyKey === prevTaxonomyKeyRef.current) return;
+    prevTaxonomyKeyRef.current = initialTaxonomyKey;
+
+    setType((initialType as any) || 'article');
+    if (initialTaxonomy.commodity) setSelectedCommodity(initialTaxonomy.commodity);
+
+    let targetCat = resolveChallenge(initialTaxonomy.category);
+    let finalSubId = '';
+
+    const rawSub = initialTaxonomy.subcategory || (initialTaxonomy as any).subcategoryId;
+    if (rawSub) {
+      // Search in target category first
+      const currentSubs = (targetCat.subcategories || []).map((s: any) => ({ id: s.id, title: s.title, shortName: s.shortName }));
+      const matchInCat = currentSubs.find((s: any) => isSubcategoryMatch(s, rawSub));
+      if (matchInCat) {
+        finalSubId = matchInCat.id;
+      } else {
+        // Search across other challenges if mismatched
+        for (const chal of challenges) {
+          const cSubs = (chal.subcategories || []).map((s: any) => ({ id: s.id, title: s.title, shortName: s.shortName }));
+          const found = cSubs.find((s: any) => isSubcategoryMatch(s, rawSub));
+          if (found) {
+            targetCat = chal;
+            finalSubId = found.id;
+            break;
+          }
         }
+        if (!finalSubId) finalSubId = rawSub;
       }
-
-      if (initialTaxonomy.format) {
-        const rawFmt = String(initialTaxonomy.format).toLowerCase().trim();
-        const validFmt: ArticleFormat = ['brief', 'memo', 'playbook', 'comparison', 'culture'].includes(rawFmt)
-          ? (rawFmt as ArticleFormat)
-          : 'brief';
-        setSelectedFormat(validFmt);
-      }
-
-      const rawEraSource = initialTaxonomy.timeframe || (initialTaxonomy as any).era;
-      if (rawEraSource) {
-        const rawEraStr = String(rawEraSource).toLowerCase().trim();
-        const validEra: ArticleEra = rawEraStr.includes('past') ? 'past' : rawEraStr.includes('futur') ? 'future' : 'present';
-        setSelectedTimeframe(validEra as any);
-        setSelectedEra(validEra);
-      }
-
-      if (initialTaxonomy.targetDate) setTargetDate(initialTaxonomy.targetDate);
-      if (initialTaxonomy.title) setTitle(initialTaxonomy.title);
-      if (initialTaxonomy.description) setDescription(initialTaxonomy.description);
-
-      // Keep blocks empty initially so the creator sees the Framework Blueprint preview & "Load This Framework" button
-      setBlocks([]);
-      setArticleEditorMode('framework');
-      setStep(3); // Jump directly to builder
     }
-  }, [initialTaxonomy, initialType, subcategoriesInSelectedCategory, isSubcategoryMatch]);
+
+    setSelectedCategory(targetCat.id);
+    setSelectedSubcategory(finalSubId);
+
+    if (initialTaxonomy.format) {
+      const rawFmt = String(initialTaxonomy.format).toLowerCase().trim();
+      const validFmt: ArticleFormat = ['brief', 'memo', 'playbook', 'comparison', 'culture'].includes(rawFmt)
+        ? (rawFmt as ArticleFormat)
+        : 'brief';
+      setSelectedFormat(validFmt);
+    }
+
+    const rawEraSource = initialTaxonomy.timeframe || (initialTaxonomy as any).era;
+    if (rawEraSource) {
+      const rawEraStr = String(rawEraSource).toLowerCase().trim();
+      const validEra: ArticleEra = rawEraStr.includes('past') ? 'past' : rawEraStr.includes('futur') ? 'future' : 'present';
+      setSelectedTimeframe(validEra as any);
+      setSelectedEra(validEra);
+    }
+
+    if (initialTaxonomy.targetDate) setTargetDate(initialTaxonomy.targetDate);
+    if (initialTaxonomy.title) setTitle(initialTaxonomy.title);
+    if (initialTaxonomy.description) setDescription(initialTaxonomy.description);
+
+    // Keep blocks empty initially so the creator sees the Framework Blueprint preview & "Load This Framework" button
+    setBlocks([]);
+    setArticleEditorMode('framework');
+    setStep(3); // Jump directly to builder
+  }, [initialTaxonomyKey, initialTaxonomy, initialType, challenges, isSubcategoryMatch, resolveChallenge]);
 
   useEffect(() => {
     if (initialDraftData) {
@@ -1291,12 +1371,12 @@ export default function CreateLearnContentForm({
                   const activeFormatMeta = FORMAT_CONFIG[selectedFormat] || FORMAT_CONFIG.brief;
                   const activeEraMeta = ERA_CONFIG[selectedEra] || ERA_CONFIG.present;
                   const currentBlueprint = getBlueprint(selectedFormat, selectedEra);
-                  const selectedSubObj = subcategoriesInSelectedCategory.find(s => s.id === selectedSubcategory || isSubcategoryMatch(s, selectedSubcategory));
+                  const selectedSubObj = activeSubcategoryObj;
 
                   const formatsList: ArticleFormat[] = ['brief', 'memo', 'playbook', 'comparison', 'culture'];
                   const erasList: ArticleEra[] = ['past', 'present', 'future'];
 
-                  const blueprintFilledCount = (selectedSubcategory ? 1 : 0) + (selectedFormat ? 1 : 0) + (selectedEra ? 1 : 0);
+                  const blueprintFilledCount = (isSubcategoryValid ? 1 : 0) + (selectedFormat ? 1 : 0) + (selectedEra ? 1 : 0);
                   const isBlueprintFilled = blueprintFilledCount === 3;
                   const blueprintFillPercent = Math.round((blueprintFilledCount / 3) * 100);
 
@@ -1493,7 +1573,7 @@ export default function CreateLearnContentForm({
                                     '&::-webkit-scrollbar-thumb': { background: alpha(activeFormatMeta.color, 0.2), borderRadius: '10px' }
                                   }}>
                                     {subcategoriesInSelectedCategory.map((sub) => {
-                                      const isSelected = selectedSubcategory === sub.id || isSubcategoryMatch(sub, selectedSubcategory);
+                                      const isSelected = selectedSubcategory === sub.id || activeSubcategoryObj?.id === sub.id || isSubcategoryMatch(sub, selectedSubcategory);
                                       const rawTitle = sub.title || '';
                                       // Parse: break into main name and bracket description
                                       const bracketMatch = rawTitle.match(/^(.*?)\s*\((.+)\)\s*$/);
@@ -1790,7 +1870,7 @@ export default function CreateLearnContentForm({
                                     </Button>
                                   ) : (
                                     <Typography sx={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>
-                                      {selectedSubcategory ? `Selected: ${selectedSubObj?.title}` : 'Tap a subcategory to proceed'}
+                                      {isSubcategoryValid ? `Selected: ${activeSubcategoryObj?.title}` : 'Tap a subcategory to proceed'}
                                     </Typography>
                                   )}
                                 </Box>
@@ -1809,12 +1889,12 @@ export default function CreateLearnContentForm({
                                   >
                                     <Box sx={{
                                       width: 18, height: 18, borderRadius: '50%',
-                                      bgcolor: selectedSubcategory ? activeFormatMeta.color : (blueprintConfigStep === 1 ? alpha(activeFormatMeta.color, 0.3) : 'rgba(0,0,0,0.15)'),
-                                      color: selectedSubcategory ? '#fff' : (blueprintConfigStep === 1 ? activeFormatMeta.color : '#64748b'),
+                                      bgcolor: isSubcategoryValid ? activeFormatMeta.color : (blueprintConfigStep === 1 ? alpha(activeFormatMeta.color, 0.3) : 'rgba(0,0,0,0.15)'),
+                                      color: isSubcategoryValid ? '#fff' : (blueprintConfigStep === 1 ? activeFormatMeta.color : '#64748b'),
                                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                                       fontSize: '0.68rem', fontWeight: 900
                                     }}>
-                                      {selectedSubcategory ? '✓' : '1'}
+                                      {isSubcategoryValid ? '✓' : '1'}
                                     </Box>
                                     <Typography sx={{ fontSize: '0.76rem', fontWeight: 800, color: blueprintConfigStep === 1 ? activeFormatMeta.color : '#64748b' }}>
                                       Subcategory
@@ -1824,14 +1904,14 @@ export default function CreateLearnContentForm({
                                   <Box sx={{ width: 14, height: 2, bgcolor: isBlueprintFilled ? activeFormatMeta.color : 'rgba(0,0,0,0.1)' }} />
 
                                   <Box
-                                    onClick={() => { if (selectedSubcategory) setBlueprintConfigStep(2); }}
+                                    onClick={() => { if (isSubcategoryValid) setBlueprintConfigStep(2); }}
                                     sx={{
                                       display: 'flex', alignItems: 'center', gap: 0.75, px: 1.5, py: 0.5, borderRadius: '20px',
-                                      cursor: selectedSubcategory ? 'pointer' : 'default',
+                                      cursor: isSubcategoryValid ? 'pointer' : 'default',
                                       bgcolor: blueprintConfigStep === 2 ? alpha(activeFormatMeta.color, 0.12) : 'rgba(0,0,0,0.04)',
                                       border: `1px solid ${blueprintConfigStep === 2 ? activeFormatMeta.color : 'transparent'}`,
                                       transition: 'all 0.2s',
-                                      opacity: selectedSubcategory ? 1 : 0.6
+                                      opacity: isSubcategoryValid ? 1 : 0.6
                                     }}
                                   >
                                     <Box sx={{
