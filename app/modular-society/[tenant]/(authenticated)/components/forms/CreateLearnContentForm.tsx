@@ -553,6 +553,7 @@ export default function CreateLearnContentForm({
   const [isBlueprintCardFlipped, setIsBlueprintCardFlipped] = useState(false);
   const [blueprintConfigStep, setBlueprintConfigStep] = useState<1 | 2>(1);
   const [thumbnailUrl, setThumbnailUrl] = useState('');
+  const [articleEditorMode, setArticleEditorMode] = useState<'framework' | 'canvas'>('framework');
 
   const currentSelectedChallenge = useMemo(() => {
     return challenges.find(c => c.id === selectedCategory) || challenges[0];
@@ -585,18 +586,9 @@ export default function CreateLearnContentForm({
       if (initialTaxonomy.title) setTitle(initialTaxonomy.title);
       if (initialTaxonomy.description) setDescription(initialTaxonomy.description);
 
-      if (blocks.length === 0 && initialTaxonomy.format && initialTaxonomy.timeframe) {
-        const blueprint = getBlueprint(initialTaxonomy.format, initialTaxonomy.timeframe as any);
-        if (blueprint && blueprint.length > 0) {
-          const initialBlocks = blueprint.map((b, idx) => ({
-            id: Math.random().toString(36).substring(7),
-            type: b.type,
-            content: idx === 0 && initialTaxonomy.description ? { point1: initialTaxonomy.description } : {}
-          }));
-          setBlocks(initialBlocks);
-        }
-      }
-
+      // Keep blocks empty initially so the creator sees the Framework Blueprint preview & "Load This Framework" button
+      setBlocks([]);
+      setArticleEditorMode('framework');
       setStep(3); // Jump directly to builder
     }
   }, [initialTaxonomy, initialType]);
@@ -625,7 +617,7 @@ export default function CreateLearnContentForm({
       }
       
       const sourceBlocks = initialDraftData.articleBlocks || initialDraftData.article?.blocks;
-      if (sourceBlocks) {
+      if (sourceBlocks && sourceBlocks.length > 0) {
         // Sort blocks by orderIndex just in case
         const sorted = [...sourceBlocks].sort((a: any, b: any) => a.orderIndex - b.orderIndex);
         const validBlocks = sorted
@@ -636,6 +628,9 @@ export default function CreateLearnContentForm({
             content: typeof b.content === 'string' ? JSON.parse(b.content) : (b.content || {})
           }));
         setBlocks(validBlocks);
+        setArticleEditorMode('canvas');
+      } else {
+        setArticleEditorMode('framework');
       }
       
       setStep(3); // Jump directly to builder
@@ -863,6 +858,7 @@ export default function CreateLearnContentForm({
     });
     setBlocks(newBlocks);
     setFlippedBlockId(newBlocks[0]?.id || null);
+    setArticleEditorMode('canvas');
   }, [selectedFormat, selectedEra, title, description]);
 
   const getBlockFillStats = (block: typeof blocks[0]) => {
@@ -1199,24 +1195,61 @@ export default function CreateLearnContentForm({
                         />
                       </Box>
 
-                      {/* Right Status Badge */}
-                      <Chip 
-                        icon={draftId && draftId !== 'new' ? <AccessTimeIcon sx={{ fontSize: 14 }} /> : <AddIcon sx={{ fontSize: 14 }} />}
-                        label={draftId && draftId !== 'new' ? 'EDITING DRAFT' : 'NEW BRIEF'} 
-                        size="small" 
-                        sx={{ 
-                          bgcolor: draftId && draftId !== 'new' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(16, 185, 129, 0.1)', 
-                          color: draftId && draftId !== 'new' ? '#d97706' : '#059669', 
-                          fontWeight: 800, border: `1px solid ${draftId && draftId !== 'new' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)'}`,
-                          px: 1, height: 26, '& .MuiChip-icon': { color: 'inherit' }
-                        }} 
-                      />
+                      {/* Right: Luxury Framework Pill Trigger & Status Badge */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                        {/* Luxury Framework Pill Trigger */}
+                        <Tooltip title={articleEditorMode === 'framework' ? "Viewing Framework Configurator" : "Tap to Edit Blueprint & Editorial Lenses"}>
+                          <Box
+                            onClick={() => setArticleEditorMode(articleEditorMode === 'framework' ? 'canvas' : 'framework')}
+                            sx={{
+                              display: 'flex', alignItems: 'center', gap: 1,
+                              px: 1.75, py: 0.65, borderRadius: '12px',
+                              bgcolor: articleEditorMode === 'framework' ? alpha(fMeta.color, 0.14) : '#fff',
+                              border: `1.5px solid ${articleEditorMode === 'framework' ? fMeta.color : 'rgba(0,0,0,0.1)'}`,
+                              boxShadow: articleEditorMode === 'framework' ? `0 4px 14px ${alpha(fMeta.color, 0.25)}` : '0 2px 8px rgba(0,0,0,0.04)',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                              '&:hover': {
+                                transform: 'translateY(-1px)',
+                                borderColor: fMeta.color,
+                                boxShadow: `0 4px 14px ${alpha(fMeta.color, 0.25)}`
+                              }
+                            }}
+                          >
+                            <SparkleIcon sx={{ fontSize: 16, color: fMeta.color }} />
+                            <Typography sx={{ fontWeight: 800, fontSize: '0.8rem', color: '#0f172a' }}>
+                              {fMeta.emoji} {fMeta.label} · {eMeta.label} Era
+                            </Typography>
+                            <Box sx={{
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              width: 22, height: 22, borderRadius: '7px',
+                              bgcolor: alpha(fMeta.color, 0.12), color: fMeta.color,
+                              ml: 0.25
+                            }}>
+                              <EditIcon sx={{ fontSize: 13 }} />
+                            </Box>
+                          </Box>
+                        </Tooltip>
+
+                        {/* Right Status Badge */}
+                        <Chip 
+                          icon={draftId && draftId !== 'new' ? <AccessTimeIcon sx={{ fontSize: 14 }} /> : <AddIcon sx={{ fontSize: 14 }} />}
+                          label={draftId && draftId !== 'new' ? 'EDITING DRAFT' : 'NEW BRIEF'} 
+                          size="small" 
+                          sx={{ 
+                            bgcolor: draftId && draftId !== 'new' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(16, 185, 129, 0.1)', 
+                            color: draftId && draftId !== 'new' ? '#d97706' : '#059669', 
+                            fontWeight: 800, border: `1px solid ${draftId && draftId !== 'new' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)'}`,
+                            px: 1, height: 26, '& .MuiChip-icon': { color: 'inherit' }
+                          }} 
+                        />
+                      </Box>
                     </Box>
                   );
                 })()}
 
-                {/* ═══════════════════════ EMPTY STATE: 3D BLUEPRINT FLIP BLOCK & LOADER ═══════════════════════ */}
-                {blocks.length === 0 && (() => {
+                {/* ═══════════════════════ FRAMEWORK & BLUEPRINT PREVIEW SPACE ═══════════════════════ */}
+                {articleEditorMode === 'framework' && (() => {
                   const currentChallenge = challenges.find(c => c.id === selectedCategory) || challenges[0];
                   const subcategoriesList = currentChallenge?.subcategories || [];
                   const activeFormatMeta = FORMAT_CONFIG[selectedFormat] || FORMAT_CONFIG.brief;
@@ -1306,7 +1339,7 @@ export default function CreateLearnContentForm({
                                         {isBlueprintFilled && selectedSubObj?.title && (
                                           <Chip
                                             icon={<span style={{ fontSize: '0.9rem', marginLeft: '6px' }}>🎯</span>}
-                                            label={<span><strong>Focus:</strong> {selectedSubObj.title}</span>}
+                                            label={<span><strong>Focus:</strong> {(selectedSubObj.title || '').replace(/\s*\(.*?\)\s*$/, '').trim()}</span>}
                                             size="small"
                                             sx={{
                                               height: 24, fontSize: '0.74rem', fontWeight: 600,
@@ -1415,8 +1448,8 @@ export default function CreateLearnContentForm({
                                   <Box sx={{
                                     display: 'grid',
                                     gridTemplateColumns: { xs: '1fr', lg: 'repeat(2, 1fr)' },
-                                    gap: 1.75,
-                                    maxHeight: '490px',
+                                    gap: 2,
+                                    maxHeight: { xs: '540px', md: '640px' },
                                     overflowY: 'auto',
                                     pr: 1,
                                     '&::-webkit-scrollbar': { width: '6px' },
@@ -1425,6 +1458,12 @@ export default function CreateLearnContentForm({
                                   }}>
                                     {subcategoriesInSelectedCategory.map((sub) => {
                                       const isSelected = selectedSubcategory === sub.id;
+                                      const rawTitle = sub.title || '';
+                                      // Parse: break into main name and bracket description
+                                      const bracketMatch = rawTitle.match(/^(.*?)\s*\((.+)\)\s*$/);
+                                      const mainTitle = bracketMatch ? bracketMatch[1].trim() : rawTitle.trim();
+                                      const bracketDesc = bracketMatch ? bracketMatch[2].trim() : '';
+
                                       return (
                                         <Box
                                           key={sub.id}
@@ -1437,6 +1476,8 @@ export default function CreateLearnContentForm({
                                           sx={{
                                             display: 'flex',
                                             flexDirection: 'row',
+                                            height: 'auto',
+                                            minHeight: { xs: 115, sm: 125 },
                                             borderRadius: '18px',
                                             border: `2px solid ${isSelected ? activeFormatMeta.color : 'rgba(0,0,0,0.06)'}`,
                                             bgcolor: isSelected ? alpha(activeFormatMeta.color, 0.06) : '#ffffff',
@@ -1452,10 +1493,11 @@ export default function CreateLearnContentForm({
                                             }
                                           }}
                                         >
-                                          {/* Left: Image on side */}
+                                          {/* Left: Image on side (Wider) */}
                                           <Box sx={{
-                                            width: { xs: 100, sm: 120 },
-                                            minWidth: { xs: 100, sm: 120 },
+                                            width: { xs: 135, sm: 165, md: 180 },
+                                            minWidth: { xs: 135, sm: 165, md: 180 },
+                                            alignSelf: 'stretch',
                                             position: 'relative',
                                             bgcolor: 'rgba(0,0,0,0.04)',
                                             overflow: 'hidden'
@@ -1463,7 +1505,7 @@ export default function CreateLearnContentForm({
                                             {sub.imageUrl ? (
                                               <img
                                                 src={sub.imageUrl}
-                                                alt={sub.title}
+                                                alt={mainTitle}
                                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                                 onError={(e) => {
                                                   (e.currentTarget as HTMLElement).style.display = 'none';
@@ -1471,7 +1513,7 @@ export default function CreateLearnContentForm({
                                               />
                                             ) : (
                                               <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: alpha(activeFormatMeta.color, 0.08) }}>
-                                                <Typography sx={{ fontSize: '1.6rem' }}>🌱</Typography>
+                                                <Typography sx={{ fontSize: '1.8rem' }}>🌱</Typography>
                                               </Box>
                                             )}
                                             <Box sx={{
@@ -1481,27 +1523,13 @@ export default function CreateLearnContentForm({
                                           </Box>
 
                                           {/* Right: Text & Selection */}
-                                          <Box sx={{ p: 1.75, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minWidth: 0 }}>
+                                          <Box sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minWidth: 0 }}>
                                             <Box>
-                                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 0.5 }}>
-                                                {sub.groupName ? (
-                                                  <Chip
-                                                    label={sub.groupName}
-                                                    size="small"
-                                                    sx={{
-                                                      bgcolor: isSelected ? alpha(activeFormatMeta.color, 0.15) : 'rgba(0,0,0,0.05)',
-                                                      color: isSelected ? activeFormatMeta.color : '#64748b',
-                                                      fontSize: '0.66rem',
-                                                      fontWeight: 800,
-                                                      height: 19
-                                                    }}
-                                                  />
-                                                ) : <Box />}
-
+                                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', mb: 0.75 }}>
                                                 {/* Sleek Selection Radio Pill */}
                                                 <Box sx={{
                                                   display: 'flex', alignItems: 'center', gap: 0.5,
-                                                  px: 1, py: 0.25, borderRadius: '12px',
+                                                  px: 1.25, py: 0.35, borderRadius: '12px',
                                                   bgcolor: isSelected ? activeFormatMeta.color : 'rgba(0,0,0,0.04)',
                                                   color: isSelected ? '#fff' : '#94a3b8',
                                                   transition: 'all 0.2s'
@@ -1516,25 +1544,29 @@ export default function CreateLearnContentForm({
                                                       <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: activeFormatMeta.color }} />
                                                     )}
                                                   </Box>
-                                                  <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: isSelected ? '#fff' : '#64748b' }}>
+                                                  <Typography sx={{ fontSize: '0.7rem', fontWeight: 800, color: isSelected ? '#fff' : '#64748b' }}>
                                                     {isSelected ? 'Selected' : 'Select'}
                                                   </Typography>
                                                 </Box>
                                               </Box>
 
+                                              {/* Main Name */}
                                               <Typography sx={{
-                                                fontWeight: 800, fontSize: '0.94rem', color: isSelected ? activeFormatMeta.color : '#0f172a',
-                                                lineHeight: 1.25, mb: 0.5
+                                                fontWeight: 800, fontSize: { xs: '0.94rem', md: '1rem' }, color: isSelected ? activeFormatMeta.color : '#0f172a',
+                                                lineHeight: 1.3, mb: bracketDesc ? 0.75 : 0
                                               }}>
-                                                {sub.title}
+                                                {mainTitle}
                                               </Typography>
 
-                                              <Typography sx={{
-                                                color: '#64748b', fontSize: '0.76rem', lineHeight: 1.35,
-                                                display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'
-                                              }}>
-                                                {sub.description || 'Core strategic pathway under this challenge.'}
-                                              </Typography>
+                                              {/* Things in bracket becomes description */}
+                                              {bracketDesc && (
+                                                <Typography sx={{
+                                                  color: '#64748b', fontSize: '0.78rem', lineHeight: 1.45,
+                                                  display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden'
+                                                }}>
+                                                  {bracketDesc}
+                                                </Typography>
+                                              )}
                                             </Box>
                                           </Box>
                                         </Box>
@@ -1869,21 +1901,35 @@ export default function CreateLearnContentForm({
                         })}
                       </Box>
 
-                      {/* CTA to Load Framework */}
-                      <Box sx={{ textAlign: 'center', mt: 4 }}>
+                      {/* CTA to Load or Return to Canvas */}
+                      <Box sx={{ textAlign: 'center', mt: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, flexWrap: 'wrap' }}>
+                        {blocks.length > 0 && (
+                          <Button
+                            variant="outlined"
+                            onClick={() => setArticleEditorMode('canvas')}
+                            startIcon={<EditIcon />}
+                            sx={{
+                              borderColor: 'rgba(0,0,0,0.2)', color: '#0f172a', fontWeight: 800, px: 3.5, py: 1.6, borderRadius: '18px',
+                              fontSize: '1rem', bgcolor: '#fff',
+                              '&:hover': { bgcolor: 'rgba(0,0,0,0.04)', borderColor: 'rgba(0,0,0,0.35)' }
+                            }}
+                          >
+                            ✍️ Back to Canvas ({blocks.length} Blocks)
+                          </Button>
+                        )}
                         <Button
                           variant="contained"
                           onClick={() => applyFramework(selectedFormat, selectedEra)}
                           startIcon={<SparkleIcon />}
                           sx={{
-                            bgcolor: activeFormatMeta.color, color: '#fff', fontWeight: 800, px: 6, py: 1.8, borderRadius: '18px',
+                            bgcolor: activeFormatMeta.color, color: '#fff', fontWeight: 800, px: 5, py: 1.6, borderRadius: '18px',
                             fontSize: '1.05rem', letterSpacing: '0.01em',
                             boxShadow: `0 8px 24px ${alpha(activeFormatMeta.color, 0.4)}`,
                             '&:hover': { bgcolor: alpha(activeFormatMeta.color, 0.9), transform: 'translateY(-2px)', boxShadow: `0 12px 32px ${alpha(activeFormatMeta.color, 0.5)}` },
                             transition: 'all 0.2s',
                           }}
                         >
-                          🚀 Load This Framework ({currentBlueprint.length} Blocks)
+                          {blocks.length === 0 ? `🚀 Load This Framework (${currentBlueprint.length} Blocks)` : `🔄 Reload Framework (${currentBlueprint.length} Blocks)`}
                         </Button>
                       </Box>
                     </Box>
@@ -1891,9 +1937,111 @@ export default function CreateLearnContentForm({
                 })()}
 
 
-                {/* ΓöÇΓöÇΓöÇ ACTIVE BLOCK CANVAS ΓöÇΓöÇΓöÇ */}
-                {blocks.length > 0 && (
-                  <Box>
+                {/* ═══ ACTIVE BLOCK CANVAS ═══ */}
+                {articleEditorMode === 'canvas' && (
+                  <Box sx={{ animation: 'fadeIn 0.25s ease' }}>
+                    {/* ═══ ACTIVE FRAMEWORK & BLUEPRINT SUMMARY PANE ═══ */}
+                    {(() => {
+                      const fMeta = FORMAT_CONFIG[selectedFormat] || FORMAT_CONFIG.brief;
+                      const eMeta = ERA_CONFIG[selectedEra] || ERA_CONFIG.present;
+                      const activeSubObj = subcategoriesInSelectedCategory.find(s => s.id === selectedSubcategory);
+
+                      return (
+                        <Paper
+                          sx={{
+                            mb: 4,
+                            p: { xs: 2.25, md: 3 },
+                            borderRadius: '24px',
+                            background: `linear-gradient(135deg, ${alpha(fMeta.color, 0.08)} 0%, rgba(255,255,255,0.95) 100%)`,
+                            border: `1.5px solid ${alpha(fMeta.color, 0.25)}`,
+                            backdropFilter: 'blur(16px)',
+                            boxShadow: `0 8px 30px ${alpha(fMeta.color, 0.08)}`,
+                            display: 'flex',
+                            flexDirection: { xs: 'column', md: 'row' },
+                            alignItems: { md: 'center' },
+                            justifyContent: 'space-between',
+                            gap: 2.5,
+                            position: 'relative',
+                            overflow: 'hidden'
+                          }}
+                        >
+                          {/* Subtle background glow */}
+                          <Box sx={{
+                            position: 'absolute', top: -40, right: -40, width: 140, height: 140,
+                            borderRadius: '50%', background: `radial-gradient(circle, ${alpha(fMeta.color, 0.2)} 0%, transparent 70%)`,
+                            pointerEvents: 'none'
+                          }} />
+
+                          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, flex: 1, minWidth: 0, position: 'relative', zIndex: 1 }}>
+                            <Box sx={{
+                              width: 48, height: 48, borderRadius: '16px', flexShrink: 0,
+                              bgcolor: alpha(fMeta.color, 0.15),
+                              border: `1px solid ${alpha(fMeta.color, 0.3)}`,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              boxShadow: `0 4px 14px ${alpha(fMeta.color, 0.18)}`
+                            }}>
+                              <SparkleIcon sx={{ fontSize: 24, color: fMeta.color }} />
+                            </Box>
+
+                            <Box sx={{ flex: 1, minWidth: 0 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flexWrap: 'wrap', mb: 0.5 }}>
+                                <Typography sx={{ fontWeight: 900, color: '#0f172a', fontSize: '1.15rem', letterSpacing: '-0.01em' }}>
+                                  {fMeta.emoji} {fMeta.label} · {eMeta.label} Era
+                                </Typography>
+                                {activeSubObj?.title && (
+                                  <Chip
+                                    icon={<span style={{ fontSize: '0.85rem', marginLeft: '4px' }}>🎯</span>}
+                                    label={<span><strong>Focus:</strong> {(activeSubObj.title || '').replace(/\s*\(.*?\)\s*$/, '').trim()}</span>}
+                                    size="small"
+                                    sx={{
+                                      height: 24, fontSize: '0.74rem', fontWeight: 700,
+                                      bgcolor: alpha(fMeta.color, 0.12),
+                                      color: fMeta.color,
+                                      border: `1px solid ${alpha(fMeta.color, 0.25)}`,
+                                      '& .MuiChip-label': { px: 1 }
+                                    }}
+                                  />
+                                )}
+                              </Box>
+
+                              <Typography sx={{ color: '#64748b', fontSize: '0.86rem', fontWeight: 500, lineHeight: 1.45 }}>
+                                {MATRIX_DESCRIPTIONS[`${selectedFormat}_${selectedEra}`] || fMeta.desc}
+                              </Typography>
+                            </Box>
+                          </Box>
+
+                          {/* Edit Blueprint & Framework Button */}
+                          <Button
+                            variant="contained"
+                            onClick={() => setArticleEditorMode('framework')}
+                            startIcon={<EditIcon sx={{ fontSize: 16 }} />}
+                            sx={{
+                              alignSelf: { xs: 'flex-start', md: 'center' },
+                              borderRadius: '14px',
+                              px: 3,
+                              py: 1.1,
+                              fontWeight: 800,
+                              fontSize: '0.84rem',
+                              textTransform: 'none',
+                              bgcolor: fMeta.color,
+                              color: '#fff',
+                              boxShadow: `0 4px 14px ${alpha(fMeta.color, 0.35)}`,
+                              '&:hover': {
+                                bgcolor: alpha(fMeta.color, 0.9),
+                                transform: 'translateY(-1px)',
+                                boxShadow: `0 6px 18px ${alpha(fMeta.color, 0.45)}`
+                              },
+                              transition: 'all 0.2s',
+                              position: 'relative',
+                              zIndex: 1
+                            }}
+                          >
+                            Edit Framework & Lenses
+                          </Button>
+                        </Paper>
+                      );
+                    })()}
+
                     {/* Canvas header + Reorder toggle */}
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4, flexWrap: 'wrap', gap: 2 }}>
                       <Box>
