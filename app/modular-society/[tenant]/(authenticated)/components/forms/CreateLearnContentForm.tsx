@@ -2188,7 +2188,7 @@ export default function CreateLearnContentForm({
                           {activeFormatMeta.emoji} {activeFormatMeta.label} · {activeEraMeta.label}
                         </Typography>
                         <Typography sx={{ color: '#64748b', fontSize: '0.95rem', maxWidth: 600, mx: 'auto', fontWeight: 500 }}>
-                          Tailored {currentBlueprint.length}-block SOP framework structured for African agro-intelligence.
+                          Recommended {currentBlueprint.length} blocks to structure this type of article.
                         </Typography>
                       </Box>
 
@@ -2241,41 +2241,108 @@ export default function CreateLearnContentForm({
                         })}
                       </Box>
 
-                      {/* ═══ DUAL ACTION LAUNCHER HUB ═══ */}
-                      <Box sx={{ mt: 4 }}>
-                        <ArticleActionHub
-                          format={selectedFormat}
-                          era={selectedEra}
-                          commodity={selectedCommodity}
-                          category={selectedCategory}
-                          subcategoryTitle={selectedSubObj?.title}
-                          blocksCount={blocks.length}
-                          pinnedClipsCount={currentPairNotes.length}
-                          onOpenAIDrafter={() => setIsPipelineModalOpen(true)}
-                          onLoadManualBlueprint={() => {
-                            applyFramework(selectedFormat, selectedEra);
-                            setArticleEditorMode('canvas');
-                          }}
-                          onOpenClipDrawer={() => openClipDrawer({ scope: 'commodity_category', commodity: selectedCommodity, category: selectedCategory })}
-                        />
+                      {/* ═══ START / IGNORE CALL TO ACTION CARD ═══ */}
+                      <Paper
+                        elevation={0}
+                        sx={{
+                          p: { xs: 3, md: 3.75 },
+                          borderRadius: '28px',
+                          background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.96) 0%, rgba(30, 41, 59, 0.94) 100%)',
+                          backdropFilter: 'blur(24px)',
+                          border: `1.5px solid rgba(255, 255, 255, 0.12)`,
+                          boxShadow: `0 24px 60px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15)`,
+                          display: 'flex',
+                          flexDirection: { xs: 'column', md: 'row' },
+                          alignItems: { xs: 'center', md: 'center' },
+                          justifyContent: 'space-between',
+                          gap: { xs: 2.5, md: 4 },
+                          position: 'relative',
+                          overflow: 'hidden',
+                          mt: 4,
+                          maxWidth: 800,
+                          mx: 'auto'
+                        }}
+                      >
+                        {/* Subtle Ambient Radial Glow */}
+                        <Box sx={{
+                          position: 'absolute',
+                          top: -40,
+                          right: -40,
+                          width: 200,
+                          height: 200,
+                          borderRadius: '50%',
+                          background: `radial-gradient(circle, ${alpha(activeFormatMeta.color, 0.25)} 0%, transparent 70%)`,
+                          pointerEvents: 'none',
+                          filter: 'blur(20px)'
+                        }} />
 
-                        {blocks.length > 0 && (
-                          <Box sx={{ textAlign: 'center', mt: 2 }}>
-                            <Button
-                              variant="outlined"
-                              onClick={() => setArticleEditorMode('canvas')}
-                              startIcon={<EditIcon />}
-                              sx={{
-                                borderColor: 'rgba(0,0,0,0.2)', color: '#0f172a', fontWeight: 800, px: 3.5, py: 1.25, borderRadius: '18px',
-                                fontSize: '0.95rem', bgcolor: '#fff',
-                                '&:hover': { bgcolor: 'rgba(0,0,0,0.04)', borderColor: 'rgba(0,0,0,0.35)' }
-                              }}
-                            >
-                              ✍️ Return to Working Canvas ({blocks.length} Blocks)
-                            </Button>
-                          </Box>
-                        )}
-                      </Box>
+                        {/* Left Content */}
+                        <Box sx={{ flex: 1, textAlign: { xs: 'center', md: 'left' }, position: 'relative', zIndex: 1 }}>
+                          <Typography sx={{ color: '#ffffff', fontWeight: 900, fontSize: { xs: '1.25rem', md: '1.4rem' }, letterSpacing: '-0.025em', mb: 0.75, lineHeight: 1.2 }}>
+                            Ready to draft this article?
+                          </Typography>
+                          <Typography sx={{ color: 'rgba(255, 255, 255, 0.65)', fontSize: '0.9rem', lineHeight: 1.55, maxWidth: 500, fontWeight: 450 }}>
+                            Spend 1 minute to auto-draft all {currentBlueprint.length} blocks with AgroLLM, or choose Ignore to write yourself.
+                          </Typography>
+                        </Box>
+
+                        {/* Right Buttons: Start & Ignore */}
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexShrink: 0, flexWrap: 'wrap', justifyContent: 'center', position: 'relative', zIndex: 1 }}>
+                          <Button
+                            variant="contained"
+                            onClick={() => setIsPipelineModalOpen(true)}
+                            startIcon={<AutoAwesomeIcon sx={{ fontSize: 18 }} />}
+                            sx={{
+                              bgcolor: activeFormatMeta.color,
+                              color: '#fff',
+                              fontWeight: 900,
+                              px: 3.75,
+                              py: 1.35,
+                              borderRadius: '16px',
+                              fontSize: '0.95rem',
+                              textTransform: 'none',
+                              letterSpacing: '0.01em',
+                              boxShadow: `0 8px 24px ${alpha(activeFormatMeta.color, 0.5)}`,
+                              transition: 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                              '&:hover': {
+                                bgcolor: alpha(activeFormatMeta.color, 0.9),
+                                transform: 'translateY(-2px)',
+                                boxShadow: `0 12px 30px ${alpha(activeFormatMeta.color, 0.65)}`
+                              }
+                            }}
+                          >
+                            Start
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            onClick={() => {
+                              applyFramework(selectedFormat, selectedEra);
+                              setArticleEditorMode('canvas');
+                            }}
+                            sx={{
+                              borderColor: 'rgba(255, 255, 255, 0.2)',
+                              color: 'rgba(255, 255, 255, 0.9)',
+                              fontWeight: 800,
+                              px: 3.25,
+                              py: 1.35,
+                              borderRadius: '16px',
+                              fontSize: '0.95rem',
+                              textTransform: 'none',
+                              bgcolor: 'rgba(255, 255, 255, 0.04)',
+                              backdropFilter: 'blur(10px)',
+                              transition: 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                              '&:hover': {
+                                borderColor: 'rgba(255, 255, 255, 0.45)',
+                                bgcolor: 'rgba(255, 255, 255, 0.1)',
+                                color: '#fff',
+                                transform: 'translateY(-2px)'
+                              }
+                            }}
+                          >
+                            Ignore
+                          </Button>
+                        </Box>
+                      </Paper>
                     </Box>
                   );
                 })()}
@@ -2284,110 +2351,8 @@ export default function CreateLearnContentForm({
                 {/* ═══ ACTIVE BLOCK CANVAS ═══ */}
                 {articleEditorMode === 'canvas' && (
                   <Box sx={{ animation: 'fadeIn 0.25s ease' }}>
-                    {/* ═══ ACTIVE FRAMEWORK & BLUEPRINT SUMMARY PANE ═══ */}
-                    {(() => {
-                      const fMeta = FORMAT_CONFIG[selectedFormat] || FORMAT_CONFIG.brief;
-                      const eMeta = ERA_CONFIG[selectedEra] || ERA_CONFIG.present;
-                      const activeSubObj = subcategoriesInSelectedCategory.find(s => s.id === selectedSubcategory || isSubcategoryMatch(s, selectedSubcategory));
-
-                      return (
-                        <Paper
-                          sx={{
-                            mb: 4,
-                            p: { xs: 2.25, md: 3 },
-                            borderRadius: '24px',
-                            background: `linear-gradient(135deg, ${alpha(fMeta.color, 0.08)} 0%, rgba(255,255,255,0.95) 100%)`,
-                            border: `1.5px solid ${alpha(fMeta.color, 0.25)}`,
-                            backdropFilter: 'blur(16px)',
-                            boxShadow: `0 8px 30px ${alpha(fMeta.color, 0.08)}`,
-                            display: 'flex',
-                            flexDirection: { xs: 'column', md: 'row' },
-                            alignItems: { md: 'center' },
-                            justifyContent: 'space-between',
-                            gap: 2.5,
-                            position: 'relative',
-                            overflow: 'hidden'
-                          }}
-                        >
-                          {/* Subtle background glow */}
-                          <Box sx={{
-                            position: 'absolute', top: -40, right: -40, width: 140, height: 140,
-                            borderRadius: '50%', background: `radial-gradient(circle, ${alpha(fMeta.color, 0.2)} 0%, transparent 70%)`,
-                            pointerEvents: 'none'
-                          }} />
-
-                          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, flex: 1, minWidth: 0, position: 'relative', zIndex: 1 }}>
-                            <Box sx={{
-                              width: 48, height: 48, borderRadius: '16px', flexShrink: 0,
-                              bgcolor: alpha(fMeta.color, 0.15),
-                              border: `1px solid ${alpha(fMeta.color, 0.3)}`,
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              boxShadow: `0 4px 14px ${alpha(fMeta.color, 0.18)}`
-                            }}>
-                              <SparkleIcon sx={{ fontSize: 24, color: fMeta.color }} />
-                            </Box>
-
-                            <Box sx={{ flex: 1, minWidth: 0 }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flexWrap: 'wrap', mb: 0.5 }}>
-                                <Typography sx={{ fontWeight: 900, color: '#0f172a', fontSize: '1.15rem', letterSpacing: '-0.01em' }}>
-                                  {fMeta.emoji} {fMeta.label} · {eMeta.label} Era
-                                </Typography>
-                                {activeSubObj?.title && (
-                                  <Chip
-                                    icon={<span style={{ fontSize: '0.85rem', marginLeft: '4px' }}>🎯</span>}
-                                    label={<span><strong>Focus:</strong> {(activeSubObj.title || '').replace(/\s*\(.*?\)\s*$/, '').trim()}</span>}
-                                    size="small"
-                                    sx={{
-                                      height: 24, fontSize: '0.74rem', fontWeight: 700,
-                                      bgcolor: alpha(fMeta.color, 0.12),
-                                      color: fMeta.color,
-                                      border: `1px solid ${alpha(fMeta.color, 0.25)}`,
-                                      '& .MuiChip-label': { px: 1 }
-                                    }}
-                                  />
-                                )}
-                              </Box>
-
-                              <Typography sx={{ color: '#64748b', fontSize: '0.86rem', fontWeight: 500, lineHeight: 1.45 }}>
-                                {MATRIX_DESCRIPTIONS[`${selectedFormat}_${selectedEra}`] || fMeta.desc}
-                              </Typography>
-                            </Box>
-                          </Box>
-
-                          {/* Edit Blueprint & Framework Button */}
-                          <Button
-                            variant="contained"
-                            onClick={() => setArticleEditorMode('framework')}
-                            startIcon={<EditIcon sx={{ fontSize: 15 }} />}
-                            sx={{
-                              alignSelf: { xs: 'flex-start', md: 'center' },
-                              borderRadius: '12px',
-                              px: 2.25,
-                              py: 0.8,
-                              fontWeight: 800,
-                              fontSize: '0.8rem',
-                              textTransform: 'none',
-                              bgcolor: fMeta.color,
-                              color: '#fff',
-                              boxShadow: `0 3px 10px ${alpha(fMeta.color, 0.3)}`,
-                              '&:hover': {
-                                bgcolor: alpha(fMeta.color, 0.9),
-                                transform: 'translateY(-1px)',
-                                boxShadow: `0 5px 14px ${alpha(fMeta.color, 0.4)}`
-                              },
-                              transition: 'all 0.2s',
-                              position: 'relative',
-                              zIndex: 1
-                            }}
-                          >
-                            Edit
-                          </Button>
-                        </Paper>
-                      );
-                    })()}
-
                     {/* Canvas header + Reorder toggle */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4, flexWrap: 'wrap', gap: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3.5, flexWrap: 'wrap', gap: 2 }}>
                       <Box>
                         <Typography sx={{ fontWeight: 900, fontSize: '1.6rem', color: '#0f172a', letterSpacing: '-0.02em' }}>Block Canvas</Typography>
                         <Typography sx={{ color: '#475569', fontSize: '0.95rem', mt: 0.5, fontWeight: 500 }}>
