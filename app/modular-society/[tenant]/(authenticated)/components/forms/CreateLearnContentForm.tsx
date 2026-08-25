@@ -79,6 +79,9 @@ import EcosystemJobPicker from '@/components/learn/EcosystemJobPicker';
 import { useClipNotes } from '@/context/ClipNoteContext';
 import { ClipNoteDrawer } from '../clips/ClipNoteDrawer';
 import { BlockClipAttachmentPill } from '../clips/BlockClipAttachmentPill';
+import { ArticleActionHub } from './ArticleActionHub';
+import { PipelineGenerationModal } from './PipelineGenerationModal';
+import { GeneratedBlockResult } from '@/lib/actions/articleDraftPipeline';
 
 // ----------------------------------------------------------------------
 // POLL OPTIONS EDITOR
@@ -850,10 +853,32 @@ export default function CreateLearnContentForm({
   const [showResetModal, setShowResetModal] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [mediaUrlMode, setMediaUrlMode] = useState<Record<string, boolean>>({});
+  const [isPipelineModalOpen, setIsPipelineModalOpen] = useState(false);
 
   const toggleUrlMode = (id: string) => {
     setMediaUrlMode(prev => ({ ...prev, [id]: !prev[id] }));
   };
+
+  const handlePipelineSuccess = useCallback((result: { title: string; description: string; blocks: GeneratedBlockResult[] }) => {
+    if (result.title) setTitle(result.title);
+    if (result.description) setDescription(result.description);
+    if (result.blocks && result.blocks.length > 0) {
+      const framework = getBlueprint(selectedFormat, selectedEra);
+      const hydrated = result.blocks.map((b, idx) => {
+        const sop = framework[idx];
+        return {
+          id: `block_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 6)}`,
+          type: (sop?.type || b.type) as BlockType,
+          role: sop?.role || b.role || 'Analysis',
+          sopDesc: sop?.desc || '',
+          sopHint: sop?.hint || '',
+          content: b.content || {}
+        };
+      });
+      setBlocks(hydrated);
+      setArticleEditorMode('canvas');
+    }
+  }, [selectedFormat, selectedEra]);
 
   useEffect(() => {
     if (flippedBlockId) {
@@ -2164,41 +2189,40 @@ export default function CreateLearnContentForm({
                         })}
                       </Box>
 
-                      {/* CTA to Load or Return to Canvas */}
-                      <Box sx={{ textAlign: 'center', mt: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, flexWrap: 'wrap' }}>
-                        {blocks.length > 0 && (
-                          <Button
-                            variant="outlined"
-                            onClick={() => setArticleEditorMode('canvas')}
-                            startIcon={<EditIcon />}
-                            sx={{
-                              borderColor: 'rgba(0,0,0,0.2)', color: '#0f172a', fontWeight: 800, px: 3.5, py: 1.6, borderRadius: '18px',
-                              fontSize: '1rem', bgcolor: '#fff',
-                              '&:hover': { bgcolor: 'rgba(0,0,0,0.04)', borderColor: 'rgba(0,0,0,0.35)' }
-                            }}
-                          >
-                            ✍️ Back to Canvas ({blocks.length} Blocks)
-                          </Button>
-                        )}
-                        <Button
-                          variant="contained"
-                          disabled={!isBlueprintFilled}
-                          onClick={() => applyFramework(selectedFormat, selectedEra)}
-                          startIcon={<SparkleIcon />}
-                          sx={{
-                            bgcolor: activeFormatMeta.color, color: '#fff', fontWeight: 800, px: 5, py: 1.6, borderRadius: '18px',
-                            fontSize: '1.05rem', letterSpacing: '0.01em',
-                            boxShadow: isBlueprintFilled ? `0 8px 24px ${alpha(activeFormatMeta.color, 0.4)}` : 'none',
-                            '&:disabled': {
-                              bgcolor: 'rgba(0,0,0,0.08)',
-                              color: '#94a3b8'
-                            },
-                            '&:hover': { bgcolor: alpha(activeFormatMeta.color, 0.9), transform: 'translateY(-2px)', boxShadow: `0 12px 32px ${alpha(activeFormatMeta.color, 0.5)}` },
-                            transition: 'all 0.2s',
+                      {/* ═══ DUAL ACTION LAUNCHER HUB ═══ */}
+                      <Box sx={{ mt: 4 }}>
+                        <ArticleActionHub
+                          format={selectedFormat}
+                          era={selectedEra}
+                          commodity={selectedCommodity}
+                          category={selectedCategory}
+                          subcategoryTitle={selectedSubObj?.title}
+                          blocksCount={blocks.length}
+                          pinnedClipsCount={currentPairNotes.length}
+                          onOpenAIDrafter={() => setIsPipelineModalOpen(true)}
+                          onLoadManualBlueprint={() => {
+                            applyFramework(selectedFormat, selectedEra);
+                            setArticleEditorMode('canvas');
                           }}
-                        >
-                          {blocks.length === 0 ? `🚀 Load This Framework (${currentBlueprint.length} Blocks)` : `🔄 Reload Framework (${currentBlueprint.length} Blocks)`}
-                        </Button>
+                          onOpenClipDrawer={() => openClipDrawer({ scope: 'commodity_category', commodity: selectedCommodity, category: selectedCategory })}
+                        />
+
+                        {blocks.length > 0 && (
+                          <Box sx={{ textAlign: 'center', mt: 2 }}>
+                            <Button
+                              variant="outlined"
+                              onClick={() => setArticleEditorMode('canvas')}
+                              startIcon={<EditIcon />}
+                              sx={{
+                                borderColor: 'rgba(0,0,0,0.2)', color: '#0f172a', fontWeight: 800, px: 3.5, py: 1.25, borderRadius: '18px',
+                                fontSize: '0.95rem', bgcolor: '#fff',
+                                '&:hover': { bgcolor: 'rgba(0,0,0,0.04)', borderColor: 'rgba(0,0,0,0.35)' }
+                              }}
+                            >
+                              ✍️ Return to Working Canvas ({blocks.length} Blocks)
+                            </Button>
+                          </Box>
+                        )}
                       </Box>
                     </Box>
                   );
@@ -3781,6 +3805,25 @@ export default function CreateLearnContentForm({
         currentCommodity={selectedCommodity}
         currentCategory={selectedCategory}
         currentArticleId={draftId || 'new'}
+      />
+
+      {/* ═══ 5-STEP AGROLLM DRAFTING PIPELINE MODAL ═══ */}
+      <PipelineGenerationModal
+        open={isPipelineModalOpen}
+        onClose={() => setIsPipelineModalOpen(false)}
+        commodity={selectedCommodity}
+        category={selectedCategory}
+        subcategory={subcategoriesInSelectedCategory.find(s => s.id === selectedSubcategory)?.title || selectedSubcategory}
+        format={selectedFormat}
+        era={selectedEra}
+        title={title || (activeSubcategoryObj?.title ? `${activeSubcategoryObj.title} Analysis` : 'Agribusiness Strategic Intelligence')}
+        description={description}
+        pinnedClips={currentPairNotes.map(n => n.content)}
+        onSuccess={handlePipelineSuccess}
+        onFallbackManual={() => {
+          applyFramework(selectedFormat, selectedEra);
+          setArticleEditorMode('canvas');
+        }}
       />
 
     </Box>
