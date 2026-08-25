@@ -31,7 +31,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useClipNotes } from '@/context/ClipNoteContext';
-import { BlockType, ArticleFormat, ArticleEra, BLOCK_DEFINITIONS } from '@/lib/config/articleBlueprints';
+import { BlockType, ArticleFormat, ArticleEra, FORMAT_CONFIG, ERA_CONFIG, BLOCK_DEFINITIONS } from '@/lib/config/articleBlueprints';
 import PremiumMarkdownEditor from '@/components/PremiumMarkdownEditor';
 
 // Helper to sanitize subcategory string (remove bracketed descriptions)
@@ -157,13 +157,15 @@ function parseScratchpadDocument(fullText: string, blocks: Array<{ id: string; r
   return { pairNote, articleNote, blockNotes };
 }
 
-// Helper to compile the clean nested curly bracket document
+// Helper to compile the clean nested curly bracket document with Era & Format in Article tag
 function compileScratchpadDocument(
   pairNote: string,
   articleNote: string,
   commodity: string,
   category: string,
   cleanSubcategory: string,
+  formatLabel: string,
+  eraLabel: string,
   blocks: Array<{ id: string; role?: string; type: BlockType }>,
   getBlockNoteFn: (blockId: string) => string
 ) {
@@ -175,8 +177,8 @@ function compileScratchpadDocument(
   }
 
   const articleName = cleanSubcategory
-    ? `${cleanSubcategory} (${blocks.length} SOP Blocks)`
-    : `Article Draft (${blocks.length} SOP Blocks)`;
+    ? `${cleanSubcategory} (${formatLabel || 'Brief'} · ${eraLabel || 'Present'})`
+    : `Article Draft (${formatLabel || 'Brief'} · ${eraLabel || 'Present'})`;
 
   doc += `{Article: ${articleName}}\n`;
   if (articleNote && articleNote.trim()) {
@@ -340,6 +342,8 @@ export function ScratchpadModal({
   commodity,
   category,
   subcategory = '',
+  format = 'brief',
+  era = 'present',
   currentTitle,
   blocks = [],
   onReorderBlocks
@@ -364,6 +368,8 @@ export function ScratchpadModal({
   const isInitializedRef = useRef(false);
 
   const cleanSubcategory = getCleanSubcategory(subcategory);
+  const formatMeta = FORMAT_CONFIG[format] || FORMAT_CONFIG.brief;
+  const eraMeta = ERA_CONFIG[era] || ERA_CONFIG.present;
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -421,6 +427,8 @@ export function ScratchpadModal({
         commodity,
         category,
         cleanSubcategory,
+        formatMeta.label,
+        eraMeta.label,
         blocks,
         (blockId) => blockNotesMap[blockId]?.content || parsedArticle.blockNotes[blockId] || parsedPair.blockNotes[blockId] || ''
       );
@@ -429,7 +437,7 @@ export function ScratchpadModal({
     } else {
       isInitializedRef.current = false;
     }
-  }, [open, blocks.length, commodity, category, cleanSubcategory]);
+  }, [open, blocks.length, commodity, category, cleanSubcategory, format, era]);
 
   // Debounced Auto-sync parser
   useEffect(() => {
@@ -490,6 +498,8 @@ export function ScratchpadModal({
       commodity,
       category,
       cleanSubcategory,
+      formatMeta.label,
+      eraMeta.label,
       blocks,
       (blockId) => blockNotes[blockId] || blockNotesMap[blockId]?.content || ''
     );
@@ -529,6 +539,8 @@ export function ScratchpadModal({
         commodity,
         category,
         cleanSubcategory,
+        formatMeta.label,
+        eraMeta.label,
         reordered,
         (id) => blockNotes[id] || blockNotesMap[id]?.content || ''
       );
@@ -556,6 +568,8 @@ export function ScratchpadModal({
       commodity,
       category,
       cleanSubcategory,
+      formatMeta.label,
+      eraMeta.label,
       newBlocks,
       (id) => blockNotes[id] || ''
     );
@@ -575,6 +589,8 @@ export function ScratchpadModal({
       commodity,
       category,
       cleanSubcategory,
+      formatMeta.label,
+      eraMeta.label,
       filtered,
       (id) => blockNotes[id] || ''
     );
@@ -603,7 +619,6 @@ export function ScratchpadModal({
         const lineCount = documentContent.substring(0, pos).split('\n').length;
         textarea.scrollTop = Math.max(0, (lineCount - 2) * lineHeight);
       } else if (typeof idx === 'number' && blockObj) {
-        // Tag is missing in editor! Auto-insert it cleanly
         handleRestoreSpecificBlockTag(idx, blockObj);
       }
     }
@@ -655,7 +670,7 @@ export function ScratchpadModal({
         }
       }}
     >
-      {/* ═══ TOP HEADER (Clean, Minimal, No Bracketed Subcategory, No Format/Era Text) ═══ */}
+      {/* ═══ TOP HEADER (Includes Commodity, Category, Clean Subcategory, Era & Format) ═══ */}
       <Box sx={{
         px: 3, py: 1.75,
         borderBottom: '1px solid rgba(0,0,0,0.06)',
@@ -677,7 +692,7 @@ export function ScratchpadModal({
               Research Scratchpad
             </Typography>
             <Typography sx={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 600 }}>
-              🌾 {commodity} · 💼 {category} {cleanSubcategory ? `· ${cleanSubcategory}` : ''}
+              🌾 {commodity} · 💼 {category} {cleanSubcategory ? `· ${cleanSubcategory}` : ''} · {formatMeta.label} · {eraMeta.label}
             </Typography>
           </Box>
         </Box>
@@ -795,7 +810,7 @@ export function ScratchpadModal({
             )}
           </Paper>
 
-          {/* 2. Article Container Breadcrumb (Clean Subcategory Name) */}
+          {/* 2. Article Container Breadcrumb (Clean Subcategory Name + Format & Era) */}
           <Paper
             elevation={0}
             onClick={() => handleJumpToSection('article')}
@@ -825,7 +840,7 @@ export function ScratchpadModal({
                   📄 {displayArticleTitle}
                 </Typography>
                 <Typography sx={{ fontSize: '0.64rem', color: '#64748b' }}>
-                  {blocks.length} SOP Blocks
+                  {formatMeta.label} · {eraMeta.label}
                 </Typography>
               </Box>
             </Box>
