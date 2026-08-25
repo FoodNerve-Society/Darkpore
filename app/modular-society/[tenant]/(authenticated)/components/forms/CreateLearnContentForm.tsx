@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { format } from 'date-fns';
 import { 
+  Popover, Menu, MenuItem, 
   Box, Typography, TextField, Button, Chip, 
   CircularProgress, alpha, IconButton, Tooltip,
   Dialog, DialogTitle, DialogContent, DialogActions, DialogContentText, Alert,
@@ -841,6 +842,8 @@ export default function CreateLearnContentForm({
   const [isPipelineModalOpen, setIsPipelineModalOpen] = useState(false);
   const [isStreamModalOpen, setIsStreamModalOpen] = useState(false);
   const [isPromptSidePaneOpen, setIsPromptSidePaneOpen] = useState(false);
+  const [canvasAnchorFormat, setCanvasAnchorFormat] = useState<null | HTMLElement>(null);
+  const [canvasAnchorEra, setCanvasAnchorEra] = useState<null | HTMLElement>(null);
 
   const toggleUrlMode = (id: string) => {
     setMediaUrlMode(prev => ({ ...prev, [id]: !prev[id] }));
@@ -2435,104 +2438,382 @@ export default function CreateLearnContentForm({
                           elevation={0}
                           sx={{
                             mb: 3.5,
-                            p: { xs: 2, sm: 2.5 },
-                            borderRadius: '24px',
-                            background: `linear-gradient(135deg, ${alpha(fMeta.color, 0.06)} 0%, rgba(255,255,255,0.95) 100%)`,
+                            p: { xs: 1.5, sm: 2 },
+                            borderRadius: '20px',
+                            background: 'rgba(255, 255, 255, 0.92)',
+                            backdropFilter: 'blur(20px)',
                             border: `1.5px solid ${alpha(fMeta.color, 0.25)}`,
-                            boxShadow: `0 8px 30px ${alpha(fMeta.color, 0.06)}`,
-                            backdropFilter: 'blur(16px)',
+                            boxShadow: `0 8px 28px ${alpha(fMeta.color, 0.08)}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            flexWrap: 'wrap',
+                            gap: 1.5
                           }}
                         >
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
-                            {/* Left: Article Types (Formats) */}
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
-                              <Typography sx={{ fontSize: '0.74rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#64748b', mr: 0.5 }}>
-                                Format:
+                          {/* Left: Interactive Lens Trigger Pills */}
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flexWrap: 'wrap' }}>
+                            <Typography sx={{ fontSize: '0.74rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b' }}>
+                              Active Blueprint:
+                            </Typography>
+
+                            {/* Format Trigger Pill */}
+                            <Button
+                              onClick={(e) => setCanvasAnchorFormat(e.currentTarget)}
+                              endIcon={<ArrowDownIcon sx={{ fontSize: 16, transition: 'transform 0.2s', transform: canvasAnchorFormat ? 'rotate(180deg)' : 'none' }} />}
+                              sx={{
+                                bgcolor: alpha(fMeta.color, 0.1),
+                                color: fMeta.color,
+                                fontWeight: 900,
+                                fontSize: '0.86rem',
+                                px: 2,
+                                py: 0.65,
+                                borderRadius: '14px',
+                                border: `1.5px solid ${alpha(fMeta.color, 0.35)}`,
+                                textTransform: 'none',
+                                boxShadow: `0 2px 10px ${alpha(fMeta.color, 0.12)}`,
+                                '&:hover': {
+                                  bgcolor: alpha(fMeta.color, 0.18),
+                                  borderColor: fMeta.color,
+                                  transform: 'translateY(-1px)'
+                                },
+                                transition: 'all 0.18s'
+                              }}
+                            >
+                              <span style={{ marginRight: 7, fontSize: '0.95rem' }}>{fMeta.emoji}</span>
+                              {fMeta.label}
+                            </Button>
+
+                            <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: '#94a3b8' }}>
+                              in
+                            </Typography>
+
+                            {/* Era Trigger Pill */}
+                            <Button
+                              onClick={(e) => setCanvasAnchorEra(e.currentTarget)}
+                              endIcon={<ArrowDownIcon sx={{ fontSize: 16, transition: 'transform 0.2s', transform: canvasAnchorEra ? 'rotate(180deg)' : 'none' }} />}
+                              sx={{
+                                bgcolor: alpha(eMeta.color, 0.1),
+                                color: eMeta.color,
+                                fontWeight: 900,
+                                fontSize: '0.86rem',
+                                px: 2,
+                                py: 0.65,
+                                borderRadius: '14px',
+                                border: `1.5px solid ${alpha(eMeta.color, 0.35)}`,
+                                textTransform: 'none',
+                                boxShadow: `0 2px 10px ${alpha(eMeta.color, 0.12)}`,
+                                '&:hover': {
+                                  bgcolor: alpha(eMeta.color, 0.18),
+                                  borderColor: eMeta.color,
+                                  transform: 'translateY(-1px)'
+                                },
+                                transition: 'all 0.18s'
+                              }}
+                            >
+                              <span style={{ marginRight: 7, fontSize: '0.95rem' }}>{eMeta.emoji}</span>
+                              {eMeta.label} Horizon
+                            </Button>
+                          </Box>
+
+                          {/* Right: Block Count & Blueprint Switcher */}
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                            <Chip
+                              label={`${blocks.length} SOP Blocks`}
+                              size="small"
+                              sx={{
+                                fontWeight: 800,
+                                fontSize: '0.74rem',
+                                bgcolor: alpha(fMeta.color, 0.12),
+                                color: fMeta.color,
+                                borderRadius: '10px',
+                                height: 26,
+                                border: `1px solid ${alpha(fMeta.color, 0.25)}`
+                              }}
+                            />
+
+                            <Tooltip title="View Framework Blueprint Preview">
+                              <Button
+                                size="small"
+                                onClick={() => setArticleEditorMode('framework')}
+                                startIcon={<SparkleIcon sx={{ fontSize: 15 }} />}
+                                sx={{
+                                  borderRadius: '12px',
+                                  fontSize: '0.76rem',
+                                  fontWeight: 800,
+                                  px: 1.5,
+                                  py: 0.65,
+                                  bgcolor: 'rgba(0,0,0,0.04)',
+                                  color: '#475569',
+                                  border: '1px solid rgba(0,0,0,0.08)',
+                                  textTransform: 'none',
+                                  '&:hover': { bgcolor: 'rgba(0,0,0,0.08)', color: '#0f172a' }
+                                }}
+                              >
+                                Blueprint
+                              </Button>
+                            </Tooltip>
+                          </Box>
+
+                          {/* ═══ FORMAT POPOVER (GLASSY, NO BACKDROP DIMMING) ═══ */}
+                          <Popover
+                            open={Boolean(canvasAnchorFormat)}
+                            anchorEl={canvasAnchorFormat}
+                            onClose={() => setCanvasAnchorFormat(null)}
+                            anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                            transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                            slotProps={{
+                              backdrop: {
+                                sx: {
+                                  bgcolor: 'transparent',
+                                  backdropFilter: 'none'
+                                }
+                              },
+                              paper: {
+                                elevation: 0,
+                                sx: {
+                                  mt: 1.25,
+                                  p: 1.25,
+                                  borderRadius: '22px',
+                                  width: { xs: 290, sm: 340 },
+                                  background: 'rgba(255, 255, 255, 0.96)',
+                                  backdropFilter: 'blur(28px)',
+                                  border: '1.5px solid rgba(0,0,0,0.08)',
+                                  boxShadow: '0 20px 48px -8px rgba(0,0,0,0.16), 0 8px 24px -4px rgba(0,0,0,0.08)',
+                                  animation: 'fadeIn 0.15s ease'
+                                }
+                              }
+                            }}
+                          >
+                            <Box sx={{ px: 1.5, pt: 1, pb: 1, borderBottom: '1px solid rgba(0,0,0,0.05)', mb: 0.75 }}>
+                              <Typography sx={{ fontSize: '0.72rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8' }}>
+                                Switch Article Format
                               </Typography>
+                              <Typography sx={{ fontSize: '0.74rem', color: '#64748b', mt: 0.25 }}>
+                                Reconfigures the 12 SOP blocks sequence
+                              </Typography>
+                            </Box>
+
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                               {(['brief', 'memo', 'playbook', 'comparison', 'culture'] as ArticleFormat[]).map(fmt => {
                                 const meta = FORMAT_CONFIG[fmt];
                                 const isSelected = selectedFormat === fmt;
+                                const shortDesc = FORMAT_SHORT_DESCRIPTIONS[fmt] || meta.desc;
                                 return (
-                                  <Chip
+                                  <Box
                                     key={fmt}
-                                    icon={<span style={{ fontSize: '0.85rem' }}>{meta.emoji}</span>}
-                                    label={meta.label}
-                                    size="small"
-                                    onClick={() => handleSwitchCanvasBlueprint(fmt, selectedEra)}
+                                    onClick={() => {
+                                      handleSwitchCanvasBlueprint(fmt, selectedEra);
+                                      setCanvasAnchorFormat(null);
+                                    }}
                                     sx={{
-                                      fontWeight: 800,
-                                      fontSize: '0.76rem',
+                                      p: 1.2,
+                                      borderRadius: '16px',
                                       cursor: 'pointer',
-                                      bgcolor: isSelected ? meta.color : 'rgba(0,0,0,0.04)',
-                                      color: isSelected ? '#fff' : '#475569',
-                                      border: `1.5px solid ${isSelected ? meta.color : 'rgba(0,0,0,0.08)'}`,
-                                      transition: 'all 0.2s',
-                                      boxShadow: isSelected ? `0 4px 14px ${alpha(meta.color, 0.35)}` : 'none',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'space-between',
+                                      gap: 1.5,
+                                      bgcolor: isSelected ? alpha(meta.color, 0.08) : 'transparent',
+                                      border: `1.5px solid ${isSelected ? alpha(meta.color, 0.35) : 'transparent'}`,
+                                      transition: 'all 0.18s cubic-bezier(0.2, 0.8, 0.2, 1)',
                                       '&:hover': {
-                                        bgcolor: isSelected ? meta.color : alpha(meta.color, 0.1),
-                                        color: isSelected ? '#fff' : meta.color,
-                                        borderColor: meta.color
+                                        bgcolor: alpha(meta.color, 0.12),
+                                        transform: 'translateX(3px)'
                                       }
                                     }}
-                                  />
+                                  >
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, minWidth: 0 }}>
+                                      <Box sx={{
+                                        width: 38,
+                                        height: 38,
+                                        borderRadius: '12px',
+                                        bgcolor: isSelected ? meta.color : alpha(meta.color, 0.12),
+                                        color: isSelected ? '#fff' : meta.color,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '1.1rem',
+                                        flexShrink: 0,
+                                        boxShadow: isSelected ? `0 4px 12px ${alpha(meta.color, 0.35)}` : 'none'
+                                      }}>
+                                        {meta.emoji}
+                                      </Box>
+                                      <Box sx={{ minWidth: 0 }}>
+                                        <Typography sx={{
+                                          fontWeight: 800,
+                                          fontSize: '0.88rem',
+                                          color: isSelected ? meta.color : '#0f172a',
+                                          lineHeight: 1.2
+                                        }}>
+                                          {meta.label}
+                                        </Typography>
+                                        <Typography sx={{
+                                          fontSize: '0.72rem',
+                                          color: '#64748b',
+                                          mt: 0.25,
+                                          whiteSpace: 'nowrap',
+                                          overflow: 'hidden',
+                                          textOverflow: 'ellipsis'
+                                        }}>
+                                          {shortDesc}
+                                        </Typography>
+                                      </Box>
+                                    </Box>
+                                    {isSelected && (
+                                      <Box sx={{
+                                        width: 22,
+                                        height: 22,
+                                        borderRadius: '50%',
+                                        bgcolor: meta.color,
+                                        color: '#fff',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        flexShrink: 0
+                                      }}>
+                                        <CheckIcon sx={{ fontSize: 14 }} />
+                                      </Box>
+                                    )}
+                                  </Box>
                                 );
                               })}
                             </Box>
+                          </Popover>
 
-                            {/* Right: Temporal Eras + Blueprint Link */}
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
-                              <Typography sx={{ fontSize: '0.74rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#64748b', mr: 0.5 }}>
-                                Era:
+                          {/* ═══ ERA POPOVER (GLASSY, NO BACKDROP DIMMING) ═══ */}
+                          <Popover
+                            open={Boolean(canvasAnchorEra)}
+                            anchorEl={canvasAnchorEra}
+                            onClose={() => setCanvasAnchorEra(null)}
+                            anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                            transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                            slotProps={{
+                              backdrop: {
+                                sx: {
+                                  bgcolor: 'transparent',
+                                  backdropFilter: 'none'
+                                }
+                              },
+                              paper: {
+                                elevation: 0,
+                                sx: {
+                                  mt: 1.25,
+                                  p: 1.25,
+                                  borderRadius: '22px',
+                                  width: { xs: 290, sm: 340 },
+                                  background: 'rgba(255, 255, 255, 0.96)',
+                                  backdropFilter: 'blur(28px)',
+                                  border: '1.5px solid rgba(0,0,0,0.08)',
+                                  boxShadow: '0 20px 48px -8px rgba(0,0,0,0.16), 0 8px 24px -4px rgba(0,0,0,0.08)',
+                                  animation: 'fadeIn 0.15s ease'
+                                }
+                              }
+                            }}
+                          >
+                            <Box sx={{ px: 1.5, pt: 1, pb: 1, borderBottom: '1px solid rgba(0,0,0,0.05)', mb: 0.75 }}>
+                              <Typography sx={{ fontSize: '0.72rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8' }}>
+                                Select Temporal Horizon
                               </Typography>
+                              <Typography sx={{ fontSize: '0.74rem', color: '#64748b', mt: 0.25 }}>
+                                Shifts narrative timeframe & analytical depth
+                              </Typography>
+                            </Box>
+
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                               {(['past', 'present', 'future'] as ArticleEra[]).map(era => {
                                 const meta = ERA_CONFIG[era];
                                 const isSelected = selectedEra === era;
+                                const eraDesc = era === 'past' ? 'Historical context, antecedents & root causes'
+                                  : era === 'present' ? 'Live realities, market dynamics & operational bottlenecks'
+                                  : 'Strategic foresight, emerging trends & next-gen playbook';
                                 return (
-                                  <Chip
+                                  <Box
                                     key={era}
-                                    icon={<span style={{ fontSize: '0.85rem' }}>{meta.emoji}</span>}
-                                    label={meta.label}
-                                    size="small"
-                                    onClick={() => handleSwitchCanvasBlueprint(selectedFormat, era)}
+                                    onClick={() => {
+                                      handleSwitchCanvasBlueprint(selectedFormat, era);
+                                      setCanvasAnchorEra(null);
+                                    }}
                                     sx={{
-                                      fontWeight: 800,
-                                      fontSize: '0.76rem',
+                                      p: 1.2,
+                                      borderRadius: '16px',
                                       cursor: 'pointer',
-                                      bgcolor: isSelected ? meta.color : 'rgba(0,0,0,0.04)',
-                                      color: isSelected ? '#fff' : '#475569',
-                                      border: `1.5px solid ${isSelected ? meta.color : 'rgba(0,0,0,0.08)'}`,
-                                      transition: 'all 0.2s',
-                                      boxShadow: isSelected ? `0 4px 14px ${alpha(meta.color, 0.35)}` : 'none',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'space-between',
+                                      gap: 1.5,
+                                      bgcolor: isSelected ? alpha(meta.color, 0.08) : 'transparent',
+                                      border: `1.5px solid ${isSelected ? alpha(meta.color, 0.35) : 'transparent'}`,
+                                      transition: 'all 0.18s cubic-bezier(0.2, 0.8, 0.2, 1)',
                                       '&:hover': {
-                                        bgcolor: isSelected ? meta.color : alpha(meta.color, 0.1),
-                                        color: isSelected ? '#fff' : meta.color,
-                                        borderColor: meta.color
+                                        bgcolor: alpha(meta.color, 0.12),
+                                        transform: 'translateX(3px)'
                                       }
                                     }}
-                                  />
+                                  >
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, minWidth: 0 }}>
+                                      <Box sx={{
+                                        width: 38,
+                                        height: 38,
+                                        borderRadius: '12px',
+                                        bgcolor: isSelected ? meta.color : alpha(meta.color, 0.12),
+                                        color: isSelected ? '#fff' : meta.color,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '1.1rem',
+                                        flexShrink: 0,
+                                        boxShadow: isSelected ? `0 4px 12px ${alpha(meta.color, 0.35)}` : 'none'
+                                      }}>
+                                        {meta.emoji}
+                                      </Box>
+                                      <Box sx={{ minWidth: 0 }}>
+                                        <Typography sx={{
+                                          fontWeight: 800,
+                                          fontSize: '0.88rem',
+                                          color: isSelected ? meta.color : '#0f172a',
+                                          lineHeight: 1.2
+                                        }}>
+                                          {meta.label} Horizon
+                                        </Typography>
+                                        <Typography sx={{
+                                          fontSize: '0.72rem',
+                                          color: '#64748b',
+                                          mt: 0.25,
+                                          whiteSpace: 'nowrap',
+                                          overflow: 'hidden',
+                                          textOverflow: 'ellipsis'
+                                        }}>
+                                          {eraDesc}
+                                        </Typography>
+                                      </Box>
+                                    </Box>
+                                    {isSelected && (
+                                      <Box sx={{
+                                        width: 22,
+                                        height: 22,
+                                        borderRadius: '50%',
+                                        bgcolor: meta.color,
+                                        color: '#fff',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        flexShrink: 0
+                                      }}>
+                                        <CheckIcon sx={{ fontSize: 14 }} />
+                                      </Box>
+                                    )}
+                                  </Box>
                                 );
                               })}
-
-                              <Tooltip title="View Framework Blueprint Preview">
-                                <IconButton
-                                  size="small"
-                                  onClick={() => setArticleEditorMode('framework')}
-                                  sx={{
-                                    ml: 0.5,
-                                    bgcolor: 'rgba(0,0,0,0.04)',
-                                    color: '#475569',
-                                    border: '1px solid rgba(0,0,0,0.08)',
-                                    '&:hover': { bgcolor: 'rgba(0,0,0,0.08)', color: '#0f172a' }
-                                  }}
-                                >
-                                  <SparkleIcon sx={{ fontSize: 16 }} />
-                                </IconButton>
-                              </Tooltip>
                             </Box>
-                          </Box>
+                          </Popover>
                         </Paper>
                       );
                     })()}
+
+
+
 
                     {/* Canvas header + Reorder toggle */}
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3.5, flexWrap: 'wrap', gap: 2 }}>
@@ -3610,7 +3891,6 @@ export default function CreateLearnContentForm({
                                       } : blk));
                                     }}
                                     onUpdateField={(key, val) => updateBlock(b.id, key, val)}
-                                     onUpdateField={(key, val) => updateBlock(b.id, key, val)}
                                      onClear={() => {
                                        setBlocks(blocks.map(blk => blk.id === b.id ? {
                                          ...blk,
