@@ -84,6 +84,7 @@ import { BlockClipAttachmentPill } from '../clips/BlockClipAttachmentPill';
 import { ArticleActionHub } from './ArticleActionHub';
 import { PipelineGenerationModal } from './PipelineGenerationModal';
 import { StreamDraftingModal } from './StreamDraftingModal';
+import { ScratchpadModal } from './ScratchpadModal';
 import { EditorialPromptSidePane } from './EditorialPromptSidePane';
 import { GeneratedBlockResult } from '@/lib/actions/articleDraftPipeline';
 import { ParsedStreamBlock } from '@/lib/utils/articleStreamParser';
@@ -842,6 +843,7 @@ export default function CreateLearnContentForm({
   const [isPipelineModalOpen, setIsPipelineModalOpen] = useState(false);
   const [isStreamModalOpen, setIsStreamModalOpen] = useState(false);
   const [isPromptSidePaneOpen, setIsPromptSidePaneOpen] = useState(false);
+  const [isScratchpadOpen, setIsScratchpadOpen] = useState(false);
   const [canvasAnchorFormat, setCanvasAnchorFormat] = useState<null | HTMLElement>(null);
   const [canvasAnchorEra, setCanvasAnchorEra] = useState<null | HTMLElement>(null);
 
@@ -1498,79 +1500,8 @@ export default function CreateLearnContentForm({
                         />
                       </Box>
 
-                      {/* Right Controls: Prompts + Stream + Clip Notes + Mode Switcher */}
+                      {/* Right Controls: Mode Switcher */}
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        {/* Editorial Prompt Terminal Trigger */}
-                        <Tooltip title="Open Editorial Prompt Engine (Live Variables & Block Re-prompter)">
-                          <Chip 
-                            icon={<span style={{ fontSize: '0.85rem' }}>⚡</span>}
-                            label="Prompts"
-                            onClick={() => setIsPromptSidePaneOpen(true)}
-                            size="small" 
-                            sx={{ 
-                              bgcolor: 'rgba(0,0,0,0.04)', 
-                              color: '#334155', 
-                              fontWeight: 800, 
-                              border: '1.5px solid rgba(0,0,0,0.08)',
-                              px: 1.25, height: 28, fontSize: '0.74rem', letterSpacing: '0.02em',
-                              cursor: 'pointer',
-                              transition: 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                              '&:hover': {
-                                transform: 'translateY(-1px)',
-                                bgcolor: 'rgba(0,0,0,0.08)',
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.06)'
-                              }
-                            }} 
-                          />
-                        </Tooltip>
-
-                        {/* Stream Markdown Editor Trigger */}
-                        <Tooltip title="Open Stream Editor (Continuous Markdown & Token Ingestion)">
-                          <Chip 
-                            icon={<span style={{ fontSize: '0.85rem' }}>📝</span>}
-                            label="Stream"
-                            onClick={() => setIsStreamModalOpen(true)}
-                            size="small" 
-                            sx={{ 
-                              bgcolor: 'rgba(0,0,0,0.04)', 
-                              color: '#334155', 
-                              fontWeight: 800, 
-                              border: '1.5px solid rgba(0,0,0,0.08)',
-                              px: 1.25, height: 28, fontSize: '0.74rem', letterSpacing: '0.02em',
-                              cursor: 'pointer',
-                              transition: 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                              '&:hover': {
-                                transform: 'translateY(-1px)',
-                                bgcolor: 'rgba(0,0,0,0.08)',
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.06)'
-                              }
-                            }} 
-                          />
-                        </Tooltip>
-
-                        <Tooltip title={currentPairNotes.length > 0 ? `View ${currentPairNotes.length} pinned note(s) for this topic` : "Open Clip Notes Drawer"}>
-                          <Chip 
-                            icon={<span style={{ fontSize: '0.85rem' }}>📎</span>}
-                            label={currentPairNotes.length > 0 ? `Notes (${currentPairNotes.length})` : "Clip Notes"}
-                            onClick={() => openClipDrawer({ scope: 'commodity_category', commodity: selectedCommodity, category: selectedCategory })}
-                            size="small" 
-                            sx={{ 
-                              bgcolor: currentPairNotes.length > 0 ? alpha('#059669', 0.14) : 'rgba(0,0,0,0.04)', 
-                              color: currentPairNotes.length > 0 ? '#059669' : '#475569', 
-                              fontWeight: 800, 
-                              border: `1.5px solid ${currentPairNotes.length > 0 ? alpha('#059669', 0.35) : 'rgba(0,0,0,0.08)'}`,
-                              px: 1.25, height: 28, fontSize: '0.74rem', letterSpacing: '0.02em',
-                              cursor: 'pointer',
-                              transition: 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                              '&:hover': {
-                                transform: 'translateY(-1px)',
-                                bgcolor: currentPairNotes.length > 0 ? alpha('#059669', 0.22) : 'rgba(0,0,0,0.08)',
-                                boxShadow: `0 4px 12px ${alpha('#059669', 0.2)}`
-                              }
-                            }} 
-                          />
-                        </Tooltip>
-
                         <Tooltip title={articleEditorMode === 'framework' ? "Viewing Framework Configurator" : "Tap to Switch to Framework Configurator"}>
                           <Chip 
                             icon={draftId && draftId !== 'new' ? <AccessTimeIcon sx={{ fontSize: 14 }} /> : <AddIcon sx={{ fontSize: 14 }} />}
@@ -2366,7 +2297,7 @@ export default function CreateLearnContentForm({
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexShrink: 0, flexWrap: 'wrap', justifyContent: 'center', position: 'relative', zIndex: 1 }}>
                           <Button
                             variant="contained"
-                            onClick={() => setIsPipelineModalOpen(true)}
+                            onClick={() => setIsPromptSidePaneOpen(true)}
                             startIcon={<AutoAwesomeIcon sx={{ fontSize: 18 }} />}
                             sx={{
                               bgcolor: activeFormatMeta.color,
@@ -2823,12 +2754,63 @@ export default function CreateLearnContentForm({
                           Tap a card to flip it and edit. <strong style={{ color: '#0f172a' }}>{blocks.filter(b => isBlockFilled(b)).length}</strong> of <strong style={{ color: '#0f172a' }}>{blocks.length}</strong> blocks filled.
                         </Typography>
                       </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                        {/* Scratchpad Trigger */}
+                        <Button
+                          startIcon={<span style={{ fontSize: '1.05rem' }}>📝</span>}
+                          onClick={() => setIsScratchpadOpen(true)}
+                          size="medium"
+                          sx={{
+                            color: '#059669',
+                            fontWeight: 800,
+                            fontSize: '0.82rem',
+                            textTransform: 'none',
+                            borderRadius: '14px',
+                            px: 2.2,
+                            py: 0.9,
+                            border: `1.5px solid ${alpha('#059669', 0.35)}`,
+                            bgcolor: alpha('#059669', 0.08),
+                            backdropFilter: 'blur(8px)',
+                            boxShadow: `0 2px 10px ${alpha('#059669', 0.1)}`,
+                            '&:hover': { bgcolor: alpha('#059669', 0.16), borderColor: '#059669', transform: 'translateY(-1px)' },
+                            transition: 'all 0.2s',
+                          }}
+                        >
+                          Scratchpad
+                        </Button>
+
+                        {/* Prompts Trigger */}
+                        <Tooltip title="Open Editorial Prompt Terminal & Block Re-prompter">
+                          <Button
+                            startIcon={<SparkleIcon sx={{ fontSize: 16 }} />}
+                            onClick={() => setIsPromptSidePaneOpen(true)}
+                            size="medium"
+                            sx={{
+                              color: '#475569',
+                              fontWeight: 700,
+                              fontSize: '0.82rem',
+                              textTransform: 'none',
+                              borderRadius: '14px',
+                              px: 2,
+                              py: 0.9,
+                              border: '1.5px solid rgba(0,0,0,0.08)',
+                              bgcolor: 'rgba(255,255,255,0.6)',
+                              backdropFilter: 'blur(8px)',
+                              '&:hover': { bgcolor: 'rgba(255,255,255,0.9)', color: '#0f172a', borderColor: 'rgba(0,0,0,0.18)' },
+                              transition: 'all 0.2s',
+                            }}
+                          >
+                            Prompts
+                          </Button>
+                        </Tooltip>
+
+                        {/* Reset Builder */}
                         <Tooltip title="Reset Builder">
                           <IconButton onClick={() => setShowResetModal(true)} sx={{ color: '#ef4444', bgcolor: 'rgba(239,68,68,0.05)', '&:hover': { bgcolor: 'rgba(239,68,68,0.1)' } }}>
                             <ReplayIcon />
                           </IconButton>
                         </Tooltip>
+
                         {reorderUnlocked && (
                           <Button
                             onClick={() => setShowResetModal(true)}
@@ -2838,6 +2820,8 @@ export default function CreateLearnContentForm({
                             Reset Order
                           </Button>
                         )}
+
+                        {/* Reorder Button */}
                         <Button
                           startIcon={reorderUnlocked ? <LockOpenIcon sx={{ fontSize: 18 }} /> : <LockIcon sx={{ fontSize: 18 }} />}
                           onClick={() => {
@@ -2849,20 +2833,20 @@ export default function CreateLearnContentForm({
                           }}
                           size="medium"
                           sx={{
-                          color: reorderUnlocked ? ACCENT : '#475569',
-                          fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.06em',
-                          borderRadius: '14px', px: 2.5, py: 1,
-                          border: `2px solid ${reorderUnlocked ? alpha(ACCENT, 0.5) : 'rgba(0,0,0,0.1)'}`,
-                          bgcolor: reorderUnlocked ? alpha(ACCENT, 0.05) : 'rgba(255,255,255,0.5)',
-                          backdropFilter: 'blur(8px)',
-                          '&:hover': { bgcolor: reorderUnlocked ? alpha(ACCENT, 0.1) : 'rgba(255,255,255,0.8)', borderColor: reorderUnlocked ? ACCENT : 'rgba(0,0,0,0.2)' },
-                          transition: 'all 0.2s',
-                        }}
-                      >
-                        {reorderUnlocked ? 'Lock Order' : 'Reorder'}
-                      </Button>
+                            color: reorderUnlocked ? ACCENT : '#475569',
+                            fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.06em',
+                            borderRadius: '14px', px: 2.5, py: 1,
+                            border: `2px solid ${reorderUnlocked ? alpha(ACCENT, 0.5) : 'rgba(0,0,0,0.1)'}`,
+                            bgcolor: reorderUnlocked ? alpha(ACCENT, 0.05) : 'rgba(255,255,255,0.5)',
+                            backdropFilter: 'blur(8px)',
+                            '&:hover': { bgcolor: reorderUnlocked ? alpha(ACCENT, 0.1) : 'rgba(255,255,255,0.8)', borderColor: reorderUnlocked ? ACCENT : 'rgba(0,0,0,0.2)' },
+                            transition: 'all 0.2s',
+                          }}
+                        >
+                          {reorderUnlocked ? 'Lock Order' : 'Reorder'}
+                        </Button>
+                      </Box>
                     </Box>
-                  </Box>
 
                   {/* Block cards */}
                     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -4291,6 +4275,23 @@ export default function CreateLearnContentForm({
       />
 
       {/* ═══ EDITORIAL PROMPT SYSTEM & BLOCK REFINER SIDE PANE ═══ */}
+      
+      {/* ═══ SCRATCHPAD MODAL (80vw x 80vh) ═══ */}
+      <ScratchpadModal
+        open={isScratchpadOpen}
+        onClose={() => setIsScratchpadOpen(false)}
+        commodity={selectedCommodity}
+        category={selectedCategory}
+        currentTitle={title}
+        blocks={blocks}
+        onInsertToBlock={(blockId, text) => {
+          setBlocks(blocks.map(b => b.id === blockId ? {
+            ...b,
+            content: { ...b.content, text: b.content.text ? `${b.content.text}\n\n${text}` : text }
+          } : b));
+        }}
+      />
+
       <EditorialPromptSidePane
         open={isPromptSidePaneOpen}
         onClose={() => setIsPromptSidePaneOpen(false)}
