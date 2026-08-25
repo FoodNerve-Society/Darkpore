@@ -85,6 +85,7 @@ import { ArticleActionHub } from './ArticleActionHub';
 import { PipelineGenerationModal } from './PipelineGenerationModal';
 import { StreamDraftingModal } from './StreamDraftingModal';
 import { ScratchpadModal } from './ScratchpadModal';
+import { BlockScratchpadModal } from './BlockScratchpadModal';
 import { EditorialPromptSidePane } from './EditorialPromptSidePane';
 import { GeneratedBlockResult } from '@/lib/actions/articleDraftPipeline';
 import { ParsedStreamBlock } from '@/lib/utils/articleStreamParser';
@@ -559,7 +560,7 @@ export default function CreateLearnContentForm({
   const blueprintFrontCardRef = useRef<HTMLDivElement>(null);
   const blueprintBackCardRef = useRef<HTMLDivElement>(null);
 
-  const { openClipDrawer, getNotesForPair } = useClipNotes();
+  const { openClipDrawer, getNotesForPair, getNotesForBlock } = useClipNotes();
   const currentPairNotes = useMemo(() => {
     if (!selectedCommodity || !selectedCategory) return [];
     return getNotesForPair(selectedCommodity, selectedCategory);
@@ -844,6 +845,7 @@ export default function CreateLearnContentForm({
   const [isStreamModalOpen, setIsStreamModalOpen] = useState(false);
   const [isPromptSidePaneOpen, setIsPromptSidePaneOpen] = useState(false);
   const [isScratchpadOpen, setIsScratchpadOpen] = useState(false);
+  const [activeScratchpadBlock, setActiveScratchpadBlock] = useState<{ block: any, index: number } | null>(null);
   const [canvasAnchorFormat, setCanvasAnchorFormat] = useState<null | HTMLElement>(null);
   const [canvasAnchorEra, setCanvasAnchorEra] = useState<null | HTMLElement>(null);
 
@@ -2234,12 +2236,49 @@ export default function CreateLearnContentForm({
                                     <Typography sx={{ fontWeight: 800, color: '#0f172a', fontSize: '1rem' }}>{sop.role}</Typography>
                                     <Chip label={bDef.label} size="small" sx={{ height: 20, fontSize: '0.68rem', bgcolor: alpha(bDef.color, 0.15), color: bDef.color, fontWeight: 800 }} />
                                   </Box>
-                                  <BlockClipAttachmentPill
-                                    blockRole={sop.type}
-                                    commodity={selectedCommodity}
-                                    category={selectedCategory}
-                                    articleId={draftId || 'new'}
-                                  />
+                                  {/* Block Scratchpad Trigger */}
+                                {(() => {
+                                  const blockNotesList = getNotesForBlock(sop.role || sop.type, draftId || 'new');
+                                  const count = blockNotesList.length;
+                                  return (
+                                    <Tooltip title="Open Block Scratchpad & Purpose Directive">
+                                      <Chip
+                                        icon={<span style={{ fontSize: '0.82rem' }}>📝</span>}
+                                        label={count > 0 ? `Notes (${count})` : "Scratchpad"}
+                                        size="small"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setActiveScratchpadBlock({
+                                            block: {
+                                              id: `blueprint_${idx}`,
+                                              type: sop.type as BlockType,
+                                              role: sop.role,
+                                              sopDesc: sop.desc,
+                                              sopHint: sop.hint,
+                                              content: {}
+                                            },
+                                            index: idx
+                                          });
+                                        }}
+                                        sx={{
+                                          height: 26,
+                                          fontSize: '0.72rem',
+                                          fontWeight: 800,
+                                          bgcolor: count > 0 ? alpha('#16a34a', 0.14) : 'rgba(0,0,0,0.04)',
+                                          color: count > 0 ? '#16a34a' : '#475569',
+                                          border: `1.5px solid ${count > 0 ? alpha('#16a34a', 0.35) : 'rgba(0,0,0,0.08)'}`,
+                                          cursor: 'pointer',
+                                          transition: 'all 0.18s',
+                                          '&:hover': {
+                                            bgcolor: count > 0 ? alpha('#16a34a', 0.22) : 'rgba(0,0,0,0.08)',
+                                            transform: 'translateY(-1px)',
+                                            borderColor: '#16a34a'
+                                          }
+                                        }}
+                                      />
+                                    </Tooltip>
+                                  );
+                                })()}
                                 </Box>
                                 <Typography sx={{ color: '#475569', fontSize: '0.85rem', lineHeight: 1.4 }}>{sop.desc}</Typography>
                               </PremiumCard>
@@ -2952,6 +2991,23 @@ export default function CreateLearnContentForm({
                                         <DragIndicatorIcon />
                                       </Box>
                                     )}
+                                    <Tooltip title="Open Block Scratchpad">
+                                      <IconButton
+                                        size="small"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setActiveScratchpadBlock({ block: b, index: i });
+                                        }}
+                                        sx={{
+                                          bgcolor: filled ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.04)',
+                                          color: filled ? '#fff' : '#475569',
+                                          border: filled ? '1px solid rgba(255,255,255,0.3)' : '1px solid rgba(0,0,0,0.08)',
+                                          '&:hover': { bgcolor: alpha('#16a34a', 0.15), color: '#16a34a' }
+                                        }}
+                                      >
+                                        <span style={{ fontSize: '0.85rem' }}>📝</span>
+                                      </IconButton>
+                                    </Tooltip>
                                     <IconButton size="small" onClick={() => removeBlock(b.id)} sx={{ bgcolor: filled ? 'rgba(255,255,255,0.15)' : 'rgba(239,68,68,0.05)', color: filled ? '#fff' : '#ef4444', border: filled ? '1px solid rgba(255,255,255,0.3)' : '1px solid rgba(239,68,68,0.1)', '&:hover': { bgcolor: '#ef4444', color: '#fff', borderColor: '#ef4444' } }}>
                                       <DeleteIcon sx={{ fontSize: 18 }} />
                                     </IconButton>
@@ -2991,13 +3047,39 @@ export default function CreateLearnContentForm({
                                     e.g. &ldquo;{b.sopHint}&rdquo;
                                   </Typography>
                                 )}
-                                <BlockClipAttachmentPill
-                                  blockRole={b.type}
-                                  blockContent={b.content ? (typeof b.content === 'string' ? b.content : JSON.stringify(b.content)) : undefined}
-                                  commodity={selectedCommodity}
-                                  category={selectedCategory}
-                                  articleId={draftId || 'new'}
-                                />
+                                {/* Block Scratchpad Trigger */}
+                                {(() => {
+                                  const blockNotesList = getNotesForBlock(b.role || b.type, draftId || 'new');
+                                  const count = blockNotesList.length;
+                                  return (
+                                    <Tooltip title="Open Block Scratchpad & Purpose Directive">
+                                      <Chip
+                                        icon={<span style={{ fontSize: '0.82rem' }}>📝</span>}
+                                        label={count > 0 ? `Notes (${count})` : "Scratchpad"}
+                                        size="small"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setActiveScratchpadBlock({ block: b, index: i });
+                                        }}
+                                        sx={{
+                                          height: 26,
+                                          fontSize: '0.72rem',
+                                          fontWeight: 800,
+                                          bgcolor: count > 0 ? alpha('#16a34a', 0.14) : 'rgba(0,0,0,0.04)',
+                                          color: count > 0 ? '#16a34a' : '#475569',
+                                          border: `1.5px solid ${count > 0 ? alpha('#16a34a', 0.35) : 'rgba(0,0,0,0.08)'}`,
+                                          cursor: 'pointer',
+                                          transition: 'all 0.18s',
+                                          '&:hover': {
+                                            bgcolor: count > 0 ? alpha('#16a34a', 0.22) : 'rgba(0,0,0,0.08)',
+                                            transform: 'translateY(-1px)',
+                                            borderColor: '#16a34a'
+                                          }
+                                        }}
+                                      />
+                                    </Tooltip>
+                                  );
+                                })()}
                                 <Tooltip title="Re-draft or refine this block with AgroLLM">
                                   <Chip
                                     icon={<AutoAwesomeIcon sx={{ fontSize: 13, color: `${color} !important` }} />}
@@ -4277,6 +4359,26 @@ export default function CreateLearnContentForm({
       {/* ═══ EDITORIAL PROMPT SYSTEM & BLOCK REFINER SIDE PANE ═══ */}
       
       {/* ═══ SCRATCHPAD MODAL (80vw x 80vh) ═══ */}
+      
+      {/* ═══ BLOCK SCRATCHPAD MODAL ═══ */}
+      <BlockScratchpadModal
+        open={Boolean(activeScratchpadBlock)}
+        onClose={() => setActiveScratchpadBlock(null)}
+        block={activeScratchpadBlock?.block || null}
+        blockIndex={activeScratchpadBlock?.index || 0}
+        format={selectedFormat}
+        era={selectedEra}
+        commodity={selectedCommodity}
+        category={selectedCategory}
+        currentTitle={title}
+        onInsertToBlock={(blockId, text) => {
+          setBlocks(blocks.map(b => b.id === blockId ? {
+            ...b,
+            content: { ...b.content, text: b.content.text ? `${b.content.text}\n\n${text}` : text }
+          } : b));
+        }}
+      />
+
       <ScratchpadModal
         open={isScratchpadOpen}
         onClose={() => setIsScratchpadOpen(false)}
