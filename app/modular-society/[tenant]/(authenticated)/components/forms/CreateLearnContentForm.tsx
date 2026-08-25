@@ -43,6 +43,7 @@ import {
   Image as ImageIcon,
   Build as BuildIcon,
   Edit as EditIcon,
+  AutoAwesome as AutoAwesomeIcon,
 } from '@mui/icons-material';
 import { keyframes } from '@mui/system';
 import {
@@ -81,7 +82,10 @@ import { ClipNoteDrawer } from '../clips/ClipNoteDrawer';
 import { BlockClipAttachmentPill } from '../clips/BlockClipAttachmentPill';
 import { ArticleActionHub } from './ArticleActionHub';
 import { PipelineGenerationModal } from './PipelineGenerationModal';
+import { StreamDraftingModal } from './StreamDraftingModal';
+import { EditorialPromptSidePane } from './EditorialPromptSidePane';
 import { GeneratedBlockResult } from '@/lib/actions/articleDraftPipeline';
+import { ParsedStreamBlock } from '@/lib/utils/articleStreamParser';
 
 // ----------------------------------------------------------------------
 // POLL OPTIONS EDITOR
@@ -300,31 +304,12 @@ import {
   FORMAT_CONFIG, 
   ERA_CONFIG, 
   MATRIX_DESCRIPTIONS,
+  BLOCK_DEFINITIONS,
   ArticleFormat, 
   ArticleEra, 
   SopBlock, 
   BlockType 
 } from '@/lib/config/articleBlueprints';
-
-const BLOCK_DEFINITIONS: Record<BlockType, { label: string, color: string }> = {
-  subheading: { label: 'Spiky Title', color: '#64748b' },
-  exec_summary: { label: 'Key Takeaways', color: '#10b981' },
-  highlight_card: { label: 'Big Stat Card', color: '#8b5cf6' },
-  core_interactive: { label: 'Main Analysis', color: '#3b82f6' },
-  media: { label: 'Evidence Gallery', color: '#0ea5e9' },
-  myth_fact: { label: 'Myth vs Reality', color: '#ef4444' },
-  pull_quote: { label: 'Strong Quote', color: '#f59e0b' },
-  live_poll: { label: 'Quick Poll', color: '#d946ef' },
-  data_embed: { label: 'Embedded Data', color: '#14b8a6' },
-  strategic_directive: { label: 'Strategic Directive', color: '#111827' },
-  call_to_action: { label: 'Call to Action', color: '#f59e0b' },
-  comparison_matrix: { label: 'Showdown Table', color: '#8b5cf6' },
-  unit_economics_card: { label: 'Financial Dashboard', color: '#10b981' },
-  protocol_steps: { label: 'Action Checklist', color: '#f59e0b' },
-  timeline_tracker: { label: 'Timeline Tracker', color: '#3b82f6' },
-  persona_dossier: { label: 'Ground Dossier', color: '#ec4899' },
-  ecosystem_embed: { label: 'Ecosystem Bridge', color: '#6366f1' },
-};
 
 const FORMAT_SHORT_DESCRIPTIONS: Record<ArticleFormat, string> = {
   brief: "Systemic market bottlenecks and real-time forces.",
@@ -854,6 +839,8 @@ export default function CreateLearnContentForm({
   const [previewOpen, setPreviewOpen] = useState(false);
   const [mediaUrlMode, setMediaUrlMode] = useState<Record<string, boolean>>({});
   const [isPipelineModalOpen, setIsPipelineModalOpen] = useState(false);
+  const [isStreamModalOpen, setIsStreamModalOpen] = useState(false);
+  const [isPromptSidePaneOpen, setIsPromptSidePaneOpen] = useState(false);
 
   const toggleUrlMode = (id: string) => {
     setMediaUrlMode(prev => ({ ...prev, [id]: !prev[id] }));
@@ -879,6 +866,23 @@ export default function CreateLearnContentForm({
       setArticleEditorMode('canvas');
     }
   }, [selectedFormat, selectedEra]);
+
+  const handleStreamSync = useCallback((payload: { title?: string; description?: string; blocks: ParsedStreamBlock[] }) => {
+    if (payload.title) setTitle(payload.title);
+    if (payload.description) setDescription(payload.description);
+    if (payload.blocks && payload.blocks.length > 0) {
+      const hydrated = payload.blocks.map((b, idx) => ({
+        id: `block_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 6)}`,
+        type: b.type,
+        role: b.role,
+        sopDesc: b.sopDesc || '',
+        sopHint: '',
+        content: b.content || {}
+      }));
+      setBlocks(hydrated);
+      setArticleEditorMode('canvas');
+    }
+  }, []);
 
   useEffect(() => {
     if (flippedBlockId) {
@@ -1417,8 +1421,56 @@ export default function CreateLearnContentForm({
                         />
                       </Box>
 
-                      {/* Right Controls: Clip Notes + Mode Switcher */}
+                      {/* Right Controls: Prompts + Stream + Clip Notes + Mode Switcher */}
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        {/* Editorial Prompt Terminal Trigger */}
+                        <Tooltip title="Open Editorial Prompt Engine (Live Variables & Block Re-prompter)">
+                          <Chip 
+                            icon={<span style={{ fontSize: '0.85rem' }}>⚡</span>}
+                            label="Prompts"
+                            onClick={() => setIsPromptSidePaneOpen(true)}
+                            size="small" 
+                            sx={{ 
+                              bgcolor: 'rgba(0,0,0,0.04)', 
+                              color: '#334155', 
+                              fontWeight: 800, 
+                              border: '1.5px solid rgba(0,0,0,0.08)',
+                              px: 1.25, height: 28, fontSize: '0.74rem', letterSpacing: '0.02em',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                              '&:hover': {
+                                transform: 'translateY(-1px)',
+                                bgcolor: 'rgba(0,0,0,0.08)',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.06)'
+                              }
+                            }} 
+                          />
+                        </Tooltip>
+
+                        {/* Stream Markdown Editor Trigger */}
+                        <Tooltip title="Open Stream Editor (Continuous Markdown & Token Ingestion)">
+                          <Chip 
+                            icon={<span style={{ fontSize: '0.85rem' }}>📝</span>}
+                            label="Stream"
+                            onClick={() => setIsStreamModalOpen(true)}
+                            size="small" 
+                            sx={{ 
+                              bgcolor: 'rgba(0,0,0,0.04)', 
+                              color: '#334155', 
+                              fontWeight: 800, 
+                              border: '1.5px solid rgba(0,0,0,0.08)',
+                              px: 1.25, height: 28, fontSize: '0.74rem', letterSpacing: '0.02em',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                              '&:hover': {
+                                transform: 'translateY(-1px)',
+                                bgcolor: 'rgba(0,0,0,0.08)',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.06)'
+                              }
+                            }} 
+                          />
+                        </Tooltip>
+
                         <Tooltip title={currentPairNotes.length > 0 ? `View ${currentPairNotes.length} pinned note(s) for this topic` : "Open Clip Notes Drawer"}>
                           <Chip 
                             icon={<span style={{ fontSize: '0.85rem' }}>📎</span>}
@@ -2533,6 +2585,24 @@ export default function CreateLearnContentForm({
                                   category={selectedCategory}
                                   articleId={draftId || 'new'}
                                 />
+                                <Tooltip title="Re-draft or refine this block with AgroLLM">
+                                  <Chip
+                                    icon={<AutoAwesomeIcon sx={{ fontSize: 13, color: `${color} !important` }} />}
+                                    label="AI Refine"
+                                    size="small"
+                                    onClick={() => setIsPromptSidePaneOpen(true)}
+                                    sx={{
+                                      bgcolor: alpha(color, 0.1),
+                                      color: color,
+                                      fontWeight: 800,
+                                      fontSize: '0.72rem',
+                                      border: `1px solid ${alpha(color, 0.25)}`,
+                                      cursor: 'pointer',
+                                      height: 26,
+                                      '&:hover': { bgcolor: alpha(color, 0.2), transform: 'translateY(-1px)' }
+                                    }}
+                                  />
+                                </Tooltip>
                                 <Tooltip title="Done editing">
                                   <IconButton
                                     size="medium"
@@ -3824,6 +3894,35 @@ export default function CreateLearnContentForm({
           applyFramework(selectedFormat, selectedEra);
           setArticleEditorMode('canvas');
         }}
+      />
+
+      {/* ═══ STREAM DRAFTING & TOKEN INGESTION MODAL ═══ */}
+      <StreamDraftingModal
+        open={isStreamModalOpen}
+        onClose={() => setIsStreamModalOpen(false)}
+        format={selectedFormat}
+        era={selectedEra}
+        commodity={selectedCommodity}
+        category={selectedCategory}
+        currentTitle={title}
+        currentDescription={description}
+        currentBlocks={blocks}
+        onSyncToCanvas={handleStreamSync}
+      />
+
+      {/* ═══ EDITORIAL PROMPT SYSTEM & BLOCK REFINER SIDE PANE ═══ */}
+      <EditorialPromptSidePane
+        open={isPromptSidePaneOpen}
+        onClose={() => setIsPromptSidePaneOpen(false)}
+        format={selectedFormat}
+        era={selectedEra}
+        commodity={selectedCommodity}
+        category={selectedCategory}
+        subcategory={subcategoriesInSelectedCategory.find(s => s.id === selectedSubcategory)?.title || selectedSubcategory}
+        currentTitle={title}
+        blocks={blocks}
+        pinnedClips={currentPairNotes.map(n => n.content)}
+        onUpdateBlockContent={(blockId, newContent) => updateBlock(blockId, 'content', newContent)}
       />
 
     </Box>

@@ -26,6 +26,26 @@ export interface SopBlock {
   hint: string;
 }
 
+export const BLOCK_DEFINITIONS: Record<BlockType, { label: string; color: string }> = {
+  subheading: { label: 'Spiky Title', color: '#64748b' },
+  exec_summary: { label: 'Key Takeaways', color: '#10b981' },
+  highlight_card: { label: 'Big Stat Card', color: '#8b5cf6' },
+  core_interactive: { label: 'Main Analysis', color: '#3b82f6' },
+  media: { label: 'Evidence Gallery', color: '#0ea5e9' },
+  myth_fact: { label: 'Myth vs Reality', color: '#ef4444' },
+  pull_quote: { label: 'Strong Quote', color: '#f59e0b' },
+  live_poll: { label: 'Quick Poll', color: '#d946ef' },
+  data_embed: { label: 'Embedded Data', color: '#14b8a6' },
+  strategic_directive: { label: 'Strategic Directive', color: '#111827' },
+  call_to_action: { label: 'Call to Action', color: '#f59e0b' },
+  comparison_matrix: { label: 'Showdown Table', color: '#8b5cf6' },
+  unit_economics_card: { label: 'Financial Dashboard', color: '#10b981' },
+  protocol_steps: { label: 'Action Checklist', color: '#f59e0b' },
+  timeline_tracker: { label: 'Timeline Tracker', color: '#3b82f6' },
+  persona_dossier: { label: 'Ground Dossier', color: '#ec4899' },
+  ecosystem_embed: { label: 'Ecosystem Bridge', color: '#6366f1' },
+};
+
 export const FORMAT_CONFIG: Record<ArticleFormat, { label: string; icon: string; emoji: string; color: string; desc: string }> = {
   brief: {
     label: 'Brief',

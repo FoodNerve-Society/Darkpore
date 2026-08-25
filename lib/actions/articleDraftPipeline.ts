@@ -29,6 +29,25 @@ export interface ArticlePipelineResponse {
   error?: string;
 }
 
+export interface RegenerateBlockInput {
+  blockType: string;
+  role: string;
+  sopDesc?: string;
+  currentContent?: Record<string, any>;
+  customInstruction?: string;
+  commodity: string;
+  category: string;
+  subcategory?: string;
+  title?: string;
+  pinnedClips?: string[];
+}
+
+export interface RegenerateBlockResponse {
+  success: boolean;
+  content: Record<string, any>;
+  error?: string;
+}
+
 /**
  * Server Action: Generates full structured interactive article blocks using Gemini 3.7 Flash.
  * Ingests topic parameters, blueprint roles, and user clip notes as ground context.
@@ -161,6 +180,68 @@ BLOCK CONTENT SPECIFICATIONS BY TYPE:
       description: input.description || '',
       blocks: [],
       error: error.message || 'Failed to generate article blocks via AgroLLM.'
+    };
+  }
+}
+
+/**
+ * Server Action: Regenerates or refines a SINGLE individual block with custom instructions.
+ */
+export async function regenerateSingleBlock(input: RegenerateBlockInput): Promise<RegenerateBlockResponse> {
+  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY;
+  if (!apiKey) {
+    return {
+      success: false,
+      content: input.currentContent || {},
+      error: 'GEMINI_API_KEY is not configured in .env'
+    };
+  }
+
+  const groundContext = input.pinnedClips && input.pinnedClips.length > 0 
+    ? `\n=== USER FIELD GROUND INTELLIGENCE ===\n${input.pinnedClips.map((c, i) => `[Clip ${i + 1}]: ${c}`).join('\n')}\n`
+    : '';
+
+  const prompt = `
+You are the AgroLLM Intelligence Engine for Food Nerve (Nigeria).
+Task: Generate/Refine content for a single interactive article block:
+
+CONTEXT:
+- Commodity: ${input.commodity}
+- Category: ${input.category} (${input.subcategory || ''})
+- Article Title: ${input.title || 'Agribusiness Strategic Intelligence'}
+- Block Type: ${input.blockType}
+- Block Role / Section: ${input.role}
+${input.sopDesc ? `- Role Guidance: ${input.sopDesc}` : ''}
+${input.currentContent ? `- Current Block Content: ${JSON.stringify(input.currentContent)}` : ''}
+${input.customInstruction ? `- User Refinement Directive: "${input.customInstruction}"` : ''}
+${groundContext}
+
+Respond with ONLY a JSON object representing the content fields for block type "${input.blockType}".
+No markdown fences, no preambles. Valid JSON only.
+`;
+
+  try {
+    const client = new GoogleGenAI({ apiKey });
+    const response = await client.models.generateContent({
+      model: 'gemini-3.7-flash',
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json',
+      }
+    });
+
+    const text = response.text || '';
+    const content = JSON.parse(text);
+    return {
+      success: true,
+      content
+    };
+  } catch (err: any) {
+    console.error('[regenerateSingleBlock] Error:', err);
+    return {
+      success: false,
+      content: input.currentContent || {},
+      error: err.message || 'Failed to refine block with AI.'
     };
   }
 }
