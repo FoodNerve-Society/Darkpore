@@ -4051,83 +4051,85 @@ export default function CreateLearnContentForm({
       </Box>
 
       {/* FOOTER */}
-      <Box sx={{ px: 3, py: 2, borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-        {step < 3 ? (
-          <Button 
-            variant="contained" 
-            onClick={() => setStep(step + 1)} 
-            disabled={(step === 1 && !type) || (step === 2 && !selectedTimeframe)}
-            sx={{ 
-              bgcolor: activeThemeColor, 
-              fontWeight: 700, 
-              px: 3, 
-              borderRadius: 2,
-              '&:disabled': {
-                bgcolor: 'rgba(0,0,0,0.12)',
-              }
-            }} 
-            endIcon={<ArrowForwardIcon />}
-          >
-            Next Step
-          </Button>
-        ) : (
-          /* ═══ STANDARD ACTIONS IN CANVAS MODE ═══ */
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <Button
-              onClick={() => setPreviewOpen(true)}
-              startIcon={<SparkleIcon sx={{ color: '#8b5cf6' }} />}
-              sx={{
-                borderColor: 'rgba(139,92,246,0.3)',
-                color: '#64748b',
-                bgcolor: 'rgba(139,92,246,0.05)',
-                fontWeight: 800,
-                borderRadius: '12px',
-                px: 3,
-                '&:hover': {
-                  bgcolor: 'rgba(139,92,246,0.1)',
-                  borderColor: '#8b5cf6',
-                  color: '#0f172a',
-                  transform: 'translateY(-2px)'
-                },
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              }}
-            >
-              Preview
-            </Button>
-            <Button
-              onClick={() => handleSubmit(false)}
-              disabled={loading}
-              sx={{
-                bgcolor: 'rgba(245, 158, 11, 0.1)',
-                color: '#d97706',
-                fontWeight: 800,
-                borderRadius: '12px',
-                px: 3,
-                '&:hover': {
-                  bgcolor: 'rgba(245, 158, 11, 0.2)',
-                  color: '#b45309'
-                }
-              }}
-            >
-              {loading ? 'Saving...' : 'Save Draft'}
-            </Button>
+      {!(type === 'article' && articleEditorMode === 'framework') && (
+        <Box sx={{ px: 3, py: 2, borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+          {step < 3 ? (
             <Button 
               variant="contained" 
-              onClick={() => handleSubmit(true)} 
-              disabled={loading} 
+              onClick={() => setStep(step + 1)} 
+              disabled={(step === 1 && !type) || (step === 2 && !selectedTimeframe)}
               sx={{ 
                 bgcolor: activeThemeColor, 
-                fontWeight: 800, 
-                px: 4, 
-                borderRadius: '12px',
-                opacity: (blocks.length > 0 && !blocks.every(b => isBlockFilled(b))) ? 0.5 : 1
-              }}
+                fontWeight: 700, 
+                px: 3, 
+                borderRadius: 2,
+                '&:disabled': {
+                  bgcolor: 'rgba(0,0,0,0.12)',
+                }
+              }} 
+              endIcon={<ArrowForwardIcon />}
             >
-              {loading ? 'Publishing...' : 'Publish'}
+              Next Step
             </Button>
-          </Box>
-        )}
-      </Box>
+          ) : (
+            /* ═══ STANDARD ACTIONS IN CANVAS MODE ═══ */
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button
+                onClick={() => setPreviewOpen(true)}
+                startIcon={<SparkleIcon sx={{ color: '#8b5cf6' }} />}
+                sx={{
+                  borderColor: 'rgba(139,92,246,0.3)',
+                  color: '#64748b',
+                  bgcolor: 'rgba(139,92,246,0.05)',
+                  fontWeight: 800,
+                  borderRadius: '12px',
+                  px: 3,
+                  '&:hover': {
+                    bgcolor: 'rgba(139,92,246,0.1)',
+                    borderColor: '#8b5cf6',
+                    color: '#0f172a',
+                    transform: 'translateY(-2px)'
+                  },
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
+              >
+                Preview
+              </Button>
+              <Button
+                onClick={() => handleSubmit(false)}
+                disabled={loading}
+                sx={{
+                  bgcolor: 'rgba(245, 158, 11, 0.1)',
+                  color: '#d97706',
+                  fontWeight: 800,
+                  borderRadius: '12px',
+                  px: 3,
+                  '&:hover': {
+                    bgcolor: 'rgba(245, 158, 11, 0.2)',
+                    color: '#b45309'
+                  }
+                }}
+              >
+                {loading ? 'Saving...' : 'Save Draft'}
+              </Button>
+              <Button 
+                variant="contained" 
+                onClick={() => handleSubmit(true)} 
+                disabled={loading} 
+                sx={{ 
+                  bgcolor: activeThemeColor, 
+                  fontWeight: 800, 
+                  px: 4, 
+                  borderRadius: '12px',
+                  opacity: (blocks.length > 0 && !blocks.every(b => isBlockFilled(b))) ? 0.5 : 1
+                }}
+              >
+                {loading ? 'Publishing...' : 'Publish'}
+              </Button>
+            </Box>
+          )}
+        </Box>
+      )}
 
       {/* PREMIUM PREVIEW DIALOG */}
       <Dialog 
@@ -4371,12 +4373,6 @@ export default function CreateLearnContentForm({
         commodity={selectedCommodity}
         category={selectedCategory}
         currentTitle={title}
-        onInsertToBlock={(blockId, text) => {
-          setBlocks(blocks.map(b => b.id === blockId ? {
-            ...b,
-            content: { ...b.content, text: b.content.text ? `${b.content.text}\n\n${text}` : text }
-          } : b));
-        }}
       />
 
       <ScratchpadModal
@@ -4386,12 +4382,6 @@ export default function CreateLearnContentForm({
         category={selectedCategory}
         currentTitle={title}
         blocks={blocks}
-        onInsertToBlock={(blockId, text) => {
-          setBlocks(blocks.map(b => b.id === blockId ? {
-            ...b,
-            content: { ...b.content, text: b.content.text ? `${b.content.text}\n\n${text}` : text }
-          } : b));
-        }}
       />
 
       <EditorialPromptSidePane

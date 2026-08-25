@@ -1,21 +1,81 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
-  Dialog, DialogContent, Box, Typography, Button, TextField,
-  Chip, Tooltip, IconButton, MenuItem, Select, FormControl,
-  InputLabel, Tabs, Tab, alpha, Paper
+  Dialog, DialogContent, Box, Typography, Button,
+  Chip, IconButton, Paper, alpha
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
 import CheckIcon from '@mui/icons-material/Check';
-import FilterListIcon from '@mui/icons-material/FilterList';
-import EditNoteIcon from '@mui/icons-material/EditNote';
+import DescriptionIcon from '@mui/icons-material/Description';
 import { useClipNotes } from '@/context/ClipNoteContext';
 import { BlockType } from '@/lib/config/articleBlueprints';
-import { ClipAttachment } from '@/types/clipNotes';
+import PremiumMarkdownEditor from '@/components/PremiumMarkdownEditor';
+
+// Helper to parse the unified markdown text into article note & block notes
+function parseScratchpadDocument(fullText: string, blocks: Array<{ id: string; role?: string; type: BlockType }>) {
+  const blockDelimRegex = /(?:^|\n)(?:---\s*\n)?::\s*Block\s*(\d+)(?::[^\n]*|\s*-[^\n]*|[^\n]*)\n/gi;
+
+  let matches: Array<{ blockIndex: number; startIndex: number; headerLength: number; endHeaderIndex: number }> = [];
+  let match: RegExpExecArray | null;
+
+  while ((match = blockDelimRegex.exec(fullText)) !== null) {
+    matches.push({
+      blockIndex: parseInt(match[1], 10) - 1,
+      startIndex: match.index,
+      headerLength: match[0].length,
+      endHeaderIndex: match.index + match[0].length
+    });
+  }
+
+  let articleNote = '';
+  let blockNotes: Record<string, string> = {};
+
+  if (matches.length === 0) {
+    articleNote = fullText.trim();
+  } else {
+    articleNote = fullText.substring(0, matches[0].startIndex).trim();
+
+    for (let i = 0; i < matches.length; i++) {
+      const current = matches[i];
+      const nextStart = (i + 1 < matches.length) ? matches[i + 1].startIndex : fullText.length;
+      let rawBlockContent = fullText.substring(current.endHeaderIndex, nextStart).trim();
+      rawBlockContent = rawBlockContent.replace(/\n---\s*$/, '').trim();
+
+      const blockObj = blocks[current.blockIndex];
+      if (blockObj) {
+        blockNotes[blockObj.id] = rawBlockContent;
+      }
+    }
+  }
+
+  return { articleNote, blockNotes };
+}
+
+// Helper to compile existing notes into a single markdown document
+function compileScratchpadDocument(
+  articleNote: string,
+  blocks: Array<{ id: string; role?: string; type: BlockType }>,
+  getBlockNoteFn: (blockId: string) => string
+) {
+  let doc = '';
+  if (articleNote && articleNote.trim()) {
+    doc += articleNote.trim() + '\n\n';
+  }
+
+  blocks.forEach((b, idx) => {
+    const note = getBlockNoteFn(b.id) || '';
+    doc += `---\n:: Block ${idx + 1}: ${b.role || b.type}\n`;
+    if (note.trim()) {
+      doc += `${note.trim()}\n\n`;
+    } else {
+      doc += '\n';
+    }
+  });
+
+  return doc;
+}
 
 export function ScratchpadModal({
   open,
@@ -23,8 +83,7 @@ export function ScratchpadModal({
   commodity,
   category,
   currentTitle,
-  blocks = [],
-  onInsertToBlock
+  blocks = []
 }: {
   open: boolean;
   onClose: () => void;
@@ -32,101 +91,125 @@ export function ScratchpadModal({
   category: string;
   currentTitle: string;
   blocks: Array<{ id: string; type: BlockType; role?: string; sopDesc?: string; content: Record<string, any> }>;
-  onInsertToBlock?: (blockId: string, text: string) => void;
 }) {
-  const { notes, createNote, updateNote, deleteNote } = useClipNotes();
+  const { notes, createNote, updateNote } = useClipNotes();
 
-  // Active Filter Tab: 'all' | 'pair' | 'article' | 'block'
-  const [filterScope, setFilterScope] = useState<'all' | 'pair' | 'article' | 'block'>('all');
-  const [filterBlockId, setFilterBlockId] = useState<string>('all');
+  const [documentContent, setDocumentContent] = useState('');
+  const [activeSectionId, setActiveSectionId] = useState<string>('article');
+  const [copied, setCopied] = useState(false);
+  const isInitializedRef = useRef(false);
 
-  // New Note Form State
-  const [noteTitle, setNoteTitle] = useState('');
-  const [noteContent, setNoteContent] = useState('');
-  const [targetScope, setTargetScope] = useState<'pair' | 'article' | 'block'>('pair');
-  const [targetBlockId, setTargetBlockId] = useState<string>(blocks[0]?.id || '');
-  const [selectedTag, setSelectedTag] = useState<string>('');
-  const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  // Existing article note
+  const existingArticleNote = useMemo(() => {
+    return notes.find(n => n.attachments?.some(a => a.scope === 'article')) || null;
+  }, [notes]);
 
-  // Filtered Notes based on active scope
-  const filteredNotes = useMemo(() => {
-    return notes.filter(n => {
-      if (filterScope === 'all') return true;
-      if (filterScope === 'pair') {
-        return n.attachments?.some(a => a.scope === 'commodity_category' && a.commodity === commodity && a.category === category);
+  // Map of existing block notes
+  const blockNotesMap = useMemo(() => {
+    const map: Record<string, { id: string; content: string }> = {};
+    blocks.forEach(b => {
+      const found = notes.find(n =>
+        n.attachments?.some(a => a.scope === 'block' && (a.blockId === b.id || a.blockRole === b.role || a.blockRole === b.type))
+      );
+      if (found) {
+        map[b.id] = { id: found.id, content: found.content };
       }
-      if (filterScope === 'article') {
-        return n.attachments?.some(a => a.scope === 'article');
-      }
-      if (filterScope === 'block') {
-        if (filterBlockId === 'all') {
-          return n.attachments?.some(a => a.scope === 'block');
-        }
-        return n.attachments?.some(a => a.scope === 'block' && a.blockId === filterBlockId);
-      }
-      return true;
     });
-  }, [notes, filterScope, filterBlockId, commodity, category]);
+    return map;
+  }, [notes, blocks]);
 
-  // Handle Save Note
-  const handleSaveNote = () => {
-    if (!noteContent.trim()) return;
-
-    let attachments: ClipAttachment[] = [];
-    if (targetScope === 'pair') {
-      attachments = [{ scope: 'commodity_category', commodity, category }];
-    } else if (targetScope === 'article') {
-      attachments = [{ scope: 'article', articleId: 'current_draft' }];
-    } else if (targetScope === 'block') {
-      const blk = blocks.find(b => b.id === targetBlockId) || blocks[0];
-      attachments = [{
-        scope: 'block',
-        blockId: targetBlockId,
-        blockRole: blk?.role || blk?.type || 'Block',
-        articleId: 'current_draft'
-      }];
+  // Initial compilation on open
+  useEffect(() => {
+    if (open) {
+      const initialArticleText = existingArticleNote?.content || '';
+      const compiled = compileScratchpadDocument(
+        initialArticleText,
+        blocks,
+        (blockId) => blockNotesMap[blockId]?.content || ''
+      );
+      setDocumentContent(compiled);
+      isInitializedRef.current = true;
+    } else {
+      isInitializedRef.current = false;
     }
+  }, [open, blocks.length]);
 
-    const tags = selectedTag ? [selectedTag] : [];
+  // Debounced Auto-sync parser
+  useEffect(() => {
+    if (!open || !isInitializedRef.current) return;
 
-    if (editingNoteId) {
-      updateNote(editingNoteId, {
-        title: noteTitle.trim(),
-        content: noteContent.trim(),
-        attachments,
-        tags
+    const timer = setTimeout(() => {
+      const { articleNote, blockNotes } = parseScratchpadDocument(documentContent, blocks);
+
+      // 1. Sync Article Note
+      if (existingArticleNote) {
+        if (existingArticleNote.content !== articleNote) {
+          updateNote(existingArticleNote.id, { content: articleNote });
+        }
+      } else if (articleNote.trim()) {
+        createNote(articleNote.trim(), 'General Article Notes', [{ scope: 'article', articleId: 'current_draft', commodity, category }]);
+      }
+
+      // 2. Sync Block Notes
+      blocks.forEach((b, idx) => {
+        const text = blockNotes[b.id] || '';
+        const existingBlockNote = blockNotesMap[b.id];
+
+        if (existingBlockNote) {
+          if (existingBlockNote.content !== text) {
+            updateNote(existingBlockNote.id, { content: text });
+          }
+        } else if (text.trim()) {
+          createNote(text.trim(), `Block ${idx + 1} Note`, [{
+            scope: 'block',
+            blockId: b.id,
+            blockRole: b.role || b.type,
+            articleId: 'current_draft',
+            commodity,
+            category
+          }]);
+        }
       });
-      setEditingNoteId(null);
-    } else {
-      createNote(noteContent.trim(), noteTitle.trim(), attachments, tags);
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [documentContent, open]);
+
+  // Breadcrumb scroll jump
+  const handleJumpToSection = (targetId: string, idx?: number) => {
+    setActiveSectionId(targetId);
+    let targetPattern = '';
+    if (targetId === 'article') {
+      targetPattern = '#';
+    } else if (typeof idx === 'number') {
+      targetPattern = `:: Block ${idx + 1}`;
     }
 
-    setNoteTitle('');
-    setNoteContent('');
-  };
-
-  const handleStartEdit = (note: any) => {
-    setEditingNoteId(note.id);
-    setNoteTitle(note.title || '');
-    setNoteContent(note.content || '');
-    const blockAtt = note.attachments?.find((a: any) => a.scope === 'block');
-    const articleAtt = note.attachments?.find((a: any) => a.scope === 'article');
-    if (blockAtt) {
-      setTargetScope('block');
-      if (blockAtt.blockId) setTargetBlockId(blockAtt.blockId);
-    } else if (articleAtt) {
-      setTargetScope('article');
-    } else {
-      setTargetScope('pair');
+    // Locate the textarea element inside the editor
+    const textarea = document.querySelector('textarea[name="scratchpad-editor"]') as HTMLTextAreaElement | null;
+    if (textarea && targetPattern) {
+      const pos = documentContent.indexOf(targetPattern);
+      if (pos !== -1) {
+        textarea.focus();
+        textarea.setSelectionRange(pos, pos + targetPattern.length);
+        const lineHeight = 24;
+        const lineCount = documentContent.substring(0, pos).split('\n').length;
+        textarea.scrollTop = Math.max(0, (lineCount - 2) * lineHeight);
+      }
     }
   };
 
-  const handleCopyNote = (id: string, content: string) => {
-    navigator.clipboard.writeText(content);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
+  const handleCopyAll = () => {
+    if (!documentContent) return;
+    navigator.clipboard.writeText(documentContent);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
+
+  // Parsed note stats for breadcrumb indicators
+  const parsedStats = useMemo(() => {
+    return parseScratchpadDocument(documentContent, blocks);
+  }, [documentContent, blocks]);
 
   return (
     <Dialog
@@ -136,8 +219,8 @@ export function ScratchpadModal({
       slotProps={{
         backdrop: {
           sx: {
-            bgcolor: 'rgba(15, 23, 42, 0.45)',
-            backdropFilter: 'blur(12px)'
+            bgcolor: 'rgba(15, 23, 42, 0.5)',
+            backdropFilter: 'blur(16px)'
           }
         },
         paper: {
@@ -147,11 +230,11 @@ export function ScratchpadModal({
             height: '80vh',
             maxWidth: '80vw',
             maxHeight: '80vh',
-            borderRadius: '28px',
+            borderRadius: '26px',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
-            background: 'rgba(255, 255, 255, 0.96)',
+            background: 'rgba(255, 255, 255, 0.98)',
             backdropFilter: 'blur(32px)',
             border: '1.5px solid rgba(0, 0, 0, 0.08)',
             boxShadow: '0 24px 64px -12px rgba(0, 0, 0, 0.25)'
@@ -161,423 +244,212 @@ export function ScratchpadModal({
     >
       {/* ═══ TOP HEADER ═══ */}
       <Box sx={{
-        px: 3,
-        py: 2,
+        px: 3, py: 1.75,
         borderBottom: '1px solid rgba(0,0,0,0.06)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        bgcolor: 'rgba(255,255,255,0.8)',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        bgcolor: 'rgba(255, 255, 255, 0.85)',
         flexShrink: 0
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Box sx={{
-            width: 42,
-            height: 42,
-            borderRadius: '14px',
-            bgcolor: alpha('#16a34a', 0.12),
-            color: '#16a34a',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '1.25rem'
+            width: 38, height: 38, borderRadius: '12px',
+            bgcolor: alpha('#16a34a', 0.12), color: '#16a34a',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '1.2rem'
           }}>
             📝
           </Box>
           <Box>
-            <Typography sx={{ fontWeight: 900, fontSize: '1.15rem', color: '#0f172a', letterSpacing: '-0.01em' }}>
-              Scratchpad & Research Stream
+            <Typography sx={{ fontWeight: 900, fontSize: '1.05rem', color: '#0f172a', letterSpacing: '-0.01em' }}>
+              General Research Scratchpad
             </Typography>
-            <Typography sx={{ fontSize: '0.78rem', color: '#64748b' }}>
-              Capture raw thoughts, field notes, and assign them to topics, articles, or specific blocks
+            <Typography sx={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 600 }}>
+              🌾 {commodity} · 💼 {category} {currentTitle ? `· "${currentTitle}"` : ''}
             </Typography>
           </Box>
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Chip
-            label={`${filteredNotes.length} Notes in View`}
+            label="✓ Real-time Sync"
             size="small"
-            sx={{ fontWeight: 800, fontSize: '0.74rem', bgcolor: 'rgba(0,0,0,0.05)', color: '#475569' }}
+            sx={{ fontWeight: 800, fontSize: '0.72rem', bgcolor: alpha('#16a34a', 0.12), color: '#16a34a' }}
           />
-          <IconButton
-            onClick={onClose}
+          <Button
+            size="small"
+            startIcon={copied ? <CheckIcon sx={{ fontSize: 14 }} /> : <ContentCopyIcon sx={{ fontSize: 14 }} />}
+            onClick={handleCopyAll}
             sx={{
+              fontWeight: 800,
+              fontSize: '0.74rem',
+              color: copied ? '#16a34a' : '#475569',
               bgcolor: 'rgba(0,0,0,0.04)',
-              color: '#64748b',
-              '&:hover': { bgcolor: 'rgba(0,0,0,0.08)', color: '#0f172a' }
+              borderRadius: '10px',
+              px: 1.5,
+              textTransform: 'none',
+              '&:hover': { bgcolor: 'rgba(0,0,0,0.08)' }
             }}
           >
-            <CloseIcon sx={{ fontSize: 20 }} />
+            {copied ? 'Copied Full Stream!' : 'Copy Stream'}
+          </Button>
+
+          <IconButton
+            onClick={onClose}
+            size="small"
+            sx={{ bgcolor: 'rgba(0,0,0,0.04)', color: '#64748b', '&:hover': { bgcolor: 'rgba(0,0,0,0.08)', color: '#0f172a' } }}
+          >
+            <CloseIcon sx={{ fontSize: 18 }} />
           </IconButton>
         </Box>
       </Box>
 
-      {/* ═══ MAIN 2-PANE BODY (80vh split) ═══ */}
+      {/* ═══ 2-PANE BODY: LEFT VERTICAL BREADCRUMB RAIL + RIGHT CONTINUOUS MARKDOWN EDITOR ═══ */}
       <DialogContent sx={{ p: 0, display: 'flex', flex: 1, overflow: 'hidden' }}>
-        {/* ─── LEFT PANE: NOTE STREAM DRAFTER (45% width) ─── */}
+
+        {/* ─── LEFT: VERTICAL BREADCRUMB NAVIGATOR (260px) ─── */}
         <Box sx={{
-          width: { xs: '100%', md: '46%' },
-          p: 3,
+          width: { xs: 200, sm: 260 },
+          flexShrink: 0,
+          borderRight: '1px solid rgba(0,0,0,0.06)',
+          bgcolor: 'rgba(248, 250, 252, 0.75)',
+          p: 2,
           display: 'flex',
           flexDirection: 'column',
-          borderRight: '1px solid rgba(0,0,0,0.06)',
-          bgcolor: 'rgba(248, 250, 252, 0.6)',
+          gap: 1,
           overflowY: 'auto'
         }}>
-          <Typography sx={{ fontSize: '0.78rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#475569', mb: 1.5 }}>
-            {editingNoteId ? '✏️ Edit Note' : '➕ Capture New Stream Note'}
+          <Typography sx={{ fontSize: '0.7rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b', mb: 0.5, px: 1 }}>
+            Scratchpad Outline
           </Typography>
 
-          {/* Attribution Scope Selector */}
-          <Box sx={{ mb: 2 }}>
-            <Typography sx={{ fontSize: '0.72rem', fontWeight: 800, color: '#64748b', mb: 0.75, textTransform: 'uppercase' }}>
-              Where does this note belong?
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              <Chip
-                label="🌾 Category & Commodity"
-                onClick={() => setTargetScope('pair')}
-                sx={{
-                  fontWeight: 800,
-                  fontSize: '0.76rem',
-                  cursor: 'pointer',
-                  bgcolor: targetScope === 'pair' ? alpha('#16a34a', 0.15) : 'rgba(0,0,0,0.04)',
-                  color: targetScope === 'pair' ? '#16a34a' : '#475569',
-                  border: `1.5px solid ${targetScope === 'pair' ? '#16a34a' : 'transparent'}`
-                }}
-              />
-              <Chip
-                label="📄 This Article"
-                onClick={() => setTargetScope('article')}
-                sx={{
-                  fontWeight: 800,
-                  fontSize: '0.76rem',
-                  cursor: 'pointer',
-                  bgcolor: targetScope === 'article' ? alpha('#2563eb', 0.15) : 'rgba(0,0,0,0.04)',
-                  color: targetScope === 'article' ? '#2563eb' : '#475569',
-                  border: `1.5px solid ${targetScope === 'article' ? '#2563eb' : 'transparent'}`
-                }}
-              />
-              <Chip
-                label="🧱 Specific Block"
-                onClick={() => setTargetScope('block')}
-                sx={{
-                  fontWeight: 800,
-                  fontSize: '0.76rem',
-                  cursor: 'pointer',
-                  bgcolor: targetScope === 'block' ? alpha('#d97706', 0.15) : 'rgba(0,0,0,0.04)',
-                  color: targetScope === 'block' ? '#d97706' : '#475569',
-                  border: `1.5px solid ${targetScope === 'block' ? '#d97706' : 'transparent'}`
-                }}
-              />
-            </Box>
-          </Box>
-
-          {/* Block Selection dropdown if targetScope === 'block' */}
-          {targetScope === 'block' && blocks.length > 0 && (
-            <FormControl size="small" fullWidth sx={{ mb: 2 }}>
-              <InputLabel sx={{ fontSize: '0.8rem', fontWeight: 700 }}>Select Target Block</InputLabel>
-              <Select
-                value={targetBlockId}
-                label="Select Target Block"
-                onChange={(e) => setTargetBlockId(e.target.value)}
-                sx={{ borderRadius: '12px', bgcolor: '#fff', fontSize: '0.82rem', fontWeight: 700 }}
-              >
-                {blocks.map((b, idx) => (
-                  <MenuItem key={b.id} value={b.id} sx={{ fontSize: '0.82rem' }}>
-                    <strong>Block {idx + 1}:</strong> {b.role || b.type} {b.sopDesc ? `— ${b.sopDesc.substring(0, 35)}...` : ''}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          )}
-
-          {/* Note Title */}
-          <TextField
-            placeholder="Note Title / Key Takeaway (optional)..."
-            value={noteTitle}
-            onChange={(e) => setNoteTitle(e.target.value)}
-            size="small"
-            fullWidth
+          {/* General Article Note Breadcrumb */}
+          <Paper
+            elevation={0}
+            onClick={() => handleJumpToSection('article')}
             sx={{
-              mb: 1.5,
-              '& .MuiOutlinedInput-root': {
-                bgcolor: '#fff',
-                borderRadius: '12px',
-                fontSize: '0.86rem',
-                fontWeight: 700
+              p: 1.25, px: 1.5,
+              borderRadius: '12px',
+              border: `1.5px solid ${activeSectionId === 'article' ? '#16a34a' : 'rgba(0,0,0,0.06)'}`,
+              bgcolor: activeSectionId === 'article' ? alpha('#16a34a', 0.1) : 'rgba(255,255,255,0.8)',
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              transition: 'all 0.18s',
+              '&:hover': {
+                bgcolor: alpha('#16a34a', 0.15),
+                transform: 'translateX(3px)'
               }
             }}
-          />
-
-          {/* Note Stream Markdown Content */}
-          <TextField
-            placeholder="Write continuous research notes, quote snippets, price indicators, or bullet points here..."
-            value={noteContent}
-            onChange={(e) => setNoteContent(e.target.value)}
-            multiline
-            rows={10}
-            fullWidth
-            sx={{
-              flex: 1,
-              mb: 2,
-              '& .MuiOutlinedInput-root': {
-                bgcolor: '#fff',
-                borderRadius: '16px',
-                fontSize: '0.88rem',
-                lineHeight: 1.6,
-                fontFamily: 'inherit'
-              }
-            }}
-          />
-
-          {/* Bottom Actions */}
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5 }}>
-            {editingNoteId ? (
-              <Button
-                variant="text"
-                size="small"
-                onClick={() => {
-                  setEditingNoteId(null);
-                  setNoteTitle('');
-                  setNoteContent('');
-                }}
-                sx={{ color: '#64748b', fontWeight: 700 }}
-              >
-                Cancel Edit
-              </Button>
-            ) : (
-              <Typography sx={{ fontSize: '0.74rem', color: '#94a3b8' }}>
-                {noteContent.length} characters · {noteContent.split(/\s+/).filter(Boolean).length} words
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+              <DescriptionIcon sx={{ fontSize: 16, color: activeSectionId === 'article' ? '#16a34a' : '#64748b' }} />
+              <Typography sx={{
+                fontSize: '0.78rem',
+                fontWeight: activeSectionId === 'article' ? 900 : 700,
+                color: activeSectionId === 'article' ? '#16a34a' : '#0f172a',
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+              }}>
+                General Article Notes
               </Typography>
-            )}
+            </Box>
 
-            <Button
-              variant="contained"
-              onClick={handleSaveNote}
-              disabled={!noteContent.trim()}
-              startIcon={editingNoteId ? <CheckIcon /> : <AddIcon />}
-              sx={{
-                bgcolor: '#16a34a',
-                color: '#fff',
-                fontWeight: 800,
-                fontSize: '0.84rem',
-                borderRadius: '12px',
-                px: 2.5,
-                py: 0.85,
-                textTransform: 'none',
-                boxShadow: '0 4px 14px rgba(22, 163, 74, 0.3)',
-                '&:hover': { bgcolor: '#15803d' }
-              }}
-            >
-              {editingNoteId ? 'Update Note' : 'Save to Stream'}
-            </Button>
-          </Box>
+            {parsedStats.articleNote && (
+              <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#16a34a', flexShrink: 0 }} />
+            )}
+          </Paper>
+
+          <Typography sx={{ fontSize: '0.68rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8', mt: 1, mb: 0.25, px: 1 }}>
+            Blocks ({blocks.length})
+          </Typography>
+
+          {/* Block Breadcrumb List */}
+          {blocks.map((b, idx) => {
+            const hasNote = Boolean(parsedStats.blockNotes[b.id]);
+            const isSelected = activeSectionId === b.id;
+
+            return (
+              <Paper
+                key={b.id}
+                elevation={0}
+                onClick={() => handleJumpToSection(b.id, idx)}
+                sx={{
+                  p: 1.1, px: 1.5,
+                  borderRadius: '12px',
+                  border: `1.5px solid ${isSelected ? '#16a34a' : 'rgba(0,0,0,0.05)'}`,
+                  bgcolor: isSelected ? alpha('#16a34a', 0.1) : 'rgba(255,255,255,0.7)',
+                  cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  transition: 'all 0.18s',
+                  '&:hover': {
+                    bgcolor: alpha('#16a34a', 0.12),
+                    transform: 'translateX(3px)'
+                  }
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+                  <Box sx={{
+                    width: 20, height: 20, borderRadius: '6px',
+                    bgcolor: isSelected ? '#16a34a' : 'rgba(0,0,0,0.06)',
+                    color: isSelected ? '#fff' : '#64748b',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '0.68rem', fontWeight: 900, flexShrink: 0
+                  }}>
+                    {idx + 1}
+                  </Box>
+                  <Typography sx={{
+                    fontSize: '0.76rem',
+                    fontWeight: isSelected ? 900 : 600,
+                    color: isSelected ? '#16a34a' : '#334155',
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                  }}>
+                    {b.role || b.type}
+                  </Typography>
+                </Box>
+
+                {hasNote && (
+                  <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#16a34a', flexShrink: 0 }} />
+                )}
+              </Paper>
+            );
+          })}
         </Box>
 
-        {/* ─── RIGHT PANE: ATTRIBUTED NOTES TIMELINE (54% width) ─── */}
+        {/* ─── RIGHT: CONTINUOUS MARKDOWN STREAM EDITOR (Fills Remaining Space) ─── */}
         <Box sx={{
-          width: { xs: '100%', md: '54%' },
+          flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          bgcolor: '#fff'
+          bgcolor: '#ffffff',
+          overflow: 'hidden'
         }}>
-          {/* Filter Bar */}
+          {/* Editor Sub-Bar */}
           <Box sx={{
-            p: 2,
-            px: 3,
-            borderBottom: '1px solid rgba(0,0,0,0.06)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: 1.5
+            px: 3, py: 1,
+            borderBottom: '1px solid rgba(0,0,0,0.05)',
+            bgcolor: 'rgba(248, 250, 252, 0.6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            gap: 2
           }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <FilterListIcon sx={{ fontSize: 16, color: '#64748b' }} />
-              <Typography sx={{ fontSize: '0.76rem', fontWeight: 800, textTransform: 'uppercase', color: '#64748b' }}>
-                Scope Filter:
-              </Typography>
-            </Box>
+            <Typography sx={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 600 }}>
+              💡 Use <code>:: Block N: [Name]</code> and <code>---</code> to assign notes to specific blocks. Any text outside belongs to the article.
+            </Typography>
 
-            <Tabs
-              value={filterScope}
-              onChange={(_, v) => setFilterScope(v)}
-              sx={{
-                minHeight: 32,
-                '& .MuiTab-root': {
-                  minHeight: 32,
-                  py: 0.5,
-                  px: 1.5,
-                  fontSize: '0.76rem',
-                  fontWeight: 800,
-                  textTransform: 'none',
-                  borderRadius: '10px'
-                }
-              }}
-            >
-              <Tab value="all" label="All" />
-              <Tab value="pair" label="Commodity/Category" />
-              <Tab value="article" label="This Article" />
-              <Tab value="block" label="Blocks" />
-            </Tabs>
+            <Typography sx={{ fontSize: '0.72rem', color: '#94a3b8', flexShrink: 0 }}>
+              {documentContent.length} chars · {documentContent.split(/\s+/).filter(Boolean).length} words
+            </Typography>
           </Box>
 
-          {/* Notes List */}
-          <Box sx={{ p: 3, flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {filteredNotes.length === 0 ? (
-              <Box sx={{
-                py: 8,
-                textAlign: 'center',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 1.5
-              }}>
-                <Box sx={{
-                  width: 54, height: 54, borderRadius: '50%',
-                  bgcolor: 'rgba(0,0,0,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '1.5rem'
-                }}>
-                  📝
-                </Box>
-                <Typography sx={{ fontWeight: 800, color: '#475569', fontSize: '0.95rem' }}>
-                  No Notes in This Scope Yet
-                </Typography>
-                <Typography sx={{ fontSize: '0.8rem', color: '#94a3b8', maxWidth: 320 }}>
-                  Use the left drafter to capture continuous thoughts or research findings for this topic.
-                </Typography>
-              </Box>
-            ) : (
-              filteredNotes.map((note) => {
-                const isPairScope = note.attachments?.some(a => a.scope === 'commodity_category');
-                const isArticleScope = note.attachments?.some(a => a.scope === 'article');
-                const blockAtt = note.attachments?.find(a => a.scope === 'block');
-
-                return (
-                  <Paper
-                    key={note.id}
-                    elevation={0}
-                    sx={{
-                      p: 2.25,
-                      borderRadius: '18px',
-                      border: '1.5px solid rgba(0,0,0,0.06)',
-                      bgcolor: 'rgba(255,255,255,0.9)',
-                      boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
-                      transition: 'all 0.18s',
-                      '&:hover': {
-                        borderColor: 'rgba(0,0,0,0.14)',
-                        boxShadow: '0 8px 24px rgba(0,0,0,0.06)'
-                      }
-                    }}
-                  >
-                    {/* Note Card Header: Scope Tag + Actions */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.25, gap: 1 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                        {isPairScope && (
-                          <Chip
-                            label={`🌾 ${commodity} · ${category}`}
-                            size="small"
-                            sx={{ fontWeight: 800, fontSize: '0.68rem', bgcolor: alpha('#16a34a', 0.12), color: '#16a34a', height: 22 }}
-                          />
-                        )}
-                        {isArticleScope && (
-                          <Chip
-                            label="📄 Article Scope"
-                            size="small"
-                            sx={{ fontWeight: 800, fontSize: '0.68rem', bgcolor: alpha('#2563eb', 0.12), color: '#2563eb', height: 22 }}
-                          />
-                        )}
-                        {blockAtt && (
-                          <Chip
-                            label={`🧱 ${blockAtt.blockRole || 'Block'}`}
-                            size="small"
-                            sx={{ fontWeight: 800, fontSize: '0.68rem', bgcolor: alpha('#d97706', 0.12), color: '#d97706', height: 22 }}
-                          />
-                        )}
-                      </Box>
-
-                      {/* Card Action Icons */}
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <Tooltip title={copiedId === note.id ? "Copied!" : "Copy note content"}>
-                          <IconButton
-                            size="small"
-                            onClick={() => handleCopyNote(note.id, note.content)}
-                            sx={{ color: copiedId === note.id ? '#16a34a' : '#64748b' }}
-                          >
-                            {copiedId === note.id ? <CheckIcon sx={{ fontSize: 16 }} /> : <ContentCopyIcon sx={{ fontSize: 16 }} />}
-                          </IconButton>
-                        </Tooltip>
-
-                        <Tooltip title="Edit note">
-                          <IconButton
-                            size="small"
-                            onClick={() => handleStartEdit(note)}
-                            sx={{ color: '#64748b' }}
-                          >
-                            <EditNoteIcon sx={{ fontSize: 18 }} />
-                          </IconButton>
-                        </Tooltip>
-
-                        <Tooltip title="Delete note">
-                          <IconButton
-                            size="small"
-                            onClick={() => deleteNote(note.id)}
-                            sx={{ color: '#ef4444', '&:hover': { bgcolor: 'rgba(239,68,68,0.08)' } }}
-                          >
-                            <DeleteIcon sx={{ fontSize: 18 }} />
-                          </IconButton>
-                        </Tooltip>
-                      </Box>
-                    </Box>
-
-                    {/* Title if present */}
-                    {note.title && (
-                      <Typography sx={{ fontWeight: 800, fontSize: '0.92rem', color: '#0f172a', mb: 0.5 }}>
-                        {note.title}
-                      </Typography>
-                    )}
-
-                    {/* Note Content */}
-                    <Typography sx={{
-                      fontSize: '0.84rem',
-                      color: '#334155',
-                      lineHeight: 1.55,
-                      whiteSpace: 'pre-wrap',
-                      bgcolor: 'rgba(0,0,0,0.02)',
-                      p: 1.5,
-                      borderRadius: '12px',
-                      border: '1px solid rgba(0,0,0,0.04)'
-                    }}>
-                      {note.content}
-                    </Typography>
-
-                    {/* Quick Insert into active block if available */}
-                    {blockAtt?.blockId && onInsertToBlock && (
-                      <Box sx={{ mt: 1.25, display: 'flex', justifyContent: 'flex-end' }}>
-                        <Button
-                          size="small"
-                          onClick={() => onInsertToBlock(blockAtt.blockId!, note.content)}
-                          sx={{
-                            fontSize: '0.74rem',
-                            fontWeight: 800,
-                            textTransform: 'none',
-                            color: '#d97706',
-                            bgcolor: alpha('#d97706', 0.08),
-                            borderRadius: '8px',
-                            px: 1.5,
-                            '&:hover': { bgcolor: alpha('#d97706', 0.15) }
-                          }}
-                        >
-                          📥 Insert into this Block
-                        </Button>
-                      </Box>
-                    )}
-                  </Paper>
-                );
-              })
-            )}
+          {/* Premium Markdown Editor Stream */}
+          <Box sx={{ flex: 1, p: 3, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+            <PremiumMarkdownEditor
+              colorTheme="#16a34a"
+              value={documentContent}
+              onChange={(e: any) => setDocumentContent(e.target.value)}
+              label="Continuous Research Stream & Block Notes"
+              placeholder="Write continuous notes here. Demarcate blocks with :: Block Name..."
+              rows={22}
+              fullWidth
+              name="scratchpad-editor"
+            />
           </Box>
         </Box>
       </DialogContent>
