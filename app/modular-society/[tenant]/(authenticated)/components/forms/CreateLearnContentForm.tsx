@@ -4380,8 +4380,12 @@ export default function CreateLearnContentForm({
         onClose={() => setIsScratchpadOpen(false)}
         commodity={selectedCommodity}
         category={selectedCategory}
+        subcategory={subcategoriesInSelectedCategory.find(s => s.id === selectedSubcategory)?.title || selectedSubcategory}
+        format={selectedFormat}
+        era={selectedEra}
         currentTitle={title}
         blocks={blocks}
+        onReorderBlocks={(newBlocks) => setBlocks(newBlocks)}
       />
 
       <EditorialPromptSidePane
