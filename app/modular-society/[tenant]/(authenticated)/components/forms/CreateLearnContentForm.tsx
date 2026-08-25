@@ -76,6 +76,9 @@ import PremiumButton from '@/components/PremiumButton';
 import PremiumMarkdownEditor from '@/components/PremiumMarkdownEditor';
 import PremiumVideoPlayer from '@/components/learn/blocks/PremiumVideoPlayer';
 import EcosystemJobPicker from '@/components/learn/EcosystemJobPicker';
+import { useClipNotes } from '@/context/ClipNoteContext';
+import { ClipNoteDrawer } from '../clips/ClipNoteDrawer';
+import { BlockClipAttachmentPill } from '../clips/BlockClipAttachmentPill';
 
 // ----------------------------------------------------------------------
 // POLL OPTIONS EDITOR
@@ -565,6 +568,12 @@ export default function CreateLearnContentForm({
 
   const blueprintFrontCardRef = useRef<HTMLDivElement>(null);
   const blueprintBackCardRef = useRef<HTMLDivElement>(null);
+
+  const { openClipDrawer, getNotesForPair } = useClipNotes();
+  const currentPairNotes = useMemo(() => {
+    if (!selectedCommodity || !selectedCategory) return [];
+    return getNotesForPair(selectedCommodity, selectedCategory);
+  }, [getNotesForPair, selectedCommodity, selectedCategory]);
 
   const handleSaveBlueprintConfig = useCallback(() => {
     setIsBlueprintCardFlipped(false);
@@ -1383,29 +1392,54 @@ export default function CreateLearnContentForm({
                         />
                       </Box>
 
-                      {/* Right Status Badge (Merged) */}
-                      <Tooltip title={articleEditorMode === 'framework' ? "Viewing Framework Configurator" : "Tap to Switch to Framework Configurator"}>
-                        <Chip 
-                          icon={draftId && draftId !== 'new' ? <AccessTimeIcon sx={{ fontSize: 14 }} /> : <AddIcon sx={{ fontSize: 14 }} />}
-                          label={`${draftId && draftId !== 'new' ? 'EDITING' : 'NEW'} ${eMeta.label.toUpperCase()} ${fMeta.label.toUpperCase()}`}
-                          onClick={() => setArticleEditorMode(articleEditorMode === 'framework' ? 'canvas' : 'framework')}
-                          size="small" 
-                          sx={{ 
-                            bgcolor: draftId && draftId !== 'new' ? 'rgba(245, 158, 11, 0.12)' : alpha(fMeta.color, 0.12), 
-                            color: draftId && draftId !== 'new' ? '#d97706' : fMeta.color, 
-                            fontWeight: 900, 
-                            border: `1.5px solid ${draftId && draftId !== 'new' ? 'rgba(245, 158, 11, 0.3)' : alpha(fMeta.color, 0.35)}`,
-                            px: 1.25, height: 28, fontSize: '0.74rem', letterSpacing: '0.04em',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                            '&:hover': {
-                              transform: 'translateY(-1px)',
-                              boxShadow: `0 4px 12px ${draftId && draftId !== 'new' ? 'rgba(245, 158, 11, 0.2)' : alpha(fMeta.color, 0.25)}`
-                            },
-                            '& .MuiChip-icon': { color: 'inherit' }
-                          }} 
-                        />
-                      </Tooltip>
+                      {/* Right Controls: Clip Notes + Mode Switcher */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Tooltip title={currentPairNotes.length > 0 ? `View ${currentPairNotes.length} pinned note(s) for this topic` : "Open Clip Notes Drawer"}>
+                          <Chip 
+                            icon={<span style={{ fontSize: '0.85rem' }}>📎</span>}
+                            label={currentPairNotes.length > 0 ? `Notes (${currentPairNotes.length})` : "Clip Notes"}
+                            onClick={() => openClipDrawer({ scope: 'commodity_category', commodity: selectedCommodity, category: selectedCategory })}
+                            size="small" 
+                            sx={{ 
+                              bgcolor: currentPairNotes.length > 0 ? alpha('#059669', 0.14) : 'rgba(0,0,0,0.04)', 
+                              color: currentPairNotes.length > 0 ? '#059669' : '#475569', 
+                              fontWeight: 800, 
+                              border: `1.5px solid ${currentPairNotes.length > 0 ? alpha('#059669', 0.35) : 'rgba(0,0,0,0.08)'}`,
+                              px: 1.25, height: 28, fontSize: '0.74rem', letterSpacing: '0.02em',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                              '&:hover': {
+                                transform: 'translateY(-1px)',
+                                bgcolor: currentPairNotes.length > 0 ? alpha('#059669', 0.22) : 'rgba(0,0,0,0.08)',
+                                boxShadow: `0 4px 12px ${alpha('#059669', 0.2)}`
+                              }
+                            }} 
+                          />
+                        </Tooltip>
+
+                        <Tooltip title={articleEditorMode === 'framework' ? "Viewing Framework Configurator" : "Tap to Switch to Framework Configurator"}>
+                          <Chip 
+                            icon={draftId && draftId !== 'new' ? <AccessTimeIcon sx={{ fontSize: 14 }} /> : <AddIcon sx={{ fontSize: 14 }} />}
+                            label={`${draftId && draftId !== 'new' ? 'EDITING' : 'NEW'} ${eMeta.label.toUpperCase()} ${fMeta.label.toUpperCase()}`}
+                            onClick={() => setArticleEditorMode(articleEditorMode === 'framework' ? 'canvas' : 'framework')}
+                            size="small" 
+                            sx={{ 
+                              bgcolor: draftId && draftId !== 'new' ? 'rgba(245, 158, 11, 0.12)' : alpha(fMeta.color, 0.12), 
+                              color: draftId && draftId !== 'new' ? '#d97706' : fMeta.color, 
+                              fontWeight: 900, 
+                              border: `1.5px solid ${draftId && draftId !== 'new' ? 'rgba(245, 158, 11, 0.3)' : alpha(fMeta.color, 0.35)}`,
+                              px: 1.25, height: 28, fontSize: '0.74rem', letterSpacing: '0.04em',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                              '&:hover': {
+                                transform: 'translateY(-1px)',
+                                boxShadow: `0 4px 12px ${draftId && draftId !== 'new' ? 'rgba(245, 158, 11, 0.2)' : alpha(fMeta.color, 0.25)}`
+                              },
+                              '& .MuiChip-icon': { color: 'inherit' }
+                            }} 
+                          />
+                        </Tooltip>
+                      </Box>
                     </Box>
                   );
                 })()}
@@ -2111,9 +2145,17 @@ export default function CreateLearnContentForm({
                                   '&:hover': { transform: 'translateX(6px)', borderColor: alpha(bDef.color, 0.4), boxShadow: `0 8px 24px ${alpha(bDef.color, 0.12)}` },
                                 }}
                               >
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
-                                  <Typography sx={{ fontWeight: 800, color: '#0f172a', fontSize: '1rem' }}>{sop.role}</Typography>
-                                  <Chip label={bDef.label} size="small" sx={{ height: 20, fontSize: '0.68rem', bgcolor: alpha(bDef.color, 0.15), color: bDef.color, fontWeight: 800 }} />
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5, flexWrap: 'wrap', gap: 1 }}>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                    <Typography sx={{ fontWeight: 800, color: '#0f172a', fontSize: '1rem' }}>{sop.role}</Typography>
+                                    <Chip label={bDef.label} size="small" sx={{ height: 20, fontSize: '0.68rem', bgcolor: alpha(bDef.color, 0.15), color: bDef.color, fontWeight: 800 }} />
+                                  </Box>
+                                  <BlockClipAttachmentPill
+                                    blockRole={sop.type}
+                                    commodity={selectedCommodity}
+                                    category={selectedCategory}
+                                    articleId={draftId || 'new'}
+                                  />
                                 </Box>
                                 <Typography sx={{ color: '#475569', fontSize: '0.85rem', lineHeight: 1.4 }}>{sop.desc}</Typography>
                               </PremiumCard>
@@ -2460,6 +2502,13 @@ export default function CreateLearnContentForm({
                                     e.g. &ldquo;{b.sopHint}&rdquo;
                                   </Typography>
                                 )}
+                                <BlockClipAttachmentPill
+                                  blockRole={b.type}
+                                  blockContent={b.content ? (typeof b.content === 'string' ? b.content : JSON.stringify(b.content)) : undefined}
+                                  commodity={selectedCommodity}
+                                  category={selectedCategory}
+                                  articleId={draftId || 'new'}
+                                />
                                 <Tooltip title="Done editing">
                                   <IconButton
                                     size="medium"
@@ -3726,6 +3775,13 @@ export default function CreateLearnContentForm({
           </Box>
         </Box>
       )}
+
+      {/* ═══ GLOBAL SLIDE-OVER CLIP NOTES DRAWER ═══ */}
+      <ClipNoteDrawer
+        currentCommodity={selectedCommodity}
+        currentCategory={selectedCategory}
+        currentArticleId={draftId || 'new'}
+      />
 
     </Box>
   );

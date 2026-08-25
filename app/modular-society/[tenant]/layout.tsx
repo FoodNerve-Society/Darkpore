@@ -7,6 +7,8 @@ import { WikiProvider } from '@/app/components/providers/WikiProvider';
 import { WikiDrawer } from '@/app/components/ui/WikiDrawer';
 import LivelyLoadingScreen from '@/components/LivelyLoadingScreen';
 
+import { ClipNoteProvider } from '@/context/ClipNoteContext';
+
 export default async function SocietyRootLayout({ children }: { children: React.ReactNode }) {
   const headersList = await headers();
   const tenantId = headersList.get('x-tenant-id') || 'food';
@@ -17,8 +19,10 @@ export default async function SocietyRootLayout({ children }: { children: React.
           <React.Suspense fallback={<LivelyLoadingScreen />}>
             <SocietyProvider>
               <WikiProvider>
-                {children}
-                <WikiDrawer />
+                <ClipNoteProvider tenantId={tenantId}>
+                  {children}
+                  <WikiDrawer />
+                </ClipNoteProvider>
               </WikiProvider>
             </SocietyProvider>
           </React.Suspense>
