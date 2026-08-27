@@ -1,35 +1,4 @@
-/**
- * Editorial Prompts Configuration & Master Prompt Templates
- * Exact master prompts for Document 1a, Document 1b, and Document 1c.
- */
-
-import { ArticleFormat, ArticleEra } from './articleBlueprints';
-
-export interface SubcategoryInput {
-  id?: string;
-  title: string;
-  desc?: string;
-}
-
-export interface ParsedArticleBrief {
-  id: string;
-  categoryId?: string;
-  subcategoryId?: string;
-  subcategoryTitle?: string;
-  commodity: string;
-  format: ArticleFormat;
-  era: ArticleEra;
-  location: string;
-  spectrumRank: string;
-  targetPersona: string;
-  title: string;
-  descriptionSentences: string[];
-  hook: string;
-  politicalEconomy?: string;
-}
-
-export const DOC_1A_MASTER_PROMPT = `### 📄 DOCUMENT 1a: THE MACRO-GEO CONTEXT & SPARRING ENGINE (MASTER PROMPT)
-
+export const DOC_1A_MASTER_PROMPT = `
 **[SYSTEM PERSONA & TONE CONSTRAINTS]**
 You are a Senior Intelligence Director at a McKinsey/CIA-level firm in August 2026, mentoring a junior analyst. You will conduct rigorous OSINT research and output a structured macroeconomic blueprint. 
 *   **Tone for Data:** Strict third-person, brutal, plain 8th-grade English. Use hard verbs. 
@@ -106,8 +75,7 @@ Output your response strictly in the two Markdown blocks below. Do not include c
 *(Include a 6th Matrix for User Location here ONLY IF it was provided by the user and did not naturally make the Top 5).*
 `;
 
-export const DOC_1B_MASTER_PROMPT = `### 📄 DOCUMENT 1b: THE DRUCKER OSINT & SPARRING ENGINE (MASTER PROMPT)
-
+export const DOC_1B_MASTER_PROMPT = `
 **[SYSTEM PERSONA & TONE CONSTRAINTS]**
 You are a Senior Intelligence Director at a McKinsey/CIA-level firm in August 2026, mentoring a junior analyst. 
 *   **Tone for Critique:** Direct, objective, and surgically precise. Do not write essays. Use bullet points. 
@@ -120,7 +88,7 @@ Target Value Chain Actor(s): {{target_actors}}
 Selected Location: {{selected_location}}
 User's Desired Outcome: {{user_outcome}}
 User's 'Why Now' (Timing): {{user_why_now}}
-[DOC_1A_MACRO_CONTEXT]: {{doc_1a_output}}
+[DOC_1A_MACRO_CONTEXT]: [Present in Chat Memory]
 10 Subcategories List: {{subcategories_list}}
 Current Date: {{current_month_year}}
 
@@ -210,9 +178,7 @@ Output your response strictly in the two Markdown blocks below. Do not include c
 *   **OSINT Intelligence:** [4-5 sentences detailing the unexpected, weird, highly surprising edge-case or ancient historical root affecting {{commodity}}.]
 *   **Political Economy (Who Profits):** [Who exactly benefits?]
 `;
-
-export const DOC_1C_MASTER_PROMPT = `### 📄 DOCUMENT 1c: THE SPECTRUM SYNTHESIZER & OUTLINE GENERATOR (MASTER PROMPT)
-
+export const DOC_1C_MASTER_PROMPT = `
 **[SYSTEM PERSONA & TONE CONSTRAINTS]**
 Act as the Executive Editor for a McKinsey/CIA-level intelligence platform operating in {{current_month_year}}.
 Write strictly in the third person. Use hard verbs (extorted, bypassed, monopolized). No fluffy adjectives. Your job is to transform raw OSINT data and the user's strategic direction into highly clickable, structurally perfect article outlines.
@@ -222,8 +188,8 @@ Write strictly in the third person. Use hard verbs (extorted, bypassed, monopoli
 *   Era (3): ["Past", "Present", "Future"]
 
 **[INPUT PAYLOAD DEFINITION]**
-[DOC_1A_MACRO_CONTEXT]: {{doc_1a_output}}
-[DOC_1B_INTELLIGENCE_POOL]: {{doc_1b_output}}
+[DOC_1A_MACRO_CONTEXT]: {{doc1a_output}}
+[DOC_1B_INTELLIGENCE_POOL]: {{doc1b_output}}
 User's Final Strategic Decision: {{user_final_decision}} 
 Target Persona: {{target_persona}}
 
@@ -252,14 +218,14 @@ Do NOT use robotic, fill-in-the-blank title templates. Generate highly clickable
 3.  **Match the Format Vibe:** A Memo title must sound financial. A Playbook title must sound tactical. A Comparison title must explicitly pit two things against each other.
 
 #### PHASE 4: Formatting Rules
-Every outline MUST be an isolated Markdown block separated by ---. Every outline MUST begin with the **[SYSTEM_METADATA]** backpack.
+Every outline MUST be an isolated Markdown block separated by \`---\`. Every outline MUST begin with the **[SYSTEM_METADATA]** backpack.
 
 **Description Rules (Exactly 6 Sentences):**
 *   Sentence 1: Core problem plainly stated.
 *   Sentence 2 & 3: Mechanics/Drucker trigger explained brutally and simply.
-*   Sentence 4: Value Chain Actor affected.
-*   Sentence 5: Systemic outcome.
-*   Sentence 6: Political Economy (Who explicitly benefits from this problem persisting).
+*   Sentence 4: Explicitly name the Value Chain Actor affected.
+*   Sentence 5: State the final systemic/financial outcome.
+*   Sentence 6: State the Political Economy (Who explicitly benefits from this problem persisting).
 
 ---
 
@@ -290,168 +256,4 @@ Output ONLY the 10-12 generated outlines. Use this exact syntax:
 ---
 *(REPEAT FOR ALL 10-12 OUTLINES)*
 `;
-
 export const DOC_2_MASTER_PROMPT = ``;
-
-/**
- * Helper to format subcategories list with Name + Description
- */
-export function formatSubcategoriesList(subcats: Array<string | SubcategoryInput>): string {
-  if (!subcats || subcats.length === 0) return 'General Value Chain Operations';
-  return subcats
-    .map((s, idx) => {
-      if (typeof s === 'string') return `${idx + 1}. ${s}`;
-      return `${idx + 1}. **${s.title}**: ${s.desc || 'Operational pathway'}`;
-    })
-    .join('\n');
-}
-
-/**
- * Compiles the exact Document 1a prompt by replacing dynamic placeholder variables.
- */
-export function buildDoc1aPrompt(params: {
-  category: string;
-  commodity: string;
-  subcategoriesList: Array<string | SubcategoryInput>;
-  currentMonthYear: string;
-  targetActors?: string[];
-  userLocation?: string;
-}): string {
-  const subcatsFormatted = formatSubcategoriesList(params.subcategoriesList);
-  const actorsStr = (params.targetActors && params.targetActors.length > 0)
-    ? params.targetActors.join(', ')
-    : 'Agro-Allocators, Logistics Operators & Commercial Traders';
-  const locationStr = params.userLocation?.trim() || '[Optional: Global Top 5 to be determined by AI]';
-
-  return DOC_1A_MASTER_PROMPT
-    .replace(/\{\{category\}\}/g, params.category)
-    .replace(/\{\{commodity\}\}/g, params.commodity)
-    .replace(/\{\{target_actors\}\}/g, actorsStr)
-    .replace(/\{\{user_location\}\}/g, locationStr)
-    .replace(/\{\{subcategories_list\}\}/g, subcatsFormatted)
-    .replace(/\{\{current_month_year\}\}/g, params.currentMonthYear);
-}
-
-/**
- * Compiles the exact Document 1b prompt by replacing dynamic placeholder variables.
- */
-export function buildDoc1bPrompt(params: {
-  commodity: string;
-  currentMonthYear: string;
-  doc1aOutput?: string;
-  subcategoriesList: Array<string | SubcategoryInput>;
-  targetActors?: string[];
-  selectedLocation?: string;
-  userOutcome?: string;
-  userWhyNow?: string;
-}): string {
-  const subcatsFormatted = formatSubcategoriesList(params.subcategoriesList);
-  const actorsStr = (params.targetActors && params.targetActors.length > 0)
-    ? params.targetActors.join(', ')
-    : 'Agro-Allocators, Logistics Operators & Commercial Traders';
-  const locationStr = params.selectedLocation?.trim() || '[Primary Epicenter from Doc 1a]';
-  const outcomeStr = params.userOutcome?.trim() || '[Specify what operational/commercial change the actor must make]';
-  const whyNowStr = params.userWhyNow?.trim() || '[Specify what market shift or news event triggered this]';
-
-  return DOC_1B_MASTER_PROMPT
-    .replace(/\{\{commodity\}\}/g, params.commodity)
-    .replace(/\{\{target_actors\}\}/g, actorsStr)
-    .replace(/\{\{selected_location\}\}/g, locationStr)
-    .replace(/\{\{user_outcome\}\}/g, outcomeStr)
-    .replace(/\{\{user_why_now\}\}/g, whyNowStr)
-    .replace(/\{\{current_month_year\}\}/g, params.currentMonthYear)
-    .replace(/\{\{doc_1a_output\}\}/g, params.doc1aOutput || '[Refer to Document 1a generated above in this chat]')
-    .replace(/\{\{subcategories_list\}\}/g, subcatsFormatted);
-}
-
-/**
- * Compiles the exact Document 1c prompt by replacing dynamic placeholder variables.
- */
-export function buildDoc1cPrompt(params: {
-  doc1aOutput?: string;
-  doc1bOutput?: string;
-  currentMonthYear?: string;
-  userFinalDecision?: string;
-  targetPersona?: string;
-}): string {
-  return DOC_1C_MASTER_PROMPT
-    .replace(/\{\{current_month_year\}\}/g, params.currentMonthYear || 'August 2026')
-    .replace(/\{\{doc_1a_output\}\}/g, params.doc1aOutput || '[Refer to the 5 Micro-Geographies from Document 1a generated above in this chat]')
-    .replace(/\{\{doc_1b_output\}\}/g, params.doc1bOutput || '[Refer to the 6-Point Spectrum and Drucker findings from Document 1b generated above in this chat]')
-    .replace(/\{\{user_final_decision\}\}/g, params.userFinalDecision || 'Stick to original strategic angle')
-    .replace(/\{\{target_persona\}\}/g, params.targetPersona || 'Agro-Allocators & Logistics Operators');
-}
-
-/**
- * Parses raw Document 1c markdown text into structured article briefs.
- */
-export function parseDoc1cArticles(rawText: string, fallbackCommodity = 'Soybeans, Nuts and Meals'): ParsedArticleBrief[] {
-  if (!rawText) return [];
-
-  const outlines: ParsedArticleBrief[] = [];
-  const blocks = rawText.split('---').map(b => b.trim()).filter(Boolean);
-
-  blocks.forEach((block, idx) => {
-    const categoryMatch = block.match(/[*•-]?\s*\*?\*?Category(?:_ID)?\*?\*?:\s*([^\n\r*]+)/i);
-    const subcategoryMatch = block.match(/[*•-]?\s*\*?\*?Subcategory(?:_ID)?\*?\*?:\s*([^\n\r*]+)/i);
-    const commodityMatch = block.match(/[*•-]?\s*\*?\*?Commodity\*?\*?:\s*([^\n\r*]+)/i);
-    const formatMatch = block.match(/[*•-]?\s*\*?\*?Format(?:_Type)?\*?\*?:\s*([^\n\r*]+)/i);
-    const eraMatch = block.match(/[*•-]?\s*\*?\*?Era\*?\*?:\s*([^\n\r*]+)/i);
-    const locationMatch = block.match(/[*•-]?\s*\*?\*?Location\*?\*?:\s*([^\n\r*]+)/i);
-    const spectrumMatch = block.match(/[*•-]?\s*\*?\*?Spectrum(?:_Rank)?\*?\*?:\s*([^\n\r*]+)/i);
-    const personaMatch = block.match(/[*•-]?\s*\*?\*?Target_Persona\*?\*?:\s*([^\n\r*]+)/i);
-
-    const cleanCategory = categoryMatch ? categoryMatch[1].replace(/[*_`]/g, '').trim() : undefined;
-    const cleanSubcategory = subcategoryMatch ? subcategoryMatch[1].replace(/[*_`]/g, '').trim() : undefined;
-    const cleanCommodity = commodityMatch ? commodityMatch[1].replace(/[*_`]/g, '').trim() : fallbackCommodity;
-    const cleanLocation = locationMatch ? locationMatch[1].replace(/[*_`]/g, '').trim() : 'National Transit Hub';
-    const cleanSpectrum = spectrumMatch ? spectrumMatch[1].replace(/[*_`]/g, '').trim() : `#${(idx % 6) + 1}`;
-    const cleanPersona = personaMatch ? personaMatch[1].replace(/[*_`]/g, '').trim() : 'Agro-Allocators & Operators';
-
-    const titleMatch = block.match(/###\s*([^\n\r]+)/);
-    const title = titleMatch ? titleMatch[1].replace(/[*_`]/g, '').trim() : `Article Brief #${idx + 1}`;
-
-    const descSectionMatch = block.match(/\*\*Description:\*\*([\s\S]*?)(?:---|$)/i);
-    let descLines: string[] = [];
-    if (descSectionMatch) {
-      descLines = descSectionMatch[1]
-        .split('\n')
-        .map(l => l.replace(/^[\s*•-]+/, '').trim())
-        .filter(l => l.length > 0);
-    }
-
-    const rawFormat = (formatMatch ? formatMatch[1].replace(/[*_`]/g, '').trim().toLowerCase() : 'brief') as ArticleFormat;
-    const format: ArticleFormat = ['brief', 'memo', 'playbook', 'comparison', 'culture'].includes(rawFormat)
-      ? rawFormat
-      : 'brief';
-
-    const rawEra = (eraMatch ? eraMatch[1].replace(/[*_`]/g, '').trim().toLowerCase() : 'present') as ArticleEra;
-    const era: ArticleEra = ['past', 'present', 'future'].includes(rawEra)
-      ? rawEra
-      : 'present';
-
-    const hook = descLines.slice(0, 3).join(' ') || 'Strategic market intelligence breakdown.';
-    const politicalEconomy = descLines.length >= 6 ? descLines[5] : undefined;
-
-    if (title && (categoryMatch || formatMatch || descLines.length > 0)) {
-      outlines.push({
-        id: `brief-${Date.now()}-${idx + 1}`,
-        categoryId: cleanCategory,
-        subcategoryId: cleanSubcategory,
-        subcategoryTitle: cleanSubcategory,
-        commodity: cleanCommodity,
-        format,
-        era,
-        location: cleanLocation,
-        spectrumRank: cleanSpectrum,
-        targetPersona: cleanPersona,
-        title,
-        descriptionSentences: descLines,
-        hook,
-        politicalEconomy,
-      });
-    }
-  });
-
-  return outlines;
-}

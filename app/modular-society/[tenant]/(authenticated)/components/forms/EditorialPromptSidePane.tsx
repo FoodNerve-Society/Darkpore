@@ -214,7 +214,7 @@ ${pinnedClips.length > 0 ? `\nPinned Ground Clips:\n${pinnedClips.join('\n---\n'
             '& .MuiTabs-indicator': { bgcolor: formatMeta.color }
           }}
         >
-          <Tab value="pipeline" label="📡 Pipeline Prompts (Doc 1A-2)" />
+          <Tab value="pipeline" label="📡 Canvas Generator (Doc 2)" />
           <Tab value="block_refiner" label={`✨ Block Refiner (${blocks.length})`} />
         </Tabs>
       </Box>

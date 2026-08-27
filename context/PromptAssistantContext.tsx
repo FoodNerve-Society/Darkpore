@@ -18,6 +18,9 @@ import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import PremiumMarkdownEditor from '@/components/PremiumMarkdownEditor';
+import PremiumAutocomplete from '@/components/PremiumAutocomplete';
+import PremiumTextField from '@/components/PremiumTextField';
+
 import {
   buildDoc1aPrompt,
   buildDoc1bPrompt,
@@ -25,6 +28,8 @@ import {
   parseDoc1cArticles
 } from '@/lib/config/editorialPrompts';
 import { foodChallenges } from '@/lib/cms/food/challenges';
+import { VALUE_CHAIN_ACTORS as CMS_ACTORS } from '@/lib/cms';
+import { VALUE_CHAIN_ACTORS as TAXONOMY_ACTORS } from '@/lib/taxonomy';
 import { getCommodityMeta } from '@/lib/cms/commodities';
 import { keyframes } from '@mui/system';
 
@@ -111,6 +116,28 @@ const PromptAssistantContext = createContext<PromptAssistantContextType>({
   registerIngestHandler: () => () => {},
 });
 
+
+const ACTOR_OPTIONS: string[] = Array.from(new Set([
+  ...CMS_ACTORS.map(a => a.label),
+  ...TAXONOMY_ACTORS,
+]));
+
+const getCategoryShortName = (catId?: string): string => {
+  if (!catId) return 'Category';
+  const id = catId.toLowerCase().trim();
+  switch (id) {
+    case 'capital': return 'Capital';
+    case 'land': return 'Land';
+    case 'inputs': return 'Inputs';
+    case 'energy': return 'Energy';
+    case 'insecurity': return 'Insecurity';
+    case 'harvest-to-market':
+    case 'harvest': return 'Harvest';
+    case 'people': return 'People';
+    default: return catId.charAt(0).toUpperCase() + catId.slice(1);
+  }
+};
+
 export const usePromptAssistant = () => useContext(PromptAssistantContext);
 
 export function PromptAssistantProvider({ children }: { children: ReactNode }) {
@@ -137,6 +164,18 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
   const [customIngestError, setCustomIngestError] = useState('');
   const [wikiChecklist, setWikiChecklist] = useState<Record<string, boolean>>({});
   const [copiedPromptTab, setCopiedPromptTab] = useState<string | null>(null);
+
+  // === SPARRING PARTNER INTERACTIVE INPUTS ===
+  const [targetActors, setTargetActors] = useState<string[]>([]);
+  const [targetLocation, setTargetLocation] = useState('');
+  
+  // Step 2 State
+  const [locationPivot, setLocationPivot] = useState(true);
+  const [expectedOutcome, setExpectedOutcome] = useState('');
+  const [whyNow, setWhyNow] = useState('');
+
+  // Step 3 State
+  const [strategicPivot, setStrategicPivot] = useState(true);
 
   // Ingest subscriber callbacks (allows CreatorStudio or other active views to receive ingested briefs)
   const ingestSubscribersRef = React.useRef<Set<(briefs: any[]) => void>>(new Set());
@@ -536,12 +575,12 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
             </Box>
             <Box>
               <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.25, fontSize: { xs: '1.05rem', sm: '1.18rem' }, letterSpacing: '-0.025em' }}>
-                Get AI article ideas here
+                AI Idea Assistant
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 0.35 }}>
                 <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#10b981' }} />
                 <Typography sx={{ color: '#64748b', fontWeight: 600, fontSize: '0.8rem', letterSpacing: '-0.01em' }}>
-                  Get 10–12 article titles and insights by the end
+                  You guide the AI with your market knowledge to uncover 10–12 sharp article outlines
                 </Typography>
               </Box>
             </Box>
@@ -693,7 +732,7 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
                 border: '1px solid rgba(255,255,255,0.15)',
               }}>
                 <Typography sx={{ color: '#93c5fd', fontSize: '0.74rem', fontWeight: 900, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  🛡️ {foodChallenges.find(c => c.id.toLowerCase() === selectedCategory.toLowerCase())?.title?.split('&')[0]?.trim() || selectedCategory}
+                  🛡️ {getCategoryShortName(selectedCategory)}
                 </Typography>
               </Box>
             </Box>
@@ -707,17 +746,22 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
               <Box sx={{ width: 30, height: 30, borderRadius: '50%', bgcolor: '#0f172a', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.88rem' }}>
                 0
               </Box>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>
-                Step 0: Workflow Overview
-              </Typography>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
+                  Step 0: How You Guide the AI
+                </Typography>
+                <Typography sx={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 600 }}>
+                  You are the Director steering the research; the AI is your OSINT Analyst.
+                </Typography>
+              </Box>
             </Box>
 
             {/* Step 0 Action Checklist */}
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 1.75, border: '1px solid rgba(15, 23, 42, 0.15)', borderRadius: '14px', bgcolor: 'rgba(15, 23, 42, 0.02)' }}>
               {[
-                { id: 'act_sop_0a', text: '1. Open ChatGPT, Claude, or Gemini in a new browser tab.' },
-                { id: 'act_sop_0b', text: '2. In that same chat thread, run Prompts 1, 2, and 3 sequentially.' },
-                { id: 'act_sop_0c', text: '3. Copy the final Document 1c output from your chat and paste it into Step 4 below.' },
+                { id: 'act_sop_0a', text: '1. Fill in 2 quick inputs per step to shape your research.' },
+                { id: 'act_sop_0b', text: '2. Copy and run each prompt sequentially in ChatGPT, Claude, or Gemini.' },
+                { id: 'act_sop_0c', text: '3. Paste the final output into Step 4 to import 12 article cards directly onto your board.' },
               ].map(item => {
                 const isChecked = !!wikiChecklist[item.id];
                 return (
@@ -771,14 +815,59 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
                 1
               </Box>
               <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>
-                Step 1: Trade Hubs & Geography
+                Step 1: Where is the Action Happening?
               </Typography>
             </Box>
 
-            {/* Pre-Prompt Action Checklist */}
+            {/* Step 1 Quick Inputs */}
+            <Box sx={{
+              p: 2.25,
+              borderRadius: '16px',
+              bgcolor: '#ffffff',
+              border: '1px solid rgba(59, 130, 246, 0.25)',
+              boxShadow: '0 4px 16px rgba(59, 130, 246, 0.05)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 2
+            }}>
+              <Box>
+                <Typography sx={{ fontSize: '0.84rem', fontWeight: 800, color: '#1e40af', display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                  <span>🎯</span> Who & Where are we focusing on?
+                </Typography>
+                <Typography sx={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500, mt: 0.25 }}>
+                  Tell the AI who your target reader is and if you have a specific city in mind.
+                </Typography>
+              </Box>
+              
+              <PremiumAutocomplete
+                multiple
+                freeSolo
+                colorTheme="#3b82f6"
+                label="Who are we writing for? (Target Audience)"
+                placeholder="Select or type e.g. Farmer / Producer, Processor, Investor..."
+                options={ACTOR_OPTIONS}
+                value={targetActors}
+                onChange={(_, val) => setTargetActors(val as string[])}
+              />
+
+              <PremiumTextField
+                colorTheme="#3b82f6"
+                label="Do you have a specific city or market in mind? (Optional)"
+                placeholder="e.g. Dawanau Market, Kano or Mile 12, Lagos"
+                value={targetLocation}
+                onChange={(e) => setTargetLocation(e.target.value)}
+                fullWidth
+              />
+            </Box>
+
+            
+
+            
+
+                        {/* Action Checklist: Before Prompt */}
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 1.75, border: '1px solid rgba(59, 130, 246, 0.25)', borderRadius: '14px', bgcolor: 'rgba(59, 130, 246, 0.03)' }}>
               {[
-                { id: 'act_copy_1a', text: '1. Click "Copy Executable Prompt 1a" below, paste it into your AI chat (ChatGPT, Claude, or Gemini), and press Enter.' }
+                { id: 'act_copy_1a', text: '1. Copy Step 1 Prompt below and run it in ChatGPT, Claude, or Gemini.' }
               ].map(item => {
                 const isChecked = !!wikiChecklist[item.id];
                 return (
@@ -786,9 +875,9 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
                     key={item.id}
                     onClick={() => toggleChecklistItem(item.id)}
                     sx={{
-                      display: 'flex', alignItems: 'center', p: 1.25, borderRadius: '10px', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', p: 1.2, borderRadius: '10px', cursor: 'pointer',
                       bgcolor: isChecked ? 'rgba(16, 185, 129, 0.06)' : '#ffffff',
-                      border: isChecked ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(59, 130, 246, 0.15)',
+                      border: isChecked ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(59, 130, 246, 0.18)',
                       transition: 'all 0.2s',
                       '&:hover': { bgcolor: isChecked ? 'rgba(16, 185, 129, 0.1)' : 'rgba(59, 130, 246, 0.06)' }
                     }}
@@ -809,11 +898,11 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
                       )}
                     </Box>
                     <Typography sx={{
-                      fontSize: '0.85rem',
+                      fontSize: '0.84rem',
                       color: isChecked ? '#94a3b8' : '#1e293b',
                       textDecoration: isChecked ? 'line-through' : 'none',
                       fontWeight: isChecked ? 500 : 700,
-                      lineHeight: 1.45
+                      lineHeight: 1.4
                     }}>
                       {item.text}
                     </Typography>
@@ -828,7 +917,7 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
                   <CheckCircleIcon sx={{ color: '#3b82f6' }} />
                   <Typography sx={{ color: '#1e40af', fontWeight: 700, fontSize: '0.9rem' }}>
-                    Prompt 1a Copied to Clipboard!
+                    Step 1 Prompt Copied to Clipboard!
                   </Typography>
                 </Box>
                 <Button size="small" onClick={() => setCopiedPromptTab(null)} sx={{ textTransform: 'none', fontWeight: 700, borderRadius: '8px', color: '#2563eb' }}>
@@ -844,7 +933,7 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
                     <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: '#10b981' }} />
                   </Box>
                   <Typography sx={{ color: '#94a3b8', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                    PROMPT BUILDER · STEP 1 (MACRO-GEO)
+                    STEP 1 PROMPT · FIND 5 HOT MARKETS
                   </Typography>
                   <Box sx={{ width: 33 }} />
                 </Box>
@@ -873,20 +962,20 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
                     }}
                   >
                     <ContentCopyIcon sx={{ mr: 1, fontSize: 16 }} />
-                    Copy Executable Prompt 1a
+                    Copy Step 1 Prompt (Find 5 Markets)
                   </Button>
                 </Box>
               </Box>
             )}
 
-            {/* Verification Checklist */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, p: 2.25, border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '16px', bgcolor: 'rgba(245, 158, 11, 0.04)' }}>
-              <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#b45309', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                ⚡ Verify AI Output for Step 1:
+            {/* Verification Checklist: Under Prompt */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, p: 2, border: '1px solid rgba(59, 130, 246, 0.25)', borderRadius: '16px', bgcolor: 'rgba(59, 130, 246, 0.04)' }}>
+              <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#1e40af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                ⚡ Check the AI Output for Step 1:
               </Typography>
               {[
-                { id: 'chk1_hubs', text: `Did the AI identify exactly 5 Nigerian micro-geographies & trade hubs for ${selectedCommodity}?` },
-                { id: 'chk1_eras', text: 'Did it establish the 3 temporal eras (Past Autopsy, Present Battlefield, Future Foresight)?' },
+                { id: 'chk1_hubs', text: `Did the AI identify 5 real cities/markets where ${selectedCommodity} is traded or struggling?` },
+                { id: 'chk1_eras', text: "Did it explain past history, today's active crisis, and what will happen by 2030?" },
               ].map(item => {
                 const isChecked = !!wikiChecklist[item.id];
                 return (
@@ -894,30 +983,30 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
                     key={item.id}
                     onClick={() => toggleChecklistItem(item.id)}
                     sx={{
-                      display: 'flex', alignItems: 'center', p: 1.25, borderRadius: '12px', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', p: 1.2, borderRadius: '10px', cursor: 'pointer',
                       bgcolor: isChecked ? 'rgba(16, 185, 129, 0.06)' : '#ffffff',
-                      border: isChecked ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(245, 158, 11, 0.2)',
+                      border: isChecked ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(59, 130, 246, 0.2)',
                       transition: 'all 0.2s',
-                      '&:hover': { bgcolor: isChecked ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.08)' }
+                      '&:hover': { bgcolor: isChecked ? 'rgba(16, 185, 129, 0.1)' : 'rgba(59, 130, 246, 0.08)' }
                     }}
                   >
                     <Box sx={{
-                      width: 22, height: 22, borderRadius: '7px',
+                      width: 20, height: 20, borderRadius: '6px',
                       border: '2px solid',
-                      borderColor: isChecked ? '#10b981' : '#f59e0b',
+                      borderColor: isChecked ? '#10b981' : '#3b82f6',
                       bgcolor: isChecked ? '#10b981' : 'transparent',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      mr: 1.5, flexShrink: 0,
+                      mr: 1.25, flexShrink: 0,
                       transition: 'all 0.2s'
                     }}>
                       {isChecked && (
-                        <svg width="12" height="9" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <svg width="10" height="8" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <path d="M1 5L5 9L13 1" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
                       )}
                     </Box>
                     <Typography sx={{
-                      fontSize: '0.86rem',
+                      fontSize: '0.84rem',
                       color: isChecked ? '#94a3b8' : '#1e293b',
                       textDecoration: isChecked ? 'line-through' : 'none',
                       fontWeight: isChecked ? 500 : 700,
@@ -930,7 +1019,8 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
                 );
               })}
             </Box>
-          </Box>
+
+            </Box>
 
           <Box sx={{ borderBottom: '1px solid rgba(0,0,0,0.08)', my: 1.5 }} />
 
@@ -943,14 +1033,116 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
                 2
               </Box>
               <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>
-                Step 2: Market Disruptions & Costs
+                Step 2: Real Market Costs & Traps
               </Typography>
             </Box>
 
-            {/* Pre-Prompt Action Checklist */}
+            {/* Step 2 Quick Inputs */}
+            <Box sx={{
+              p: 2.25,
+              borderRadius: '16px',
+              bgcolor: '#ffffff',
+              border: '1px solid rgba(245, 158, 11, 0.3)',
+              boxShadow: '0 4px 16px rgba(245, 158, 11, 0.05)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 2
+            }}>
+              <Box>
+                <Typography sx={{ fontSize: '0.84rem', fontWeight: 800, color: '#b45309', display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                  <span>🔄</span> What problem are we solving?
+                </Typography>
+                <Typography sx={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500, mt: 0.25 }}>
+                  Tell the AI what practical action you want the reader to take, and why it is urgent.
+                </Typography>
+              </Box>
+
+              {/* Crash-Proof Segmented Pill Switcher for Location */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                <Typography sx={{ fontSize: '0.76rem', fontWeight: 700, color: '#475569' }}>
+                  Choose your focus location:
+                </Typography>
+                <Box sx={{
+                  display: 'flex',
+                  p: 0.5,
+                  borderRadius: '12px',
+                  bgcolor: '#f1f5f9',
+                  border: '1px solid rgba(0,0,0,0.06)'
+                }}>
+                  <Button
+                    onClick={() => setLocationPivot(false)}
+                    sx={{
+                      flex: 1,
+                      py: 0.75,
+                      borderRadius: '9px',
+                      textTransform: 'none',
+                      fontSize: '0.8rem',
+                      fontWeight: !locationPivot ? 800 : 600,
+                      color: !locationPivot ? '#0f172a' : '#64748b',
+                      bgcolor: !locationPivot ? '#ffffff' : 'transparent',
+                      boxShadow: !locationPivot ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+                      transition: 'all 0.15s ease',
+                      '&:hover': { bgcolor: !locationPivot ? '#ffffff' : 'rgba(0,0,0,0.04)' }
+                    }}
+                  >
+                    📍 Stick to My City / Market
+                  </Button>
+                  <Button
+                    onClick={() => setLocationPivot(true)}
+                    sx={{
+                      flex: 1,
+                      py: 0.75,
+                      borderRadius: '9px',
+                      textTransform: 'none',
+                      fontSize: '0.8rem',
+                      fontWeight: locationPivot ? 800 : 600,
+                      color: locationPivot ? '#b45309' : '#64748b',
+                      bgcolor: locationPivot ? '#ffffff' : 'transparent',
+                      boxShadow: locationPivot ? '0 2px 8px rgba(245, 158, 11, 0.15)' : 'none',
+                      transition: 'all 0.15s ease',
+                      '&:hover': { bgcolor: locationPivot ? '#ffffff' : 'rgba(0,0,0,0.04)' }
+                    }}
+                  >
+                    ⚡ Use AI Top Market
+                  </Button>
+                </Box>
+              </Box>
+
+              {/* Question 1: Desired Outcome */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: '#1e293b', display: 'flex', alignItems: 'center', gap: 0.6 }}>
+                  💡 What should this person do differently? (The Solution)
+                </Typography>
+                <PremiumMarkdownEditor
+                  colorTheme="#f59e0b"
+                  placeholder="e.g. Start solar drying ginger before loading trucks, or sell directly to juice factories."
+                  value={expectedOutcome}
+                  onChange={(e: any) => setExpectedOutcome(e.target.value)}
+                  minRows={3}
+                  fullWidth
+                />
+              </Box>
+
+              {/* Question 2: Why Now (The Trigger) */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: '#1e293b', display: 'flex', alignItems: 'center', gap: 0.6 }}>
+                  ⚡ Why is this urgent right now? (The Trigger)
+                </Typography>
+                <PremiumMarkdownEditor
+                  colorTheme="#f59e0b"
+                  placeholder="e.g. Diesel prices doubled, new export standards, or recent floods ruined 40% of crops."
+                  value={whyNow}
+                  onChange={(e: any) => setWhyNow(e.target.value)}
+                  minRows={3}
+                  fullWidth
+                />
+              </Box>
+            </Box>
+
+                        {/* Action Checklist: Before Prompt */}
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 1.75, border: '1px solid rgba(245, 158, 11, 0.25)', borderRadius: '14px', bgcolor: 'rgba(245, 158, 11, 0.03)' }}>
               {[
-                { id: 'act_copy_1b', text: '1. Click "Copy Executable Prompt 1b" below, paste it into the SAME AI chat thread, and press Enter.' }
+                { id: 'act_copy_1b', text: '1. Copy Step 2 Prompt below and run it in the SAME AI chat thread.' }
               ].map(item => {
                 const isChecked = !!wikiChecklist[item.id];
                 return (
@@ -958,9 +1150,9 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
                     key={item.id}
                     onClick={() => toggleChecklistItem(item.id)}
                     sx={{
-                      display: 'flex', alignItems: 'center', p: 1.25, borderRadius: '10px', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', p: 1.2, borderRadius: '10px', cursor: 'pointer',
                       bgcolor: isChecked ? 'rgba(16, 185, 129, 0.06)' : '#ffffff',
-                      border: isChecked ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(245, 158, 11, 0.2)',
+                      border: isChecked ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(245, 158, 11, 0.25)',
                       transition: 'all 0.2s',
                       '&:hover': { bgcolor: isChecked ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.08)' }
                     }}
@@ -981,11 +1173,11 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
                       )}
                     </Box>
                     <Typography sx={{
-                      fontSize: '0.85rem',
+                      fontSize: '0.84rem',
                       color: isChecked ? '#94a3b8' : '#1e293b',
                       textDecoration: isChecked ? 'line-through' : 'none',
                       fontWeight: isChecked ? 500 : 700,
-                      lineHeight: 1.45
+                      lineHeight: 1.4
                     }}>
                       {item.text}
                     </Typography>
@@ -1000,7 +1192,7 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
                   <CheckCircleIcon sx={{ color: '#f59e0b' }} />
                   <Typography sx={{ color: '#b45309', fontWeight: 700, fontSize: '0.9rem' }}>
-                    Prompt 1b Copied to Clipboard!
+                    Step 2 Prompt Copied to Clipboard!
                   </Typography>
                 </Box>
                 <Button size="small" onClick={() => setCopiedPromptTab(null)} sx={{ textTransform: 'none', fontWeight: 700, borderRadius: '8px', color: '#b45309' }}>
@@ -1016,7 +1208,7 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
                     <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: '#10b981' }} />
                   </Box>
                   <Typography sx={{ color: '#fbbf24', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                    PROMPT BUILDER · STEP 2 (DRUCKER OSINT)
+                    STEP 2 PROMPT · UNCOVER REAL MARKET COSTS
                   </Typography>
                   <Box sx={{ width: 33 }} />
                 </Box>
@@ -1045,20 +1237,20 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
                     }}
                   >
                     <ContentCopyIcon sx={{ mr: 1, fontSize: 16 }} />
-                    Copy Executable Prompt 1b
+                    Copy Step 2 Prompt (Market Costs)
                   </Button>
                 </Box>
               </Box>
             )}
 
-            {/* Verification Checklist */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, p: 2.25, border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '16px', bgcolor: 'rgba(245, 158, 11, 0.04)' }}>
+            {/* Verification Checklist: Under Prompt */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, p: 2, border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '16px', bgcolor: 'rgba(245, 158, 11, 0.04)' }}>
               <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#b45309', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                ⚡ Verify AI Output for Step 2:
+                ⚡ Check the AI Output for Step 2:
               </Typography>
               {[
-                { id: 'chk2_vectors', text: 'Did the AI generate 10 distinct Drucker innovation vectors?' },
-                { id: 'chk2_asymmetry', text: 'Did it identify informal fuel spreads, trucking union minimums & arbitrage gangs?' },
+                { id: 'chk2_vectors', text: 'Did the AI pick the 6 best, most practical topics for this commodity?' },
+                { id: 'chk2_asymmetry', text: 'Did it clearly name who is losing money and who is profiting from the problem?' },
               ].map(item => {
                 const isChecked = !!wikiChecklist[item.id];
                 return (
@@ -1066,7 +1258,7 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
                     key={item.id}
                     onClick={() => toggleChecklistItem(item.id)}
                     sx={{
-                      display: 'flex', alignItems: 'center', p: 1.25, borderRadius: '12px', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', p: 1.2, borderRadius: '10px', cursor: 'pointer',
                       bgcolor: isChecked ? 'rgba(16, 185, 129, 0.06)' : '#ffffff',
                       border: isChecked ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(245, 158, 11, 0.2)',
                       transition: 'all 0.2s',
@@ -1074,22 +1266,22 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
                     }}
                   >
                     <Box sx={{
-                      width: 22, height: 22, borderRadius: '7px',
+                      width: 20, height: 20, borderRadius: '6px',
                       border: '2px solid',
                       borderColor: isChecked ? '#10b981' : '#f59e0b',
                       bgcolor: isChecked ? '#10b981' : 'transparent',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      mr: 1.5, flexShrink: 0,
+                      mr: 1.25, flexShrink: 0,
                       transition: 'all 0.2s'
                     }}>
                       {isChecked && (
-                        <svg width="12" height="9" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <svg width="10" height="8" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <path d="M1 5L5 9L13 1" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
                       )}
                     </Box>
                     <Typography sx={{
-                      fontSize: '0.86rem',
+                      fontSize: '0.84rem',
                       color: isChecked ? '#94a3b8' : '#1e293b',
                       textDecoration: isChecked ? 'line-through' : 'none',
                       fontWeight: isChecked ? 500 : 700,
@@ -1102,7 +1294,8 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
                 );
               })}
             </Box>
-          </Box>
+
+            </Box>
 
           <Box sx={{ borderBottom: '1px solid rgba(0,0,0,0.08)', my: 1.5 }} />
 
@@ -1128,10 +1321,10 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
               </Box>
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
-                  Step 3: Generate 10–12 Article Briefs
+                  Step 3: Generate 12 Article Ideas
                 </Typography>
                 <Typography sx={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 600 }}>
-                  Synthesizes Macro-Geo + Drucker OSINT across 6 Nigerian market angles
+                  Creates 10–12 clickable article headlines across 6 practical story angles
                 </Typography>
               </Box>
             </Box>
@@ -1155,12 +1348,12 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
 
               <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1 }}>
                 {[
-                  { rank: '#1', name: 'The Bleeding Neck', desc: 'Urgent fuel, freight & spoilage squeeze', color: '#ef4444', bg: '#fef2f2', border: '#fecaca', emoji: '🔴' },
-                  { rank: '#2', name: 'Institutional Pivot', desc: '₦500M+ SPVs, off-taker balance sheets', color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe', emoji: '🏛️' },
-                  { rank: '#3', name: 'The Grassroots Hack', desc: 'Farmgate aggregation & informal yield hacks', color: '#d97706', bg: '#fffbeb', border: '#fde68a', emoji: '🚜' },
-                  { rank: '#4', name: 'The R&D Horizon', desc: 'Post-harvest biotech, solar drying & storage', color: '#059669', bg: '#ecfdf5', border: '#a7f3d0', emoji: '🧬' },
-                  { rank: '#5', name: 'The Macro Threat', desc: 'FX devaluation, interest rates & policy bans', color: '#ea580c', bg: '#fff7ed', border: '#fed7aa', emoji: '⚠️' },
-                  { rank: '#6', name: 'The Black Swan', desc: 'Informal arbitrage, spot spreads & disruption', color: '#9333ea', bg: '#faf5ff', border: '#e9d5ff', emoji: '🔮' },
+                  { rank: '#1', name: 'Urgent Crisis', desc: 'Everyday fuel, spoilage & freight squeeze', color: '#ef4444', bg: '#fef2f2', border: '#fecaca', emoji: '🔴' },
+                  { rank: '#2', name: 'Big Business Move', desc: 'Large company investments & buyer contracts', color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe', emoji: '🏛️' },
+                  { rank: '#3', name: 'Grassroots Hack', desc: 'Everyday farmer and truck driver survival tricks', color: '#d97706', bg: '#fffbeb', border: '#fde68a', emoji: '🚜' },
+                  { rank: '#4', name: 'Future Tech', desc: 'Solar drying, simple cold storage & new seeds', color: '#059669', bg: '#ecfdf5', border: '#a7f3d0', emoji: '🧬' },
+                  { rank: '#5', name: 'Government & Macro Risk', desc: 'Currency drops, high loan rates & export laws', color: '#ea580c', bg: '#fff7ed', border: '#fed7aa', emoji: '⚠️' },
+                  { rank: '#6', name: 'Wild Surprise', desc: 'Unusual market tricks and hidden opportunities', color: '#9333ea', bg: '#faf5ff', border: '#e9d5ff', emoji: '🔮' },
                 ].map(spectrum => (
                   <Box
                     key={spectrum.rank}
@@ -1188,10 +1381,77 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
               </Box>
             </Box>
 
-            {/* Pre-Prompt Action Checklist */}
+            {/* Step 3 Quick Inputs */}
+            <Box sx={{
+              p: 2.25,
+              borderRadius: '16px',
+              bgcolor: '#ffffff',
+              border: '1px solid rgba(168, 85, 247, 0.3)',
+              boxShadow: '0 4px 16px rgba(168, 85, 247, 0.05)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 1.5
+            }}>
+              <Box>
+                <Typography sx={{ fontSize: '0.84rem', fontWeight: 800, color: '#7e22ce', display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                  <span>🥊</span> Choose your story angle:
+                </Typography>
+                <Typography sx={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500, mt: 0.25 }}>
+                  Decide whether to stick to your original angle or follow the AI market suggestion.
+                </Typography>
+              </Box>
+
+              {/* Crash-Proof Segmented Pill Switcher for Strategy */}
+              <Box sx={{
+                display: 'flex',
+                p: 0.5,
+                borderRadius: '12px',
+                bgcolor: '#f1f5f9',
+                border: '1px solid rgba(0,0,0,0.06)'
+              }}>
+                <Button
+                  onClick={() => setStrategicPivot(false)}
+                  sx={{
+                    flex: 1,
+                    py: 0.75,
+                    borderRadius: '9px',
+                    textTransform: 'none',
+                    fontSize: '0.8rem',
+                    fontWeight: !strategicPivot ? 800 : 600,
+                    color: !strategicPivot ? '#0f172a' : '#64748b',
+                    bgcolor: !strategicPivot ? '#ffffff' : 'transparent',
+                    boxShadow: !strategicPivot ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+                    transition: 'all 0.15s ease',
+                    '&:hover': { bgcolor: !strategicPivot ? '#ffffff' : 'rgba(0,0,0,0.04)' }
+                  }}
+                >
+                  🥊 Stick to My Original Idea
+                </Button>
+                <Button
+                  onClick={() => setStrategicPivot(true)}
+                  sx={{
+                    flex: 1,
+                    py: 0.75,
+                    borderRadius: '9px',
+                    textTransform: 'none',
+                    fontSize: '0.8rem',
+                    fontWeight: strategicPivot ? 800 : 600,
+                    color: strategicPivot ? '#7e22ce' : '#64748b',
+                    bgcolor: strategicPivot ? '#ffffff' : 'transparent',
+                    boxShadow: strategicPivot ? '0 2px 8px rgba(168, 85, 247, 0.15)' : 'none',
+                    transition: 'all 0.15s ease',
+                    '&:hover': { bgcolor: strategicPivot ? '#ffffff' : 'rgba(0,0,0,0.04)' }
+                  }}
+                >
+                  🔄 Follow AI Recommendation
+                </Button>
+              </Box>
+            </Box>
+
+                        {/* Action Checklist: Before Prompt */}
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 1.75, border: '1px solid rgba(168, 85, 247, 0.25)', borderRadius: '14px', bgcolor: 'rgba(168, 85, 247, 0.03)' }}>
               {[
-                { id: 'act_copy_1c', text: '1. Click "Copy Executable Prompt 1c" below, paste it into the SAME AI chat thread, and press Enter.' }
+                { id: 'act_copy_1c', text: '1. Copy Step 3 Prompt below and run it in the SAME AI chat thread.' }
               ].map(item => {
                 const isChecked = !!wikiChecklist[item.id];
                 return (
@@ -1199,9 +1459,9 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
                     key={item.id}
                     onClick={() => toggleChecklistItem(item.id)}
                     sx={{
-                      display: 'flex', alignItems: 'center', p: 1.25, borderRadius: '10px', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', p: 1.2, borderRadius: '10px', cursor: 'pointer',
                       bgcolor: isChecked ? 'rgba(16, 185, 129, 0.06)' : '#ffffff',
-                      border: isChecked ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(168, 85, 247, 0.2)',
+                      border: isChecked ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(168, 85, 247, 0.25)',
                       transition: 'all 0.2s',
                       '&:hover': { bgcolor: isChecked ? 'rgba(16, 185, 129, 0.1)' : 'rgba(168, 85, 247, 0.08)' }
                     }}
@@ -1222,11 +1482,11 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
                       )}
                     </Box>
                     <Typography sx={{
-                      fontSize: '0.85rem',
+                      fontSize: '0.84rem',
                       color: isChecked ? '#94a3b8' : '#1e293b',
                       textDecoration: isChecked ? 'line-through' : 'none',
                       fontWeight: isChecked ? 500 : 700,
-                      lineHeight: 1.45
+                      lineHeight: 1.4
                     }}>
                       {item.text}
                     </Typography>
@@ -1241,7 +1501,7 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
                   <CheckCircleIcon sx={{ color: '#a855f7' }} />
                   <Typography sx={{ color: '#7e22ce', fontWeight: 700, fontSize: '0.9rem' }}>
-                    Prompt 1c Copied to Clipboard!
+                    Step 3 Prompt Copied to Clipboard!
                   </Typography>
                 </Box>
                 <Button size="small" onClick={() => setCopiedPromptTab(null)} sx={{ textTransform: 'none', fontWeight: 700, borderRadius: '8px', color: '#7e22ce' }}>
@@ -1257,7 +1517,7 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
                     <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: '#10b981' }} />
                   </Box>
                   <Typography sx={{ color: '#c084fc', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                    PROMPT BUILDER · STEP 3 (SPECTRUM OUTLINES)
+                    STEP 3 PROMPT · GENERATE 12 ARTICLES
                   </Typography>
                   <Box sx={{ width: 33 }} />
                 </Box>
@@ -1286,20 +1546,20 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
                     }}
                   >
                     <ContentCopyIcon sx={{ mr: 1, fontSize: 16 }} />
-                    Copy Executable Prompt 1c
+                    Copy Step 3 Prompt (Generate 12 Articles)
                   </Button>
                 </Box>
               </Box>
             )}
 
-            {/* Verification Checklist */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, p: 2.25, border: '1px solid rgba(168, 85, 247, 0.3)', borderRadius: '16px', bgcolor: 'rgba(168, 85, 247, 0.04)' }}>
+            {/* Verification Checklist: Under Prompt */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, p: 2, border: '1px solid rgba(168, 85, 247, 0.3)', borderRadius: '16px', bgcolor: 'rgba(168, 85, 247, 0.04)' }}>
               <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#7e22ce', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                ⚡ Verify AI Output for Step 3:
+                ⚡ Check the AI Output for Step 3:
               </Typography>
               {[
-                { id: 'chk3_ranks', text: 'Did the AI produce 10–12 briefs across the 6 Cognitive Spectrum ranks?' },
-                { id: 'chk3_headers', text: 'Does EACH brief begin with a complete [SYSTEM_METADATA] header block?' },
+                { id: 'chk3_ranks', text: 'Did the AI produce 10 to 12 distinct, clickable article titles across all 6 angles?' },
+                { id: 'chk3_headers', text: 'Does every article start with a [SYSTEM_METADATA] block and a 6-sentence summary?' },
               ].map(item => {
                 const isChecked = !!wikiChecklist[item.id];
                 return (
@@ -1307,7 +1567,7 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
                     key={item.id}
                     onClick={() => toggleChecklistItem(item.id)}
                     sx={{
-                      display: 'flex', alignItems: 'center', p: 1.25, borderRadius: '12px', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', p: 1.2, borderRadius: '10px', cursor: 'pointer',
                       bgcolor: isChecked ? 'rgba(16, 185, 129, 0.06)' : '#ffffff',
                       border: isChecked ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(168, 85, 247, 0.2)',
                       transition: 'all 0.2s',
@@ -1315,22 +1575,22 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
                     }}
                   >
                     <Box sx={{
-                      width: 22, height: 22, borderRadius: '7px',
+                      width: 20, height: 20, borderRadius: '6px',
                       border: '2px solid',
                       borderColor: isChecked ? '#10b981' : '#a855f7',
                       bgcolor: isChecked ? '#10b981' : 'transparent',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      mr: 1.5, flexShrink: 0,
+                      mr: 1.25, flexShrink: 0,
                       transition: 'all 0.2s'
                     }}>
                       {isChecked && (
-                        <svg width="12" height="9" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <svg width="10" height="8" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <path d="M1 5L5 9L13 1" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
                       )}
                     </Box>
                     <Typography sx={{
-                      fontSize: '0.86rem',
+                      fontSize: '0.84rem',
                       color: isChecked ? '#94a3b8' : '#1e293b',
                       textDecoration: isChecked ? 'line-through' : 'none',
                       fontWeight: isChecked ? 500 : 700,
@@ -1343,7 +1603,8 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
                 );
               })}
             </Box>
-          </Box>
+
+            </Box>
 
           <Box sx={{ borderBottom: '1px solid rgba(0,0,0,0.08)', my: 1.5 }} />
 
@@ -1356,15 +1617,62 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
                 4
               </Box>
               <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>
-                Step 4: Ingest into Studio Cards
+                Step 4: Import Articles into Studio
               </Typography>
+            </Box>
+
+                        {/* Action Checklist: Before Scratchpad */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 1.75, border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: '14px', bgcolor: 'rgba(16, 185, 129, 0.03)' }}>
+              {[
+                { id: 'chk4_paste', text: '1. Paste your final Document 1c output from ChatGPT/Claude into the box below.' }
+              ].map(item => {
+                const isChecked = !!wikiChecklist[item.id] || !!customIngestMarkdown.trim();
+                return (
+                  <Box
+                    key={item.id}
+                    onClick={() => toggleChecklistItem(item.id)}
+                    sx={{
+                      display: 'flex', alignItems: 'center', p: 1.2, borderRadius: '10px', cursor: 'pointer',
+                      bgcolor: isChecked ? 'rgba(16, 185, 129, 0.06)' : '#ffffff',
+                      border: isChecked ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(16, 185, 129, 0.2)',
+                      transition: 'all 0.2s',
+                      '&:hover': { bgcolor: isChecked ? 'rgba(16, 185, 129, 0.1)' : 'rgba(16, 185, 129, 0.06)' }
+                    }}
+                  >
+                    <Box sx={{
+                      width: 20, height: 20, borderRadius: '6px',
+                      border: '2px solid',
+                      borderColor: isChecked ? '#10b981' : '#059669',
+                      bgcolor: isChecked ? '#10b981' : 'transparent',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      mr: 1.25, flexShrink: 0,
+                      transition: 'all 0.2s'
+                    }}>
+                      {isChecked && (
+                        <svg width="10" height="8" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M1 5L5 9L13 1" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      )}
+                    </Box>
+                    <Typography sx={{
+                      fontSize: '0.84rem',
+                      color: isChecked ? '#94a3b8' : '#1e293b',
+                      textDecoration: isChecked ? 'line-through' : 'none',
+                      fontWeight: isChecked ? 500 : 700,
+                      lineHeight: 1.4
+                    }}>
+                      {item.text}
+                    </Typography>
+                  </Box>
+                );
+              })}
             </Box>
 
             {/* Step 4 Scratchpad Block */}
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
                 <Typography variant="overline" sx={{ color: '#10b981', fontWeight: 800, letterSpacing: '0.06em', lineHeight: 1, display: 'flex', alignItems: 'center', gap: 0.8 }}>
-                  📝 Step 4 Scratchpad · Final Markdown Outlines
+                  📝 Step 4 Scratchpad · Paste Final 12 Articles
                 </Typography>
                 {customIngestMarkdown.trim() ? (
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -1435,7 +1743,7 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
                     }
                   }}
                 >
-                  Tap to Paste Document 1c from Clipboard
+                  Tap to Paste Your 12 Articles from Clipboard
                 </Button>
               )}
 
@@ -1455,11 +1763,11 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
             {/* Verification Checklist */}
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, p: 2.25, border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '16px', bgcolor: 'rgba(16, 185, 129, 0.04)' }}>
               <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                📋 Ingest Verification Checklist:
+                ⚡ Check Before Importing:
               </Typography>
               {[
-                { id: 'chk4_validate', text: 'All 12 briefs successfully parsed and mapped into the 6 Cognitive Spectrum categories.' },
-                { id: 'chk4_draft', text: 'Ready to select a brief and click "Write This Brief" to begin drafting your article in the Studio.' },
+                { id: 'chk4_detected', text: `Live Detection: ${liveParsedBriefs.length} valid article cards detected.` },
+                { id: 'chk4_ingest', text: 'Ready to click "Import Articles into Studio" to render them directly on your canvas.' },
               ].map(item => {
                 const isChecked = !!wikiChecklist[item.id];
                 return (

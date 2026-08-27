@@ -150,6 +150,22 @@ const ERA_DETAILS = [
   { era: 'Future', emoji: '🔮', color: '#3b82f6', desc: 'Forward-looking roadmap: Projections, 2030 forecasts, and next trends.' },
 ];
 
+const getCategoryShortName = (catId?: string): string => {
+  if (!catId) return 'Category';
+  const id = catId.toLowerCase().trim();
+  switch (id) {
+    case 'capital': return 'Capital';
+    case 'land': return 'Land';
+    case 'inputs': return 'Inputs';
+    case 'energy': return 'Energy';
+    case 'insecurity': return 'Insecurity';
+    case 'harvest-to-market':
+    case 'harvest': return 'Harvest';
+    case 'people': return 'People';
+    default: return catId.charAt(0).toUpperCase() + catId.slice(1);
+  }
+};
+
 export default function CreatorStudioDashboard({
   drafts = [],
   workspaceTabs = [],
@@ -1276,16 +1292,16 @@ export default function CreatorStudioDashboard({
                                 </Box>
 
                                 <Box>
-                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.25 }}>
-                                    <Typography sx={{ color: isFocused ? '#93c5fd' : 'rgba(255,255,255,0.5)', fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                                      {item.category}
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.35 }}>
+                                    <Typography sx={{ color: isFocused ? '#93c5fd' : 'rgba(255,255,255,0.55)', fontSize: '0.72rem', fontWeight: 700, lineHeight: 1.25 }}>
+                                      {item.challenge.title}
                                     </Typography>
                                     {isToday && (
-                                      <Chip label="TODAY" size="small" sx={{ height: 18, fontSize: '0.62rem', bgcolor: '#f59e0b', color: '#fff', fontWeight: 900 }} />
+                                      <Chip label="TODAY" size="small" sx={{ height: 18, fontSize: '0.62rem', bgcolor: '#f59e0b', color: '#fff', fontWeight: 900, flexShrink: 0 }} />
                                     )}
                                   </Box>
-                                  <Typography variant="h6" sx={{ color: '#fff', fontWeight: 900, fontSize: { xs: '0.95rem', sm: '1.05rem' }, lineHeight: 1.2 }}>
-                                    {item.challenge.title}
+                                  <Typography variant="h6" sx={{ color: '#fff', fontWeight: 900, fontSize: { xs: '1.05rem', sm: '1.2rem' }, lineHeight: 1.2, letterSpacing: '-0.01em' }}>
+                                    {getCategoryShortName(item.category)}
                                   </Typography>
                                 </Box>
                               </Box>
@@ -1429,7 +1445,7 @@ export default function CreatorStudioDashboard({
                             >
                               <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 35%, rgba(0,0,0,0.85) 100%)' }} />
                               <Typography sx={{ position: 'absolute', bottom: 7, left: 4, right: 4, color: '#93c5fd', fontSize: '0.7rem', fontWeight: 900, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                🛡️ {challengesData.find(c => c.id === selectedCategory)?.title?.split('&')[0]?.trim() || selectedCategory}
+                                🛡️ {getCategoryShortName(selectedCategory)}
                               </Typography>
                             </Box>
                           </Box>
