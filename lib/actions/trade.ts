@@ -709,3 +709,79 @@ export async function getTradeListingById(listingId: string) {
     return { success: false, error: error?.message || 'Failed to fetch listing.' };
   }
 }
+
+/**
+ * Fetches similar trade listings or jobs excluding currentId.
+ */
+export async function getSimilarTradeListings(currentId: string, category: string, commodity?: string, limit: number = 3) {
+  try {
+    const isJob = category === 'jobs' || category === 'volunteer' || category === 'internship' || category === 'internships';
+    const targetCategories = isJob ? ['jobs', 'volunteer'] : ['flash-sale', 'group-buy', 'swap'];
+
+    const where: any = {
+      id: { not: currentId },
+      status: 'active',
+      category: { in: targetCategories },
+    };
+
+    let listings = await prisma.tradeListing.findMany({
+      where,
+      take: limit + 2,
+      orderBy: { postedAt: 'desc' },
+      include: {
+        postedBy: {
+          select: { id: true, firstName: true, name: true, avatarUrl: true, verified: true }
+        },
+        organization: {
+          select: { id: true, name: true, logoUrl: true, verified: true }
+        }
+      }
+    });
+
+    // If matching commodity yielded fewer than limit, fetch fallback
+    if (listings.length < limit) {
+      const fallbackListings = await prisma.tradeListing.findMany({
+        where: {
+          id: { not: currentId },
+          status: 'active',
+          category: { in: targetCategories }
+        },
+        take: limit,
+        orderBy: { postedAt: 'desc' },
+        include: {
+          postedBy: {
+            select: { id: true, firstName: true, name: true, avatarUrl: true, verified: true }
+          },
+          organization: {
+            select: { id: true, name: true, logoUrl: true, verified: true }
+          }
+        }
+      });
+      listings = fallbackListings;
+    }
+
+    const formatted = listings.map(l => ({
+      id: l.id,
+      category: l.category,
+      title: l.title,
+      description: l.description,
+      priceOrAsk: l.priceOrAsk,
+      location: l.location,
+      lga: l.lga || '',
+      postedBy: { 
+        name: l.organization?.name || l.postedBy?.name || 'FoodNerve Operator',
+        avatarUrl: l.organization?.logoUrl || l.postedBy?.avatarUrl || '',
+        isVerified: l.organization?.verified || false
+      },
+      postedAt: l.postedAt.toISOString(),
+      urgency: l.urgency || 'normal',
+      status: l.status,
+      imageUrl: l.imageUrl,
+    }));
+
+    return { success: true, listings: formatted.slice(0, limit) };
+  } catch (error: any) {
+    console.error('Failed to get similar listings:', error);
+    return { success: false, error: error.message, listings: [] };
+  }
+}

@@ -4,6 +4,7 @@
 import React, { useState, Suspense, useRef, useEffect } from "react";
 import {
   Box,
+  Card,
   Typography,
   Chip,
   Paper,
@@ -18,6 +19,8 @@ import {
 } from "@mui/material";
 import {
   Add as AddIcon,
+  AccessTime as AccessTimeIcon,
+  ArrowForward as ArrowForwardIcon,
   LocationOn as LocationIcon,
   Bolt as BoltIcon,
   ArrowBack as ArrowBackIcon,
@@ -145,40 +148,184 @@ const MOCK_LISTINGS: TradeListing[] = [
 // UI COMPONENTS
 // ════════════════════════════════════════════════════════════
 
-function CategoryAccentBar({ category }: { category: string }) {
-  let color = EMERALD;
-  if (category === "flash-sale") color = FLASH_RED;
-  if (category === "group-buy") color = "#3b82f6";
-  if (category === "swap") color = "#8b5cf6";
-  if (category === "jobs") color = "#1e293b"; // Dark premium slate
-  if (category === "volunteer") color = "#ec4899"; // Pink for NP
+function getJobColor(cat: string) {
+  if (cat === "volunteer") return "#ec4899"; // Pink for NP Volunteering
+  if (cat === "internship" || cat === "internships") return "#3b82f6"; // Blue for Internships
+  return "#10b981"; // Emerald for Jobs
+}
+
+function getMarketplaceColor(cat: string) {
+  if (cat === "flash-sale") return FLASH_RED;
+  if (cat === "group-buy") return "#3b82f6";
+  if (cat === "swap") return "#8b5cf6";
+  return EMERALD;
+}
+
+// ── 1. JOB / HUMAN CAPITAL CARD (.com Hero Design) ──────────
+function JobListingCard({ listing, isGrid = false, onDraftClick }: { listing: TradeListing, isGrid?: boolean, onDraftClick?: (id: string) => void }) {
+  const router = useRouter();
+  const [isHovered, setIsHovered] = useState(false);
+  const isDraft = listing.status === 'draft';
+  const displayTitle = listing.title || 'Untitled Draft';
+  
+  const categoryColor = getJobColor(listing.category);
+  const posterName = listing.postedBy?.name || listing.organization?.name || 'FoodNerve Operator';
+  const avatarUrl = listing.postedBy?.avatarUrl || listing.organization?.logoUrl || listing.companyLogo || '';
+  const initial = posterName.charAt(0).toUpperCase() || 'O';
+  
+  const categoryLabel = listing.category === 'volunteer' ? 'VOLUNTEER (NP)' :
+                        (listing.category === 'internship' || listing.category === 'internships') ? 'INTERNSHIP' :
+                        'JOB';
 
   return (
-    <Box sx={{ width: "100%", height: 4, background: `linear-gradient(90deg, ${color} 0%, transparent 100%)` }} />
+    <Card
+      variant="outlined"
+      onClick={() => {
+        if (isDraft && onDraftClick) {
+          onDraftClick(listing.id);
+        } else {
+          router.push(`/trade/${listing.id}`);
+        }
+      }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      sx={{
+        minWidth: isGrid ? 0 : { xs: 280, sm: 320 },
+        maxWidth: isGrid ? '100%' : 340,
+        width: isGrid ? '100%' : 'auto',
+        scrollSnapAlign: "start",
+        flexShrink: 0,
+        cursor: "pointer",
+        bgcolor: '#ffffff',
+        border: '1px solid #e2e8f0',
+        borderRadius: '20px',
+        boxShadow: isHovered 
+          ? `0 20px 40px -8px ${categoryColor}30, 0 0 0 1px ${categoryColor}40` 
+          : '0 4px 20px -4px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.05)',
+        transform: isHovered ? 'translateY(-6px)' : 'none',
+        transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+        p: { xs: 2.5, sm: 3 },
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        position: 'relative',
+        overflow: 'hidden',
+        background: `linear-gradient(135deg, #ffffff 10%, ${categoryColor}12 100%)`,
+      }}
+    >
+      <Box>
+        {/* Top Row: Organization Avatar + Category Pill */}
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2.5 }}>
+          <Box sx={{ p: 0.5, borderRadius: '14px', bgcolor: '#ffffff', boxShadow: '0 4px 12px rgba(0,0,0,0.06)', border: '1px solid rgba(0,0,0,0.04)' }}>
+            <Avatar
+              src={avatarUrl}
+              sx={{ 
+                width: 44, 
+                height: 44, 
+                bgcolor: `${categoryColor}15`, 
+                color: categoryColor, 
+                fontWeight: 900, 
+                borderRadius: '10px' 
+              }}
+            >
+              {initial}
+            </Avatar>
+          </Box>
+          
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {listing.urgency === 'expiring' && (
+              <Chip
+                icon={<BoltIcon sx={{ fontSize: 12, color: `${FLASH_RED} !important` }} />}
+                label="URGENT"
+                size="small"
+                sx={{
+                  bgcolor: `${FLASH_RED}15`,
+                  color: FLASH_RED,
+                  fontWeight: 900,
+                  fontSize: '0.62rem',
+                  height: 24,
+                  borderRadius: '6px',
+                  letterSpacing: '0.04em',
+                  boxShadow: `inset 0 0 0 1px ${FLASH_RED}30`,
+                }}
+              />
+            )}
+            <Chip
+              label={categoryLabel}
+              size="small"
+              sx={{
+                bgcolor: `${categoryColor}15`,
+                color: categoryColor,
+                fontWeight: 900,
+                fontSize: '0.65rem',
+                height: 24,
+                borderRadius: '6px',
+                letterSpacing: '0.05em',
+                boxShadow: `inset 0 0 0 1px ${categoryColor}30`,
+              }}
+            />
+          </Box>
+        </Box>
+        
+        {/* Main Body: Poster Name, Title, and Metadata Pills */}
+        <Box sx={{ mb: 2.5, flex: 1 }}>
+          <Typography sx={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 700, mb: 0.5, letterSpacing: '0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {posterName}
+          </Typography>
+          <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.25, fontSize: { xs: '1.05rem', sm: '1.18rem' }, mb: 2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+            {displayTitle}
+          </Typography>
+
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            {listing.location && (
+              <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, bgcolor: '#ffffff', border: '1px solid #e2e8f0', px: 1.25, py: 0.4, borderRadius: '8px', color: '#475569', fontSize: '0.74rem', fontWeight: 700 }}>
+                <LocationIcon sx={{ fontSize: 13, color: categoryColor }} /> {listing.location}
+              </Box>
+            )}
+            {listing.priceOrAsk && (
+              <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, bgcolor: '#ffffff', border: '1px solid #e2e8f0', px: 1.25, py: 0.4, borderRadius: '8px', color: '#0f172a', fontSize: '0.74rem', fontWeight: 800 }}>
+                💰 {listing.priceOrAsk}
+              </Box>
+            )}
+            <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, bgcolor: '#ffffff', border: '1px solid #e2e8f0', px: 1.25, py: 0.4, borderRadius: '8px', color: '#475569', fontSize: '0.74rem', fontWeight: 700 }}>
+              <AccessTimeIcon sx={{ fontSize: 13, color: categoryColor }} /> {isDraft ? 'Draft' : 'Actively Open'}
+            </Box>
+          </Box>
+        </Box>
+      </Box>
+
+      {/* Dashed Action Footer */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px dashed #cbd5e1', pt: 2, mt: 'auto' }}>
+        <Typography sx={{ fontWeight: 800, fontSize: '0.84rem', color: categoryColor }}>
+          {isDraft ? 'Edit Draft' : 'View Details'}
+        </Typography>
+        <Box sx={{ 
+          width: 32, 
+          height: 32, 
+          borderRadius: '50%', 
+          bgcolor: isHovered ? categoryColor : `${categoryColor}15`, 
+          color: isHovered ? '#ffffff' : categoryColor, 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          transition: 'all 0.3s ease',
+          transform: isHovered ? 'translateX(3px)' : 'none',
+        }}>
+          <ArrowForwardIcon sx={{ fontSize: 16 }} />
+        </Box>
+      </Box>
+    </Card>
   );
 }
 
-function renderCategoryBadge(cat: string) {
-  switch (cat) {
-    case "flash-sale":
-      return <Chip icon={<BoltIcon sx={{ fontSize: 14 }} />} label="FLASH SALE" size="small" sx={{ height: 22, fontSize: '0.65rem', fontWeight: 800, bgcolor: alpha(FLASH_RED, 0.1), color: FLASH_RED, '& .MuiChip-icon': { color: FLASH_RED } }} />;
-    case "group-buy":
-      return <Chip label="GROUP-BUY" size="small" sx={{ height: 22, fontSize: '0.65rem', fontWeight: 800, bgcolor: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }} />;
-    case "swap":
-      return <Chip label="SWAP" size="small" sx={{ height: 22, fontSize: '0.65rem', fontWeight: 800, bgcolor: 'rgba(168, 85, 247, 0.1)', color: '#a855f7' }} />;
-    case "jobs":
-      return <Chip label="JOB" size="small" sx={{ height: 22, fontSize: '0.65rem', fontWeight: 800, bgcolor: 'rgba(234, 179, 8, 0.1)', color: '#eab308' }} />;
-    case "volunteer":
-      return <Chip label="VOLUNTEER" size="small" sx={{ height: 22, fontSize: '0.65rem', fontWeight: 800, bgcolor: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }} />;
-    default:
-      return null;
-  }
-}
-
-function ListingCard({ listing, isGrid = false, onDraftClick }: { listing: TradeListing, isGrid?: boolean, onDraftClick?: (id: string) => void }) {
+// ── 2. MARKETPLACE CARD (Flash Sales, Group Buy, Swaps) ──────
+function MarketplaceCard({ listing, isGrid = false, onDraftClick }: { listing: TradeListing, isGrid?: boolean, onDraftClick?: (id: string) => void }) {
   const router = useRouter();
   const isDraft = listing.status === 'draft';
   const displayTitle = listing.title || 'Untitled Draft';
+  const color = getMarketplaceColor(listing.category);
+  const posterName = listing.postedBy?.name || listing.organization?.name || 'FoodNerve Operator';
+  const avatarUrl = listing.postedBy?.avatarUrl || listing.organization?.logoUrl || '';
 
   return (
     <Paper
@@ -187,7 +334,7 @@ function ListingCard({ listing, isGrid = false, onDraftClick }: { listing: Trade
         if (isDraft && onDraftClick) {
           onDraftClick(listing.id);
         } else {
-          router.push(`/society/trade/${listing.id}`);
+          router.push(`/trade/${listing.id}`);
         }
       }}
       sx={{
@@ -199,40 +346,46 @@ function ListingCard({ listing, isGrid = false, onDraftClick }: { listing: Trade
         flexShrink: 0,
         cursor: "pointer",
         overflow: "hidden",
+        display: 'flex',
+        flexDirection: 'column',
+        bgcolor: '#ffffff',
         "&:hover": {
           transform: "translateY(-4px)",
-          boxShadow: `0 12px 32px ${alpha(EMERALD, 0.15)}`,
-          borderColor: alpha(EMERALD, 0.3),
+          boxShadow: `0 12px 32px ${alpha(color, 0.18)}`,
+          borderColor: alpha(color, 0.35),
         }
       }}
     >
-      {/* Image */}
-      <Box sx={{ height: 160, position: "relative", bgcolor: alpha(EMERALD, 0.05) }}>
+      {/* Image Container with Badges & Avatar */}
+      <Box sx={{ height: 160, position: "relative", bgcolor: alpha(color, 0.05) }}>
         <Box
           sx={{
             position: "absolute",
             inset: 0,
-            backgroundImage: listing.imageUrl ? `url(${listing.imageUrl})` : `linear-gradient(135deg, ${alpha(EMERALD, 0.6)} 0%, ${alpha('#3b82f6', 0.6)} 100%)`,
+            backgroundImage: listing.imageUrl ? `url(${listing.imageUrl})` : `linear-gradient(135deg, ${alpha(color, 0.7)} 0%, ${alpha('#3b82f6', 0.7)} 100%)`,
             backgroundSize: "cover",
             backgroundPosition: "center",
           }}
         />
-        {/* Avatar / Organization Logo Overlay */}
+        
+        {/* Poster Avatar Overlay */}
         <Box sx={{ position: "absolute", bottom: 12, right: 12 }}>
           <Avatar 
-            src={listing.postedBy?.avatarUrl || ""}
+            src={avatarUrl}
             sx={{ 
-              width: 48, height: 48, 
+              width: 44, height: 44, 
               border: "3px solid #fff", 
-              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-              bgcolor: alpha(EMERALD, 0.9), 
+              boxShadow: "0 4px 12px rgba(0,0,0,0.18)",
+              bgcolor: alpha(color, 0.95), 
               color: "#fff", 
               fontWeight: 800 
             }}
           >
-            {listing.postedBy?.name?.charAt(0) || "U"}
+            {posterName.charAt(0).toUpperCase()}
           </Avatar>
         </Box>
+
+        {/* Category-Specific Pills */}
         {listing.urgency === "expiring" && (
           <Chip
             icon={<BoltIcon sx={{ fontSize: 14 }} />}
@@ -245,40 +398,78 @@ function ListingCard({ listing, isGrid = false, onDraftClick }: { listing: Trade
             }}
           />
         )}
+        {listing.category === 'group-buy' && listing.slots && (
+          <Chip
+            label={`${listing.slots.filled}/${listing.slots.total} SLOTS`}
+            size="small"
+            sx={{
+              position: "absolute", top: 12, left: 12,
+              bgcolor: '#3b82f6', color: "#fff", fontWeight: 800, fontSize: "0.7rem"
+            }}
+          />
+        )}
+        {listing.category === 'swap' && (
+          <Chip
+            label="SWAP / BARTER"
+            size="small"
+            sx={{
+              position: "absolute", top: 12, left: 12,
+              bgcolor: '#8b5cf6', color: "#fff", fontWeight: 800, fontSize: "0.7rem"
+            }}
+          />
+        )}
       </Box>
 
-      <CategoryAccentBar category={listing.category} />
+      {/* Accent Line */}
+      <Box sx={{ width: "100%", height: 4, background: `linear-gradient(90deg, ${color} 0%, transparent 100%)` }} />
 
-      <Box sx={{ p: 2 }}>
-        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-           <Typography variant="caption" sx={{ color: EMERALD_DARK, fontWeight: 700, textTransform: "uppercase" }}>
+      {/* Card Details */}
+      <Box sx={{ p: 2.5, display: 'flex', flexDirection: 'column', flex: 1 }}>
+        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1, alignItems: 'center' }}>
+           <Typography variant="caption" sx={{ color, fontWeight: 800, textTransform: "uppercase", letterSpacing: '0.04em' }}>
              {listing.category.replace("-", " ")}
            </Typography>
-           <Typography variant="caption" color="text.secondary">
+           <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
              2h ago
            </Typography>
         </Box>
-        <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.2, mb: 1, color: "#000" }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 800, lineHeight: 1.25, mb: 1, color: "#0f172a", display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
           {displayTitle}
         </Typography>
-        <Typography variant="body2" sx={{ color: "text.secondary", mb: 2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+        <Typography variant="body2" sx={{ color: "text.secondary", mb: 2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", flex: 1 }}>
           {listing.description}
         </Typography>
 
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", pt: 1.5, borderTop: '1px dashed #e2e8f0' }}>
           <Box>
-             <Typography variant="h6" sx={{ fontWeight: 900, color: EMERALD_DARK, lineHeight: 1 }}>
+             <Typography variant="h6" sx={{ fontWeight: 900, color, lineHeight: 1 }}>
                {listing.priceOrAsk}
              </Typography>
-             <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.5 }}>
-               <LocationIcon sx={{ fontSize: 12, color: "text.secondary" }} />
-               <Typography variant="caption" color="text.secondary">{listing.location}</Typography>
-             </Box>
+             {listing.location && (
+               <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.75 }}>
+                 <LocationIcon sx={{ fontSize: 13, color: "text.secondary" }} />
+                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>{listing.location}</Typography>
+               </Box>
+             )}
           </Box>
         </Box>
       </Box>
     </Paper>
   );
+}
+
+// ── 3. ROUTER / DISPATCHER ──────────────────────────────────
+function ListingCard({ listing, isGrid = false, onDraftClick }: { listing: TradeListing, isGrid?: boolean, onDraftClick?: (id: string) => void }) {
+  const isJobOrHumanCapital = 
+    listing.category === 'jobs' || 
+    listing.category === 'volunteer' || 
+    listing.category === 'internships' || 
+    listing.category === 'internship';
+  
+  if (isJobOrHumanCapital) {
+    return <JobListingCard listing={listing} isGrid={isGrid} onDraftClick={onDraftClick} />;
+  }
+  return <MarketplaceCard listing={listing} isGrid={isGrid} onDraftClick={onDraftClick} />;
 }
 
 function HorizontalScrollRow({ title, emoji, items, onDraftClick }: { title: string, emoji: string, items: any[], onDraftClick?: (id: string) => void }) {

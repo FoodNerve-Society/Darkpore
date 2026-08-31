@@ -239,7 +239,7 @@ export default function CreateListingPage() {
 
     if (res.success) {
       setSubmitted(true);
-      setTimeout(() => router.push("/society/trade"), 2500);
+      setTimeout(() => router.push("/trade"), 2500);
     } else {
       alert(res.error || "Failed to publish listing.");
       setIsSubmitting(false);
