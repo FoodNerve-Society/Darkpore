@@ -182,6 +182,7 @@ export default function PublicCareerDetailView({ listing, similarListings = [] }
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
@@ -256,7 +257,22 @@ export default function PublicCareerDetailView({ listing, similarListings = [] }
     );
   }, [listing, posterName, selectedPreset]);
 
+  const getSocietyTradeUrl = () => {
+    if (typeof window !== "undefined") {
+      const isLocal = window.location.hostname.includes("localhost");
+      return isLocal 
+        ? `http://foodnerve.org.localhost:3000/trade/${listing.id}`
+        : `https://foodnerve.org/trade/${listing.id}`;
+    }
+    return `https://foodnerve.org/trade/${listing.id}`;
+  };
+
   const handleApplyClick = () => {
+    if (!currentUser) {
+      setIsRedirecting(true);
+      window.location.href = getSocietyTradeUrl();
+      return;
+    }
     setShowApplyModal(true);
   };
 
@@ -887,7 +903,7 @@ export default function PublicCareerDetailView({ listing, similarListings = [] }
               </Box>
             </Paper>
 
-            {/* UNAUTHENTICATED STATE: CLEAN MINIMAL SIGN IN */}
+            {/* UNAUTHENTICATED STATE: ROUTE TO SOCIETY PORTAL */}
             {!currentUser ? (
               <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", py: 3, px: { xs: 1, sm: 2 } }}>
                 <Box
@@ -910,32 +926,40 @@ export default function PublicCareerDetailView({ listing, similarListings = [] }
                 <Typography variant="h6" sx={{ fontWeight: 900, color: "#0f172a", mb: 1, fontSize: "1.25rem", letterSpacing: "-0.01em" }}>
                   {getAuthGateTitle()}
                 </Typography>
-                <Typography sx={{ color: "#64748b", fontSize: "0.9rem", maxWidth: 400, lineHeight: 1.5, mb: 3.5 }}>
-                  Sign in with your Google account to access verified contact details and application instructions.
+                <Typography sx={{ color: "#64748b", fontSize: "0.9rem", maxWidth: 420, lineHeight: 1.5, mb: 3.5 }}>
+                  Continue to the FoodNerve Society portal to sign in and submit your verified application.
                 </Typography>
 
                 <Button
                   fullWidth
                   variant="contained"
-                  onClick={handleGoogleSignIn}
-                  disabled={isSigningIn}
-                  startIcon={isSigningIn ? <CircularProgress size={20} sx={{ color: "#0f172a" }} /> : <GoogleGIcon />}
+                  disabled={isRedirecting}
+                  onClick={() => {
+                    setIsRedirecting(true);
+                    window.location.href = getSocietyTradeUrl();
+                  }}
+                  startIcon={isRedirecting ? <CircularProgress size={18} sx={{ color: "#ffffff" }} /> : undefined}
+                  endIcon={isRedirecting ? undefined : <OpenInNewIcon />}
                   sx={{
                     maxWidth: 380,
-                    bgcolor: "#ffffff",
-                    color: "#0f172a",
-                    border: "1px solid #cbd5e1",
+                    bgcolor: isRedirecting ? "#0f172a" : EMERALD,
+                    color: "#ffffff",
                     fontWeight: 800,
                     borderRadius: "14px",
                     py: 1.5,
                     fontSize: "0.95rem",
                     textTransform: "none",
-                    boxShadow: "0 4px 14px rgba(0,0,0,0.06)",
-                    "&:hover": { bgcolor: "#f8fafc", borderColor: "#94a3b8", transform: "translateY(-1px)", boxShadow: "0 6px 20px rgba(0,0,0,0.09)" },
+                    boxShadow: isRedirecting ? "none" : `0 8px 24px ${alpha(EMERALD, 0.35)}`,
+                    "&:hover": { bgcolor: isRedirecting ? "#0f172a" : "#059669", transform: isRedirecting ? "none" : "translateY(-1px)" },
                     transition: "all 0.2s ease",
+                    "&.Mui-disabled": {
+                      bgcolor: "#0f172a",
+                      color: "#ffffff",
+                      opacity: 0.9,
+                    },
                   }}
                 >
-                  {isSigningIn ? "Signing in..." : "Continue with Google"}
+                  {isRedirecting ? "Connecting to Society Portal..." : "Continue to Society to Apply"}
                 </Button>
               </Box>
             ) : (

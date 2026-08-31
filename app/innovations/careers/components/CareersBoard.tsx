@@ -112,6 +112,7 @@ function CoherentExecutiveJobCard({
   const locationText = job.location || "Pan-African";
   const compDisplay = job.priceOrAsk || (job.npReward ? `${job.npReward} NP` : "Competitive");
   const isTierActive = selectedTier === tier.id;
+  const isBrandNew = job.postedAt && (Date.now() - new Date(job.postedAt).getTime()) < 3 * 24 * 60 * 60 * 1000;
 
   return (
     <Box
@@ -255,20 +256,38 @@ function CoherentExecutiveJobCard({
               </Box>
             </Box>
 
-            <Chip
-              label={catLabel}
-              size="small"
-              sx={{
-                height: 24,
-                fontSize: "0.68rem",
-                fontWeight: 800,
-                bgcolor: `${categoryColor}15`,
-                color: categoryColor,
-                borderRadius: "9999px",
-                border: `1px solid ${categoryColor}25`,
-                px: 0.5,
-              }}
-            />
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.8 }}>
+              {isBrandNew && (
+                <Chip
+                  label="✨ New"
+                  size="small"
+                  sx={{
+                    height: 22,
+                    fontSize: "0.65rem",
+                    fontWeight: 800,
+                    bgcolor: "rgba(245, 158, 11, 0.15)",
+                    color: "#d97706",
+                    borderRadius: "9999px",
+                    border: "1px solid rgba(245, 158, 11, 0.3)",
+                    px: 0.3,
+                  }}
+                />
+              )}
+              <Chip
+                label={catLabel}
+                size="small"
+                sx={{
+                  height: 24,
+                  fontSize: "0.68rem",
+                  fontWeight: 800,
+                  bgcolor: `${categoryColor}15`,
+                  color: categoryColor,
+                  borderRadius: "9999px",
+                  border: `1px solid ${categoryColor}25`,
+                  px: 0.5,
+                }}
+              />
+            </Box>
           </Box>
 
           {/* Job Title */}
