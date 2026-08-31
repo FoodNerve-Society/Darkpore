@@ -752,9 +752,10 @@ export default function ListingDetailPage() {
 
   const applyBtn = getApplyButtonDetails();
 
-  const orgSlug = listing?.organization?.slug || listing?.organization?.id || (posterName ? posterName.toLowerCase().replace(/[^a-z0-9]+/g, '-') : 'org');
-  const orgPublicUrl = listing?.organization?.website || `https://foodnerve.org/@o-${orgSlug}`;
-  const orgDisplayUrl = listing?.organization?.website ? listing.organization.website.replace(/^https?:\/\//, '') : `foodnerve.org/@o-${orgSlug}`;
+  const orgSlug = listing?.organization?.slug || (listing?.organization?.name ? listing.organization.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') : (posterName ? posterName.toLowerCase().replace(/[^a-z0-9]+/g, '-') : 'org'));
+  const orgProfilePath = listing?.organization ? `/@o-${orgSlug}` : (listing?.postedBy?.username ? `/@u-${listing.postedBy.username.replace(/^@+/, '')}` : `/@o-${orgSlug}`);
+  const orgPublicUrl = `https://foodnerve.org${orgProfilePath}`;
+  const orgDisplayUrl = `foodnerve.org${orgProfilePath}`;
 
   // Option 3: Multi-Color Segment Ribbon Data
   const specSegments = [
@@ -859,14 +860,22 @@ export default function ListingDetailPage() {
           >
             <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, alignItems: { sm: "flex-start" }, justifyContent: "space-between", gap: 3, mb: 3.5 }}>
               <Box sx={{ display: "flex", gap: 2.5, alignItems: "flex-start" }}>
-                <Box sx={{ p: 0.5, borderRadius: "16px", bgcolor: "#ffffff", boxShadow: "0 4px 16px rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.04)", flexShrink: 0 }}>
+                <Box
+                  onClick={() => router.push(orgProfilePath)}
+                  sx={{ p: 0.5, borderRadius: "16px", bgcolor: "#ffffff", boxShadow: "0 4px 16px rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.04)", flexShrink: 0, cursor: "pointer", transition: "transform 0.2s", "&:hover": { transform: "scale(1.05)" } }}
+                >
                   <Avatar src={orgLogo} sx={{ width: { xs: 56, md: 68 }, height: { xs: 56, md: 68 }, bgcolor: `${themeColor}15`, color: themeColor, fontWeight: 900, borderRadius: "12px", fontSize: "1.5rem" }}>
                     {posterName.charAt(0).toUpperCase()}
                   </Avatar>
                 </Box>
                 <Box>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", mb: 0.5 }}>
-                    <Typography sx={{ fontWeight: 800, color: "#475569", fontSize: "0.95rem" }}>{posterName}</Typography>
+                    <Typography
+                      onClick={() => router.push(orgProfilePath)}
+                      sx={{ fontWeight: 800, color: "#475569", fontSize: "0.95rem", cursor: "pointer", "&:hover": { color: themeColor, textDecoration: "underline" } }}
+                    >
+                      {posterName}
+                    </Typography>
                     {listing.postedBy?.isVerified && (
                       <Box sx={{ display: "flex", alignItems: "center", gap: 0.3, bgcolor: alpha(EMERALD, 0.1), color: EMERALD, px: 0.8, py: 0.2, borderRadius: "6px" }}>
                         <VerifiedIcon sx={{ fontSize: 13 }} />
@@ -1097,7 +1106,7 @@ export default function ListingDetailPage() {
                 <Button
                   fullWidth
                   variant="outlined"
-                  onClick={() => router.push(`/org/${listing.organization?.id || ''}`)}
+                  onClick={() => router.push(orgProfilePath)}
                   sx={{
                     borderRadius: "12px",
                     textTransform: "none",
@@ -1357,23 +1366,23 @@ export default function ListingDetailPage() {
 
             {/* Public Company Profile / Website URL Pill */}
             <Box sx={{ display: "flex", alignItems: "center", gap: 1, width: { xs: "100%", sm: "auto" } }}>
-              <Tooltip title="Click to copy organization link">
+              <Tooltip title="Open organization profile">
                 <Button
                   onClick={() => {
-                    navigator.clipboard.writeText(orgPublicUrl);
-                    setToastMsg("Organization link copied to clipboard!");
+                    router.push(orgProfilePath);
                   }}
                   startIcon={<LinkIcon sx={{ fontSize: 16 }} />}
+                  endIcon={<OpenInNewIcon sx={{ fontSize: 14 }} />}
                   sx={{
                     bgcolor: "#ffffff",
                     border: "1px solid #cbd5e1",
-                    color: "#334155",
-                    fontSize: "0.76rem",
+                    color: "#0f172a",
+                    fontSize: "0.78rem",
                     fontWeight: 800,
                     textTransform: "none",
-                    borderRadius: "10px",
-                    px: 1.5,
-                    py: 0.7,
+                    borderRadius: "12px",
+                    px: 1.8,
+                    py: 0.8,
                     flex: { xs: 1, sm: "initial" },
                     "&:hover": { borderColor: themeColor, color: themeColor, bgcolor: alpha(themeColor, 0.04) },
                   }}
@@ -1381,12 +1390,17 @@ export default function ListingDetailPage() {
                   {orgDisplayUrl}
                 </Button>
               </Tooltip>
-              <IconButton
-                onClick={() => window.open(orgPublicUrl, '_blank')}
-                sx={{ bgcolor: "#ffffff", border: "1px solid #cbd5e1", color: "#64748b", "&:hover": { color: themeColor } }}
-              >
-                <OpenInNewIcon sx={{ fontSize: 16 }} />
-              </IconButton>
+              <Tooltip title="Copy profile URL">
+                <IconButton
+                  onClick={() => {
+                    navigator.clipboard.writeText(orgPublicUrl);
+                    setToastMsg("Organization profile link copied!");
+                  }}
+                  sx={{ bgcolor: "#ffffff", border: "1px solid #cbd5e1", color: "#64748b", "&:hover": { color: themeColor, borderColor: themeColor } }}
+                >
+                  <ContentCopyIcon sx={{ fontSize: 16 }} />
+                </IconButton>
+              </Tooltip>
             </Box>
           </Paper>
 

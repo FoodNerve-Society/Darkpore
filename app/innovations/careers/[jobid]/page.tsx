@@ -11,7 +11,7 @@ export async function generateMetadata({ params }: { params: Promise<{ jobid: st
     const { jobid } = await params;
     const job = await prisma.tradeListing.findUnique({
         where: { id: jobid },
-        include: { organization: true }
+        include: { organization: true, postedBy: true }
     });
 
     if (!job) {
@@ -30,7 +30,7 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ job
     const { jobid } = await params;
     const job = await prisma.tradeListing.findUnique({
         where: { id: jobid },
-        include: { organization: true }
+        include: { organization: true, postedBy: true }
     });
 
     if (!job) {
@@ -65,8 +65,8 @@ export default async function JobDetailsPage({ params }: { params: Promise<{ job
         <Box sx={{ minHeight: '100vh', bgcolor: '#f8fafc', pb: 12 }}>
             <JobHeroHeader 
                 title={job.title}
-                organizationName={job.organization?.name || 'FoodNerve'}
-                logoUrl={job.organization?.logoUrl}
+                organizationName={job.organization?.name || job.postedBy?.name || 'FoodNerve'}
+                logoUrl={job.organization?.logoUrl || job.postedBy?.avatarUrl}
                 location={job.location}
                 workModel={job.workModel}
                 commitment={job.duration || (job.category === 'volunteer' ? 'volunteer' : 'full-time')}

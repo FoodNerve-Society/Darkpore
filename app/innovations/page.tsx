@@ -147,7 +147,7 @@ export default async function InnovationsHomepage() {
       }),
       prisma.learnContent.count({ where: { status: 'published' } }),
       prisma.calendarEvent.count({ where: { sourceType: 'livestream', status: { in: ['upcoming', 'live'] } } }),
-      prisma.tradeListing.count({ where: { category: { in: ['jobs', 'volunteer', 'internship'] }, status: 'active' } }),
+      prisma.tradeListing.count({ where: { category: { in: ['jobs', 'job', 'volunteer', 'internship', 'internships'] }, status: 'active' } }),
       prisma.campaign.count({ where: { status: 'active_deployment' } })
     ]);
     
@@ -217,34 +217,36 @@ export default async function InnovationsHomepage() {
     console.warn("SERVER LOG - Failed to fetch active deployments from DB.", e);
   }
 
-  // Fetch Jobs & Volunteering Opportunities
+  // Fetch Live Jobs & Volunteering Opportunities
   let activeOpportunities: any[] = [];
   try {
-    const tenDaysAgo = new Date();
-    tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
-
     const rawListings = await prisma.tradeListing.findMany({
       where: { 
-        category: { in: ['jobs', 'volunteer'] },
-        status: 'active',
-        postedAt: { gte: tenDaysAgo } // Auto-archive jobs older than 10 days
+        category: { in: ['jobs', 'job', 'volunteer', 'internship', 'internships'] },
+        status: 'active'
       },
       include: { postedBy: true, organization: true },
-      take: 10,
+      take: 20,
       orderBy: { postedAt: 'desc' }
     });
     
     activeOpportunities = rawListings.map((l: any) => {
-        const isVolunteer = l.category === 'volunteer' || (l.category === 'jobs' && l.metadata?.commitment === 'volunteer');
-        const isInternship = l.category === 'jobs' && l.metadata?.commitment === 'internship';
+        const isVolunteer = l.category === 'volunteer';
+        const isInternship = l.category === 'internship' || l.category === 'internships';
         const typeLabel = isVolunteer ? 'Volunteering' : isInternship ? 'Internships' : 'Jobs';
+        const companyLogo = l.organization?.logoUrl || l.postedBy?.avatarUrl || '';
+        const authorName = l.organization?.name || l.postedBy?.name || 'FoodNerve Network';
+        const compDisplay = isVolunteer ? `${l.npReward || 'Earn'} NP` : (l.priceOrAsk || 'Competitive Salary');
+
         return {
           id: l.id,
           title: l.title,
           type: typeLabel,
           imageUrl: l.imageUrl || '/images/default-thumbnail.jpg',
-          author: l.postedBy?.name || l.organization?.name || 'FoodNerve Network',
-          metric: isVolunteer ? `${l.npReward || l.metadata?.npAmount || 'Earn'} NP` : l.priceOrAsk,
+          companyLogo,
+          author: authorName,
+          locationOrSalary: l.location || 'Pan-African Operations',
+          metric: compDisplay,
           link: `/careers/${l.id}`
         };
       });
@@ -494,12 +496,13 @@ export default async function InnovationsHomepage() {
               type: opp.type,
               title: opp.title,
               authorOrOperator: opp.author,
-              locationOrSalary: opp.location || 'Remote',
+              companyLogo: opp.companyLogo,
+              locationOrSalary: opp.locationOrSalary,
               metaInfo: opp.metric,
               link: opp.link,
               thumbnailUrl: opp.imageUrl
             }));
-            return <Swimlane key={lane.id} lane={{ ...lane, items: combinedItems, newCount: combinedItems.length, totalCount: statsObj.jobs }} />;
+            return <Swimlane key={lane.id} lane={{ ...lane, items: combinedItems, newCount: combinedItems.length, totalCount: statsObj.jobs || combinedItems.length }} />;
           }
           // Generate basic items for missions
           if (lane.id === 'lane-missions') {
