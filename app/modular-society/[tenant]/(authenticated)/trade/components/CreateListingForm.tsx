@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { getTenantConfig } from "@/lib/cms";
+import { getTenantConfig, VALUE_CHAIN_ACTORS as CMS_VALUE_CHAIN_ACTORS } from "@/lib/cms";
 import {
   Box,
   Typography,
@@ -61,6 +61,8 @@ import { Country, State, City } from 'country-state-city';
 import { CATEGORY_OPTIONS, JOB_FUNCTIONS, VALUE_CHAIN_ACTORS } from "@/lib/taxonomy";
 import { commoditiesList } from "@/lib/cms/commodities";
 import { differenceInMonths, differenceInDays, addMonths } from 'date-fns';
+
+const CORE_VALUE_CHAIN_ACTORS = CMS_VALUE_CHAIN_ACTORS.map(a => a.label);
 
 const EMERALD = "#10b981";
 const EMERALD_DARK = "#059669";
@@ -1598,7 +1600,7 @@ export default function CreateListingForm({
                                 ) : (
                                   <>
                                     <Box sx={{ flex: 1 }}>
-                                      <PremiumAutocomplete colorTheme={color} label="Value Chain Actor / Function *" options={VALUE_CHAIN_ACTORS} value={jobFunction} onChange={(e, val) => setJobFunction(val as string)} />
+                                      <PremiumAutocomplete colorTheme={color} label="Value Chain Actor / Function *" options={CORE_VALUE_CHAIN_ACTORS} value={jobFunction} onChange={(e, val) => setJobFunction(val as string)} />
                                     </Box>
                                     <Box sx={{ flex: 1 }}>
                                       <PremiumAutocomplete colorTheme={color} label="Commodity / Crop Focus (Optional)" options={commoditiesList} value={sector} onChange={(e, val) => setSector(val as string)} />
