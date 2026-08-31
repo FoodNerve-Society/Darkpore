@@ -67,6 +67,7 @@ model User {
   omniWikiDocs         OmniWikiDoc[]
   wikiStates           UserWikiState[]
   weeklyCommodityBids  WeeklyCommodityBid[]
+  savedItems           SavedItem[]
 
   @@index([email])
 }
@@ -860,3 +861,22 @@ model DailyEditorialIntel {
   @@index([year, week, dayOfWeek])
 }
 
+// ════════════════════════════════════════════════════════
+// BOOKMARK / SAVED ITEMS (POLYMORPHIC)
+// ════════════════════════════════════════════════════════
+
+model SavedItem {
+  id        String   @id @default(cuid())
+  userId    String
+  itemType  String   // 'trade' | 'job' | 'class' | 'article' | 'livestream' | 'event' | 'initiative'
+  itemId    String   // Foreign ID of the resource
+  title     String?  // Quick reference
+  metadata  String?  // JSON string for thumbnail, price, category, etc.
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, itemType, itemId])
+  @@index([userId, itemType])
+}

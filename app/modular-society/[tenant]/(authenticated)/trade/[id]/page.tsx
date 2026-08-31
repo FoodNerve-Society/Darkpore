@@ -42,6 +42,8 @@ import { getTradeListingById, getSimilarTradeListings } from "@/lib/actions/trad
 
 import PremiumAutocomplete from "@/components/PremiumAutocomplete";
 import PremiumMarkdownEditor from "@/components/PremiumMarkdownEditor";
+import ShareListingModal from "@/components/ShareListingModal";
+import { toggleBookmark, checkIsBookmarked } from "@/lib/actions/bookmarks";
 
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
@@ -476,6 +478,7 @@ export default function ListingDetailPage() {
   const [similarListings, setSimilarListings] = useState<any[]>([]);
   const [loadingSimilar, setLoadingSimilar] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   
   // Application Modal & Form States
   const [showApplyModal, setShowApplyModal] = useState(false);
@@ -484,6 +487,48 @@ export default function ListingDetailPage() {
   const [selectedPreset, setSelectedPreset] = useState<PitchPreset | null>(PITCH_PRESETS[0]);
   const [applySubmitted, setApplySubmitted] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+
+  // Sync bookmark state with database on mount
+  useEffect(() => {
+    const userId = profile?.uid || profile?.id;
+    if (userId && listingId) {
+      checkIsBookmarked({ userId, itemType: "trade", itemId: listingId }).then((res) => {
+        if (res?.isSaved) {
+          setIsSaved(true);
+        }
+      });
+    }
+  }, [profile?.uid, profile?.id, listingId]);
+
+  const handleToggleBookmark = async () => {
+    const userId = profile?.uid || profile?.id;
+    if (!userId) {
+      setToastMsg("Please sign in to bookmark listings");
+      return;
+    }
+    const nextSavedState = !isSaved;
+    setIsSaved(nextSavedState);
+
+    const res = await toggleBookmark({
+      userId,
+      itemType: "trade",
+      itemId: listing.id,
+      title: listing.title,
+      metadata: {
+        category: listing.category,
+        priceOrAsk: listing.priceOrAsk,
+        location: listing.location,
+        posterName: listing.organization?.name || listing.postedBy?.name || "FoodNerve Operator"
+      }
+    });
+
+    if (res.success) {
+      setToastMsg(res.isSaved ? "Saved to your bookmarks!" : "Removed from your bookmarks!");
+    } else {
+      setIsSaved(!nextSavedState);
+      setToastMsg("Failed to update bookmark");
+    }
+  };
 
   // Compute accurate FoodNerve username and profile link
   const rawUsername = profile?.username || (profile?.email ? profile.email.split('@')[0] : (profile?.uid ? profile.uid.slice(0, 10) : 'operator'));
@@ -603,10 +648,7 @@ export default function ListingDetailPage() {
   }, [listing, profile, selectedPreset]);
 
   const handleShare = () => {
-    if (typeof window !== "undefined") {
-      navigator.clipboard.writeText(window.location.href);
-      setToastMsg("Listing link copied to clipboard!");
-    }
+    setShowShareModal(true);
   };
 
   const handleApplyClick = () => {
@@ -788,9 +830,11 @@ export default function ListingDetailPage() {
           <IconButton onClick={() => setIsSaved(!isSaved)} sx={{ bgcolor: "#ffffff", border: "1px solid #e2e8f0", color: isSaved ? themeColor : "#64748b", "&:hover": { bgcolor: "#f8fafc" } }}>
             {isSaved ? <BookmarkIcon /> : <BookmarkBorderIcon />}
           </IconButton>
-          <IconButton onClick={handleShare} sx={{ bgcolor: "#ffffff", border: "1px solid #e2e8f0", color: "#64748b", "&:hover": { bgcolor: "#f8fafc" } }}>
-            <ShareIcon sx={{ fontSize: 20 }} />
-          </IconButton>
+          <Tooltip title="Share mandate as image or link">
+            <IconButton onClick={() => setShowShareModal(true)} sx={{ bgcolor: "#ffffff", border: "1px solid #e2e8f0", color: "#64748b", "&:hover": { bgcolor: "#f8fafc" } }}>
+              <ShareIcon sx={{ fontSize: 20 }} />
+            </IconButton>
+          </Tooltip>
         </Box>
       </Box>
 
@@ -1167,6 +1211,15 @@ export default function ListingDetailPage() {
           </Box>
         </Box>
       )}
+
+      {/* ── SHARE MANDATE MODAL (VISUAL CARD + SOCIAL EXPORT) ── */}
+      <ShareListingModal
+        open={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        listing={listing}
+        themeColor={themeColor}
+        onToast={(msg) => setToastMsg(msg)}
+      />
 
       {/* ══════════════════════════════════════════════════════ */}
       {/* ── ULTRA-PREMIUM APPLICATION DOSSIER DIALOG ─────────── */}
