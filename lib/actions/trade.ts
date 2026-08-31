@@ -382,7 +382,7 @@ export async function getTradeListings(options?: { categories?: string[] }) {
 
 export async function getCareersListings() {
   try {
-    const listingsResult = await getTradeListings({ categories: ['jobs', 'volunteer'] });
+    const listingsResult = await getTradeListings({ categories: ['jobs', 'job', 'volunteer', 'internship', 'internships'] });
     if (!listingsResult.success || !listingsResult.listings) {
       throw new Error(listingsResult.error || "Failed to fetch listings");
     }

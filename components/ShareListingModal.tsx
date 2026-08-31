@@ -499,18 +499,54 @@ export default function ShareListingModal({
                 />
               </Box>
 
-              {/* Role Title Preview in Back */}
-              <Box sx={{ p: 1.8, borderRadius: "20px", bgcolor: "rgba(255, 255, 255, 0.05)", border: "1px solid rgba(255, 255, 255, 0.08)" }}>
-                <Typography sx={{ fontSize: "0.72rem", color: "#94a3b8", fontWeight: 800, textTransform: "uppercase" }}>
-                  {posterName}
+              {/* Top Wide Button: Copy Link (Atop the 4 channels) */}
+              <Button
+                fullWidth
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCopyLink();
+                }}
+                startIcon={copied ? <CheckIcon sx={{ color: "#4ade80", fontSize: 20 }} /> : <ContentCopyIcon sx={{ color: "#38bdf8", fontSize: 20 }} />}
+                sx={{
+                  py: 1.4,
+                  px: 2,
+                  borderRadius: "18px",
+                  bgcolor: "rgba(255, 255, 255, 0.07)",
+                  border: "1px solid rgba(255, 255, 255, 0.18)",
+                  color: "#ffffff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  textTransform: "none",
+                  boxShadow: "0 4px 16px rgba(0,0,0,0.25)",
+                  "&:hover": {
+                    bgcolor: "rgba(255, 255, 255, 0.14)",
+                    borderColor: "#38bdf8",
+                    transform: "translateY(-1px)",
+                  },
+                  transition: "all 0.2s ease",
+                }}
+              >
+                <Typography sx={{ fontSize: "0.88rem", fontWeight: 800, color: "#ffffff" }}>
+                  {copied ? "Link Copied to Clipboard!" : "Copy Job Link"}
                 </Typography>
-                <Typography variant="subtitle1" sx={{ fontWeight: 900, color: "#ffffff", lineHeight: 1.25, mt: 0.3 }}>
-                  {displayTitle}
+                <Typography
+                  noWrap
+                  sx={{
+                    fontSize: "0.72rem",
+                    color: "#94a3b8",
+                    fontFamily: "monospace",
+                    maxWidth: 150,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {currentUrl.replace(/^https?:\/\//, "")}
                 </Typography>
-              </Box>
+              </Button>
 
               {/* 4 Social Channel Grid */}
-              <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.5 }}>
+              <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.4 }}>
                 {/* WhatsApp */}
                 <Button
                   onClick={(e) => {
@@ -518,20 +554,20 @@ export default function ShareListingModal({
                     handleWhatsAppShare();
                   }}
                   sx={{
-                    p: 2,
-                    borderRadius: "20px",
+                    p: 1.8,
+                    borderRadius: "18px",
                     bgcolor: "#14532d",
                     border: "1px solid #22c55e",
                     color: "#ffffff",
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
-                    gap: 0.8,
+                    gap: 0.6,
                     "&:hover": { bgcolor: "#166534", transform: "translateY(-2px)" },
                     transition: "all 0.2s",
                   }}
                 >
-                  <WhatsAppIcon sx={{ fontSize: 28, color: "#4ade80" }} />
+                  <WhatsAppIcon sx={{ fontSize: 26, color: "#4ade80" }} />
                   <Typography sx={{ fontSize: "0.78rem", fontWeight: 900, textTransform: "none" }}>
                     WhatsApp
                   </Typography>
@@ -547,20 +583,20 @@ export default function ShareListingModal({
                     handleLinkedInShare();
                   }}
                   sx={{
-                    p: 2,
-                    borderRadius: "20px",
+                    p: 1.8,
+                    borderRadius: "18px",
                     bgcolor: "#0c4a6e",
                     border: "1px solid #0284c7",
                     color: "#ffffff",
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
-                    gap: 0.8,
+                    gap: 0.6,
                     "&:hover": { bgcolor: "#0369a1", transform: "translateY(-2px)" },
                     transition: "all 0.2s",
                   }}
                 >
-                  <LinkedInIcon sx={{ fontSize: 28, color: "#38bdf8" }} />
+                  <LinkedInIcon sx={{ fontSize: 26, color: "#38bdf8" }} />
                   <Typography sx={{ fontSize: "0.78rem", fontWeight: 900, textTransform: "none" }}>
                     LinkedIn
                   </Typography>
@@ -576,20 +612,20 @@ export default function ShareListingModal({
                     handleTwitterShare();
                   }}
                   sx={{
-                    p: 2,
-                    borderRadius: "20px",
+                    p: 1.8,
+                    borderRadius: "18px",
                     bgcolor: "rgba(255, 255, 255, 0.08)",
                     border: "1px solid rgba(255, 255, 255, 0.2)",
                     color: "#ffffff",
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
-                    gap: 0.8,
+                    gap: 0.6,
                     "&:hover": { bgcolor: "rgba(255, 255, 255, 0.15)", transform: "translateY(-2px)" },
                     transition: "all 0.2s",
                   }}
                 >
-                  <TwitterIcon sx={{ fontSize: 28, color: "#ffffff" }} />
+                  <TwitterIcon sx={{ fontSize: 26, color: "#ffffff" }} />
                   <Typography sx={{ fontSize: "0.78rem", fontWeight: 900, textTransform: "none" }}>
                     X / Twitter
                   </Typography>
@@ -605,20 +641,20 @@ export default function ShareListingModal({
                     handleTelegramShare();
                   }}
                   sx={{
-                    p: 2,
-                    borderRadius: "20px",
+                    p: 1.8,
+                    borderRadius: "18px",
                     bgcolor: "#1e3a8a",
                     border: "1px solid #3b82f6",
                     color: "#ffffff",
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
-                    gap: 0.8,
+                    gap: 0.6,
                     "&:hover": { bgcolor: "#1d4ed8", transform: "translateY(-2px)" },
                     transition: "all 0.2s",
                   }}
                 >
-                  <TelegramIcon sx={{ fontSize: 28, color: "#60a5fa" }} />
+                  <TelegramIcon sx={{ fontSize: 26, color: "#60a5fa" }} />
                   <Typography sx={{ fontSize: "0.78rem", fontWeight: 900, textTransform: "none" }}>
                     Telegram
                   </Typography>
@@ -628,26 +664,34 @@ export default function ShareListingModal({
                 </Button>
               </Box>
 
-              {/* Native Share Button on Back */}
+              {/* Bottom Wide Button: System Share / More Options */}
               <Button
+                fullWidth
                 variant="outlined"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleNativeShare();
                 }}
-                startIcon={<ShareIcon />}
+                startIcon={<ShareIcon sx={{ color: "#ffffff", fontSize: 20 }} />}
                 sx={{
-                  py: 1.3,
+                  py: 1.4,
                   borderRadius: "18px",
                   fontWeight: 800,
-                  fontSize: "0.85rem",
+                  fontSize: "0.88rem",
                   color: "#ffffff",
                   borderColor: "rgba(255, 255, 255, 0.25)",
+                  bgcolor: "rgba(255, 255, 255, 0.05)",
                   textTransform: "none",
-                  "&:hover": { borderColor: "#ffffff", bgcolor: "rgba(255, 255, 255, 0.08)" },
+                  boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+                  "&:hover": {
+                    borderColor: "#ffffff",
+                    bgcolor: "rgba(255, 255, 255, 0.12)",
+                    transform: "translateY(-1px)",
+                  },
+                  transition: "all 0.2s ease",
                 }}
               >
-                More System Options
+                Share via Device / More Apps
               </Button>
             </Paper>
           </motion.div>
