@@ -40,6 +40,9 @@ import {
 } from "@/lib/db/society";
 import { getTradeListingById, getSimilarTradeListings } from "@/lib/actions/trade";
 
+import PremiumAutocomplete from "@/components/PremiumAutocomplete";
+import PremiumMarkdownEditor from "@/components/PremiumMarkdownEditor";
+
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
@@ -67,12 +70,15 @@ import CategoryIcon from "@mui/icons-material/Category";
 import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
 import EmailIcon from "@mui/icons-material/Email";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import LinkIcon from "@mui/icons-material/Link";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 
 // ── Colors ──────────────────────────────────────────────────
 const EMERALD = "#10b981";
 const EMERALD_DARK = "#059669";
 const FLASH_RED = "#ef4444";
 const BLUE = "#3b82f6";
+const PURPLE = "#7c3aed";
 
 // ── Glassmorphism Base ──────────────────────────────────────
 const glassCard = {
@@ -92,7 +98,7 @@ function timeAgo(dateString: string): string {
   const mins = Math.floor(diffMs / (1000 * 60));
   if (mins < 1) return "Just now";
   if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / (1000 * 60 * 60));
+  const hours = Math.floor(diffMs / (1000 * 60));
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   return `${days}d ago`;
@@ -141,7 +147,7 @@ function MiniJobCard({ listing, onClick }: { listing: any, onClick: () => void }
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       sx={{
-        p: 2.5,
+        p: { xs: 2, sm: 2.5 },
         borderRadius: "20px",
         cursor: "pointer",
         bgcolor: "#ffffff",
@@ -154,44 +160,62 @@ function MiniJobCard({ listing, onClick }: { listing: any, onClick: () => void }
         flexDirection: "column",
         justifyContent: "space-between",
         height: "100%",
+        width: "100%",
+        boxSizing: "border-box",
       }}
     >
       <Box>
-        <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", mb: 2 }}>
-          <Avatar sx={{ width: 40, height: 40, bgcolor: `${color}15`, color, fontWeight: 800, borderRadius: "10px" }} src={listing.postedBy?.avatarUrl}>
+        <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", mb: 1.5 }}>
+          <Avatar sx={{ width: 36, height: 36, bgcolor: `${color}15`, color, fontWeight: 800, borderRadius: "10px" }} src={listing.postedBy?.avatarUrl}>
             {initial}
           </Avatar>
-          <Chip label={listing.category?.toUpperCase()} size="small" sx={{ height: 22, fontSize: "0.62rem", fontWeight: 900, bgcolor: `${color}15`, color, borderRadius: "6px" }} />
+          <Chip label={listing.category?.toUpperCase()} size="small" sx={{ height: 20, fontSize: "0.6rem", fontWeight: 900, bgcolor: `${color}15`, color, borderRadius: "6px" }} />
         </Box>
-        <Typography sx={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 700, mb: 0.5 }}>{posterName}</Typography>
-        <Typography variant="subtitle1" sx={{ fontWeight: 800, color: "#0f172a", lineHeight: 1.25, mb: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+        <Typography sx={{ fontSize: "0.72rem", color: "#64748b", fontWeight: 700, mb: 0.3 }}>{posterName}</Typography>
+        <Typography variant="subtitle1" sx={{ fontWeight: 800, color: "#0f172a", fontSize: { xs: "0.92rem", sm: "1rem" }, lineHeight: 1.25, mb: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
           {listing.title}
         </Typography>
-        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 2 }}>
+        <Box sx={{ display: "flex", gap: 0.8, flexWrap: "wrap", mb: 1.5 }}>
           {listing.location && (
-            <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, bgcolor: "#fff", border: "1px solid #e2e8f0", px: 1, py: 0.3, borderRadius: "6px", fontSize: "0.7rem", color: "#475569", fontWeight: 700 }}>
-              <LocationOnIcon sx={{ fontSize: 12, color }} /> {listing.location}
+            <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.4, bgcolor: "#fff", border: "1px solid #e2e8f0", px: 0.8, py: 0.2, borderRadius: "6px", fontSize: "0.68rem", color: "#475569", fontWeight: 700 }}>
+              <LocationOnIcon sx={{ fontSize: 11, color }} /> {listing.location}
             </Box>
           )}
           {listing.priceOrAsk && (
-            <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, bgcolor: "#fff", border: "1px solid #e2e8f0", px: 1, py: 0.3, borderRadius: "6px", fontSize: "0.7rem", color: "#0f172a", fontWeight: 800 }}>
+            <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.4, bgcolor: "#fff", border: "1px solid #e2e8f0", px: 0.8, py: 0.2, borderRadius: "6px", fontSize: "0.68rem", color: "#0f172a", fontWeight: 800 }}>
               💰 {listing.priceOrAsk}
             </Box>
           )}
         </Box>
       </Box>
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px dashed #cbd5e1", pt: 1.5, mt: "auto" }}>
-        <Typography sx={{ fontWeight: 800, fontSize: "0.78rem", color }}>View Role</Typography>
-        <ArrowForwardIcon sx={{ fontSize: 14, color, transform: isHovered ? "translateX(3px)" : "none", transition: "transform 0.2s" }} />
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderTop: "1px dashed #cbd5e1", pt: 1.2, mt: "auto" }}>
+        <Typography sx={{ fontWeight: 800, fontSize: "0.76rem", color }}>View Role</Typography>
+        <ArrowForwardIcon sx={{ fontSize: 13, color, transform: isHovered ? "translateX(3px)" : "none", transition: "transform 0.2s" }} />
       </Box>
     </Card>
   );
 }
 
+// remove duplicate declaration if present
+
 // ── HIGH-FIDELITY SKELETON COMPONENT ────────────────────────
 function JobDetailSkeleton() {
   return (
-    <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1080, mx: "auto" }}>
+    <Box
+      sx={{
+        flex: 1,
+        height: "100%",
+        minHeight: 0,
+        overflowY: "auto",
+        overflowX: "hidden",
+        WebkitOverflowScrolling: "touch",
+        display: "flex",
+        flexDirection: "column",
+        width: "100%",
+        boxSizing: "border-box",
+      }}
+    >
+      <Box sx={{ p: { xs: 1.5, sm: 2.5, md: 4 }, pb: { xs: 16, sm: 12, md: 6 }, maxWidth: 1080, mx: "auto", width: "100%", boxSizing: "border-box" }}>
       {/* Top Bar Skeleton */}
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
         <Skeleton variant="rounded" width={130} height={38} sx={{ borderRadius: "12px" }} />
@@ -268,8 +292,175 @@ function JobDetailSkeleton() {
         </Box>
       </Box>
     </Box>
+    </Box>
   );
 }
+
+// ── PITCH PRESETS & AUTOCOMPLETE GENERATOR ──────────────────
+interface PitchPreset {
+  id: string;
+  label: string;
+  category: string;
+  tagline: string;
+  generate: (listing: any, profile: any) => string;
+}
+
+const PITCH_PRESETS: PitchPreset[] = [
+  {
+    id: "executive",
+    label: "💼 Executive & Strategic Leadership",
+    category: "Leadership",
+    tagline: "Comprehensive executive overview with focus on value-chain governance & outcomes.",
+    generate: (listing, profile) => {
+      const orgName = listing?.organization?.name || listing?.postedBy?.name || "Hiring Team";
+      const rawUsername = profile?.username || (profile?.email ? profile.email.split('@')[0] : (profile?.uid ? profile.uid.slice(0, 10) : 'operator'));
+      const cleanUsername = (rawUsername || '').replace(/^@+/, '');
+      const profileUrl = `https://foodnerve.org/@u-${cleanUsername}`;
+      const candidateName = profile?.displayName || (profile?.firstName ? `${profile.firstName} ${profile.lastName || ''}`.trim() : cleanUsername);
+      const candidateRank = (profile?.currentRank || profile?.rank || 1) as RankLevel;
+      const rankTitle = RANK_NAMES[candidateRank] || "Initiate";
+      const candidateBio = profile?.bio || "Agricultural Operations & Value Chain Specialist";
+      const candidateLocation = profile?.state ? `${profile.state}, Nigeria` : "Nigeria";
+
+      return `Dear Hiring Team at ${orgName},
+
+I am writing to formally submit my candidacy for the "${listing?.title}" position on the FoodNerve Ecosystem.
+
+=== VERIFIED CANDIDATE DOSSIER ===
+• Candidate: ${candidateName}
+• FoodNerve Handle: @${cleanUsername}
+• Verified Profile Link: ${profileUrl}
+• Ecosystem Rank: Rank ${candidateRank} (${rankTitle})
+• Focus Area: ${candidateBio}
+• Location: ${candidateLocation}
+• Society Authentication: Verified via FoodNerve Trust Protocol
+
+=== STRATEGIC FIT & OPERATIONAL CAPABILITY ===
+I have thoroughly evaluated the mandate deliverables, organizational expectations, and systemic challenge alignment. With authenticated standing within the FoodNerve Society and active leadership experience across African agricultural value chains, I am prepared to execute this mandate with rigorous discipline and measurable results.
+
+My complete verified ledger, operational endorsements, and identity credentials can be reviewed directly at:
+🔗 ${profileUrl}
+
+I look forward to discussing how my strategic background aligns with the goals of ${orgName}.
+
+Warm regards,
+
+${candidateName}
+FoodNerve Society Member (Rank ${candidateRank} ${rankTitle})
+${profileUrl}`;
+    }
+  },
+  {
+    id: "field-operations",
+    label: "🌾 Field Operations & Commodity Logistics",
+    category: "Operations",
+    tagline: "Action-oriented pitch centered on post-harvest handling, distribution & physical execution.",
+    generate: (listing, profile) => {
+      const orgName = listing?.organization?.name || listing?.postedBy?.name || "Hiring Team";
+      const rawUsername = profile?.username || (profile?.email ? profile.email.split('@')[0] : (profile?.uid ? profile.uid.slice(0, 10) : 'operator'));
+      const cleanUsername = (rawUsername || '').replace(/^@+/, '');
+      const profileUrl = `https://foodnerve.org/@u-${cleanUsername}`;
+      const candidateName = profile?.displayName || (profile?.firstName ? `${profile.firstName} ${profile.lastName || ''}`.trim() : cleanUsername);
+      const candidateRank = (profile?.currentRank || profile?.rank || 1) as RankLevel;
+      const rankTitle = RANK_NAMES[candidateRank] || "Initiate";
+      const candidateBio = profile?.bio || "Agricultural Field & Logistics Specialist";
+      const candidateLocation = profile?.state ? `${profile.state}, Nigeria` : "Nigeria";
+
+      return `Dear Hiring Team at ${orgName},
+
+I am applying for the "${listing?.title}" opportunity on FoodNerve with an immediate focus on field execution and operational excellence.
+
+=== VERIFIED CANDIDATE PROFILE ===
+• Name: ${candidateName} (@${cleanUsername})
+• Society Profile: ${profileUrl}
+• Verified Rank: Rank ${candidateRank} (${rankTitle})
+• Specialty: ${candidateBio}
+• Base: ${candidateLocation}
+
+=== OPERATIONAL READINESS ===
+My experience directly covers agricultural commodity movement, hub management, farmer network coordination, and post-harvest mitigation. I bring boots-on-the-ground discipline and proven reliability within the FoodNerve network.
+
+Verify my active field credentials and endorsements:
+👉 ${profileUrl}
+
+Ready for immediate deployment upon review.
+
+Best regards,
+
+${candidateName}
+${profileUrl}`;
+    }
+  },
+  {
+    id: "innovation-tech",
+    label: "⚡ AgTech, Digital Telemetry & Innovation",
+    category: "Technology",
+    tagline: "Technical pitch for software, data telemetry, cold-chain monitoring & agronomic innovation.",
+    generate: (listing, profile) => {
+      const orgName = listing?.organization?.name || listing?.postedBy?.name || "Hiring Team";
+      const rawUsername = profile?.username || (profile?.email ? profile.email.split('@')[0] : (profile?.uid ? profile.uid.slice(0, 10) : 'operator'));
+      const cleanUsername = (rawUsername || '').replace(/^@+/, '');
+      const profileUrl = `https://foodnerve.org/@u-${cleanUsername}`;
+      const candidateName = profile?.displayName || (profile?.firstName ? `${profile.firstName} ${profile.lastName || ''}`.trim() : cleanUsername);
+      const candidateRank = (profile?.currentRank || profile?.rank || 1) as RankLevel;
+      const rankTitle = RANK_NAMES[candidateRank] || "Initiate";
+      const candidateBio = profile?.bio || "Agritech & Digital Systems Specialist";
+      const candidateLocation = profile?.state ? `${profile.state}, Nigeria` : "Nigeria";
+
+      return `Dear Hiring Team at ${orgName},
+
+I am excited to submit my application for the "${listing?.title}" mandate on FoodNerve.
+
+=== CANDIDATE IDENTITY & TELEMETRY ===
+• Candidate: ${candidateName}
+• FoodNerve Handle: @${cleanUsername}
+• Profile URL: ${profileUrl}
+• Verification Tier: Rank ${candidateRank} (${rankTitle})
+• Core Discipline: ${candidateBio}
+
+=== TECHNICAL CONTRIBUTION ===
+I specialize in leveraging technology, digital logistics tracking, data pipelines, and scalable agricultural innovations to streamline operations. I am eager to apply this technical toolkit to scale the impact of ${orgName}.
+
+Full public portfolio and smart verification:
+🔗 ${profileUrl}
+
+Sincerely,
+
+${candidateName}
+${profileUrl}`;
+    }
+  },
+  {
+    id: "fast-pitch",
+    label: "🚀 High-Impact Direct Pitch (Concise)",
+    category: "Fast Apply",
+    tagline: "Short, punchy, high-velocity mandate introduction with direct profile link.",
+    generate: (listing, profile) => {
+      const orgName = listing?.organization?.name || listing?.postedBy?.name || "Hiring Team";
+      const rawUsername = profile?.username || (profile?.email ? profile.email.split('@')[0] : (profile?.uid ? profile.uid.slice(0, 10) : 'operator'));
+      const cleanUsername = (rawUsername || '').replace(/^@+/, '');
+      const profileUrl = `https://foodnerve.org/@u-${cleanUsername}`;
+      const candidateName = profile?.displayName || (profile?.firstName ? `${profile.firstName} ${profile.lastName || ''}`.trim() : cleanUsername);
+      const candidateRank = (profile?.currentRank || profile?.rank || 1) as RankLevel;
+      const rankTitle = RANK_NAMES[candidateRank] || "Initiate";
+
+      return `Hello ${orgName} Hiring Team,
+
+I am writing to express my strong interest in your "${listing?.title}" opening.
+
+As an authenticated FoodNerve Society member (Rank ${candidateRank} ${rankTitle}), I bring proven execution capability and a track record across the African food value chain.
+
+Please inspect my verified qualifications and society endorsements here:
+🔗 ${profileUrl}
+
+I would welcome a conversation to get started.
+
+Warm regards,
+${candidateName} (@${cleanUsername})
+${profileUrl}`;
+    }
+  }
+];
 
 // ════════════════════════════════════════════════════════════
 // LISTING DETAIL PAGE
@@ -290,8 +481,19 @@ export default function ListingDetailPage() {
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [applyMessage, setApplyMessage] = useState("");
   const [emailBody, setEmailBody] = useState("");
+  const [selectedPreset, setSelectedPreset] = useState<PitchPreset | null>(PITCH_PRESETS[0]);
   const [applySubmitted, setApplySubmitted] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+
+  // Compute accurate FoodNerve username and profile link
+  const rawUsername = profile?.username || (profile?.email ? profile.email.split('@')[0] : (profile?.uid ? profile.uid.slice(0, 10) : 'operator'));
+  const cleanUsername = rawUsername.replace(/^@+/, '');
+  const foodnerveProfileUrl = `https://foodnerve.org/@u-${cleanUsername}`;
+  const candidateName = profile?.displayName || (profile?.firstName ? `${profile.firstName} ${profile.lastName || ''}`.trim() : cleanUsername);
+  const candidateRank = (profile?.currentRank || profile?.rank || 1) as RankLevel;
+  const rankTitle = RANK_NAMES[candidateRank] || "Initiate";
+  const candidateBio = profile?.bio || "Agro-Enterprise & Value Chain Operator";
+  const candidateLocation = profile?.state ? `${profile.state}, Nigeria` : "Nigeria";
 
   // Fetch listing from DB with fallback to mock
   useEffect(() => {
@@ -392,39 +594,13 @@ export default function ListingDetailPage() {
     return () => { isCancelled = true; };
   }, [listingId]);
 
-  // Pre-fill email body when profile or listing is loaded
+  // Pre-fill executive application email letter
   useEffect(() => {
     if (listing && profile) {
-      const orgName = listing.organization?.name || listing.postedBy?.name || "Hiring Team";
-      const candidateName = profile.displayName || profile.name || "FoodNerve Operator";
-      const candidateRank = profile.rank || 1;
-      const rankTitle = RANK_NAMES[candidateRank as RankLevel] || "Operator";
-      const candidateBio = profile.bio || "Agricultural Operations & Value Chain Specialist";
-      const candidateLocation = profile.state ? `${profile.state}, Nigeria` : "Nigeria";
-
-      const draft = `Dear Hiring Team at ${orgName},
-
-I am writing to formally submit my application for the "${listing.title}" mandate on the FoodNerve Ecosystem.
-
-=== VERIFIED CANDIDATE DOSSIER ===
-• Candidate: ${candidateName}
-• Ecosystem Rank: Rank ${candidateRank} (${rankTitle})
-• Primary Focus: ${candidateBio}
-• Location: ${candidateLocation}
-• Society ID: ${profile.uid ? profile.uid.slice(0, 10) : 'AUTHENTICATED'}
-
-=== CANDIDATE NOTE & STATEMENT ===
-I have reviewed the scope of work and deliverables. With my operational background across the agricultural value chain, I am well-prepared to execute this mandate immediately.
-
-Please find my verified credentials linked to my Society profile. I look forward to discussing how I can create impact for ${orgName}.
-
-Warm regards,
-${candidateName}
-FoodNerve Society Member`;
-
-      setEmailBody(draft);
+      const preset = selectedPreset || PITCH_PRESETS[0];
+      setEmailBody(preset.generate(listing, profile));
     }
-  }, [listing, profile]);
+  }, [listing, profile, selectedPreset]);
 
   const handleShare = () => {
     if (typeof window !== "undefined") {
@@ -434,13 +610,24 @@ FoodNerve Society Member`;
   };
 
   const handleApplyClick = () => {
-    // Open modal for all application types
+    if (listing) {
+      const preset = selectedPreset || PITCH_PRESETS[0];
+      setEmailBody(preset.generate(listing, profile));
+    }
     setShowApplyModal(true);
   };
 
+  const handlePresetSelect = (preset: PitchPreset | null) => {
+    setSelectedPreset(preset);
+    if (preset && listing) {
+      setEmailBody(preset.generate(listing, profile));
+      setToastMsg(`Applied "${preset.label}" tone template!`);
+    }
+  };
+
   const handleSendEmailClient = () => {
-    const targetEmail = listing?.applicationEmail || "hiring@foodnerve.org";
-    const subject = encodeURIComponent(`Application for ${listing?.title} - ${profile?.displayName || 'Operator'} (Rank ${profile?.rank || 1})`);
+    const targetEmail = listing?.applicationEmail || "hiring@organization.org";
+    const subject = encodeURIComponent(`Application: ${listing?.title} - ${candidateName} (@${cleanUsername})`);
     const body = encodeURIComponent(emailBody);
     window.location.href = `mailto:${targetEmail}?subject=${subject}&body=${body}`;
   };
@@ -448,7 +635,14 @@ FoodNerve Society Member`;
   const handleCopyEmailDossier = () => {
     if (typeof window !== "undefined") {
       navigator.clipboard.writeText(emailBody);
-      setToastMsg("Application letter copied to clipboard!");
+      setToastMsg("Full application letter copied to clipboard!");
+    }
+  };
+
+  const handleCopyProfileUrl = () => {
+    if (typeof window !== "undefined") {
+      navigator.clipboard.writeText(foodnerveProfileUrl);
+      setToastMsg("FoodNerve profile link copied to clipboard!");
     }
   };
 
@@ -469,14 +663,16 @@ FoodNerve Society Member`;
   // ── NOT FOUND STATE ───────────────────────────────────────
   if (!listing) {
     return (
-      <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 800, mx: "auto", textAlign: "center", mt: 6 }}>
-        <Paper elevation={0} sx={{ ...glassCard, p: { xs: 4, md: 6 } }}>
-          <Typography variant="h5" sx={{ fontWeight: 900, mb: 1, color: "#0f172a" }}>Listing Not Found</Typography>
-          <Typography variant="body2" sx={{ color: "#64748b", mb: 3 }}>This listing may have expired, been fulfilled, or removed.</Typography>
-          <Button variant="contained" onClick={() => router.push("/trade")} sx={{ bgcolor: EMERALD, "&:hover": { bgcolor: EMERALD_DARK }, borderRadius: "12px", textTransform: "none", fontWeight: 700, px: 3, py: 1.2 }}>
-            Browse Active Listings
-          </Button>
-        </Paper>
+      <Box sx={{ flex: 1, height: "100%", minHeight: 0, overflowY: "auto", overflowX: "hidden", WebkitOverflowScrolling: "touch", width: "100%", boxSizing: "border-box" }}>
+        <Box sx={{ p: { xs: 2, md: 4 }, pb: { xs: 14, sm: 10, md: 6 }, maxWidth: 800, mx: "auto", textAlign: "center", mt: 6 }}>
+          <Paper elevation={0} sx={{ ...glassCard, p: { xs: 4, md: 6 } }}>
+            <Typography variant="h5" sx={{ fontWeight: 900, mb: 1, color: "#0f172a" }}>Listing Not Found</Typography>
+            <Typography variant="body2" sx={{ color: "#64748b", mb: 3 }}>This listing may have expired, been fulfilled, or removed.</Typography>
+            <Button variant="contained" onClick={() => router.push("/trade")} sx={{ bgcolor: EMERALD, "&:hover": { bgcolor: EMERALD_DARK }, borderRadius: "12px", textTransform: "none", fontWeight: 700, px: 3, py: 1.2 }}>
+              Browse Active Listings
+            </Button>
+          </Paper>
+        </Box>
       </Box>
     );
   }
@@ -502,7 +698,7 @@ FoodNerve Society Member`;
       return {
         icon: <EmailIcon />,
         label: "Apply via Verified Email",
-        color: "#7c3aed"
+        color: PURPLE
       };
     }
     return {
@@ -513,6 +709,10 @@ FoodNerve Society Member`;
   };
 
   const applyBtn = getApplyButtonDetails();
+
+  const orgSlug = listing?.organization?.slug || listing?.organization?.id || (posterName ? posterName.toLowerCase().replace(/[^a-z0-9]+/g, '-') : 'org');
+  const orgPublicUrl = listing?.organization?.website || `https://foodnerve.org/@o-${orgSlug}`;
+  const orgDisplayUrl = listing?.organization?.website ? listing.organization.website.replace(/^https?:\/\//, '') : `foodnerve.org/@o-${orgSlug}`;
 
   // Option 3: Multi-Color Segment Ribbon Data
   const specSegments = [
@@ -551,7 +751,21 @@ FoodNerve Society Member`;
   ];
 
   return (
-    <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1080, mx: "auto" }}>
+    <Box
+      sx={{
+        flex: 1,
+        height: "100%",
+        minHeight: 0,
+        overflowY: "auto",
+        overflowX: "hidden",
+        WebkitOverflowScrolling: "touch",
+        display: "flex",
+        flexDirection: "column",
+        width: "100%",
+        boxSizing: "border-box",
+      }}
+    >
+      <Box sx={{ p: { xs: 1.5, sm: 2.5, md: 4 }, pb: { xs: 16, sm: 12, md: 6 }, maxWidth: 1080, mx: "auto", width: "100%", boxSizing: "border-box" }}>
       
       {/* ── Top Bar / Back Button ───────────────────────────── */}
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
@@ -590,8 +804,8 @@ FoodNerve Society Member`;
           <Paper
             elevation={0}
             sx={{
-              p: { xs: 3, md: 4 },
-              borderRadius: "24px",
+              p: { xs: 2.5, sm: 3.5, md: 4 },
+              borderRadius: { xs: "20px", md: "24px" },
               border: "1px solid #e2e8f0",
               background: `linear-gradient(135deg, #ffffff 40%, ${themeColor}12 100%)`,
               boxShadow: "0 10px 30px -10px rgba(0,0,0,0.04)",
@@ -625,7 +839,7 @@ FoodNerve Society Member`;
                 </Box>
               </Box>
 
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 1, minWidth: { sm: 190 } }}>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1, width: { xs: "100%", sm: "auto" }, minWidth: { sm: 190 } }}>
                 <Button
                   variant="contained"
                   onClick={handleApplyClick}
@@ -954,132 +1168,326 @@ FoodNerve Society Member`;
         </Box>
       )}
 
-      {/* ── INTELLIGENT APPLICATION DIALOG (EMAIL / NATIVE / EXTERNAL) ── */}
+      {/* ══════════════════════════════════════════════════════ */}
+      {/* ── ULTRA-PREMIUM APPLICATION DOSSIER DIALOG ─────────── */}
+      {/* ══════════════════════════════════════════════════════ */}
       <Dialog
         open={showApplyModal}
         onClose={() => setShowApplyModal(false)}
         maxWidth="md"
         fullWidth
-        PaperProps={{ sx: { borderRadius: "24px", p: { xs: 1, sm: 2 } } }}
+        PaperProps={{
+          sx: {
+            borderRadius: "28px",
+            p: 0,
+            overflow: "hidden",
+            boxShadow: "0 24px 60px -12px rgba(15, 23, 42, 0.25)",
+            border: "1px solid rgba(226, 232, 240, 0.8)",
+          }
+        }}
       >
-        <DialogTitle sx={{ fontWeight: 900, color: "#0f172a", pb: 1, display: "flex", alignItems: "center", gap: 1.5 }}>
-          {listing.applicationMethod === 'email' ? (
-            <>
-              <EmailIcon sx={{ color: "#7c3aed", fontSize: 28 }} />
-              Apply via Verified Email Dossier
-            </>
-          ) : listing.applicationMethod === 'external' ? (
-            <>
-              <OpenInNewIcon sx={{ color: "#0284c7", fontSize: 28 }} />
-              External Portal Application
-            </>
-          ) : (
-            <>
-              <RocketLaunchIcon sx={{ color: themeColor, fontSize: 28 }} />
-              Fast Apply with Society Profile
-            </>
-          )}
-        </DialogTitle>
+        {/* Modal Hero Banner */}
+        <Box
+          sx={{
+            p: { xs: 3, sm: 3.5 },
+            background: listing.applicationMethod === 'email'
+              ? "linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #4338ca 100%)"
+              : listing.applicationMethod === 'external'
+                ? "linear-gradient(135deg, #0c4a6e 0%, #0369a1 100%)"
+                : "linear-gradient(135deg, #064e3b 0%, #059669 100%)",
+            color: "#ffffff",
+            position: "relative",
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, mb: 1 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+              <Box
+                sx={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: "14px",
+                  bgcolor: "rgba(255, 255, 255, 0.15)",
+                  backdropFilter: "blur(8px)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  border: "1px solid rgba(255, 255, 255, 0.25)",
+                }}
+              >
+                {listing.applicationMethod === 'email' ? (
+                  <EmailIcon sx={{ color: "#ffffff", fontSize: 24 }} />
+                ) : listing.applicationMethod === 'external' ? (
+                  <OpenInNewIcon sx={{ color: "#ffffff", fontSize: 24 }} />
+                ) : (
+                  <RocketLaunchIcon sx={{ color: "#ffffff", fontSize: 24 }} />
+                )}
+              </Box>
+              <Box>
+                <Typography sx={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(255, 255, 255, 0.75)" }}>
+                  {listing.applicationMethod === 'email' ? "Official Email Dispatch" : listing.applicationMethod === 'external' ? "External ATS Application" : "Direct Society Application"}
+                </Typography>
+                <Typography variant="h6" sx={{ fontWeight: 900, color: "#ffffff", lineHeight: 1.2 }}>
+                  {listing.title}
+                </Typography>
+              </Box>
+            </Box>
 
-        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2.5, pt: "12px !important" }}>
+            <Chip
+              label={`To: ${posterName}`}
+              size="small"
+              sx={{
+                bgcolor: "rgba(255, 255, 255, 0.15)",
+                backdropFilter: "blur(8px)",
+                color: "#ffffff",
+                fontWeight: 800,
+                fontSize: "0.72rem",
+                borderRadius: "8px",
+                border: "1px solid rgba(255, 255, 255, 0.2)",
+              }}
+            />
+          </Box>
+        </Box>
+
+        <DialogContent sx={{ p: { xs: 3, sm: 4 }, display: "flex", flexDirection: "column", gap: 3 }}>
           
-          {/* Case A: EMAIL APPLICATION FLOW */}
+          {/* ── 1. HIRING COMPANY IDENTITY & ORGANIZATION DOSSIER CARD ────── */}
+          <Paper
+            elevation={0}
+            sx={{
+              p: { xs: 2, sm: 2.5 },
+              borderRadius: "20px",
+              bgcolor: "#f8fafc",
+              border: "1px solid #e2e8f0",
+              display: "flex",
+              flexDirection: { xs: "column", sm: "row" },
+              alignItems: { sm: "center" },
+              justifyContent: "space-between",
+              gap: 2,
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <Avatar
+                src={orgLogo}
+                sx={{
+                  width: { xs: 46, sm: 52 },
+                  height: { xs: 46, sm: 52 },
+                  borderRadius: "14px",
+                  bgcolor: `${themeColor}15`,
+                  color: themeColor,
+                  fontWeight: 900,
+                  fontSize: "1.25rem",
+                  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.06)",
+                }}
+              >
+                {posterName.charAt(0).toUpperCase()}
+              </Avatar>
+              <Box>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", mb: 0.3 }}>
+                  <Typography sx={{ fontWeight: 900, color: "#0f172a", fontSize: { xs: "0.95rem", sm: "1.05rem" } }}>
+                    {posterName}
+                  </Typography>
+                  {listing.postedBy?.isVerified && (
+                    <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.3, bgcolor: "rgba(16, 185, 129, 0.1)", color: EMERALD, px: 0.8, py: 0.2, borderRadius: "6px" }}>
+                      <VerifiedIcon sx={{ fontSize: 13 }} />
+                      <Typography sx={{ fontSize: "0.65rem", fontWeight: 800 }}>VERIFIED</Typography>
+                    </Box>
+                  )}
+                  <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.3, bgcolor: alpha(rColor, 0.1), color: rColor, px: 0.8, py: 0.2, borderRadius: "6px" }}>
+                    <Typography sx={{ fontSize: "0.65rem", fontWeight: 800 }}>RANK {orgRank}</Typography>
+                  </Box>
+                </Box>
+                <Typography sx={{ fontSize: "0.82rem", color: "#64748b", fontWeight: 600 }}>
+                  {listing.organization?.description || "FoodNerve Society Verified Hiring Organization"}
+                </Typography>
+              </Box>
+            </Box>
+
+            {/* Public Company Profile / Website URL Pill */}
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1, width: { xs: "100%", sm: "auto" } }}>
+              <Tooltip title="Click to copy organization link">
+                <Button
+                  onClick={() => {
+                    navigator.clipboard.writeText(orgPublicUrl);
+                    setToastMsg("Organization link copied to clipboard!");
+                  }}
+                  startIcon={<LinkIcon sx={{ fontSize: 16 }} />}
+                  sx={{
+                    bgcolor: "#ffffff",
+                    border: "1px solid #cbd5e1",
+                    color: "#334155",
+                    fontSize: "0.76rem",
+                    fontWeight: 800,
+                    textTransform: "none",
+                    borderRadius: "10px",
+                    px: 1.5,
+                    py: 0.7,
+                    flex: { xs: 1, sm: "initial" },
+                    "&:hover": { borderColor: themeColor, color: themeColor, bgcolor: alpha(themeColor, 0.04) },
+                  }}
+                >
+                  {orgDisplayUrl}
+                </Button>
+              </Tooltip>
+              <IconButton
+                onClick={() => window.open(orgPublicUrl, '_blank')}
+                sx={{ bgcolor: "#ffffff", border: "1px solid #cbd5e1", color: "#64748b", "&:hover": { color: themeColor } }}
+              >
+                <OpenInNewIcon sx={{ fontSize: 16 }} />
+              </IconButton>
+            </Box>
+          </Paper>
+
+          {/* ── 2. EMAIL APPLICATION FLOW ──────────────────────── */}
           {listing.applicationMethod === 'email' && (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
-              <Box sx={{ p: 2, borderRadius: "16px", bgcolor: alpha("#7c3aed", 0.05), border: `1px solid ${alpha("#7c3aed", 0.15)}` }}>
-                <Typography sx={{ fontSize: "0.86rem", color: "#475569", lineHeight: 1.5 }}>
-                  We have pre-composed your official application letter synced with your <strong>Rank {profile?.rank || 1}</strong> Society credentials. You can edit the text below, open it directly in your mail app, or copy it to your clipboard.
+              
+              {/* Destination Email */}
+              <Box sx={{ p: 1.5, px: 2, borderRadius: "12px", bgcolor: "#f8fafc", border: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 1 }}>
+                <Typography sx={{ fontSize: "0.72rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                  Destination Email
                 </Typography>
-                <Box sx={{ display: "flex", gap: 2, mt: 1.5, flexWrap: "wrap" }}>
-                  <Typography sx={{ fontSize: "0.82rem", fontWeight: 700, color: "#0f172a" }}>
-                    To: <span style={{ color: "#7c3aed" }}>{listing.applicationEmail || "hiring@organization.org"}</span>
-                  </Typography>
-                  <Typography sx={{ fontSize: "0.82rem", fontWeight: 700, color: "#0f172a" }}>
-                    Applicant: <span style={{ color: "#0f172a" }}>{profile?.displayName || "Operator"}</span>
-                  </Typography>
-                </Box>
+                <Typography sx={{ fontSize: "0.88rem", fontWeight: 800, color: PURPLE }}>
+                  {listing.applicationEmail || "hiring@organization.org"}
+                </Typography>
               </Box>
 
-              <TextField
-                multiline
-                rows={10}
-                fullWidth
-                label="Application Letter & Candidate Credentials"
-                value={emailBody}
-                onChange={(e) => setEmailBody(e.target.value)}
-                sx={{
-                  fontFamily: "monospace",
-                  "& .MuiInputBase-input": { fontSize: "0.88rem", lineHeight: 1.6 }
-                }}
-              />
+              {/* ── PREMIUM AUTOCOMPLETE TEMPLATE SELECTOR ───────── */}
+              <Box>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+                  <AutoAwesomeIcon sx={{ fontSize: 16, color: PURPLE }} />
+                  <Typography sx={{ fontSize: "0.78rem", fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    Application Pitch Preset & Tone
+                  </Typography>
+                </Box>
+                <PremiumAutocomplete
+                  colorTheme={PURPLE}
+                  label="Select Application Preset / Tone"
+                  placeholder="Choose an executive, field operations, or technical pitch..."
+                  options={PITCH_PRESETS}
+                  getOptionLabel={(option: any) => typeof option === "string" ? option : option.label}
+                  value={selectedPreset}
+                  onChange={(_, newValue: any) => handlePresetSelect(newValue)}
+                  fullWidth
+                />
+              </Box>
+
+              {/* ── PRE-COMPOSED LETTER (PREMIUM MARKDOWN EDITOR) ─── */}
+              <Box sx={{ position: "relative" }}>
+                <Typography sx={{ fontSize: "0.78rem", fontWeight: 800, color: "#475569", mb: 1, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  Pre-Composed Candidate Letter (Fully Editable)
+                </Typography>
+                <PremiumMarkdownEditor
+                  colorTheme={PURPLE}
+                  label="Candidate Application Letter"
+                  placeholder="Review or customize your cover letter and candidate statement..."
+                  value={emailBody}
+                  onChange={(e: any) => setEmailBody(e.target.value)}
+                  rows={8}
+                  fullWidth
+                />
+              </Box>
             </Box>
           )}
 
-          {/* Case B: NATIVE IN-PLATFORM APPLICATION FLOW */}
+          {/* ── 3. NATIVE IN-PLATFORM APPLICATION FLOW ─────────── */}
           {listing.applicationMethod === 'native' && (
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
-              <Box sx={{ p: 2, borderRadius: "16px", bgcolor: alpha(themeColor, 0.05), border: `1px solid ${alpha(themeColor, 0.15)}`, display: "flex", alignItems: "center", gap: 2 }}>
-                <Avatar sx={{ width: 44, height: 44, bgcolor: themeColor, fontWeight: 900 }}>
-                  {(profile?.displayName || "U").charAt(0).toUpperCase()}
-                </Avatar>
-                <Box>
-                  <Typography sx={{ fontWeight: 800, color: "#0f172a" }}>{profile?.displayName || "Society Operator"}</Typography>
-                  <Typography sx={{ fontSize: "0.8rem", color: "#64748b" }}>Rank {profile?.rank || 1} · {profile?.email}</Typography>
-                </Box>
-              </Box>
-
-              <TextField
-                multiline
-                rows={4}
-                fullWidth
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <Typography sx={{ fontSize: "0.88rem", color: "#475569" }}>
+                Your candidacy, verified rank, and application statement will be recorded directly into the organization’s recruitment desk.
+              </Typography>
+              <PremiumMarkdownEditor
+                colorTheme={themeColor}
                 label="Candidate Pitch & Statement"
                 placeholder="Introduce yourself, your operational track record, and how you will execute this mandate..."
                 value={applyMessage}
-                onChange={(e) => setApplyMessage(e.target.value)}
+                onChange={(e: any) => setApplyMessage(e.target.value)}
+                rows={5}
+                fullWidth
               />
             </Box>
           )}
 
-          {/* Case C: EXTERNAL ATS APPLICATION FLOW */}
+          {/* ── 4. EXTERNAL ATS APPLICATION FLOW ───────────────── */}
           {listing.applicationMethod === 'external' && (
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5, py: 2, textAlign: "center" }}>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2, py: 2, textAlign: "center" }}>
               <Typography sx={{ fontSize: "1rem", color: "#334155", fontWeight: 600 }}>
-                You are about to be redirected to the official applicant tracking portal of:
+                You are about to be redirected to the official applicant portal of:
               </Typography>
               <Typography variant="h5" sx={{ fontWeight: 900, color: "#0f172a" }}>
                 {posterName}
               </Typography>
-              <Typography sx={{ fontSize: "0.88rem", color: "#64748b", maxWidth: 450, mx: "auto" }}>
-                Your Society reputation and verification ID can be included on their external application form.
+              <Typography sx={{ fontSize: "0.88rem", color: "#64748b", maxWidth: 460, mx: "auto" }}>
+                Make sure to include your verified FoodNerve public link (<strong>{foodnerveProfileUrl}</strong>) on your application form.
               </Typography>
             </Box>
           )}
 
         </DialogContent>
 
-        <DialogActions sx={{ p: 3, pt: 1, display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 1.5 }}>
-          <Button onClick={() => setShowApplyModal(false)} sx={{ fontWeight: 700, color: "#64748b" }}>
+        <DialogActions
+          sx={{
+            p: { xs: 2, sm: 3 },
+            pt: 2,
+            bgcolor: "#f8fafc",
+            borderTop: "1px solid #e2e8f0",
+            display: "flex",
+            flexDirection: { xs: "column-reverse", sm: "row" },
+            alignItems: { xs: "stretch", sm: "center" },
+            justifyContent: "space-between",
+            gap: 1.5,
+          }}
+        >
+          <Button
+            onClick={() => setShowApplyModal(false)}
+            sx={{
+              fontWeight: 700,
+              color: "#64748b",
+              textTransform: "none",
+              width: { xs: "100%", sm: "auto" },
+              py: { xs: 1, sm: "auto" }
+            }}
+          >
             Cancel
           </Button>
 
-          <Box sx={{ display: "flex", gap: 1.5 }}>
+          <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: 1.5, width: { xs: "100%", sm: "auto" } }}>
             {listing.applicationMethod === 'email' && (
               <>
                 <Button
                   variant="outlined"
                   onClick={handleCopyEmailDossier}
                   startIcon={<ContentCopyIcon />}
-                  sx={{ borderRadius: "12px", fontWeight: 700, borderColor: "#cbd5e1", color: "#334155" }}
+                  sx={{
+                    borderRadius: "14px",
+                    fontWeight: 800,
+                    borderColor: "#cbd5e1",
+                    color: "#334155",
+                    textTransform: "none",
+                    px: 2.5,
+                    py: 1.2,
+                    width: { xs: "100%", sm: "auto" },
+                    "&:hover": { borderColor: PURPLE, bgcolor: "rgba(124, 58, 237, 0.04)" }
+                  }}
                 >
-                  Copy Dossier
+                  Copy Full Letter
                 </Button>
                 <Button
                   variant="contained"
                   onClick={handleSendEmailClient}
-                  endIcon={<SendIcon />}
-                  sx={{ bgcolor: "#7c3aed", color: "#ffffff", fontWeight: 800, borderRadius: "12px", px: 3, "&:hover": { bgcolor: "#6d28d9" } }}
+                  sx={{
+                    bgcolor: PURPLE,
+                    color: "#ffffff",
+                    fontWeight: 800,
+                    borderRadius: "14px",
+                    px: 3.5,
+                    py: 1.2,
+                    width: { xs: "100%", sm: "auto" },
+                    textTransform: "none",
+                    boxShadow: "0 10px 25px -5px rgba(124, 58, 237, 0.4)",
+                    "&:hover": { bgcolor: "#6d28d9" }
+                  }}
                 >
-                  Open in Mail App
+                  Apply via Email
                 </Button>
               </>
             )}
@@ -1090,9 +1498,20 @@ FoodNerve Society Member`;
                 onClick={handleApplySubmit}
                 disabled={applySubmitted}
                 endIcon={<RocketLaunchIcon />}
-                sx={{ bgcolor: themeColor, color: "#ffffff", fontWeight: 800, borderRadius: "12px", px: 3.5, "&:hover": { bgcolor: alpha(themeColor, 0.9) } }}
+                sx={{
+                  bgcolor: themeColor,
+                  color: "#ffffff",
+                  fontWeight: 800,
+                  borderRadius: "14px",
+                  px: 3.5,
+                  py: 1.2,
+                  width: { xs: "100%", sm: "auto" },
+                  textTransform: "none",
+                  boxShadow: `0 10px 25px -5px ${alpha(themeColor, 0.4)}`,
+                  "&:hover": { bgcolor: alpha(themeColor, 0.9) }
+                }}
               >
-                {applySubmitted ? "Submitting..." : "Submit Application"}
+                {applySubmitted ? "Submitting..." : "Submit Direct Application"}
               </Button>
             )}
 
@@ -1104,7 +1523,17 @@ FoodNerve Society Member`;
                   window.open(listing.applicationUrl, '_blank', 'noopener,noreferrer');
                 }}
                 endIcon={<OpenInNewIcon />}
-                sx={{ bgcolor: "#0284c7", color: "#ffffff", fontWeight: 800, borderRadius: "12px", px: 3.5, "&:hover": { bgcolor: "#0369a1" } }}
+                sx={{
+                  bgcolor: "#0284c7",
+                  color: "#ffffff",
+                  fontWeight: 800,
+                  borderRadius: "14px",
+                  px: 3.5,
+                  py: 1.2,
+                  width: { xs: "100%", sm: "auto" },
+                  textTransform: "none",
+                  "&:hover": { bgcolor: "#0369a1" }
+                }}
               >
                 Continue to Company Portal
               </Button>
@@ -1120,6 +1549,7 @@ FoodNerve Society Member`;
         </Alert>
       </Snackbar>
 
+      </Box>
     </Box>
   );
 }

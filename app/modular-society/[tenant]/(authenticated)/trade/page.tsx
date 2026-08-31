@@ -54,7 +54,7 @@ const glassCard = {
 // ── Shared Paper Styles ──────────────────────────────────
 const sharedPaperSx = {
   flex: 1,
-  m: { xs: 1, md: 2 },
+  m: { xs: 0.5, sm: 1, md: 2 },
   minHeight: 0,
   height: { xs: 'calc(100% - 16px)', md: 'calc(100% - 32px)' },
   bgcolor: '#ffffff',
@@ -190,8 +190,8 @@ function JobListingCard({ listing, isGrid = false, onDraftClick }: { listing: Tr
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       sx={{
-        minWidth: isGrid ? 0 : { xs: 280, sm: 320 },
-        maxWidth: isGrid ? '100%' : 340,
+        minWidth: isGrid ? 0 : { xs: '80vw', sm: 290, md: 320 },
+        maxWidth: isGrid ? '100%' : { xs: '82vw', sm: 330, md: 340 },
         width: isGrid ? '100%' : 'auto',
         scrollSnapAlign: "start",
         flexShrink: 0,
@@ -339,8 +339,8 @@ function MarketplaceCard({ listing, isGrid = false, onDraftClick }: { listing: T
       }}
       sx={{
         ...glassCard,
-        minWidth: isGrid ? 0 : { xs: 280, sm: 300 },
-        maxWidth: isGrid ? '100%' : 320,
+        minWidth: isGrid ? 0 : { xs: '80vw', sm: 290, md: 320 },
+        maxWidth: isGrid ? '100%' : { xs: '82vw', sm: 320 },
         width: isGrid ? '100%' : 'auto',
         scrollSnapAlign: "start",
         flexShrink: 0,
@@ -484,7 +484,7 @@ function HorizontalScrollRow({ title, emoji, items, onDraftClick }: { title: str
       </Box>
       <Box
         sx={{
-          display: "flex", gap: 2, overflowX: "auto", pb: 2, px: { xs: 2, md: 4 }, scrollSnapType: "x mandatory",
+          display: "flex", gap: 2, overflowX: "auto", pb: 2, px: { xs: 1.5, sm: 2.5, md: 4 }, scrollSnapType: "x mandatory",
           "&::-webkit-scrollbar": { display: "none" }, scrollbarWidth: "none",
         }}
       >
