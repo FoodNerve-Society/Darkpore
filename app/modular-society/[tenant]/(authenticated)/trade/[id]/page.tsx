@@ -770,7 +770,7 @@ export default function ListingDetailPage() {
       id: "compensation",
       icon: <PaymentsIcon sx={{ fontSize: 19, color: "#059669" }} />,
       color: "#059669",
-      label: "VALUE EXCHANGE",
+      label: "SALARY / COMPENSATION",
       value: listing.priceOrAsk || "Competitive Retainer",
       hint: listing.category === "volunteer" ? "NervePoints Reward" : "Monthly Compensation"
     },
@@ -778,7 +778,7 @@ export default function ListingDetailPage() {
       id: "function",
       icon: <CategoryIcon sx={{ fontSize: 19, color: "#7c3aed" }} />,
       color: "#7c3aed",
-      label: "VALUE CHAIN ACTOR",
+      label: "VALUE CHAIN FUNCTION",
       value: listing.jobFunction || listing.commodity || "Agro-Enterprise",
       hint: "Ecosystem Function"
     },
@@ -830,7 +830,7 @@ export default function ListingDetailPage() {
           <IconButton onClick={() => setIsSaved(!isSaved)} sx={{ bgcolor: "#ffffff", border: "1px solid #e2e8f0", color: isSaved ? themeColor : "#64748b", "&:hover": { bgcolor: "#f8fafc" } }}>
             {isSaved ? <BookmarkIcon /> : <BookmarkBorderIcon />}
           </IconButton>
-          <Tooltip title="Share mandate as image or link">
+          <Tooltip title="Share job as image or link">
             <IconButton onClick={() => setShowShareModal(true)} sx={{ bgcolor: "#ffffff", border: "1px solid #e2e8f0", color: "#64748b", "&:hover": { bgcolor: "#f8fafc" } }}>
               <ShareIcon sx={{ fontSize: 20 }} />
             </IconButton>
