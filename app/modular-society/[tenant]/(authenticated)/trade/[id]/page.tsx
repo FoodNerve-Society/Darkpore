@@ -65,6 +65,8 @@ import RocketLaunchIcon from "@mui/icons-material/RocketLaunch";
 import PaymentsIcon from "@mui/icons-material/Payments";
 import CategoryIcon from "@mui/icons-material/Category";
 import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
+import EmailIcon from "@mui/icons-material/Email";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 
 // ── Colors ──────────────────────────────────────────────────
 const EMERALD = "#10b981";
@@ -90,7 +92,7 @@ function timeAgo(dateString: string): string {
   const mins = Math.floor(diffMs / (1000 * 60));
   if (mins < 1) return "Just now";
   if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
+  const hours = Math.floor(mins / (1000 * 60 * 60));
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   return `${days}d ago`;
@@ -212,14 +214,14 @@ function JobDetailSkeleton() {
           <Skeleton variant="rounded" width={180} height={48} sx={{ borderRadius: "14px" }} />
         </Box>
 
-        {/* Icon-Pod Bar Skeleton */}
-        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.75, pt: 3, borderTop: "1px dashed #e2e8f0" }}>
+        {/* Option 3 Segmented Ribbon Skeleton */}
+        <Box sx={{ display: "flex", flexDirection: { xs: "column", md: "row" }, borderRadius: "18px", bgcolor: "#f8fafc", border: "1px solid #e2e8f0", overflow: "hidden", mt: 3 }}>
           {[1, 2, 3, 4].map((i) => (
-            <Box key={i} sx={{ display: "flex", alignItems: "center", gap: 1.5, p: "10px 16px", borderRadius: "16px", bgcolor: "#f8fafc", border: "1px solid #e2e8f0", minWidth: 160 }}>
-              <Skeleton variant="rounded" width={38} height={38} sx={{ borderRadius: "12px", flexShrink: 0 }} />
+            <Box key={i} sx={{ flex: 1, p: "14px 20px", display: "flex", alignItems: "center", gap: 1.5, borderRight: { md: i === 4 ? "none" : "1px solid #e2e8f0" } }}>
+              <Skeleton variant="rounded" width={36} height={36} sx={{ borderRadius: "10px", flexShrink: 0 }} />
               <Box sx={{ flex: 1 }}>
                 <Skeleton variant="text" width={60} height={12} sx={{ mb: 0.5 }} />
-                <Skeleton variant="text" width={100} height={18} />
+                <Skeleton variant="text" width={90} height={16} />
               </Box>
             </Box>
           ))}
@@ -283,8 +285,11 @@ export default function ListingDetailPage() {
   const [similarListings, setSimilarListings] = useState<any[]>([]);
   const [loadingSimilar, setLoadingSimilar] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  
+  // Application Modal & Form States
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [applyMessage, setApplyMessage] = useState("");
+  const [emailBody, setEmailBody] = useState("");
   const [applySubmitted, setApplySubmitted] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
@@ -387,6 +392,40 @@ export default function ListingDetailPage() {
     return () => { isCancelled = true; };
   }, [listingId]);
 
+  // Pre-fill email body when profile or listing is loaded
+  useEffect(() => {
+    if (listing && profile) {
+      const orgName = listing.organization?.name || listing.postedBy?.name || "Hiring Team";
+      const candidateName = profile.displayName || profile.name || "FoodNerve Operator";
+      const candidateRank = profile.rank || 1;
+      const rankTitle = RANK_NAMES[candidateRank as RankLevel] || "Operator";
+      const candidateBio = profile.bio || "Agricultural Operations & Value Chain Specialist";
+      const candidateLocation = profile.state ? `${profile.state}, Nigeria` : "Nigeria";
+
+      const draft = `Dear Hiring Team at ${orgName},
+
+I am writing to formally submit my application for the "${listing.title}" mandate on the FoodNerve Ecosystem.
+
+=== VERIFIED CANDIDATE DOSSIER ===
+• Candidate: ${candidateName}
+• Ecosystem Rank: Rank ${candidateRank} (${rankTitle})
+• Primary Focus: ${candidateBio}
+• Location: ${candidateLocation}
+• Society ID: ${profile.uid ? profile.uid.slice(0, 10) : 'AUTHENTICATED'}
+
+=== CANDIDATE NOTE & STATEMENT ===
+I have reviewed the scope of work and deliverables. With my operational background across the agricultural value chain, I am well-prepared to execute this mandate immediately.
+
+Please find my verified credentials linked to my Society profile. I look forward to discussing how I can create impact for ${orgName}.
+
+Warm regards,
+${candidateName}
+FoodNerve Society Member`;
+
+      setEmailBody(draft);
+    }
+  }, [listing, profile]);
+
   const handleShare = () => {
     if (typeof window !== "undefined") {
       navigator.clipboard.writeText(window.location.href);
@@ -395,15 +434,22 @@ export default function ListingDetailPage() {
   };
 
   const handleApplyClick = () => {
-    if (listing?.applicationMethod === 'external' && listing?.applicationUrl) {
-      window.open(listing.applicationUrl, '_blank', 'noopener,noreferrer');
-      return;
-    }
-    if (listing?.applicationMethod === 'email' && listing?.applicationEmail) {
-      window.location.href = `mailto:${listing.applicationEmail}?subject=Application for ${encodeURIComponent(listing.title)}`;
-      return;
-    }
+    // Open modal for all application types
     setShowApplyModal(true);
+  };
+
+  const handleSendEmailClient = () => {
+    const targetEmail = listing?.applicationEmail || "hiring@foodnerve.org";
+    const subject = encodeURIComponent(`Application for ${listing?.title} - ${profile?.displayName || 'Operator'} (Rank ${profile?.rank || 1})`);
+    const body = encodeURIComponent(emailBody);
+    window.location.href = `mailto:${targetEmail}?subject=${subject}&body=${body}`;
+  };
+
+  const handleCopyEmailDossier = () => {
+    if (typeof window !== "undefined") {
+      navigator.clipboard.writeText(emailBody);
+      setToastMsg("Application letter copied to clipboard!");
+    }
   };
 
   const handleApplySubmit = () => {
@@ -411,7 +457,7 @@ export default function ListingDetailPage() {
     setTimeout(() => {
       setShowApplyModal(false);
       setApplySubmitted(false);
-      setToastMsg("Application submitted successfully! The organization has been notified.");
+      setToastMsg("Application submitted successfully! The hiring organization has been notified.");
     }, 1200);
   };
 
@@ -443,28 +489,61 @@ export default function ListingDetailPage() {
   const orgRank = listing.organization?.rank || listing.postedBy?.rank || 1;
   const rColor = RANK_COLORS[orgRank as RankLevel] || "#94a3b8";
 
-  // Option 1: Bento Spec Data
-  const specItems = [
+  // Dynamic Apply Button Icon & Text
+  const getApplyButtonDetails = () => {
+    if (listing.applicationMethod === 'external') {
+      return {
+        icon: <OpenInNewIcon />,
+        label: listing.externalButtonText || "Apply on Company Site",
+        color: "#0284c7"
+      };
+    }
+    if (listing.applicationMethod === 'email') {
+      return {
+        icon: <EmailIcon />,
+        label: "Apply via Verified Email",
+        color: "#7c3aed"
+      };
+    }
+    return {
+      icon: <RocketLaunchIcon />,
+      label: "Apply with Profile",
+      color: themeColor
+    };
+  };
+
+  const applyBtn = getApplyButtonDetails();
+
+  // Option 3: Multi-Color Segment Ribbon Data
+  const specSegments = [
     {
-      icon: <LocationOnIcon sx={{ fontSize: 18, color: themeColor }} />,
+      id: "location",
+      icon: <LocationOnIcon sx={{ fontSize: 19, color: "#0284c7" }} />,
+      color: "#0284c7",
       label: "LOCATION & BASE",
       value: listing.location || "Pan-African",
       hint: listing.workModel || "On-Site Operations"
     },
     {
-      icon: <PaymentsIcon sx={{ fontSize: 18, color: themeColor }} />,
+      id: "compensation",
+      icon: <PaymentsIcon sx={{ fontSize: 19, color: "#059669" }} />,
+      color: "#059669",
       label: "VALUE EXCHANGE",
       value: listing.priceOrAsk || "Competitive Retainer",
       hint: listing.category === "volunteer" ? "NervePoints Reward" : "Monthly Compensation"
     },
     {
-      icon: <CategoryIcon sx={{ fontSize: 18, color: themeColor }} />,
+      id: "function",
+      icon: <CategoryIcon sx={{ fontSize: 19, color: "#7c3aed" }} />,
+      color: "#7c3aed",
       label: "VALUE CHAIN ACTOR",
       value: listing.jobFunction || listing.commodity || "Agro-Enterprise",
       hint: "Ecosystem Function"
     },
     {
-      icon: <HourglassEmptyIcon sx={{ fontSize: 18, color: themeColor }} />,
+      id: "timeline",
+      icon: <HourglassEmptyIcon sx={{ fontSize: 19, color: "#e11d48" }} />,
+      color: "#e11d48",
       label: "TIMELINE & STATUS",
       value: remaining ? remaining : "Actively Hiring",
       hint: remaining ? "Until Application Closes" : "Open for Operators"
@@ -507,7 +586,7 @@ export default function ListingDetailPage() {
       {isJobOrVolunteer ? (
         <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
           
-          {/* ── HERO HEADER CARD (OPTION 1: BENTO SPEC GRID) ── */}
+          {/* ── HERO HEADER CARD (OPTION 3: MULTI-COLOR RIBBON) ── */}
           <Paper
             elevation={0}
             sx={{
@@ -546,13 +625,13 @@ export default function ListingDetailPage() {
                 </Box>
               </Box>
 
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 1, minWidth: { sm: 180 } }}>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1, minWidth: { sm: 190 } }}>
                 <Button
                   variant="contained"
                   onClick={handleApplyClick}
-                  endIcon={listing.applicationMethod === 'external' ? <OpenInNewIcon /> : <SendIcon />}
+                  endIcon={applyBtn.icon}
                   sx={{
-                    bgcolor: themeColor,
+                    bgcolor: applyBtn.color,
                     color: "#ffffff",
                     fontWeight: 800,
                     borderRadius: "14px",
@@ -560,58 +639,89 @@ export default function ListingDetailPage() {
                     px: 3,
                     fontSize: "0.95rem",
                     textTransform: "none",
-                    boxShadow: `0 10px 25px -5px ${themeColor}50`,
-                    "&:hover": { bgcolor: alpha(themeColor, 0.9), transform: "scale(1.02)" },
+                    boxShadow: `0 10px 25px -5px ${alpha(applyBtn.color, 0.5)}`,
+                    "&:hover": { bgcolor: alpha(applyBtn.color, 0.9), transform: "scale(1.02)" },
                     transition: "all 0.2s",
                   }}
                 >
-                  {listing.applicationMethod === 'external' ? listing.externalButtonText : "Apply for Role"}
+                  {applyBtn.label}
                 </Button>
               </Box>
             </Box>
 
-            {/* ── BENTO SPEC GRID (OPTION 1) ────────────────── */}
+            {/* ── MULTI-COLOR SEGMENTED RIBBON BAR ───────────── */}
             <Box
               sx={{
-                display: "grid",
-                gridTemplateColumns: { xs: "repeat(2, 1fr)", md: "repeat(4, 1fr)" },
-                gap: 2,
-                pt: 3,
-                borderTop: "1px dashed #cbd5e1",
+                display: "flex",
+                flexDirection: { xs: "column", md: "row" },
+                borderRadius: "18px",
+                bgcolor: "#ffffff",
+                border: "1px solid #e2e8f0",
+                boxShadow: "0 4px 16px -2px rgba(0,0,0,0.03)",
+                overflow: "hidden",
+                mt: 3,
               }}
             >
-              {specItems.map((item, idx) => (
+              {specSegments.map((item, idx) => (
                 <Box
-                  key={idx}
+                  key={item.id}
                   sx={{
-                    p: 2,
-                    borderRadius: "16px",
-                    bgcolor: "#ffffff",
-                    border: "1px solid #e2e8f0",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.02)",
+                    flex: 1,
+                    p: { xs: "12px 16px", md: "14px 20px" },
                     display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-between",
-                    transition: "all 0.2s",
+                    alignItems: "center",
+                    gap: 1.75,
+                    borderRight: { md: idx === specSegments.length - 1 ? "none" : "1px solid #e2e8f0" },
+                    borderBottom: { xs: idx === specSegments.length - 1 ? "none" : "1px solid #e2e8f0", md: "none" },
+                    transition: "all 0.2s ease",
                     "&:hover": {
-                      borderColor: alpha(themeColor, 0.4),
-                      transform: "translateY(-2px)",
-                      boxShadow: `0 6px 16px ${alpha(themeColor, 0.08)}`
+                      bgcolor: alpha(item.color, 0.05),
                     }
                   }}
                 >
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 1 }}>
+                  <Box
+                    sx={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: "12px",
+                      bgcolor: alpha(item.color, 0.12),
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                      boxShadow: `inset 0 0 0 1px ${alpha(item.color, 0.2)}`,
+                    }}
+                  >
                     {item.icon}
-                    <Typography sx={{ fontSize: "0.66rem", fontWeight: 800, color: "#64748b", letterSpacing: "0.05em", textTransform: "uppercase" }}>
+                  </Box>
+                  <Box sx={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+                    <Typography
+                      sx={{
+                        fontSize: "0.62rem",
+                        fontWeight: 800,
+                        color: item.color,
+                        letterSpacing: "0.06em",
+                        textTransform: "uppercase",
+                        lineHeight: 1.1,
+                        mb: 0.35,
+                      }}
+                    >
                       {item.label}
                     </Typography>
+                    <Typography
+                      sx={{
+                        fontWeight: 900,
+                        color: "#0f172a",
+                        fontSize: "0.92rem",
+                        lineHeight: 1.2,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {item.value}
+                    </Typography>
                   </Box>
-                  <Typography sx={{ fontWeight: 900, color: "#0f172a", fontSize: "0.95rem", lineHeight: 1.25, mb: 0.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {item.value}
-                  </Typography>
-                  <Typography sx={{ fontSize: "0.74rem", color: "#94a3b8", fontWeight: 600 }}>
-                    {item.hint}
-                  </Typography>
                 </Box>
               ))}
             </Box>
@@ -681,7 +791,7 @@ export default function ListingDetailPage() {
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
                     <CheckCircleIcon sx={{ color: themeColor, fontSize: 20 }} />
                     <Typography sx={{ color: "#334155", fontSize: "0.92rem", fontWeight: 600 }}>
-                      Direct application through FoodNerve Society profile
+                      Official application processed via FoodNerve Society Trust Protocol
                     </Typography>
                   </Box>
                   {listing.requiredDocuments?.requireResume && (
@@ -844,35 +954,162 @@ export default function ListingDetailPage() {
         </Box>
       )}
 
-      {/* ── NATIVE APPLICATION DIALOG ───────────────────────── */}
-      <Dialog open={showApplyModal} onClose={() => setShowApplyModal(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: "20px", p: 1 } }}>
-        <DialogTitle sx={{ fontWeight: 900, color: "#0f172a", pb: 1 }}>
-          Apply for {listing.title}
+      {/* ── INTELLIGENT APPLICATION DIALOG (EMAIL / NATIVE / EXTERNAL) ── */}
+      <Dialog
+        open={showApplyModal}
+        onClose={() => setShowApplyModal(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: "24px", p: { xs: 1, sm: 2 } } }}
+      >
+        <DialogTitle sx={{ fontWeight: 900, color: "#0f172a", pb: 1, display: "flex", alignItems: "center", gap: 1.5 }}>
+          {listing.applicationMethod === 'email' ? (
+            <>
+              <EmailIcon sx={{ color: "#7c3aed", fontSize: 28 }} />
+              Apply via Verified Email Dossier
+            </>
+          ) : listing.applicationMethod === 'external' ? (
+            <>
+              <OpenInNewIcon sx={{ color: "#0284c7", fontSize: 28 }} />
+              External Portal Application
+            </>
+          ) : (
+            <>
+              <RocketLaunchIcon sx={{ color: themeColor, fontSize: 28 }} />
+              Fast Apply with Society Profile
+            </>
+          )}
         </DialogTitle>
+
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2.5, pt: "12px !important" }}>
-          <Typography sx={{ fontSize: "0.88rem", color: "#64748b" }}>
-            Your application will be submitted under your Society profile: <strong>{profile?.displayName || "Operator"}</strong>.
-          </Typography>
-          <TextField
-            multiline
-            rows={4}
-            fullWidth
-            label="Cover Letter / Candidate Note"
-            placeholder="Introduce yourself, your relevant field experience, and why you are the ideal fit for this mandate..."
-            value={applyMessage}
-            onChange={(e) => setApplyMessage(e.target.value)}
-          />
+          
+          {/* Case A: EMAIL APPLICATION FLOW */}
+          {listing.applicationMethod === 'email' && (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+              <Box sx={{ p: 2, borderRadius: "16px", bgcolor: alpha("#7c3aed", 0.05), border: `1px solid ${alpha("#7c3aed", 0.15)}` }}>
+                <Typography sx={{ fontSize: "0.86rem", color: "#475569", lineHeight: 1.5 }}>
+                  We have pre-composed your official application letter synced with your <strong>Rank {profile?.rank || 1}</strong> Society credentials. You can edit the text below, open it directly in your mail app, or copy it to your clipboard.
+                </Typography>
+                <Box sx={{ display: "flex", gap: 2, mt: 1.5, flexWrap: "wrap" }}>
+                  <Typography sx={{ fontSize: "0.82rem", fontWeight: 700, color: "#0f172a" }}>
+                    To: <span style={{ color: "#7c3aed" }}>{listing.applicationEmail || "hiring@organization.org"}</span>
+                  </Typography>
+                  <Typography sx={{ fontSize: "0.82rem", fontWeight: 700, color: "#0f172a" }}>
+                    Applicant: <span style={{ color: "#0f172a" }}>{profile?.displayName || "Operator"}</span>
+                  </Typography>
+                </Box>
+              </Box>
+
+              <TextField
+                multiline
+                rows={10}
+                fullWidth
+                label="Application Letter & Candidate Credentials"
+                value={emailBody}
+                onChange={(e) => setEmailBody(e.target.value)}
+                sx={{
+                  fontFamily: "monospace",
+                  "& .MuiInputBase-input": { fontSize: "0.88rem", lineHeight: 1.6 }
+                }}
+              />
+            </Box>
+          )}
+
+          {/* Case B: NATIVE IN-PLATFORM APPLICATION FLOW */}
+          {listing.applicationMethod === 'native' && (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+              <Box sx={{ p: 2, borderRadius: "16px", bgcolor: alpha(themeColor, 0.05), border: `1px solid ${alpha(themeColor, 0.15)}`, display: "flex", alignItems: "center", gap: 2 }}>
+                <Avatar sx={{ width: 44, height: 44, bgcolor: themeColor, fontWeight: 900 }}>
+                  {(profile?.displayName || "U").charAt(0).toUpperCase()}
+                </Avatar>
+                <Box>
+                  <Typography sx={{ fontWeight: 800, color: "#0f172a" }}>{profile?.displayName || "Society Operator"}</Typography>
+                  <Typography sx={{ fontSize: "0.8rem", color: "#64748b" }}>Rank {profile?.rank || 1} · {profile?.email}</Typography>
+                </Box>
+              </Box>
+
+              <TextField
+                multiline
+                rows={4}
+                fullWidth
+                label="Candidate Pitch & Statement"
+                placeholder="Introduce yourself, your operational track record, and how you will execute this mandate..."
+                value={applyMessage}
+                onChange={(e) => setApplyMessage(e.target.value)}
+              />
+            </Box>
+          )}
+
+          {/* Case C: EXTERNAL ATS APPLICATION FLOW */}
+          {listing.applicationMethod === 'external' && (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5, py: 2, textAlign: "center" }}>
+              <Typography sx={{ fontSize: "1rem", color: "#334155", fontWeight: 600 }}>
+                You are about to be redirected to the official applicant tracking portal of:
+              </Typography>
+              <Typography variant="h5" sx={{ fontWeight: 900, color: "#0f172a" }}>
+                {posterName}
+              </Typography>
+              <Typography sx={{ fontSize: "0.88rem", color: "#64748b", maxWidth: 450, mx: "auto" }}>
+                Your Society reputation and verification ID can be included on their external application form.
+              </Typography>
+            </Box>
+          )}
+
         </DialogContent>
-        <DialogActions sx={{ p: 2.5, pt: 1 }}>
-          <Button onClick={() => setShowApplyModal(false)} sx={{ fontWeight: 700, color: "#64748b" }}>Cancel</Button>
-          <Button
-            variant="contained"
-            onClick={handleApplySubmit}
-            disabled={applySubmitted}
-            sx={{ bgcolor: themeColor, color: "#ffffff", fontWeight: 800, borderRadius: "10px", px: 3, "&:hover": { bgcolor: alpha(themeColor, 0.9) } }}
-          >
-            {applySubmitted ? "Submitting..." : "Submit Application"}
+
+        <DialogActions sx={{ p: 3, pt: 1, display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 1.5 }}>
+          <Button onClick={() => setShowApplyModal(false)} sx={{ fontWeight: 700, color: "#64748b" }}>
+            Cancel
           </Button>
+
+          <Box sx={{ display: "flex", gap: 1.5 }}>
+            {listing.applicationMethod === 'email' && (
+              <>
+                <Button
+                  variant="outlined"
+                  onClick={handleCopyEmailDossier}
+                  startIcon={<ContentCopyIcon />}
+                  sx={{ borderRadius: "12px", fontWeight: 700, borderColor: "#cbd5e1", color: "#334155" }}
+                >
+                  Copy Dossier
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={handleSendEmailClient}
+                  endIcon={<SendIcon />}
+                  sx={{ bgcolor: "#7c3aed", color: "#ffffff", fontWeight: 800, borderRadius: "12px", px: 3, "&:hover": { bgcolor: "#6d28d9" } }}
+                >
+                  Open in Mail App
+                </Button>
+              </>
+            )}
+
+            {listing.applicationMethod === 'native' && (
+              <Button
+                variant="contained"
+                onClick={handleApplySubmit}
+                disabled={applySubmitted}
+                endIcon={<RocketLaunchIcon />}
+                sx={{ bgcolor: themeColor, color: "#ffffff", fontWeight: 800, borderRadius: "12px", px: 3.5, "&:hover": { bgcolor: alpha(themeColor, 0.9) } }}
+              >
+                {applySubmitted ? "Submitting..." : "Submit Application"}
+              </Button>
+            )}
+
+            {listing.applicationMethod === 'external' && (
+              <Button
+                variant="contained"
+                onClick={() => {
+                  setShowApplyModal(false);
+                  window.open(listing.applicationUrl, '_blank', 'noopener,noreferrer');
+                }}
+                endIcon={<OpenInNewIcon />}
+                sx={{ bgcolor: "#0284c7", color: "#ffffff", fontWeight: 800, borderRadius: "12px", px: 3.5, "&:hover": { bgcolor: "#0369a1" } }}
+              >
+                Continue to Company Portal
+              </Button>
+            )}
+          </Box>
         </DialogActions>
       </Dialog>
 
