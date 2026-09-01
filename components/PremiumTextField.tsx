@@ -17,7 +17,7 @@ type PremiumTextFieldProps = TextFieldProps & CustomProps;
 
 // Use forwardRef to ensure the component can be used by libraries like MUI's Autocomplete
 const PremiumTextField: FC<PremiumTextFieldProps> = forwardRef<HTMLDivElement, PremiumTextFieldProps>(
-    ({ colorTheme, errorHelperText, InputProps, ...props }, ref) => {
+    ({ colorTheme, errorHelperText, InputProps, slotProps, ...props }, ref) => {
         const hasError = !!errorHelperText;
 
         return (
@@ -27,8 +27,17 @@ const PremiumTextField: FC<PremiumTextFieldProps> = forwardRef<HTMLDivElement, P
                     variant="filled" // We use 'filled' as a base to easily override styles
                     fullWidth={props.fullWidth}
                     error={hasError}
-                    {...props}
                     helperText={!errorHelperText ? props.helperText : undefined}
+                    slotProps={{
+                        input: {
+                            disableUnderline: true,
+                            ...(InputProps as any),
+                            ...(slotProps as any)?.input,
+                        },
+                        inputLabel: (slotProps as any)?.inputLabel,
+                        htmlInput: (slotProps as any)?.htmlInput,
+                    }}
+                    {...props}
                     sx={{
                         // 1) Unfocused label
                         '& label': {
@@ -76,15 +85,7 @@ const PremiumTextField: FC<PremiumTextFieldProps> = forwardRef<HTMLDivElement, P
                         },
                         ...props.sx
                     }}
-                    // @ts-expect-error InputProps typing conflict with TextField in newer MUI
-                    InputProps={{
-                        ...(InputProps as any),
-                        inputRef: ref,
-                        disableUnderline: true,
-                        sx: {
-                            ...(InputProps as any)?.sx,
-                        }
-                    }}
+
                 />
                 {hasError && (
                     <Alert
