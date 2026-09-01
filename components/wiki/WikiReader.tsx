@@ -482,51 +482,105 @@ export default function WikiReader({ doc, loading, isAdmin, hasAccess, canSeeBlo
             </Typography>
           </Box>
 
-          {/* Right */}
-          <Box sx={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1 }}>
+          {/* Right: Icon Actions (Edit, Save, Reset, Minimize, Close) */}
+          <Box sx={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 0.75 }}>
             {(isAdmin || doc.authorId === profile?.uid) && onEdit && (
-              <Button
-                variant="contained"
-                size="small"
-                startIcon={<EditIcon sx={{ fontSize: 16 }} />}
-                onClick={onEdit}
-                sx={{
-                  bgcolor: '#0f172a',
-                  color: '#fff',
-                  fontWeight: 800,
-                  borderRadius: '10px',
-                  textTransform: 'none',
-                  fontSize: '0.82rem',
-                  px: 2, py: 0.6,
-                  boxShadow: '0 4px 12px rgba(15, 23, 42, 0.15)',
-                  '&:hover': { bgcolor: '#1e293b', transform: 'translateY(-1px)' },
-                  transition: 'all 0.2s',
-                  flexShrink: 0,
-                }}
-              >
-                Edit Document
-              </Button>
+              <Tooltip title="Edit Document in Studio">
+                <IconButton
+                  size="small"
+                  onClick={onEdit}
+                  sx={{
+                    bgcolor: '#0f172a',
+                    color: '#fff',
+                    width: 32,
+                    height: 32,
+                    borderRadius: '8px',
+                    boxShadow: '0 2px 6px rgba(15, 23, 42, 0.2)',
+                    '&:hover': { bgcolor: '#1e293b', transform: 'scale(1.05)' },
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  <EditIcon sx={{ fontSize: 16 }} />
+                </IconButton>
+              </Tooltip>
             )}
             {hasUnsavedChanges && (
-              <PremiumButton 
-                baseColor="#10b981" 
-                startIcon={<CloudSyncIcon />} 
-                onClick={handleSaveToCloud}
-                disabled={isSaving}
-              >
-                {isSaving ? 'Saving...' : 'Save'}
-              </PremiumButton>
+              <Tooltip title={isSaving ? "Saving to Cloud..." : "Save Workspace to Cloud"}>
+                <IconButton
+                  size="small"
+                  onClick={handleSaveToCloud}
+                  disabled={isSaving}
+                  sx={{
+                    bgcolor: 'rgba(16, 185, 129, 0.15)',
+                    color: '#059669',
+                    width: 32,
+                    height: 32,
+                    borderRadius: '8px',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    '&:hover': { bgcolor: '#10b981', color: '#fff', transform: 'scale(1.05)' },
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  <CloudSyncIcon sx={{ fontSize: 17 }} />
+                </IconButton>
+              </Tooltip>
             )}
             <Tooltip title="Reset Workspace to Default">
               <IconButton 
                 color="error"
                 size="small"
                 onClick={handleResetWorkspace}
-                sx={{ bgcolor: 'rgba(239, 68, 68, 0.1)', '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.2)' } }}
+                sx={{ 
+                  bgcolor: 'rgba(239, 68, 68, 0.1)', 
+                  color: '#ef4444',
+                  width: 32,
+                  height: 32,
+                  borderRadius: '8px',
+                  '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.2)', transform: 'scale(1.05)' },
+                  transition: 'all 0.2s',
+                }}
               >
-                <RestartAltIcon fontSize="small" />
+                <RestartAltIcon sx={{ fontSize: 17 }} />
               </IconButton>
             </Tooltip>
+            {onMinimize && (
+              <Tooltip title="Minimize & Dock to Screen">
+                <IconButton
+                  size="small"
+                  onClick={onMinimize}
+                  sx={{
+                    bgcolor: 'rgba(0,0,0,0.04)',
+                    color: '#475569',
+                    width: 32,
+                    height: 32,
+                    borderRadius: '8px',
+                    '&:hover': { bgcolor: 'rgba(0,0,0,0.08)', color: '#0f172a', transform: 'scale(1.05)' },
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  <MinimizeIcon sx={{ fontSize: 17 }} />
+                </IconButton>
+              </Tooltip>
+            )}
+            {onClose && (
+              <Tooltip title="Close">
+                <IconButton
+                  size="small"
+                  onClick={onClose}
+                  sx={{
+                    bgcolor: 'rgba(0,0,0,0.04)',
+                    color: '#475569',
+                    width: 32,
+                    height: 32,
+                    borderRadius: '8px',
+                    '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', transform: 'scale(1.05)' },
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  <CloseIcon sx={{ fontSize: 17 }} />
+                </IconButton>
+              </Tooltip>
+            )}
           </Box>
         </Box>
       )}
