@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Box, Container, Typography, Button, Chip, Paper } from '@mui/material';
+import { Box, Container, Typography, Button, Chip, Paper, IconButton, Tooltip } from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -25,12 +26,16 @@ const sharedPaperSx = {
 export default function WikiFrontContent({ 
   wikiDocs, 
   isAdmin, 
+  currentUserId,
   onDocSelect, 
+  onEditDoc,
   onCreateClick 
 }: { 
   wikiDocs: any[];
   isAdmin: boolean;
+  currentUserId?: string;
   onDocSelect: (slug: string) => void;
+  onEditDoc?: (slug: string) => void;
   onCreateClick: () => void;
 }) {
   const router = useRouter();
@@ -106,7 +111,29 @@ export default function WikiFrontContent({
                     Category: <span style={{ textTransform: 'capitalize' }}>{item.category}</span>
                   </Typography>
                 </Box>
-                <ArrowForwardIcon sx={{ color: 'rgba(255,255,255,0.3)', fontSize: 28 }} />
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  {onEditDoc && (isAdmin || item.authorId === currentUserId) && (
+                    <Tooltip title="Edit Playbook">
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEditDoc(item.slug);
+                        }}
+                        sx={{
+                          color: '#fff',
+                          bgcolor: 'rgba(255,255,255,0.1)',
+                          border: '1px solid rgba(255,255,255,0.15)',
+                          '&:hover': { bgcolor: 'rgba(16, 185, 129, 0.3)', color: '#10b981', transform: 'scale(1.08)' },
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        <EditIcon sx={{ fontSize: 18 }} />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                  <ArrowForwardIcon sx={{ color: 'rgba(255,255,255,0.3)', fontSize: 28 }} />
+                </Box>
               </Box>
             ))
           )}

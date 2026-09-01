@@ -93,6 +93,19 @@ export async function createOrUpdateWikiDoc(data: WikiDocInput) {
   }
 }
 
+export async function deleteWikiDoc(slug: string) {
+  try {
+    await prisma.omniWikiDoc.delete({
+      where: { slug }
+    });
+    revalidatePath('/modular-society/[tenant]/[...all]', 'layout');
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error deleting wiki doc:', error);
+    return { success: false, error: error.message };
+  }
+}
+
 export async function getWikiDoc(slug: string) {
   try {
     const doc = await prisma.omniWikiDoc.findUnique({

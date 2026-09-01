@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Box, Typography, Paper, Chip, IconButton, alpha, Tooltip } from '@mui/material';
+import WorkspaceContentManager, { WorkspaceTab } from '@/app/components/studio/WorkspaceContentManager';
 import {
   MenuBook as MenuBookIcon,
   Gavel as PolicyIcon,
@@ -87,11 +88,17 @@ const WIKI_TEMPLATES: Record<string, any[]> = {
 
 export default function WikiStudioDashboard({
   docs = [],
+  workspaceTabs = [],
   onStartFresh,
+  onEditDoc,
+  onDeleteDoc,
   userName
 }: {
   docs?: any[];
+  workspaceTabs?: WorkspaceTab[];
   onStartFresh: (type: string, taxonomy: any, templateBlocks?: any[], fullPayload?: any) => void;
+  onEditDoc?: (slug: string) => void;
+  onDeleteDoc?: (slug: string) => void;
   userName?: string;
 }) {
   const [expandedStartType, setExpandedStartType] = useState<string | null>(null);
@@ -461,6 +468,20 @@ export default function WikiStudioDashboard({
           );
         })}
       </Box>
+
+      {/* ================================================================ */}
+      {/* 3. BOTTOM SECTION: WORKSPACE CONTENT MANAGER                     */}
+      {/* ================================================================ */}
+      {workspaceTabs && workspaceTabs.length > 0 && onEditDoc && onDeleteDoc && (
+        <Box sx={{ width: '100%', mt: 4 }}>
+          <WorkspaceContentManager
+            tabs={workspaceTabs}
+            colorTheme={ACCENT}
+            onEdit={(itemId) => onEditDoc(itemId)}
+            onDelete={(itemId) => onDeleteDoc(itemId)}
+          />
+        </Box>
+      )}
     </Box>
   );
 }

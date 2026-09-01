@@ -11,6 +11,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import FolderIcon from '@mui/icons-material/Folder';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import MinimizeIcon from '@mui/icons-material/Remove';
+import CloseIcon from '@mui/icons-material/Close';
 import CloudSyncIcon from '@mui/icons-material/CloudSync';
 import Tooltip from '@mui/material/Tooltip';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
@@ -303,10 +305,12 @@ interface WikiReaderProps {
   canSeeBlock: (block: WikiBlock) => boolean;
   onEdit?: () => void;
   onNavigate?: (slug: string) => void;
+  onMinimize?: () => void;
+  onClose?: () => void;
   headerContent?: React.ReactNode;
 }
 
-export default function WikiReader({ doc, loading, isAdmin, hasAccess, canSeeBlock, onEdit, onNavigate, headerContent }: WikiReaderProps) {
+export default function WikiReader({ doc, loading, isAdmin, hasAccess, canSeeBlock, onEdit, onNavigate, onMinimize, onClose, headerContent }: WikiReaderProps) {
   const { profile } = useSociety();
   const [breadcrumbs, setBreadcrumbs] = useState<any[]>([]);
   
@@ -430,38 +434,80 @@ export default function WikiReader({ doc, loading, isAdmin, hasAccess, canSeeBlo
     localStorage.removeItem(`wiki_state_${doc.id}_${profile.uid}`);
     await resetUserWikiState(doc.id, profile.uid);
   };
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', bgcolor: '#ffffff', position: 'relative' }}>
-      {headerContent && (
-        <Box sx={{ p: 2, position: 'absolute', top: 0, left: 0, zIndex: 10 }}>
-          {headerContent}
-        </Box>
-      )}
-
       {/* STICKY WORKSPACE NAVBAR */}
       {doc && hasAccess && !loading && (
         <Box sx={{ 
-          position: 'sticky', top: 0, zIndex: 20, 
-          bgcolor: 'rgba(255, 255, 255, 0.85)', 
-          backdropFilter: 'blur(16px)',
+          position: 'sticky', top: 0, zIndex: 50, 
+          bgcolor: 'rgba(255, 255, 255, 0.95)', 
+          backdropFilter: 'blur(20px)',
           borderBottom: '1px solid rgba(0,0,0,0.08)',
-          px: { xs: 2, md: 4 }, py: 1.5,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+          px: { xs: 2, md: 3 }, py: 1.2,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.03)'
         }}>
-          {/* Left side spacer to keep center balanced */}
-          <Box sx={{ flex: 1, display: { xs: 'none', sm: 'block' } }} />
+          {/* Left: Back Button */}
+          <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+            {headerContent ? (
+              headerContent
+            ) : (
+              <Button
+                size="small"
+                onClick={() => onNavigate && onNavigate('')}
+                sx={{
+                  color: '#475569',
+                  fontWeight: 800,
+                  fontSize: '0.82rem',
+                  textTransform: 'none',
+                  borderRadius: '10px',
+                  px: 1.5, py: 0.6,
+                  bgcolor: 'rgba(0,0,0,0.04)',
+                  '&:hover': { bgcolor: 'rgba(0,0,0,0.08)', color: '#0f172a' },
+                }}
+              >
+                ← Back to List
+              </Button>
+            )}
+          </Box>
           
           {/* Center */}
-          <Box sx={{ flex: 2, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <Typography sx={{ fontWeight: 800, color: '#0f172a', fontSize: '1rem', letterSpacing: '-0.02em' }}>{doc.title}</Typography>
-            <Typography sx={{ fontSize: '0.75rem', color: hasUnsavedChanges ? '#f59e0b' : '#10b981', fontWeight: 600 }}>
-              {hasUnsavedChanges ? 'Unsaved local changes' : (lastSaved ? `Saved to cloud at ${lastSaved.toLocaleTimeString()}` : 'No cloud saves yet')}
+          <Box sx={{ flex: 2, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 0, px: 1 }}>
+            <Typography noWrap sx={{ fontWeight: 800, color: '#0f172a', fontSize: '0.95rem', letterSpacing: '-0.01em', maxWidth: '100%' }}>
+              {doc.title}
+            </Typography>
+            <Typography sx={{ fontSize: '0.72rem', color: hasUnsavedChanges ? '#f59e0b' : '#10b981', fontWeight: 600 }}>
+              {hasUnsavedChanges ? 'Unsaved local changes' : (lastSaved ? `Saved at ${lastSaved.toLocaleTimeString()}` : 'Synced with Cloud')}
             </Typography>
           </Box>
 
           {/* Right */}
-          <Box sx={{ flex: 1, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-              {hasUnsavedChanges && (
+          <Box sx={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1 }}>
+            {(isAdmin || doc.authorId === profile?.uid) && onEdit && (
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<EditIcon sx={{ fontSize: 16 }} />}
+                onClick={onEdit}
+                sx={{
+                  bgcolor: '#0f172a',
+                  color: '#fff',
+                  fontWeight: 800,
+                  borderRadius: '10px',
+                  textTransform: 'none',
+                  fontSize: '0.82rem',
+                  px: 2, py: 0.6,
+                  boxShadow: '0 4px 12px rgba(15, 23, 42, 0.15)',
+                  '&:hover': { bgcolor: '#1e293b', transform: 'translateY(-1px)' },
+                  transition: 'all 0.2s',
+                  flexShrink: 0,
+                }}
+              >
+                Edit Document
+              </Button>
+            )}
+            {hasUnsavedChanges && (
               <PremiumButton 
                 baseColor="#10b981" 
                 startIcon={<CloudSyncIcon />} 
@@ -471,15 +517,16 @@ export default function WikiReader({ doc, loading, isAdmin, hasAccess, canSeeBlo
                 {isSaving ? 'Saving...' : 'Save'}
               </PremiumButton>
             )}
-              <Tooltip title="Reset Workspace to Default">
-                <IconButton 
-                  color="error"
-                  onClick={handleResetWorkspace}
-                  sx={{ bgcolor: 'rgba(239, 68, 68, 0.1)', '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.2)' } }}
-                >
-                  <RestartAltIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
+            <Tooltip title="Reset Workspace to Default">
+              <IconButton 
+                color="error"
+                size="small"
+                onClick={handleResetWorkspace}
+                sx={{ bgcolor: 'rgba(239, 68, 68, 0.1)', '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.2)' } }}
+              >
+                <RestartAltIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
           </Box>
         </Box>
       )}

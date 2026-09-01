@@ -1,11 +1,13 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Drawer, Box, IconButton, useMediaQuery, useTheme, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Typography, Button, MenuItem, Select, InputLabel, FormControl } from '@mui/material';
+import { Drawer, Box, IconButton, useMediaQuery, useTheme, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Typography, Button, MenuItem, Select, InputLabel, FormControl, Tooltip } from '@mui/material';
 import { getHotspotMappings, getWikiDoc, WikiBlock, createRegistryHotspot } from '@/lib/actions/wiki';
 import { useSociety } from './SocietyContext';
 import WikiReader from '@/components/wiki/WikiReader';
 import CloseIcon from '@mui/icons-material/Close';
+import OpenInFullIcon from '@mui/icons-material/OpenInFull';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
 import { useRouter } from 'next/navigation';
 import PremiumTextField from '@/components/PremiumTextField';
 import PremiumAutocomplete from '@/components/PremiumAutocomplete';
@@ -61,6 +63,7 @@ export function WikiOverlayProvider({ children }: { children: React.ReactNode })
   
   const [mappings, setMappings] = useState<Record<string, string>>({});
   const [isOpen, setIsOpen] = useState(false);
+  const [isDocked, setIsDocked] = useState(false);
   const [activeSlug, setActiveSlug] = useState<string | null>(null);
   
   const [doc, setDoc] = useState<any>(null);
@@ -114,7 +117,6 @@ export function WikiOverlayProvider({ children }: { children: React.ReactNode })
     const res = await createRegistryHotspot(registerId, registerLabel, registerCategory, registerSubcategory);
     if (res.success) {
       setShowRegisterModal(false);
-      // Let the developer know they should link it in the studio
       router.push(`/profile/wiki`);
     } else {
       alert("Error: " + res.error);
@@ -132,14 +134,14 @@ export function WikiOverlayProvider({ children }: { children: React.ReactNode })
     loadMappings();
   }, []);
 
-  // Fetch doc when slug changes
+  // Fetch doc when slug changes or drawer/dock opens
   useEffect(() => {
-    if (activeSlug && isOpen) {
+    if (activeSlug && (isOpen || isDocked)) {
       loadDoc(activeSlug);
-    } else {
+    } else if (!isOpen && !isDocked) {
       setDoc(null);
     }
-  }, [activeSlug, isOpen]);
+  }, [activeSlug, isOpen, isDocked]);
 
   const loadDoc = async (slug: string) => {
     setLoading(true);
@@ -154,6 +156,7 @@ export function WikiOverlayProvider({ children }: { children: React.ReactNode })
 
   const openWikiBySlug = (slug: string) => {
     setActiveSlug(slug);
+    setIsDocked(false);
     setIsOpen(true);
   };
 
@@ -162,14 +165,24 @@ export function WikiOverlayProvider({ children }: { children: React.ReactNode })
     if (slug) {
       openWikiBySlug(slug);
     } else {
-      console.warn(`No wiki document mapped to hotspot: ${hotspotId}`);
+      openRegisterModal(hotspotId);
     }
   };
 
   const closeWiki = () => {
     setIsOpen(false);
-    // Add slight delay before clearing doc to allow exit animation
-    setTimeout(() => setActiveSlug(null), 300);
+    setIsDocked(false);
+    setActiveSlug(null);
+  };
+
+  const minimizeWiki = () => {
+    setIsOpen(false);
+    setIsDocked(true);
+  };
+
+  const expandWiki = () => {
+    setIsDocked(false);
+    setIsOpen(true);
   };
 
   // Access Control Helpers
@@ -221,6 +234,7 @@ export function WikiOverlayProvider({ children }: { children: React.ReactNode })
             height: { xs: '90vh', sm: '100%' },
             borderRadius: { xs: '24px 24px 0 0', sm: 0 },
             bgcolor: '#ffffff',
+            boxShadow: '-8px 0 32px rgba(0,0,0,0.12)',
           }
         }}
       >
@@ -231,13 +245,101 @@ export function WikiOverlayProvider({ children }: { children: React.ReactNode })
           hasAccess={hasAccess()}
           canSeeBlock={canSeeBlock}
           onEdit={handleEdit}
-          headerContent={
-            <IconButton onClick={closeWiki} sx={{ mr: 1 }}>
-              <CloseIcon />
-            </IconButton>
-          }
+          onMinimize={minimizeWiki}
+          onClose={closeWiki}
         />
       </Drawer>
+
+      {/* FLOATING DOCKED WIKI PILL */}
+      {isDocked && doc && (
+        <Box
+          sx={{
+            position: 'fixed',
+            bottom: { xs: 80, sm: 24 },
+            right: 24,
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5,
+            bgcolor: 'rgba(15, 23, 42, 0.92)',
+            backdropFilter: 'blur(20px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+            border: '1px solid rgba(16, 185, 129, 0.35)',
+            boxShadow: '0 12px 36px rgba(0,0,0,0.35), 0 0 20px rgba(16, 185, 129, 0.2)',
+            borderRadius: '100px',
+            px: 2,
+            py: 1,
+            color: '#fff',
+            cursor: 'pointer',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            '&:hover': {
+              transform: 'translateY(-3px)',
+              boxShadow: '0 16px 44px rgba(0,0,0,0.4), 0 0 28px rgba(16, 185, 129, 0.35)',
+              borderColor: '#10b981',
+            },
+          }}
+          onClick={expandWiki}
+        >
+          {/* Live pulsing emerald dot */}
+          <Box sx={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#10b981' }} />
+            <Box sx={{ position: 'absolute', width: 16, height: 16, borderRadius: '50%', bgcolor: '#10b981', opacity: 0.4, animation: 'ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite' }} />
+          </Box>
+
+          <MenuBookIcon sx={{ fontSize: 18, color: '#10b981' }} />
+
+          <Box sx={{ display: 'flex', flexDirection: 'column', maxWidth: { xs: 150, sm: 220 } }}>
+            <Typography noWrap sx={{ fontWeight: 800, fontSize: '0.82rem', color: '#fff' }}>
+              {doc.title}
+            </Typography>
+            <Typography sx={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.6)', fontWeight: 600, textTransform: 'capitalize' }}>
+              {doc.category || 'Playbook'} • Docked
+            </Typography>
+          </Box>
+
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 0.5 }}>
+            <Tooltip title="Expand Playbook">
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  expandWiki();
+                }}
+                sx={{
+                  color: '#fff',
+                  bgcolor: 'rgba(255,255,255,0.1)',
+                  width: 26,
+                  height: 26,
+                  '&:hover': { bgcolor: '#10b981', color: '#fff' },
+                  transition: 'all 0.2s',
+                }}
+              >
+                <OpenInFullIcon sx={{ fontSize: 14 }} />
+              </IconButton>
+            </Tooltip>
+
+            <Tooltip title="Close Playbook">
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  closeWiki();
+                }}
+                sx={{
+                  color: 'rgba(255,255,255,0.6)',
+                  bgcolor: 'rgba(255,255,255,0.05)',
+                  width: 26,
+                  height: 26,
+                  '&:hover': { bgcolor: 'rgba(239,68,68,0.3)', color: '#ef4444' },
+                  transition: 'all 0.2s',
+                }}
+              >
+                <CloseIcon sx={{ fontSize: 14 }} />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        </Box>
+      )}
 
       <Dialog 
         open={showRegisterModal} 

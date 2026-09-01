@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Box, Typography, Button, IconButton, Paper,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
@@ -9,7 +9,8 @@ import {
 import BusinessIcon from '@mui/icons-material/Business';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { useSociety } from '@/context/SocietyContext';
-import { getAllVisibleWikiDocs, getWikiDoc, createOrUpdateWikiDoc, WikiBlock, WikiDocInput, getRegistryHotspots, createRegistryHotspot } from '@/lib/actions/wiki';
+import { getAllVisibleWikiDocs, getWikiDoc, createOrUpdateWikiDoc, deleteWikiDoc, WikiBlock, WikiDocInput, getRegistryHotspots, createRegistryHotspot } from '@/lib/actions/wiki';
+import { WorkspaceTab } from '@/app/components/studio/WorkspaceContentManager';
 import FlipContainer from '../../components/shared/FlipContainer';
 import WikiReader from '@/components/wiki/WikiReader';
 import WikiStudioDashboard from '../../components/forms/WikiStudioDashboard';
@@ -99,6 +100,68 @@ export default function WikiDashboardPage() {
     }
   };
 
+  const workspaceTabs: WorkspaceTab[] = useMemo(() => {
+    if (!profile) return [];
+
+    // 1. Personal Tab
+    const personalItems = wikiDocs
+      .filter((d: any) => !d.authorId || d.authorId === profile.uid)
+      .map((d: any) => ({
+        id: d.slug,
+        title: d.title,
+        type: 'article',
+        status: d.tags?.includes('STATUS_DRAFT') ? 'draft' : 'published',
+        date: d.updatedAt ? new Date(d.updatedAt).toLocaleDateString() : 'Recent',
+        authorName: profile.displayName || profile.firstName || 'Personal',
+        authorAvatar: profile.avatarUrl,
+      }));
+
+    const tabs: WorkspaceTab[] = [
+      {
+        id: 'personal',
+        label: 'Personal',
+        logoUrl: profile.avatarUrl,
+        items: personalItems,
+      },
+    ];
+
+    // 2. Organization Tabs
+    if (profile.organizations && profile.organizations.length > 0) {
+      profile.organizations.forEach((org: any) => {
+        const orgItems = wikiDocs
+          .filter((d: any) => d.authorId === org.id)
+          .map((d: any) => ({
+            id: d.slug,
+            title: d.title,
+            type: 'article',
+            status: d.tags?.includes('STATUS_DRAFT') ? 'draft' : 'published',
+            date: d.updatedAt ? new Date(d.updatedAt).toLocaleDateString() : 'Recent',
+            authorName: org.name,
+            authorAvatar: org.logoUrl,
+          }));
+
+        tabs.push({
+          id: org.id,
+          label: org.name,
+          logoUrl: org.logoUrl,
+          items: orgItems,
+        });
+      });
+    }
+
+    return tabs;
+  }, [wikiDocs, profile]);
+
+  const handleDeleteDoc = async (slug: string) => {
+    if (!confirm('Are you sure you want to delete this wiki document? This cannot be undone.')) return;
+    const res = await deleteWikiDoc(slug);
+    if (res.success) {
+      await loadDashboard();
+    } else {
+      alert('Error deleting document: ' + res.error);
+    }
+  };
+
   useEffect(() => {
     loadDashboard();
     loadHotspots().then(() => {
@@ -108,6 +171,13 @@ export default function WikiDashboardPage() {
         setNewHotspotLabel(qsHotspot.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
         setShowHotspotModal(true);
         router.replace(`/modular-society/${tenant}/profile/wiki`);
+      }
+
+      const qsEdit = searchParams.get('edit');
+      if (qsEdit) {
+        setActiveDocSlug(qsEdit);
+        setIsFlipped(true);
+        loadDoc(qsEdit).then(() => setViewMode('editor'));
       }
     });
   }, [profile, searchParams, router, tenant]);
@@ -177,24 +247,29 @@ export default function WikiDashboardPage() {
       setEditForm({
         ...editForm,
         ...fullPayload,
-        blocks: (fullPayload.blocks || []).map((b: any) => ({ ...b, id: b.id || `block-${Date.now()}-${Math.random()}` }))
+        slug: fullPayload.slug || `sop-${Date.now()}`,
+        title: fullPayload.title || 'Untitled SOP',
+        blocks: fullPayload.blocks || templateBlocks,
+        tags: fullPayload.tags || ['sop', taxonomy.subcategory].filter(Boolean),
+        authorId: postingAs === 'organization' ? (selectedOrgId || profile?.uid) : (profile?.uid || ''),
       });
-      setViewMode('editor');
-      return;
+    } else {
+      setEditForm({
+        slug: `sop-${Date.now()}`,
+        title: 'Untitled SOP',
+        category: taxonomy.category || 'operations',
+        isPublic: taxonomy.clearance === 'public',
+        allowedRoles: taxonomy.clearance === 'internal_staff' ? ['internal_staff'] : taxonomy.clearance === 'admin' ? ['admin'] : ['guest'],
+        allowedUsers: [],
+        blocks: templateBlocks,
+        tags: ['sop', taxonomy.subcategory].filter(Boolean),
+        authorId: postingAs === 'organization' ? (selectedOrgId || profile?.uid) : (profile?.uid || ''),
+        hotspotId: '',
+        parentId: ''
+      });
     }
-
-    setEditForm({
-      ...editForm,
-      category: taxonomy.category || 'operations',
-      tags: taxonomy.subcategory ? [taxonomy.subcategory] : [],
-      isPublic: taxonomy.clearance === 'public',
-      allowedRoles: taxonomy.clearance === 'public' ? [] : [taxonomy.clearance],
-      blocks: templateBlocks.map((b: any) => ({ ...b, id: `block-${Date.now()}-${Math.random()}` }))
-    });
     setViewMode('editor');
   };
-
-  if (!profile) return null;
 
   const userRoles = profile?.roles || ['guest'];
   const isAdmin = profile?.isAdmin || false;
@@ -211,47 +286,60 @@ export default function WikiDashboardPage() {
 
   const hasAccess = () => {
     if (!doc) return false;
-    
-    // Drafts are ONLY visible to the author
-    if (doc.tags?.includes("STATUS_DRAFT")) {
-      return doc.authorId === uid;
-    }
-    
-    if (isAdmin) return true; // Admins see everything published
-    if (doc.isPublic) return true; // Public docs (Everyone authenticated)
-    if (doc.allowedUsers.includes(uid)) return true; // Whitelist
-    if (doc.authorId === uid) return true; // Author always sees their own doc
-    
+    if (isAdmin) return true;
+    if (doc.isPublic) return true;
+    if (doc.allowedRoles.some((r: string) => (userRoles as string[]).includes(r))) return true;
+    if (doc.allowedUsers.includes(uid)) return true;
+    if (doc.authorId === uid) return true;
     return false;
   };
 
+  // --- Front Content (List) ---
   const FrontContent = (
     <WikiFrontContent 
       wikiDocs={wikiDocs}
       isAdmin={isAdmin}
+      currentUserId={profile?.uid}
       onDocSelect={(slug) => {
         setActiveDocSlug(slug);
         setIsFlipped(true);
+        setViewMode('reader');
+        loadDoc(slug);
+      }}
+      onEditDoc={(slug) => {
+        setActiveDocSlug(slug);
+        setIsFlipped(true);
+        loadDoc(slug).then(() => setViewMode('editor'));
       }}
       onCreateClick={() => {
         setActiveDocSlug(null);
         setIsFlipped(true);
+        setViewMode('lobby');
       }}
     />
   );
 
+  // --- Back Content (Workspace) ---
   const BackContent = (
-    <Paper elevation={0} sx={{ ...sharedPaperSx, bgcolor: '#ffffff', p: 0 }}>
+    <Paper elevation={0} sx={sharedPaperSx}>
+      {/* Top Header Bar for Studio view */}
       {viewMode !== 'reader' && (
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: { xs: 2, md: 3 }, borderBottom: '1px solid rgba(0,0,0,0.08)', bgcolor: '#fff', zIndex: 10, flexShrink: 0 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Tooltip title={viewMode === 'lobby' ? "Close Studio" : "Cancel & Return"}>
-              <IconButton 
+        <Box sx={{ 
+          px: { xs: 2.5, md: 3.5 }, py: 2, 
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          borderBottom: '1px solid rgba(0,0,0,0.05)', flexShrink: 0 
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Tooltip title={viewMode === 'editor' ? "Back to Studio" : "Back to Playbooks"}>
+              <IconButton
                 onClick={() => {
-                  if (viewMode === 'lobby') setIsFlipped(false);
-                  else if (doc) setViewMode('reader');
-                  else setViewMode('lobby');
-                }} 
+                  if (viewMode === 'editor') {
+                    if (doc) setViewMode('reader');
+                    else setViewMode('lobby');
+                  } else {
+                    setIsFlipped(false);
+                  }
+                }}
                 sx={{ width: 36, height: 36, bgcolor: 'rgba(0,0,0,0.03)', '&:hover': { bgcolor: 'rgba(0,0,0,0.06)' } }}
               >
                 <ArrowBackIcon sx={{ fontSize: 18 }} />
@@ -259,13 +347,11 @@ export default function WikiDashboardPage() {
             </Tooltip>
             <Box>
               <Typography sx={{ fontWeight: 900, fontSize: '1.1rem', letterSpacing: '-0.01em', display: 'flex', alignItems: 'center', gap: 1 }}>
-                <span style={{ opacity: 0.5 }}>Studio</span>
+                <span style={{ opacity: 0.5 }}>Omni-Wiki</span>
                 <span style={{ opacity: 0.5 }}>/</span>
-                {viewMode === 'lobby' ? 'Select Template' : doc ? `Edit ${doc.title || 'Wiki'}` : 'Create Wiki'}
-                {loading && <span style={{ opacity: 0.5, fontSize: '0.8rem', marginLeft: 8 }}>Saving...</span>}
-              </Typography>
-              <Typography sx={{ fontSize: '0.72rem', color: 'text.disabled', fontWeight: 600, mt: 0.2 }}>
-                Publishing as {postingAs === 'personal' ? (profile?.displayName || 'Unknown') : (profile?.organizations?.find((o: any) => o.id === selectedOrgId)?.name || 'Organization')}
+                <span style={{ textTransform: 'capitalize' }}>
+                  {viewMode === 'lobby' ? 'Studio' : editForm.title || 'New Playbook'}
+                </span>
               </Typography>
             </Box>
           </Box>
@@ -311,12 +397,39 @@ export default function WikiDashboardPage() {
             }
           }}
           headerContent={
-            <IconButton onClick={() => setIsFlipped(false)} sx={{ mr: 1 }}><ArrowBackIcon /></IconButton>
+            <Button
+              startIcon={<ArrowBackIcon />}
+              onClick={() => setIsFlipped(false)}
+              size="small"
+              sx={{
+                color: '#475569',
+                fontWeight: 800,
+                fontSize: '0.82rem',
+                textTransform: 'none',
+                borderRadius: '10px',
+                px: 1.5,
+                py: 0.6,
+                bgcolor: 'rgba(0,0,0,0.04)',
+                '&:hover': { bgcolor: 'rgba(0,0,0,0.08)', color: '#0f172a' },
+              }}
+            >
+              ← Back to List
+            </Button>
           }
         />
       ) : viewMode === 'lobby' ? (
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-          <WikiStudioDashboard docs={wikiDocs} onStartFresh={handleStartFresh} userName={profile.displayName || profile.uid} />
+          <WikiStudioDashboard 
+            docs={wikiDocs} 
+            workspaceTabs={workspaceTabs}
+            onStartFresh={handleStartFresh} 
+            onEditDoc={(slug) => {
+              setActiveDocSlug(slug);
+              loadDoc(slug).then(() => setViewMode('editor'));
+            }}
+            onDeleteDoc={handleDeleteDoc}
+            userName={profile?.displayName || profile?.uid} 
+          />
         </Box>
       ) : (
         <WikiEditor 
@@ -359,9 +472,9 @@ export default function WikiDashboardPage() {
             sx={{ '& fieldset': { borderColor: 'rgba(255,255,255,0.2)' }, '& .MuiInputBase-root': { color: '#fff' }, '& .MuiFormLabel-root': { color: 'rgba(255,255,255,0.7)' } }}
           />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowHotspotModal(false)} sx={{ color: 'rgba(255,255,255,0.5)' }}>Cancel</Button>
-          <Button onClick={handleCreateHotspot} variant="contained" sx={{ bgcolor: '#3b82f6', '&:hover': { bgcolor: '#2563eb' } }}>Register</Button>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setShowHotspotModal(false)} sx={{ color: 'rgba(255,255,255,0.7)' }}>Cancel</Button>
+          <Button onClick={handleCreateHotspot} variant="contained" sx={{ bgcolor: '#3b82f6', '&:hover': { bgcolor: '#2563eb' } }}>Register Hotspot</Button>
         </DialogActions>
       </Dialog>
     </>
