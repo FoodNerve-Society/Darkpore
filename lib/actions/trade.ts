@@ -696,7 +696,7 @@ export async function getTradeListingById(listingId: string) {
       include: {
         organization: true,
         postedBy: {
-          select: { id: true, name: true, avatarUrl: true, email: true }
+          select: { id: true, name: true, firstName: true, lastName: true, avatarUrl: true, email: true, username: true, rank: true, role: true, verified: true }
         }
       }
     });

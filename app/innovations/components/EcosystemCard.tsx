@@ -217,14 +217,38 @@ export const EcosystemCard: React.FC<EcosystemCardProps> = ({
         <Box>
           {/* Organization Avatar & Category Chip */}
           <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
-            <Box sx={{ p: 0.5, borderRadius: '14px', bgcolor: '#ffffff', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}>
+            {(item.companyLogo || item.authorAvatarUrl) ? (
+              <Box
+                sx={{
+                  p: 0.6,
+                  borderRadius: "12px",
+                  bgcolor: "#f1f5f9",
+                  border: "1px solid #e2e8f0",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <Box
+                  component="img"
+                  src={item.companyLogo || item.authorAvatarUrl}
+                  alt={item.authorOrOperator}
+                  sx={{
+                    maxHeight: 34,
+                    maxWidth: 80,
+                    objectFit: "contain",
+                    display: "block",
+                  }}
+                />
+              </Box>
+            ) : (
               <Avatar
-                src={item.companyLogo || item.authorAvatarUrl}
-                sx={{ width: 44, height: 44, bgcolor: `${careerColor}15`, color: careerColor, fontWeight: 900, borderRadius: '10px' }}
+                sx={{ width: 40, height: 40, bgcolor: `${careerColor}15`, color: careerColor, fontWeight: 900, borderRadius: "10px" }}
               >
                 {item.authorOrOperator.charAt(0)}
               </Avatar>
-            </Box>
+            )}
             
             <Chip
               label={item.type?.toUpperCase()}

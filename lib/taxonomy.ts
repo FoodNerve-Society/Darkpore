@@ -6,10 +6,19 @@ export const TAXONOMY = {
     "Greenhouse & Hydroponics"
   ],
   "Processing & Manufacturing": [
+    "Food Processing & Manufacturing",
+    "Quality Assurance & Food Safety",
     "Milling & Extrusion",
     "Cold Storage & Preservation",
     "Packaging & Labeling",
-    "Fermentation & Bio-processing"
+    "Fermentation & Bio-processing",
+    "Food Product Development (R&D)"
+  ],
+  "Culinary, Food Service & Hospitality": [
+    "Culinary & Kitchen Operations (Chef / Cook)",
+    "Restaurant & Bar Management",
+    "Catering & Institutional Feeding",
+    "Food Safety & Hygiene Inspection"
   ],
   "Logistics & Supply Chain": [
     "Cold-Chain Transport",
@@ -44,7 +53,23 @@ export const CATEGORY_OPTIONS = Object.entries(TAXONOMY).map(([influencer, actor
   return [influencer, ...actors.map(actor => `  ↳ ${actor}`)];
 }).flat();
 
-export const VALUE_CHAIN_ACTORS = Object.values(TAXONOMY).flat();
+/**
+ * The 8 Core Value Chain Actors of the FoodNerve Agricultural Ecosystem.
+ */
+export const CORE_VALUE_CHAIN_ACTORS = [
+  "Farmer / Producer",
+  "Processor / Manufacturer",
+  "Distributor / Transporter",
+  "Retailer / Vendor",
+  "Consumer",
+  "Regulator / Policymaker",
+  "Researcher / Innovator",
+  "Investor / Financier"
+] as const;
 
-export const JOB_FUNCTIONS = VALUE_CHAIN_ACTORS;
+export const VALUE_CHAIN_ACTORS = CORE_VALUE_CHAIN_ACTORS;
+
+export const DEPARTMENT_FUNCTIONS = Object.values(TAXONOMY).flat();
+
+export const JOB_FUNCTIONS = CORE_VALUE_CHAIN_ACTORS;
 

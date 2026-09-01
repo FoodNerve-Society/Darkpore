@@ -213,18 +213,33 @@ function CoherentExecutiveJobCard({
           {/* Top Row: Avatar & Category Chip */}
           <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
             <Box sx={{ display: "flex", alignItems: "center", gap: 1.2 }}>
-              <Box
-                sx={{
-                  p: 0.3,
-                  borderRadius: "14px",
-                  bgcolor: "#ffffff",
-                  boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
-                  border: "1px solid #f1f5f9",
-                  flexShrink: 0,
-                }}
-              >
+              {orgLogo ? (
+                <Box
+                  sx={{
+                    p: 0.6,
+                    borderRadius: "12px",
+                    bgcolor: "#f1f5f9",
+                    border: "1px solid #e2e8f0",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <Box
+                    component="img"
+                    src={orgLogo}
+                    alt={orgName}
+                    sx={{
+                      maxHeight: 30,
+                      maxWidth: 75,
+                      objectFit: "contain",
+                      display: "block",
+                    }}
+                  />
+                </Box>
+              ) : (
                 <Avatar
-                  src={orgLogo}
                   sx={{
                     width: 38,
                     height: 38,
@@ -237,7 +252,7 @@ function CoherentExecutiveJobCard({
                 >
                   {initial}
                 </Avatar>
-              </Box>
+              )}
 
               <Box sx={{ minWidth: 0, display: "flex", alignItems: "center", gap: 0.5 }}>
                 <Typography

@@ -64,6 +64,9 @@ export default function ShareListingModal({
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(currentUrl)}`;
   const posterName = listing.organization?.name || listing.postedBy?.name || "FoodNerve Operator";
   const orgLogo = listing.organization?.logoUrl || listing.postedBy?.avatarUrl || "";
+  const orgRank = Number(listing.organization?.rank || 1);
+  const posterRank = Number(listing.postedBy?.rank || 1);
+  const isVerified = orgRank >= 4 || posterRank >= 4;
   const initial = posterName.charAt(0).toUpperCase() || "O";
   const displayTitle = listing.title || listing.name || "Untitled Role";
 
@@ -278,31 +281,56 @@ export default function ShareListingModal({
 
               {/* Organization & Verification Header */}
               <Box sx={{ display: "flex", alignItems: "center", gap: 1.8 }}>
-                <Avatar
-                  src={orgLogo}
-                  sx={{
-                    width: 46,
-                    height: 46,
-                    borderRadius: "16px",
-                    bgcolor: `${themeColor}25`,
-                    color: "#ffffff",
-                    fontWeight: 900,
-                    fontSize: "1.15rem",
-                    border: "1px solid rgba(255, 255, 255, 0.15)",
-                    boxShadow: "0 4px 14px rgba(0,0,0,0.3)",
-                  }}
-                >
-                  {initial}
-                </Avatar>
+                {orgLogo ? (
+                  <Box
+                    sx={{
+                      p: 0.8,
+                      borderRadius: "14px",
+                      bgcolor: "rgba(255, 255, 255, 0.08)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Box
+                      component="img"
+                      src={orgLogo}
+                      alt={posterName}
+                      sx={{
+                        maxHeight: 38,
+                        maxWidth: 95,
+                        objectFit: "contain",
+                        display: "block",
+                      }}
+                    />
+                  </Box>
+                ) : (
+                  <Avatar
+                    sx={{
+                      width: 42,
+                      height: 42,
+                      borderRadius: "12px",
+                      bgcolor: `${themeColor}25`,
+                      color: "#ffffff",
+                      fontWeight: 900,
+                      fontSize: "1.1rem",
+                    }}
+                  >
+                    {initial}
+                  </Avatar>
+                )}
                 <Box>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.6 }}>
                     <Typography sx={{ fontSize: "0.98rem", fontWeight: 900, color: "#ffffff", lineHeight: 1.2 }}>
                       {posterName}
                     </Typography>
-                    <VerifiedIcon sx={{ fontSize: 17, color: "#10b981" }} />
+                    {isVerified && (
+                      <VerifiedIcon sx={{ fontSize: 17, color: "#10b981" }} />
+                    )}
                   </Box>
                   <Typography sx={{ fontSize: "0.72rem", color: "#94a3b8", fontWeight: 600, mt: 0.3 }}>
-                    Verified Hiring Operator
+                    {isVerified ? "Verified Hiring Operator" : "Hiring Organization"}
                   </Typography>
                 </Box>
               </Box>

@@ -140,15 +140,19 @@ export default function CreateListingForm({
   const [draftOrg, setDraftOrg] = useState<any>(null);
   
   // Identity Logic
-  const tertiary = draftData 
+  const normalize = (v: any) => (Array.isArray(v) ? v[0] : v);
+
+  const rawTertiary = draftData 
       ? (draftData.jobSource === 'internal_foodnerve' ? 'foodnerve-org' : 
          draftData.jobSource === 'verified_tenant' ? 'my-org' : 
          draftData.jobSource === 'community_sourced' ? 'external' : undefined)
-      : initialSelections?.tertiary;
+      : normalize(initialSelections?.tertiary || fastIngestData?.tertiary || fastIngestData?.jobSource);
+
+  const tertiary = rawTertiary;
 
   const isFoodNerve = tertiary === 'foodnerve-org';
   const isMyOrg = tertiary === 'my-org';
-  const isExternal = tertiary === 'external';
+  const isExternal = tertiary === 'external' || (!isFoodNerve && !isMyOrg && (!!fastIngestData?.organizationName || !!draftData?.organization?.isExternal));
   
   const primarySelection = initialSelections?.primary || draftData?.compType || draftData?.category || fastIngestData?.category || 'jobs';
   const secondarySelection = initialSelections?.secondary || draftData?.workModel || fastIngestData?.workModel || 'onsite';
@@ -563,8 +567,9 @@ export default function CreateListingForm({
       if (fastIngestData.title) setTitle(fastIngestData.title);
       if (fastIngestData.description) setDescription(fastIngestData.description);
       if (fastIngestData.sector) setSector(fastIngestData.sector);
-      if (fastIngestData.jobFunction) {
-        const jf = Array.isArray(fastIngestData.jobFunction) ? fastIngestData.jobFunction[0] : fastIngestData.jobFunction;
+      const rawJobFunc = fastIngestData.valueChainActor || fastIngestData.jobFunction;
+      if (rawJobFunc) {
+        const jf = Array.isArray(rawJobFunc) ? rawJobFunc[0] : rawJobFunc;
         setJobFunction(jf);
       }
       if (fastIngestData.commitment) {
@@ -602,6 +607,35 @@ export default function CreateListingForm({
       }
       if (fastIngestData.organizationShortName && isExternal) {
         setExternalEntityShortName(fastIngestData.organizationShortName);
+      }
+
+      // External Organization Country, State, LGA
+      if (fastIngestData.organizationCountry && isExternal) {
+        const countryName = String(fastIngestData.organizationCountry).toLowerCase();
+        const matchedCountry = countries.find(c => c.name.toLowerCase() === countryName || c.isoCode.toLowerCase() === countryName);
+        if (matchedCountry) {
+          setExternalCountry(matchedCountry);
+          if (fastIngestData.organizationState) {
+            const states = State.getStatesOfCountry(matchedCountry.isoCode);
+            setExternalStates(states);
+            const stateName = String(fastIngestData.organizationState).toLowerCase();
+            const matchedState = states.find(s => s.name.toLowerCase() === stateName || s.isoCode.toLowerCase() === stateName);
+            if (matchedState) {
+              setExternalState(matchedState);
+              if (fastIngestData.organizationLga) {
+                const cities = City.getCitiesOfState(matchedCountry.isoCode, matchedState.isoCode);
+                setExternalCities(cities);
+                const lgaName = String(fastIngestData.organizationLga).toLowerCase();
+                const matchedLga = cities.find(l => l.name.toLowerCase() === lgaName);
+                setExternalLga(matchedLga || { name: fastIngestData.organizationLga });
+              }
+            } else {
+              setExternalState({ name: fastIngestData.organizationState });
+            }
+          }
+        } else {
+          setExternalCountry({ name: fastIngestData.organizationCountry });
+        }
       }
 
       // External Organization Challenges
@@ -761,7 +795,8 @@ export default function CreateListingForm({
     if (isVolunteer) {
       if (!duration || duration.trim() === '') items.push({ id: 'comp_duration', text: `Engagement duration is missing.` });
     } else {
-      if (!currency || !minSalary || !maxSalary || !duration) items.push({ id: 'comp_salary', text: `Compensation details (budget, duration) are incomplete.` });
+      if (!duration || duration.trim() === '') items.push({ id: 'comp_duration', text: `Engagement duration is missing.` });
+      if (!minSalary && !maxSalary) items.push({ id: 'comp_salary_note', text: `Salary is unstated in source text (will display as 'Competitive'). You can optionally enter an estimated range.` });
     }
 
     return items;
@@ -826,13 +861,10 @@ export default function CreateListingForm({
         }
         break;
       case 'compensation':
-        total = isVolunteer ? 1 : 3;
-        if (isVolunteer) {
-           if (duration) filled++;
-        } else {
-           if (currency) filled++;
-           if (minSalary) filled++;
-           if (maxSalary) filled++;
+        total = 1;
+        if (duration) filled++;
+        if (currency) {
+          // Currency is auto-selected or user-selected
         }
         break;
       case 'cta':
@@ -897,7 +929,7 @@ export default function CreateListingForm({
       );
   }
 
-  const handlePreSubmit = (status: 'draft' | 'active') => {
+  const handlePreSubmit = async (status: 'draft' | 'active') => {
     setError(null);
     setSuccessMsg(null);
 
@@ -905,76 +937,66 @@ export default function CreateListingForm({
 
     // Enforce title and location for drafts as well
     if (status === 'draft') {
-        if (!title.trim() || !hasValidLocation) {
-            setError("Add a job title and location to save to draft.");
-            scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-            return;
-        }
+      if (!title.trim() || !hasValidLocation) {
+        setError("Add a job title and location to save to draft.");
+        scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
     }
 
     if (status === 'active') {
-        if (!areAllBlocksFilled) {
-            const incompleteBlocks = LISTING_FRAMEWORK.filter(b => !isBlockFilled(b.id)).map(b => b.id);
-            const stats = incompleteBlocks.map(id => `${id} (${getBlockFillStats(id).filled}/${getBlockFillStats(id).total})`);
-            setError(`Please complete all required fields. Incomplete: ${stats.join(', ')}`);
-            scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-            return;
-        }
-        if (hasSalaryError) {
-            setError("Minimum salary cannot be greater than maximum salary.");
-            scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-            return;
-        }
+      if (!areAllBlocksFilled) {
+        const incompleteBlocks = LISTING_FRAMEWORK.filter(b => !isBlockFilled(b.id)).map(b => b.id);
+        const stats = incompleteBlocks.map(id => `${id} (${getBlockFillStats(id).filled}/${getBlockFillStats(id).total})`);
+        setError(`Please complete all required fields. Incomplete: ${stats.join(', ')}`);
+        scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+      if (hasSalaryError) {
+        setError("Minimum salary cannot be greater than maximum salary.");
+        scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
     }
 
-        // Set defaults for the modal depending on existing form data
-    if (isMyOrg || isFoodNerve || isExternal) {
-       setModalPostingAs('organization');
-    } else {
-       setModalPostingAs('personal');
-    }
-    
-    setPublishModalStatus(status);
+    await handleFinalSubmit(status);
   };
 
-  const handleFinalSubmit = async () => {
-    if (!publishModalStatus) return;
-    const status = publishModalStatus;
+  const handleFinalSubmit = async (status: 'draft' | 'active') => {
     setIsSubmitting(true);
 
-    // Determine the organizationId & finalIsExternal based on the modal selection
+    // Determine the organizationId & finalIsExternal directly from Block 1 Identity selection
     let organizationId: string | null = null;
     let finalIsExternal = isExternal;
     
-    if (modalPostingAs === 'personal') {
-        organizationId = null;
-        finalIsExternal = false;
+    if (isExternal) {
+      organizationId = externalEntityId || null;
+      finalIsExternal = true;
+    } else if (selectedEntityId) {
+      organizationId = selectedEntityId;
+      finalIsExternal = false;
+    } else if (isMyOrg || isFoodNerve) {
+      organizationId = profile?.organizations?.[0]?.id || activeOrg?.id || null;
+      finalIsExternal = false;
     } else {
-        if (selectedEntityId) {
-            organizationId = selectedEntityId;
-        } else if (profile?.organizations && profile.organizations.length > 0) {
-            organizationId = profile.organizations[0].id;
-        } else if (activeOrg?.id) {
-            organizationId = activeOrg.id;
-        } else if (isExternal) {
-            organizationId = null;
-        }
+      organizationId = null;
+      finalIsExternal = false;
     }
     
     // Upload Logo if a local file was selected
     let finalLogoUrl = "";
     if (finalIsExternal && externalEntityLogoFile) {
-        const result = await uploadFile(externalEntityLogoFile);
-        if (result?.publicUrl || result?.secure_url) {
-            finalLogoUrl = result.publicUrl || result.secure_url;
-            setExternalEntityLogoUrl(finalLogoUrl);
-        } else {
-            alert("Failed to upload external organization logo. Try again.");
-            setIsSubmitting(false);
-            return;
-        }
+      const result = await uploadFile(externalEntityLogoFile);
+      if (result?.publicUrl || result?.secure_url) {
+        finalLogoUrl = result.publicUrl || result.secure_url;
+        setExternalEntityLogoUrl(finalLogoUrl);
+      } else {
+        alert("Failed to upload external organization logo. Try again.");
+        setIsSubmitting(false);
+        return;
+      }
     } else if (finalIsExternal) {
-        finalLogoUrl = externalEntityLogoUrl;
+      finalLogoUrl = externalEntityLogoUrl;
     }
 
     const isVolunteer = initialCategory?.toLowerCase().includes('volunteer');
@@ -1000,6 +1022,17 @@ export default function CreateListingForm({
       organizationSubcategories: finalIsExternal ? orgSubcategories.map(s => s.id) : undefined,
       jobChallenges: jobChallenges.map(c => c.id),
       jobSubcategories: jobSubcategories.map(s => s.id),
+      jobFunction: jobFunction || undefined,
+      sector: sector || undefined,
+      duration: duration || undefined,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
+      currency: currency || 'NGN',
+      minSalary: minSalary || undefined,
+      maxSalary: maxSalary || undefined,
+      workModel: isRemote ? 'Remote Operations' : 'On-Site Operations',
+      compType: isVolunteer ? 'Volunteer/NP' : 'Fiat',
+      npAmount: isVolunteer ? npAmount : undefined,
       // CTA Setup
       applicationMethod,
       applicationUrl: applicationMethod === 'external' ? applicationUrl : undefined,
@@ -1016,7 +1049,13 @@ export default function CreateListingForm({
         category: initialCategory, 
         title, 
         description, 
-        priceOrAsk: isVolunteer ? (npAmount || "0") : `${currency} ${minSalary} - ${maxSalary}`, 
+        priceOrAsk: isVolunteer 
+          ? (npAmount || "0") 
+          : (minSalary && maxSalary) 
+            ? `${currency} ${minSalary} - ${maxSalary}` 
+            : minSalary 
+              ? `${currency} ${minSalary}+` 
+              : "Competitive", 
         commodity: sector || undefined,
         location: locationString, 
         lga: selectedCity?.name || "", 
@@ -1185,7 +1224,14 @@ export default function CreateListingForm({
               if (filled) {
                 if (b.id === 'overview') filledSummary = `${title} at ${companyName}`;
                 if (b.id === 'geography') filledSummary = `${selectedCity ? selectedCity.name + ', ' : ''}${selectedCountry?.name || ''}`;
-                if (b.id === 'compensation') filledSummary = isVolunteer ? `${duration} • ${npAmount} NP` : `${currency} ${minSalary} - ${maxSalary} • ${duration}`;
+                if (b.id === 'compensation') {
+                  const salText = (minSalary && maxSalary) 
+                    ? `${currency} ${Number(minSalary).toLocaleString()} - ${Number(maxSalary).toLocaleString()}` 
+                    : minSalary 
+                      ? `${currency} ${Number(minSalary).toLocaleString()}+` 
+                      : 'Competitive';
+                  filledSummary = isVolunteer ? `${duration || 'Ongoing'} • ${npAmount || '0'} NP` : `${salText} • ${duration || 'Ongoing'}`;
+                }
               }
 
               return (
@@ -1333,13 +1379,13 @@ export default function CreateListingForm({
                                                                       '&:hover': { bgcolor: isSelected ? alpha(color, 0.08) : 'rgba(0,0,0,0.04)' }
                                                                   }}
                                                               >
-                                                                  <Box sx={{ width: 48, height: 48, borderRadius: '12px', bgcolor: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px solid rgba(0,0,0,0.05)' }}>
-                                                                      {org.logoUrl ? (
-                                                                          <img src={org.logoUrl} alt={org.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                                                                      ) : (
-                                                                          <WorkIcon sx={{ color: 'rgba(0,0,0,0.2)' }} />
-                                                                      )}
-                                                                  </Box>
+                                                                  {org.logoUrl ? (
+                                                                      <Box component="img" src={org.logoUrl} alt={org.name} sx={{ maxHeight: 44, maxWidth: 90, objectFit: 'contain', flexShrink: 0 }} />
+                                                                  ) : (
+                                                                      <Avatar sx={{ width: 44, height: 44, borderRadius: '12px', bgcolor: alpha(color, 0.1), color, fontWeight: 900 }}>
+                                                                          {org.name?.charAt(0)?.toUpperCase() || <WorkIcon sx={{ color: 'rgba(0,0,0,0.2)' }} />}
+                                                                      </Avatar>
+                                                                  )}
                                                                   {renderOrgCardDetails(org)}
                                                                   {isSelected && <CheckIcon sx={{ color }} />}
                                                               </Paper>
@@ -1368,13 +1414,13 @@ export default function CreateListingForm({
                                                         p: 2, borderRadius: '16px', display: 'flex', alignItems: 'center', gap: 2,
                                                         border: `2px solid ${color}`, bgcolor: alpha(color, 0.05), mb: 2
                                                     }}>
-                                                        <Box sx={{ width: 48, height: 48, borderRadius: '12px', bgcolor: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px solid rgba(0,0,0,0.05)' }}>
-                                                            {draftOrg.logoUrl ? (
-                                                                <img src={draftOrg.logoUrl} alt={draftOrg.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                                            ) : (
-                                                                <Typography sx={{ fontWeight: 800, color: '#94a3b8' }}>{draftOrg.name.charAt(0)}</Typography>
-                                                            )}
-                                                        </Box>
+                                                        {draftOrg.logoUrl ? (
+                                                            <Box component="img" src={draftOrg.logoUrl} alt={draftOrg.name} sx={{ maxHeight: 44, maxWidth: 90, objectFit: 'contain', flexShrink: 0 }} />
+                                                        ) : (
+                                                            <Avatar sx={{ width: 44, height: 44, borderRadius: '12px', bgcolor: alpha(color, 0.1), color, fontWeight: 900 }}>
+                                                                {draftOrg.name?.charAt(0)?.toUpperCase() || 'O'}
+                                                            </Avatar>
+                                                        )}
                                                         {renderOrgCardDetails(draftOrg)}
                                                     </Paper>
                                                     <Alert severity="info" sx={{ borderRadius: 2, '& .MuiAlert-message': { width: '100%', fontWeight: 500 } }}>
@@ -1410,13 +1456,13 @@ export default function CreateListingForm({
                                                               mt: 2, p: 2, borderRadius: '16px', display: 'flex', alignItems: 'center', gap: 2,
                                                               border: `2px solid ${alpha(color, 0.2)}`, bgcolor: alpha(color, 0.02)
                                                           }}>
-                                                              <Box sx={{ width: 48, height: 48, borderRadius: '12px', bgcolor: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px solid rgba(0,0,0,0.05)' }}>
-                                                                  {selectedOrg.logoUrl ? (
-                                                                      <img src={selectedOrg.logoUrl} alt={selectedOrg.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                                                  ) : (
-                                                                      <Typography sx={{ fontWeight: 800, color: '#94a3b8' }}>{selectedOrg.name.charAt(0)}</Typography>
-                                                                  )}
-                                                              </Box>
+                                                              {selectedOrg.logoUrl ? (
+                                                                  <Box component="img" src={selectedOrg.logoUrl} alt={selectedOrg.name} sx={{ maxHeight: 44, maxWidth: 90, objectFit: 'contain', flexShrink: 0 }} />
+                                                              ) : (
+                                                                  <Avatar sx={{ width: 44, height: 44, borderRadius: '12px', bgcolor: alpha(color, 0.1), color, fontWeight: 900 }}>
+                                                                      {selectedOrg.name?.charAt(0)?.toUpperCase() || 'O'}
+                                                                  </Avatar>
+                                                              )}
                                                               {renderOrgCardDetails(selectedOrg)}
                                                               <CheckIcon sx={{ color }} />
                                                           </Paper>
@@ -1598,7 +1644,14 @@ export default function CreateListingForm({
                                 ) : (
                                   <>
                                     <Box sx={{ flex: 1 }}>
-                                      <PremiumAutocomplete colorTheme={color} label="Value Chain Actor / Function *" options={CORE_VALUE_CHAIN_ACTORS} value={jobFunction} onChange={(e, val) => setJobFunction(val as string)} />
+                                      <PremiumAutocomplete 
+                                        freeSolo 
+                                        colorTheme={color} 
+                                        label="Value Chain Actor / Function *" 
+                                        options={CORE_VALUE_CHAIN_ACTORS} 
+                                        value={jobFunction} 
+                                        onChange={(e, val) => setJobFunction(val as string)} 
+                                      />
                                     </Box>
                                     <Box sx={{ flex: 1 }}>
                                       <PremiumAutocomplete colorTheme={color} label="Commodity / Crop Focus (Optional)" options={commoditiesList} value={sector} onChange={(e, val) => setSector(val as string)} />
@@ -1693,8 +1746,8 @@ export default function CreateListingForm({
                           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                                 <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: '#64748b', mb: -1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Time & Reward</Typography>
                                 
-                                <Alert severity="info" sx={{ borderRadius: 2, bgcolor: alpha('#3b82f6', 0.1), color: '#3b82f6', '& .MuiAlert-icon': { color: '#3b82f6' } }}>
-                                    <strong>Required to complete this block:</strong> {isVolunteer ? 'Duration / Engagement Length' : 'Currency, Min Budget, and Max Budget'}
+                                <Alert severity="info" sx={{ borderRadius: 2, bgcolor: alpha('#3b82f6', 0.08), color: '#1e40af', '& .MuiAlert-icon': { color: '#3b82f6' } }}>
+                                    <strong>Required to complete this block:</strong> Duration / Engagement Length. <em>(Salary range is optional and will display as 'Competitive' if unstated)</em>.
                                 </Alert>
                                 
                                 {/* Application Deadline — when can people apply by */}
@@ -1731,10 +1784,10 @@ export default function CreateListingForm({
                                                 <PremiumAutocomplete colorTheme={color} label="Currency *" options={CURRENCY_OPTIONS} value={currency} onChange={(e, val) => setCurrency(val as string)} disableClearable />
                                             </Box>
                                             <Box sx={{ flex: 1 }}>
-                                                <PremiumPriceInput colorTheme={color} fullWidth label="Min Budget/Salary" value={minSalary} onChange={(e: any) => setMinSalary(e.target.value)} currencySymbol={currency} />
+                                                <PremiumPriceInput colorTheme={color} fullWidth label="Min Budget/Salary (Optional)" value={minSalary} onChange={(e: any) => setMinSalary(e.target.value)} currencySymbol={currency} placeholder="e.g. 150000" />
                                             </Box>
                                             <Box sx={{ flex: 1 }}>
-                                                <PremiumPriceInput colorTheme={color} fullWidth label="Max Budget/Salary" value={maxSalary} onChange={(e: any) => setMaxSalary(e.target.value)} currencySymbol={currency} />
+                                                <PremiumPriceInput colorTheme={color} fullWidth label="Max Budget/Salary (Optional)" value={maxSalary} onChange={(e: any) => setMaxSalary(e.target.value)} currencySymbol={currency} placeholder="e.g. 250000" />
                                             </Box>
                                         </Box>
                                         {hasSalaryError && (
@@ -1925,10 +1978,12 @@ export default function CreateListingForm({
             onClose={() => setShowPreview(false)}
             data={{
               title,
-              companyName: isExternal ? externalEntityName : profile?.organizations?.find((o: any) => o.id === selectedEntityId)?.name || 'Unknown Entity',
+              companyName: isExternal ? (externalEntityName || 'External Organization') : profile?.organizations?.find((o: any) => o.id === selectedEntityId)?.name || 'FoodNerve Operator',
               companyLogoUrl: isExternal ? externalEntityLogoUrl : profile?.organizations?.find((o: any) => o.id === selectedEntityId)?.logoUrl || '',
-              category: sector || '',
-              locationString: selectedCountry ? `${selectedCity ? selectedCity.name + ', ' : ''}${selectedState ? selectedState.name + ', ' : ''}${selectedCountry.name}` : '',
+              category: initialCategory,
+              sector: sector || '',
+              jobFunction: jobFunction || '',
+              locationString: selectedCountry ? `${selectedCity ? selectedCity.name + ', ' : ''}${selectedState ? selectedState.name + ', ' : ''}${selectedCountry.name}` : (draftLocation || ''),
               duration,
               deadline,
               startDate,
@@ -1939,7 +1994,25 @@ export default function CreateListingForm({
               currency,
               npAmount,
               description,
-              color: '#3b82f6' // fallback primary color for the modal
+              color: initialCategory === 'volunteer' ? '#ec4899' : initialCategory === 'internship' ? '#3b82f6' : '#10b981',
+              applicationMethod,
+              applicationUrl,
+              applicationEmail,
+              externalButtonText: externalButtonText || 'Apply on Company Site',
+              challenges: orgChallenges.map((c: any) => c.title || c.label || c.id || c),
+              requireResume,
+              requireCoverLetter,
+              requirePortfolio,
+              workModel: isRemote ? 'Remote Operations' : 'On-Site Operations',
+              isExternal,
+              rank: isExternal ? 1 : (profile?.organizations?.find((o: any) => o.id === selectedEntityId)?.rank || 1),
+              poster: {
+                name: profile?.displayName || profile?.name || 'FoodNerve Operator',
+                avatarUrl: profile?.avatarUrl || '',
+                rank: profile?.rank || 1,
+                username: profile?.username || profile?.uid || '',
+                role: profile?.role || 'Ecosystem Operator'
+              }
             }}
           />
         </Box>
@@ -2116,224 +2189,6 @@ export default function CreateListingForm({
           </Box>
         </Box>
       )}
-
-      {/* Confirmation Modal */}
-      <Modal open={!!publishModalStatus} onClose={() => !isSubmitting && setPublishModalStatus(null)}>
-        {(() => {
-          const isDraftModal = publishModalStatus === 'draft';
-          const modalAccentColor = isDraftModal ? '#f59e0b' : EMERALD;
-          
-          return (
-            <Box sx={{
-              position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-              width: { xs: '90%', sm: 440 }, 
-              bgcolor: 'rgba(255, 255, 255, 0.85)', 
-              backdropFilter: 'blur(32px) saturate(1.4)',
-              WebkitBackdropFilter: 'blur(32px) saturate(1.4)',
-              borderRadius: '28px', 
-              boxShadow: `0 40px 80px -16px ${alpha(modalAccentColor, 0.2)}, 0 0 0 1px rgba(255,255,255,0.6) inset, 0 4px 12px rgba(255,255,255,0.3) inset`, 
-              p: 4,
-              display: 'flex', flexDirection: 'column', gap: 3.5,
-              outline: 'none'
-            }}>
-              
-              {/* Header */}
-              <Box sx={{ textAlign: 'center', mb: 1 }}>
-                <Box sx={{ 
-                  width: 56, height: 56, borderRadius: '20px', 
-                  background: `linear-gradient(135deg, ${alpha(modalAccentColor, 0.2)} 0%, ${alpha(modalAccentColor, 0.05)} 100%)`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  margin: '0 auto', mb: 2,
-                  boxShadow: `0 8px 16px ${alpha(modalAccentColor, 0.15)}, 0 0 0 1px ${alpha(modalAccentColor, 0.15)} inset`
-                }}>
-                  <Box sx={{ 
-                    width: 24, height: 24, borderRadius: '50%', 
-                    bgcolor: modalAccentColor, boxShadow: `0 4px 12px ${alpha(modalAccentColor, 0.5)}`
-                  }} />
-                </Box>
-                <Typography variant="h5" sx={{ fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em', mb: 0.5 }}>
-                  {isDraftModal ? 'Save Draft' : 'Publish Listing'}
-                </Typography>
-                <Typography sx={{ color: '#475569', fontSize: '0.95rem', fontWeight: 500 }}>
-                  Select the identity under which this listing should be {isDraftModal ? 'saved as a draft' : 'published live'}:
-                </Typography>
-              </Box>
-
-              {/* Selection Cards */}
-              <Box sx={{ display: 'flex', gap: 2 }}>
-                <Box 
-                  onClick={() => {
-                    setModalPostingAs('personal');
-                    if (onPostingAsChange) onPostingAsChange('personal');
-                  }}
-                  sx={{ 
-                    flex: 1, p: 2.5, borderRadius: '20px', 
-                    border: '2px solid', 
-                    borderColor: modalPostingAs === 'personal' ? modalAccentColor : 'rgba(255,255,255,0.6)',
-                    bgcolor: modalPostingAs === 'personal' ? alpha(modalAccentColor, 0.06) : 'rgba(255,255,255,0.4)',
-                    cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    boxShadow: modalPostingAs === 'personal' ? `0 12px 24px -8px ${alpha(modalAccentColor, 0.3)}` : '0 4px 12px rgba(0,0,0,0.02)',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      borderColor: modalPostingAs === 'personal' ? modalAccentColor : 'rgba(255,255,255,0.8)',
-                      bgcolor: modalPostingAs === 'personal' ? alpha(modalAccentColor, 0.06) : 'rgba(255,255,255,0.6)',
-                    }
-                  }}
-                >
-                  <Avatar 
-                    src={profile?.avatarUrl} 
-                    sx={{ 
-                      width: 44, height: 44, mb: 1, 
-                      border: `2px solid ${modalPostingAs === 'personal' ? modalAccentColor : 'rgba(0,0,0,0.08)'}`,
-                      bgcolor: alpha(modalAccentColor, 0.1), color: modalAccentColor, fontWeight: 800
-                    }}
-                  >
-                    {(profile?.displayName || profile?.name || 'P').charAt(0)}
-                  </Avatar>
-                  <Typography sx={{ fontWeight: 800, color: modalPostingAs === 'personal' ? modalAccentColor : '#334155', mb: 0.5, fontSize: '1.05rem' }}>Myself</Typography>
-                  <Typography sx={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500, textAlign: 'center' }}>
-                    {profile?.displayName || profile?.name || 'Personal Account'}
-                  </Typography>
-                </Box>
-                <Box 
-                  onClick={() => {
-                    const userHasOrgs = (profile?.organizations && profile.organizations.length > 0) || activeOrg || isExternal || isFoodNerve || isMyOrg;
-                    if (userHasOrgs) {
-                      setModalPostingAs('organization');
-                      if (onPostingAsChange) onPostingAsChange('organization');
-                      const targetOrgId = selectedEntityId || profile?.organizations?.[0]?.id || activeOrg?.id;
-                      if (targetOrgId) {
-                        if (!selectedEntityId) setSelectedEntityId(targetOrgId);
-                        if (onOrgIdChange) onOrgIdChange(targetOrgId);
-                      }
-                    } else {
-                      alert("You must be part of an organization to select this.");
-                    }
-                  }}
-                  sx={{ 
-                    flex: 1, p: 2.5, borderRadius: '20px', 
-                    border: '2px solid', 
-                    borderColor: modalPostingAs === 'organization' ? modalAccentColor : 'rgba(255,255,255,0.6)',
-                    bgcolor: modalPostingAs === 'organization' ? alpha(modalAccentColor, 0.06) : 'rgba(255,255,255,0.4)',
-                    cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    boxShadow: modalPostingAs === 'organization' ? `0 12px 24px -8px ${alpha(modalAccentColor, 0.3)}` : '0 4px 12px rgba(0,0,0,0.02)',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                    opacity: ((profile?.organizations && profile.organizations.length > 0) || activeOrg || isExternal || isFoodNerve || isMyOrg) ? 1 : 0.4,
-                    '&:hover': {
-                      transform: ((profile?.organizations && profile.organizations.length > 0) || activeOrg || isExternal || isFoodNerve || isMyOrg) ? 'translateY(-2px)' : 'none',
-                      borderColor: modalPostingAs === 'organization' ? modalAccentColor : ((profile?.organizations && profile.organizations.length > 0) || activeOrg || isExternal || isFoodNerve || isMyOrg) ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.4)',
-                      bgcolor: modalPostingAs === 'organization' ? alpha(modalAccentColor, 0.06) : ((profile?.organizations && profile.organizations.length > 0) || activeOrg || isExternal || isFoodNerve || isMyOrg) ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.4)',
-                    }
-                  }}
-                >
-                  {(() => {
-                    const matchedUserOrg = selectedEntityId ? profile?.organizations?.find((o: any) => o.id === selectedEntityId) : null;
-                    const matchedFNOrg = selectedEntityId ? foodNerveOrgs?.find((o: any) => o.id === selectedEntityId) : null;
-                    const logo = matchedUserOrg?.logoUrl || matchedFNOrg?.logoUrl || (isExternal ? externalEntityLogoUrl : profile?.organizations?.[0]?.logoUrl || activeOrg?.logoUrl);
-                    const name = matchedUserOrg?.name || matchedFNOrg?.name || (isExternal ? externalEntityName : profile?.organizations?.[0]?.name || activeOrg?.name || 'O');
-                    return (
-                      <Avatar 
-                        src={logo} 
-                        sx={{ 
-                          width: 44, height: 44, mb: 1, 
-                          border: `2px solid ${modalPostingAs === 'organization' ? modalAccentColor : 'rgba(0,0,0,0.08)'}`,
-                          bgcolor: '#fff', color: '#64748b', fontWeight: 800
-                        }}
-                      >
-                        {logo ? null : (name ? name.charAt(0) : <BusinessIcon sx={{ color: '#64748b' }} />)}
-                      </Avatar>
-                    );
-                  })()}
-                  <Typography sx={{ fontWeight: 800, color: modalPostingAs === 'organization' ? modalAccentColor : '#334155', mb: 0.5, fontSize: '1.05rem' }}>Organization</Typography>
-                  <Typography sx={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500, textAlign: 'center', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {(() => {
-                      if (selectedEntityId) {
-                        const userOrg = profile?.organizations?.find((o: any) => o.id === selectedEntityId);
-                        if (userOrg) return userOrg.name;
-                        const fnOrg = foodNerveOrgs?.find((o: any) => o.id === selectedEntityId);
-                        if (fnOrg) return fnOrg.name;
-                      }
-                      if (isExternal && externalEntityName) return externalEntityName;
-                      if (profile?.organizations && profile.organizations.length > 0) return profile.organizations[0].name;
-                      return activeOrg?.name || 'Entity';
-                    })()}
-                  </Typography>
-                </Box>
-              </Box>
-
-              {/* Organization Selector inside Modal for Multi-Org Users */}
-              {modalPostingAs === 'organization' && profile?.organizations && profile.organizations.length > 0 && (
-                <Box sx={{ 
-                  p: 2, borderRadius: '16px', 
-                  bgcolor: 'rgba(255,255,255,0.4)', 
-                  border: '1px solid rgba(255,255,255,0.6)',
-                  backdropFilter: 'blur(10px)'
-                }}>
-                  <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', mb: 1 }}>
-                    Posting Organization:
-                  </Typography>
-                  <PremiumAutocomplete
-                    colorTheme={modalAccentColor}
-                    label="Select Organization"
-                    options={profile.organizations}
-                    getOptionLabel={(opt: any) => opt.name || ''}
-                    value={profile.organizations.find((o: any) => o.id === selectedEntityId) || profile.organizations[0] || null}
-                    onChange={(e, val) => {
-                      const newOrgId = val ? val.id : null;
-                      setSelectedEntityId(newOrgId);
-                      if (onOrgIdChange) onOrgIdChange(newOrgId);
-                    }}
-                    renderOption={(props: any, opt: any) => (
-                      <Box component="li" {...props} sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
-                        <Avatar src={opt.logoUrl} sx={{ width: 22, height: 22 }} />
-                        <Typography sx={{ fontWeight: 600, fontSize: '0.85rem' }}>{opt.name}</Typography>
-                      </Box>
-                    )}
-                  />
-                </Box>
-              )}
-
-              {/* Action Buttons */}
-              <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
-                <Button 
-                  variant="outlined" 
-                  fullWidth 
-                  onClick={() => setPublishModalStatus(null)}
-                  disabled={isSubmitting}
-                  sx={{ 
-                    borderRadius: '16px', fontWeight: 700, py: 1.5, 
-                    borderColor: 'rgba(15, 23, 42, 0.1)', color: '#475569',
-                    bgcolor: 'rgba(255,255,255,0.5)',
-                    '&:hover': { bgcolor: 'rgba(255,255,255,0.8)', borderColor: 'rgba(15, 23, 42, 0.2)' }
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  variant="contained" 
-                  fullWidth 
-                  onClick={handleFinalSubmit}
-                  disabled={isSubmitting}
-                  sx={{ 
-                    borderRadius: '16px', fontWeight: 700, py: 1.5, 
-                    bgcolor: modalAccentColor, color: '#fff', 
-                    boxShadow: `0 8px 24px -8px ${alpha(modalAccentColor, 0.5)}`,
-                    transition: 'all 0.2s',
-                    '&:hover': { 
-                      bgcolor: alpha(modalAccentColor, 0.9),
-                      boxShadow: `0 12px 28px -8px ${alpha(modalAccentColor, 0.6)}`,
-                      transform: 'translateY(-1px)'
-                    } 
-                  }}
-                >
-                  {isSubmitting ? 'Processing...' : (isDraftModal ? 'Confirm Draft' : 'Confirm Publish')}
-                </Button>
-              </Box>
-            </Box>
-          );
-        })()}
-      </Modal>
 
     </Box>
   );

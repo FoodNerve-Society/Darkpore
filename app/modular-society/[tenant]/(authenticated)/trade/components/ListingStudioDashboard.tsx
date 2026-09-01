@@ -257,16 +257,23 @@ export default function ListingStudioDashboard({
         const handleFastIngest = () => {
           if (parseStatus !== 'valid' || !parsedPreview) return;
           try {
-            const category = parsedPreview.taxonomy?.category || parsedPreview.category || 'jobs';
+            const normalize = (v: any) => (Array.isArray(v) ? v[0] : v);
+
+            const rawCat = parsedPreview.taxonomy?.category || parsedPreview.category || 'jobs';
+            const category = normalize(rawCat);
+
             let selections = undefined;
             if (parsedPreview.taxonomy) {
               selections = {
-                primary: parsedPreview.taxonomy.primary,
-                secondary: parsedPreview.taxonomy.secondary,
-                tertiary: parsedPreview.taxonomy.tertiary
+                primary: normalize(parsedPreview.taxonomy.primary),
+                secondary: normalize(parsedPreview.taxonomy.secondary),
+                tertiary: normalize(parsedPreview.taxonomy.tertiary)
               };
             }
             const formPayload = parsedPreview.payload || parsedPreview;
+            if (selections?.tertiary && !formPayload.tertiary) {
+              formPayload.tertiary = selections.tertiary;
+            }
             onStartFresh(category, selections, formPayload);
           } catch (e: any) {
             setFastIngestError(e.message || "Invalid JSON payload.");

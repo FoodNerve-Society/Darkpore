@@ -45,6 +45,7 @@ import LinkIcon from "@mui/icons-material/Link";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import { getEnrichedChallenges, formatDeadlineRemaining, parseMarkdownToHtml } from "@/app/modular-society/[tenant]/(authenticated)/trade/components/PreviewListingModal";
 
 const EMERALD = "#10b981";
 const PURPLE = "#7c3aed";
@@ -148,9 +149,36 @@ function MiniJobCard({ listing, onClick }: { listing: any; onClick: () => void }
     >
       <Box>
         <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", mb: 1.5 }}>
-          <Avatar sx={{ width: 36, height: 36, bgcolor: `${color}15`, color, fontWeight: 800, borderRadius: "10px" }} src={listing.organization?.logoUrl || listing.postedBy?.avatarUrl}>
-            {initial}
-          </Avatar>
+          {(listing.organization?.logoUrl || listing.postedBy?.avatarUrl) ? (
+            <Box
+              sx={{
+                p: 0.5,
+                borderRadius: "10px",
+                bgcolor: "#f1f5f9",
+                border: "1px solid #e2e8f0",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <Box
+                component="img"
+                src={listing.organization?.logoUrl || listing.postedBy?.avatarUrl}
+                alt={posterName}
+                sx={{
+                  maxHeight: 26,
+                  maxWidth: 60,
+                  objectFit: "contain",
+                  display: "block",
+                }}
+              />
+            </Box>
+          ) : (
+            <Avatar sx={{ width: 34, height: 34, bgcolor: `${color}15`, color, fontWeight: 800, borderRadius: "10px" }}>
+              {initial}
+            </Avatar>
+          )}
           <Chip label={listing.category?.toUpperCase()} size="small" sx={{ height: 20, fontSize: "0.6rem", fontWeight: 900, bgcolor: `${color}15`, color, borderRadius: "6px" }} />
         </Box>
         <Typography sx={{ fontSize: "0.72rem", color: "#64748b", fontWeight: 700, mb: 0.3 }}>{posterName}</Typography>
@@ -199,12 +227,13 @@ export default function PublicCareerDetailView({ listing, similarListings = [] }
   }, []);
 
   const themeColor = listing.category === "volunteer" ? "#ec4899" : listing.category === "internship" ? "#3b82f6" : "#10b981";
-  const posterName = listing.organization?.name || listing.postedBy?.name || "FoodNerve Operator";
-  const orgLogo = listing.organization?.logoUrl || listing.postedBy?.avatarUrl;
-  const orgRank = listing.organization?.rank || listing.postedBy?.rank || 1;
+  const orgName = listing.organization?.name || (listing.isExternal ? "External Organization" : (listing.postedBy?.name || "FoodNerve Operator"));
+  const orgLogo = listing.organization?.logoUrl || "";
+  const orgRank = listing.organization?.rank || 1;
+  const initial = orgName.charAt(0).toUpperCase() || "O";
   const remaining = hoursLeft(listing.expiresAt);
 
-  const orgSlug = listing?.organization?.slug || (listing?.organization?.name ? listing.organization.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") : (posterName ? posterName.toLowerCase().replace(/[^a-z0-9]+/g, "-") : "org"));
+  const orgSlug = listing?.organization?.slug || (listing?.organization?.name ? listing.organization.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") : (orgName ? orgName.toLowerCase().replace(/[^a-z0-9]+/g, "-") : "org"));
   const orgProfilePath = listing?.organization ? `/@o-${orgSlug}` : (listing?.postedBy?.username ? `/@u-${listing.postedBy.username.replace(/^@+/, "")}` : `/@o-${orgSlug}`);
   const orgDisplayUrl = `foodnerve.org${orgProfilePath}`;
 
@@ -253,9 +282,9 @@ export default function PublicCareerDetailView({ listing, similarListings = [] }
   useEffect(() => {
     setEmailSubject(`Application for ${listing.title} - FoodNerve Society Dossier`);
     setEmailBody(
-      `Hello ${posterName} Team,\n\nI am applying for the **${listing.title}** position posted on the FoodNerve Ecosystem.\n\n${selectedPreset.template}\n\nBest regards,\nFoodNerve Operator`
+      `Hello ${orgName} Team,\n\nI am applying for the **${listing.title}** position posted on the FoodNerve Ecosystem.\n\n${selectedPreset.template}\n\nBest regards,\nFoodNerve Operator`
     );
-  }, [listing, posterName, selectedPreset]);
+  }, [listing, orgName, selectedPreset]);
 
   const getSocietyTradeUrl = () => {
     if (typeof window !== "undefined") {
@@ -321,10 +350,18 @@ export default function PublicCareerDetailView({ listing, similarListings = [] }
     if (listing.challenges) challenges = typeof listing.challenges === "string" ? JSON.parse(listing.challenges) : listing.challenges;
   } catch (e) {}
 
+  if ((!challenges || challenges.length === 0) && listing.organization?.challenges) {
+    try {
+      challenges = typeof listing.organization.challenges === "string" ? JSON.parse(listing.organization.challenges) : listing.organization.challenges;
+    } catch (e) {}
+  }
+
   let requiredDocs: any = {};
   try {
     if (listing.requiredDocuments) requiredDocs = typeof listing.requiredDocuments === "string" ? JSON.parse(listing.requiredDocuments) : listing.requiredDocuments;
   } catch (e) {}
+
+  const timelineInfo = formatDeadlineRemaining(listing.applicationDeadline || listing.deadline || listing.expiresAt);
 
   const specSegments = [
     {
@@ -356,8 +393,8 @@ export default function PublicCareerDetailView({ listing, similarListings = [] }
       icon: <HourglassEmptyIcon sx={{ fontSize: 19, color: "#e11d48" }} />,
       color: "#e11d48",
       label: "TIMELINE & STATUS",
-      value: remaining ? remaining : "Actively Hiring",
-      hint: remaining ? "Until Application Closes" : "Open for Operators"
+      value: timelineInfo.text,
+      hint: listing.duration ? `${listing.duration} Engagement` : timelineInfo.hint
     }
   ];
 
@@ -427,35 +464,52 @@ export default function PublicCareerDetailView({ listing, similarListings = [] }
         >
           <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, alignItems: { sm: "flex-start" }, justifyContent: "space-between", gap: 3, mb: 3.5 }}>
             <Box sx={{ display: "flex", gap: 2.5, alignItems: "flex-start" }}>
-              <Box
-                onClick={handleOpenOrgProfile}
-                sx={{
-                  p: 0.5,
-                  borderRadius: "16px",
-                  bgcolor: "#ffffff",
-                  boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
-                  border: "1px solid rgba(0,0,0,0.04)",
-                  flexShrink: 0,
-                  cursor: "pointer",
-                  transition: "transform 0.2s",
-                  "&:hover": { transform: "scale(1.05)" },
-                }}
-              >
-                <Avatar
-                  src={orgLogo}
+              {orgLogo ? (
+                <Box
+                  onClick={handleOpenOrgProfile}
                   sx={{
-                    width: { xs: 56, md: 68 },
-                    height: { xs: 56, md: 68 },
+                    p: 0.8,
+                    borderRadius: "14px",
+                    bgcolor: "#f1f5f9",
+                    border: "1px solid #e2e8f0",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                    cursor: "pointer",
+                    transition: "transform 0.2s",
+                    "&:hover": { transform: "scale(1.03)" },
+                  }}
+                >
+                  <Box
+                    component="img"
+                    src={orgLogo}
+                    alt={orgName}
+                    sx={{
+                      maxHeight: { xs: 46, md: 54 },
+                      maxWidth: { xs: 120, md: 160 },
+                      objectFit: "contain",
+                      display: "block",
+                    }}
+                  />
+                </Box>
+              ) : (
+                <Avatar
+                  onClick={handleOpenOrgProfile}
+                  sx={{
+                    width: { xs: 52, md: 60 },
+                    height: { xs: 52, md: 60 },
                     bgcolor: `${themeColor}15`,
                     color: themeColor,
                     fontWeight: 900,
-                    borderRadius: "12px",
-                    fontSize: "1.5rem",
+                    borderRadius: "14px",
+                    fontSize: "1.4rem",
+                    cursor: "pointer",
                   }}
                 >
-                  {posterName.charAt(0).toUpperCase()}
+                  {initial}
                 </Avatar>
-              </Box>
+              )}
 
               <Box>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", mb: 0.5 }}>
@@ -463,13 +517,13 @@ export default function PublicCareerDetailView({ listing, similarListings = [] }
                     onClick={handleOpenOrgProfile}
                     sx={{ fontWeight: 800, color: "#475569", fontSize: "0.95rem", cursor: "pointer", "&:hover": { color: themeColor, textDecoration: "underline" } }}
                   >
-                    {posterName}
+                    {orgName}
                   </Typography>
-                  {listing.postedBy?.isVerified && (
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.3, bgcolor: alpha(EMERALD, 0.1), color: EMERALD, px: 0.8, py: 0.2, borderRadius: "6px" }}>
-                      <VerifiedIcon sx={{ fontSize: 13 }} />
-                      <Typography sx={{ fontSize: "0.65rem", fontWeight: 800 }}>VERIFIED</Typography>
-                    </Box>
+                  {/* Only Rank 4+ organizations are verified */}
+                  {orgRank >= 4 && (
+                    <Tooltip title="Rank 4 Verified Organization">
+                      <VerifiedIcon sx={{ fontSize: 16, color: EMERALD, verticalAlign: "middle" }} />
+                    </Tooltip>
                   )}
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.3, bgcolor: "rgba(100, 116, 139, 0.1)", color: "#475569", px: 0.8, py: 0.2, borderRadius: "6px" }}>
                     <Typography sx={{ fontSize: "0.65rem", fontWeight: 800 }}>RANK {orgRank}</Typography>
@@ -587,54 +641,37 @@ export default function PublicCareerDetailView({ listing, similarListings = [] }
           {/* Left Column: Responsibilities, Challenges, Requirements */}
           <Box sx={{ display: "flex", flexDirection: "column", gap: 3.5 }}>
             
-            {/* Full Description Card */}
+            {/* Full Description Card with Rich Markdown Styling */}
             <Paper elevation={0} sx={{ ...glassCard, p: { xs: 3, md: 4 } }}>
-              <Typography variant="h6" sx={{ fontWeight: 900, color: "#0f172a", mb: 2, fontSize: "1.15rem" }}>
+              <Typography variant="h6" sx={{ fontWeight: 900, color: "#0f172a", mb: 2.5, fontSize: "1.2rem", letterSpacing: '-0.01em' }}>
                 Role Overview & Responsibilities
               </Typography>
               <Box
                 sx={{
                   color: "#334155",
-                  fontSize: "0.98rem",
-                  lineHeight: 1.8,
-                  whiteSpace: "pre-wrap",
-                  "& h1, & h2, & h3": { color: "#0f172a", fontWeight: 800, mt: 2, mb: 1 },
-                  "& ul, & ol": { pl: 3, my: 1.5 },
-                  "& li": { mb: 0.75 },
+                  fontFamily: 'inherit',
+                  '& .md-h1': { fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', mt: 3, mb: 1.5 },
+                  '& .md-h2': { fontSize: '1.3rem', fontWeight: 800, color: '#0f172a', mt: 3, mb: 1.2 },
+                  '& .md-h3': { fontSize: '1.12rem', fontWeight: 800, color: '#0f172a', mt: 2.5, mb: 1 },
+                  '& .md-h4': { fontSize: '1rem', fontWeight: 700, color: '#0f172a', mt: 2, mb: 0.8 },
+                  '& .md-p': { fontSize: '0.96rem', lineHeight: 1.8, color: '#334155', mb: 1.2 },
+                  '& .md-ul, & .md-ol': { pl: 3, mb: 2, color: '#334155', fontSize: '0.96rem' },
+                  '& .md-ul li, & .md-ol li': { mb: 0.6, lineHeight: 1.7 },
+                  '& .md-quote': { borderLeft: `4px solid ${alpha(themeColor, 0.4)}`, pl: 2, my: 2, fontStyle: 'italic', color: '#64748b' },
+                  '& .md-code': { bgcolor: '#f1f5f9', px: 0.8, py: 0.2, borderRadius: '4px', fontSize: '0.85em', fontFamily: 'monospace', color: '#0f172a' },
+                  '& .md-hr': { border: 'none', borderTop: '1px solid #e2e8f0', my: 3 },
+                  '& .md-spacer': { height: '8px' },
+                  '& strong': { color: '#0f172a', fontWeight: 700 },
+                  '& em': { fontStyle: 'italic' }
                 }}
               >
-                {listing.description}
+                {listing.description ? (
+                  <div dangerouslySetInnerHTML={{ __html: parseMarkdownToHtml(listing.description, themeColor) }} />
+                ) : (
+                  <Typography sx={{ color: '#94a3b8', fontStyle: 'italic' }}>No description provided yet.</Typography>
+                )}
               </Box>
             </Paper>
-
-            {/* Systemic Challenges Focus */}
-            {challenges.length > 0 && (
-              <Paper elevation={0} sx={{ ...glassCard, p: { xs: 3, md: 4 }, bgcolor: alpha(themeColor, 0.02) }}>
-                <Typography variant="h6" sx={{ fontWeight: 900, color: "#0f172a", mb: 1, fontSize: "1.1rem" }}>
-                  Ecosystem Impact & Challenge Focus
-                </Typography>
-                <Typography sx={{ color: "#64748b", fontSize: "0.9rem", mb: 2.5 }}>
-                  This position directly addresses core agricultural bottlenecks in the FoodNerve 2026 Master Plan:
-                </Typography>
-                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5 }}>
-                  {challenges.map((c: any, idx: number) => (
-                    <Chip
-                      key={idx}
-                      label={typeof c === "string" ? c : c.title || c.label || "Systemic Challenge"}
-                      sx={{
-                        bgcolor: "#ffffff",
-                        border: `1px solid ${alpha(themeColor, 0.25)}`,
-                        color: "#0f172a",
-                        fontWeight: 700,
-                        fontSize: "0.82rem",
-                        borderRadius: "10px",
-                        p: 1.5,
-                      }}
-                    />
-                  ))}
-                </Box>
-              </Paper>
-            )}
 
             {/* Application Requirements Card */}
             <Paper elevation={0} sx={{ ...glassCard, p: { xs: 3, md: 4 } }}>
@@ -677,11 +714,43 @@ export default function PublicCareerDetailView({ listing, similarListings = [] }
                 Hiring Organization
               </Typography>
               <Box sx={{ display: "flex", alignItems: "center", gap: 2, mt: 1.5, mb: 2 }}>
-                <Avatar src={orgLogo} sx={{ width: 48, height: 48, borderRadius: "12px", bgcolor: `${themeColor}15`, color: themeColor, fontWeight: 900 }}>
-                  {posterName.charAt(0).toUpperCase()}
-                </Avatar>
-                <Box>
-                  <Typography sx={{ fontWeight: 800, color: "#0f172a", fontSize: "1.05rem" }}>{posterName}</Typography>
+                {orgLogo ? (
+                  <Box
+                    sx={{
+                      p: 0.6,
+                      borderRadius: "12px",
+                      bgcolor: "#f1f5f9",
+                      border: "1px solid #e2e8f0",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Box
+                      component="img"
+                      src={orgLogo}
+                      alt={orgName}
+                      sx={{
+                        maxHeight: 36,
+                        maxWidth: 85,
+                        objectFit: "contain",
+                        display: "block",
+                      }}
+                    />
+                  </Box>
+                ) : (
+                  <Avatar sx={{ width: 44, height: 44, borderRadius: "12px", bgcolor: `${themeColor}15`, color: themeColor, fontWeight: 900 }}>
+                    {initial}
+                  </Avatar>
+                )}
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.8 }}>
+                    <Typography sx={{ fontWeight: 800, color: "#0f172a", fontSize: "1.05rem" }}>{orgName}</Typography>
+                    {orgRank >= 4 && (
+                      <VerifiedIcon sx={{ fontSize: 16, color: "#10b981" }} />
+                    )}
+                  </Box>
                   <Typography sx={{ fontSize: "0.78rem", color: "#64748b" }}>Rank {orgRank} Society Operator</Typography>
                 </Box>
               </Box>
@@ -707,16 +776,246 @@ export default function PublicCareerDetailView({ listing, similarListings = [] }
               </Button>
             </Paper>
 
-            {/* Security & Verification Guarantee */}
-            <Paper elevation={0} sx={{ ...glassCard, p: 3, bgcolor: alpha(EMERALD, 0.03), borderColor: alpha(EMERALD, 0.2) }}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1 }}>
-                <ShieldIcon sx={{ color: EMERALD, fontSize: 22 }} />
-                <Typography sx={{ fontWeight: 800, color: "#0f172a", fontSize: "0.95rem" }}>Verified Opportunity</Typography>
-              </Box>
-              <Typography sx={{ fontSize: "0.82rem", color: "#475569", lineHeight: 1.5 }}>
-                This opportunity is issued by an authenticated FoodNerve Society participant. All commitments are logged in the ecosystem trust ledger.
-              </Typography>
-            </Paper>
+            {/* Job Poster Dossier Card */}
+            {(() => {
+              const posterUserName = listing.postedBy?.name || listing.postedBy?.firstName || 'Ecosystem Talent Scout';
+              const posterUserAvatar = listing.postedBy?.avatarUrl || '';
+              const posterUserRank = listing.postedBy?.rank || 1;
+              const posterUserRole = listing.postedBy?.role || (posterUserRank >= 4 ? 'Ecosystem Pillar' : 'Talent Scout');
+              const posterUsername = listing.postedBy?.username || listing.postedBy?.id || '';
+              const posterProfileUrl = posterUsername ? `/@u-${posterUsername}` : '#';
+
+              return (
+                <Paper
+                  elevation={0}
+                  sx={{
+                    ...glassCard,
+                    p: 3.5,
+                    borderRadius: "24px",
+                    border: "1px solid #e2e8f0",
+                    background: "linear-gradient(135deg, #ffffff 60%, rgba(248,250,252,0.9) 100%)",
+                    boxShadow: "0 4px 20px -4px rgba(0,0,0,0.04)",
+                    transition: "all 0.25s ease",
+                    "&:hover": {
+                      borderColor: alpha(themeColor, 0.4),
+                      transform: "translateY(-2px)",
+                      boxShadow: `0 12px 28px -6px rgba(0,0,0,0.08), 0 0 0 1px ${alpha(themeColor, 0.2)}`
+                    }
+                  }}
+                >
+                  <Typography
+                    variant="overline"
+                    sx={{
+                      color: "#94a3b8",
+                      fontWeight: 800,
+                      letterSpacing: "0.08em",
+                      fontSize: "0.72rem",
+                      display: "block",
+                      mb: 1.5
+                    }}
+                  >
+                    Curated & Posted By
+                  </Typography>
+
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
+                    <Avatar
+                      src={posterUserAvatar}
+                      alt={posterUserName}
+                      sx={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: "14px",
+                        bgcolor: alpha(themeColor, 0.1),
+                        color: themeColor,
+                        fontWeight: 900,
+                        fontSize: "1.05rem",
+                        border: `2px solid ${alpha(themeColor, 0.2)}`
+                      }}
+                    >
+                      {posterUserName.charAt(0).toUpperCase()}
+                    </Avatar>
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.8 }}>
+                        <Typography
+                          sx={{
+                            fontWeight: 800,
+                            color: "#0f172a",
+                            fontSize: "1rem",
+                            lineHeight: 1.3,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap"
+                          }}
+                        >
+                          {posterUserName}
+                        </Typography>
+                        {posterUserRank >= 4 && (
+                          <VerifiedIcon sx={{ fontSize: 16, color: "#10b981" }} />
+                        )}
+                      </Box>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.4, flexWrap: "wrap" }}>
+                        <Chip
+                          label={`Rank ${posterUserRank}`}
+                          size="small"
+                          sx={{
+                            bgcolor: alpha(themeColor, 0.1),
+                            color: themeColor,
+                            fontWeight: 800,
+                            fontSize: "0.68rem",
+                            height: 20,
+                            borderRadius: "6px"
+                          }}
+                        />
+                        <Typography sx={{ fontSize: "0.76rem", color: "#64748b", fontWeight: 600 }}>
+                          {posterUserRole}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+
+                  <Typography sx={{ color: "#475569", fontSize: "0.83rem", lineHeight: 1.55, mb: 2.5 }}>
+                    Verified ecosystem participant actively stewarding talent and opportunities across the FoodNerve network.
+                  </Typography>
+
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    component="a"
+                    href={posterProfileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={{
+                      borderRadius: "14px",
+                      textTransform: "none",
+                      fontWeight: 800,
+                      fontSize: "0.86rem",
+                      py: 1.2,
+                      borderColor: "#e2e8f0",
+                      color: "#0f172a",
+                      bgcolor: "#ffffff",
+                      boxShadow: "0 2px 6px rgba(0,0,0,0.02)",
+                      "&:hover": {
+                        borderColor: themeColor,
+                        bgcolor: alpha(themeColor, 0.04),
+                        color: themeColor
+                      }
+                    }}
+                  >
+                    View Poster Profile
+                  </Button>
+                </Paper>
+              );
+            })()}
+
+            {/* Security & Verification Guarantee (Only if poster or org is Rank 4+) */}
+            {((listing.postedBy?.rank || 1) >= 4 || orgRank >= 4) && (
+              <Paper elevation={0} sx={{ ...glassCard, p: 3, bgcolor: alpha(EMERALD, 0.03), borderColor: alpha(EMERALD, 0.2) }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1 }}>
+                  <ShieldIcon sx={{ color: EMERALD, fontSize: 22 }} />
+                  <Typography sx={{ fontWeight: 800, color: "#0f172a", fontSize: "0.95rem" }}>Verified Opportunity</Typography>
+                </Box>
+                <Typography sx={{ fontSize: "0.82rem", color: "#475569", lineHeight: 1.5 }}>
+                  This opportunity is issued by an authenticated FoodNerve Society participant. All commitments are logged in the ecosystem trust ledger.
+                </Typography>
+              </Paper>
+            )}
+
+            {/* Ecosystem Impact & Challenge Focus (Right Column - Invisible Background) */}
+            {(() => {
+              const enrichedChallenges = getEnrichedChallenges(challenges);
+              if (enrichedChallenges.length === 0) return null;
+              return (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 0.5 }}>
+                  <Box sx={{ mb: 0.5 }}>
+                    <Typography sx={{ fontWeight: 900, color: "#0f172a", fontSize: "1.05rem", letterSpacing: "-0.01em" }}>
+                      Ecosystem Impact & Challenge Focus
+                    </Typography>
+                    <Typography sx={{ color: "#64748b", fontSize: "0.82rem", mt: 0.4, lineHeight: 1.5 }}>
+                      This position directly addresses core agricultural bottlenecks in the FoodNerve {new Date().getFullYear()} Master Plan:
+                    </Typography>
+                  </Box>
+
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    {enrichedChallenges.map((item, idx) => (
+                      <Box
+                        key={idx}
+                        sx={{
+                          borderRadius: "20px",
+                          bgcolor: "#ffffff",
+                          border: "1px solid #e2e8f0",
+                          boxShadow: "0 4px 16px -2px rgba(0,0,0,0.04)",
+                          overflow: "hidden",
+                          display: "flex",
+                          flexDirection: "column",
+                          transition: "all 0.25s ease",
+                          "&:hover": {
+                            borderColor: alpha(themeColor, 0.4),
+                            transform: "translateY(-2px)",
+                            boxShadow: `0 12px 24px -6px rgba(0,0,0,0.08), 0 0 0 1px ${alpha(themeColor, 0.2)}`,
+                            "& img": {
+                              transform: "scale(1.04)"
+                            }
+                          }
+                        }}
+                      >
+                        {/* Card Image */}
+                        <Box
+                          sx={{
+                            width: "100%",
+                            height: 140,
+                            position: "relative",
+                            overflow: "hidden",
+                            bgcolor: alpha(themeColor, 0.08),
+                            flexShrink: 0
+                          }}
+                        >
+                          <Box
+                            component="img"
+                            src={item.imageUrl}
+                            alt={item.title}
+                            sx={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                              display: "block",
+                              transition: "transform 0.4s ease"
+                            }}
+                          />
+                        </Box>
+
+                        {/* Card Content */}
+                        <Box sx={{ p: 2.5 }}>
+                          <Typography
+                            sx={{
+                              fontWeight: 800,
+                              fontSize: "0.98rem",
+                              color: "#0f172a",
+                              lineHeight: 1.35,
+                              mb: 1
+                            }}
+                          >
+                            {item.title}
+                          </Typography>
+                          <Typography
+                            sx={{
+                              fontSize: "0.82rem",
+                              color: "#475569",
+                              lineHeight: 1.6,
+                              display: "-webkit-box",
+                              WebkitLineClamp: 4,
+                              WebkitBoxOrient: "vertical",
+                              overflow: "hidden"
+                            }}
+                          >
+                            {item.desc}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
+              );
+            })()}
           </Box>
         </Box>
 
@@ -815,7 +1114,7 @@ export default function PublicCareerDetailView({ listing, similarListings = [] }
               </Box>
 
               <Chip
-                label={`To: ${posterName}`}
+                label={`To: ${orgName}`}
                 size="small"
                 sx={{
                   bgcolor: "rgba(255, 255, 255, 0.15)",
@@ -860,11 +1159,11 @@ export default function PublicCareerDetailView({ listing, similarListings = [] }
                     fontSize: "1.25rem",
                   }}
                 >
-                  {posterName.charAt(0).toUpperCase()}
+                  {initial}
                 </Avatar>
                 <Box>
                   <Typography sx={{ fontWeight: 900, color: "#0f172a", fontSize: "1.05rem" }}>
-                    {posterName}
+                    {orgName}
                   </Typography>
                   <Typography sx={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 600 }}>
                     Verified FoodNerve Hiring Organization
@@ -1038,7 +1337,7 @@ export default function PublicCareerDetailView({ listing, similarListings = [] }
                           if (val) {
                             setSelectedPreset(val);
                             setEmailBody(
-                              `Hello ${posterName} Team,\n\nI am applying for the **${listing.title}** position posted on the FoodNerve Ecosystem.\n\n${val.template}\n\nBest regards,\nFoodNerve Operator`
+                              `Hello ${orgName} Team,\n\nI am applying for the **${listing.title}** position posted on the FoodNerve Ecosystem.\n\n${val.template}\n\nBest regards,\nFoodNerve Operator`
                             );
                           }
                         }}

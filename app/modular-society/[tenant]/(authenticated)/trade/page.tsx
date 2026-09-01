@@ -216,12 +216,36 @@ function JobListingCard({ listing, isGrid = false, onDraftClick }: { listing: Tr
       <Box>
         {/* Top Row: Organization Avatar + Category Pill */}
         <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2.5 }}>
-          <Box sx={{ p: 0.5, borderRadius: '14px', bgcolor: '#ffffff', boxShadow: '0 4px 12px rgba(0,0,0,0.06)', border: '1px solid rgba(0,0,0,0.04)' }}>
+          {avatarUrl ? (
+            <Box
+              sx={{
+                p: 0.6,
+                borderRadius: '12px',
+                bgcolor: '#f1f5f9',
+                border: '1px solid #e2e8f0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <Box
+                component="img"
+                src={avatarUrl}
+                alt={posterName}
+                sx={{
+                  maxHeight: 34,
+                  maxWidth: 75,
+                  objectFit: 'contain',
+                  display: 'block',
+                }}
+              />
+            </Box>
+          ) : (
             <Avatar
-              src={avatarUrl}
               sx={{ 
-                width: 44, 
-                height: 44, 
+                width: 40, 
+                height: 40, 
                 bgcolor: `${categoryColor}15`, 
                 color: categoryColor, 
                 fontWeight: 900, 
@@ -230,7 +254,7 @@ function JobListingCard({ listing, isGrid = false, onDraftClick }: { listing: Tr
             >
               {initial}
             </Avatar>
-          </Box>
+          )}
           
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             {listing.urgency === 'expiring' && (

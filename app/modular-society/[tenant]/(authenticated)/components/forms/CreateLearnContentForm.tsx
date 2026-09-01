@@ -338,7 +338,7 @@ const SPIKY_TITLE_TEMPLATES: Record<string, string[]> = {
     "The [Metric/Percentage] Paradox: Why [Location]'s [Value Chain Actor] is Surviving by [Unexpected Hack], and Why [Target Persona] Must [Action]",
     "Bypassing the [Broken Gatekeeper]: How [Value Chain Actor] in [Location] Are Using [New Method] Right Now, and Why [Target Persona] Must [Action]",
     "The Unspoken Truth About [Trend]: Why [Location]'s [Sector] Now Relies on [Controversial/Messy Fix], and Why [Target Persona] Must [Action]",
-    "[Factor A] vs. [Factor B]: Why Only [Specific Winner] Can Afford to [Action] in 2026 [Location], and Why [Target Persona] Must [Action]"
+    `[Factor A] vs. [Factor B]: Why Only [Specific Winner] Can Afford to [Action] in ${new Date().getFullYear()} [Location], and Why [Target Persona] Must [Action]`
   ],
   future: [
     "The End of [Current Bottleneck]: How [Emerging Tech] Will Permanently Disrupt [Location]'s [Sector] by [Year], and Why [Target Persona] Must [Action]",
