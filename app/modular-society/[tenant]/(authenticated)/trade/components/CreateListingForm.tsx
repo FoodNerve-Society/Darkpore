@@ -563,7 +563,10 @@ export default function CreateListingForm({
       if (fastIngestData.title) setTitle(fastIngestData.title);
       if (fastIngestData.description) setDescription(fastIngestData.description);
       if (fastIngestData.sector) setSector(fastIngestData.sector);
-      if (fastIngestData.jobFunction) setJobFunction(fastIngestData.jobFunction);
+      if (fastIngestData.jobFunction) {
+        const jf = Array.isArray(fastIngestData.jobFunction) ? fastIngestData.jobFunction[0] : fastIngestData.jobFunction;
+        setJobFunction(jf);
+      }
       if (fastIngestData.commitment) {
           // Typically commitment is primarySelection, but handled globally
       }
