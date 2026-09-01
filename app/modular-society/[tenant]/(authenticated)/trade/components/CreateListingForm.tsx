@@ -580,8 +580,6 @@ export default function CreateListingForm({
             if (match[1]) setCurrency(match[1].trim());
             setMinSalary(match[2]);
             setMaxSalary(match[3]);
-          } else {
-            actions.push({ id: 'salary', text: `Verify compensation structure: ${fastIngestData.priceOrAsk}`, resolved: false });
           }
         }
       }
@@ -601,9 +599,6 @@ export default function CreateListingForm({
       }
       if (fastIngestData.organizationShortName && isExternal) {
         setExternalEntityShortName(fastIngestData.organizationShortName);
-      }
-      if (fastIngestData.organizationName && !isExternal) {
-        actions.push({ id: 'org_identity', text: `Role is internal, but AI extracted org: ${fastIngestData.organizationName}. Ensure correct hiring entity is selected.`, resolved: false });
       }
 
       // External Organization Challenges
