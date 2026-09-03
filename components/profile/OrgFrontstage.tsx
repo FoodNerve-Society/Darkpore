@@ -1,7 +1,6 @@
-// @ts-nocheck
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Container,
@@ -15,6 +14,8 @@ import {
   IconButton,
   Divider,
   CircularProgress,
+  Tooltip,
+  Fade,
   alpha,
 } from '@mui/material';
 import { keyframes } from '@emotion/react';
@@ -31,7 +32,10 @@ import CloseIcon from '@mui/icons-material/Close';
 import OpenInFullIcon from '@mui/icons-material/OpenInFull';
 import AddIcon from '@mui/icons-material/Add';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CheckIcon from '@mui/icons-material/Check';
 import BusinessIcon from '@mui/icons-material/Business';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useSociety } from '@/context/SocietyContext';
 import { getPublicOrganization } from '@/lib/actions/organizations';
 import OrgApplicantLedger from './OrgApplicantLedger';
@@ -65,64 +69,100 @@ const orgDriftIndigo = keyframes`
 interface OrgBlockDef {
   id: 'talent' | 'roster' | 'compliance' | 'governance' | 'activity';
   num: string;
+  number: number;
   title: string;
+  shortTitle: string;
   desc: string;
   color: string;
   icon: React.ReactNode;
   badge: string;
   cta: string;
+  whatFor: string;
+  whyExists: string;
+  statLabel: string;
+  statValue: string;
 }
 
 const ORG_BLOCKS: OrgBlockDef[] = [
   {
     id: 'talent',
     num: '01',
+    number: 1,
     title: 'Talent & Applicant Ledger (ATS)',
+    shortTitle: 'ATS Talent',
     desc: 'Review candidate pipeline, hiring stages (Screening → Interview → Offer → Hired), and applicant dossiers.',
     color: '#3b82f6',
-    icon: <PeopleIcon />,
+    icon: <PeopleIcon sx={{ fontSize: 20 }} />,
     badge: 'ATS Pipeline',
     cta: 'Open Talent Ledger',
+    whatFor: 'Screen, shortlist, and interview candidates applying to your organization’s open positions.',
+    whyExists: 'Gives corporate recruiters end-to-end recruitment tracking without external paid software.',
+    statLabel: 'Funnel',
+    statValue: 'Screening → Hired',
   },
   {
     id: 'roster',
     num: '02',
+    number: 2,
     title: 'Team Roster & Corporate Roles',
+    shortTitle: 'Team Roster',
     desc: 'Manage organizational members, assign permissions (Owner, Admin, Member), and invite teammates.',
     color: '#10b981',
-    icon: <GroupsIcon />,
+    icon: <GroupsIcon sx={{ fontSize: 20 }} />,
     badge: 'Team Directory',
     cta: 'Manage Roster',
+    whatFor: 'Oversee internal staff, assign departmental clearances, and control administrative access.',
+    whyExists: 'Ensures clear corporate hierarchy and role segregation across trading and administrative operations.',
+    statLabel: 'Clearance',
+    statValue: 'Corporate Roles',
   },
   {
     id: 'compliance',
     num: '03',
+    number: 3,
     title: 'Verification & Compliance Vault',
+    shortTitle: 'Compliance',
     desc: 'CAC registration documents, RC number filing, institutional vetting clearance, and verified partner credentials.',
     color: '#f59e0b',
-    icon: <VerifiedUserIcon />,
+    icon: <VerifiedUserIcon sx={{ fontSize: 20 }} />,
     badge: 'Compliance Vault',
     cta: 'Review Compliance',
+    whatFor: 'Submit CAC business certificates and RC numbers to verify your legal corporate standing.',
+    whyExists: 'Unlocks Rank 4 Verified Partner trust badge, higher escrow limits, and verified employer ranking.',
+    statLabel: 'Clearance',
+    statValue: 'CAC Filing',
   },
   {
     id: 'governance',
     num: '04',
+    number: 4,
     title: 'Governance & Approval Queue',
+    shortTitle: 'Approvals',
     desc: 'Live administrative queue of pending trade listings, team submissions, and ecosystem sign-offs.',
     color: '#8b5cf6',
-    icon: <RocketLaunchIcon />,
+    icon: <RocketLaunchIcon sx={{ fontSize: 20 }} />,
     badge: 'Approvals Queue',
     cta: 'Review Approvals',
+    whatFor: 'Inspect and sign off on trade tenders, procurement listings, and member requests before publication.',
+    whyExists: 'Maintains organizational quality control and operational standards across all published content.',
+    statLabel: 'Queue',
+    statValue: 'Admin Clearance',
   },
   {
     id: 'activity',
     num: '05',
+    number: 5,
     title: 'Corporate Activity & Audit Trail',
+    shortTitle: 'Audit Log',
     desc: 'Immutable audit log of corporate events, permissions changes, and ecosystem milestones.',
     color: '#64748b',
-    icon: <ArticleIcon />,
+    icon: <ArticleIcon sx={{ fontSize: 20 }} />,
     badge: 'Audit Trail',
     cta: 'View Audit Log',
+    whatFor: 'Track every action taken by members, role modifications, and system events in an immutable feed.',
+    whyExists: 'Provides institutional transparency and compliance accountability for investors and auditors.',
+    statLabel: 'Telemetry',
+    statValue: 'Live Telemetry',
   },
 ];
 
@@ -136,9 +176,33 @@ export default function OrgFrontstage({ tenant, slug, initialBlock }: Props) {
   const { profile, activeOrg } = useSociety();
   const [org, setOrg] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [flippedBlockId, setFlippedBlockId] = useState<string | null>(null);
   const [activeModalBlock, setActiveModalBlock] = useState<
     'talent' | 'roster' | 'compliance' | 'governance' | 'activity' | null
   >(initialBlock || null);
+  const [mobileContextOpen, setMobileContextOpen] = useState(false);
+
+  const mobilePillsTrackRef = useRef<any>(null);
+  const mobilePillRefs = useRef<Record<string, any>>({});
+
+  useEffect(() => {
+    if (activeModalBlock && mobilePillsTrackRef.current) {
+      const activeEl = mobilePillRefs.current[activeModalBlock];
+      const container = mobilePillsTrackRef.current;
+      if (container && activeEl) {
+        const timer = setTimeout(() => {
+          const containerWidth = container.offsetWidth;
+          const chipLeft = activeEl.offsetLeft;
+          const chipWidth = activeEl.offsetWidth;
+          container.scrollTo({
+            left: chipLeft - containerWidth / 2 + chipWidth / 2,
+            behavior: 'smooth',
+          });
+        }, 50);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [activeModalBlock]);
 
   const orgName = activeOrg?.name || slug;
   const logoUrl = activeOrg?.logoUrl;
@@ -159,7 +223,7 @@ export default function OrgFrontstage({ tenant, slug, initialBlock }: Props) {
     }
   }, [activeOrg, slug]);
 
-  const activeDef = ORG_BLOCKS.find((b) => b.id === activeModalBlock);
+  const activeDef = ORG_BLOCKS.find((b) => b.id === activeModalBlock) || ORG_BLOCKS[0];
 
   return (
     <Box
@@ -534,263 +598,844 @@ export default function OrgFrontstage({ tenant, slug, initialBlock }: Props) {
             </Typography>
           </Box>
 
-          {ORG_BLOCKS.map((b) => (
-            <Paper
-              key={b.id}
-              elevation={0}
-              onClick={() => setActiveModalBlock(b.id)}
-              sx={{
-                borderRadius: '20px',
-                border: '1px solid rgba(255, 255, 255, 0.85)',
-                background: 'rgba(255, 255, 255, 0.68)',
-                backdropFilter: 'blur(20px)',
-                WebkitBackdropFilter: 'blur(20px)',
-                boxShadow: '0 8px 30px -4px rgba(15, 23, 42, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.95)',
-                overflow: 'hidden',
-                cursor: 'pointer',
-                transition: 'all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                '&:hover': {
-                  borderColor: alpha(b.color, 0.6),
-                  background: 'rgba(255, 255, 255, 0.88)',
-                  boxShadow: `0 16px 40px -6px rgba(15, 23, 42, 0.08), 0 0 24px ${alpha(b.color, 0.18)}, inset 0 1px 0 rgba(255, 255, 255, 1)`,
-                  transform: 'translateY(-2px)',
-                },
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'stretch' }}>
-                {/* Left vertical color accent */}
-                <Box sx={{ width: 6, flexShrink: 0, bgcolor: b.color }} />
+          {ORG_BLOCKS.map((b, i) => {
+            const isFlipped = flippedBlockId === b.id;
+            const color = b.color;
 
+            return (
+              <Box
+                key={b.id}
+                id={`org-block-${b.id}`}
+                sx={{ perspective: '1600px', mb: 1.5, scrollMarginTop: '120px' }}
+              >
                 <Box
                   sx={{
-                    p: { xs: 2, md: 2.5 },
-                    flex: 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    flexWrap: 'wrap',
-                    gap: 2,
+                    position: 'relative',
+                    transition: 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                    transformStyle: 'preserve-3d',
+                    transformOrigin: 'center center',
+                    transform: isFlipped ? 'rotateX(-180deg)' : 'none',
                   }}
                 >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    {/* Number & Icon Badge */}
-                    <Box
-                      sx={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: '14px',
-                        bgcolor: alpha(b.color, 0.1),
-                        color: b.color,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        border: `1px solid ${alpha(b.color, 0.2)}`,
-                        flexShrink: 0,
-                      }}
-                    >
-                      {b.icon}
-                    </Box>
+                  {/* ────────────────────────────────────────────────────
+                      FRONT FACE
+                     ──────────────────────────────────────────────────── */}
+                  <Box
+                    onClick={() => !isFlipped && setFlippedBlockId(b.id)}
+                    sx={{
+                      backfaceVisibility: 'hidden',
+                      position: isFlipped ? 'absolute' : 'relative',
+                      width: '100%',
+                      top: 0,
+                      borderRadius: '20px',
+                      border: '1px solid rgba(255, 255, 255, 0.85)',
+                      background: 'rgba(255, 255, 255, 0.68)',
+                      backdropFilter: 'blur(20px)',
+                      WebkitBackdropFilter: 'blur(20px)',
+                      boxShadow: '0 8px 30px -4px rgba(15, 23, 42, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.95)',
+                      overflow: 'hidden',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                      '&:hover': {
+                        borderColor: alpha(color, 0.6),
+                        background: 'rgba(255, 255, 255, 0.85)',
+                        boxShadow: `0 16px 40px -6px rgba(15, 23, 42, 0.08), 0 0 24px ${alpha(color, 0.18)}, inset 0 1px 0 rgba(255, 255, 255, 1)`,
+                        transform: 'translateY(-2px)',
+                      },
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'stretch' }}>
+                      {/* Left vertical color accent */}
+                      <Box sx={{ width: 6, flexShrink: 0, bgcolor: color }} />
 
-                    <Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography
-                          sx={{
-                            fontWeight: 800,
-                            fontSize: { xs: '0.92rem', md: '1.02rem' },
-                            color: '#0f172a',
-                          }}
-                        >
-                          {b.title}
-                        </Typography>
-                        <Chip
-                          label={b.badge}
-                          size="small"
-                          sx={{
-                            height: 20,
-                            fontSize: '0.62rem',
-                            fontWeight: 800,
-                            bgcolor: alpha(b.color, 0.1),
-                            color: b.color,
-                            borderRadius: '6px',
-                          }}
-                        />
+                      <Box
+                        sx={{
+                          p: { xs: 2, md: 2.5 },
+                          flex: 1,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          flexWrap: 'wrap',
+                          gap: 2,
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          {/* Number & Icon Badge */}
+                          <Box
+                            sx={{
+                              width: 44,
+                              height: 44,
+                              borderRadius: '14px',
+                              bgcolor: alpha(color, 0.1),
+                              color,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              border: `1px solid ${alpha(color, 0.2)}`,
+                              flexShrink: 0,
+                            }}
+                          >
+                            {b.icon}
+                          </Box>
+
+                          <Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Typography
+                                sx={{
+                                  fontWeight: 800,
+                                  fontSize: { xs: '0.92rem', md: '1.02rem' },
+                                  color: '#0f172a',
+                                }}
+                              >
+                                {b.title}
+                              </Typography>
+                              <Chip
+                                label={b.badge}
+                                size="small"
+                                sx={{
+                                  height: 20,
+                                  fontSize: '0.62rem',
+                                  fontWeight: 800,
+                                  bgcolor: alpha(color, 0.1),
+                                  color,
+                                  borderRadius: '6px',
+                                }}
+                              />
+                            </Box>
+                            <Typography sx={{ fontSize: '0.8rem', color: '#64748b', mt: 0.2, maxWidth: 520 }}>
+                              {b.desc}
+                            </Typography>
+                          </Box>
+                        </Box>
+
+                        {/* Right Action Hint to Flip */}
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: { xs: 'auto', sm: 0 } }}>
+                          <Typography sx={{ fontSize: '0.78rem', color, fontWeight: 800 }}>
+                            Tap to flip ↻
+                          </Typography>
+                        </Box>
                       </Box>
-                      <Typography sx={{ fontSize: '0.8rem', color: '#64748b', mt: 0.2, maxWidth: 520 }}>
-                        {b.desc}
-                      </Typography>
                     </Box>
                   </Box>
 
-                  {/* Right Action Trigger (No Flipping!) */}
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: { xs: 'auto', sm: 0 } }}>
-                    <Button
-                      variant="contained"
-                      size="small"
-                      endIcon={<OpenInFullIcon sx={{ fontSize: '14px !important' }} />}
+                  {/* ────────────────────────────────────────────────────
+                      BACK FACE (FLIPPED QUICK-ACTION VIEW)
+                     ──────────────────────────────────────────────────── */}
+                  <Box
+                    sx={{
+                      backfaceVisibility: 'hidden',
+                      transform: 'rotateX(180deg)',
+                      position: isFlipped ? 'relative' : 'absolute',
+                      width: '100%',
+                      top: 0,
+                      borderRadius: '20px',
+                      border: `1.5px solid ${alpha(color, 0.4)}`,
+                      background: 'rgba(255, 255, 255, 0.92)',
+                      backdropFilter: 'blur(24px)',
+                      WebkitBackdropFilter: 'blur(24px)',
+                      boxShadow: '0 20px 50px -10px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95)',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {/* Back Card Header */}
+                    <Box
                       sx={{
-                        bgcolor: alpha(b.color, 0.12),
-                        color: b.color,
-                        borderRadius: '10px',
-                        fontWeight: 800,
-                        textTransform: 'none',
-                        fontSize: '0.78rem',
-                        boxShadow: 'none',
-                        '&:hover': { bgcolor: alpha(b.color, 0.22) },
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1.5,
+                        px: { xs: 2, md: 3 },
+                        py: 1.5,
+                        borderBottom: '1px solid rgba(0,0,0,0.06)',
+                        background: alpha(color, 0.05),
                       }}
                     >
-                      {b.cta}
-                    </Button>
+                      <Box
+                        sx={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: '10px',
+                          bgcolor: alpha(color, 0.15),
+                          color,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          border: `1px solid ${alpha(color, 0.25)}`,
+                        }}
+                      >
+                        <Typography sx={{ fontWeight: 800, fontSize: '0.85rem' }}>{b.num}</Typography>
+                      </Box>
+                      <Typography sx={{ fontWeight: 800, color: '#0f172a', fontSize: '1rem', flex: 1 }}>
+                        {b.title}
+                      </Typography>
+
+                      {/* Expand to Modal Action Icon */}
+                      <Tooltip title="Open Full Screen Modal">
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveModalBlock(b.id);
+                          }}
+                          sx={{
+                            color: '#334155',
+                            bgcolor: '#ffffff',
+                            border: '1px solid #cbd5e1',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                            '&:hover': { bgcolor: alpha(color, 0.12), color, borderColor: color },
+                          }}
+                        >
+                          <OpenInFullIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
+                      </Tooltip>
+
+                      {/* Done / Flip-back Check Icon */}
+                      <Tooltip title="Done (Flip Back)">
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setFlippedBlockId(null);
+                          }}
+                          sx={{
+                            bgcolor: color,
+                            color: '#fff',
+                            boxShadow: `0 4px 12px ${alpha(color, 0.35)}`,
+                            '&:hover': { bgcolor: alpha(color, 0.9), transform: 'scale(1.05)' },
+                          }}
+                        >
+                          <CheckIcon sx={{ fontSize: 18, fontWeight: 900 }} />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+
+                    {/* Back Card Body with High-Velocity Actions */}
+                    <Box sx={{ p: { xs: 2, md: 2.5 } }}>
+                      {/* TALENT BACK FACE */}
+                      {b.id === 'talent' && (
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                            {[
+                              { label: 'All Candidates', count: 'Pipeline', icon: '👥' },
+                              { label: 'Under Review', count: 'Screening', icon: '🔍' },
+                              { label: 'Shortlisted', count: 'Top Talent', icon: '⭐' },
+                              { label: 'Interviews', count: 'Active', icon: '🎙️' },
+                              { label: 'Hired', count: 'Onboarded', icon: '🎉' },
+                            ].map((s, idx) => (
+                              <Chip
+                                key={idx}
+                                label={`${s.icon} ${s.label}: ${s.count}`}
+                                size="small"
+                                sx={{ bgcolor: '#f1f5f9', color: '#334155', fontWeight: 700, borderRadius: '8px' }}
+                              />
+                            ))}
+                          </Box>
+                          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', pt: 0.5 }}>
+                            <Button
+                              variant="contained"
+                              size="small"
+                              onClick={() => setActiveModalBlock('talent')}
+                              startIcon={<PeopleIcon />}
+                              endIcon={<OpenInFullIcon sx={{ fontSize: 13 }} />}
+                              sx={{ bgcolor: '#3b82f6', borderRadius: '10px', fontWeight: 800, textTransform: 'none', px: 2, py: 0.8, boxShadow: 'none' }}
+                            >
+                              Open Full ATS Candidate Ledger
+                            </Button>
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              component="a"
+                              href="/trade/create"
+                              startIcon={<WorkIcon />}
+                              sx={{ borderRadius: '10px', fontWeight: 700, textTransform: 'none', borderColor: '#cbd5e1', color: '#0f172a' }}
+                            >
+                              Post New Opportunity
+                            </Button>
+                          </Box>
+                        </Box>
+                      )}
+
+                      {/* ROSTER BACK FACE */}
+                      {b.id === 'roster' && (
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <Typography sx={{ fontSize: '0.82rem', color: '#64748b' }}>
+                            {org?.members?.length || 1} team members with active permissions. Direct team management:
+                          </Typography>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            {org?.members?.slice(0, 3).map((m: any) => (
+                              <Box key={m.id} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 1, bgcolor: '#f8fafc', borderRadius: '10px', border: '1px solid #f1f5f9' }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                  <Avatar src={m.user?.avatarUrl || ''} sx={{ width: 28, height: 28 }}>
+                                    {m.user?.name?.charAt(0) || 'U'}
+                                  </Avatar>
+                                  <Box>
+                                    <Typography sx={{ fontWeight: 700, fontSize: '0.82rem', color: '#0f172a' }}>{m.user?.name || 'Member'}</Typography>
+                                    <Typography sx={{ fontSize: '0.7rem', color: '#64748b' }}>{m.user?.email}</Typography>
+                                  </Box>
+                                </Box>
+                                <Chip label={m.role} size="small" sx={{ fontWeight: 700, textTransform: 'capitalize', height: 20, fontSize: '0.65rem' }} />
+                              </Box>
+                            ))}
+                          </Box>
+                          <Box sx={{ display: 'flex', gap: 1.5, pt: 0.5 }}>
+                            <Button
+                              variant="contained"
+                              size="small"
+                              onClick={() => setActiveModalBlock('roster')}
+                              startIcon={<GroupsIcon />}
+                              endIcon={<OpenInFullIcon sx={{ fontSize: 13 }} />}
+                              sx={{ bgcolor: '#10b981', borderRadius: '10px', fontWeight: 800, textTransform: 'none', px: 2, py: 0.8, boxShadow: 'none' }}
+                            >
+                              Manage Full Directory & Roles
+                            </Button>
+                          </Box>
+                        </Box>
+                      )}
+
+                      {/* COMPLIANCE BACK FACE */}
+                      {b.id === 'compliance' && (
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          {isVerified ? (
+                            <Box sx={{ p: 1.5, bgcolor: 'rgba(16, 185, 129, 0.08)', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+                              <Typography sx={{ color: '#10b981', fontWeight: 800, fontSize: '0.88rem' }}>
+                                ✓ Rank 4: Official Verified Partner
+                              </Typography>
+                              <Typography sx={{ color: '#059669', fontSize: '0.78rem', mt: 0.5 }}>
+                                CAC clearance verified. Your listings carry official credibility across the network.
+                              </Typography>
+                            </Box>
+                          ) : (
+                            <Box sx={{ p: 1.5, bgcolor: 'rgba(245, 158, 11, 0.08)', borderRadius: '12px', border: '1px solid rgba(245, 158, 11, 0.25)' }}>
+                              <Typography sx={{ color: '#d97706', fontWeight: 800, fontSize: '0.88rem' }}>
+                                Rank 1: Registered Entity (Unverified CAC)
+                              </Typography>
+                              <Typography sx={{ color: '#b45309', fontSize: '0.78rem', mt: 0.5 }}>
+                                Upload CAC Certificate or institutional credentials to unlock Rank 4 badge.
+                              </Typography>
+                            </Box>
+                          )}
+                          <Box sx={{ display: 'flex', gap: 1.5 }}>
+                            <Button
+                              variant="contained"
+                              size="small"
+                              onClick={() => setActiveModalBlock('compliance')}
+                              startIcon={<VerifiedUserIcon />}
+                              endIcon={<OpenInFullIcon sx={{ fontSize: 13 }} />}
+                              sx={{ bgcolor: '#f59e0b', color: '#fff', borderRadius: '10px', fontWeight: 800, textTransform: 'none', px: 2, py: 0.8, boxShadow: 'none', '&:hover': { bgcolor: '#d97706' } }}
+                            >
+                              {isVerified ? 'View Compliance Certificate' : 'Begin CAC Verification'}
+                            </Button>
+                          </Box>
+                        </Box>
+                      )}
+
+                      {/* GOVERNANCE BACK FACE */}
+                      {b.id === 'governance' && (
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <Typography sx={{ fontSize: '0.82rem', color: '#64748b' }}>
+                            Live administrative queue for trade listing sign-offs and team content clearance.
+                          </Typography>
+                          <Box sx={{ display: 'flex', gap: 1.5 }}>
+                            <Button
+                              variant="contained"
+                              size="small"
+                              onClick={() => setActiveModalBlock('governance')}
+                              startIcon={<RocketLaunchIcon />}
+                              endIcon={<OpenInFullIcon sx={{ fontSize: 13 }} />}
+                              sx={{ bgcolor: '#8b5cf6', color: '#fff', borderRadius: '10px', fontWeight: 800, textTransform: 'none', px: 2, py: 0.8, boxShadow: 'none', '&:hover': { bgcolor: '#7c3aed' } }}
+                            >
+                              Inspect Approval Queue
+                            </Button>
+                          </Box>
+                        </Box>
+                      )}
+
+                      {/* ACTIVITY BACK FACE */}
+                      {b.id === 'activity' && (
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <Typography sx={{ fontSize: '0.82rem', color: '#64748b' }}>
+                            Real-time telemetry and audit feed of recent organizational updates.
+                          </Typography>
+                          <Box sx={{ display: 'flex', gap: 1.5 }}>
+                            <Button
+                              variant="contained"
+                              size="small"
+                              onClick={() => setActiveModalBlock('activity')}
+                              startIcon={<ArticleIcon />}
+                              endIcon={<OpenInFullIcon sx={{ fontSize: 13 }} />}
+                              sx={{ bgcolor: '#64748b', color: '#fff', borderRadius: '10px', fontWeight: 800, textTransform: 'none', px: 2, py: 0.8, boxShadow: 'none', '&:hover': { bgcolor: '#475569' } }}
+                            >
+                              View Full Audit Feed
+                            </Button>
+                          </Box>
+                        </Box>
+                      )}
+                    </Box>
                   </Box>
                 </Box>
               </Box>
-            </Paper>
-          ))}
+            );
+          })}
         </Box>
       </Container>
 
-      {/* ─── 3. DEDICATED EXECUTIVE MODAL DIALOG (NO FLIPPING) ─── */}
+      {/* ─── 3. DEDICATED EXECUTIVE MASTER MODAL DIALOG ─── */}
       <Dialog
         open={Boolean(activeModalBlock)}
         onClose={() => setActiveModalBlock(null)}
         maxWidth="lg"
         fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: { xs: '16px', md: '24px' },
-            bgcolor: '#f8fafc',
-            backgroundImage: 'none',
-            overflow: 'hidden',
-            width: { xs: '96vw', md: '92vw' },
-            maxWidth: '1100px !important',
-            height: { xs: '92vh', md: '88vh' },
-            maxHeight: '92vh !important',
-            m: 'auto',
-            border: '1px solid rgba(226, 232, 240, 0.9)',
-            boxShadow: '0 25px 60px -12px rgba(15, 23, 42, 0.25)',
-            display: 'flex',
-            flexDirection: 'column',
+        slots={{ transition: Fade as any }}
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: { xs: '20px', md: '28px' },
+              bgcolor: '#f8fafc',
+              backgroundImage: 'none',
+              overflow: 'hidden',
+              width: { xs: '96vw !important', sm: '92vw !important', md: '1120px !important' },
+              minWidth: { xs: '96vw !important', sm: '92vw !important', md: '1120px !important' },
+              maxWidth: { xs: '96vw !important', sm: '92vw !important', md: '1120px !important' },
+              height: { xs: '90vh !important', sm: '88vh !important', md: '780px !important' },
+              minHeight: { xs: '90vh !important', sm: '88vh !important', md: '780px !important' },
+              maxHeight: { xs: '90vh !important', sm: '88vh !important', md: '780px !important' },
+              m: 'auto',
+              border: '1px solid rgba(226, 232, 240, 0.9)',
+              boxShadow: '0 25px 60px -12px rgba(15, 23, 42, 0.25)',
+              display: 'flex',
+              flexDirection: 'column',
+              transition: 'none !important',
+              animation: 'none !important',
+            },
           },
         }}
       >
-        {/* Header Bar */}
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            px: { xs: 2, md: 3 },
-            py: 1.5,
-            bgcolor: '#ffffff',
-            borderBottom: '1px solid #e2e8f0',
-            flexShrink: 0,
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            {activeDef && (
-              <Box
-                sx={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: '10px',
-                  bgcolor: alpha(activeDef.color, 0.12),
-                  color: activeDef.color,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                {activeDef.icon}
-              </Box>
-            )}
-            <Box>
-              <Typography sx={{ fontWeight: 800, fontSize: '0.98rem', color: '#0f172a' }}>
-                {activeDef?.title || 'Organization Workspace'}
-              </Typography>
-              <Typography sx={{ fontSize: '0.72rem', color: '#64748b' }}>
-                {orgName} • @o-{slug}
-              </Typography>
-            </Box>
-          </Box>
-
-          <IconButton
-            onClick={() => setActiveModalBlock(null)}
-            size="small"
-            sx={{
-              color: '#64748b',
-              bgcolor: '#f1f5f9',
-              '&:hover': { bgcolor: '#e2e8f0', color: '#0f172a' },
-            }}
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </Box>
-
-        {/* Modal Body with Left Dock Tabs & Right Content Canvas */}
         <Box sx={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
-          {/* Left Docked Navigation (Desktop) */}
+          {/* ── DESKTOP DOCKED SIDEBAR (md+ >= 900px, 280px Permanent) ── */}
           <Box
             sx={{
               display: { xs: 'none', md: 'flex' },
               flexDirection: 'column',
-              width: 260,
+              justifyContent: 'space-between',
+              width: 280,
               flexShrink: 0,
               bgcolor: '#ffffff',
               borderRight: '1px solid #e2e8f0',
-              p: 2,
-              gap: 1,
+              p: 2.5,
+              gap: 2,
               overflowY: 'auto',
+              height: '100%',
+              minHeight: '100%',
+              maxHeight: '100%',
             }}
           >
-            <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', px: 1, mb: 0.5 }}>
-              Operations Modules
-            </Typography>
-            {ORG_BLOCKS.map((b) => {
-              const isCurrent = activeModalBlock === b.id;
-              return (
-                <Box
-                  key={b.id}
-                  onClick={() => setActiveModalBlock(b.id)}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {/* Org Console Identity Header */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pb: 1.5, borderBottom: '1px solid #e2e8f0' }}>
+                <Avatar
+                  src={logoUrl || org?.logoUrl}
                   sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1.5,
-                    px: 1.5,
-                    py: 1.2,
-                    borderRadius: '12px',
-                    cursor: 'pointer',
-                    bgcolor: isCurrent ? alpha(b.color, 0.12) : 'transparent',
-                    border: '1px solid',
-                    borderColor: isCurrent ? alpha(b.color, 0.3) : 'transparent',
-                    transition: 'all 0.15s ease',
-                    '&:hover': {
-                      bgcolor: isCurrent ? alpha(b.color, 0.15) : '#f8fafc',
-                    },
+                    width: 42,
+                    height: 42,
+                    bgcolor: '#0f172a',
+                    color: '#ffffff',
+                    fontWeight: 900,
+                    border: `2px solid ${isVerified ? '#10b981' : '#f59e0b'}`,
                   }}
                 >
-                  <Box sx={{ color: isCurrent ? b.color : '#64748b', display: 'flex' }}>
-                    {b.icon}
-                  </Box>
-                  <Box sx={{ minWidth: 0, flex: 1 }}>
-                    <Typography
+                  {orgName.charAt(0).toUpperCase()}
+                </Avatar>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography noWrap sx={{ fontWeight: 900, fontSize: '0.92rem', color: '#0f172a' }}>
+                    {orgName}
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                    <Chip
+                      label={isVerified ? 'Rank 4: Partner' : 'Rank 1: Entity'}
+                      size="small"
                       sx={{
-                        fontSize: '0.82rem',
-                        fontWeight: isCurrent ? 800 : 600,
-                        color: isCurrent ? '#0f172a' : '#475569',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
+                        height: 18,
+                        fontSize: '0.62rem',
+                        fontWeight: 900,
+                        bgcolor: isVerified ? alpha('#10b981', 0.15) : alpha('#f59e0b', 0.15),
+                        color: isVerified ? '#10b981' : '#f59e0b',
                       }}
-                    >
-                      {b.title}
+                    />
+                    <Typography noWrap sx={{ fontSize: '0.72rem', color: '#64748b' }}>
+                      @{slug}
                     </Typography>
                   </Box>
                 </Box>
-              );
-            })}
+              </Box>
+
+              {/* Module Navigation Tabs (All 5 Blocks) */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', px: 1 }}>
+                  Operations Modules
+                </Typography>
+                {ORG_BLOCKS.map((b) => {
+                  const isActive = b.id === activeModalBlock;
+                  return (
+                    <Box
+                      key={b.id}
+                      onClick={() => setActiveModalBlock(b.id)}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1.5,
+                        p: 1.25,
+                        borderRadius: '12px',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                        bgcolor: isActive ? alpha(b.color, 0.1) : 'transparent',
+                        border: `1.5px solid ${isActive ? b.color : 'transparent'}`,
+                        color: isActive ? '#0f172a' : '#475569',
+                        '&:hover': {
+                          bgcolor: isActive ? alpha(b.color, 0.14) : '#f1f5f9',
+                        },
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: '8px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          bgcolor: isActive ? b.color : alpha(b.color, 0.15),
+                          color: isActive ? '#ffffff' : b.color,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {b.icon}
+                      </Box>
+                      <Box sx={{ minWidth: 0, flex: 1 }}>
+                        <Typography sx={{ fontSize: '0.84rem', fontWeight: isActive ? 900 : 700, lineHeight: 1.2 }}>
+                          {b.shortTitle}
+                        </Typography>
+                        <Typography noWrap sx={{ fontSize: '0.7rem', color: isActive ? '#64748b' : '#94a3b8' }}>
+                          Part {b.number}
+                        </Typography>
+                      </Box>
+                      {isActive && (
+                        <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: b.color }} />
+                      )}
+                    </Box>
+                  );
+                })}
+              </Box>
+            </Box>
+
+            {/* Docked Context Card ("What this is for & Why it exists") */}
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2,
+                borderRadius: '16px',
+                bgcolor: alpha(activeDef.color, 0.05),
+                border: `1px solid ${alpha(activeDef.color, 0.2)}`,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 1.5,
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: activeDef.color }} />
+                <Typography sx={{ fontSize: '0.72rem', fontWeight: 900, color: activeDef.color, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  About This Section
+                </Typography>
+              </Box>
+
+              <Box>
+                <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
+                  What this is for:
+                </Typography>
+                <Typography sx={{ fontSize: '0.76rem', color: '#1e293b', lineHeight: 1.4, mt: 0.2 }}>
+                  {activeDef.whatFor}
+                </Typography>
+              </Box>
+
+              <Box>
+                <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
+                  Why it exists:
+                </Typography>
+                <Typography sx={{ fontSize: '0.74rem', color: '#475569', lineHeight: 1.4, mt: 0.2 }}>
+                  {activeDef.whyExists}
+                </Typography>
+              </Box>
+
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: 1, borderTop: `1px solid ${alpha(activeDef.color, 0.15)}` }}>
+                <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b' }}>{activeDef.statLabel}:</Typography>
+                <Typography sx={{ fontSize: '0.72rem', fontWeight: 900, color: activeDef.color }}>{activeDef.statValue}</Typography>
+              </Box>
+            </Paper>
           </Box>
 
-          {/* Right Content Canvas */}
-          <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', bgcolor: '#f8fafc' }}>
+          {/* ── MOBILE HEADER BAR (xs-sm < 900px, Docked at Top) ── */}
+          <Box
+            sx={{
+              display: { xs: 'flex', md: 'none' },
+              flexDirection: 'column',
+              flexShrink: 0,
+              bgcolor: '#f8fafc',
+              borderBottom: '1px solid #e2e8f0',
+              width: '100%',
+            }}
+          >
+            {/* Top row: Title + Close button */}
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
+                <Box sx={{ width: 32, height: 32, borderRadius: '10px', bgcolor: alpha(activeDef.color, 0.15), color: activeDef.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {activeDef.icon}
+                </Box>
+                <Box>
+                  <Typography sx={{ fontWeight: 900, fontSize: '0.98rem', color: '#0f172a', lineHeight: 1.2 }}>
+                    {activeDef.title}
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.68rem', color: '#64748b' }}>
+                    Part {activeDef.number} of 5 • @{slug}
+                  </Typography>
+                </Box>
+              </Box>
+              <IconButton onClick={() => setActiveModalBlock(null)} size="small" sx={{ bgcolor: '#ffffff', border: '1px solid #e2e8f0', width: 34, height: 34 }}>
+                <CloseIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Box>
+
+            {/* Pill Category Tab Menu (FoodNerve .com Career Page Style) */}
+            <Box sx={{ px: 2, pb: 1.2 }}>
+              <Box
+                ref={mobilePillsTrackRef}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  overflowX: 'auto',
+                  p: 0.6,
+                  gap: 0.8,
+                  bgcolor: 'rgba(255, 255, 255, 0.85)',
+                  backdropFilter: 'blur(20px)',
+                  WebkitBackdropFilter: 'blur(20px)',
+                  borderRadius: '9999px',
+                  border: '1px solid rgba(226, 232, 240, 0.9)',
+                  boxShadow: '0 4px 20px -4px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.9)',
+                  '::-webkit-scrollbar': { display: 'none' },
+                }}
+              >
+                {ORG_BLOCKS.map((b) => {
+                  const isActive = b.id === activeModalBlock;
+                  return (
+                    <Box
+                      key={b.id}
+                      ref={(el) => {
+                        mobilePillRefs.current[b.id] = el;
+                      }}
+                      onClick={() => setActiveModalBlock(b.id)}
+                      sx={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 0.8,
+                        px: 1.8,
+                        py: 0.65,
+                        borderRadius: '9999px',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0,
+                        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                        bgcolor: isActive ? b.color : 'transparent',
+                        color: isActive ? '#ffffff' : '#475569',
+                        boxShadow: isActive ? `0 4px 14px ${alpha(b.color, 0.4)}` : 'none',
+                        '&:hover': {
+                          bgcolor: isActive ? b.color : alpha(b.color, 0.08),
+                          color: isActive ? '#ffffff' : '#0f172a',
+                        },
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          width: 18,
+                          height: 18,
+                          borderRadius: '9999px',
+                          bgcolor: isActive ? 'rgba(255, 255, 255, 0.25)' : alpha(b.color, 0.12),
+                          color: isActive ? '#ffffff' : b.color,
+                          fontSize: '0.68rem',
+                          fontWeight: 900,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        {b.number}
+                      </Box>
+                      <Typography
+                        sx={{
+                          fontSize: '0.78rem',
+                          fontWeight: isActive ? 900 : 700,
+                          letterSpacing: '-0.01em',
+                        }}
+                      >
+                        {b.shortTitle}
+                      </Typography>
+                    </Box>
+                  );
+                })}
+              </Box>
+            </Box>
+
+            {/* Premium "About this section" Disclosure on Mobile */}
+            <Box sx={{ px: 2, pb: 1.5 }}>
+              <Paper
+                elevation={0}
+                onClick={() => setMobileContextOpen(!mobileContextOpen)}
+                sx={{
+                  p: 1.5,
+                  borderRadius: '16px',
+                  bgcolor: alpha(activeDef.color, 0.04),
+                  border: `1px solid ${alpha(activeDef.color, 0.2)}`,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.02)',
+                  '&:hover': {
+                    bgcolor: alpha(activeDef.color, 0.08),
+                    borderColor: alpha(activeDef.color, 0.35),
+                  },
+                }}
+              >
+                {/* Accordion Trigger Row */}
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box
+                      sx={{
+                        width: 22,
+                        height: 22,
+                        borderRadius: '6px',
+                        bgcolor: alpha(activeDef.color, 0.14),
+                        color: activeDef.color,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <AutoAwesomeIcon sx={{ fontSize: 13 }} />
+                    </Box>
+                    <Typography
+                      sx={{
+                        fontSize: '0.72rem',
+                        fontWeight: 900,
+                        color: activeDef.color,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em',
+                      }}
+                    >
+                      About This Section
+                    </Typography>
+                  </Box>
+
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Chip
+                      label={`${activeDef.statLabel}: ${activeDef.statValue}`}
+                      size="small"
+                      sx={{
+                        height: 20,
+                        fontSize: '0.65rem',
+                        fontWeight: 900,
+                        bgcolor: alpha(activeDef.color, 0.12),
+                        color: activeDef.color,
+                        borderRadius: '6px',
+                      }}
+                    />
+                    <ExpandMoreIcon
+                      sx={{
+                        fontSize: 18,
+                        color: activeDef.color,
+                        transform: mobileContextOpen ? 'rotate(180deg)' : 'none',
+                        transition: 'transform 0.2s ease',
+                      }}
+                    />
+                  </Box>
+                </Box>
+
+                {/* Expanded Context Details */}
+                {mobileContextOpen && (
+                  <Box sx={{ mt: 1.5, pt: 1.5, borderTop: `1px solid ${alpha(activeDef.color, 0.15)}`, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <Box>
+                      <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
+                        What this is for:
+                      </Typography>
+                      <Typography sx={{ fontSize: '0.76rem', color: '#1e293b', lineHeight: 1.4, mt: 0.2 }}>
+                        {activeDef.whatFor}
+                      </Typography>
+                    </Box>
+
+                    <Box>
+                      <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
+                        Why it exists:
+                      </Typography>
+                      <Typography sx={{ fontSize: '0.74rem', color: '#475569', lineHeight: 1.4, mt: 0.2 }}>
+                        {activeDef.whyExists}
+                      </Typography>
+                    </Box>
+                  </Box>
+                )}
+              </Paper>
+            </Box>
+          </Box>
+
+          {/* ── RIGHT MAIN CONTENT CANVAS ── */}
+          <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', bgcolor: '#f8fafc' }}>
+            {/* Desktop Canvas Header */}
+            <Box
+              sx={{
+                display: { xs: 'none', md: 'flex' },
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                px: 3.5,
+                py: 2,
+                bgcolor: '#ffffff',
+                borderBottom: '1px solid #e2e8f0',
+                flexShrink: 0,
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box
+                  sx={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: '10px',
+                    bgcolor: alpha(activeDef.color, 0.12),
+                    color: activeDef.color,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {activeDef.icon}
+                </Box>
+                <Box>
+                  <Typography sx={{ fontWeight: 900, fontSize: '1.05rem', color: '#0f172a' }}>
+                    {activeDef.title}
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.75rem', color: '#64748b' }}>
+                    Part {activeDef.number} of 5 • {activeDef.desc}
+                  </Typography>
+                </Box>
+              </Box>
+
+              <IconButton
+                onClick={() => setActiveModalBlock(null)}
+                size="small"
+                sx={{
+                  color: '#64748b',
+                  bgcolor: '#f1f5f9',
+                  border: '1px solid #e2e8f0',
+                  '&:hover': { bgcolor: '#e2e8f0', color: '#0f172a' },
+                }}
+              >
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </Box>
+
+            {/* Scrollable Content Body */}
+            <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', bgcolor: '#f8fafc' }}>
             {/* 1. TALENT ATS LEDGER */}
             {activeModalBlock === 'talent' && (
               <Box sx={{ p: { xs: 1.5, md: 3 }, bgcolor: '#ffffff', minHeight: '100%' }}>
@@ -1029,9 +1674,10 @@ export default function OrgFrontstage({ tenant, slug, initialBlock }: Props) {
             )}
           </Box>
         </Box>
-      </Dialog>
-    </Box>
-  );
+      </Box>
+    </Dialog>
+  </Box>
+);
 }
 
 function PendingApprovalSection({ organizationId, userRole, userId }: { organizationId?: string; userRole: string; userId?: string }) {

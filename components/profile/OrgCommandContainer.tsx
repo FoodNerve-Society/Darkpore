@@ -1,8 +1,7 @@
-// @ts-nocheck
 'use client';
 
 import React, { useState } from 'react';
-import { Box, Typography, Button, Paper, Avatar, Badge, Dialog } from '@mui/material';
+import { Box, Typography, Button, Paper, Avatar, Badge, Dialog, Chip } from '@mui/material';
 import OrgFrontstage from './OrgFrontstage';
 import CreateOrgBackstage from './CreateOrgBackstage';
 import JoinOrgBackstage from './JoinOrgBackstage';
@@ -10,6 +9,7 @@ import OrgMiniCard from './OrgMiniCard';
 import OrgSwitcherPills from './OrgSwitcherPills';
 import AddIcon from '@mui/icons-material/Add';
 import GroupsIcon from '@mui/icons-material/Groups';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { useSociety } from '@/context/SocietyContext';
 
 interface Props {
@@ -28,8 +28,15 @@ export default function OrgCommandContainer({ tenant, slug, isActive, isCollapse
   const { profile, activeOrg, switchOrg } = useSociety();
 
   const organizations = profile?.organizations || [];
-  const currentActiveOrg = activeOrg || organizations[0] || null;
-  const currentSlug = currentActiveOrg?.slug || slug || null;
+  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(
+    slug ? (organizations.find((o) => o.slug === slug)?.id || null) : null
+  );
+
+  const currentOrg = selectedOrgId
+    ? organizations.find((o) => o.id === selectedOrgId) || null
+    : (isActive ? (activeOrg || organizations[0] || null) : null);
+  const currentActiveOrg = currentOrg || activeOrg || organizations[0] || null;
+  const currentSlug = currentOrg?.slug || (isActive ? (activeOrg?.slug || slug || null) : null);
   const hasOrgs = organizations.length > 0;
 
   const handleManageOpen = (block?: 'talent' | 'roster' | 'compliance' | 'governance' | 'activity', e?: React.MouseEvent) => {
@@ -45,6 +52,7 @@ export default function OrgCommandContainer({ tenant, slug, isActive, isCollapse
   };
 
   const handleOrgSelect = (orgId: string) => {
+    setSelectedOrgId(orgId);
     switchOrg(orgId);
     if (isCollapsed) onActivate();
   };
@@ -238,7 +246,7 @@ export default function OrgCommandContainer({ tenant, slug, isActive, isCollapse
     // ─── NO ORG (COLLAPSED) ───
     return (
       <Box
-        onClick={() => { setIsFlipped(true); onActivate(); }}
+        onClick={() => { setNoOrgModal('join'); onActivate(); }}
         sx={{
           height: '100%',
           display: 'flex',
@@ -381,19 +389,7 @@ export default function OrgCommandContainer({ tenant, slug, isActive, isCollapse
   // ─── EXPANDED STATE (MODULAR BLOCKS, ZERO 3D FLIPPING) ───
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* MOBILE HORIZONTAL SWITCHER PILLS (ONLY IF HAS ORGS & EXPANDED) */}
-      {hasOrgs && (
-        <Box sx={{ display: { xs: 'block', md: 'none' }, mb: 1 }}>
-          <OrgSwitcherPills
-            organizations={organizations}
-            activeOrgId={currentActiveOrg?.id || null}
-            onSwitch={(orgId) => switchOrg(orgId)}
-            onJoinOrg={() => setNoOrgModal('join')}
-          />
-        </Box>
-      )}
-
-      {!currentSlug ? (
+      {!hasOrgs ? (
         <Box
           sx={{
             height: '100%',
@@ -480,12 +476,196 @@ export default function OrgCommandContainer({ tenant, slug, isActive, isCollapse
             </Box>
           </Paper>
         </Box>
+      ) : !currentSlug ? (
+        /* ─── ORGANIZATIONS DIRECTORY LIST (CLEAN, MINIMAL, ZERO TAB ON TOP) ─── */
+        <Box
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            overflowY: 'auto',
+            p: { xs: 2, md: 3 },
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 2,
+            position: 'relative',
+          }}
+        >
+          {/* Minimal Header with subtle Join shortcut */}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 0.5 }}>
+            <Box>
+              <Typography sx={{ fontWeight: 800, fontSize: { xs: '1.1rem', md: '1.25rem' }, color: '#0f172a', letterSpacing: '-0.02em' }}>
+                Workspaces
+              </Typography>
+              <Typography sx={{ fontSize: '0.78rem', color: '#64748b', mt: 0.2 }}>
+                Select an organization to open its workspace
+              </Typography>
+            </Box>
+            <Button
+              size="small"
+              startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+              onClick={() => setNoOrgModal('join')}
+              sx={{
+                borderRadius: '10px',
+                fontSize: '0.76rem',
+                fontWeight: 700,
+                color: '#0f172a',
+                bgcolor: '#f1f5f9',
+                border: '1px solid #e2e8f0',
+                textTransform: 'none',
+                px: 1.5,
+                py: 0.5,
+                '&:hover': { bgcolor: '#e2e8f0' },
+              }}
+            >
+              Join or Create
+            </Button>
+          </Box>
+
+          {/* Minimal Org Cards Stack */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+            {organizations.map((org) => {
+              const isPartner = org.verified || Boolean((org as any).rank && (org as any).rank >= 4);
+              return (
+                <Paper
+                  key={org.id}
+                  elevation={0}
+                  onClick={() => {
+                    setSelectedOrgId(org.id);
+                    switchOrg(org.id);
+                    if (!isActive) onActivate();
+                  }}
+                  sx={{
+                    p: 1.75,
+                    borderRadius: '16px',
+                    bgcolor: 'rgba(255, 255, 255, 0.75)',
+                    backdropFilter: 'blur(16px)',
+                    WebkitBackdropFilter: 'blur(16px)',
+                    border: '1px solid rgba(226, 232, 240, 0.85)',
+                    boxShadow: '0 2px 8px -2px rgba(15, 23, 42, 0.04)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 2,
+                    '&:hover': {
+                      bgcolor: '#ffffff',
+                      borderColor: '#cbd5e1',
+                      boxShadow: '0 8px 24px -4px rgba(15, 23, 42, 0.08)',
+                      transform: 'translateY(-1px)',
+                      '& .arrow-btn': {
+                        bgcolor: '#0f172a',
+                        color: '#ffffff',
+                        transform: 'translateX(2px)',
+                      },
+                    },
+                  }}
+                >
+                  {/* Left: Avatar + Identity */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75, minWidth: 0 }}>
+                    <Avatar
+                      src={org.logoUrl}
+                      sx={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: '12px',
+                        bgcolor: '#0f172a',
+                        color: '#ffffff',
+                        fontWeight: 800,
+                        fontSize: '1rem',
+                        border: `1.5px solid ${isPartner ? '#10b981' : '#e2e8f0'}`,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {org.name.charAt(0).toUpperCase()}
+                    </Avatar>
+
+                    <Box sx={{ minWidth: 0 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                        <Typography
+                          noWrap
+                          sx={{
+                            fontWeight: 800,
+                            color: '#0f172a',
+                            fontSize: '0.94rem',
+                            letterSpacing: '-0.01em',
+                          }}
+                        >
+                          {org.name}
+                        </Typography>
+                        {isPartner && (
+                          <Box
+                            sx={{
+                              width: 7,
+                              height: 7,
+                              borderRadius: '50%',
+                              bgcolor: '#10b981',
+                              flexShrink: 0,
+                            }}
+                          />
+                        )}
+                      </Box>
+
+                      <Typography
+                        noWrap
+                        sx={{
+                          fontSize: '0.76rem',
+                          color: '#64748b',
+                          mt: 0.15,
+                        }}
+                      >
+                        @{org.slug} • <span style={{ textTransform: 'capitalize' }}>{org.role || 'Member'}</span>{isPartner ? ' • Partner' : ''}
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  {/* Right: Minimal Arrow Action */}
+                  <Box
+                    className="arrow-btn"
+                    sx={{
+                      width: 34,
+                      height: 34,
+                      borderRadius: '10px',
+                      bgcolor: '#f1f5f9',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#64748b',
+                      flexShrink: 0,
+                      transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                    }}
+                  >
+                    <ArrowForwardIcon sx={{ fontSize: 16 }} />
+                  </Box>
+                </Paper>
+              );
+            })}
+          </Box>
+        </Box>
       ) : (
-        <OrgFrontstage
-          slug={currentSlug}
-          tenant={tenant}
-          initialBlock={initialBlock}
-        />
+        /* ─── ACTIVE ORG WORKSPACE (TOP SWITCHER TAB WITH BACK & JOIN ON EDGES) ─── */
+        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <Box sx={{ mb: 1.5, flexShrink: 0 }}>
+            <OrgSwitcherPills
+              organizations={organizations}
+              activeOrgId={selectedOrgId}
+              onBack={() => setSelectedOrgId(null)}
+              onSwitch={(orgId) => {
+                setSelectedOrgId(orgId);
+                switchOrg(orgId);
+              }}
+              onJoinOrg={() => setNoOrgModal('join')}
+            />
+          </Box>
+
+          <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+            <OrgFrontstage
+              slug={currentSlug}
+              tenant={tenant}
+              initialBlock={initialBlock}
+            />
+          </Box>
+        </Box>
       )}
 
       {/* ZERO-ORG ACTION MODAL (JOIN / CREATE DIALOG) */}
@@ -494,16 +674,18 @@ export default function OrgCommandContainer({ tenant, slug, isActive, isCollapse
         onClose={() => setNoOrgModal(null)}
         maxWidth="md"
         fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: { xs: '16px', md: '24px' },
-            bgcolor: '#f8fafc',
-            overflow: 'hidden',
-            width: { xs: '96vw', md: '80vw' },
-            maxWidth: '850px !important',
-            height: { xs: '90vh', md: '80vh' },
-            maxHeight: '90vh !important',
-            border: '1px solid rgba(226, 232, 240, 0.9)',
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: { xs: '16px', md: '24px' },
+              bgcolor: '#f8fafc',
+              overflow: 'hidden',
+              width: { xs: '96vw', md: '80vw' },
+              maxWidth: '850px !important',
+              height: { xs: '90vh', md: '80vh' },
+              maxHeight: '90vh !important',
+              border: '1px solid rgba(226, 232, 240, 0.9)',
+            },
           },
         }}
       >
