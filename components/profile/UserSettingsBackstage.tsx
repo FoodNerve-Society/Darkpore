@@ -510,18 +510,23 @@ export default function UserSettingsBackstage({ onClose, initialBlockId }: Props
           {/* Header Row: Rank Badge & Share Action */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2.5 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Chip
-                label={`Rank ${rank} · ${RANK_NAMES[rank]}`}
-                size="small"
+              <Box
                 sx={{
-                  bgcolor: alpha(rankColor, 0.12),
-                  color: rankColor,
-                  fontWeight: 800,
-                  fontSize: '0.72rem',
-                  borderRadius: '8px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 0.6,
+                  px: 1,
+                  py: 0.35,
+                  borderRadius: '6px',
+                  bgcolor: alpha(rankColor, 0.1),
                   border: `1px solid ${alpha(rankColor, 0.25)}`,
                 }}
-              />
+              >
+                <Box sx={{ width: 5, height: 5, borderRadius: '50%', bgcolor: rankColor }} />
+                <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: rankColor, letterSpacing: '0.02em', textTransform: 'uppercase' }}>
+                  Rank {rank} · {RANK_NAMES[rank]}
+                </Typography>
+              </Box>
               {rank >= 4 && <VerifiedIcon sx={{ color: '#10b981', fontSize: 18 }} />}
             </Box>
 
@@ -1975,36 +1980,123 @@ export default function UserSettingsBackstage({ onClose, initialBlockId }: Props
               </Box>
             )}
 
-            {/* ── BLOCK 4: CREDENTIALS ── */}
+            {/* ── BLOCK 4: CREDENTIALS (STACKED EXECUTIVE SHOWCASE) ── */}
             {activeModalBlock === 'credentials' && (
-              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' }, gap: 3.5, width: '100%', minWidth: 0, maxWidth: '100%' }}>
-                {/* Card 1: Executive Announcement */}
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', bgcolor: '#f8fafc', p: 3, borderRadius: '20px', border: '1px solid #e2e8f0', width: '100%', minWidth: 0, maxWidth: '100%' }}>
-                  <Box ref={cardRef1} sx={{ borderRadius: '24px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', maxWidth: '100%', display: 'flex', justifyContent: 'center' }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 4,
+                  width: '100%',
+                  maxWidth: '560px',
+                  mx: 'auto',
+                  pb: 3,
+                }}
+              >
+                <Typography sx={{ fontSize: '0.88rem', color: '#64748b', textAlign: 'center', maxWidth: 460 }}>
+                  Official verified executive credentials. Download high-resolution PNG passes to your device for presentations, meetings, and offline identification:
+                </Typography>
+
+                {/* Pass 1: Executive Announcement Pass */}
+                <Box
+                  sx={{
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    bgcolor: '#f8fafc',
+                    p: { xs: 2.5, sm: 3.5 },
+                    borderRadius: '24px',
+                    border: '1px solid #e2e8f0',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
+                  }}
+                >
+                  <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 2 }}>
+                    Credential Pass 01 · Executive Announcement
+                  </Typography>
+                  <Box
+                    ref={cardRef1}
+                    sx={{
+                      borderRadius: '24px',
+                      overflow: 'hidden',
+                      boxShadow: '0 20px 50px -10px rgba(15, 23, 42, 0.2)',
+                      display: 'flex',
+                      justifyContent: 'center',
+                    }}
+                  >
                     <ExecutiveCard cardTheme="#0f172a" cardStyle="announcement" {...execProps} />
                   </Box>
                   <Button
-                    fullWidth
                     variant="outlined"
                     startIcon={<DownloadIcon />}
                     onClick={() => exportCard1('member_pass.png')}
-                    sx={{ mt: 3, py: 1.4, borderRadius: '14px', fontWeight: 800, textTransform: 'none', borderColor: '#cbd5e1', color: '#0f172a' }}
+                    sx={{
+                      mt: 3,
+                      py: 1.4,
+                      px: 4,
+                      width: { xs: '100%', sm: '400px' },
+                      borderRadius: '14px',
+                      fontWeight: 800,
+                      textTransform: 'none',
+                      borderColor: '#cbd5e1',
+                      color: '#0f172a',
+                      bgcolor: '#ffffff',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
+                      '&:hover': { bgcolor: '#0f172a', color: '#ffffff', borderColor: '#0f172a' },
+                    }}
                   >
                     Download Digital Pass (PNG)
                   </Button>
                 </Box>
 
-                {/* Card 2: Membership ID */}
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', bgcolor: '#f8fafc', p: 3, borderRadius: '20px', border: '1px solid #e2e8f0', width: '100%', minWidth: 0, maxWidth: '100%' }}>
-                  <Box ref={cardRef2} sx={{ borderRadius: '24px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', maxWidth: '100%', display: 'flex', justifyContent: 'center' }}>
+                {/* Pass 2: Photo ID Card */}
+                <Box
+                  sx={{
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    bgcolor: '#f8fafc',
+                    p: { xs: 2.5, sm: 3.5 },
+                    borderRadius: '24px',
+                    border: '1px solid #e2e8f0',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
+                  }}
+                >
+                  <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 2 }}>
+                    Credential Pass 02 · Verified Membership ID
+                  </Typography>
+                  <Box
+                    ref={cardRef2}
+                    sx={{
+                      borderRadius: '24px',
+                      overflow: 'hidden',
+                      boxShadow: '0 20px 50px -10px rgba(16, 185, 129, 0.2)',
+                      display: 'flex',
+                      justifyContent: 'center',
+                    }}
+                  >
                     <ExecutiveCard cardTheme="#10b981" cardStyle="membership" {...execProps} />
                   </Box>
                   <Button
-                    fullWidth
                     variant="outlined"
                     startIcon={<DownloadIcon />}
                     onClick={() => exportCard2('photo_id_card.png')}
-                    sx={{ mt: 3, py: 1.4, borderRadius: '14px', fontWeight: 800, textTransform: 'none', borderColor: '#cbd5e1', color: '#0f172a' }}
+                    sx={{
+                      mt: 3,
+                      py: 1.4,
+                      px: 4,
+                      width: { xs: '100%', sm: '400px' },
+                      borderRadius: '14px',
+                      fontWeight: 800,
+                      textTransform: 'none',
+                      borderColor: '#a7f3d0',
+                      color: '#065f46',
+                      bgcolor: '#ffffff',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
+                      '&:hover': { bgcolor: '#10b981', color: '#ffffff', borderColor: '#10b981' },
+                    }}
                   >
                     Download Photo ID Card (PNG)
                   </Button>

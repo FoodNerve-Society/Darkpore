@@ -39,15 +39,15 @@ export default function CommandCenterLayout() {
             flex: activeView === 'split' 
               ? 1 
               : (activeView === 'user' 
-                  ? { xs: 9, md: 8 } 
-                  : { xs: 1, md: 2 }
+                  ? { xs: 1, md: 8 } 
+                  : { xs: '0 0 auto', md: 2 }
                 ),
-            transition: 'flex 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
-            minHeight: 0,
+            transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+            minHeight: { xs: activeView === 'org' ? '74px' : 0, md: 0 },
             minWidth: 0,
             display: 'flex',
             flexDirection: 'column',
-            height: '100%'
+            height: activeView === 'org' ? { xs: '74px', md: '100%' } : '100%'
           }}
         >
           <UserCommandContainer 
@@ -68,15 +68,15 @@ export default function CommandCenterLayout() {
             flex: activeView === 'split' 
               ? 1 
               : (activeView === 'org' 
-                  ? { xs: 9, md: 8 } 
-                  : { xs: 1, md: 2 }
+                  ? { xs: 1, md: 8 } 
+                  : { xs: '0 0 auto', md: 2 }
                 ),
-            transition: 'flex 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
-            minHeight: 0,
+            transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+            minHeight: { xs: activeView === 'user' ? '74px' : 0, md: 0 },
             minWidth: 0,
             display: 'flex',
             flexDirection: 'column',
-            height: '100%'
+            height: activeView === 'user' ? { xs: '74px', md: '100%' } : '100%'
           }}
         >
           <OrgCommandContainer 

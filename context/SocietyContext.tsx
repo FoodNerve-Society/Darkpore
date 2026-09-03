@@ -117,20 +117,30 @@ export interface SocietyProfile {
 // ============================================================
 
 export function calculateRank(profile: SocietyProfile): RankLevel {
+  // Admins, Super Admins, and Investors are Rank 5 (Apex) by default
+  if (
+    profile.isAdmin ||
+    profile.roles?.includes('admin' as any) ||
+    profile.roles?.includes('super_admin' as any) ||
+    profile.roles?.includes('investor')
+  ) {
+    return 5;
+  }
+
   const { wallet, gatekeepers, lifetimeInvestedFiat, lifetimeDonatedFiat, lifetimeSpentNP } = profile;
-  const np = wallet.lifetimeNP;
+  const np = wallet?.lifetimeNP || 0;
 
   // Rank 5: Apex — Must be Rank 4 PLUS prove investment/support
-  if (gatekeepers.hasBusinessVerification && np >= 5000 && lifetimeInvestedFiat >= 5000000) return 5;
+  if (gatekeepers?.hasBusinessVerification && np >= 5000 && (lifetimeInvestedFiat || 0) >= 5000000) return 5;
 
   // Rank 4: Pioneer — Verified Business OR Verified Employee of a Rank 4 Business
-  if (gatekeepers.hasBusinessVerification && np >= 5000) return 4;
+  if (gatekeepers?.hasBusinessVerification && np >= 5000) return 4;
 
   // Rank 3: Catalyst — KYC (Which includes joining a business) + (Spent 500 NP OR Donated ₦50k)
-  if (gatekeepers.hasKYC && np >= 2000 && (lifetimeSpentNP >= 500 || lifetimeDonatedFiat >= 50000)) return 3;
+  if (gatekeepers?.hasKYC && np >= 2000 && ((lifetimeSpentNP || 0) >= 500 || (lifetimeDonatedFiat || 0) >= 50000)) return 3;
 
   // Rank 2: Builder — Profile Complete
-  if (gatekeepers.hasCompletedProfile && np >= 500) return 2;
+  if (gatekeepers?.hasCompletedProfile && np >= 500) return 2;
 
   // Rank 1: Initiate (Default)
   return 1;
