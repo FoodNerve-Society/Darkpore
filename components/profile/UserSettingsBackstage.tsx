@@ -22,6 +22,7 @@ import {
   Snackbar,
   Alert,
   Tooltip,
+  Fade,
 } from '@mui/material';
 import { useRouter, useParams } from 'next/navigation';
 import { useSociety, RANK_NAMES, RANK_COLORS, calculateRank, type RankLevel } from '@/context/SocietyContext';
@@ -1176,20 +1177,55 @@ export default function UserSettingsBackstage({ onClose, initialBlockId }: Props
       <Dialog
         open={Boolean(activeModalBlock)}
         onClose={() => setActiveModalBlock(null)}
+        TransitionComponent={Fade}
+        transitionDuration={{ enter: 180, exit: 120 }}
         maxWidth={false}
+        slotProps={{
+          paper: {
+            sx: {
+              // Strictly locked width - invariant across all blocks
+              width: { xs: '96vw !important', sm: '92vw !important', md: '1120px !important' },
+              minWidth: { xs: '96vw !important', sm: '92vw !important', md: '1120px !important' },
+              maxWidth: { xs: '96vw !important', sm: '92vw !important', md: '1120px !important' },
+
+              // Strictly locked height - invariant across all blocks
+              height: { xs: '90vh !important', sm: '88vh !important', md: '780px !important' },
+              minHeight: { xs: '90vh !important', sm: '88vh !important', md: '780px !important' },
+              maxHeight: { xs: '90vh !important', sm: '88vh !important', md: '780px !important' },
+
+              borderRadius: { xs: '20px', sm: '24px' },
+              p: 0,
+              m: 'auto !important',
+              overflow: 'hidden',
+              bgcolor: '#ffffff',
+              border: '1px solid #e2e8f0',
+              boxShadow: '0 30px 90px -20px rgba(0, 0, 0, 0.45)',
+              transition: 'none !important',
+              animation: 'none !important',
+            },
+          },
+        }}
         PaperProps={{
           sx: {
-            width: { xs: '98vw', sm: '94vw', md: '1120px' },
-            maxWidth: '1160px',
-            height: { xs: '94vh', sm: '90vh', md: '780px' },
-            maxHeight: { xs: '94vh', md: '780px' },
+            // Strictly locked width - invariant across all blocks
+            width: { xs: '96vw !important', sm: '92vw !important', md: '1120px !important' },
+            minWidth: { xs: '96vw !important', sm: '92vw !important', md: '1120px !important' },
+            maxWidth: { xs: '96vw !important', sm: '92vw !important', md: '1120px !important' },
+
+            // Strictly locked height - invariant across all blocks
+            height: { xs: '90vh !important', sm: '88vh !important', md: '780px !important' },
+            minHeight: { xs: '90vh !important', sm: '88vh !important', md: '780px !important' },
+            maxHeight: { xs: '90vh !important', sm: '88vh !important', md: '780px !important' },
+
             borderRadius: { xs: '20px', sm: '24px' },
             p: 0,
-            m: { xs: 0.5, sm: 2 },
+            m: 'auto !important',
             overflow: 'hidden',
             bgcolor: '#ffffff',
             border: '1px solid #e2e8f0',
             boxShadow: '0 30px 90px -20px rgba(0, 0, 0, 0.45)',
+            transition: 'none !important',
+            animation: 'none !important',
           },
         }}
       >
@@ -1198,6 +1234,10 @@ export default function UserSettingsBackstage({ onClose, initialBlockId }: Props
           sx={{
             width: '100%',
             height: '100%',
+            minWidth: '100%',
+            maxWidth: '100%',
+            minHeight: '100%',
+            maxHeight: '100%',
             display: 'flex',
             flexDirection: { xs: 'column', md: 'row' },
             overflow: 'hidden',
@@ -1209,6 +1249,8 @@ export default function UserSettingsBackstage({ onClose, initialBlockId }: Props
             sx={{
               display: { xs: 'none', md: 'flex' },
               width: '280px',
+              minWidth: '280px',
+              maxWidth: '280px',
               flexShrink: 0,
               bgcolor: '#f8fafc',
               borderRight: '1px solid #e2e8f0',
@@ -1218,6 +1260,8 @@ export default function UserSettingsBackstage({ onClose, initialBlockId }: Props
               gap: 2,
               overflowY: 'auto',
               height: '100%',
+              minHeight: '100%',
+              maxHeight: '100%',
             }}
           >
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -1567,7 +1611,8 @@ export default function UserSettingsBackstage({ onClose, initialBlockId }: Props
               minHeight: 0,
               display: 'flex',
               flexDirection: 'column',
-              height: { xs: 'auto', md: '100%' },
+              width: '100%',
+              height: '100%',
               overflow: 'hidden',
               bgcolor: '#ffffff',
             }}
@@ -1602,7 +1647,9 @@ export default function UserSettingsBackstage({ onClose, initialBlockId }: Props
               sx={{
                 flex: 1,
                 minHeight: 0,
+                minWidth: 0,
                 overflowY: 'auto',
+                overflowX: 'hidden',
                 p: { xs: 2, sm: 2.5, md: 3.5 },
                 WebkitOverflowScrolling: 'touch',
               }}
@@ -1930,10 +1977,10 @@ export default function UserSettingsBackstage({ onClose, initialBlockId }: Props
 
             {/* ── BLOCK 4: CREDENTIALS ── */}
             {activeModalBlock === 'credentials' && (
-              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' }, gap: 4 }}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 1fr' }, gap: 3.5, width: '100%', minWidth: 0, maxWidth: '100%' }}>
                 {/* Card 1: Executive Announcement */}
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', bgcolor: '#f8fafc', p: 3, borderRadius: '20px', border: '1px solid #e2e8f0' }}>
-                  <Box ref={cardRef1} sx={{ borderRadius: '24px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', bgcolor: '#f8fafc', p: 3, borderRadius: '20px', border: '1px solid #e2e8f0', width: '100%', minWidth: 0, maxWidth: '100%' }}>
+                  <Box ref={cardRef1} sx={{ borderRadius: '24px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', maxWidth: '100%', display: 'flex', justifyContent: 'center' }}>
                     <ExecutiveCard cardTheme="#0f172a" cardStyle="announcement" {...execProps} />
                   </Box>
                   <Button
@@ -1948,8 +1995,8 @@ export default function UserSettingsBackstage({ onClose, initialBlockId }: Props
                 </Box>
 
                 {/* Card 2: Membership ID */}
-                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', bgcolor: '#f8fafc', p: 3, borderRadius: '20px', border: '1px solid #e2e8f0' }}>
-                  <Box ref={cardRef2} sx={{ borderRadius: '24px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', bgcolor: '#f8fafc', p: 3, borderRadius: '20px', border: '1px solid #e2e8f0', width: '100%', minWidth: 0, maxWidth: '100%' }}>
+                  <Box ref={cardRef2} sx={{ borderRadius: '24px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', maxWidth: '100%', display: 'flex', justifyContent: 'center' }}>
                     <ExecutiveCard cardTheme="#10b981" cardStyle="membership" {...execProps} />
                   </Box>
                   <Button
