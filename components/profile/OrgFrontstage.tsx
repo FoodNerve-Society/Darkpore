@@ -8,6 +8,7 @@ import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import SettingsIcon from '@mui/icons-material/Settings';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import DynamicFeedIcon from '@mui/icons-material/DynamicFeed';
+import PeopleIcon from '@mui/icons-material/People';
 import { useSociety } from '@/context/SocietyContext';
 
 interface Props {
@@ -111,6 +112,26 @@ export default function OrgFrontstage({ tenant, slug, onFlipRequest }: Props) {
           </Box>
 
           <Box sx={{ display: 'flex', gap: 1, width: { xs: '100%', sm: 'auto' } }}>
+            <Button
+              variant="contained"
+              startIcon={<PeopleIcon sx={{ fontSize: { xs: 16, md: 18 } }} />}
+              onClick={onFlipRequest}
+              sx={{
+                flex: { xs: 1, sm: 'none' },
+                bgcolor: 'rgba(59, 130, 246, 0.2)',
+                color: '#38bdf8',
+                border: '1px solid rgba(56, 189, 248, 0.4)',
+                borderRadius: '12px',
+                fontWeight: 800,
+                textTransform: 'none',
+                px: { xs: 1.5, md: 2.5 },
+                py: { xs: 0.8, md: 1 },
+                fontSize: { xs: '0.78rem', md: '0.88rem' },
+                '&:hover': { bgcolor: 'rgba(59, 130, 246, 0.3)', borderColor: '#38bdf8' },
+              }}
+            >
+              Talent & Applicants
+            </Button>
             <Button
               variant="contained"
               startIcon={<SettingsIcon sx={{ fontSize: { xs: 16, md: 18 } }} />}

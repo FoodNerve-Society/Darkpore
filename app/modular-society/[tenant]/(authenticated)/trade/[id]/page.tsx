@@ -39,6 +39,7 @@ import {
   type TradeCategory,
 } from "@/lib/db/society";
 import { getTradeListingById, getSimilarTradeListings } from "@/lib/actions/trade";
+import { submitJobApplication } from "@/lib/actions/applications";
 
 import PremiumAutocomplete from "@/components/PremiumAutocomplete";
 import PremiumMarkdownEditor from "@/components/PremiumMarkdownEditor";
@@ -698,13 +699,30 @@ export default function ListingDetailPage() {
     }
   };
 
-  const handleApplySubmit = () => {
+  const handleApplySubmit = async () => {
+    if (!listing) return;
     setApplySubmitted(true);
-    setTimeout(() => {
-      setShowApplyModal(false);
+    try {
+      const res = await submitJobApplication({
+        listingId: listing.id,
+        firebaseUid: profile?.uid,
+        candidateEmail: profile?.email || candidateName,
+        candidateName: candidateName,
+        coverLetter: emailBody,
+        pitchTone: selectedPreset?.label,
+      });
+      if (res.success) {
+        setShowApplyModal(false);
+        setToastMsg("Application submitted successfully! The hiring organization has been notified.");
+      } else {
+        setToastMsg(res.error || "Failed to submit application.");
+      }
+    } catch (err: any) {
+      console.error("Submission error:", err);
+      setToastMsg(err.message || "Failed to submit application.");
+    } finally {
       setApplySubmitted(false);
-      setToastMsg("Application submitted successfully! The hiring organization has been notified.");
-    }, 1200);
+    }
   };
 
   // ── LOADING STATE ─────────────────────────────────────────
@@ -737,6 +755,15 @@ export default function ListingDetailPage() {
   const orgRank = listing.organization?.rank || 1;
   const initial = orgName.charAt(0).toUpperCase() || "O";
   const rColor = RANK_COLORS[orgRank as RankLevel] || "#94a3b8";
+
+  const isHiringManager = Boolean(
+    profile && (
+      listing.postedById === profile.id ||
+      listing.postedBy?.id === profile.id ||
+      profile.organizations?.some((o: any) => o.id === listing.organizationId || o.slug === listing.organization?.slug) ||
+      profile.isAdmin
+    )
+  );
 
   // Dynamic Apply Button Icon & Text
   const getApplyButtonDetails = () => {
@@ -858,6 +885,56 @@ export default function ListingDetailPage() {
       {isJobOrVolunteer ? (
         <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
           
+          {/* ── HIRING MANAGER OWNER BANNER ── */}
+          {isHiringManager && (
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2,
+                px: 3,
+                borderRadius: "18px",
+                bgcolor: "rgba(59, 130, 246, 0.08)",
+                border: "1.5px solid rgba(59, 130, 246, 0.3)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: 2,
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                <ShieldIcon sx={{ color: "#3b82f6", fontSize: 24 }} />
+                <Box>
+                  <Typography sx={{ fontWeight: 900, color: "#0f172a", fontSize: "0.95rem" }}>
+                    Hiring Manager Privileges Active
+                  </Typography>
+                  <Typography sx={{ color: "#64748b", fontSize: "0.8rem", fontWeight: 600 }}>
+                    You have organizational administrative access to review candidate applications for this role.
+                  </Typography>
+                </Box>
+              </Box>
+              <Button
+                variant="contained"
+                size="small"
+                onClick={() => router.push(`/modular-society/${tenant}/profile?tab=talent&listingId=${listing.id}`)}
+                sx={{
+                  bgcolor: "#3b82f6",
+                  color: "#ffffff",
+                  fontWeight: 800,
+                  borderRadius: "10px",
+                  textTransform: "none",
+                  boxShadow: "none",
+                  px: 2.5,
+                  py: 0.8,
+                  fontSize: "0.82rem",
+                  "&:hover": { bgcolor: "#2563eb" },
+                }}
+              >
+                Open Applicant Ledger
+              </Button>
+            </Paper>
+          )}
+
           {/* ── HERO HEADER CARD (OPTION 3: MULTI-COLOR RIBBON) ── */}
           <Paper
             elevation={0}

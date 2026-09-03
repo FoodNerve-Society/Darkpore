@@ -68,6 +68,7 @@ model User {
   wikiStates           UserWikiState[]
   weeklyCommodityBids  WeeklyCommodityBid[]
   savedItems           SavedItem[]
+  jobApplications      JobApplication[]
 
   @@index([email])
 }
@@ -194,6 +195,44 @@ model TradeListing {
 
   organizationId String?
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  applications   JobApplication[]
+}
+
+model JobApplication {
+  id              String       @id @default(cuid())
+  listingId       String
+  listing         TradeListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  userId          String?
+  user            User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  // Candidate Snapshot
+  candidateName   String
+  candidateEmail  String
+  candidatePhone  String?
+  candidateAvatar String?
+  candidateRank   Int          @default(1)
+  candidateLga    String?
+  candidateState  String?
+
+  // Dossier Submission
+  coverLetter     String?      // Markdown pitch statement
+  resumeUrl       String?      // Cloudflare R2 PDF upload or Drive link
+  portfolioUrl    String?
+  customAnswers   String?      // JSON string of { question, answer }
+  pitchTone       String?      // e.g. 'Executive', 'Field Operations', 'Growth'
+
+  // Hiring Stage Pipeline
+  status          String       @default("new") // 'new' | 'reviewing' | 'shortlisted' | 'interview' | 'hired' | 'rejected'
+  internalNotes   String?      // Private notes visible only to org admins/recruiters
+  rating          Int?         // 1 to 5 star rating
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([listingId, status])
+  @@index([userId])
 }
 
 model Campaign {

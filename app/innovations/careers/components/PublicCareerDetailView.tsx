@@ -25,6 +25,7 @@ import PremiumAutocomplete from "@/components/PremiumAutocomplete";
 import PremiumMarkdownEditor from "@/components/PremiumMarkdownEditor";
 import { auth } from "@/lib/firebase/client";
 import { onAuthStateChanged, User, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { submitJobApplication } from "@/lib/actions/applications";
 
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
@@ -276,6 +277,34 @@ export default function PublicCareerDetailView({ listing, similarListings = [] }
       }
     } finally {
       setIsSigningIn(false);
+    }
+  };
+
+  const [isSubmittingApp, setIsSubmittingApp] = useState(false);
+
+  const handleNativeSubmitApplication = async () => {
+    if (!currentUser) return;
+    setIsSubmittingApp(true);
+    try {
+      const res = await submitJobApplication({
+        listingId: listing.id,
+        firebaseUid: currentUser.uid,
+        candidateEmail: currentUser.email || '',
+        candidateName: currentUser.displayName || 'Operator',
+        coverLetter: emailBody,
+        pitchTone: selectedPreset?.label,
+      });
+      if (res.success) {
+        setShowApplyModal(false);
+        setToastMsg("Application submitted successfully to organization talent ledger!");
+      } else {
+        setToastMsg(res.error || "Failed to submit application.");
+      }
+    } catch (err: any) {
+      console.error("Submission error:", err);
+      setToastMsg(err.message || "Failed to submit application.");
+    } finally {
+      setIsSubmittingApp(false);
     }
   };
 
@@ -1410,11 +1439,9 @@ export default function PublicCareerDetailView({ listing, similarListings = [] }
 
                     <Button
                       variant="contained"
-                      onClick={() => {
-                        setShowApplyModal(false);
-                        setToastMsg("Application submitted via FoodNerve Society Trust Protocol!");
-                      }}
-                      startIcon={<RocketLaunchIcon />}
+                      disabled={isSubmittingApp}
+                      onClick={handleNativeSubmitApplication}
+                      startIcon={isSubmittingApp ? <CircularProgress size={18} sx={{ color: "#fff" }} /> : <RocketLaunchIcon />}
                       sx={{
                         bgcolor: themeColor,
                         color: "#ffffff",
@@ -1427,7 +1454,7 @@ export default function PublicCareerDetailView({ listing, similarListings = [] }
                         "&:hover": { bgcolor: alpha(themeColor, 0.9) },
                       }}
                     >
-                      Submit Application with Profile
+                      {isSubmittingApp ? "Submitting Dossier..." : "Submit Application with Profile"}
                     </Button>
                   </Box>
                 )}
