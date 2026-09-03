@@ -246,9 +246,10 @@ export default function UserSettingsBackstage({ onClose }: { onClose?: (blockId?
                       variant="outlined"
                       startIcon={<IosShareIcon />}
                       onClick={() => {
-                        const url = `${window.location.origin}/modular-society/${params.tenant || 'darkpore'}/@u-${profile.username}`;
+                        const cleanOrigin = window.location.origin.includes('localhost') ? window.location.origin : 'https://foodnerve.org';
+                        const url = `${cleanOrigin}/@u-${profile.username}`;
                         navigator.clipboard.writeText(url);
-                        alert('Public Profile Link Copied!');
+                        alert('Public Profile Link Copied: ' + url);
                       }}
                       sx={{ 
                         color: 'rgba(255,255,255,0.9)', 

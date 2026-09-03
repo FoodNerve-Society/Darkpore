@@ -153,7 +153,7 @@ export default function OrgFrontstage({ tenant, slug, onFlipRequest }: Props) {
             <Button
               variant="outlined"
               component="a"
-              href={`/modular-society/${tenant}/@o-${slug}`}
+              href={`/@o-${slug}`}
               target="_blank"
               endIcon={<OpenInNewIcon sx={{ fontSize: { xs: 14, md: 16 } }} />}
               sx={{
@@ -247,7 +247,8 @@ export default function OrgFrontstage({ tenant, slug, onFlipRequest }: Props) {
             <Button
               variant="outlined"
               component="a"
-              href={`/modular-society/${tenant}/@o-${slug}`}
+              href={`/@o-${slug}`}
+              target="_blank"
               endIcon={<OpenInNewIcon />}
               sx={{ borderRadius: '12px', fontWeight: 700, textTransform: 'none', borderColor: '#cbd5e1', color: '#0f172a', py: 1, fontSize: { xs: '0.8rem', md: '0.9rem' } }}
             >

@@ -131,7 +131,8 @@ export default function OrgManageBackstage({ onClose }: { onClose?: () => void }
           <Button 
             variant="outlined" 
             component="a"
-            href={`/modular-society/${tenant}/@o-${org.slug}`}
+            href={`/@o-${org.slug}`}
+            target="_blank"
             sx={{ fontWeight: 700, borderRadius: '12px', borderColor: '#cbd5e1', color: '#0f172a', '&:hover': { bgcolor: '#f1f5f9', borderColor: '#94a3b8' } }}
           >
             View Public Profile
@@ -211,8 +212,14 @@ export default function OrgManageBackstage({ onClose }: { onClose?: () => void }
                 >
                   Review Job Applicants
                 </Button>
-                <Button variant="outlined" startIcon={<WorkIcon />} sx={{ justifyContent: 'flex-start', p: 2, borderRadius: '16px', borderColor: '#e2e8f0', color: '#334155', fontWeight: 600, '&:hover': { bgcolor: '#f8fafc' } }}>
-                  Post New Job Listing
+                <Button 
+                  variant="outlined" 
+                  component="a"
+                  href="/trade/create"
+                  startIcon={<WorkIcon sx={{ color: '#10b981' }} />} 
+                  sx={{ justifyContent: 'flex-start', p: 2, borderRadius: '16px', borderColor: '#e2e8f0', color: '#334155', fontWeight: 600, '&:hover': { bgcolor: '#f8fafc' } }}
+                >
+                  Post New Opportunity / Job
                 </Button>
              </Box>
           </Paper>

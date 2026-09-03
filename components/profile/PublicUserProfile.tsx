@@ -107,7 +107,7 @@ export default function PublicUserProfile({ username, tenant, onFlipRequest }: {
                   if (onFlipRequest) {
                     onFlipRequest();
                   } else {
-                    router.push(`/modular-society/${tenant}/profile`);
+                    router.push('/profile');
                   }
                 }}
                 sx={{ mb: 4, borderRadius: '12px', fontWeight: 600, borderColor: '#cbd5e1', color: '#475569', '&:hover': { bgcolor: '#f1f5f9' } }}
@@ -124,7 +124,7 @@ export default function PublicUserProfile({ username, tenant, onFlipRequest }: {
                   {user.organizationMemberships.map((membership: any) => (
                     <Box 
                       key={membership.id}
-                      onClick={() => router.push(`/modular-society/${tenant}/@o-${membership.organization.slug}`)}
+                      onClick={() => router.push(`/@o-${membership.organization.slug}`)}
                       sx={{ 
                         display: 'flex', alignItems: 'center', gap: 2, p: 2, 
                         borderRadius: '16px', border: '1px solid #e2e8f0', 
