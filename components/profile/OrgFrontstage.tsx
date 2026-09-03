@@ -176,89 +176,232 @@ export default function OrgFrontstage({ tenant, slug, onFlipRequest }: Props) {
       </Box>
 
       {/* DASHBOARD CONTENT BODY */}
-      <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, flex: 1, bgcolor: '#f8fafc' }}>
-        
-        {/* STATS OVERVIEW */}
-        <Grid container spacing={{ xs: 1.5, md: 2 }} sx={{ mb: { xs: 2, md: 3 } }}>
-          {[
-            { label: 'Ecosystem Status', value: isVerified ? 'Verified Partner' : 'Registered Entity', color: isVerified ? '#10b981' : '#f59e0b', icon: <VerifiedUserIcon /> },
-            { label: 'Department', value: department, color: '#3b82f6', icon: <GroupsIcon /> },
-            { label: 'Governance Rank', value: 'Rank 4 Pioneer', color: '#8b5cf6', icon: <RocketLaunchIcon /> },
-          ].map((stat, i) => (
-            <Grid key={i} size={{ xs: 12, sm: 4 }}>
-              <Paper
-                elevation={0}
-                sx={{
-                  p: { xs: 1.8, md: 2.5 },
-                  borderRadius: '16px',
-                  border: '1px solid #e2e8f0',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1.5,
-                  bgcolor: '#fff',
-                }}
-              >
-                <Box
+      <Box
+        sx={{
+          p: { xs: 2, sm: 3, md: 4 },
+          flex: 1,
+          position: 'relative',
+          overflow: 'hidden',
+          background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 45%, #f8fafc 100%)',
+          '@keyframes orgDriftGold': {
+            '0%': { transform: 'translate(0px, 0px) scale(1)' },
+            '33%': { transform: 'translate(-70px, 60px) scale(1.15)' },
+            '66%': { transform: 'translate(40px, 120px) scale(0.94)' },
+            '100%': { transform: 'translate(0px, 0px) scale(1)' },
+          },
+          '@keyframes orgDriftViolet': {
+            '0%': { transform: 'translate(0px, 0px) scale(1)' },
+            '33%': { transform: 'translate(80px, -50px) scale(1.18)' },
+            '66%': { transform: 'translate(-50px, 90px) scale(0.92)' },
+            '100%': { transform: 'translate(0px, 0px) scale(1)' },
+          },
+          '@keyframes orgDriftAmber': {
+            '0%': { transform: 'translate(0px, 0px) scale(0.94)' },
+            '50%': { transform: 'translate(-60px, -70px) scale(1.2)' },
+            '100%': { transform: 'translate(0px, 0px) scale(0.94)' },
+          },
+          '@keyframes orgDriftIndigo': {
+            '0%': { transform: 'translate(0px, 0px) scale(1)' },
+            '50%': { transform: 'translate(70px, 50px) scale(1.15)' },
+            '100%': { transform: 'translate(0px, 0px) scale(1)' },
+          },
+        }}
+      >
+        {/* ── ORG CONTAINER AMBIENT CANVAS (AMBER & VIOLET OPPOSITE COMPLEMENTARY PAIR) ── */}
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            pointerEvents: 'none',
+            zIndex: 0,
+            overflow: 'hidden',
+          }}
+        >
+          {/* Soft Multi-Stop Radial Base (Amber & Violet) */}
+          <Box
+            sx={{
+              position: 'absolute',
+              inset: 0,
+              background: 'radial-gradient(ellipse at 85% 12%, rgba(245, 158, 11, 0.13) 0%, transparent 55%), radial-gradient(ellipse at 15% 85%, rgba(124, 77, 255, 0.13) 0%, transparent 55%), radial-gradient(ellipse at 75% 80%, rgba(251, 191, 36, 0.08) 0%, transparent 60%), radial-gradient(ellipse at 20% 15%, rgba(99, 102, 241, 0.08) 0%, transparent 55%)',
+              filter: 'blur(45px)',
+            }}
+          />
+
+          {/* OPPOSITE COMPLEMENTARY ORB 1: Warm Amber / Gold Drift */}
+          <Box
+            sx={{
+              position: 'absolute',
+              top: '6%',
+              right: '-6%',
+              width: { xs: 320, md: 500 },
+              height: { xs: 320, md: 500 },
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(245, 158, 11, 0.22) 0%, rgba(251, 191, 36, 0.08) 45%, transparent 75%)',
+              filter: 'blur(65px)',
+              animation: 'orgDriftGold 25s ease-in-out infinite',
+              willChange: 'transform',
+            }}
+          />
+
+          {/* OPPOSITE COMPLEMENTARY ORB 2: Royal Violet Counter-Drift */}
+          <Box
+            sx={{
+              position: 'absolute',
+              bottom: '4%',
+              left: '-6%',
+              width: { xs: 320, md: 500 },
+              height: { xs: 320, md: 500 },
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(124, 77, 255, 0.20) 0%, rgba(99, 102, 241, 0.07) 50%, transparent 75%)',
+              filter: 'blur(70px)',
+              animation: 'orgDriftViolet 29s ease-in-out infinite',
+              willChange: 'transform',
+            }}
+          />
+
+          {/* ACCENT ORB 3: Deep Indigo Counter-Swell */}
+          <Box
+            sx={{
+              position: 'absolute',
+              top: '42%',
+              left: '15%',
+              width: { xs: 280, md: 440 },
+              height: { xs: 280, md: 440 },
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(124, 77, 255, 0.04) 50%, transparent 75%)',
+              filter: 'blur(60px)',
+              animation: 'orgDriftIndigo 31s ease-in-out infinite',
+              willChange: 'transform',
+            }}
+          />
+
+          {/* ACCENT ORB 4: Luminous Honey / Saffron Drift */}
+          <Box
+            sx={{
+              position: 'absolute',
+              bottom: '20%',
+              right: '15%',
+              width: { xs: 260, md: 420 },
+              height: { xs: 260, md: 420 },
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(251, 191, 36, 0.16) 0%, rgba(245, 158, 11, 0.04) 50%, transparent 75%)',
+              filter: 'blur(65px)',
+              animation: 'orgDriftAmber 33s ease-in-out infinite',
+              willChange: 'transform',
+            }}
+          />
+
+          {/* Micro-Dot Matrix Physical Texture Overlay */}
+          <Box
+            sx={{
+              position: 'absolute',
+              inset: 0,
+              backgroundImage: 'radial-gradient(rgba(15, 23, 42, 0.035) 1px, transparent 1px)',
+              backgroundSize: '28px 28px',
+              opacity: 0.65,
+            }}
+          />
+        </Box>
+
+        {/* Content Container (Layered above ambient canvas) */}
+        <Box sx={{ position: 'relative', zIndex: 1 }}>
+          {/* STATS OVERVIEW */}
+          <Grid container spacing={{ xs: 1.5, md: 2 }} sx={{ mb: { xs: 2, md: 3 } }}>
+            {[
+              { label: 'Ecosystem Status', value: isVerified ? 'Verified Partner' : 'Registered Entity', color: isVerified ? '#10b981' : '#f59e0b', icon: <VerifiedUserIcon /> },
+              { label: 'Department', value: department, color: '#3b82f6', icon: <GroupsIcon /> },
+              { label: 'Governance Rank', value: 'Rank 4 Pioneer', color: '#8b5cf6', icon: <RocketLaunchIcon /> },
+            ].map((stat, i) => (
+              <Grid key={i} size={{ xs: 12, sm: 4 }}>
+                <Paper
+                  elevation={0}
                   sx={{
-                    width: { xs: 36, md: 44 },
-                    height: { xs: 36, md: 44 },
-                    borderRadius: '12px',
-                    bgcolor: `${stat.color}15`,
-                    color: stat.color,
+                    p: { xs: 1.8, md: 2.5 },
+                    borderRadius: '16px',
+                    border: '1px solid rgba(255, 255, 255, 0.85)',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
+                    gap: 1.5,
+                    bgcolor: 'rgba(255, 255, 255, 0.72)',
+                    backdropFilter: 'blur(20px)',
+                    WebkitBackdropFilter: 'blur(20px)',
+                    boxShadow: '0 8px 30px -4px rgba(15, 23, 42, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.95)',
                   }}
                 >
-                  {stat.icon}
-                </Box>
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography sx={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600 }}>
-                    {stat.label}
-                  </Typography>
-                  <Typography sx={{ fontSize: { xs: '0.85rem', md: '0.95rem' }, fontWeight: 800, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {stat.value}
-                  </Typography>
-                </Box>
-              </Paper>
-            </Grid>
-          ))}
-        </Grid>
+                  <Box
+                    sx={{
+                      width: { xs: 36, md: 44 },
+                      height: { xs: 36, md: 44 },
+                      borderRadius: '12px',
+                      bgcolor: `${stat.color}15`,
+                      color: stat.color,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {stat.icon}
+                  </Box>
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography sx={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600 }}>
+                      {stat.label}
+                    </Typography>
+                    <Typography sx={{ fontSize: { xs: '0.85rem', md: '0.95rem' }, fontWeight: 800, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {stat.value}
+                    </Typography>
+                  </Box>
+                </Paper>
+              </Grid>
+            ))}
+          </Grid>
 
-        {/* QUICK ACTIONS & HIGHLIGHTS */}
-        <Paper elevation={0} sx={{ p: { xs: 2, sm: 3 }, borderRadius: '18px', border: '1px solid #e2e8f0', bgcolor: '#fff', mb: 3 }}>
-          <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a', mb: 1.5, fontSize: { xs: '0.95rem', md: '1.1rem' }, display: 'flex', alignItems: 'center', gap: 1 }}>
-            <DynamicFeedIcon sx={{ color: '#3b82f6', fontSize: { xs: 20, md: 24 } }} /> Executive Frontstage Overview
-          </Typography>
-          <Typography sx={{ color: '#64748b', fontSize: { xs: '0.8rem', md: '0.9rem' }, mb: 2.5, lineHeight: 1.5 }}>
-            Welcome to your organization frontstage workspace. Use the backstage controls to manage roles, update compliance filings, and configure team permissions.
-          </Typography>
+          {/* QUICK ACTIONS & HIGHLIGHTS */}
+          <Paper
+            elevation={0}
+            sx={{
+              p: { xs: 2, sm: 3 },
+              borderRadius: '18px',
+              border: '1px solid rgba(255, 255, 255, 0.85)',
+              bgcolor: 'rgba(255, 255, 255, 0.75)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              boxShadow: '0 8px 30px -4px rgba(15, 23, 42, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.95)',
+              mb: 3,
+            }}
+          >
+            <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a', mb: 1.5, fontSize: { xs: '0.95rem', md: '1.1rem' }, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <DynamicFeedIcon sx={{ color: '#3b82f6', fontSize: { xs: 20, md: 24 } }} /> Executive Frontstage Overview
+            </Typography>
+            <Typography sx={{ color: '#64748b', fontSize: { xs: '0.8rem', md: '0.9rem' }, mb: 2.5, lineHeight: 1.5 }}>
+              Welcome to your organization frontstage workspace. Use the backstage controls to manage roles, update compliance filings, and configure team permissions.
+            </Typography>
 
-          <Box sx={{ display: 'flex', gap: 1.5, flexDirection: { xs: 'column', sm: 'row' } }}>
-            <Button
-              variant="outlined"
-              onClick={onFlipRequest}
-              startIcon={<SettingsIcon />}
-              sx={{ borderRadius: '12px', fontWeight: 700, textTransform: 'none', borderColor: '#cbd5e1', color: '#0f172a', py: 1, fontSize: { xs: '0.8rem', md: '0.9rem' } }}
-            >
-              Open Management Backstage
-            </Button>
-            <Button
-              variant="outlined"
-              component="a"
-              href={`/@o-${slug}`}
-              target="_blank"
-              endIcon={<OpenInNewIcon />}
-              sx={{ borderRadius: '12px', fontWeight: 700, textTransform: 'none', borderColor: '#cbd5e1', color: '#0f172a', py: 1, fontSize: { xs: '0.8rem', md: '0.9rem' } }}
-            >
-              View Handle Page (@o-{slug})
-            </Button>
-          </Box>
-        </Paper>
+            <Box sx={{ display: 'flex', gap: 1.5, flexDirection: { xs: 'column', sm: 'row' } }}>
+              <Button
+                variant="outlined"
+                onClick={onFlipRequest}
+                startIcon={<SettingsIcon />}
+                sx={{ borderRadius: '12px', fontWeight: 700, textTransform: 'none', borderColor: '#cbd5e1', color: '#0f172a', py: 1, fontSize: { xs: '0.8rem', md: '0.9rem' }, bgcolor: '#ffffff', '&:hover': { bgcolor: '#f1f5f9' } }}
+              >
+                Open Management Backstage
+              </Button>
+              <Button
+                variant="outlined"
+                component="a"
+                href={`/@o-${slug}`}
+                target="_blank"
+                endIcon={<OpenInNewIcon />}
+                sx={{ borderRadius: '12px', fontWeight: 700, textTransform: 'none', borderColor: '#cbd5e1', color: '#0f172a', py: 1, fontSize: { xs: '0.8rem', md: '0.9rem' }, bgcolor: '#ffffff', '&:hover': { bgcolor: '#f1f5f9' } }}
+              >
+                View Handle Page (@o-{slug})
+              </Button>
+            </Box>
+          </Paper>
 
-        {/* ORGANIZATIONAL GOVERNANCE & APPROVAL QUEUE */}
-        <PendingApprovalSection organizationId={activeOrg?.id} userRole={role} userId={profile?.uid} />
+          {/* ORGANIZATIONAL GOVERNANCE & APPROVAL QUEUE */}
+          <PendingApprovalSection organizationId={activeOrg?.id} userRole={role} userId={profile?.uid} />
+        </Box>
       </Box>
     </Paper>
   );

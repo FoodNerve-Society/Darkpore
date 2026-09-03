@@ -25,6 +25,7 @@ import {
   Fade,
 } from '@mui/material';
 import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
 import { useSociety, RANK_NAMES, RANK_COLORS, calculateRank, type RankLevel } from '@/context/SocietyContext';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
@@ -78,7 +79,6 @@ export type ProfileBlockId =
   | 'wallet'
   | 'quests'
   | 'credentials'
-  | 'workspaces'
   | 'wiki'
   | 'security';
 
@@ -292,10 +292,19 @@ export default function UserSettingsBackstage({ onClose, initialBlockId }: Props
     foodnerve: { active: !!fnOrg, role: fnOrg?.role, department: fnOrg?.department, logoUrl: fnOrg?.logoUrl },
   };
 
+  const tenant = (params?.tenant as string) || 'foodnerve';
+  const username = profile.username || profile.uid;
+  const publicProfilePath = typeof window !== 'undefined' && window.location.pathname.startsWith('/modular-society')
+    ? `/modular-society/${tenant}/@u-${username}`
+    : `/@u-${username}`;
+
   const handleCopyPublicUrl = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     const cleanOrigin = window.location.origin.includes('localhost') ? window.location.origin : 'https://foodnerve.org';
-    const url = `${cleanOrigin}/@u-${profile.username || profile.uid}`;
+    const cleanPath = window.location.pathname.startsWith('/modular-society')
+      ? `/modular-society/${tenant}/@u-${username}`
+      : `/@u-${username}`;
+    const url = `${cleanOrigin}${cleanPath}`;
     navigator.clipboard.writeText(url);
     setToastMsg(`Public Profile Link Copied: ${url}`);
   };
@@ -346,14 +355,6 @@ export default function UserSettingsBackstage({ onClose, initialBlockId }: Props
       desc: 'Digital member passes and printable ID cards you can download.',
       color: '#10b981',
       icon: <BadgeIcon sx={{ fontSize: 20 }} />,
-    },
-    {
-      id: 'workspaces',
-      role: 'Companies & Teams',
-      label: 'Companies',
-      desc: 'Switch between your personal profile and your registered companies.',
-      color: '#06b6d4',
-      icon: <BusinessIcon sx={{ fontSize: 20 }} />,
     },
     {
       id: 'wiki',
@@ -439,21 +440,8 @@ export default function UserSettingsBackstage({ onClose, initialBlockId }: Props
       statValue: 'Image (PNG)',
     },
     {
-      id: 'workspaces',
-      number: 5,
-      title: 'Companies & Teams',
-      shortTitle: 'Companies',
-      subtitle: 'Switch between your personal account and your businesses',
-      color: '#06b6d4',
-      icon: <BusinessIcon sx={{ fontSize: 18 }} />,
-      whatFor: 'Choose whether you want to act as yourself or on behalf of a company you registered.',
-      whyExists: 'Allows you to keep business deals, payments, and team contracts separate from your personal profile.',
-      statLabel: 'Current Account',
-      statValue: activeOrg?.name || 'Personal Account',
-    },
-    {
       id: 'wiki',
-      number: 6,
+      number: 5,
       title: 'Guides & Rules',
       shortTitle: 'Guides',
       subtitle: 'Clear manuals for food safety, shipping, and trading',
@@ -466,7 +454,7 @@ export default function UserSettingsBackstage({ onClose, initialBlockId }: Props
     },
     {
       id: 'security',
-      number: 7,
+      number: 6,
       title: 'Security & Login',
       shortTitle: 'Security',
       subtitle: 'Protect your account and control your privacy',
@@ -489,26 +477,147 @@ export default function UserSettingsBackstage({ onClose, initialBlockId }: Props
         height: '100%',
         overflowY: 'auto',
         overflowX: 'hidden',
-        bgcolor: '#f8fafc',
+        position: 'relative',
+        background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 45%, #f8fafc 100%)',
         WebkitOverflowScrolling: 'touch',
+        '@keyframes ambientDriftRed': {
+          '0%': { transform: 'translate(0px, 0px) scale(1)' },
+          '33%': { transform: 'translate(-70px, 80px) scale(1.18)' },
+          '66%': { transform: 'translate(45px, 140px) scale(0.92)' },
+          '100%': { transform: 'translate(0px, 0px) scale(1)' },
+        },
+        '@keyframes ambientDriftGreen': {
+          '0%': { transform: 'translate(0px, 0px) scale(1)' },
+          '33%': { transform: 'translate(80px, 60px) scale(1.16)' },
+          '66%': { transform: 'translate(-50px, 120px) scale(0.94)' },
+          '100%': { transform: 'translate(0px, 0px) scale(1)' },
+        },
+        '@keyframes ambientDriftRose': {
+          '0%': { transform: 'translate(0px, 0px) scale(0.92)' },
+          '50%': { transform: 'translate(-60px, -80px) scale(1.2)' },
+          '100%': { transform: 'translate(0px, 0px) scale(0.92)' },
+        },
+        '@keyframes ambientDriftMint': {
+          '0%': { transform: 'translate(0px, 0px) scale(1)' },
+          '50%': { transform: 'translate(70px, -60px) scale(1.15)' },
+          '100%': { transform: 'translate(0px, 0px) scale(1)' },
+        },
       }}
     >
-      <Container maxWidth="md" sx={{ py: { xs: 2.5, md: 4 }, display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {/* ── PROFILE CONTAINER AMBIENT CANVAS (RED & GREEN COMPLEMENTARY PAIR) ── */}
+      <Box
+        sx={{
+          position: 'absolute',
+          inset: 0,
+          pointerEvents: 'none',
+          zIndex: 0,
+          overflow: 'hidden',
+        }}
+      >
+        {/* Soft Multi-Stop Radial Base Gradient (Red & Emerald Mint) */}
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            background: `radial-gradient(ellipse at 85% 8%, rgba(239, 68, 68, 0.14) 0%, transparent 55%), radial-gradient(ellipse at 15% 15%, rgba(16, 185, 129, 0.14) 0%, transparent 50%), radial-gradient(ellipse at 75% 85%, rgba(244, 63, 94, 0.10) 0%, transparent 60%), radial-gradient(ellipse at 20% 80%, rgba(5, 150, 105, 0.09) 0%, transparent 55%)`,
+            filter: 'blur(45px)',
+          }}
+        />
+
+        {/* COMPLEMENTARY ORB 1: Crimson / Coral Red Radiant Drift */}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '4%',
+            right: '-6%',
+            width: { xs: 340, md: 540 },
+            height: { xs: 340, md: 540 },
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(239, 68, 68, 0.22) 0%, rgba(244, 63, 94, 0.08) 45%, transparent 75%)',
+            filter: 'blur(65px)',
+            animation: 'ambientDriftRed 24s ease-in-out infinite',
+            willChange: 'transform',
+          }}
+        />
+
+        {/* COMPLEMENTARY ORB 2: Emerald / Mint Green Counter-Drift */}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '2%',
+            left: '-8%',
+            width: { xs: 320, md: 520 },
+            height: { xs: 320, md: 520 },
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(16, 185, 129, 0.22) 0%, rgba(5, 150, 105, 0.08) 50%, transparent 75%)',
+            filter: 'blur(70px)',
+            animation: 'ambientDriftGreen 28s ease-in-out infinite',
+            willChange: 'transform',
+          }}
+        />
+
+        {/* ACCENT ORB 3: Deep Warm Rose / Crimson Drift */}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '42%',
+            left: '18%',
+            width: { xs: 300, md: 480 },
+            height: { xs: 300, md: 480 },
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(225, 29, 72, 0.16) 0%, rgba(244, 63, 94, 0.05) 50%, transparent 75%)',
+            filter: 'blur(60px)',
+            animation: 'ambientDriftRose 30s ease-in-out infinite',
+            willChange: 'transform',
+          }}
+        />
+
+        {/* ACCENT ORB 4: Luminous Sage / Seafoam Mint Counter-Drift */}
+        <Box
+          sx={{
+            position: 'absolute',
+            bottom: '4%',
+            right: '12%',
+            width: { xs: 320, md: 500 },
+            height: { xs: 320, md: 500 },
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(52, 211, 153, 0.16) 0%, rgba(16, 185, 129, 0.05) 50%, transparent 75%)',
+            filter: 'blur(75px)',
+            animation: 'ambientDriftMint 34s ease-in-out infinite',
+            willChange: 'transform',
+          }}
+        />
+
+        {/* Subtle Micro-Dot Physical Texture Overlay */}
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: 'radial-gradient(rgba(15, 23, 42, 0.035) 1px, transparent 1px)',
+            backgroundSize: '28px 28px',
+            opacity: 0.65,
+          }}
+        />
+      </Box>
+
+      <Container maxWidth="md" sx={{ py: { xs: 2.5, md: 4 }, display: 'flex', flexDirection: 'column', gap: 3, position: 'relative', zIndex: 1 }}>
         
-        {/* ─── 1. ZEN EXECUTIVE IDENTITY HERO CARD ───────────────── */}
+        {/* ─── 1. ZEN EXECUTIVE IDENTITY HERO CARD (FROSTED LIQUID GLASS) ─── */}
         <Paper
           elevation={0}
           sx={{
             p: { xs: 2.5, md: 3.5 },
             borderRadius: '24px',
-            bgcolor: '#ffffff',
-            border: '1px solid #e2e8f0',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.02)',
             position: 'relative',
+            background: 'rgba(255, 255, 255, 0.72)',
+            backdropFilter: 'blur(24px)',
+            WebkitBackdropFilter: 'blur(24px)',
+            border: '1px solid rgba(255, 255, 255, 0.85)',
+            boxShadow: '0 12px 40px -8px rgba(15, 23, 42, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.95)',
           }}
         >
-          {/* Header Row: Rank Badge & Share Action */}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2.5 }}>
+          {/* Header Row: Rank Badge & Actions */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2.5, flexWrap: 'wrap', gap: 1.5, position: 'relative', zIndex: 1 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Box
                 sx={{
@@ -527,31 +636,54 @@ export default function UserSettingsBackstage({ onClose, initialBlockId }: Props
                   Rank {rank} · {RANK_NAMES[rank]}
                 </Typography>
               </Box>
-              {rank >= 4 && <VerifiedIcon sx={{ color: '#10b981', fontSize: 18 }} />}
             </Box>
 
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<IosShareIcon sx={{ fontSize: 15 }} />}
-              onClick={handleCopyPublicUrl}
-              sx={{
-                borderRadius: '10px',
-                fontWeight: 700,
-                textTransform: 'none',
-                fontSize: '0.8rem',
-                borderColor: '#e2e8f0',
-                color: '#475569',
-                bgcolor: '#ffffff',
-                '&:hover': { bgcolor: '#f1f5f9', borderColor: '#cbd5e1' },
-              }}
-            >
-              Share Profile
-            </Button>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Button
+                component={Link}
+                href={publicProfilePath}
+                target="_blank"
+                rel="noopener noreferrer"
+                variant="contained"
+                size="small"
+                startIcon={<OpenInNewIcon sx={{ fontSize: 14 }} />}
+                sx={{
+                  borderRadius: '10px',
+                  fontWeight: 800,
+                  textTransform: 'none',
+                  fontSize: '0.78rem',
+                  bgcolor: '#0f172a',
+                  color: '#ffffff',
+                  boxShadow: 'none',
+                  '&:hover': { bgcolor: '#1e293b' },
+                }}
+              >
+                View Public Page
+              </Button>
+
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<IosShareIcon sx={{ fontSize: 15 }} />}
+                onClick={handleCopyPublicUrl}
+                sx={{
+                  borderRadius: '10px',
+                  fontWeight: 700,
+                  textTransform: 'none',
+                  fontSize: '0.78rem',
+                  borderColor: '#e2e8f0',
+                  color: '#475569',
+                  bgcolor: '#ffffff',
+                  '&:hover': { bgcolor: '#f1f5f9', borderColor: '#cbd5e1' },
+                }}
+              >
+                Share
+              </Button>
+            </Box>
           </Box>
 
           {/* Operator Identity Presentation */}
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2.5} alignItems={{ sm: 'center' }}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2.5} alignItems={{ sm: 'center' }} sx={{ position: 'relative', zIndex: 1 }}>
             <Box sx={{ position: 'relative', width: 76, height: 76, flexShrink: 0 }}>
               <Avatar
                 src={editAvatarUrl || profile.avatarUrl}
@@ -570,9 +702,17 @@ export default function UserSettingsBackstage({ onClose, initialBlockId }: Props
             </Box>
 
             <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography sx={{ fontWeight: 900, fontSize: { xs: '1.4rem', md: '1.7rem' }, color: '#0f172a', lineHeight: 1.2 }}>
-                {fullName}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                <Typography sx={{ fontWeight: 900, fontSize: { xs: '1.4rem', md: '1.7rem' }, color: '#0f172a', lineHeight: 1.2 }}>
+                  {fullName}
+                </Typography>
+                {(rank >= 4 || profile.isAdmin || profile.gatekeepers?.hasKYC) && (
+                  <Tooltip title={profile.isAdmin ? "Verified System Admin" : "Verified Operator"}>
+                    <VerifiedIcon sx={{ color: '#10b981', fontSize: 22 }} />
+                  </Tooltip>
+                )}
+              </Box>
+
               <Typography sx={{ color: '#64748b', fontSize: '0.85rem', mt: 0.3 }}>
                 @{profile.username || 'operator'} {profile.roles?.length ? `· ${profile.roles.join(', ')}` : ''}
               </Typography>
@@ -585,20 +725,23 @@ export default function UserSettingsBackstage({ onClose, initialBlockId }: Props
             </Box>
           </Stack>
 
-          {/* 3-Pill Glance Metrics */}
-          <Box sx={{ display: 'flex', gap: 1.5, mt: 3, pt: 2.5, borderTop: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
+          {/* 2-Pill Glance Metrics */}
+          <Box sx={{ display: 'flex', gap: 1.5, mt: 3, pt: 2.5, borderTop: '1px solid rgba(226, 232, 240, 0.65)', flexWrap: 'wrap', position: 'relative', zIndex: 1 }}>
             <Box
               onClick={() => setFlippedBlockId('wallet')}
               sx={{
                 px: 2,
                 py: 1.2,
-                borderRadius: '12px',
-                bgcolor: '#f8fafc',
-                border: '1px solid #e2e8f0',
+                borderRadius: '14px',
+                bgcolor: 'rgba(255, 255, 255, 0.65)',
+                backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)',
+                border: '1px solid rgba(226, 232, 240, 0.85)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
                 flex: { xs: '1 1 100%', sm: 1 },
                 cursor: 'pointer',
                 transition: 'all 0.15s',
-                '&:hover': { bgcolor: '#f1f5f9', borderColor: '#cbd5e1' },
+                '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.95)', borderColor: '#cbd5e1', transform: 'translateY(-1px)' },
               }}
             >
               <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
@@ -614,13 +757,16 @@ export default function UserSettingsBackstage({ onClose, initialBlockId }: Props
               sx={{
                 px: 2,
                 py: 1.2,
-                borderRadius: '12px',
-                bgcolor: '#f8fafc',
-                border: '1px solid #e2e8f0',
+                borderRadius: '14px',
+                bgcolor: 'rgba(255, 255, 255, 0.65)',
+                backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)',
+                border: '1px solid rgba(226, 232, 240, 0.85)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
                 flex: { xs: '1 1 100%', sm: 1 },
                 cursor: 'pointer',
                 transition: 'all 0.15s',
-                '&:hover': { bgcolor: '#f1f5f9', borderColor: '#cbd5e1' },
+                '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.95)', borderColor: '#cbd5e1', transform: 'translateY(-1px)' },
               }}
             >
               <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
@@ -628,28 +774,6 @@ export default function UserSettingsBackstage({ onClose, initialBlockId }: Props
               </Typography>
               <Typography sx={{ fontSize: '1.15rem', fontWeight: 900, color: '#7c4dff' }}>
                 {lifetimeNP.toLocaleString()} NP <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>({Math.round(progress)}% to Rank {nextRank})</span>
-              </Typography>
-            </Box>
-
-            <Box
-              onClick={() => setFlippedBlockId('workspaces')}
-              sx={{
-                px: 2,
-                py: 1.2,
-                borderRadius: '12px',
-                bgcolor: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                flex: { xs: '1 1 100%', sm: 1 },
-                cursor: 'pointer',
-                transition: 'all 0.15s',
-                '&:hover': { bgcolor: '#f1f5f9', borderColor: '#cbd5e1' },
-              }}
-            >
-              <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
-                Current Account
-              </Typography>
-              <Typography sx={{ fontSize: '0.95rem', fontWeight: 800, color: activeOrg ? '#3b82f6' : '#0f172a', mt: 0.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {activeOrg ? activeOrg.name : 'Personal Account'}
               </Typography>
             </Box>
           </Box>
@@ -696,16 +820,18 @@ export default function UserSettingsBackstage({ onClose, initialBlockId }: Props
                       width: '100%',
                       top: 0,
                       borderRadius: '20px',
-                      border: `1px solid ${alpha(color, 0.25)}`,
-                      background: `linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(248,250,252,0.95) 100%)`,
-                      backdropFilter: 'blur(16px)',
-                      boxShadow: '0 8px 32px rgba(0,0,0,0.03)',
+                      border: '1px solid rgba(255, 255, 255, 0.85)',
+                      background: 'rgba(255, 255, 255, 0.68)',
+                      backdropFilter: 'blur(20px)',
+                      WebkitBackdropFilter: 'blur(20px)',
+                      boxShadow: '0 8px 30px -4px rgba(15, 23, 42, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.95)',
                       overflow: 'hidden',
                       cursor: 'pointer',
                       transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
                       '&:hover': {
-                        borderColor: color,
-                        boxShadow: `0 12px 36px ${alpha(color, 0.12)}`,
+                        borderColor: alpha(color, 0.6),
+                        background: 'rgba(255, 255, 255, 0.85)',
+                        boxShadow: `0 16px 40px -6px rgba(15, 23, 42, 0.08), 0 0 24px ${alpha(color, 0.18)}, inset 0 1px 0 rgba(255, 255, 255, 1)`,
                         transform: 'translateY(-2px)',
                       },
                     }}
@@ -772,10 +898,11 @@ export default function UserSettingsBackstage({ onClose, initialBlockId }: Props
                       width: '100%',
                       top: 0,
                       borderRadius: '20px',
-                      border: `1.5px solid ${alpha(color, 0.45)}`,
-                      background: `linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(248,250,252,0.98) 100%)`,
-                      backdropFilter: 'blur(20px)',
-                      boxShadow: `0 16px 48px rgba(0,0,0,0.08)`,
+                      border: `1.5px solid ${alpha(color, 0.4)}`,
+                      background: 'rgba(255, 255, 255, 0.88)',
+                      backdropFilter: 'blur(24px)',
+                      WebkitBackdropFilter: 'blur(24px)',
+                      boxShadow: '0 20px 50px -10px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95)',
                       overflow: 'hidden',
                     }}
                   >
@@ -1045,72 +1172,7 @@ export default function UserSettingsBackstage({ onClose, initialBlockId }: Props
                         </Box>
                       )}
 
-                      {/* ── BLOCK 5: WORKSPACES FLIPPED ── */}
-                      {b.id === 'workspaces' && (
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                          <Box
-                            onClick={() => {
-                              switchOrg(null);
-                              setToastMsg('Switched context to Personal Account.');
-                              setFlippedBlockId(null);
-                            }}
-                            sx={{
-                              p: 1.5,
-                              borderRadius: '12px',
-                              cursor: 'pointer',
-                              bgcolor: !activeOrg ? '#0f172a' : '#f8fafc',
-                              color: !activeOrg ? '#ffffff' : '#0f172a',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 1.5,
-                            }}
-                          >
-                            <Avatar sx={{ width: 32, height: 32, bgcolor: !activeOrg ? 'rgba(255,255,255,0.15)' : '#e2e8f0', color: !activeOrg ? '#ffffff' : '#475569' }}>
-                              <PersonIcon sx={{ fontSize: 16 }} />
-                            </Avatar>
-                            <Box sx={{ flex: 1 }}>
-                              <Typography sx={{ fontWeight: 800, fontSize: '0.86rem' }}>Personal Account (Myself)</Typography>
-                              <Typography sx={{ fontSize: '0.7rem', opacity: 0.7 }}>Your own profile</Typography>
-                            </Box>
-                            {!activeOrg && <Chip label="ACTIVE" size="small" sx={{ bgcolor: '#10b981', color: '#fff', height: 18, fontSize: '0.6rem', fontWeight: 900 }} />}
-                          </Box>
-
-                          {profile.organizations?.map((org) => {
-                            const isSelected = activeOrg?.id === org.id;
-                            return (
-                              <Box
-                                key={org.id}
-                                onClick={() => {
-                                  switchOrg(org.id);
-                                  setToastMsg(`Switched context to ${org.name}.`);
-                                  setFlippedBlockId(null);
-                                }}
-                                sx={{
-                                  p: 1.5,
-                                  borderRadius: '12px',
-                                  cursor: 'pointer',
-                                  bgcolor: isSelected ? '#0f172a' : '#f8fafc',
-                                  color: isSelected ? '#ffffff' : '#0f172a',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: 1.5,
-                                }}
-                              >
-                                <Avatar src={org.logoUrl} sx={{ width: 32, height: 32, bgcolor: isSelected ? 'rgba(255,255,255,0.15)' : '#e2e8f0', color: isSelected ? '#ffffff' : '#0f172a', fontWeight: 800, fontSize: '0.8rem' }}>
-                                  {org.name.charAt(0)}
-                                </Avatar>
-                                <Box sx={{ flex: 1, minWidth: 0 }}>
-                                  <Typography sx={{ fontWeight: 800, fontSize: '0.86rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{org.name}</Typography>
-                                  <Typography sx={{ fontSize: '0.7rem', opacity: 0.7 }}>{org.role}</Typography>
-                                </Box>
-                                {isSelected && <Chip label="ACTIVE" size="small" sx={{ bgcolor: '#10b981', color: '#fff', height: 18, fontSize: '0.6rem', fontWeight: 900 }} />}
-                              </Box>
-                            );
-                          })}
-                        </Box>
-                      )}
-
-                      {/* ── BLOCK 6: WIKI FLIPPED ── */}
+                      {/* ── BLOCK 5: WIKI FLIPPED ── */}
                       {b.id === 'wiki' && (
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                           <Typography sx={{ fontSize: '0.84rem', color: '#475569' }}>
@@ -1139,7 +1201,7 @@ export default function UserSettingsBackstage({ onClose, initialBlockId }: Props
                         </Box>
                       )}
 
-                      {/* ── BLOCK 7: SECURITY FLIPPED ── */}
+                      {/* ── BLOCK 6: SECURITY FLIPPED ── */}
                       {b.id === 'security' && (
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                           <PremiumSwitch
@@ -2104,89 +2166,7 @@ export default function UserSettingsBackstage({ onClose, initialBlockId }: Props
               </Box>
             )}
 
-            {/* ── BLOCK 5: WORKSPACES ── */}
-            {activeModalBlock === 'workspaces' && (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                <Typography sx={{ fontSize: '0.88rem', color: '#64748b' }}>
-                  Choose which account you want to use for deals, orders, and contracts:
-                </Typography>
-
-                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
-                  {/* Myself (Individual) */}
-                  <Box
-                    onClick={() => {
-                      switchOrg(null);
-                      setToastMsg('Switched context to Personal Account.');
-                      setActiveModalBlock(null);
-                    }}
-                    sx={{
-                      p: 2.5,
-                      borderRadius: '16px',
-                      cursor: 'pointer',
-                      bgcolor: !activeOrg ? '#0f172a' : '#f8fafc',
-                      color: !activeOrg ? '#ffffff' : '#0f172a',
-                      border: `1.5px solid ${!activeOrg ? '#0f172a' : '#e2e8f0'}`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 2,
-                      transition: 'all 0.15s',
-                      '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 8px 24px rgba(0,0,0,0.06)' },
-                    }}
-                  >
-                    <Avatar sx={{ width: 48, height: 48, bgcolor: !activeOrg ? 'rgba(255,255,255,0.15)' : '#e2e8f0', color: !activeOrg ? '#ffffff' : '#475569' }}>
-                      <PersonIcon sx={{ fontSize: 24 }} />
-                    </Avatar>
-                    <Box sx={{ flex: 1 }}>
-                      <Typography sx={{ fontWeight: 900, fontSize: '0.98rem' }}>Personal Account (Myself)</Typography>
-                      <Typography sx={{ fontSize: '0.78rem', opacity: 0.7 }}>Your own individual profile and points</Typography>
-                    </Box>
-                    {!activeOrg && <Chip label="ACTIVE" size="small" sx={{ bgcolor: '#10b981', color: '#fff', fontWeight: 900, height: 22, fontSize: '0.68rem' }} />}
-                  </Box>
-
-                  {/* Organizations */}
-                  {profile.organizations?.map((org) => {
-                    const isSelected = activeOrg?.id === org.id;
-                    return (
-                      <Box
-                        key={org.id}
-                        onClick={() => {
-                          switchOrg(org.id);
-                          setToastMsg(`Switched context to ${org.name}.`);
-                          setActiveModalBlock(null);
-                        }}
-                        sx={{
-                          p: 2.5,
-                          borderRadius: '16px',
-                          cursor: 'pointer',
-                          bgcolor: isSelected ? '#0f172a' : '#f8fafc',
-                          color: isSelected ? '#ffffff' : '#0f172a',
-                          border: `1.5px solid ${isSelected ? '#0f172a' : '#e2e8f0'}`,
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 2,
-                          transition: 'all 0.15s',
-                          '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 8px 24px rgba(0,0,0,0.06)' },
-                        }}
-                      >
-                        <Avatar src={org.logoUrl} sx={{ width: 48, height: 48, bgcolor: isSelected ? 'rgba(255,255,255,0.15)' : '#e2e8f0', color: isSelected ? '#ffffff' : '#0f172a', fontWeight: 900, fontSize: '1.2rem' }}>
-                          {org.name.charAt(0)}
-                        </Avatar>
-                        <Box sx={{ flex: 1, minWidth: 0 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Typography sx={{ fontWeight: 900, fontSize: '0.98rem' }}>{org.name}</Typography>
-                            {org.verified && <VerifiedIcon sx={{ color: '#10b981', fontSize: 18 }} />}
-                          </Box>
-                          <Typography sx={{ fontSize: '0.78rem', opacity: 0.7 }}>{org.role}</Typography>
-                        </Box>
-                        {isSelected && <Chip label="ACTIVE" size="small" sx={{ bgcolor: '#10b981', color: '#fff', fontWeight: 900, height: 22, fontSize: '0.68rem' }} />}
-                      </Box>
-                    );
-                  })}
-                </Box>
-              </Box>
-            )}
-
-            {/* ── BLOCK 6: SOPS & PLAYBOOKS ── */}
+            {/* ── BLOCK 5: SOPS & PLAYBOOKS ── */}
             {activeModalBlock === 'wiki' && (() => {
               const DEFAULT_GUIDES = [
                 {
@@ -2264,7 +2244,7 @@ export default function UserSettingsBackstage({ onClose, initialBlockId }: Props
               );
             })()}
 
-            {/* ── BLOCK 7: SECURITY & SESSIONS ── */}
+            {/* ── BLOCK 6: SECURITY & SESSIONS ── */}
             {activeModalBlock === 'security' && (
               <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
                 {/* Left Column: Security Settings */}
