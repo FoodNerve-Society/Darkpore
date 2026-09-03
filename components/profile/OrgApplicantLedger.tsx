@@ -14,16 +14,15 @@ import {
   Select,
   MenuItem,
   CircularProgress,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Drawer,
   Tooltip,
   Rating,
   alpha,
   Snackbar,
   Alert,
+  ToggleButtonGroup,
+  ToggleButton,
+  Divider,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
@@ -45,6 +44,13 @@ import StarIcon from '@mui/icons-material/Star';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import CloseIcon from '@mui/icons-material/Close';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import ViewKanbanIcon from '@mui/icons-material/ViewKanban';
+import TableRowsIcon from '@mui/icons-material/TableRows';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import SendIcon from '@mui/icons-material/Send';
+import BoltIcon from '@mui/icons-material/Bolt';
+import TuneIcon from '@mui/icons-material/Tune';
 
 import {
   getOrgJobApplications,
@@ -54,17 +60,19 @@ import {
 import { useRouter } from 'next/navigation';
 
 const STAGES = [
-  { id: 'all', label: 'All Candidates', color: '#64748b' },
-  { id: 'new', label: 'New / Unreviewed', color: '#3b82f6' },
-  { id: 'reviewing', label: 'Under Review', color: '#f59e0b' },
-  { id: 'shortlisted', label: 'Shortlisted', color: '#8b5cf6' },
-  { id: 'interview', label: 'Interview Scheduled', color: '#06b6d4' },
-  { id: 'hired', label: 'Hired / Accepted', color: '#10b981' },
-  { id: 'rejected', label: 'Archived / Rejected', color: '#ef4444' },
+  { id: 'all', label: 'All Candidates', color: '#64748b', emoji: '👥' },
+  { id: 'new', label: 'New / Inbox', color: '#3b82f6', emoji: '📬' },
+  { id: 'reviewing', label: 'Under Review', color: '#f59e0b', emoji: '🔍' },
+  { id: 'shortlisted', label: 'Shortlisted', color: '#8b5cf6', emoji: '⭐' },
+  { id: 'interview', label: 'Interview Scheduled', color: '#06b6d4', emoji: '🎙️' },
+  { id: 'hired', label: 'Hired / Accepted', color: '#10b981', emoji: '🎉' },
+  { id: 'rejected', label: 'Archived', color: '#ef4444', emoji: '📁' },
 ];
 
+const KANBAN_STAGES = STAGES.filter((s) => s.id !== 'all');
+
 function getStageMeta(status: string) {
-  return STAGES.find((s) => s.id === status) || { id: status, label: status.toUpperCase(), color: '#64748b' };
+  return STAGES.find((s) => s.id === status) || { id: status, label: status.toUpperCase(), color: '#64748b', emoji: '📋' };
 }
 
 interface Props {
@@ -97,10 +105,13 @@ export default function OrgApplicantLedger({
     rejected: 0,
   });
 
-  // Filters
+  // Views & Filters
+  const [viewMode, setViewMode] = useState<'kanban' | 'table'>('table');
   const [selectedListingId, setSelectedListingId] = useState<string>(initialListingId || 'all');
   const [selectedStage, setSelectedStage] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [filterRank4Only, setFilterRank4Only] = useState<boolean>(false);
+  const [filterWithResumeOnly, setFilterWithResumeOnly] = useState<boolean>(false);
 
   // Selected Candidate Drawer
   const [selectedApp, setSelectedApp] = useState<any | null>(null);
@@ -153,17 +164,30 @@ export default function OrgApplicantLedger({
 
   // Filtered applications client-side for immediate responsive search
   const filteredApps = useMemo(() => {
-    if (!searchQuery.trim()) return applications;
-    const q = searchQuery.toLowerCase();
-    return applications.filter((app) => {
-      return (
-        app.candidateName?.toLowerCase().includes(q) ||
-        app.candidateEmail?.toLowerCase().includes(q) ||
-        app.listing?.title?.toLowerCase().includes(q) ||
-        app.coverLetter?.toLowerCase().includes(q)
-      );
-    });
-  }, [applications, searchQuery]);
+    let list = applications;
+
+    if (filterRank4Only) {
+      list = list.filter((app) => (app.candidateRank || 1) >= 4);
+    }
+
+    if (filterWithResumeOnly) {
+      list = list.filter((app) => !!app.resumeUrl);
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter((app) => {
+        return (
+          app.candidateName?.toLowerCase().includes(q) ||
+          app.candidateEmail?.toLowerCase().includes(q) ||
+          app.listing?.title?.toLowerCase().includes(q) ||
+          app.coverLetter?.toLowerCase().includes(q)
+        );
+      });
+    }
+
+    return list;
+  }, [applications, searchQuery, filterRank4Only, filterWithResumeOnly]);
 
   // Update Status
   const handleStatusChange = async (appId: string, newStatus: string) => {
@@ -176,12 +200,29 @@ export default function OrgApplicantLedger({
         if (selectedApp && selectedApp.id === appId) {
           setSelectedApp((prev: any) => ({ ...prev, status: newStatus }));
         }
-        setToastMsg(`Application status updated to ${newStatus.toUpperCase()}`);
-        // Refresh stats in background
+        setToastMsg(`Status updated to ${newStatus.toUpperCase()}`);
         getOrgApplicantStats(organizationId).then((r) => r.success && setStats(r.stats));
       }
     } catch (e) {
       console.error('Failed to update status:', e);
+    }
+  };
+
+  // Update Rating
+  const handleRatingChange = async (appId: string, newRating: number | null) => {
+    try {
+      const res = await updateJobApplicationStatus(appId, { rating: newRating || 0 });
+      if (res.success) {
+        setApplications((prev) =>
+          prev.map((a) => (a.id === appId ? { ...a, rating: newRating } : a))
+        );
+        if (selectedApp && selectedApp.id === appId) {
+          setSelectedApp((prev: any) => ({ ...prev, rating: newRating }));
+        }
+        setToastMsg(`Candidate rating saved (${newRating} stars)`);
+      }
+    } catch (e) {
+      console.error('Failed to update rating:', e);
     }
   };
 
@@ -207,18 +248,41 @@ export default function OrgApplicantLedger({
     }
   };
 
+  // Pre-fill quick outreach email
+  const handleQuickOutreach = (type: 'screening' | 'offer' | 'reject') => {
+    if (!selectedApp) return;
+    let subject = '';
+    let body = '';
+    const candidateFirst = selectedApp.candidateName.split(' ')[0] || 'Operator';
+    const roleTitle = selectedApp.listing?.title || 'Job Opportunity';
+
+    if (type === 'screening') {
+      subject = `Invitation for Screening: ${roleTitle} with ${organizationName}`;
+      body = `Hi ${candidateFirst},\n\nThank you for applying for the ${roleTitle} opportunity at ${organizationName}.\n\nWe were very impressed by your FoodNerve operator profile and would love to schedule a quick 20-minute introductory conversation.\n\nPlease let us know what times work best for you this week, or connect directly on FoodNerve Meet.\n\nBest regards,\n${organizationName} Hiring Team`;
+    } else if (type === 'offer') {
+      subject = `Offer of Engagement: ${roleTitle} at ${organizationName}`;
+      body = `Hi ${candidateFirst},\n\nOn behalf of ${organizationName}, we are thrilled to offer you the position of ${roleTitle}!\n\nWe look forward to onboarding you onto the FoodNerve ecosystem network.\n\nBest regards,\n${organizationName} Leadership`;
+    } else {
+      subject = `Update regarding your application for ${roleTitle}`;
+      body = `Hi ${candidateFirst},\n\nThank you for your interest in the ${roleTitle} position with ${organizationName}.\n\nWhile we were impressed with your background, we have chosen to move forward with another candidate whose experience more closely matches our immediate operational requirements.\n\nWe wish you the very best in your endeavors across the FoodNerve ecosystem.\n\nSincerely,\n${organizationName} Hiring Team`;
+    }
+
+    const mailto = `mailto:${selectedApp.candidateEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailto;
+  };
+
   return (
     <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* ── TOP HEADER ──────────────────────────────────────────────── */}
       <Box
         sx={{
           p: { xs: 2.5, md: 3.5 },
-          pb: 2,
+          pb: 2.5,
           display: 'flex',
           flexDirection: { xs: 'column', md: 'row' },
           alignItems: { xs: 'flex-start', md: 'center' },
           justifyContent: 'space-between',
-          gap: 2,
+          gap: 2.5,
           borderBottom: '1px solid #e2e8f0',
           bgcolor: '#ffffff',
         }}
@@ -231,17 +295,66 @@ export default function OrgApplicantLedger({
               </IconButton>
             )}
             <Box>
-              <Typography variant="h5" sx={{ fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em' }}>
-                Talent & Applicant Ledger
-              </Typography>
-              <Typography sx={{ color: '#64748b', fontSize: '0.85rem', fontWeight: 600 }}>
-                {organizationName} • {stats.total} total candidate submissions
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="h5" sx={{ fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em' }}>
+                  Talent & Applicant Ledger
+                </Typography>
+                <Chip
+                  label="PRO ATS"
+                  size="small"
+                  sx={{
+                    bgcolor: 'rgba(59, 130, 246, 0.1)',
+                    color: '#3b82f6',
+                    fontWeight: 900,
+                    fontSize: '0.68rem',
+                    borderRadius: '6px',
+                    height: 20,
+                  }}
+                />
+              </Box>
+              <Typography sx={{ color: '#64748b', fontSize: '0.85rem', fontWeight: 600, mt: 0.3 }}>
+                {organizationName} • {stats.total} total candidate submissions across all listings
               </Typography>
             </Box>
           </Box>
         </Box>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, width: { xs: '100%', md: 'auto' } }}>
+        {/* View Switcher & Actions */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, width: { xs: '100%', md: 'auto' }, flexWrap: 'wrap' }}>
+          <ToggleButtonGroup
+            value={viewMode}
+            exclusive
+            onChange={(e, val) => val && setViewMode(val)}
+            size="small"
+            sx={{
+              bgcolor: '#f1f5f9',
+              borderRadius: '12px',
+              p: 0.4,
+              '& .MuiToggleButton-root': {
+                border: 'none',
+                borderRadius: '8px',
+                px: 1.5,
+                py: 0.6,
+                fontWeight: 800,
+                fontSize: '0.8rem',
+                textTransform: 'none',
+                color: '#64748b',
+                '&.Mui-selected': {
+                  bgcolor: '#ffffff',
+                  color: '#0f172a',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
+                },
+              },
+            }}
+          >
+            <ToggleButton value="table">
+              <TableRowsIcon sx={{ fontSize: 16, mr: 0.6 }} /> Ledger Table
+            </ToggleButton>
+            <ToggleButton value="kanban">
+              <ViewKanbanIcon sx={{ fontSize: 16, mr: 0.6 }} /> Pipeline Board
+            </ToggleButton>
+          </ToggleButtonGroup>
+
           <Button
             variant="outlined"
             onClick={loadData}
@@ -252,10 +365,11 @@ export default function OrgApplicantLedger({
               color: '#475569',
               borderColor: '#e2e8f0',
               textTransform: 'none',
+              fontSize: '0.82rem',
               '&:hover': { bgcolor: '#f8fafc', borderColor: '#cbd5e1' },
             }}
           >
-            Refresh
+            Sync
           </Button>
         </Box>
       </Box>
@@ -316,6 +430,7 @@ export default function OrgApplicantLedger({
                 },
               }}
             >
+              <Typography sx={{ fontSize: '0.85rem' }}>{st.emoji}</Typography>
               <Typography sx={{ fontSize: '0.82rem', fontWeight: 800 }}>{st.label}</Typography>
               <Chip
                 label={count}
@@ -337,75 +452,114 @@ export default function OrgApplicantLedger({
       {/* ── FILTERS & SEARCH ROW ───────────────────────────────────── */}
       <Box
         sx={{
-          p: { xs: 2, md: 3 },
+          p: { xs: 2, md: 2.5 },
+          px: { xs: 2.5, md: 3.5 },
           display: 'flex',
-          flexDirection: { xs: 'column', md: 'row' },
-          alignItems: 'center',
+          flexDirection: { xs: 'column', lg: 'row' },
+          alignItems: { xs: 'stretch', lg: 'center' },
+          justifyContent: 'space-between',
           gap: 2,
           bgcolor: '#ffffff',
           borderBottom: '1px solid #f1f5f9',
         }}
       >
-        {/* Search */}
-        <TextField
-          size="small"
-          placeholder="Search by candidate name, email, role, or pitch..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          sx={{
-            flex: 1,
-            width: { xs: '100%', md: 'auto' },
-            '& .MuiOutlinedInput-root': {
-              borderRadius: '12px',
-              bgcolor: '#f8fafc',
-            },
-          }}
-          slotProps={{
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon sx={{ color: '#94a3b8', fontSize: 20 }} />
-                </InputAdornment>
-              ),
-              endAdornment: searchQuery ? (
-                <InputAdornment position="end">
-                  <IconButton size="small" onClick={() => setSearchQuery('')}>
-                    <ClearIcon sx={{ fontSize: 16 }} />
-                  </IconButton>
-                </InputAdornment>
-              ) : null,
-            }
-          }}
-        />
-
-        {/* Listing Dropdown Filter */}
-        {uniqueListings.length > 0 && (
-          <Select
+        {/* Left: Search & Listing Picker */}
+        <Box sx={{ display: 'flex', gap: 1.5, flex: 1, flexDirection: { xs: 'column', sm: 'row' } }}>
+          <TextField
             size="small"
-            value={selectedListingId}
-            onChange={(e) => setSelectedListingId(e.target.value)}
+            placeholder="Search candidate name, email, role, or pitch..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             sx={{
-              minWidth: 220,
-              width: { xs: '100%', md: 'auto' },
-              borderRadius: '12px',
-              bgcolor: '#f8fafc',
-              fontSize: '0.85rem',
-              fontWeight: 700,
+              flex: 1,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '12px',
+                bgcolor: '#f8fafc',
+                fontSize: '0.88rem',
+              },
             }}
-          >
-            <MenuItem value="all">
-              <em>All Company Listings</em>
-            </MenuItem>
-            {uniqueListings.map((l) => (
-              <MenuItem key={l.id} value={l.id}>
-                {l.title}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ color: '#94a3b8', fontSize: 20 }} />
+                  </InputAdornment>
+                ),
+                endAdornment: searchQuery ? (
+                  <InputAdornment position="end">
+                    <IconButton size="small" onClick={() => setSearchQuery('')}>
+                      <ClearIcon sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  </InputAdornment>
+                ) : null,
+              },
+            }}
+          />
+
+          {uniqueListings.length > 0 && (
+            <Select
+              size="small"
+              value={selectedListingId}
+              onChange={(e) => setSelectedListingId(e.target.value)}
+              sx={{
+                minWidth: 220,
+                borderRadius: '12px',
+                bgcolor: '#f8fafc',
+                fontSize: '0.85rem',
+                fontWeight: 700,
+              }}
+            >
+              <MenuItem value="all">
+                <em>All Company Listings</em>
               </MenuItem>
-            ))}
-          </Select>
-        )}
+              {uniqueListings.map((l) => (
+                <MenuItem key={l.id} value={l.id}>
+                  {l.title}
+                </MenuItem>
+              ))}
+            </Select>
+          )}
+        </Box>
+
+        {/* Right: Quick Filter Chips */}
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Chip
+            icon={<VerifiedIcon sx={{ fontSize: '15px !important' }} />}
+            label="Rank 4+ Verified Only"
+            onClick={() => setFilterRank4Only((prev) => !prev)}
+            sx={{
+              fontWeight: 800,
+              fontSize: '0.75rem',
+              cursor: 'pointer',
+              bgcolor: filterRank4Only ? '#10b981' : '#f8fafc',
+              color: filterRank4Only ? '#ffffff' : '#475569',
+              border: '1px solid',
+              borderColor: filterRank4Only ? '#10b981' : '#e2e8f0',
+              borderRadius: '8px',
+              '& .MuiChip-icon': { color: filterRank4Only ? '#ffffff' : '#10b981' },
+            }}
+          />
+
+          <Chip
+            icon={<DescriptionIcon sx={{ fontSize: '15px !important' }} />}
+            label="With Resume Attached"
+            onClick={() => setFilterWithResumeOnly((prev) => !prev)}
+            sx={{
+              fontWeight: 800,
+              fontSize: '0.75rem',
+              cursor: 'pointer',
+              bgcolor: filterWithResumeOnly ? '#3b82f6' : '#f8fafc',
+              color: filterWithResumeOnly ? '#ffffff' : '#475569',
+              border: '1px solid',
+              borderColor: filterWithResumeOnly ? '#3b82f6' : '#e2e8f0',
+              borderRadius: '8px',
+              '& .MuiChip-icon': { color: filterWithResumeOnly ? '#ffffff' : '#3b82f6' },
+            }}
+          />
+        </Box>
       </Box>
 
-      {/* ── CANDIDATE TABLE / CARDS ────────────────────────────────── */}
+      {/* ── CANDIDATE WORKSPACE BODY ───────────────────────────────── */}
       <Box sx={{ flex: 1, overflowY: 'auto', p: { xs: 2, md: 3.5 }, bgcolor: '#f8fafc' }}>
         {loading ? (
           <Box sx={{ display: 'flex', height: 260, alignItems: 'center', justifyContent: 'center' }}>
@@ -427,10 +581,211 @@ export default function OrgApplicantLedger({
               No applications match this filter
             </Typography>
             <Typography sx={{ color: '#64748b', fontSize: '0.88rem', maxWidth: 460, mx: 'auto' }}>
-              When operators apply to your published job listings on FoodNerve, their complete verified dossier will appear here automatically.
+              When operators apply to your published opportunities on FoodNerve, their complete verified dossier will appear here automatically.
             </Typography>
           </Paper>
+        ) : viewMode === 'kanban' ? (
+          /* ── KANBAN PIPELINE BOARD ── */
+          <Box
+            sx={{
+              display: 'flex',
+              gap: 2.5,
+              overflowX: 'auto',
+              alignItems: 'flex-start',
+              pb: 3,
+              minHeight: '100%',
+              scrollbarWidth: 'thin',
+            }}
+          >
+            {KANBAN_STAGES.map((stage) => {
+              const stageApps = filteredApps.filter((a) => a.status === stage.id);
+
+              return (
+                <Box
+                  key={stage.id}
+                  sx={{
+                    width: 320,
+                    minWidth: 320,
+                    bgcolor: '#f1f5f9',
+                    borderRadius: '20px',
+                    p: 2,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 1.5,
+                  }}
+                >
+                  {/* Column Header */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 0.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: stage.color }} />
+                      <Typography sx={{ fontWeight: 900, fontSize: '0.88rem', color: '#0f172a' }}>
+                        {stage.label}
+                      </Typography>
+                    </Box>
+                    <Chip
+                      label={stageApps.length}
+                      size="small"
+                      sx={{
+                        height: 20,
+                        fontSize: '0.7rem',
+                        fontWeight: 900,
+                        bgcolor: `${stage.color}15`,
+                        color: stage.color,
+                        borderRadius: '6px',
+                      }}
+                    />
+                  </Box>
+
+                  {/* Cards Stack */}
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, minHeight: 120 }}>
+                    {stageApps.length === 0 ? (
+                      <Box
+                        sx={{
+                          p: 3,
+                          textAlign: 'center',
+                          borderRadius: '14px',
+                          border: '1px dashed #cbd5e1',
+                          bgcolor: 'rgba(255,255,255,0.5)',
+                        }}
+                      >
+                        <Typography sx={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: 600 }}>
+                          Empty stage
+                        </Typography>
+                      </Box>
+                    ) : (
+                      stageApps.map((app) => {
+                        const rankColor =
+                          app.candidateRank >= 4
+                            ? '#10b981'
+                            : app.candidateRank >= 2
+                            ? '#3b82f6'
+                            : '#94a3b8';
+
+                        return (
+                          <Paper
+                            key={app.id}
+                            elevation={0}
+                            onClick={() => {
+                              setSelectedApp(app);
+                              setInternalNotesDraft(app.internalNotes || '');
+                            }}
+                            sx={{
+                              p: 2,
+                              borderRadius: '16px',
+                              bgcolor: '#ffffff',
+                              border: '1px solid #e2e8f0',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s ease',
+                              boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
+                              '&:hover': {
+                                transform: 'translateY(-2px)',
+                                borderColor: stage.color,
+                                boxShadow: `0 8px 20px ${alpha(stage.color, 0.12)}`,
+                              },
+                            }}
+                          >
+                            <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1, mb: 1.2 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
+                                <Avatar
+                                  src={app.candidateAvatar || app.user?.avatarUrl || ''}
+                                  sx={{
+                                    width: 36,
+                                    height: 36,
+                                    borderRadius: '10px',
+                                    bgcolor: '#f1f5f9',
+                                    color: rankColor,
+                                    fontWeight: 900,
+                                    fontSize: '0.9rem',
+                                    border: '1px solid #e2e8f0',
+                                  }}
+                                >
+                                  {app.candidateName.charAt(0).toUpperCase()}
+                                </Avatar>
+                                <Box>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                    <Typography sx={{ fontWeight: 800, fontSize: '0.9rem', color: '#0f172a' }}>
+                                      {app.candidateName}
+                                    </Typography>
+                                    {app.candidateRank >= 4 && (
+                                      <VerifiedIcon sx={{ fontSize: 14, color: '#10b981' }} />
+                                    )}
+                                  </Box>
+                                  <Typography sx={{ fontSize: '0.72rem', color: '#64748b' }}>
+                                    Rank {app.candidateRank}
+                                  </Typography>
+                                </Box>
+                              </Box>
+
+                              <Rating
+                                size="small"
+                                value={app.rating || 0}
+                                onChange={(e, val) => {
+                                  e.stopPropagation();
+                                  handleRatingChange(app.id, val);
+                                }}
+                                sx={{ fontSize: '0.85rem' }}
+                              />
+                            </Box>
+
+                            <Typography
+                              noWrap
+                              sx={{
+                                fontSize: '0.82rem',
+                                fontWeight: 700,
+                                color: '#334155',
+                                mb: 0.5,
+                              }}
+                            >
+                              {app.listing?.title || 'Job Opportunity'}
+                            </Typography>
+
+                            {app.coverLetter && (
+                              <Typography
+                                sx={{
+                                  fontSize: '0.75rem',
+                                  color: '#64748b',
+                                  display: '-webkit-box',
+                                  WebkitLineClamp: 2,
+                                  WebkitBoxOrient: 'vertical',
+                                  overflow: 'hidden',
+                                  lineHeight: 1.4,
+                                  mb: 1.5,
+                                }}
+                              >
+                                {app.coverLetter}
+                              </Typography>
+                            )}
+
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pt: 1, borderTop: '1px solid #f1f5f9' }}>
+                              <Typography sx={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 600 }}>
+                                {app.createdAt
+                                  ? new Date(app.createdAt).toLocaleDateString(undefined, {
+                                      month: 'short',
+                                      day: 'numeric',
+                                    })
+                                  : 'Recent'}
+                              </Typography>
+
+                              {app.resumeUrl && (
+                                <Chip
+                                  label="Resume"
+                                  size="small"
+                                  icon={<DescriptionIcon sx={{ fontSize: '12px !important' }} />}
+                                  sx={{ height: 18, fontSize: '0.62rem', fontWeight: 800, bgcolor: '#ecfdf5', color: '#059669' }}
+                                />
+                              )}
+                            </Box>
+                          </Paper>
+                        );
+                      })
+                    )}
+                  </Box>
+                </Box>
+              );
+            })}
+          </Box>
         ) : (
+          /* ── LEDGER TABLE / CARDS ── */
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
             {filteredApps.map((app) => {
               const stageMeta = getStageMeta(app.status);
@@ -477,14 +832,15 @@ export default function OrgApplicantLedger({
                   }}
                 >
                   {/* Left: Candidate Avatar & Info */}
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, minWidth: 0 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, minWidth: 0, flex: 1.2 }}>
                     <Avatar
                       src={app.candidateAvatar || app.user?.avatarUrl || ''}
                       sx={{
                         width: 48,
                         height: 48,
                         borderRadius: '14px',
-                        bgcolor: `${rankColor}20`,
+                        bgcolor: '#f1f5f9',
+                        border: '1px solid #e2e8f0',
                         color: rankColor,
                         fontWeight: 900,
                         fontSize: '1.2rem',
@@ -514,6 +870,15 @@ export default function OrgApplicantLedger({
                             borderRadius: '6px',
                           }}
                         />
+                        <Rating
+                          size="small"
+                          value={app.rating || 0}
+                          onChange={(e, val) => {
+                            e.stopPropagation();
+                            handleRatingChange(app.id, val);
+                          }}
+                          sx={{ fontSize: '0.85rem' }}
+                        />
                       </Box>
 
                       <Typography
@@ -527,9 +892,7 @@ export default function OrgApplicantLedger({
                         }}
                       >
                         <span>{app.candidateEmail}</span>
-                        {app.candidateState && (
-                          <span>• {app.candidateState}</span>
-                        )}
+                        {app.candidateState && <span>• {app.candidateState}</span>}
                       </Typography>
                     </Box>
                   </Box>
@@ -620,7 +983,7 @@ export default function OrgApplicantLedger({
         slotProps={{
           paper: {
             sx: {
-              width: { xs: '100vw', sm: 580, md: 660 },
+              width: { xs: '100vw', sm: 580, md: 680 },
               p: 0,
               bgcolor: '#f8fafc',
             },
@@ -644,13 +1007,14 @@ export default function OrgApplicantLedger({
                 <Avatar
                   src={selectedApp.candidateAvatar || selectedApp.user?.avatarUrl || ''}
                   sx={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: '16px',
-                    bgcolor: 'rgba(255, 255, 255, 0.15)',
-                    color: '#ffffff',
+                    width: 60,
+                    height: 60,
+                    borderRadius: '18px',
+                    bgcolor: '#f1f5f9',
+                    border: '1px solid #e2e8f0',
+                    color: '#0f172a',
                     fontWeight: 900,
-                    fontSize: '1.4rem',
+                    fontSize: '1.5rem',
                   }}
                 >
                   {selectedApp.candidateName.charAt(0).toUpperCase()}
@@ -664,9 +1028,17 @@ export default function OrgApplicantLedger({
                       <VerifiedIcon sx={{ fontSize: 18, color: '#10b981' }} />
                     )}
                   </Box>
-                  <Typography sx={{ color: '#94a3b8', fontSize: '0.82rem', fontWeight: 600 }}>
-                    Rank {selectedApp.candidateRank} Verified FoodNerve Operator
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.5 }}>
+                    <Typography sx={{ color: '#94a3b8', fontSize: '0.82rem', fontWeight: 600 }}>
+                      Rank {selectedApp.candidateRank} Verified FoodNerve Operator
+                    </Typography>
+                    <Rating
+                      size="small"
+                      value={selectedApp.rating || 0}
+                      onChange={(e, val) => handleRatingChange(selectedApp.id, val)}
+                      sx={{ fontSize: '0.95rem' }}
+                    />
+                  </Box>
                 </Box>
               </Box>
 
@@ -675,7 +1047,7 @@ export default function OrgApplicantLedger({
               </IconButton>
             </Box>
 
-            {/* Action Bar (Meet Chat & Email) */}
+            {/* Action Bar (Meet Chat & Email & Quick Presets) */}
             <Box
               sx={{
                 p: 2,
@@ -683,8 +1055,9 @@ export default function OrgApplicantLedger({
                 bgcolor: '#ffffff',
                 borderBottom: '1px solid #e2e8f0',
                 display: 'flex',
-                gap: 1.5,
+                gap: 1.2,
                 flexWrap: 'wrap',
+                alignItems: 'center',
               }}
             >
               {selectedApp.user?.username && (
@@ -701,10 +1074,11 @@ export default function OrgApplicantLedger({
                     fontWeight: 800,
                     textTransform: 'none',
                     boxShadow: 'none',
+                    fontSize: '0.8rem',
                     '&:hover': { bgcolor: '#2563eb' },
                   }}
                 >
-                  Chat on FoodNerve Meet
+                  Meet Chat
                 </Button>
               )}
 
@@ -712,8 +1086,7 @@ export default function OrgApplicantLedger({
                 <Button
                   variant="outlined"
                   size="small"
-                  component="a"
-                  href={`mailto:${selectedApp.candidateEmail}?subject=${encodeURIComponent(`Update on your application for ${selectedApp.listing?.title || 'Job Opportunity'}`)}`}
+                  onClick={() => handleQuickOutreach('screening')}
                   startIcon={<EmailIcon />}
                   sx={{
                     borderRadius: '12px',
@@ -721,10 +1094,11 @@ export default function OrgApplicantLedger({
                     textTransform: 'none',
                     color: '#0f172a',
                     borderColor: '#cbd5e1',
+                    fontSize: '0.8rem',
                     '&:hover': { bgcolor: '#f8fafc' },
                   }}
                 >
-                  Email Candidate
+                  Invite Screening
                 </Button>
               )}
 
@@ -744,16 +1118,34 @@ export default function OrgApplicantLedger({
                     color: '#059669',
                     borderColor: '#a7f3d0',
                     bgcolor: '#ecfdf5',
+                    fontSize: '0.8rem',
                     '&:hover': { bgcolor: '#d1fae5' },
                   }}
                 >
-                  View Resume
+                  Resume
                 </Button>
               )}
+
+              <Button
+                variant="text"
+                size="small"
+                onClick={() => handleQuickOutreach('offer')}
+                startIcon={<BoltIcon sx={{ color: '#10b981' }} />}
+                sx={{
+                  borderRadius: '12px',
+                  fontWeight: 800,
+                  textTransform: 'none',
+                  color: '#10b981',
+                  fontSize: '0.8rem',
+                  '&:hover': { bgcolor: 'rgba(16, 185, 129, 0.08)' },
+                }}
+              >
+                Send Offer
+              </Button>
             </Box>
 
             {/* Drawer Body Scroll */}
-            <Box sx={{ flex: 1, overflowY: 'auto', p: { xs: 2.5, md: 3 }, display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <Box sx={{ flex: 1, overflowY: 'auto', p: { xs: 2.5, md: 3 }, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
               {/* Target Role Card */}
               <Paper elevation={0} sx={{ p: 2.5, borderRadius: '18px', border: '1px solid #e2e8f0', bgcolor: '#ffffff' }}>
                 <Typography sx={{ fontSize: '0.72rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase' }}>
@@ -775,21 +1167,28 @@ export default function OrgApplicantLedger({
                       sx={{ height: 22, fontSize: '0.65rem', fontWeight: 800, bgcolor: '#f1f5f9', color: '#0f172a', borderRadius: '6px' }}
                     />
                   )}
+                  {selectedApp.pitchTone && (
+                    <Chip
+                      label={`Tone: ${selectedApp.pitchTone}`}
+                      size="small"
+                      sx={{ height: 22, fontSize: '0.65rem', fontWeight: 800, bgcolor: 'rgba(124, 58, 237, 0.08)', color: '#7c3aed', borderRadius: '6px' }}
+                    />
+                  )}
                 </Box>
               </Paper>
 
-              {/* Stage Selector */}
+              {/* Stage Progression Selector */}
               <Paper elevation={0} sx={{ p: 2.5, borderRadius: '18px', border: '1px solid #e2e8f0', bgcolor: '#ffffff' }}>
                 <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', mb: 1.5 }}>
-                  Pipeline Stage
+                  Pipeline Stage & Triage
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                  {STAGES.filter((s) => s.id !== 'all').map((st) => {
+                  {KANBAN_STAGES.map((st) => {
                     const isCurrent = selectedApp.status === st.id;
                     return (
                       <Chip
                         key={st.id}
-                        label={st.label}
+                        label={`${st.emoji} ${st.label}`}
                         onClick={() => handleStatusChange(selectedApp.id, st.id)}
                         sx={{
                           fontWeight: 800,

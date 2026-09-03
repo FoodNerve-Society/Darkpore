@@ -541,6 +541,8 @@ export default function ListingDetailPage() {
   const rankTitle = RANK_NAMES[candidateRank] || "Initiate";
   const candidateBio = profile?.bio || "Agro-Enterprise & Value Chain Operator";
   const candidateLocation = profile?.state ? `${profile.state}, Nigeria` : "Nigeria";
+  const [applyResumeUrl, setApplyResumeUrl] = useState('');
+  const [applyPortfolioUrl, setApplyPortfolioUrl] = useState('');
 
   // Fetch listing from DB with fallback to mock
   useEffect(() => {
@@ -710,6 +712,8 @@ export default function ListingDetailPage() {
         candidateName: candidateName,
         coverLetter: emailBody,
         pitchTone: selectedPreset?.label,
+        resumeUrl: applyResumeUrl.trim() || undefined,
+        portfolioUrl: applyPortfolioUrl.trim() || undefined,
       });
       if (res.success) {
         setShowApplyModal(false);
@@ -1828,19 +1832,112 @@ export default function ListingDetailPage() {
 
           {/* ── 3. NATIVE IN-PLATFORM APPLICATION FLOW ─────────── */}
           {listing.applicationMethod === 'native' && (
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <Typography sx={{ fontSize: "0.88rem", color: "#475569" }}>
-                Your candidacy, verified rank, and application statement will be recorded directly into the organization’s recruitment desk.
-              </Typography>
-              <PremiumMarkdownEditor
-                colorTheme={themeColor}
-                label="Candidate Pitch & Statement"
-                placeholder="Introduce yourself, your operational track record, and how you will execute this mandate..."
-                value={applyMessage}
-                onChange={(e: any) => setApplyMessage(e.target.value)}
-                rows={5}
-                fullWidth
-              />
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+              {/* Operator Dossier Snapshot Preview */}
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2,
+                  px: 2.5,
+                  borderRadius: "16px",
+                  bgcolor: "rgba(16, 185, 129, 0.05)",
+                  border: "1.5px solid rgba(16, 185, 129, 0.2)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 2,
+                  flexWrap: "wrap",
+                }}
+              >
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                  <Avatar
+                    src={profile?.avatarUrl || ""}
+                    sx={{ width: 44, height: 44, borderRadius: "12px", bgcolor: "#f1f5f9", color: themeColor, fontWeight: 900 }}
+                  >
+                    {candidateName.charAt(0).toUpperCase()}
+                  </Avatar>
+                  <Box>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.8 }}>
+                      <Typography sx={{ fontWeight: 900, fontSize: "0.95rem", color: "#0f172a" }}>
+                        {candidateName}
+                      </Typography>
+                      {candidateRank >= 4 && <VerifiedIcon sx={{ fontSize: 16, color: "#10b981" }} />}
+                      <Chip
+                        label={`Rank ${candidateRank}`}
+                        size="small"
+                        sx={{ height: 20, fontSize: "0.65rem", fontWeight: 800, bgcolor: "rgba(16, 185, 129, 0.15)", color: "#059669", borderRadius: "6px" }}
+                      />
+                    </Box>
+                    <Typography sx={{ fontSize: "0.78rem", color: "#64748b" }}>
+                      @{cleanUsername} • {profile?.email || "Authenticated Operator"}
+                    </Typography>
+                  </Box>
+                </Box>
+                <Chip
+                  label="Trust Protocol Verified"
+                  size="small"
+                  icon={<ShieldIcon sx={{ fontSize: "14px !important" }} />}
+                  sx={{ fontWeight: 800, fontSize: "0.7rem", bgcolor: "#ecfdf5", color: "#059669", borderRadius: "8px" }}
+                />
+              </Paper>
+
+              {/* Application Pitch Preset / Tone Selector */}
+              <Box>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+                  <AutoAwesomeIcon sx={{ fontSize: 16, color: themeColor }} />
+                  <Typography sx={{ fontSize: "0.78rem", fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    Application Pitch Tone & Template
+                  </Typography>
+                </Box>
+                <PremiumAutocomplete
+                  colorTheme={themeColor}
+                  label="Select Pitch Preset / Tone"
+                  placeholder="Choose an executive, field operations, or technical pitch..."
+                  options={PITCH_PRESETS}
+                  getOptionLabel={(option: any) => typeof option === "string" ? option : option.label}
+                  value={selectedPreset}
+                  onChange={(_, newValue: any) => handlePresetSelect(newValue)}
+                  fullWidth
+                />
+              </Box>
+
+              {/* Pitch Statement */}
+              <Box>
+                <Typography sx={{ fontSize: "0.78rem", fontWeight: 800, color: "#475569", mb: 1, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  Candidate Pitch & Statement
+                </Typography>
+                <PremiumMarkdownEditor
+                  colorTheme={themeColor}
+                  label="Candidate Pitch & Statement"
+                  placeholder="Introduce yourself, your operational track record, and how you will execute this mandate..."
+                  value={emailBody}
+                  onChange={(e: any) => setEmailBody(e.target.value)}
+                  rows={6}
+                  fullWidth
+                />
+              </Box>
+
+              {/* Optional Links: Resume & Portfolio */}
+              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
+                <TextField
+                  size="small"
+                  label="Resume / CV Link (Google Drive, Dropbox, PDF)"
+                  placeholder="https://..."
+                  value={applyResumeUrl}
+                  onChange={(e) => setApplyResumeUrl(e.target.value)}
+                  fullWidth
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                />
+                <TextField
+                  size="small"
+                  label="Portfolio / Website URL (Optional)"
+                  placeholder="https://..."
+                  value={applyPortfolioUrl}
+                  onChange={(e) => setApplyPortfolioUrl(e.target.value)}
+                  fullWidth
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                />
+              </Box>
             </Box>
           )}
 
