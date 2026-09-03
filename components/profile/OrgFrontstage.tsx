@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Box, Typography, Paper, Avatar, Chip, Button, Grid } from '@mui/material';
+import { keyframes } from '@emotion/react';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import GroupsIcon from '@mui/icons-material/Groups';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
@@ -10,6 +11,32 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import DynamicFeedIcon from '@mui/icons-material/DynamicFeed';
 import PeopleIcon from '@mui/icons-material/People';
 import { useSociety } from '@/context/SocietyContext';
+
+const orgDriftGold = keyframes`
+  0% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(-70px, 60px) scale(1.15); }
+  66% { transform: translate(40px, 120px) scale(0.94); }
+  100% { transform: translate(0px, 0px) scale(1); }
+`;
+
+const orgDriftViolet = keyframes`
+  0% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(80px, -50px) scale(1.18); }
+  66% { transform: translate(-50px, 90px) scale(0.92); }
+  100% { transform: translate(0px, 0px) scale(1); }
+`;
+
+const orgDriftAmber = keyframes`
+  0% { transform: translate(0px, 0px) scale(0.94); }
+  50% { transform: translate(-60px, -70px) scale(1.2); }
+  100% { transform: translate(0px, 0px) scale(0.94); }
+`;
+
+const orgDriftIndigo = keyframes`
+  0% { transform: translate(0px, 0px) scale(1); }
+  50% { transform: translate(70px, 50px) scale(1.15); }
+  100% { transform: translate(0px, 0px) scale(1); }
+`;
 
 interface Props {
   tenant: string;
@@ -181,126 +208,119 @@ export default function OrgFrontstage({ tenant, slug, onFlipRequest }: Props) {
           p: { xs: 2, sm: 3, md: 4 },
           flex: 1,
           position: 'relative',
-          overflow: 'hidden',
           background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 45%, #f8fafc 100%)',
-          '@keyframes orgDriftGold': {
-            '0%': { transform: 'translate(0px, 0px) scale(1)' },
-            '33%': { transform: 'translate(-70px, 60px) scale(1.15)' },
-            '66%': { transform: 'translate(40px, 120px) scale(0.94)' },
-            '100%': { transform: 'translate(0px, 0px) scale(1)' },
-          },
-          '@keyframes orgDriftViolet': {
-            '0%': { transform: 'translate(0px, 0px) scale(1)' },
-            '33%': { transform: 'translate(80px, -50px) scale(1.18)' },
-            '66%': { transform: 'translate(-50px, 90px) scale(0.92)' },
-            '100%': { transform: 'translate(0px, 0px) scale(1)' },
-          },
-          '@keyframes orgDriftAmber': {
-            '0%': { transform: 'translate(0px, 0px) scale(0.94)' },
-            '50%': { transform: 'translate(-60px, -70px) scale(1.2)' },
-            '100%': { transform: 'translate(0px, 0px) scale(0.94)' },
-          },
-          '@keyframes orgDriftIndigo': {
-            '0%': { transform: 'translate(0px, 0px) scale(1)' },
-            '50%': { transform: 'translate(70px, 50px) scale(1.15)' },
-            '100%': { transform: 'translate(0px, 0px) scale(1)' },
-          },
         }}
       >
-        {/* ── ORG CONTAINER AMBIENT CANVAS (AMBER & VIOLET OPPOSITE COMPLEMENTARY PAIR) ── */}
+        {/* ── STICKY ORG AMBIENT CANVAS (FOLLOWS VIEWPORT, ZERO HARD BOTTOM EDGE) ── */}
         <Box
           sx={{
-            position: 'absolute',
-            inset: 0,
+            position: 'sticky',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: 0,
+            overflow: 'visible',
             pointerEvents: 'none',
             zIndex: 0,
-            overflow: 'hidden',
           }}
         >
-          {/* Soft Multi-Stop Radial Base (Amber & Violet) */}
           <Box
             sx={{
               position: 'absolute',
-              inset: 0,
-              background: 'radial-gradient(ellipse at 85% 12%, rgba(245, 158, 11, 0.13) 0%, transparent 55%), radial-gradient(ellipse at 15% 85%, rgba(124, 77, 255, 0.13) 0%, transparent 55%), radial-gradient(ellipse at 75% 80%, rgba(251, 191, 36, 0.08) 0%, transparent 60%), radial-gradient(ellipse at 20% 15%, rgba(99, 102, 241, 0.08) 0%, transparent 55%)',
-              filter: 'blur(45px)',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100vh',
+              minHeight: '100%',
+              overflow: 'hidden',
+              pointerEvents: 'none',
             }}
-          />
+          >
+            {/* Soft Multi-Stop Radial Base (Amber & Violet) */}
+            <Box
+              sx={{
+                position: 'absolute',
+                inset: 0,
+                background: 'radial-gradient(ellipse at 85% 12%, rgba(245, 158, 11, 0.14) 0%, transparent 55%), radial-gradient(ellipse at 15% 85%, rgba(124, 77, 255, 0.14) 0%, transparent 55%), radial-gradient(ellipse at 75% 80%, rgba(251, 191, 36, 0.09) 0%, transparent 60%), radial-gradient(ellipse at 20% 15%, rgba(99, 102, 241, 0.08) 0%, transparent 55%)',
+                filter: 'blur(45px)',
+              }}
+            />
 
-          {/* OPPOSITE COMPLEMENTARY ORB 1: Warm Amber / Gold Drift */}
-          <Box
-            sx={{
-              position: 'absolute',
-              top: '6%',
-              right: '-6%',
-              width: { xs: 320, md: 500 },
-              height: { xs: 320, md: 500 },
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(245, 158, 11, 0.22) 0%, rgba(251, 191, 36, 0.08) 45%, transparent 75%)',
-              filter: 'blur(65px)',
-              animation: 'orgDriftGold 25s ease-in-out infinite',
-              willChange: 'transform',
-            }}
-          />
+            {/* OPPOSITE COMPLEMENTARY ORB 1: Warm Amber / Gold Drift */}
+            <Box
+              sx={{
+                position: 'absolute',
+                top: '6%',
+                right: '-6%',
+                width: { xs: 320, md: 500 },
+                height: { xs: 320, md: 500 },
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(245, 158, 11, 0.24) 0%, rgba(251, 191, 36, 0.09) 45%, transparent 75%)',
+                filter: 'blur(65px)',
+                animation: `${orgDriftGold} 22s ease-in-out infinite`,
+                willChange: 'transform',
+              }}
+            />
 
-          {/* OPPOSITE COMPLEMENTARY ORB 2: Royal Violet Counter-Drift */}
-          <Box
-            sx={{
-              position: 'absolute',
-              bottom: '4%',
-              left: '-6%',
-              width: { xs: 320, md: 500 },
-              height: { xs: 320, md: 500 },
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(124, 77, 255, 0.20) 0%, rgba(99, 102, 241, 0.07) 50%, transparent 75%)',
-              filter: 'blur(70px)',
-              animation: 'orgDriftViolet 29s ease-in-out infinite',
-              willChange: 'transform',
-            }}
-          />
+            {/* OPPOSITE COMPLEMENTARY ORB 2: Royal Violet Counter-Drift */}
+            <Box
+              sx={{
+                position: 'absolute',
+                bottom: '4%',
+                left: '-6%',
+                width: { xs: 320, md: 500 },
+                height: { xs: 320, md: 500 },
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(124, 77, 255, 0.22) 0%, rgba(99, 102, 241, 0.08) 50%, transparent 75%)',
+                filter: 'blur(70px)',
+                animation: `${orgDriftViolet} 26s ease-in-out infinite`,
+                willChange: 'transform',
+              }}
+            />
 
-          {/* ACCENT ORB 3: Deep Indigo Counter-Swell */}
-          <Box
-            sx={{
-              position: 'absolute',
-              top: '42%',
-              left: '15%',
-              width: { xs: 280, md: 440 },
-              height: { xs: 280, md: 440 },
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(124, 77, 255, 0.04) 50%, transparent 75%)',
-              filter: 'blur(60px)',
-              animation: 'orgDriftIndigo 31s ease-in-out infinite',
-              willChange: 'transform',
-            }}
-          />
+            {/* ACCENT ORB 3: Deep Indigo Counter-Swell */}
+            <Box
+              sx={{
+                position: 'absolute',
+                top: '42%',
+                left: '15%',
+                width: { xs: 280, md: 440 },
+                height: { xs: 280, md: 440 },
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(99, 102, 241, 0.16) 0%, rgba(124, 77, 255, 0.05) 50%, transparent 75%)',
+                filter: 'blur(60px)',
+                animation: `${orgDriftIndigo} 28s ease-in-out infinite`,
+                willChange: 'transform',
+              }}
+            />
 
-          {/* ACCENT ORB 4: Luminous Honey / Saffron Drift */}
-          <Box
-            sx={{
-              position: 'absolute',
-              bottom: '20%',
-              right: '15%',
-              width: { xs: 260, md: 420 },
-              height: { xs: 260, md: 420 },
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(251, 191, 36, 0.16) 0%, rgba(245, 158, 11, 0.04) 50%, transparent 75%)',
-              filter: 'blur(65px)',
-              animation: 'orgDriftAmber 33s ease-in-out infinite',
-              willChange: 'transform',
-            }}
-          />
+            {/* ACCENT ORB 4: Luminous Honey / Saffron Drift */}
+            <Box
+              sx={{
+                position: 'absolute',
+                bottom: '20%',
+                right: '15%',
+                width: { xs: 260, md: 420 },
+                height: { xs: 260, md: 420 },
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(251, 191, 36, 0.18) 0%, rgba(245, 158, 11, 0.05) 50%, transparent 75%)',
+                filter: 'blur(65px)',
+                animation: `${orgDriftAmber} 30s ease-in-out infinite`,
+                willChange: 'transform',
+              }}
+            />
 
-          {/* Micro-Dot Matrix Physical Texture Overlay */}
-          <Box
-            sx={{
-              position: 'absolute',
-              inset: 0,
-              backgroundImage: 'radial-gradient(rgba(15, 23, 42, 0.035) 1px, transparent 1px)',
-              backgroundSize: '28px 28px',
-              opacity: 0.65,
-            }}
-          />
+            {/* Micro-Dot Matrix Physical Texture Overlay */}
+            <Box
+              sx={{
+                position: 'absolute',
+                inset: 0,
+                backgroundImage: 'radial-gradient(rgba(15, 23, 42, 0.035) 1px, transparent 1px)',
+                backgroundSize: '28px 28px',
+                opacity: 0.65,
+              }}
+            />
+          </Box>
         </Box>
 
         {/* Content Container (Layered above ambient canvas) */}
