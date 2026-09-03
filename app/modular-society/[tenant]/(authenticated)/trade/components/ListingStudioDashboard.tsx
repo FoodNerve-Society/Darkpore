@@ -240,33 +240,11 @@ export default function ListingStudioDashboard({
         <Typography variant="h4" sx={{ fontWeight: 900, letterSpacing: '-0.02em', mb: 1.5, color: '#1e293b', fontSize: { xs: '1.1rem', sm: '1.75rem', md: '2.125rem' } }}>
           Welcome to the Studio
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-          <Chip
-            label={`${drafts.length} active draft${drafts.length !== 1 ? 's' : ''} in your workspace`}
-            size="small"
-            sx={{ bgcolor: 'rgba(0,0,0,0.04)', color: 'text.secondary', fontWeight: 600, borderRadius: '8px' }}
-          />
-          {profile?.organizations && profile.organizations.length > 0 && (
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={() => router.push(`/modular-society/${tenant}/profile?tab=talent`)}
-              startIcon={<PeopleIcon sx={{ color: '#3b82f6' }} />}
-              sx={{
-                borderRadius: '8px',
-                fontWeight: 700,
-                textTransform: 'none',
-                fontSize: '0.78rem',
-                borderColor: '#cbd5e1',
-                color: '#0f172a',
-                py: 0.3,
-                '&:hover': { bgcolor: 'rgba(59, 130, 246, 0.05)', borderColor: '#3b82f6' },
-              }}
-            >
-              Review Org Applicant Ledger
-            </Button>
-          )}
-        </Box>
+        <Chip
+          label={`${drafts.length} active draft${drafts.length !== 1 ? 's' : ''} in your workspace`}
+          size="small"
+          sx={{ bgcolor: 'rgba(0,0,0,0.04)', color: 'text.secondary', fontWeight: 600, borderRadius: '8px' }}
+        />
       </Box>
 
       {/* ================================================================ */}

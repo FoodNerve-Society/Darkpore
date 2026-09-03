@@ -543,6 +543,7 @@ export default function ListingDetailPage() {
   const candidateLocation = profile?.state ? `${profile.state}, Nigeria` : "Nigeria";
   const [applyResumeUrl, setApplyResumeUrl] = useState('');
   const [applyPortfolioUrl, setApplyPortfolioUrl] = useState('');
+  const [customAnswers, setCustomAnswers] = useState<Record<string, { id: string, question: string, type: string, answer: string }>>({});
 
   // Fetch listing from DB with fallback to mock
   useEffect(() => {
@@ -703,6 +704,27 @@ export default function ListingDetailPage() {
 
   const handleApplySubmit = async () => {
     if (!listing) return;
+
+    // Validate required documents
+    if (listing.requiredDocuments?.requireResume && !applyResumeUrl.trim()) {
+      setToastMsg("Please provide your Resume / CV link as required by the employer.");
+      return;
+    }
+    if (listing.requiredDocuments?.requirePortfolio && !applyPortfolioUrl.trim()) {
+      setToastMsg("Please provide your Portfolio link as required by the employer.");
+      return;
+    }
+
+    // Validate required custom questions
+    if (listing.customQuestions && listing.customQuestions.length > 0) {
+      for (const q of listing.customQuestions) {
+        if (q.required && (!customAnswers[q.id]?.answer || !customAnswers[q.id].answer.trim())) {
+          setToastMsg(`Please answer the required question: "${q.question}"`);
+          return;
+        }
+      }
+    }
+
     setApplySubmitted(true);
     try {
       const res = await submitJobApplication({
@@ -714,6 +736,7 @@ export default function ListingDetailPage() {
         pitchTone: selectedPreset?.label,
         resumeUrl: applyResumeUrl.trim() || undefined,
         portfolioUrl: applyPortfolioUrl.trim() || undefined,
+        customAnswers: Object.values(customAnswers),
       });
       if (res.success) {
         setShowApplyModal(false);
@@ -1792,7 +1815,70 @@ export default function ListingDetailPage() {
                 </Typography>
               </Box>
 
-              {/* ── PREMIUM AUTOCOMPLETE TEMPLATE SELECTOR ───────── */}
+              {/* Employer Instructions Callout */}
+              {listing.applicationInstructions && (
+                <Box sx={{ p: 2, borderRadius: "14px", bgcolor: "rgba(124, 58, 237, 0.04)", border: "1px solid rgba(124, 58, 237, 0.2)" }}>
+                  <Typography sx={{ fontSize: "0.75rem", fontWeight: 800, color: PURPLE, textTransform: "uppercase", mb: 0.5 }}>
+                    📌 Employer Application Instructions
+                  </Typography>
+                  <Typography sx={{ fontSize: "0.85rem", color: "#334155", lineHeight: 1.6 }}>
+                    {listing.applicationInstructions}
+                  </Typography>
+                </Box>
+              )}
+
+              {/* Required Document Attachments Banner */}
+              {(listing.requiredDocuments?.requireResume || listing.requiredDocuments?.requirePortfolio || listing.requiredDocuments?.requireCoverLetter) && (
+                <Box sx={{ p: 1.5, px: 2, borderRadius: "12px", bgcolor: "#ecfdf5", border: "1px solid #a7f3d0", display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
+                  <Typography sx={{ fontSize: "0.75rem", fontWeight: 800, color: "#065f46" }}>
+                    📎 Attachments to include in your email:
+                  </Typography>
+                  {listing.requiredDocuments?.requireResume && (
+                    <Chip label="Resume / CV Required" size="small" sx={{ height: 22, fontWeight: 800, fontSize: "0.68rem", bgcolor: "#d1fae5", color: "#047857" }} />
+                  )}
+                  {listing.requiredDocuments?.requirePortfolio && (
+                    <Chip label="Portfolio / Work Samples Required" size="small" sx={{ height: 22, fontWeight: 800, fontSize: "0.68rem", bgcolor: "#d1fae5", color: "#047857" }} />
+                  )}
+                  {listing.requiredDocuments?.requireCoverLetter && (
+                    <Chip label="Cover Letter" size="small" sx={{ height: 22, fontWeight: 800, fontSize: "0.68rem", bgcolor: "#d1fae5", color: "#047857" }} />
+                  )}
+                </Box>
+              )}
+
+              {/* Custom Screening Questions for Email */}
+              {listing.customQuestions && listing.customQuestions.length > 0 && (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 2, p: 2, borderRadius: "16px", bgcolor: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                  <Typography sx={{ fontSize: "0.78rem", fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    Screening Questions (Will be embedded in your email)
+                  </Typography>
+                  {listing.customQuestions.map((q: any, idx: number) => (
+                    <Box key={q.id || idx}>
+                      <Typography sx={{ fontSize: "0.82rem", fontWeight: 700, color: "#1e293b", mb: 0.8 }}>
+                        {idx + 1}. {q.question} {q.required && <span style={{ color: "#ef4444" }}>*</span>}
+                      </Typography>
+                      <TextField
+                        size="small"
+                        fullWidth
+                        multiline={q.type === 'markdown'}
+                        rows={q.type === 'markdown' ? 3 : 1}
+                        type={q.type === 'date' ? 'date' : 'text'}
+                        placeholder={q.type === 'link' ? 'https://...' : 'Type your answer...'}
+                        value={customAnswers[q.id]?.answer || ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setCustomAnswers(prev => ({
+                            ...prev,
+                            [q.id]: { id: q.id, question: q.question, type: q.type, answer: val }
+                          }));
+                        }}
+                        sx={{ bgcolor: "#ffffff", '& .MuiOutlinedInput-root': { borderRadius: '10px' } }}
+                      />
+                    </Box>
+                  ))}
+                </Box>
+              )}
+
+              {/* Application Pitch Preset & Tone */}
               <Box>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
                   <AutoAwesomeIcon sx={{ fontSize: 16, color: PURPLE }} />
@@ -1812,7 +1898,7 @@ export default function ListingDetailPage() {
                 />
               </Box>
 
-              {/* ── PRE-COMPOSED LETTER (PREMIUM MARKDOWN EDITOR) ─── */}
+              {/* Pre-Composed Letter */}
               <Box sx={{ position: "relative" }}>
                 <Typography sx={{ fontSize: "0.78rem", fontWeight: 800, color: "#475569", mb: 1, textTransform: "uppercase", letterSpacing: "0.05em" }}>
                   Pre-Composed Candidate Letter (Fully Editable)
@@ -1881,6 +1967,63 @@ export default function ListingDetailPage() {
                 />
               </Paper>
 
+              {/* Optional / Required Document Links */}
+              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
+                <TextField
+                  size="small"
+                  label={listing.requiredDocuments?.requireResume ? "Resume / CV Link (Required by Employer) *" : "Resume / CV Link (Google Drive, PDF, Dropbox)"}
+                  placeholder="https://..."
+                  required={!!listing.requiredDocuments?.requireResume}
+                  value={applyResumeUrl}
+                  onChange={(e) => setApplyResumeUrl(e.target.value)}
+                  fullWidth
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                />
+                <TextField
+                  size="small"
+                  label={listing.requiredDocuments?.requirePortfolio ? "Portfolio Link (Required by Employer) *" : "Portfolio / Website URL (Optional)"}
+                  placeholder="https://..."
+                  required={!!listing.requiredDocuments?.requirePortfolio}
+                  value={applyPortfolioUrl}
+                  onChange={(e) => setApplyPortfolioUrl(e.target.value)}
+                  fullWidth
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                />
+              </Box>
+
+              {/* Screening Questions (Native Dynamic Form) */}
+              {listing.customQuestions && listing.customQuestions.length > 0 && (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 2, p: 2.5, borderRadius: "16px", bgcolor: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                  <Typography sx={{ fontSize: "0.8rem", fontWeight: 800, color: "#334155", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    Employer Screening Questions ({listing.customQuestions.length})
+                  </Typography>
+                  {listing.customQuestions.map((q: any, idx: number) => (
+                    <Box key={q.id || idx}>
+                      <Typography sx={{ fontSize: "0.84rem", fontWeight: 700, color: "#0f172a", mb: 0.8 }}>
+                        {idx + 1}. {q.question} {q.required && <span style={{ color: "#ef4444" }}>*</span>}
+                      </Typography>
+                      <TextField
+                        size="small"
+                        fullWidth
+                        multiline={q.type === 'markdown'}
+                        rows={q.type === 'markdown' ? 3 : 1}
+                        type={q.type === 'date' ? 'date' : 'text'}
+                        placeholder={q.type === 'link' ? 'https://...' : 'Type your answer...'}
+                        value={customAnswers[q.id]?.answer || ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setCustomAnswers(prev => ({
+                            ...prev,
+                            [q.id]: { id: q.id, question: q.question, type: q.type, answer: val }
+                          }));
+                        }}
+                        sx={{ bgcolor: "#ffffff", '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                      />
+                    </Box>
+                  ))}
+                </Box>
+              )}
+
               {/* Application Pitch Preset / Tone Selector */}
               <Box>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
@@ -1916,43 +2059,94 @@ export default function ListingDetailPage() {
                   fullWidth
                 />
               </Box>
-
-              {/* Optional Links: Resume & Portfolio */}
-              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
-                <TextField
-                  size="small"
-                  label="Resume / CV Link (Google Drive, Dropbox, PDF)"
-                  placeholder="https://..."
-                  value={applyResumeUrl}
-                  onChange={(e) => setApplyResumeUrl(e.target.value)}
-                  fullWidth
-                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
-                />
-                <TextField
-                  size="small"
-                  label="Portfolio / Website URL (Optional)"
-                  placeholder="https://..."
-                  value={applyPortfolioUrl}
-                  onChange={(e) => setApplyPortfolioUrl(e.target.value)}
-                  fullWidth
-                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
-                />
-              </Box>
             </Box>
           )}
 
           {/* ── 4. EXTERNAL ATS APPLICATION FLOW ───────────────── */}
           {listing.applicationMethod === 'external' && (
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 2, py: 2, textAlign: "center" }}>
-              <Typography sx={{ fontSize: "1rem", color: "#334155", fontWeight: 600 }}>
-                You are about to be redirected to the official applicant portal of:
-              </Typography>
-              <Typography variant="h5" sx={{ fontWeight: 900, color: "#0f172a" }}>
-                {orgName}
-              </Typography>
-              <Typography sx={{ fontSize: "0.88rem", color: "#64748b", maxWidth: 460, mx: "auto" }}>
-                Make sure to include your verified FoodNerve public link (<strong>{foodnerveProfileUrl}</strong>) on your application form.
-              </Typography>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5, py: 1 }}>
+              <Box sx={{ textAlign: "center", mb: 1 }}>
+                <Typography sx={{ fontSize: "0.95rem", color: "#334155", fontWeight: 600 }}>
+                  You are about to be redirected to the official applicant portal of:
+                </Typography>
+                <Typography variant="h5" sx={{ fontWeight: 900, color: "#0f172a", mt: 0.5 }}>
+                  {orgName}
+                </Typography>
+              </Box>
+
+              {/* Employer Instructions */}
+              {listing.applicationInstructions && (
+                <Box sx={{ p: 2, borderRadius: "14px", bgcolor: "rgba(2, 132, 199, 0.05)", border: "1px solid rgba(2, 132, 199, 0.2)" }}>
+                  <Typography sx={{ fontSize: "0.75rem", fontWeight: 800, color: "#0284c7", textTransform: "uppercase", mb: 0.5 }}>
+                    📌 Employer Application Instructions
+                  </Typography>
+                  <Typography sx={{ fontSize: "0.85rem", color: "#334155", lineHeight: 1.6 }}>
+                    {listing.applicationInstructions}
+                  </Typography>
+                </Box>
+              )}
+
+              {/* Candidate Preparation Checklist */}
+              <Paper elevation={0} sx={{ p: 2.5, borderRadius: "16px", bgcolor: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                <Typography sx={{ fontSize: "0.78rem", fontWeight: 800, color: "#475569", textTransform: "uppercase", mb: 1.5, letterSpacing: "0.04em" }}>
+                  ✅ Candidate Preparation Checklist
+                </Typography>
+
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1.2 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <CheckCircleIcon sx={{ fontSize: 16, color: "#10b981" }} />
+                    <Typography sx={{ fontSize: "0.84rem", color: "#334155", fontWeight: 600 }}>
+                      Verified FoodNerve Operator Credentials
+                    </Typography>
+                  </Box>
+
+                  {listing.requiredDocuments?.requireResume && (
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <CheckCircleIcon sx={{ fontSize: 16, color: "#10b981" }} />
+                      <Typography sx={{ fontSize: "0.84rem", color: "#334155", fontWeight: 600 }}>
+                        Resume / Curriculum Vitae ready to upload
+                      </Typography>
+                    </Box>
+                  )}
+
+                  {listing.requiredDocuments?.requirePortfolio && (
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <CheckCircleIcon sx={{ fontSize: 16, color: "#10b981" }} />
+                      <Typography sx={{ fontSize: "0.84rem", color: "#334155", fontWeight: 600 }}>
+                        Portfolio / Work Samples ready to submit
+                      </Typography>
+                    </Box>
+                  )}
+
+                  {listing.customQuestions && listing.customQuestions.length > 0 && (
+                    <Box sx={{ mt: 1, pt: 1, borderTop: "1px solid #e2e8f0" }}>
+                      <Typography sx={{ fontSize: "0.75rem", fontWeight: 800, color: "#64748b", mb: 0.8 }}>
+                        Screening topics to prepare for on the external portal:
+                      </Typography>
+                      {listing.customQuestions.map((q: any, idx: number) => (
+                        <Typography key={idx} sx={{ fontSize: "0.8rem", color: "#475569", pl: 1, mb: 0.4 }}>
+                          • {q.question}
+                        </Typography>
+                      ))}
+                    </Box>
+                  )}
+                </Box>
+              </Paper>
+
+              {/* Public Link Reminder */}
+              <Box sx={{ p: 1.5, px: 2, borderRadius: "12px", bgcolor: "#ffffff", border: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1 }}>
+                <Box>
+                  <Typography sx={{ fontSize: "0.7rem", fontWeight: 800, color: "#64748b", textTransform: "uppercase" }}>
+                    Your Verified Public Link
+                  </Typography>
+                  <Typography sx={{ fontSize: "0.84rem", fontWeight: 700, color: "#0f172a" }}>
+                    {foodnerveProfileUrl}
+                  </Typography>
+                </Box>
+                <IconButton size="small" onClick={handleCopyProfileUrl} sx={{ bgcolor: "#f1f5f9" }}>
+                  <ContentCopyIcon sx={{ fontSize: 16 }} />
+                </IconButton>
+              </Box>
             </Box>
           )}
 

@@ -51,6 +51,9 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import SendIcon from '@mui/icons-material/Send';
 import BoltIcon from '@mui/icons-material/Bolt';
 import TuneIcon from '@mui/icons-material/Tune';
+import QuizIcon from '@mui/icons-material/Quiz';
+import FolderOpenIcon from '@mui/icons-material/FolderOpen';
+import LinkIcon from '@mui/icons-material/Link';
 
 import {
   getOrgJobApplications,
@@ -1236,7 +1239,122 @@ export default function OrgApplicantLedger({
                 )}
               </Paper>
 
-              {/* Recruiter Private Notes */}
+              {/* Candidate Attached Documentation & Verified Links */}
+              {(selectedApp.resumeUrl || selectedApp.portfolioUrl || selectedApp.user?.username) && (
+                <Paper elevation={0} sx={{ p: 2.5, borderRadius: '18px', border: '1px solid #e2e8f0', bgcolor: '#ffffff' }}>
+                  <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <FolderOpenIcon sx={{ fontSize: 16, color: '#10b981' }} />
+                    Candidate Attachments & Verified Credentials
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2 }}>
+                    {selectedApp.resumeUrl && (
+                      <Box sx={{ p: 1.5, px: 2, borderRadius: '12px', bgcolor: '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <DescriptionIcon sx={{ fontSize: 18, color: '#059669' }} />
+                          <Typography sx={{ fontSize: '0.84rem', fontWeight: 700, color: '#0f172a' }}>
+                            Resume / Curriculum Vitae
+                          </Typography>
+                        </Box>
+                        <Button
+                          size="small"
+                          component="a"
+                          href={selectedApp.resumeUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          endIcon={<LaunchIcon sx={{ fontSize: 13 }} />}
+                          sx={{ textTransform: 'none', fontWeight: 800, fontSize: '0.75rem', color: '#059669', bgcolor: '#ecfdf5', borderRadius: '8px', px: 1.5 }}
+                        >
+                          View Document
+                        </Button>
+                      </Box>
+                    )}
+
+                    {selectedApp.portfolioUrl && (
+                      <Box sx={{ p: 1.5, px: 2, borderRadius: '12px', bgcolor: '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <LinkIcon sx={{ fontSize: 18, color: '#3b82f6' }} />
+                          <Typography sx={{ fontSize: '0.84rem', fontWeight: 700, color: '#0f172a' }}>
+                            Portfolio / Work Samples
+                          </Typography>
+                        </Box>
+                        <Button
+                          size="small"
+                          component="a"
+                          href={selectedApp.portfolioUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          endIcon={<LaunchIcon sx={{ fontSize: 13 }} />}
+                          sx={{ textTransform: 'none', fontWeight: 800, fontSize: '0.75rem', color: '#3b82f6', bgcolor: 'rgba(59, 130, 246, 0.08)', borderRadius: '8px', px: 1.5 }}
+                        >
+                          Open Portfolio
+                        </Button>
+                      </Box>
+                    )}
+
+                    {selectedApp.user?.username && (
+                      <Box sx={{ p: 1.5, px: 2, borderRadius: '12px', bgcolor: '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <VerifiedIcon sx={{ fontSize: 18, color: '#10b981' }} />
+                          <Typography sx={{ fontSize: '0.84rem', fontWeight: 700, color: '#0f172a' }}>
+                            FoodNerve Public Operator Profile
+                          </Typography>
+                        </Box>
+                        <Button
+                          size="small"
+                          component="a"
+                          href={`https://foodnerve.org/@u-${selectedApp.user.username}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          endIcon={<LaunchIcon sx={{ fontSize: 13 }} />}
+                          sx={{ textTransform: 'none', fontWeight: 800, fontSize: '0.75rem', color: '#0f172a', bgcolor: '#f1f5f9', borderRadius: '8px', px: 1.5 }}
+                        >
+                          @{selectedApp.user.username}
+                        </Button>
+                      </Box>
+                    )}
+                  </Box>
+                </Paper>
+              )}
+
+              {/* Screening Questions & Candidate Responses */}
+              {(() => {
+                let parsedAnswers: any[] = [];
+                if (selectedApp.customAnswers) {
+                  try {
+                    const raw = typeof selectedApp.customAnswers === 'string' ? JSON.parse(selectedApp.customAnswers) : selectedApp.customAnswers;
+                    if (Array.isArray(raw)) {
+                      parsedAnswers = raw;
+                    } else if (typeof raw === 'object' && raw !== null) {
+                      parsedAnswers = Object.values(raw);
+                    }
+                  } catch (e) {}
+                }
+
+                if (parsedAnswers.length === 0) return null;
+
+                return (
+                  <Paper elevation={0} sx={{ p: 2.5, borderRadius: '18px', border: '1px solid #e2e8f0', bgcolor: '#ffffff' }}>
+                    <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <QuizIcon sx={{ fontSize: 16, color: '#3b82f6' }} />
+                      Screening Questions & Responses ({parsedAnswers.length})
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                      {parsedAnswers.map((qa: any, idx: number) => (
+                        <Box key={idx} sx={{ p: 2, borderRadius: '14px', bgcolor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                          <Typography sx={{ fontWeight: 800, fontSize: '0.84rem', color: '#0f172a', mb: 0.8 }}>
+                            #{idx + 1}: {qa.question || qa.prompt || 'Screening Prompt'}
+                          </Typography>
+                          <Box sx={{ p: 1.5, borderRadius: '10px', bgcolor: '#ffffff', border: '1px solid #e2e8f0' }}>
+                            <Typography sx={{ fontSize: '0.88rem', color: '#334155', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                              {qa.answer || qa.response || <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>No response provided</span>}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      ))}
+                    </Box>
+                  </Paper>
+                );
+              })()}
               <Paper elevation={0} sx={{ p: 2.5, borderRadius: '18px', border: '1px solid #e2e8f0', bgcolor: '#ffffff' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
                   <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>

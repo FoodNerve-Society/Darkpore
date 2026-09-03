@@ -9,15 +9,16 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import PeopleIcon from '@mui/icons-material/People';
+import WorkIcon from '@mui/icons-material/Work';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { getActiveTheme } from './navigation/NavThemes';
 import { useCalendarOverlay } from '@/context/CalendarOverlayContext';
 
 // --- MOCK DATA FOR VISUAL PROTOTYPING ---
-type FeedItemType = 'trade' | 'learn' | 'system' | 'network';
+type FeedItemType = 'trade' | 'learn' | 'system' | 'network' | 'talent';
 
 interface MockFeedItem {
   id: string;
@@ -25,18 +26,22 @@ interface MockFeedItem {
   title: string;
   snippet: string;
   time: string;
+  link?: string;
 }
 
 const mockUpdates: MockFeedItem[] = [
-  { id: '1', type: 'trade', title: 'Bulk Cassava Deal', snippet: '50 Tons @ ₦450k', time: '2m' },
-  { id: '2', type: 'system', title: 'Escrow Released', snippet: '₦2.0M cleared for logistics', time: '1h' },
-  { id: '3', type: 'learn', title: 'Vertical Farming', snippet: 'Masterclass live now', time: '3h' },
-  { id: '4', type: 'network', title: 'New Coop Member', snippet: 'John Doe joined syndicate', time: '5h' },
-  { id: '5', type: 'trade', title: 'Price Alert: Cocoa', snippet: 'Spot price dropped by 2%', time: '6h' }
+  { id: '1', type: 'talent', title: 'New Candidate Applied', snippet: 'Senior Agronomist • Rank 4 Verified', time: '5m', link: '/profile?tab=talent' },
+  { id: '2', type: 'trade', title: 'Bulk Cassava Deal', snippet: '50 Tons @ ₦450k', time: '12m' },
+  { id: '3', type: 'talent', title: 'Candidate Shortlisted', snippet: 'Agro Logistics Lead advanced to Interview', time: '35m', link: '/profile?tab=talent' },
+  { id: '4', type: 'system', title: 'Escrow Released', snippet: '₦2.0M cleared for logistics', time: '1h' },
+  { id: '5', type: 'learn', title: 'Vertical Farming', snippet: 'Masterclass live now', time: '3h' },
+  { id: '6', type: 'network', title: 'New Coop Member', snippet: 'John Doe joined syndicate', time: '5h' },
+  { id: '7', type: 'trade', title: 'Price Alert: Cocoa', snippet: 'Spot price dropped by 2%', time: '6h' }
 ];
 
 export default function UpdatesFeed() {
   const pathname = usePathname();
+  const router = useRouter();
   const activeTheme = getActiveTheme(pathname);
   const { openCalendar } = useCalendarOverlay();
   const [activeFilter, setActiveFilter] = useState('All');
@@ -51,11 +56,13 @@ export default function UpdatesFeed() {
     let cardColor = activeTheme.main;
 
     if (item.type === 'trade') cardColor = '#10b981'; // Emerald
+    if (item.type === 'talent') cardColor = '#3b82f6'; // Blue
     if (item.type === 'learn') cardColor = '#8b5cf6'; // Violet
     if (item.type === 'system') cardColor = '#f59e0b'; // Amber
-    if (item.type === 'network') cardColor = '#3b82f6'; // Blue
+    if (item.type === 'network') cardColor = '#06b6d4'; // Cyan
 
     if (item.type === 'trade') Icon = TrendingUpIcon;
+    if (item.type === 'talent') Icon = WorkIcon;
     if (item.type === 'learn') Icon = PlayArrowIcon;
     if (item.type === 'network') Icon = PeopleIcon;
 
@@ -66,6 +73,17 @@ export default function UpdatesFeed() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: 'spring', damping: 20, delay: index * 0.05 }}
+        onClick={() => {
+          if (item.link) {
+            router.push(item.link);
+          } else if (item.type === 'talent') {
+            router.push('/profile?tab=talent');
+          } else if (item.type === 'trade') {
+            router.push('/trade');
+          } else if (item.type === 'learn') {
+            router.push('/learn');
+          }
+        }}
         sx={{
           p: 1.5,
           mb: 1.5,
@@ -141,6 +159,14 @@ export default function UpdatesFeed() {
     );
   };
 
+  const filteredUpdates = mockUpdates.filter(item => {
+    if (activeFilter === 'All') return true;
+    if (activeFilter === 'Jobs') return item.type === 'talent';
+    if (activeFilter === 'Trade') return item.type === 'trade';
+    if (activeFilter === 'Learn') return item.type === 'learn';
+    return true;
+  });
+
   return (
     <Box sx={{ maxWidth: '400px', width: '100%', mx: 'auto', display: 'flex', flexDirection: 'column', gap: 3, pt: 1 }}>
       
@@ -152,12 +178,12 @@ export default function UpdatesFeed() {
           borderRadius: 8, 
           p: 0.5 
         }}>
-          {['All', 'Trade', 'Learn'].map(filter => (
+          {['All', 'Jobs', 'Trade', 'Learn'].map(filter => (
             <Box 
               key={filter}
               onClick={() => setActiveFilter(filter)}
               sx={{ 
-                px: 2, py: 0.5, borderRadius: 8, cursor: 'pointer',
+                px: 1.8, py: 0.5, borderRadius: 8, cursor: 'pointer',
                 bgcolor: activeFilter === filter ? 'white' : 'transparent',
                 color: activeFilter === filter ? activeTheme.main : 'text.secondary',
                 fontWeight: activeFilter === filter ? 800 : 600,
@@ -306,7 +332,7 @@ export default function UpdatesFeed() {
           Latest Activity
         </Typography>
         <AnimatePresence>
-          {mockUpdates.map((item, index) => renderFeedCard(item, index))}
+          {filteredUpdates.map((item, index) => renderFeedCard(item, index))}
         </AnimatePresence>
       </Box>
       
