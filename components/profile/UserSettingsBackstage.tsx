@@ -1154,267 +1154,301 @@ export default function UserSettingsBackstage({ onClose, initialBlockId }: Props
         maxWidth={false}
         PaperProps={{
           sx: {
-            width: { xs: '96vw', md: '1180px' },
-            minWidth: { md: '1180px' },
-            maxWidth: { xs: '96vw', md: '1180px' },
-            height: { xs: '92vh', md: '780px' },
-            minHeight: { md: '780px' },
-            maxHeight: { xs: '92vh', md: '780px' },
-            borderRadius: '24px',
+            width: { xs: '98vw', sm: '94vw', md: '1120px' },
+            maxWidth: '1160px',
+            height: { xs: '94vh', sm: '90vh', md: '780px' },
+            maxHeight: { xs: '94vh', md: '780px' },
+            borderRadius: { xs: '20px', sm: '24px' },
             p: 0,
-            display: 'flex',
-            flexDirection: { xs: 'column', md: 'row' },
+            m: { xs: 0.5, sm: 2 },
             overflow: 'hidden',
-            boxShadow: '0 30px 90px -20px rgba(0, 0, 0, 0.45)',
             bgcolor: '#ffffff',
             border: '1px solid #e2e8f0',
+            boxShadow: '0 30px 90px -20px rgba(0, 0, 0, 0.45)',
           },
         }}
       >
-        {/* ── DESKTOP FIXED SIDEBAR (Width: 310px, Docked Left) ── */}
+        {/* ── UNIFIED INNER CONTAINER (Isolates from MuiDialog-paper CSS) ── */}
         <Box
           sx={{
-            display: { xs: 'none', md: 'flex' },
-            width: '310px',
-            flexShrink: 0,
-            bgcolor: '#f8fafc',
-            borderRight: '1px solid #e2e8f0',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            p: 2.5,
-            gap: 2,
-            overflowY: 'auto',
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            flexDirection: { xs: 'column', md: 'row' },
+            overflow: 'hidden',
+            position: 'relative',
           }}
         >
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {/* Header / Console Identity */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pb: 1.5, borderBottom: '1px solid #e2e8f0' }}>
-              <Avatar
-                src={editAvatarUrl || profile.avatarUrl}
-                sx={{ width: 40, height: 40, bgcolor: '#0f172a', color: '#ffffff', fontWeight: 900, border: `2px solid ${rankColor}` }}
-              >
-                {profile.firstName?.[0] || 'O'}
-              </Avatar>
-              <Box sx={{ minWidth: 0, flex: 1 }}>
-                <Typography noWrap sx={{ fontWeight: 900, fontSize: '0.92rem', color: '#0f172a' }}>
-                  {[profile.prefixes?.[0], profile.firstName, profile.lastName].filter(Boolean).join(' ') || 'Operator'}
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
-                  <Chip
-                    label={`Rank ${rank}`}
-                    size="small"
-                    sx={{ height: 18, fontSize: '0.65rem', fontWeight: 900, bgcolor: alpha(rankColor, 0.15), color: rankColor }}
-                  />
-                  <Typography noWrap sx={{ fontSize: '0.72rem', color: '#64748b' }}>
-                    Account Settings
-                  </Typography>
-                </Box>
-              </Box>
-            </Box>
-
-            {/* Block Switcher Tabs (All 7 Blocks) */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-              <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', px: 1 }}>
-                Sections
-              </Typography>
-              {BLOCKS_CATALOG.map((b) => {
-                const isActive = b.id === activeModalBlock;
-                return (
-                  <Box
-                    key={b.id}
-                    onClick={() => setActiveModalBlock(b.id)}
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1.5,
-                      p: 1.25,
-                      borderRadius: '12px',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease',
-                      bgcolor: isActive ? alpha(b.color, 0.1) : 'transparent',
-                      border: `1.5px solid ${isActive ? b.color : 'transparent'}`,
-                      color: isActive ? '#0f172a' : '#475569',
-                      '&:hover': {
-                        bgcolor: isActive ? alpha(b.color, 0.14) : '#f1f5f9',
-                      },
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: '8px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        bgcolor: isActive ? b.color : alpha(b.color, 0.15),
-                        color: isActive ? '#ffffff' : b.color,
-                        flexShrink: 0,
-                      }}
-                    >
-                      {b.icon}
-                    </Box>
-                    <Box sx={{ minWidth: 0, flex: 1 }}>
-                      <Typography sx={{ fontSize: '0.84rem', fontWeight: isActive ? 900 : 700, lineHeight: 1.2 }}>
-                        {b.shortTitle}
-                      </Typography>
-                      <Typography noWrap sx={{ fontSize: '0.7rem', color: isActive ? '#64748b' : '#94a3b8' }}>
-                        Part {b.number}
-                      </Typography>
-                    </Box>
-                    {isActive && (
-                      <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: b.color }} />
-                    )}
-                  </Box>
-                );
-              })}
-            </Box>
-          </Box>
-
-          {/* Docked Context Card ("What this is for & Why it exists") */}
-          <Paper
-            elevation={0}
-            sx={{
-              p: 2,
-              borderRadius: '16px',
-              bgcolor: alpha(currentModalBlockMeta.color, 0.05),
-              border: `1px solid ${alpha(currentModalBlockMeta.color, 0.2)}`,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 1.5,
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: currentModalBlockMeta.color }} />
-              <Typography sx={{ fontSize: '0.72rem', fontWeight: 900, color: currentModalBlockMeta.color, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                About This Section
-              </Typography>
-            </Box>
-
-            <Box>
-              <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
-                What this is for:
-              </Typography>
-              <Typography sx={{ fontSize: '0.76rem', color: '#1e293b', lineHeight: 1.4, mt: 0.2 }}>
-                {currentModalBlockMeta.whatFor}
-              </Typography>
-            </Box>
-
-            <Box>
-              <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
-                Why it exists:
-              </Typography>
-              <Typography sx={{ fontSize: '0.74rem', color: '#475569', lineHeight: 1.4, mt: 0.2 }}>
-                {currentModalBlockMeta.whyExists}
-              </Typography>
-            </Box>
-
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: 1, borderTop: `1px solid ${alpha(currentModalBlockMeta.color, 0.15)}` }}>
-              <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b' }}>{currentModalBlockMeta.statLabel}:</Typography>
-              <Typography sx={{ fontSize: '0.72rem', fontWeight: 900, color: currentModalBlockMeta.color }}>{currentModalBlockMeta.statValue}</Typography>
-            </Box>
-          </Paper>
-        </Box>
-
-        {/* ── MOBILE FIXED TOP BAR (xs-sm only) ── */}
-        <Box
-          sx={{
-            display: { xs: 'flex', md: 'none' },
-            flexDirection: 'column',
-            borderBottom: '1px solid #e2e8f0',
-            bgcolor: '#f8fafc',
-            flexShrink: 0,
-          }}
-        >
-          {/* Top row: Title + Close button */}
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1.5 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Box sx={{ width: 28, height: 28, borderRadius: '8px', bgcolor: alpha(currentModalBlockMeta.color, 0.15), color: currentModalBlockMeta.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {currentModalBlockMeta.icon}
-              </Box>
-              <Typography sx={{ fontWeight: 900, fontSize: '0.98rem', color: '#0f172a' }}>
-                {currentModalBlockMeta.shortTitle}
-              </Typography>
-              <Chip label={`#${currentModalBlockMeta.number}`} size="small" sx={{ height: 18, fontSize: '0.62rem', fontWeight: 900, bgcolor: alpha(currentModalBlockMeta.color, 0.15), color: currentModalBlockMeta.color }} />
-            </Box>
-            <IconButton onClick={() => setActiveModalBlock(null)} size="small" sx={{ bgcolor: '#ffffff', border: '1px solid #e2e8f0' }}>
-              <CloseIcon sx={{ fontSize: 18 }} />
-            </IconButton>
-          </Box>
-
-          {/* Horizontal scrollable tab pills */}
-          <Box sx={{ display: 'flex', gap: 1, overflowX: 'auto', px: 2, pb: 1.5, '::-webkit-scrollbar': { display: 'none' } }}>
-            {BLOCKS_CATALOG.map((b) => {
-              const isActive = b.id === activeModalBlock;
-              return (
-                <Chip
-                  key={b.id}
-                  label={b.shortTitle}
-                  onClick={() => setActiveModalBlock(b.id)}
-                  sx={{
-                    fontWeight: 800,
-                    fontSize: '0.75rem',
-                    cursor: 'pointer',
-                    bgcolor: isActive ? b.color : '#ffffff',
-                    color: isActive ? '#ffffff' : '#475569',
-                    border: `1px solid ${isActive ? b.color : '#e2e8f0'}`,
-                    flexShrink: 0,
-                  }}
-                />
-              );
-            })}
-          </Box>
-
-          {/* Collapsible Info Bar ("What & Why") on Mobile */}
-          <Box sx={{ px: 2, pb: 1 }}>
-            <Button
-              size="small"
-              onClick={() => setMobileContextOpen(!mobileContextOpen)}
-              sx={{ fontSize: '0.72rem', fontWeight: 800, color: currentModalBlockMeta.color, textTransform: 'none', p: 0 }}
-            >
-              {mobileContextOpen ? '▲ Hide Module Purpose' : 'ℹ️ What is this for and why does it exist?'}
-            </Button>
-            {mobileContextOpen && (
-              <Box sx={{ mt: 1, p: 1.5, borderRadius: '12px', bgcolor: alpha(currentModalBlockMeta.color, 0.06), border: `1px solid ${alpha(currentModalBlockMeta.color, 0.2)}` }}>
-                <Typography sx={{ fontSize: '0.74rem', color: '#1e293b', mb: 0.5 }}>
-                  <strong>What this is for:</strong> {currentModalBlockMeta.whatFor}
-                </Typography>
-                <Typography sx={{ fontSize: '0.72rem', color: '#475569' }}>
-                  <strong>Why it exists:</strong> {currentModalBlockMeta.whyExists}
-                </Typography>
-              </Box>
-            )}
-          </Box>
-        </Box>
-
-        {/* ── MAIN INTERACTIVE CANVAS (Right side on Desktop, lower canvas on Mobile) ── */}
-        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', minWidth: 0, overflow: 'hidden' }}>
-          {/* Canvas Desktop Header */}
+          {/* ── DESKTOP & TABLET FIXED SIDEBAR (Docked Left, Permanent on md+) ── */}
           <Box
             sx={{
               display: { xs: 'none', md: 'flex' },
-              alignItems: 'center',
+              width: '280px',
+              flexShrink: 0,
+              bgcolor: '#f8fafc',
+              borderRight: '1px solid #e2e8f0',
+              flexDirection: 'column',
               justifyContent: 'space-between',
-              px: 3.5,
-              py: 2,
-              borderBottom: '1px solid #f1f5f9',
+              p: 2.5,
+              gap: 2,
+              overflowY: 'auto',
+              height: '100%',
             }}
           >
-            <Box>
-              <Typography sx={{ fontWeight: 900, fontSize: '1.2rem', color: '#0f172a' }}>
-                {currentModalBlockMeta.title}
-              </Typography>
-              <Typography sx={{ fontSize: '0.78rem', color: '#64748b' }}>
-                {currentModalBlockMeta.subtitle}
-              </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {/* Header / Console Identity */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pb: 1.5, borderBottom: '1px solid #e2e8f0' }}>
+                <Avatar
+                  src={editAvatarUrl || profile.avatarUrl}
+                  sx={{ width: 40, height: 40, bgcolor: '#0f172a', color: '#ffffff', fontWeight: 900, border: `2px solid ${rankColor}` }}
+                >
+                  {profile.firstName?.[0] || 'O'}
+                </Avatar>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography noWrap sx={{ fontWeight: 900, fontSize: '0.92rem', color: '#0f172a' }}>
+                    {[profile.prefixes?.[0], profile.firstName, profile.lastName].filter(Boolean).join(' ') || 'Operator'}
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                    <Chip
+                      label={`Rank ${rank}`}
+                      size="small"
+                      sx={{ height: 18, fontSize: '0.65rem', fontWeight: 900, bgcolor: alpha(rankColor, 0.15), color: rankColor }}
+                    />
+                    <Typography noWrap sx={{ fontSize: '0.72rem', color: '#64748b' }}>
+                      Account Settings
+                    </Typography>
+                  </Box>
+                </Box>
+              </Box>
+
+              {/* Block Switcher Tabs (All 7 Blocks) */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', px: 1 }}>
+                  Sections
+                </Typography>
+                {BLOCKS_CATALOG.map((b) => {
+                  const isActive = b.id === activeModalBlock;
+                  return (
+                    <Box
+                      key={b.id}
+                      onClick={() => setActiveModalBlock(b.id)}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1.5,
+                        p: 1.25,
+                        borderRadius: '12px',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                        bgcolor: isActive ? alpha(b.color, 0.1) : 'transparent',
+                        border: `1.5px solid ${isActive ? b.color : 'transparent'}`,
+                        color: isActive ? '#0f172a' : '#475569',
+                        '&:hover': {
+                          bgcolor: isActive ? alpha(b.color, 0.14) : '#f1f5f9',
+                        },
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: '8px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          bgcolor: isActive ? b.color : alpha(b.color, 0.15),
+                          color: isActive ? '#ffffff' : b.color,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {b.icon}
+                      </Box>
+                      <Box sx={{ minWidth: 0, flex: 1 }}>
+                        <Typography sx={{ fontSize: '0.84rem', fontWeight: isActive ? 900 : 700, lineHeight: 1.2 }}>
+                          {b.shortTitle}
+                        </Typography>
+                        <Typography noWrap sx={{ fontSize: '0.7rem', color: isActive ? '#64748b' : '#94a3b8' }}>
+                          Part {b.number}
+                        </Typography>
+                      </Box>
+                      {isActive && (
+                        <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: b.color }} />
+                      )}
+                    </Box>
+                  );
+                })}
+              </Box>
             </Box>
-            <IconButton onClick={() => setActiveModalBlock(null)} size="small" sx={{ bgcolor: '#f8fafc', border: '1px solid #e2e8f0' }}>
-              <CloseIcon sx={{ fontSize: 18 }} />
-            </IconButton>
+
+            {/* Docked Context Card ("What this is for & Why it exists") */}
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2,
+                borderRadius: '16px',
+                bgcolor: alpha(currentModalBlockMeta.color, 0.05),
+                border: `1px solid ${alpha(currentModalBlockMeta.color, 0.2)}`,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 1.5,
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: currentModalBlockMeta.color }} />
+                <Typography sx={{ fontSize: '0.72rem', fontWeight: 900, color: currentModalBlockMeta.color, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  About This Section
+                </Typography>
+              </Box>
+
+              <Box>
+                <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
+                  What this is for:
+                </Typography>
+                <Typography sx={{ fontSize: '0.76rem', color: '#1e293b', lineHeight: 1.4, mt: 0.2 }}>
+                  {currentModalBlockMeta.whatFor}
+                </Typography>
+              </Box>
+
+              <Box>
+                <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
+                  Why it exists:
+                </Typography>
+                <Typography sx={{ fontSize: '0.74rem', color: '#475569', lineHeight: 1.4, mt: 0.2 }}>
+                  {currentModalBlockMeta.whyExists}
+                </Typography>
+              </Box>
+
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: 1, borderTop: `1px solid ${alpha(currentModalBlockMeta.color, 0.15)}` }}>
+                <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b' }}>{currentModalBlockMeta.statLabel}:</Typography>
+                <Typography sx={{ fontSize: '0.72rem', fontWeight: 900, color: currentModalBlockMeta.color }}>{currentModalBlockMeta.statValue}</Typography>
+              </Box>
+            </Paper>
           </Box>
 
-          {/* Canvas Scrollable Body */}
-          <Box sx={{ flex: 1, overflowY: 'auto', p: { xs: 2.5, md: 3.5 } }}>
+          {/* ── MOBILE HEADER BAR (xs-sm < 900px, Docked at Top) ── */}
+          <Box
+            sx={{
+              display: { xs: 'flex', md: 'none' },
+              flexDirection: 'column',
+              flexShrink: 0,
+              bgcolor: '#f8fafc',
+              borderBottom: '1px solid #e2e8f0',
+            }}
+          >
+            {/* Top row: Title + Close button */}
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
+                <Box sx={{ width: 32, height: 32, borderRadius: '10px', bgcolor: alpha(currentModalBlockMeta.color, 0.15), color: currentModalBlockMeta.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {currentModalBlockMeta.icon}
+                </Box>
+                <Box>
+                  <Typography sx={{ fontWeight: 900, fontSize: '0.98rem', color: '#0f172a', lineHeight: 1.2 }}>
+                    {currentModalBlockMeta.title}
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.68rem', color: '#64748b' }}>
+                    Part {currentModalBlockMeta.number} of 7
+                  </Typography>
+                </Box>
+              </Box>
+              <IconButton onClick={() => setActiveModalBlock(null)} size="small" sx={{ bgcolor: '#ffffff', border: '1px solid #e2e8f0', width: 34, height: 34 }}>
+                <CloseIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Box>
+
+            {/* Horizontal scrollable tab pills */}
+            <Box sx={{ display: 'flex', gap: 1, overflowX: 'auto', px: 2, pb: 1.2, '::-webkit-scrollbar': { display: 'none' } }}>
+              {BLOCKS_CATALOG.map((b) => {
+                const isActive = b.id === activeModalBlock;
+                return (
+                  <Chip
+                    key={b.id}
+                    label={`${b.number}. ${b.shortTitle}`}
+                    onClick={() => setActiveModalBlock(b.id)}
+                    sx={{
+                      fontWeight: 800,
+                      fontSize: '0.75rem',
+                      cursor: 'pointer',
+                      bgcolor: isActive ? b.color : '#ffffff',
+                      color: isActive ? '#ffffff' : '#475569',
+                      border: `1.5px solid ${isActive ? b.color : '#e2e8f0'}`,
+                      flexShrink: 0,
+                      height: 28,
+                    }}
+                  />
+                );
+              })}
+            </Box>
+
+            {/* Collapsible Info Bar ("What & Why") on Mobile */}
+            <Box sx={{ px: 2, pb: 1 }}>
+              <Button
+                size="small"
+                onClick={() => setMobileContextOpen(!mobileContextOpen)}
+                sx={{ fontSize: '0.72rem', fontWeight: 800, color: currentModalBlockMeta.color, textTransform: 'none', p: 0 }}
+              >
+                {mobileContextOpen ? '▲ Hide Purpose' : 'ℹ️ What is this section for?'}
+              </Button>
+              {mobileContextOpen && (
+                <Box sx={{ mt: 1, p: 1.5, borderRadius: '12px', bgcolor: alpha(currentModalBlockMeta.color, 0.06), border: `1px solid ${alpha(currentModalBlockMeta.color, 0.2)}` }}>
+                  <Typography sx={{ fontSize: '0.74rem', color: '#1e293b', mb: 0.5 }}>
+                    <strong>What this is for:</strong> {currentModalBlockMeta.whatFor}
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.72rem', color: '#475569' }}>
+                    <strong>Why it exists:</strong> {currentModalBlockMeta.whyExists}
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          </Box>
+
+          {/* ── MAIN INTERACTIVE CANVAS (Right side on Desktop, full width on Mobile) ── */}
+          <Box
+            sx={{
+              flex: 1,
+              minWidth: 0,
+              minHeight: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              height: { xs: 'auto', md: '100%' },
+              overflow: 'hidden',
+              bgcolor: '#ffffff',
+            }}
+          >
+            {/* Canvas Desktop Header (Hidden on Mobile) */}
+            <Box
+              sx={{
+                display: { xs: 'none', md: 'flex' },
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                px: 3.5,
+                py: 2,
+                borderBottom: '1px solid #f1f5f9',
+                flexShrink: 0,
+              }}
+            >
+              <Box>
+                <Typography sx={{ fontWeight: 900, fontSize: '1.2rem', color: '#0f172a' }}>
+                  {currentModalBlockMeta.title}
+                </Typography>
+                <Typography sx={{ fontSize: '0.78rem', color: '#64748b' }}>
+                  {currentModalBlockMeta.subtitle}
+                </Typography>
+              </Box>
+              <IconButton onClick={() => setActiveModalBlock(null)} size="small" sx={{ bgcolor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                <CloseIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Box>
+
+            {/* Canvas Scrollable Content (Takes 100% of remaining height on both desktop & mobile) */}
+            <Box
+              sx={{
+                flex: 1,
+                minHeight: 0,
+                overflowY: 'auto',
+                p: { xs: 2, sm: 2.5, md: 3.5 },
+                WebkitOverflowScrolling: 'touch',
+              }}
+            >
             {/* ── BLOCK 1: IDENTITY ── */}
             {activeModalBlock === 'identity' && (
               <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '280px 1fr' }, gap: 3.5 }}>
@@ -1856,22 +1890,43 @@ export default function UserSettingsBackstage({ onClose, initialBlockId }: Props
             )}
 
             {/* ── BLOCK 6: SOPS & PLAYBOOKS ── */}
-            {activeModalBlock === 'wiki' && (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                <Typography sx={{ fontSize: '0.88rem', color: '#64748b' }}>
-                  Helpful guides and rules for food handling and trading:
-                </Typography>
+            {activeModalBlock === 'wiki' && (() => {
+              const DEFAULT_GUIDES = [
+                {
+                  id: 'g-1',
+                  title: 'Food Safety & Hygiene Standards',
+                  category: 'Food Safety',
+                  slug: 'food-safety-standards',
+                  desc: 'Essential hygiene requirements for food handlers, cold storage, and transport.',
+                  isPublic: true,
+                },
+                {
+                  id: 'g-2',
+                  title: 'Grain Storage & Moisture Control',
+                  category: 'Crop Storage',
+                  slug: 'grain-moisture-control',
+                  desc: 'How to prevent post-harvest spoilage and weevil infestation in silos.',
+                  isPublic: true,
+                },
+                {
+                  id: 'g-3',
+                  title: 'Escrow & Trade Settlement Rules',
+                  category: 'Trading Rules',
+                  slug: 'escrow-trade-rules',
+                  desc: 'Understanding inspection sign-offs, Paystack escrow releases, and disputes.',
+                  isPublic: true,
+                },
+              ];
+              const displayDocs = wikiDocs.length > 0 ? wikiDocs : DEFAULT_GUIDES;
 
-                {wikiDocs.length === 0 ? (
-                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 8, gap: 1.5 }}>
-                    <MenuBookIcon sx={{ fontSize: 48, color: '#cbd5e1' }} />
-                    <Typography sx={{ color: '#64748b', fontSize: '0.92rem', fontStyle: 'italic' }}>
-                      No guides available yet.
-                    </Typography>
-                  </Box>
-                ) : (
+              return (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                  <Typography sx={{ fontSize: '0.88rem', color: '#64748b' }}>
+                    Helpful guides and rules for food handling and trading:
+                  </Typography>
+
                   <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
-                    {wikiDocs.map((doc) => (
+                    {displayDocs.map((doc) => (
                       <Box
                         key={doc.id}
                         onClick={() => {
@@ -1898,16 +1953,19 @@ export default function UserSettingsBackstage({ onClose, initialBlockId }: Props
                             <Chip label={doc.isPublic ? 'Public' : 'Restricted'} size="small" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 800, bgcolor: doc.isPublic ? '#ecfdf5' : '#fef2f2', color: doc.isPublic ? '#059669' : '#ef4444' }} />
                           </Box>
                           <Typography sx={{ fontSize: '0.78rem', color: '#64748b', mt: 0.5 }}>Category: {doc.category || 'Help Guide'}</Typography>
+                          {doc.desc && (
+                            <Typography sx={{ fontSize: '0.75rem', color: '#475569', mt: 0.5, lineHeight: 1.3 }}>{doc.desc}</Typography>
+                          )}
                         </Box>
-                        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', pt: 1 }}>
                           <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: '#6366f1' }}>Read Guide →</Typography>
                         </Box>
                       </Box>
                     ))}
                   </Box>
-                )}
-              </Box>
-            )}
+                </Box>
+              );
+            })()}
 
             {/* ── BLOCK 7: SECURITY & SESSIONS ── */}
             {activeModalBlock === 'security' && (
@@ -1978,7 +2036,8 @@ export default function UserSettingsBackstage({ onClose, initialBlockId }: Props
             )}
           </Box>
         </Box>
-      </Dialog>
+      </Box>
+    </Dialog>
 
       {/* SNACKBAR FEEDBACK */}
       <Snackbar open={!!toastMsg} autoHideDuration={4000} onClose={() => setToastMsg(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
