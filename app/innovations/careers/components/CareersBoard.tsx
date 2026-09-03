@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -419,6 +419,29 @@ export default function CareersBoard({
   const [selectedTier, setSelectedTier] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Auto-centering category pills track
+  const categoryTrackRef = useRef<any>(null);
+  const categoryPillRefs = useRef<Record<string, any>>({});
+
+  useEffect(() => {
+    if (activeCategory && categoryTrackRef.current) {
+      const activeEl = categoryPillRefs.current[activeCategory];
+      const container = categoryTrackRef.current;
+      if (container && activeEl) {
+        const timer = setTimeout(() => {
+          const containerWidth = container.offsetWidth;
+          const chipLeft = activeEl.offsetLeft;
+          const chipWidth = activeEl.offsetWidth;
+          container.scrollTo({
+            left: chipLeft - containerWidth / 2 + chipWidth / 2,
+            behavior: "smooth",
+          });
+        }, 50);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [activeCategory]);
+
   const allJobs = useMemo(() => {
     return [...(coreEcosystemRoles || []), ...(societyPartners || []), ...(externalSourced || [])];
   }, [coreEcosystemRoles, societyPartners, externalSourced]);
@@ -517,10 +540,11 @@ export default function CareersBoard({
       <Box sx={{ display: "flex", width: "100%", mb: 3, alignItems: "center", justifyContent: "center" }}>
         <Box sx={{ position: "relative", width: "max-content", maxWidth: "100%" }}>
           <Box
+            ref={categoryTrackRef}
             sx={{
               width: "100%",
               display: "flex",
-              justifyContent: "center",
+              justifyContent: { xs: "flex-start", sm: "center" },
               alignItems: "center",
               overflowX: "auto",
               p: 0.75,
@@ -531,6 +555,7 @@ export default function CareersBoard({
               borderRadius: "32px",
               border: "1px solid rgba(255, 255, 255, 0.9)",
               boxShadow: "0 8px 30px -6px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8)",
+              "::-webkit-scrollbar": { display: "none" },
             }}
           >
             {categories.map((cat) => {
@@ -538,6 +563,9 @@ export default function CareersBoard({
               return (
                 <Box
                   key={cat.id}
+                  ref={(el) => {
+                    categoryPillRefs.current[cat.id] = el;
+                  }}
                   onClick={() => setActiveCategory(cat.id)}
                   sx={{
                     px: { xs: 2, sm: 2.8 },

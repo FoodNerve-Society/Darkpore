@@ -54,6 +54,7 @@ import CheckIcon from '@mui/icons-material/Check';
 import ReplayIcon from '@mui/icons-material/Replay';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { auth } from '@/lib/firebase/client';
 import { signOut } from 'firebase/auth';
 import { useWiki } from '@/app/components/providers/WikiProvider';
@@ -109,6 +110,30 @@ export default function UserSettingsBackstage({ onClose, initialBlockId }: Props
 
   // Active Block Expanded into Full Modal (Triggered via expand icon on back face)
   const [activeModalBlock, setActiveModalBlock] = useState<ProfileBlockId | null>(null);
+
+  // Auto-centering mobile pills track
+  const mobilePillsTrackRef = useRef<any>(null);
+  const mobilePillRefs = useRef<Record<string, any>>({});
+
+  useEffect(() => {
+    if (activeModalBlock && mobilePillsTrackRef.current) {
+      const activeEl = mobilePillRefs.current[activeModalBlock];
+      const container = mobilePillsTrackRef.current;
+      if (container && activeEl) {
+        // Use timeout to guarantee DOM layout has settled on render/animation
+        const timer = setTimeout(() => {
+          const containerWidth = container.offsetWidth;
+          const chipLeft = activeEl.offsetLeft;
+          const chipWidth = activeEl.offsetWidth;
+          container.scrollTo({
+            left: chipLeft - containerWidth / 2 + chipWidth / 2,
+            behavior: 'smooth',
+          });
+        }, 50);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [activeModalBlock]);
 
   useEffect(() => {
     if (initialBlockId) {
@@ -1355,49 +1380,182 @@ export default function UserSettingsBackstage({ onClose, initialBlockId }: Props
               </IconButton>
             </Box>
 
-            {/* Horizontal scrollable tab pills */}
-            <Box sx={{ display: 'flex', gap: 1, overflowX: 'auto', px: 2, pb: 1.2, '::-webkit-scrollbar': { display: 'none' } }}>
-              {BLOCKS_CATALOG.map((b) => {
-                const isActive = b.id === activeModalBlock;
-                return (
-                  <Chip
-                    key={b.id}
-                    label={`${b.number}. ${b.shortTitle}`}
-                    onClick={() => setActiveModalBlock(b.id)}
-                    sx={{
-                      fontWeight: 800,
-                      fontSize: '0.75rem',
-                      cursor: 'pointer',
-                      bgcolor: isActive ? b.color : '#ffffff',
-                      color: isActive ? '#ffffff' : '#475569',
-                      border: `1.5px solid ${isActive ? b.color : '#e2e8f0'}`,
-                      flexShrink: 0,
-                      height: 28,
-                    }}
-                  />
-                );
-              })}
+            {/* Pill Category Tab Menu (FoodNerve .com Career Page Style) */}
+            <Box sx={{ px: 2, pb: 1.2 }}>
+              <Box
+                ref={mobilePillsTrackRef}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  overflowX: 'auto',
+                  p: 0.6,
+                  gap: 0.8,
+                  bgcolor: 'rgba(255, 255, 255, 0.85)',
+                  backdropFilter: 'blur(20px)',
+                  WebkitBackdropFilter: 'blur(20px)',
+                  borderRadius: '9999px',
+                  border: '1px solid rgba(226, 232, 240, 0.9)',
+                  boxShadow: '0 4px 20px -4px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.9)',
+                  '::-webkit-scrollbar': { display: 'none' },
+                }}
+              >
+                {BLOCKS_CATALOG.map((b) => {
+                  const isActive = b.id === activeModalBlock;
+                  return (
+                    <Box
+                      key={b.id}
+                      ref={(el) => {
+                        mobilePillRefs.current[b.id] = el;
+                      }}
+                      onClick={() => setActiveModalBlock(b.id)}
+                      sx={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 0.8,
+                        px: 1.8,
+                        py: 0.65,
+                        borderRadius: '9999px',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0,
+                        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                        bgcolor: isActive ? b.color : 'transparent',
+                        color: isActive ? '#ffffff' : '#475569',
+                        boxShadow: isActive ? `0 4px 14px ${alpha(b.color, 0.4)}` : 'none',
+                        '&:hover': {
+                          bgcolor: isActive ? b.color : alpha(b.color, 0.08),
+                          color: isActive ? '#ffffff' : '#0f172a',
+                        },
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          width: 18,
+                          height: 18,
+                          borderRadius: '9999px',
+                          bgcolor: isActive ? 'rgba(255, 255, 255, 0.25)' : alpha(b.color, 0.12),
+                          color: isActive ? '#ffffff' : b.color,
+                          fontSize: '0.68rem',
+                          fontWeight: 900,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        {b.number}
+                      </Box>
+                      <Typography
+                        sx={{
+                          fontSize: '0.78rem',
+                          fontWeight: isActive ? 900 : 700,
+                          letterSpacing: '-0.01em',
+                        }}
+                      >
+                        {b.shortTitle}
+                      </Typography>
+                    </Box>
+                  );
+                })}
+              </Box>
             </Box>
 
-            {/* Collapsible Info Bar ("What & Why") on Mobile */}
-            <Box sx={{ px: 2, pb: 1 }}>
-              <Button
-                size="small"
+            {/* Premium "About this section" Disclosure on Mobile */}
+            <Box sx={{ px: 2, pb: 1.5 }}>
+              <Paper
+                elevation={0}
                 onClick={() => setMobileContextOpen(!mobileContextOpen)}
-                sx={{ fontSize: '0.72rem', fontWeight: 800, color: currentModalBlockMeta.color, textTransform: 'none', p: 0 }}
+                sx={{
+                  p: 1.5,
+                  borderRadius: '16px',
+                  bgcolor: alpha(currentModalBlockMeta.color, 0.04),
+                  border: `1px solid ${alpha(currentModalBlockMeta.color, 0.2)}`,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.02)',
+                  '&:hover': {
+                    bgcolor: alpha(currentModalBlockMeta.color, 0.08),
+                    borderColor: alpha(currentModalBlockMeta.color, 0.35),
+                  },
+                }}
               >
-                {mobileContextOpen ? '▲ Hide Purpose' : 'ℹ️ What is this section for?'}
-              </Button>
-              {mobileContextOpen && (
-                <Box sx={{ mt: 1, p: 1.5, borderRadius: '12px', bgcolor: alpha(currentModalBlockMeta.color, 0.06), border: `1px solid ${alpha(currentModalBlockMeta.color, 0.2)}` }}>
-                  <Typography sx={{ fontSize: '0.74rem', color: '#1e293b', mb: 0.5 }}>
-                    <strong>What this is for:</strong> {currentModalBlockMeta.whatFor}
-                  </Typography>
-                  <Typography sx={{ fontSize: '0.72rem', color: '#475569' }}>
-                    <strong>Why it exists:</strong> {currentModalBlockMeta.whyExists}
-                  </Typography>
+                {/* Accordion Trigger Row */}
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box
+                      sx={{
+                        width: 22,
+                        height: 22,
+                        borderRadius: '6px',
+                        bgcolor: alpha(currentModalBlockMeta.color, 0.14),
+                        color: currentModalBlockMeta.color,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <AutoAwesomeIcon sx={{ fontSize: 13 }} />
+                    </Box>
+                    <Typography
+                      sx={{
+                        fontSize: '0.72rem',
+                        fontWeight: 900,
+                        color: currentModalBlockMeta.color,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em',
+                      }}
+                    >
+                      About This Section
+                    </Typography>
+                  </Box>
+
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Chip
+                      label={`${currentModalBlockMeta.statLabel}: ${currentModalBlockMeta.statValue}`}
+                      size="small"
+                      sx={{
+                        height: 20,
+                        fontSize: '0.65rem',
+                        fontWeight: 900,
+                        bgcolor: '#ffffff',
+                        color: currentModalBlockMeta.color,
+                        border: `1px solid ${alpha(currentModalBlockMeta.color, 0.25)}`,
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                      }}
+                    />
+                    <ExpandMoreIcon
+                      sx={{
+                        fontSize: 18,
+                        color: currentModalBlockMeta.color,
+                        transform: mobileContextOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                        transition: 'transform 0.25s ease',
+                      }}
+                    />
+                  </Box>
                 </Box>
-              )}
+
+                {/* Expanded Details */}
+                {mobileContextOpen && (
+                  <Box sx={{ mt: 1.5, pt: 1.2, borderTop: `1px solid ${alpha(currentModalBlockMeta.color, 0.12)}`, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <Box>
+                      <Typography sx={{ fontSize: '0.66rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                        What this is for:
+                      </Typography>
+                      <Typography sx={{ fontSize: '0.76rem', color: '#1e293b', lineHeight: 1.4, mt: 0.2 }}>
+                        {currentModalBlockMeta.whatFor}
+                      </Typography>
+                    </Box>
+
+                    <Box>
+                      <Typography sx={{ fontSize: '0.66rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                        Why it exists:
+                      </Typography>
+                      <Typography sx={{ fontSize: '0.74rem', color: '#475569', lineHeight: 1.4, mt: 0.2 }}>
+                        {currentModalBlockMeta.whyExists}
+                      </Typography>
+                    </Box>
+                  </Box>
+                )}
+              </Paper>
             </Box>
           </Box>
 
