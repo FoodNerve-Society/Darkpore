@@ -34,9 +34,9 @@ export default function OrgCommandContainer({ tenant, slug, isActive, isCollapse
 
   const currentOrg = selectedOrgId
     ? organizations.find((o) => o.id === selectedOrgId) || null
-    : (isActive ? (activeOrg || organizations[0] || null) : null);
+    : null;
   const currentActiveOrg = currentOrg || activeOrg || organizations[0] || null;
-  const currentSlug = currentOrg?.slug || (isActive ? (activeOrg?.slug || slug || null) : null);
+  const currentSlug = currentOrg?.slug || null;
   const hasOrgs = organizations.length > 0;
 
   const handleManageOpen = (block?: 'talent' | 'roster' | 'compliance' | 'governance' | 'activity', e?: React.MouseEvent) => {
@@ -476,7 +476,7 @@ export default function OrgCommandContainer({ tenant, slug, isActive, isCollapse
             </Box>
           </Paper>
         </Box>
-      ) : !currentSlug ? (
+      ) : !selectedOrgId || !currentSlug ? (
         /* ─── ORGANIZATIONS DIRECTORY LIST (CLEAN, MINIMAL, ZERO TAB ON TOP) ─── */
         <Box
           sx={{
@@ -490,7 +490,7 @@ export default function OrgCommandContainer({ tenant, slug, isActive, isCollapse
             position: 'relative',
           }}
         >
-          {/* Minimal Header with subtle Join shortcut */}
+          {/* Minimal Header */}
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 0.5 }}>
             <Box>
               <Typography sx={{ fontWeight: 800, fontSize: { xs: '1.1rem', md: '1.25rem' }, color: '#0f172a', letterSpacing: '-0.02em' }}>
@@ -500,25 +500,6 @@ export default function OrgCommandContainer({ tenant, slug, isActive, isCollapse
                 Select an organization to open its workspace
               </Typography>
             </Box>
-            <Button
-              size="small"
-              startIcon={<AddIcon sx={{ fontSize: 16 }} />}
-              onClick={() => setNoOrgModal('join')}
-              sx={{
-                borderRadius: '10px',
-                fontSize: '0.76rem',
-                fontWeight: 700,
-                color: '#0f172a',
-                bgcolor: '#f1f5f9',
-                border: '1px solid #e2e8f0',
-                textTransform: 'none',
-                px: 1.5,
-                py: 0.5,
-                '&:hover': { bgcolor: '#e2e8f0' },
-              }}
-            >
-              Join or Create
-            </Button>
           </Box>
 
           {/* Minimal Org Cards Stack */}
@@ -640,10 +621,74 @@ export default function OrgCommandContainer({ tenant, slug, isActive, isCollapse
                 </Paper>
               );
             })}
+
+            {/* ── "+ REGISTER OR JOIN ANOTHER ORGANIZATION" AT THE BOTTOM ── */}
+            <Paper
+              elevation={0}
+              onClick={() => setNoOrgModal('join')}
+              sx={{
+                p: 2,
+                borderRadius: '16px',
+                bgcolor: 'rgba(255, 255, 255, 0.5)',
+                border: '1.5px dashed #cbd5e1',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                cursor: 'pointer',
+                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                '&:hover': {
+                  bgcolor: '#ffffff',
+                  borderColor: '#0f172a',
+                  boxShadow: '0 4px 16px -2px rgba(15, 23, 42, 0.08)',
+                  '& .join-chip': {
+                    bgcolor: '#0f172a',
+                    color: '#ffffff',
+                  },
+                },
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box
+                  sx={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: '10px',
+                    bgcolor: 'rgba(15, 23, 42, 0.06)',
+                    color: '#0f172a',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <AddIcon sx={{ fontSize: 18 }} />
+                </Box>
+                <Box>
+                  <Typography sx={{ fontWeight: 800, color: '#0f172a', fontSize: '0.88rem' }}>
+                    Register or Join Another Organization
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.74rem', color: '#64748b' }}>
+                    Connect to corporate partners or register a new CAC entity
+                  </Typography>
+                </Box>
+              </Box>
+              <Chip
+                className="join-chip"
+                label="+ Add Workspace"
+                size="small"
+                sx={{
+                  bgcolor: '#f1f5f9',
+                  color: '#0f172a',
+                  fontWeight: 800,
+                  fontSize: '0.72rem',
+                  borderRadius: '8px',
+                  transition: 'all 0.2s ease',
+                }}
+              />
+            </Paper>
           </Box>
         </Box>
       ) : (
-        /* ─── ACTIVE ORG WORKSPACE (TOP SWITCHER TAB WITH BACK & JOIN ON EDGES) ─── */
+        /* ─── ACTIVE ORG WORKSPACE (TOP SWITCHER TAB WITH BACK & CAREER-STYLE PILLS) ─── */
         <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           <Box sx={{ mb: 1.5, flexShrink: 0 }}>
             <OrgSwitcherPills
@@ -654,7 +699,6 @@ export default function OrgCommandContainer({ tenant, slug, isActive, isCollapse
                 setSelectedOrgId(orgId);
                 switchOrg(orgId);
               }}
-              onJoinOrg={() => setNoOrgModal('join')}
             />
           </Box>
 
