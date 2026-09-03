@@ -5,7 +5,7 @@ import { Box, Typography, Paper, Avatar, LinearProgress, Button } from '@mui/mat
 import SettingsIcon from '@mui/icons-material/Settings';
 import FlipContainer from '@/app/modular-society/[tenant]/(authenticated)/components/shared/FlipContainer';
 import EditProfileBackstage from './EditProfileBackstage';
-import UserSettingsBackstage from './UserSettingsBackstage';
+import UserSettingsBackstage, { type ProfileBlockId } from './UserSettingsBackstage';
 import { useSociety, RANK_NAMES, RANK_COLORS, calculateRank, type RankLevel } from '@/context/SocietyContext';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
@@ -21,10 +21,10 @@ interface Props {
 
 export default function UserCommandContainer({ tenant, username, isActive, isCollapsed, onActivate }: Props) {
   const [isFlipped, setIsFlipped] = useState(false);
-  const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
+  const [activeBlockId, setActiveBlockId] = useState<ProfileBlockId | null>(null);
   const { profile } = useSociety();
 
-  const handleFlip = (blockId?: string) => {
+  const handleFlip = (blockId?: ProfileBlockId) => {
     if (blockId) setActiveBlockId(blockId);
     setIsFlipped(true);
   };
@@ -34,7 +34,7 @@ export default function UserCommandContainer({ tenant, username, isActive, isCol
     setTimeout(() => setActiveBlockId(null), 300); // clear after flip animation
   };
 
-  const handleDirectBlockOpen = (e: React.MouseEvent, blockId: string) => {
+  const handleDirectBlockOpen = (e: React.MouseEvent, blockId: ProfileBlockId) => {
     e.stopPropagation();
     setActiveBlockId(blockId);
     setIsFlipped(true);
@@ -175,7 +175,7 @@ export default function UserCommandContainer({ tenant, username, isActive, isCol
 
           {/* 2. Profile Activity Button Card */}
           <Box 
-            onClick={(e) => handleDirectBlockOpen(e, 'notifications')} 
+            onClick={(e) => handleDirectBlockOpen(e, 'security')} 
             sx={{ 
               display: 'flex',
               alignItems: 'center',
@@ -216,7 +216,7 @@ export default function UserCommandContainer({ tenant, username, isActive, isCol
 
           {/* 3. Manage Profile Button Card */}
           <Box 
-            onClick={(e) => handleDirectBlockOpen(e, 'edit-profile')} 
+            onClick={(e) => handleDirectBlockOpen(e, 'identity')} 
             sx={{ 
               display: 'flex',
               alignItems: 'center',
@@ -257,35 +257,22 @@ export default function UserCommandContainer({ tenant, username, isActive, isCol
 
         </Box>
 
-        {/* ─── PROGRESS + WALLET — Desktop only ─── */}
-        <Box sx={{ display: { xs: 'none', md: 'flex' }, flexDirection: 'column', gap: 1, width: '100%', mt: 2 }}>
-          {/* Progress */}
-          <Box 
-            onClick={(e) => handleDirectBlockOpen(e, 'quests')}
-            sx={{ cursor: 'pointer', '&:hover': { opacity: 0.8 }, p: 0.5, borderRadius: 1 }}
-          >
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.3 }}>
-              <Typography sx={{ fontSize: '0.55rem', color: '#64748b' }}>Rank Progress</Typography>
-              <Typography sx={{ fontSize: '0.55rem', color: '#94a3b8', fontWeight: 600 }}>
-                {rank >= 5 ? 'MAX' : `${Math.round(progress)}%`}
-              </Typography>
-            </Box>
-            <LinearProgress
-              variant="determinate"
-              value={progress}
-              sx={{
-                height: 3, borderRadius: 2, bgcolor: '#1e293b',
-                '& .MuiLinearProgress-bar': { borderRadius: 2, background: `linear-gradient(90deg, ${rankColor}, ${rankColor}bb)` },
-              }}
-            />
-          </Box>
-
-          {/* Wallet */}
-          <Box 
+        {/* ─── DESKTOP BOTTOM: WALLET & GATEKEEPER PILLS ─── */}
+        <Box sx={{
+          display: { xs: 'none', md: 'flex' },
+          flexDirection: 'column', gap: 1.5,
+          mt: 'auto', pt: 2,
+        }}>
+          {/* Wallet Balance Card */}
+          <Box
             onClick={(e) => handleDirectBlockOpen(e, 'wallet')}
-            sx={{ 
-              bgcolor: '#ffffff08', borderRadius: '10px', border: '1px solid #ffffff0a', p: 1.2,
-              cursor: 'pointer', transition: 'all 0.2s', '&:hover': { bgcolor: '#ffffff12', transform: 'scale(1.02)' }
+            sx={{
+              p: 1.25, borderRadius: '12px',
+              bgcolor: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.06)',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              '&:hover': { bgcolor: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.1)' }
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.3 }}>
@@ -301,7 +288,7 @@ export default function UserCommandContainer({ tenant, username, isActive, isCol
 
           {/* Gatekeeper dots */}
           <Box 
-            onClick={(e) => handleDirectBlockOpen(e, 'edit-profile')}
+            onClick={(e) => handleDirectBlockOpen(e, 'quests')}
             sx={{ 
               display: 'flex', gap: 0.5, justifyContent: 'center', cursor: 'pointer',
               p: 0.5, borderRadius: 1, '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' }
@@ -360,7 +347,7 @@ export default function UserCommandContainer({ tenant, username, isActive, isCol
 
           {/* Manage Profile CTA */}
           <Box 
-            onClick={(e) => handleDirectBlockOpen(e, 'edit-profile')} 
+            onClick={(e) => handleDirectBlockOpen(e, 'identity')} 
             sx={{ 
               display: 'flex',
               alignItems: 'center',
@@ -402,18 +389,18 @@ export default function UserCommandContainer({ tenant, username, isActive, isCol
   }
 
   return (
-    <FlipContainer
-      isFlipped={isFlipped}
-      frontContent={
-        <Paper elevation={0} sx={{ height: '100%', overflowY: 'auto', bgcolor: '#ffffff', borderRadius: 4, boxShadow: { xs: '0 8px 32px rgba(0,0,0,0.06)', md: '0 10px 40px rgba(0,0,0,0.04)' }, position: 'relative' }}>
-          <UserSettingsBackstage onClose={handleFlip} />
-        </Paper>
-      }
-      backContent={
-        <Paper elevation={0} sx={{ height: '100%', overflowY: 'auto', bgcolor: '#ffffff', borderRadius: 4, boxShadow: { xs: '0 8px 32px rgba(0,0,0,0.06)', md: '0 10px 40px rgba(0,0,0,0.04)' }, position: 'relative' }}>
-          <EditProfileBackstage onClose={handleUnflip} initialBlockId={activeBlockId} />
-        </Paper>
-      }
-    />
+    <Paper
+      elevation={0}
+      sx={{
+        height: '100%',
+        overflowY: 'auto',
+        bgcolor: '#ffffff',
+        borderRadius: 4,
+        boxShadow: { xs: '0 8px 32px rgba(0,0,0,0.06)', md: '0 10px 40px rgba(0,0,0,0.04)' },
+        position: 'relative',
+      }}
+    >
+      <UserSettingsBackstage initialBlockId={activeBlockId} />
+    </Paper>
   );
 }
