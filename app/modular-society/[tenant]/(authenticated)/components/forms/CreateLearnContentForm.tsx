@@ -45,6 +45,7 @@ import {
   Build as BuildIcon,
   Edit as EditIcon,
   AutoAwesome as AutoAwesomeIcon,
+  InfoOutlined as InfoOutlinedIcon,
 } from '@mui/icons-material';
 import { keyframes } from '@mui/system';
 import {
@@ -552,10 +553,22 @@ export default function CreateLearnContentForm({
   const [selectedCommodity, setSelectedCommodity] = useState<string>('Soybeans, Nuts and Meals');
   const [selectedFormat, setSelectedFormat] = useState<ArticleFormat>('brief');
   const [selectedEra, setSelectedEra] = useState<ArticleEra>('present');
-  const [isBlueprintCardFlipped, setIsBlueprintCardFlipped] = useState(false);
+  const [isBlueprintCardFlipped, setIsBlueprintCardFlipped] = useState<boolean>(() => {
+    const rawSub = initialTaxonomy?.subcategory || (initialTaxonomy as any)?.subcategoryId;
+    return !rawSub;
+  });
   const [blueprintConfigStep, setBlueprintConfigStep] = useState<1 | 2>(1);
+  const [hasLaunchedAssistant, setHasLaunchedAssistant] = useState(false);
   const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [articleEditorMode, setArticleEditorMode] = useState<'framework' | 'canvas'>('framework');
+
+  // If subcategory is not selected when viewing framework mode, keep the blueprint block started opened
+  useEffect(() => {
+    if (articleEditorMode === 'framework' && !selectedSubcategory) {
+      setIsBlueprintCardFlipped(true);
+      setBlueprintConfigStep(1);
+    }
+  }, [articleEditorMode, selectedSubcategory]);
 
   const blueprintFrontCardRef = useRef<HTMLDivElement>(null);
   const blueprintBackCardRef = useRef<HTMLDivElement>(null);
@@ -2325,7 +2338,7 @@ export default function CreateLearnContentForm({
                         {/* Left Content */}
                         <Box sx={{ flex: 1, textAlign: { xs: 'center', md: 'left' }, position: 'relative', zIndex: 1 }}>
                           <Typography sx={{ color: '#ffffff', fontWeight: 900, fontSize: { xs: '1.25rem', md: '1.4rem' }, letterSpacing: '-0.025em', mb: 0.75, lineHeight: 1.2 }}>
-                            Ready to draft this article?
+                            Get full articles here
                           </Typography>
                           <Typography sx={{ color: 'rgba(255, 255, 255, 0.65)', fontSize: '0.9rem', lineHeight: 1.55, maxWidth: 500, fontWeight: 450 }}>
                             Spend 1 minute to auto-draft all {currentBlueprint.length} blocks with AgroLLM, or choose Ignore to write yourself.
@@ -2336,7 +2349,10 @@ export default function CreateLearnContentForm({
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexShrink: 0, flexWrap: 'wrap', justifyContent: 'center', position: 'relative', zIndex: 1 }}>
                           <Button
                             variant="contained"
-                            onClick={() => setIsPromptSidePaneOpen(true)}
+                            onClick={() => {
+                              setHasLaunchedAssistant(true);
+                              setIsPromptSidePaneOpen(true);
+                            }}
                             startIcon={<AutoAwesomeIcon sx={{ fontSize: 18 }} />}
                             sx={{
                               bgcolor: activeFormatMeta.color,
@@ -2389,6 +2405,32 @@ export default function CreateLearnContentForm({
                           </Button>
                         </Box>
                       </Paper>
+
+                      {/* SUPPORTIVE ASSISTANT STATUS ALERT (Shows if assistant was launched but blocks not yet ingested) */}
+                      {hasLaunchedAssistant && blocks.length === 0 && (
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            p: 2,
+                            borderRadius: '16px',
+                            bgcolor: 'rgba(59, 130, 246, 0.08)',
+                            border: '1px solid rgba(59, 130, 246, 0.25)',
+                            maxWidth: 800,
+                            mx: 'auto',
+                            mt: 2.5,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1.5,
+                          }}
+                        >
+                          <InfoOutlinedIcon sx={{ color: '#60a5fa', fontSize: 22, flexShrink: 0 }} />
+                          <Box sx={{ flex: 1 }}>
+                            <Typography sx={{ color: '#bfdbfe', fontSize: '0.84rem', fontWeight: 600, lineHeight: 1.5 }}>
+                              We haven't detected your ingested blocks yet. Don't worry — your progress is saved in your browser, and you can resume anytime by clicking <strong>Start</strong> above.
+                            </Typography>
+                          </Box>
+                        </Paper>
+                      )}
                     </Box>
                   );
                 })()}
@@ -4391,6 +4433,7 @@ export default function CreateLearnContentForm({
       <EditorialPromptSidePane
         open={isPromptSidePaneOpen}
         onClose={() => setIsPromptSidePaneOpen(false)}
+        onOpen={() => setIsPromptSidePaneOpen(true)}
         format={selectedFormat}
         era={selectedEra}
         commodity={selectedCommodity}
@@ -4404,6 +4447,7 @@ export default function CreateLearnContentForm({
         onIngestAllBlocks={(newBlocks) => {
           setBlocks(newBlocks);
           setArticleEditorMode('canvas');
+          setHasLaunchedAssistant(false);
         }}
         onUpdateTitle={(newTitle) => setTitle(newTitle)}
         onUpdateDescription={(newDesc) => setDescription(newDesc)}
