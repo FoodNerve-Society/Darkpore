@@ -6,46 +6,26 @@ import {
   Box,
   Typography,
   IconButton,
-  Button,
-  TextField,
-  Tabs,
-  Tab,
   Chip,
-  Tooltip,
-  CircularProgress,
-  Divider,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
   alpha,
-  Paper,
-  Alert,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import TerminalIcon from '@mui/icons-material/Terminal';
-import BoltIcon from '@mui/icons-material/Bolt';
-import CheckIcon from '@mui/icons-material/Check';
-import ContentPasteIcon from '@mui/icons-material/ContentPaste';
-import SparkleIcon from '@mui/icons-material/AutoAwesome';
 import {
   ArticleFormat,
   ArticleEra,
   FORMAT_CONFIG,
   ERA_CONFIG,
-  BLOCK_DEFINITIONS,
   BlockType,
   getBlueprint,
 } from '@/lib/config/articleBlueprints';
 import { getCommodityMeta } from '@/lib/cms/commodities';
 import { foodChallenges } from '@/lib/cms/food/challenges';
 import {
-  generateArticleBlocksPipeline,
-  regenerateSingleBlock,
-  GeneratedBlockResult,
-} from '@/lib/actions/articleDraftPipeline';
+  PromptTerminalBox,
+  PromptChecklistItem,
+  PromptFastIngestBox,
+} from '@/components/prompts';
 
 interface EditorialPromptSidePaneProps {
   open: boolean;
@@ -66,7 +46,7 @@ interface EditorialPromptSidePaneProps {
     content: Record<string, any>;
   }>;
   pinnedClips?: string[];
-  onUpdateBlockContent: (blockId: string, updatedContent: Record<string, any>) => void;
+  onUpdateBlockContent?: (blockId: string, updatedContent: Record<string, any>) => void;
   onIngestAllBlocks?: (
     newBlocks: Array<{
       id: string;
@@ -93,34 +73,16 @@ export function EditorialPromptSidePane({
   currentDescription = '',
   blocks,
   pinnedClips = [],
-  onUpdateBlockContent,
   onIngestAllBlocks,
   onUpdateTitle,
   onUpdateDescription,
 }: EditorialPromptSidePaneProps) {
-  const [activeTab, setActiveTab] = useState<'pipeline' | 'codraft' | 'ingest' | 'block_refiner'>('pipeline');
-  const [copiedStep, setCopiedStep] = useState<number | null>(null);
+  const [checklist, setChecklist] = useState<Record<string, boolean>>({});
 
-  // Instant Co-Draft State
-  const [isGeneratingAll, setIsGeneratingAll] = useState(false);
-  const [generateError, setGenerateError] = useState<string | null>(null);
-  const [generatedDraft, setGeneratedDraft] = useState<{
-    title: string;
-    description: string;
-    blocks: GeneratedBlockResult[];
-  } | null>(null);
-
-  // Fast Ingest State
+  // Fast Ingest State under Document 4
   const [rawIngestPayload, setRawIngestPayload] = useState('');
   const [ingestError, setIngestError] = useState<string | null>(null);
   const [ingestSuccess, setIngestSuccess] = useState(false);
-
-  // Block Refiner State
-  const [selectedBlockId, setSelectedBlockId] = useState<string>(blocks[0]?.id || '');
-  const [customDirective, setCustomDirective] = useState('');
-  const [isRefining, setIsRefining] = useState(false);
-  const [refineError, setRefineError] = useState<string | null>(null);
-  const [refineSuccess, setRefineSuccess] = useState(false);
 
   const formatMeta = FORMAT_CONFIG[format] || FORMAT_CONFIG.brief;
   const eraMeta = ERA_CONFIG[era] || ERA_CONFIG.present;
@@ -135,187 +97,230 @@ export function EditorialPromptSidePane({
     );
   }, [category]);
 
-  // Selected block for refiner
-  const selectedBlock = useMemo(() => {
-    return blocks.find((b) => b.id === selectedBlockId) || blocks[0];
-  }, [blocks, selectedBlockId]);
+  const toggleChecklistItem = (id: string) => {
+    setChecklist((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
 
-  // Pre-compiled pipeline prompts with dynamic parameters
-  const compiledPrompts = useMemo(() => {
+  // Live Block Detection
+  const detectedBlockCount = useMemo(() => {
+    if (!rawIngestPayload.trim()) return 0;
+    try {
+      const trimmed = rawIngestPayload.trim();
+      if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) return parsed.length;
+        if (parsed.blocks && Array.isArray(parsed.blocks)) return parsed.blocks.length;
+      }
+      const jsonMatch = trimmed.match(/```json\s*([\s\S]*?)\s*```/) || trimmed.match(/\[\s*\{[\s\S]*\}\s*\]/);
+      if (jsonMatch) {
+        const extracted = JSON.parse(jsonMatch[1] || jsonMatch[0]);
+        if (Array.isArray(extracted)) return extracted.length;
+        if (extracted.blocks && Array.isArray(extracted.blocks)) return extracted.blocks.length;
+      }
+    } catch {
+      // ignore
+    }
+    return 0;
+  }, [rawIngestPayload]);
+
+  // ═══════════════════════════════════════════════════════════
+  // DOCUMENT 2: NARRATIVE ARCHITECTURE & THESIS (2a, 2b, 2c)
+  // ═══════════════════════════════════════════════════════════
+  const doc2Prompts = useMemo(() => {
     return [
       {
-        step: 1,
-        title: 'DOC 1A: Macro & Temporal Anchors',
-        role: 'Synthesize historical precedents, policy shifts & spatial bottlenecks',
-        prompt: `You are the Lead Agro Systems Director for Food Nerve (Nigeria).
-Analyze the macro economic drivers, historical precedents, and policy shifts for:
+        key: 'doc_2a',
+        code: 'DOC 2a',
+        title: 'Narrative Angle & Spiky Hook Formulation',
+        role: 'Synthesize the central contrarian argument and attention-arresting hook',
+        prompt: `You are the Lead Agribusiness Editorial Strategist for Food Nerve (Nigeria).
+We are drafting an interactive strategic publication with the following specifications:
 - Commodity: "${commodity}"
-- Challenge Area: "${category}" (${subcategory || 'General'})
-- Time Horizon: ${era.toUpperCase()} ERA
+- Strategic Challenge: "${category}" (${subcategory || 'General'})
+- Format Lens: "${formatMeta.label}" (${format.toUpperCase()})
+- Temporal Era: "${eraMeta.label}" (${era.toUpperCase()} ERA)
+- Working Title: "${currentTitle || 'Agribusiness Strategic Intelligence'}"
 
-Identify:
-1. The historical anchor & structural bottleneck in Nigeria.
-2. The monetary / currency / import substitution pressure (e.g. FX volatility, tariffs, fuel subsidies).
-3. The active production corridors (e.g. Kano, Oyo, Kaduna, Benue, Niger).
-4. Concrete unit friction points experienced by aggregators, processors, and farmers.`,
+[TASK 2a: NARRATIVE ANGLE & SPIKY HOOK]
+1. Formulate 3 distinct "Spiky Points of View" that challenge lazy conventional assumptions in the Nigerian agricultural market.
+2. For each angle, write a 2-sentence opening hook designed to grab commercial aggregators, processors, and investors.
+3. Establish the central economic thesis: what structural bottleneck (e.g. FX volatility, storage losses, diesel costs, aggregation fragmentation) is creating the crisis or opportunity right now?`,
       },
       {
-        step: 2,
-        title: 'DOC 1B: Drucker Innovation Engine',
-        role: 'Scan for incongruities, demographic shifts & process need breakthroughs',
-        prompt: `Apply Peter Drucker's 7 Sources of Innovation to:
-- Commodity: "${commodity}"
-- Category: "${category}" (${subcategory || 'General'})
+        key: 'doc_2b',
+        code: 'DOC 2b',
+        title: 'Target Value Chain Persona & Operational Stakes',
+        role: 'Define reader persona, daily frictions, and financial downside of inaction',
+        prompt: `[TASK 2b: TARGET PERSONA & OPERATIONAL STAKES]
+Context: "${commodity}" × "${category}" (${subcategory || 'General'}) in Nigeria.
+Publication Type: ${formatMeta.label} (${eraMeta.label}).
 
-Highlight:
-1. The Unexpected Success / Failure in recent commercial operations.
-2. Incongruity between economic reality and farmer/market assumptions.
-3. Specific Process Needs (storage protocols, cold chain, aggregation standards).
-4. New Knowledge & technological catalysts ready for deployment.`,
+1. Identify the primary commercial operator affected (e.g., Northern Commodity Aggregator, Industrial Food Processor, Cold-Chain Fleet Operator, Commercial Farmer).
+2. Detail their current "Workaround" vs the "Real Cost of Inaction":
+   - Unit Economics impact: specify losses in ₦ per metric ton, percentage spoilage, or margin erosion.
+   - Seasonal operational timeline: when does the pressure peak (planting, harvest glut, or lean season)?
+3. Draft a crisp 1-paragraph Persona Dossier describing their operational reality on the ground.`,
       },
       {
-        step: 3,
-        title: 'DOC 1C: Spectrum & Spiky Thesis',
-        role: 'Synthesize contrarian editorial angles & high-conviction hooks',
-        prompt: `Generate 3 contrarian thesis angles for an editorial piece on "${commodity}" (${category}):
-Format: ${format.toUpperCase()} (${era.toUpperCase()} ERA)
-Working Title: "${currentTitle || 'Agribusiness Strategic Intelligence'}"
-
-Each angle must:
-- Challenge mainstream NGO / conventional donor assumptions.
-- Provide a concrete unit economics hypothesis (₦/ton, margins, % waste).
-- Target operational aggregators, enterprise off-takers, and agtech investors.
-- Conclude with a clear strategic posture for Nigerian operators.`,
-      },
-      {
-        step: 4,
-        title: 'DOC 2: Multi-Block Blueprint Composer',
-        role: `Compose full ${currentBlueprint.length}-block interactive article JSON payload`,
-        prompt: `Generate complete structured JSON payloads for the following ${currentBlueprint.length} blocks matching our editorial SOP:
+        key: 'doc_2c',
+        code: 'DOC 2c',
+        title: 'Blueprint Skeleton & Block Sequence Mapping',
+        role: `Map the narrative arc across all ${currentBlueprint.length} blueprint blocks`,
+        prompt: `[TASK 2c: BLUEPRINT SKELETON MAPPING]
+Our interactive publication requires exactly ${currentBlueprint.length} blocks following our structured editorial SOP:
 
 ${currentBlueprint
   .map(
     (b, i) =>
-      `${i + 1}. Block Type: "${b.type}", Role: "${b.role}"\n   SOP Directive: ${b.desc}\n   Content Hint: ${b.hint}`
+      `Block ${i + 1}: [${b.type.toUpperCase()}]\n- Editorial Role: "${b.role}"\n- SOP Directive: ${b.desc}\n- Core Hint: ${b.hint}`
   )
   .join('\n\n')}
 
-Topic Parameters:
-- Commodity: "${commodity}"
-- Category: "${category}" (${subcategory || 'General'})
-- Format: "${format.toUpperCase()}" (${era.toUpperCase()} ERA)
-- Working Title: "${currentTitle || 'Agribusiness Strategic Intelligence'}"
-${pinnedClips.length > 0 ? `\nPinned Ground Intelligence:\n${pinnedClips.join('\n---\n')}` : ''}
-
-Output format: Return an array of ${currentBlueprint.length} JSON objects with fields: { "type": string, "role": string, "content": object }`,
+Review the topic: "${commodity}" in "${category}" (${subcategory || 'General'}).
+Map out a bulleted 1-sentence outline for each of the ${currentBlueprint.length} blocks above so the narrative flows seamlessly from opening hook to empirical proof, unit economics, and final strategic directive.`,
       },
     ];
-  }, [commodity, category, subcategory, era, format, currentTitle, currentBlueprint, pinnedClips]);
+  }, [commodity, category, subcategory, formatMeta, eraMeta, format, era, currentTitle, currentBlueprint]);
 
-  const handleCopyPrompt = (text: string, stepIdx: number) => {
-    navigator.clipboard.writeText(text);
-    setCopiedStep(stepIdx);
-    setTimeout(() => setCopiedStep(null), 2000);
-  };
+  // ═══════════════════════════════════════════════════════════
+  // DOCUMENT 3: BLOCK-BY-BLOCK CONTENT DRAFTING (3a, 3b, 3c)
+  // ═══════════════════════════════════════════════════════════
+  const doc3Prompts = useMemo(() => {
+    return [
+      {
+        key: 'doc_3a',
+        code: 'DOC 3a',
+        title: 'Foundation Blocks: Hook, Subheading & 3-Point Executive Summary',
+        role: 'Draft the opening anchor blocks with temporal markers',
+        prompt: `[TASK 3a: FOUNDATION BLOCKS]
+Generate the opening content blocks for our ${formatMeta.label} on "${commodity}" (${category}):
 
-  // Instant Co-Draft execution
-  const handleExecuteFullPipeline = async () => {
-    setIsGeneratingAll(true);
-    setGenerateError(null);
+1. Subheading Block:
+   - A punchy 1-sentence subheadline with high operational specificity (mentioning corridors like Kano, Benue, Oyo, or Kaduna).
 
-    try {
-      const res = await generateArticleBlocksPipeline({
-        commodity,
-        category,
-        subcategory,
-        format,
-        era,
-        title: currentTitle || `${commodity} Strategic Blueprint`,
-        description: currentDescription,
-        pinnedClips,
-      });
+2. Executive Summary Block (Strict 3-Point Structure for ${era.toUpperCase()} Era):
+   - Point 1 (${era === 'past' ? 'The Original Promise' : era === 'future' ? 'The Dying Paradigm' : 'The Crisis'}): State the empirical reality with concrete data.
+   - Point 2 (${era === 'past' ? 'The Friction Point' : era === 'future' ? 'The Disruption' : 'The Workaround'}): Detail the commercial bottleneck.
+   - Point 3 (${era === 'past' ? 'The Loss' : era === 'future' ? 'The Horizon Year' : 'The Primary Actor Affected'}): Summarize the net financial consequence in ₦ or percentage.`,
+      },
+      {
+        key: 'doc_3b',
+        code: 'DOC 3b',
+        title: 'Analytical & Interactive Core Blocks: Directives, Economics & Proof',
+        role: 'Draft unit economics calculations, comparison matrices, and tactical directives',
+        prompt: `[TASK 3b: ANALYTICAL & INTERACTIVE CORE BLOCKS]
+Draft the rigorous data and interactive blocks for "${commodity}" (${category}):
 
-      if (res.success && res.blocks && res.blocks.length > 0) {
-        setGeneratedDraft({
-          title: res.title,
-          description: res.description,
-          blocks: res.blocks,
-        });
-      } else {
-        setGenerateError(res.error || 'Failed to generate blocks pipeline.');
-      }
-    } catch (err: any) {
-      setGenerateError(err.message || 'Error occurred during pipeline generation.');
-    } finally {
-      setIsGeneratingAll(false);
-    }
-  };
+1. Strategic Directive Block:
+   - Urgency Level: High / Critical / Immediate.
+   - Target Persona: Primary operator who must execute this directive.
+   - 3 Actionable Bullet Directives: Concrete operational instructions (storage temperature, aggregation protocol, contract hedging).
 
-  const handleApplyGeneratedToCanvas = () => {
-    if (!generatedDraft) return;
+2. Unit Economics / Comparison Matrix Block:
+   - Provide realistic Nigerian agribusiness figures (e.g. ₦350,000/ton farmgate vs ₦580,000/ton terminal market; 18-24% post-harvest loss; transport costs per truckload).
+   - Show the margin difference between business-as-usual vs the proposed intervention.
 
-    if (onUpdateTitle && generatedDraft.title) {
-      onUpdateTitle(generatedDraft.title);
-    }
-    if (onUpdateDescription && generatedDraft.description) {
-      onUpdateDescription(generatedDraft.description);
-    }
+3. Myth vs Fact / Core Interactive Block:
+   - Myth: Common misconception held by traders or farmers.
+   - Fact: Ground operational reality backed by logistics data.`,
+      },
+      {
+        key: 'doc_3c',
+        code: 'DOC 3c',
+        title: 'Ground Intelligence & Ecosystem Call to Action',
+        role: 'Synthesize field evidence, pull quotes, and final network action triggers',
+        prompt: `[TASK 3c: GROUND INTELLIGENCE & CALL TO ACTION]
+${pinnedClips.length > 0 ? `Incorporate the following attached field notes:\n${pinnedClips.join('\n---\n')}\n\n` : ''}
+1. Pull Quote / Field Voice:
+   - Draft a raw, authentic quote from a market operator, warehouse manager, or truck driver on the corridor.
 
-    if (onIngestAllBlocks && generatedDraft.blocks.length > 0) {
-      const hydrated = generatedDraft.blocks.map((b, idx) => {
-        const sop = currentBlueprint[idx];
-        return {
-          id: `block_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 6)}`,
-          type: (sop?.type || b.type) as BlockType,
-          role: sop?.role || b.role || 'Analysis',
-          sopDesc: sop?.desc || '',
-          sopHint: sop?.hint || '',
-          content: b.content || {},
-        };
-      });
-      onIngestAllBlocks(hydrated);
-    }
+2. Call to Action (CTA) Block:
+   - What should the reader do next on the Food Nerve Network?
+   - Offer a clear next step: e.g. join the regional aggregation cooperative, access cold-storage capacity, apply for equipment leasing, or inspect live market prices.`,
+      },
+    ];
+  }, [commodity, category, formatMeta, era, pinnedClips]);
 
-    onClose();
-  };
+  // ═══════════════════════════════════════════════════════════
+  // DOCUMENT 4: FULL SYNTHESIS & INGESTION COMPOSER (4a, 4b)
+  // ═══════════════════════════════════════════════════════════
+  const doc4Prompts = useMemo(() => {
+    return [
+      {
+        key: 'doc_4a',
+        code: 'DOC 4a',
+        title: 'Master Multi-Block Blueprint Composer',
+        role: `Assemble all ${currentBlueprint.length} blocks into structured JSON for direct canvas import`,
+        prompt: `[TASK 4a: MASTER COMPILATION]
+You have conducted the research across Docs 2 and 3. Now compile the complete, publication-ready article payload for Food Nerve.
 
-  // Fast Ingest Parser
+Return ONLY a valid JSON object with the following schema:
+{
+  "title": "${currentTitle || `Strategic Intelligence: ${commodity} on the ${category} Corridor`}",
+  "description": "${currentDescription || `A comprehensive ${formatMeta.label.toLowerCase()} evaluating unit economics, supply bottlenecks, and tactical directives for Nigerian operators.`}",
+  "blocks": [
+${currentBlueprint
+  .map(
+    (b, i) => `    {
+      "type": "${b.type}",
+      "role": "${b.role}",
+      "content": { /* Complete payload matching ${b.type} SOP requirements */ }
+    }`
+  )
+  .join(',\n')}
+  ]
+}
+
+Ensure all ${currentBlueprint.length} blocks contain substantive, realistic data in Naira (₦) for Nigerian agribusiness corridors. Do not truncate with placeholders.`,
+      },
+    ];
+  }, [commodity, category, formatMeta, currentTitle, currentDescription, currentBlueprint]);
+
+  // Fast Ingest Parser handler with Fast Ingest Protocol Normalization
   const handleParseAndIngest = () => {
     setIngestError(null);
     setIngestSuccess(false);
 
     const trimmed = rawIngestPayload.trim();
     if (!trimmed) {
-      setIngestError('Please paste your generated output or JSON payload first.');
+      setIngestError('Please paste your generated JSON or block payload into the editor below.');
       return;
     }
 
     try {
       let parsedBlocks: any[] = [];
 
-      // Case 1: Pure JSON array or object with blocks
       if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
         const parsed = JSON.parse(trimmed);
         if (Array.isArray(parsed)) {
           parsedBlocks = parsed;
         } else if (parsed.blocks && Array.isArray(parsed.blocks)) {
           parsedBlocks = parsed.blocks;
-          if (parsed.title && onUpdateTitle) onUpdateTitle(parsed.title);
-          if (parsed.description && onUpdateDescription) onUpdateDescription(parsed.description);
+          if (parsed.title && onUpdateTitle) {
+            const rawTitle = Array.isArray(parsed.title) ? parsed.title[0] : parsed.title;
+            onUpdateTitle(String(rawTitle));
+          }
+          if (parsed.description && onUpdateDescription) {
+            const rawDesc = Array.isArray(parsed.description) ? parsed.description[0] : parsed.description;
+            onUpdateDescription(String(rawDesc));
+          }
         }
       }
 
-      // Case 2: Markdown blocks or embedded JSON blocks
       if (parsedBlocks.length === 0) {
         const jsonMatch = trimmed.match(/```json\s*([\s\S]*?)\s*```/) || trimmed.match(/\[\s*\{[\s\S]*\}\s*\]/);
         if (jsonMatch) {
           const extracted = JSON.parse(jsonMatch[1] || jsonMatch[0]);
-          if (Array.isArray(extracted)) parsedBlocks = extracted;
+          if (Array.isArray(extracted)) {
+            parsedBlocks = extracted;
+          } else if (extracted.blocks && Array.isArray(extracted.blocks)) {
+            parsedBlocks = extracted.blocks;
+          }
         }
       }
 
       if (parsedBlocks.length === 0) {
-        setIngestError('Could not find structured block array in pasted text. Please verify formatting.');
+        setIngestError('Could not locate a valid block array in the pasted output. Please check formatting.');
         return;
       }
 
@@ -342,41 +347,6 @@ Output format: Return an array of ${currentBlueprint.length} JSON objects with f
     }
   };
 
-  // Block Refiner execution
-  const handleExecuteRefine = async () => {
-    if (!selectedBlock) return;
-    setIsRefining(true);
-    setRefineError(null);
-    setRefineSuccess(false);
-
-    try {
-      const res = await regenerateSingleBlock({
-        blockType: selectedBlock.type,
-        role: selectedBlock.role || selectedBlock.type,
-        sopDesc: selectedBlock.sopDesc,
-        currentContent: selectedBlock.content,
-        customInstruction: customDirective.trim(),
-        commodity,
-        category,
-        subcategory,
-        title: currentTitle,
-        pinnedClips,
-      });
-
-      if (res.success && res.content) {
-        onUpdateBlockContent(selectedBlock.id, res.content);
-        setRefineSuccess(true);
-        setTimeout(() => setRefineSuccess(false), 3000);
-      } else {
-        setRefineError(res.error || 'Failed to refine block.');
-      }
-    } catch (err: any) {
-      setRefineError(err.message || 'Error occurred during block regeneration.');
-    } finally {
-      setIsRefining(false);
-    }
-  };
-
   return (
     <Drawer
       anchor="right"
@@ -397,7 +367,7 @@ Output format: Return an array of ${currentBlueprint.length} JSON objects with f
       }}
     >
       {/* ──────────────────────────────────────────────────────────── */}
-      {/* STICKY GLASSMORPHISM LUXURY HEADER                            */}
+      {/* STICKY GLASSMORPHISM LUXURY HEADER (LEARNSTUDIO & WIKI PARITY) */}
       {/* ──────────────────────────────────────────────────────────── */}
       <Box
         sx={{
@@ -448,7 +418,15 @@ Output format: Return an array of ${currentBlueprint.length} JSON objects with f
               Editorial AI Assistant
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 0.35 }}>
-              <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#10b981' }} />
+              <Box
+                sx={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: '50%',
+                  bgcolor: '#10b981',
+                  boxShadow: '0 0 8px #10b981',
+                }}
+              />
               <Typography
                 sx={{
                   color: '#64748b',
@@ -457,7 +435,7 @@ Output format: Return an array of ${currentBlueprint.length} JSON objects with f
                   letterSpacing: '-0.01em',
                 }}
               >
-                Guide AI with ground intelligence to compose all {currentBlueprint.length} blocks
+                Sequenced master prompts across Docs 2, 3 &amp; 4 for your {currentBlueprint.length}-block SOP
               </Typography>
             </Box>
           </Box>
@@ -484,46 +462,7 @@ Output format: Return an array of ${currentBlueprint.length} JSON objects with f
       </Box>
 
       {/* ──────────────────────────────────────────────────────────── */}
-      {/* TABS BAR                                                     */}
-      {/* ──────────────────────────────────────────────────────────── */}
-      <Box
-        sx={{
-          px: { xs: 2, sm: 3 },
-          borderBottom: '1px solid rgba(0, 0, 0, 0.06)',
-          bgcolor: '#ffffff',
-        }}
-      >
-        <Tabs
-          value={activeTab}
-          onChange={(_, v) => setActiveTab(v)}
-          variant="scrollable"
-          scrollButtons="auto"
-          sx={{
-            minHeight: 48,
-            '& .MuiTab-root': {
-              minHeight: 48,
-              fontWeight: 800,
-              fontSize: '0.82rem',
-              textTransform: 'none',
-              color: '#64748b',
-              '&.Mui-selected': { color: '#0f172a' },
-            },
-            '& .MuiTabs-indicator': {
-              bgcolor: formatMeta.color,
-              height: 3,
-              borderRadius: '3px 3px 0 0',
-            },
-          }}
-        >
-          <Tab value="pipeline" label="📡 Master Prompts (Doc 1 & 2)" />
-          <Tab value="codraft" label="⚡ Instant AI Co-Draft" />
-          <Tab value="ingest" label="📥 Fast Ingest Terminal" />
-          <Tab value="block_refiner" label={`✨ Block Refiner (${blocks.length})`} />
-        </Tabs>
-      </Box>
-
-      {/* ──────────────────────────────────────────────────────────── */}
-      {/* SCROLLABLE BODY                                              */}
+      {/* SCROLLABLE SEQUENTIAL PROMPT BODY (NO TABS, SEAMLESS FLOW)    */}
       {/* ──────────────────────────────────────────────────────────── */}
       <Box
         sx={{
@@ -532,11 +471,11 @@ Output format: Return an array of ${currentBlueprint.length} JSON objects with f
           p: { xs: 2.5, sm: 3.5 },
           display: 'flex',
           flexDirection: 'column',
-          gap: 3.5,
+          gap: 4.5,
         }}
       >
         {/* ──────────────────────────────────────────────────────────── */}
-        {/* VISUAL ANCHOR: DUAL SQUIRCLE INTERSECTION (LEARNSTUDIO STYLE) */}
+        {/* VISUAL ANCHOR: DUAL SQUIRCLE INTERSECTION                     */}
         {/* ──────────────────────────────────────────────────────────── */}
         <Box
           sx={{
@@ -683,7 +622,7 @@ Output format: Return an array of ${currentBlueprint.length} JSON objects with f
             justifyContent: 'center',
             gap: 1,
             flexWrap: 'wrap',
-            mt: -1,
+            mt: -1.5,
           }}
         >
           <Chip
@@ -725,499 +664,223 @@ Output format: Return an array of ${currentBlueprint.length} JSON objects with f
         </Box>
 
         {/* ──────────────────────────────────────────────────────────── */}
-        {/* TAB 1: MASTER PROMPTS (DOC 1 & DOC 2)                        */}
+        {/* SECTION 2: DOCUMENT 2 — ARCHITECTURE & THESIS (2a, 2b, 2c)   */}
         {/* ──────────────────────────────────────────────────────────── */}
-        {activeTab === 'pipeline' && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-            <Box sx={{ px: 0.5 }}>
-              <Typography sx={{ fontWeight: 900, color: '#0f172a', fontSize: '1.05rem', letterSpacing: '-0.02em' }}>
-                4-Phase Editorial Prompt Engine
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box
+              sx={{
+                width: 32,
+                height: 32,
+                borderRadius: '50%',
+                bgcolor: '#3b82f6',
+                color: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 900,
+                fontSize: '0.9rem',
+              }}
+            >
+              2
+            </Box>
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.2 }}>
+                Document 2: Architecture, Thesis &amp; Blueprint
               </Typography>
-              <Typography sx={{ color: '#64748b', fontSize: '0.82rem', mt: 0.25, lineHeight: 1.5 }}>
-                Copy each prompt into Claude, Gemini, or ChatGPT to synthesize rigorous Nigerian market intelligence, then paste the output in the Ingest tab.
+              <Typography sx={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 600 }}>
+                Establish contrarian angles, target commercial operators, and outline your {currentBlueprint.length} blocks.
               </Typography>
             </Box>
+          </Box>
 
-            {compiledPrompts.map((p) => (
-              <Paper
-                key={p.step}
-                elevation={0}
-                sx={{
-                  p: { xs: 2, sm: 2.5 },
-                  borderRadius: '20px',
-                  bgcolor: '#ffffff',
-                  border: '1.5px solid rgba(226, 232, 240, 0.9)',
-                  boxShadow: '0 4px 20px -4px rgba(15, 23, 42, 0.04)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 1.75,
-                  transition: 'all 0.2s ease',
-                  '&:hover': {
-                    borderColor: '#cbd5e1',
-                    boxShadow: '0 8px 28px -4px rgba(15, 23, 42, 0.08)',
-                  },
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-                    <Box
-                      sx={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: '9px',
-                        bgcolor: '#0f172a',
-                        color: '#ffffff',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontWeight: 900,
-                        fontSize: '0.8rem',
-                        flexShrink: 0,
-                      }}
-                    >
-                      {p.step}
-                    </Box>
-                    <Box>
-                      <Typography sx={{ fontWeight: 900, fontSize: '0.92rem', color: '#0f172a' }}>
-                        {p.title}
-                      </Typography>
-                      <Typography sx={{ fontSize: '0.75rem', color: '#64748b' }}>
-                        {p.role}
-                      </Typography>
-                    </Box>
-                  </Box>
-
-                  <Button
-                    size="small"
-                    variant="contained"
-                    onClick={() => handleCopyPrompt(p.prompt, p.step)}
-                    startIcon={copiedStep === p.step ? <CheckIcon sx={{ fontSize: 15 }} /> : <ContentCopyIcon sx={{ fontSize: 14 }} />}
-                    sx={{
-                      borderRadius: '10px',
-                      fontSize: '0.74rem',
-                      fontWeight: 800,
-                      bgcolor: copiedStep === p.step ? '#10b981' : '#0f172a',
-                      color: '#ffffff',
-                      textTransform: 'none',
-                      px: 2,
-                      py: 0.7,
-                      flexShrink: 0,
-                      boxShadow: 'none',
-                      '&:hover': {
-                        bgcolor: copiedStep === p.step ? '#059669' : '#1e293b',
-                      },
-                    }}
-                  >
-                    {copiedStep === p.step ? 'Copied ✓' : 'Copy Prompt'}
-                  </Button>
-                </Box>
-
-                {/* Dark Luxury Monospace Code Box */}
-                <Box
-                  sx={{
-                    bgcolor: '#0f172a',
-                    borderRadius: '14px',
-                    p: 2,
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
-                    maxHeight: 180,
-                    overflowY: 'auto',
-                  }}
-                >
-                  <Typography
-                    component="pre"
-                    sx={{
-                      color: '#e2e8f0',
-                      fontFamily: 'Consolas, Monaco, "Courier New", monospace',
-                      fontSize: '0.76rem',
-                      lineHeight: 1.6,
-                      whiteSpace: 'pre-wrap',
-                      wordBreak: 'break-word',
-                      m: 0,
-                    }}
-                  >
-                    {p.prompt}
-                  </Typography>
-                </Box>
-              </Paper>
+          {/* Action Checklist for Document 2 using PromptChecklistItem */}
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 1,
+              p: 1.75,
+              border: '1px solid rgba(59, 130, 246, 0.25)',
+              borderRadius: '14px',
+              bgcolor: 'rgba(59, 130, 246, 0.03)',
+            }}
+          >
+            {[
+              { id: 'sop_doc2_1', text: '1. Copy Doc 2a to discover 3 sharp contrarian angles in ChatGPT, Claude, or Gemini.' },
+              { id: 'sop_doc2_2', text: '2. Run Doc 2b to establish unit economics in Naira and primary operator stakes.' },
+              { id: 'sop_doc2_3', text: `3. Run Doc 2c to map the narrative flow across all ${currentBlueprint.length} blueprint blocks.` },
+            ].map((item) => (
+              <PromptChecklistItem
+                key={item.id}
+                id={item.id}
+                text={item.text}
+                checked={!!checklist[item.id]}
+                onToggle={toggleChecklistItem}
+                colorTheme="#3b82f6"
+              />
             ))}
           </Box>
-        )}
+
+          {/* Prompt Cards for Document 2 using PromptTerminalBox */}
+          {doc2Prompts.map((p) => (
+            <PromptTerminalBox
+              key={p.key}
+              id={p.key}
+              codeLabel={p.code}
+              title={p.title}
+              subtitle={p.role}
+              prompt={p.prompt}
+              colorTheme="#3b82f6"
+              copyButtonLabel={`Copy ${p.code} Prompt`}
+              copiedBannerText={`${p.code} Copied to Clipboard!`}
+            />
+          ))}
+        </Box>
 
         {/* ──────────────────────────────────────────────────────────── */}
-        {/* TAB 2: INSTANT AI CO-DRAFT                                   */}
+        {/* SECTION 3: DOCUMENT 3 — BLOCK CONTENT DRAFTING (3a, 3b, 3c)   */}
         {/* ──────────────────────────────────────────────────────────── */}
-        {activeTab === 'codraft' && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-            <Paper
-              elevation={0}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box
               sx={{
-                p: 3,
-                borderRadius: '20px',
-                bgcolor: '#ffffff',
-                border: `2px solid ${alpha(formatMeta.color, 0.25)}`,
-                boxShadow: `0 12px 32px ${alpha(formatMeta.color, 0.08)}`,
+                width: 32,
+                height: 32,
+                borderRadius: '50%',
+                bgcolor: '#f59e0b',
+                color: '#fff',
                 display: 'flex',
-                flexDirection: 'column',
-                gap: 2.5,
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 900,
+                fontSize: '0.9rem',
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Box
-                  sx={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: '12px',
-                    bgcolor: alpha(formatMeta.color, 0.14),
-                    color: formatMeta.color,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <BoltIcon sx={{ fontSize: 24 }} />
-                </Box>
-                <Box>
-                  <Typography sx={{ fontWeight: 900, color: '#0f172a', fontSize: '1.05rem' }}>
-                    Automated 5-Step AgroLLM Pipeline
-                  </Typography>
-                  <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>
-                    Directly synthesizes intelligence across all {currentBlueprint.length} blocks using Gemini
-                  </Typography>
-                </Box>
-              </Box>
-
-              <Typography sx={{ fontSize: '0.86rem', color: '#475569', lineHeight: 1.6 }}>
-                AgroLLM will ingest <strong>{commodity}</strong> in <strong>{category}</strong>, evaluate historical anchors, Drucker innovation sources, contrarian thesis angles, and structure interactive block schemas automatically.
+              3
+            </Box>
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.2 }}>
+                Document 3: Block-by-Block Content Drafting
               </Typography>
-
-              {generateError && (
-                <Alert severity="error" sx={{ borderRadius: '12px', fontSize: '0.82rem' }}>
-                  {generateError}
-                </Alert>
-              )}
-
-              {generatedDraft ? (
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-                  <Alert severity="success" sx={{ borderRadius: '12px', fontWeight: 700, fontSize: '0.84rem' }}>
-                    Generated {generatedDraft.blocks.length} blocks successfully for: &quot;{generatedDraft.title}&quot;
-                  </Alert>
-
-                  <Button
-                    variant="contained"
-                    onClick={handleApplyGeneratedToCanvas}
-                    sx={{
-                      bgcolor: formatMeta.color,
-                      color: '#ffffff',
-                      borderRadius: '14px',
-                      fontWeight: 900,
-                      py: 1.4,
-                      fontSize: '0.92rem',
-                      textTransform: 'none',
-                      boxShadow: `0 8px 24px ${alpha(formatMeta.color, 0.4)}`,
-                      '&:hover': { bgcolor: alpha(formatMeta.color, 0.9) },
-                    }}
-                  >
-                    Apply All Blocks to Canvas →
-                  </Button>
-                </Box>
-              ) : (
-                <Button
-                  variant="contained"
-                  disabled={isGeneratingAll}
-                  onClick={handleExecuteFullPipeline}
-                  startIcon={
-                    isGeneratingAll ? (
-                      <CircularProgress size={18} sx={{ color: '#fff' }} />
-                    ) : (
-                      <AutoAwesomeIcon />
-                    )
-                  }
-                  sx={{
-                    bgcolor: '#0f172a',
-                    color: '#ffffff',
-                    borderRadius: '14px',
-                    fontWeight: 900,
-                    py: 1.5,
-                    fontSize: '0.92rem',
-                    textTransform: 'none',
-                    boxShadow: '0 8px 24px rgba(15, 23, 42, 0.25)',
-                    '&:hover': { bgcolor: '#1e293b' },
-                  }}
-                >
-                  {isGeneratingAll
-                    ? 'Executing Pipeline (~15-30s)...'
-                    : `Execute AI Co-Drafting (${currentBlueprint.length} Blocks)`}
-                </Button>
-              )}
-            </Paper>
-          </Box>
-        )}
-
-        {/* ──────────────────────────────────────────────────────────── */}
-        {/* TAB 3: FAST INGEST TERMINAL                                  */}
-        {/* ──────────────────────────────────────────────────────────── */}
-        {activeTab === 'ingest' && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-            <Box sx={{ px: 0.5 }}>
-              <Typography sx={{ fontWeight: 900, color: '#0f172a', fontSize: '1.05rem', letterSpacing: '-0.02em' }}>
-                Direct Payload Relay Terminal
-              </Typography>
-              <Typography sx={{ color: '#64748b', fontSize: '0.82rem', mt: 0.25, lineHeight: 1.5 }}>
-                Paste the JSON array or markdown blocks produced by Claude, ChatGPT, or Gemini. The parser will automatically map and hydrate your canvas blocks.
+              <Typography sx={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 600 }}>
+                Synthesize opening executive summaries, interactive economics directives, and ground evidence.
               </Typography>
             </Box>
+          </Box>
 
-            <Paper
-              elevation={0}
+          {/* Action Checklist for Document 3 using PromptChecklistItem */}
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 1,
+              p: 1.75,
+              border: '1px solid rgba(245, 158, 11, 0.25)',
+              borderRadius: '14px',
+              bgcolor: 'rgba(245, 158, 11, 0.03)',
+            }}
+          >
+            {[
+              { id: 'sop_doc3_1', text: '1. Copy Doc 3a to draft the 3-point temporal executive summary with sharp data.' },
+              { id: 'sop_doc3_2', text: '2. Run Doc 3b to build unit economics cards, margin impacts, and strategic directives.' },
+              { id: 'sop_doc3_3', text: '3. Run Doc 3c to integrate field voices and ecosystem action triggers.' },
+            ].map((item) => (
+              <PromptChecklistItem
+                key={item.id}
+                id={item.id}
+                text={item.text}
+                checked={!!checklist[item.id]}
+                onToggle={toggleChecklistItem}
+                colorTheme="#f59e0b"
+              />
+            ))}
+          </Box>
+
+          {/* Prompt Cards for Document 3 using PromptTerminalBox */}
+          {doc3Prompts.map((p) => (
+            <PromptTerminalBox
+              key={p.key}
+              id={p.key}
+              codeLabel={p.code}
+              title={p.title}
+              subtitle={p.role}
+              prompt={p.prompt}
+              colorTheme="#f59e0b"
+              copyButtonLabel={`Copy ${p.code} Prompt`}
+              copiedBannerText={`${p.code} Copied to Clipboard!`}
+            />
+          ))}
+        </Box>
+
+        {/* ──────────────────────────────────────────────────────────── */}
+        {/* SECTION 4: DOCUMENT 4 — FULL SYNTHESIS & INGESTION (4a, 4b)   */}
+        {/* ──────────────────────────────────────────────────────────── */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box
               sx={{
-                p: 2.5,
-                borderRadius: '20px',
-                bgcolor: '#ffffff',
-                border: '1.5px solid rgba(226, 232, 240, 0.9)',
+                width: 32,
+                height: 32,
+                borderRadius: '50%',
+                bgcolor: '#10b981',
+                color: '#fff',
                 display: 'flex',
-                flexDirection: 'column',
-                gap: 2,
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 900,
+                fontSize: '0.9rem',
               }}
             >
-              <TextField
-                multiline
-                rows={9}
-                fullWidth
-                placeholder="Paste JSON blocks array or Markdown output here..."
-                value={rawIngestPayload}
-                onChange={(e) => setRawIngestPayload(e.target.value)}
-                slotProps={{
-                  input: {
-                    sx: {
-                      fontFamily: 'Consolas, Monaco, monospace',
-                      fontSize: '0.8rem',
-                      lineHeight: 1.5,
-                      borderRadius: '14px',
-                      bgcolor: '#f8fafc',
-                    },
-                  },
-                }}
-              />
-
-              {ingestError && (
-                <Alert severity="error" sx={{ borderRadius: '12px', fontSize: '0.82rem' }}>
-                  {ingestError}
-                </Alert>
-              )}
-
-              {ingestSuccess && (
-                <Alert severity="success" sx={{ borderRadius: '12px', fontWeight: 800, fontSize: '0.84rem' }}>
-                  ✓ Successfully ingested blocks into your canvas!
-                </Alert>
-              )}
-
-              <Button
-                variant="contained"
-                onClick={handleParseAndIngest}
-                startIcon={<ContentPasteIcon sx={{ fontSize: 18 }} />}
-                sx={{
-                  bgcolor: '#0f172a',
-                  color: '#ffffff',
-                  borderRadius: '14px',
-                  fontWeight: 900,
-                  py: 1.4,
-                  fontSize: '0.92rem',
-                  textTransform: 'none',
-                  boxShadow: '0 8px 24px rgba(15, 23, 42, 0.2)',
-                  '&:hover': { bgcolor: '#1e293b' },
-                }}
-              >
-                ⚡ Parse & Ingest to Canvas
-              </Button>
-            </Paper>
+              4
+            </Box>
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.2 }}>
+                Document 4: Multi-Block Assembly &amp; Direct Canvas Ingest
+              </Typography>
+              <Typography sx={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 600 }}>
+                Assemble all {currentBlueprint.length} blocks into a single payload, then paste below to populate the canvas.
+              </Typography>
+            </Box>
           </Box>
-        )}
 
-        {/* ──────────────────────────────────────────────────────────── */}
-        {/* TAB 4: SINGLE BLOCK REFINER                                  */}
-        {/* ──────────────────────────────────────────────────────────── */}
-        {activeTab === 'block_refiner' && (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-            {blocks.length === 0 ? (
-              <Box sx={{ textAlign: 'center', py: 8, color: '#94a3b8' }}>
-                <Typography sx={{ fontSize: '2rem', mb: 1 }}>🧱</Typography>
-                <Typography sx={{ fontWeight: 800, fontSize: '0.95rem', color: '#334155' }}>
-                  No Canvas Blocks Loaded
-                </Typography>
-                <Typography sx={{ fontSize: '0.8rem', color: '#64748b', mt: 0.5 }}>
-                  Click &quot;Instant AI Co-Draft&quot; or load the manual framework to refine individual blocks here.
-                </Typography>
-              </Box>
-            ) : (
-              <>
-                <Box sx={{ px: 0.5 }}>
-                  <Typography sx={{ fontWeight: 900, color: '#0f172a', fontSize: '1.05rem', letterSpacing: '-0.02em' }}>
-                    Surgical Block-Level Re-Prompter
-                  </Typography>
-                  <Typography sx={{ color: '#64748b', fontSize: '0.82rem', mt: 0.25, lineHeight: 1.5 }}>
-                    Select any block currently on your canvas, inject custom instructions (e.g. adjust tone, add local Naira pricing), and AgroLLM will re-draft just that block.
-                  </Typography>
-                </Box>
+          {/* Doc 4a: Master Compilation Prompt using PromptTerminalBox */}
+          {doc4Prompts.map((p) => (
+            <PromptTerminalBox
+              key={p.key}
+              id={p.key}
+              codeLabel={p.code}
+              title={p.title}
+              subtitle={p.role}
+              prompt={p.prompt}
+              colorTheme="#10b981"
+              copyButtonLabel={`Copy ${p.code} Master Prompt`}
+              copiedBannerText={`${p.code} Copied to Clipboard!`}
+            />
+          ))}
 
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 2.5,
-                    borderRadius: '20px',
-                    bgcolor: '#ffffff',
-                    border: '1.5px solid rgba(226, 232, 240, 0.9)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 2,
-                  }}
-                >
-                  <FormControl fullWidth size="small">
-                    <InputLabel sx={{ fontWeight: 700, fontSize: '0.85rem' }}>Select Block to Refine</InputLabel>
-                    <Select
-                      value={selectedBlockId || blocks[0]?.id}
-                      label="Select Block to Refine"
-                      onChange={(e) => setSelectedBlockId(e.target.value)}
-                      sx={{ borderRadius: '12px', fontWeight: 800, fontSize: '0.86rem' }}
-                    >
-                      {blocks.map((b, idx) => {
-                        const bDef = BLOCK_DEFINITIONS[b.type] || { label: b.type, color: formatMeta.color };
-                        return (
-                          <MenuItem key={b.id} value={b.id} sx={{ fontWeight: 700, fontSize: '0.85rem' }}>
-                            {idx + 1}. {b.role || bDef.label} ({bDef.label})
-                          </MenuItem>
-                        );
-                      })}
-                    </Select>
-                  </FormControl>
-
-                  {/* Current Block Content Preview */}
-                  {selectedBlock && (
-                    <Box
-                      sx={{
-                        p: 2,
-                        borderRadius: '14px',
-                        bgcolor: '#f8fafc',
-                        border: '1px solid #e2e8f0',
-                      }}
-                    >
-                      <Typography
-                        sx={{
-                          fontSize: '0.72rem',
-                          fontWeight: 800,
-                          color: '#64748b',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.04em',
-                          mb: 0.5,
-                        }}
-                      >
-                        Current Block Content ({selectedBlock.type})
-                      </Typography>
-                      <Typography
-                        component="pre"
-                        sx={{
-                          fontSize: '0.76rem',
-                          color: '#334155',
-                          lineHeight: 1.5,
-                          maxHeight: 140,
-                          overflowY: 'auto',
-                          whiteSpace: 'pre-wrap',
-                          wordBreak: 'break-word',
-                          fontFamily: 'Consolas, Monaco, monospace',
-                          m: 0,
-                        }}
-                      >
-                        {JSON.stringify(selectedBlock.content, null, 2)}
-                      </Typography>
-                    </Box>
-                  )}
-
-                  {/* Custom Directive */}
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    <Typography sx={{ fontSize: '0.82rem', fontWeight: 800, color: '#0f172a' }}>
-                      Custom Directive / Refinement Instructions
-                    </Typography>
-                    <TextField
-                      multiline
-                      rows={3}
-                      fullWidth
-                      placeholder="e.g. 'Add specific transport costs in Naira per ton between Kano and Lagos, and make the tone urgent for off-takers...'"
-                      value={customDirective}
-                      onChange={(e) => setCustomDirective(e.target.value)}
-                      slotProps={{
-                        input: { sx: { borderRadius: '14px', fontSize: '0.85rem' } },
-                      }}
-                    />
-
-                    {/* Quick Suggestions Chips */}
-                    <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', mt: 0.5 }}>
-                      {[
-                        'Add Naira unit economics',
-                        'Emphasize cold-chain risks',
-                        'Target corporate off-takers',
-                        'Keep it concise for mobile',
-                      ].map((chip) => (
-                        <Chip
-                          key={chip}
-                          label={`+ ${chip}`}
-                          size="small"
-                          onClick={() => setCustomDirective((prev) => (prev ? `${prev}. ${chip}` : chip))}
-                          sx={{
-                            fontSize: '0.72rem',
-                            fontWeight: 700,
-                            bgcolor: '#f1f5f9',
-                            color: '#475569',
-                            cursor: 'pointer',
-                            '&:hover': { bgcolor: '#e2e8f0', color: '#0f172a' },
-                          }}
-                        />
-                      ))}
-                    </Box>
-                  </Box>
-
-                  {refineError && (
-                    <Alert severity="error" sx={{ borderRadius: '12px', fontSize: '0.82rem' }}>
-                      {refineError}
-                    </Alert>
-                  )}
-
-                  {refineSuccess && (
-                    <Alert severity="success" sx={{ borderRadius: '12px', fontWeight: 800, fontSize: '0.84rem' }}>
-                      ✓ Block refined and updated on canvas!
-                    </Alert>
-                  )}
-
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    disabled={isRefining}
-                    onClick={handleExecuteRefine}
-                    startIcon={
-                      isRefining ? (
-                        <CircularProgress size={16} sx={{ color: '#fff' }} />
-                      ) : (
-                        <AutoAwesomeIcon />
-                      )
-                    }
-                    sx={{
-                      py: 1.4,
-                      borderRadius: '14px',
-                      fontWeight: 800,
-                      fontSize: '0.9rem',
-                      bgcolor: formatMeta.color,
-                      color: '#ffffff',
-                      textTransform: 'none',
-                      boxShadow: `0 6px 20px ${alpha(formatMeta.color, 0.35)}`,
-                      '&:hover': { bgcolor: alpha(formatMeta.color, 0.9) },
-                    }}
-                  >
-                    {isRefining ? 'Re-drafting Block with AgroLLM...' : '✨ Refine & Apply to Canvas'}
-                  </Button>
-                </Paper>
-              </>
-            )}
-          </Box>
-        )}
+          {/* Doc 4b: Integrated Fast Ingest Relay Terminal using PromptFastIngestBox */}
+          <PromptFastIngestBox
+            value={rawIngestPayload}
+            onChange={(val) => {
+              setRawIngestPayload(val);
+              if (ingestError) setIngestError(null);
+            }}
+            onIngest={handleParseAndIngest}
+            codeLabel="DOC 4b"
+            title="Fast Ingest Relay & Canvas Import"
+            subtitle={`Paste the JSON array output from Doc 4a below to automatically populate all ${currentBlueprint.length} blocks onto your canvas.`}
+            colorTheme="#10b981"
+            liveBlockCount={detectedBlockCount}
+            expectedBlockCount={currentBlueprint.length}
+            error={ingestError}
+            success={ingestSuccess}
+            buttonLabel="⚡ Ingest & Apply All Blocks to Canvas"
+          />
+        </Box>
       </Box>
     </Drawer>
   );
 }
+
+export default EditorialPromptSidePane;
