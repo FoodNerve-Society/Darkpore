@@ -4397,9 +4397,16 @@ export default function CreateLearnContentForm({
         category={selectedCategory}
         subcategory={subcategoriesInSelectedCategory.find(s => s.id === selectedSubcategory)?.title || selectedSubcategory}
         currentTitle={title}
+        currentDescription={description}
         blocks={blocks}
         pinnedClips={currentPairNotes.map(n => n.content)}
         onUpdateBlockContent={(blockId, newContent) => updateBlock(blockId, 'content', newContent)}
+        onIngestAllBlocks={(newBlocks) => {
+          setBlocks(newBlocks);
+          setArticleEditorMode('canvas');
+        }}
+        onUpdateTitle={(newTitle) => setTitle(newTitle)}
+        onUpdateDescription={(newDesc) => setDescription(newDesc)}
       />
 
     </Box>
