@@ -57,6 +57,8 @@ import WikiHotspot from '@/components/wiki/WikiHotspot';
 import PremiumMarkdownEditor from '@/components/PremiumMarkdownEditor';
 import WorkspaceContentManager from '@/app/components/studio/WorkspaceContentManager';
 import { usePromptAssistant } from '@/context/PromptAssistantContext';
+import { useSociety } from '@/context/SocietyContext';
+import { AdminArticlePromptSidePane } from './AdminArticlePromptSidePane';
 import { commoditiesList, getCommodityMeta } from '@/lib/cms/commodities';
 import { getISOWeek, startOfISOWeek, addDays, format, getYear } from 'date-fns';
 import { CATEGORY_MAP } from '@/lib/config/editorialMatrix';
@@ -217,6 +219,21 @@ export default function CreatorStudioDashboard({
   const [hasLaunchedAssistant, setHasLaunchedAssistant] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [collapsedRanks, setCollapsedRanks] = useState<Record<string, boolean>>({});
+
+  // Society Profile & Admin Gating
+  const { profile } = useSociety();
+  const isAdmin = Boolean(profile?.isAdmin || profile?.roles?.includes('admin' as any) || profile?.roles?.includes('super_admin' as any));
+  const [isAdminSidePaneOpen, setIsAdminSidePaneOpen] = useState(false);
+
+  const handleAdminIngest = useCallback((newBriefs: any[]) => {
+    if (newBriefs && newBriefs.length > 0) {
+      setInsights(newBriefs);
+      if (typeof window !== 'undefined') {
+        const key = `editorial_ingested_briefs_${selectedCommodity}_${selectedCategory}`;
+        localStorage.setItem(key, JSON.stringify(newBriefs));
+      }
+    }
+  }, [selectedCommodity, selectedCategory]);
 
   const toggleRankCollapse = useCallback((rankKey: string) => {
     setCollapsedRanks(prev => ({ ...prev, [rankKey]: !prev[rankKey] }));
@@ -1552,6 +1569,102 @@ export default function CreatorStudioDashboard({
                             </Box>
                           </Paper>
                         )}
+
+                        {/* ──────────────────────────────────────────────────────────── */}
+                        {/* DEDICATED ADMIN ARTICLE FLOW CARD (Gated to Admin Profiles)  */}
+                        {/* ──────────────────────────────────────────────────────────── */}
+                        {isAdmin && (
+                          <Paper
+                            elevation={0}
+                            sx={{
+                              p: { xs: 2.5, sm: 3 },
+                              borderRadius: '24px',
+                              bgcolor: 'rgba(245, 158, 11, 0.04)',
+                              border: '1.5px dashed rgba(245, 158, 11, 0.35)',
+                              backdropFilter: 'blur(16px)',
+                              boxShadow: '0 8px 32px rgba(245, 158, 11, 0.06)',
+                              maxWidth: { xs: 500, md: 740 },
+                              mx: 'auto',
+                              mt: 3,
+                              display: 'flex',
+                              flexDirection: { xs: 'column', sm: 'row' },
+                              alignItems: { xs: 'flex-start', sm: 'center' },
+                              justifyContent: 'space-between',
+                              gap: 2.5,
+                              transition: 'all 0.2s ease',
+                              '&:hover': {
+                                borderColor: 'rgba(245, 158, 11, 0.6)',
+                                bgcolor: 'rgba(245, 158, 11, 0.07)',
+                              }
+                            }}
+                          >
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                              <Box
+                                sx={{
+                                  width: 44,
+                                  height: 44,
+                                  borderRadius: '14px',
+                                  background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                                  color: '#ffffff',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  boxShadow: '0 4px 14px rgba(245, 158, 11, 0.35)',
+                                  flexShrink: 0,
+                                }}
+                              >
+                                <LockIcon sx={{ fontSize: 22 }} />
+                              </Box>
+                              <Box>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <Typography sx={{ color: '#fff', fontWeight: 900, fontSize: '1.05rem', letterSpacing: '-0.01em' }}>
+                                    Admins Article Flow
+                                  </Typography>
+                                  <Chip
+                                    label="ADMIN"
+                                    size="small"
+                                    sx={{
+                                      bgcolor: 'rgba(245, 158, 11, 0.2)',
+                                      color: '#fbbf24',
+                                      fontWeight: 900,
+                                      fontSize: '0.62rem',
+                                      height: 18,
+                                      borderRadius: '6px',
+                                    }}
+                                  />
+                                </Box>
+                                <Typography sx={{ color: 'rgba(255, 255, 255, 0.72)', fontSize: '0.84rem', lineHeight: 1.5, mt: 0.25 }}>
+                                  This uses the admin internal calendar to help them write specific articles that have been pre-planned.
+                                </Typography>
+                              </Box>
+                            </Box>
+
+                            <Button
+                              variant="contained"
+                              onClick={() => setIsAdminSidePaneOpen(true)}
+                              endIcon={<ArrowForwardIcon sx={{ fontSize: '13px !important' }} />}
+                              sx={{
+                                bgcolor: '#f59e0b',
+                                color: '#000',
+                                fontWeight: 900,
+                                px: 3,
+                                py: 1.1,
+                                borderRadius: '12px',
+                                textTransform: 'none',
+                                fontSize: '0.86rem',
+                                whiteSpace: 'nowrap',
+                                boxShadow: '0 4px 14px rgba(245, 158, 11, 0.35)',
+                                transition: 'all 0.2s ease',
+                                '&:hover': {
+                                  bgcolor: '#fbbf24',
+                                  transform: 'translateY(-1px)',
+                                }
+                              }}
+                            >
+                              Start Flow
+                            </Button>
+                          </Paper>
+                        )}
                         </Box>
                       ) : (
                         /* NORMAL STATE: Swimlane Grid Grouped by Spectrum Rank + Editorial Framework Guide */
@@ -1594,6 +1707,32 @@ export default function CreatorStudioDashboard({
                                 </Box>
                               </Box>
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                {isAdmin && (
+                                  <Button
+                                    size="small"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setIsAdminSidePaneOpen(true);
+                                    }}
+                                    startIcon={<LockIcon sx={{ fontSize: '13px !important' }} />}
+                                    sx={{
+                                      bgcolor: 'rgba(245, 158, 11, 0.15)',
+                                      color: '#f59e0b',
+                                      fontWeight: 800,
+                                      fontSize: '0.74rem',
+                                      borderRadius: '8px',
+                                      px: 1.5,
+                                      py: 0.4,
+                                      textTransform: 'none',
+                                      border: '1px solid rgba(245, 158, 11, 0.3)',
+                                      '&:hover': {
+                                        bgcolor: 'rgba(245, 158, 11, 0.25)',
+                                      }
+                                    }}
+                                  >
+                                    Admin Flow
+                                  </Button>
+                                )}
                                 <Chip
                                   label={isGuideOpen ? "Hide" : "Explore"}
                                   size="small"
@@ -2024,6 +2163,18 @@ export default function CreatorStudioDashboard({
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* ──────────────────────────────────────────────────────────── */}
+      {/* DEDICATED ADMIN ARTICLE PROMPT SIDE PANE                      */}
+      {/* ──────────────────────────────────────────────────────────── */}
+      <AdminArticlePromptSidePane
+        open={isAdminSidePaneOpen}
+        onClose={() => setIsAdminSidePaneOpen(false)}
+        commodity={selectedCommodity}
+        category={selectedCategory}
+        targetDate={selectedTargetDate}
+        onIngest={handleAdminIngest}
+      />
     </Box>
   );
 }
