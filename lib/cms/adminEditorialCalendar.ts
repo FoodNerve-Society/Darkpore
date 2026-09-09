@@ -149,13 +149,44 @@ export function getAdminArticleById(articleId: string): AdminCalendarArticleReco
 }
 
 /**
- * Returns all planned article options for a specific commodity focus from the 1,820 calendar.
+ * Checks whether a record category matches the target category slug/name
  */
-export function getAdminCalendarOptionsForCommodity(commodity: string): AdminCalendarOption[] {
+export function isCategoryMatch(itemCategory?: string, targetCategory?: string): boolean {
+  if (!itemCategory || !targetCategory) return false;
+  const i = itemCategory.toLowerCase();
+  const t = targetCategory.toLowerCase().replace(/[-_]/g, ' ');
+
+  if (i.includes(t) || t.includes(i)) return true;
+  if (t.includes('capital') || t.includes('financial')) return i.includes('capital') || i.includes('financial');
+  if (t.includes('land')) return i.includes('land');
+  if (t.includes('input')) return i.includes('input');
+  if (t.includes('energy')) return i.includes('energy');
+  if (t.includes('insecurity')) return i.includes('insecurity');
+  if (t.includes('harvest') || t.includes('market') || t.includes('post')) return i.includes('harvest') || i.includes('market') || i.includes('post');
+  if (t.includes('people') || t.includes('skill')) return i.includes('people') || i.includes('skill');
+
+  return false;
+}
+
+/**
+ * Returns all planned article options for a specific commodity focus from the 1,820 calendar.
+ * If category is provided, strictly filters to subcategories matching that category across all weeks.
+ */
+export function getAdminCalendarOptionsForCommodity(
+  commodity: string,
+  category?: string
+): AdminCalendarOption[] {
   const cleanComm = (commodity || '').toLowerCase().trim();
-  const matches = ADMIN_EDITORIAL_CALENDAR.filter(item => {
+  let matches = ADMIN_EDITORIAL_CALENDAR.filter(item => {
     return item['Food Focus']?.toLowerCase().includes(cleanComm) || cleanComm.includes(item['Food Focus']?.toLowerCase());
   });
+
+  if (category) {
+    const categoryMatches = matches.filter(item => isCategoryMatch(item['Category'], category));
+    if (categoryMatches.length > 0) {
+      matches = categoryMatches;
+    }
+  }
 
   const targetList = matches.length > 0 ? matches : ADMIN_EDITORIAL_CALENDAR.slice(0, 70);
 

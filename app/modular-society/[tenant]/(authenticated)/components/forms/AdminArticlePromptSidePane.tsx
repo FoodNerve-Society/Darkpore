@@ -23,7 +23,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { PromptTerminalBox } from '@/components/prompts/PromptTerminalBox';
 import { PromptChecklistItem } from '@/components/prompts/PromptChecklistItem';
 import { PromptFastIngestBox } from '@/components/prompts/PromptFastIngestBox';
-import PremiumAutocomplete from '@/components/PremiumAutocomplete';
+import PremiumDropdown from '@/components/PremiumDropdown';
 import { getCommodityMeta } from '@/lib/cms/commodities';
 import { foodChallenges } from '@/lib/cms/food/challenges';
 import { parseDoc1cArticles, ParsedArticleBrief } from '@/lib/config/editorialPrompts';
@@ -665,63 +665,97 @@ export function AdminArticlePromptSidePane({
               </Box>
             </Box>
 
-            {/* Context Meta, Date & Autocomplete without Bounding Box */}
-            <Box sx={{ width: '100%', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+            {/* ═══ ACTIVE ANGLE SWITCHER (INTUITIVE PILL DROPDOWN) ═══ */}
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, flexWrap: 'wrap', mt: 0.5 }}>
+              <Typography sx={{ fontSize: '0.74rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b' }}>
+                Active Angle:
+              </Typography>
+              <PremiumDropdown
+                colorTheme="#f59e0b"
+                label={selectedOption?.subcategory || "Select Subcategory"}
+                popoverTitle={`Select ${categoryShortName} Subcategory`}
+                popoverSubtitle={`10 pre-planned editorial angles for ${(dayNode?.['Food Focus'] || commodity).split(',')[0]} × ${categoryShortName}`}
+                options={calendarOptions}
+                value={selectedOption}
+                onChange={handleSelectOption}
+                getOptionId={(opt) => opt.id}
+                getOptionLabel={(opt) => opt.subcategory}
+                getOptionSecondary={(opt) => opt.title}
+                getOptionTag={(opt) => `W${opt.globalWeek} • ${opt.day}`}
+                getOptionEmoji={() => '🌿'}
+              />
+            </Box>
+
+            {/* ═══ UNIFIED PRE-PLANNED EDITORIAL DOSSIER CARD ═══ */}
+            <Box
+              sx={{
+                width: '100%',
+                p: { xs: 2, sm: 2.25 },
+                borderRadius: '18px',
+                bgcolor: 'rgba(255, 255, 255, 0.88)',
+                backdropFilter: 'blur(16px)',
+                border: '1px solid rgba(0, 0, 0, 0.06)',
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                textAlign: 'center',
+                gap: 1.25,
+              }}
+            >
               {loadingNode ? (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 1.5 }}>
                   <CircularProgress size={18} sx={{ color: '#f59e0b' }} />
-                  <Typography sx={{ color: '#64748b', fontSize: '0.8rem', fontWeight: 600 }}>Loading Calendar Day Record...</Typography>
+                  <Typography sx={{ color: '#64748b', fontSize: '0.8rem', fontWeight: 600 }}>
+                    Loading Calendar Day Record...
+                  </Typography>
                 </Box>
               ) : (
                 <>
-                  {/* Planned Date / Live Badge */}
-                  <Chip
-                    icon={<CalendarMonthIcon sx={{ fontSize: '15px !important', color: isToday ? '#dc2626' : '#b45309' }} />}
-                    label={
-                      isToday
-                        ? `Live Today • ${dayNode?.['Day'] || ''}, ${dayNode?.['Publication Date'] || ''} • Global Week ${dayNode?.['Global Week'] || 1}`
-                        : `Planned for ${dayNode?.['Day'] || ''}, ${dayNode?.['Publication Date'] || ''} • Global Week ${dayNode?.['Global Week'] || 1}`
-                    }
+                  {/* Publishing Headline */}
+                  <Typography
                     sx={{
-                      bgcolor: isToday ? '#fef2f2' : '#fef3c7',
-                      color: isToday ? '#dc2626' : '#b45309',
-                      border: `1px solid ${isToday ? '#fecaca' : '#fde68a'}`,
+                      color: '#0f172a',
                       fontWeight: 800,
-                      fontSize: '0.74rem',
-                      py: 0.25,
-                      px: 0.5,
-                      height: 26,
+                      fontSize: { xs: '0.98rem', sm: '1.08rem' },
+                      lineHeight: 1.35,
+                      letterSpacing: '-0.015em',
+                      maxWidth: '96%',
                     }}
-                  />
-
-                  {/* Headline in crisp Dark Typography */}
-                  <Typography sx={{ color: '#0f172a', fontWeight: 900, fontSize: { xs: '1.02rem', sm: '1.14rem' }, lineHeight: 1.35, mt: 0.25, maxWidth: '94%' }}>
+                  >
                     "{dayNode?.['Publishing Headline / Editorial Title'] || dayNode?.['Article Working Title'] || 'Editorial Calendar Entry'}"
                   </Typography>
 
-                  {/* Metadata Chips Row */}
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, flexWrap: 'wrap', mt: 0.25 }}>
+                  {/* Single Clean Metadata Badges Line */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, flexWrap: 'wrap' }}>
                     <Chip
-                      label={`🌿 ${dayNode?.['Subcategory'] || 'Active Subcategory'}`}
+                      icon={<CalendarMonthIcon sx={{ fontSize: '13px !important', color: isToday ? '#dc2626' : '#b45309' }} />}
+                      label={
+                        isToday
+                          ? `Live Today • ${dayNode?.['Day'] || ''}, ${dayNode?.['Publication Date'] || ''}`
+                          : `📅 Planned for ${dayNode?.['Day'] || ''}, ${dayNode?.['Publication Date'] || ''} (W${dayNode?.['Global Week'] || 1})`
+                      }
                       size="small"
                       sx={{
-                        bgcolor: '#eff6ff',
-                        color: '#1d4ed8',
+                        bgcolor: isToday ? '#fef2f2' : '#fef3c7',
+                        color: isToday ? '#dc2626' : '#b45309',
                         fontWeight: 800,
                         fontSize: '0.68rem',
                         height: 22,
-                        border: '1px solid #dbeafe',
+                        borderRadius: '8px',
+                        border: `1px solid ${isToday ? '#fecaca' : '#fde68a'}`,
                       }}
                     />
                     <Chip
                       label={`📍 ${dayNode?.['Primary Country'] || dayNode?.['Candidate Country (Pre-Gate)'] || 'Nigeria'}`}
                       size="small"
                       sx={{
-                        bgcolor: '#ffffff',
+                        bgcolor: '#f8fafc',
                         color: '#475569',
                         fontWeight: 700,
                         fontSize: '0.68rem',
                         height: 22,
+                        borderRadius: '8px',
                         border: '1px solid #e2e8f0',
                       }}
                     />
@@ -729,65 +763,18 @@ export function AdminArticlePromptSidePane({
                       label={`🔒 ${dayNode?.['Article ID'] || '1820-CALENDAR'}`}
                       size="small"
                       sx={{
-                        bgcolor: '#fffbeb',
-                        color: '#b45309',
+                        bgcolor: '#f8fafc',
+                        color: '#64748b',
                         fontWeight: 800,
-                        fontSize: '0.66rem',
+                        fontSize: '0.64rem',
                         height: 22,
-                        border: '1px solid #fef3c7',
+                        borderRadius: '8px',
+                        border: '1px solid #e2e8f0',
                       }}
                     />
                   </Box>
                 </>
               )}
-
-              {/* Premium Autocomplete: Subcategory & Planned Date Switcher */}
-              <Box sx={{ width: '100%', mt: 1.5, textAlign: 'left' }}>
-                <Typography sx={{ color: '#64748b', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', mb: 0.75, pl: 0.5 }}>
-                  Switch Pre-Planned Subcategory or Calendar Date
-                </Typography>
-                <PremiumAutocomplete
-                  colorTheme="#f59e0b"
-                  label="Select Pre-Planned Subcategory / Date"
-                  placeholder="Type to search subcategories, dates, or headlines..."
-                  options={calendarOptions}
-                  getOptionLabel={(opt) => (typeof opt === 'string' ? opt : `${opt.subcategory} (${opt.day}, ${opt.date})`)}
-                  value={selectedOption}
-                  onChange={(_, newVal) => {
-                    if (newVal && typeof newVal !== 'string') {
-                      handleSelectOption(newVal);
-                    }
-                  }}
-                  isOptionEqualToValue={(opt, val) => opt.id === val.id}
-                  renderOption={(props, opt) => (
-                    <li {...props} key={opt.id}>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.3, width: '100%' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
-                          <Typography sx={{ fontWeight: 800, fontSize: '0.88rem', color: '#0f172a' }}>
-                            {opt.subcategory}
-                          </Typography>
-                          <Chip
-                            label={`W${opt.globalWeek} • ${opt.day}`}
-                            size="small"
-                            sx={{ bgcolor: '#fef3c7', color: '#b45309', fontWeight: 800, fontSize: '0.62rem', height: 18 }}
-                          />
-                        </Box>
-                        <Typography sx={{ fontSize: '0.74rem', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {opt.title}
-                        </Typography>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 0.2 }}>
-                          <Typography sx={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 600 }}>
-                            📅 {opt.date}
-                          </Typography>
-                          <Typography sx={{ fontSize: '0.68rem', color: '#3b82f6', fontWeight: 700 }}>
-                            • {getCategoryShortName(opt.category)}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </li>
-                  )}
-                />
-              </Box>
             </Box>
           </Box>
 

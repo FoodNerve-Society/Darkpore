@@ -26,7 +26,10 @@ export async function fetchAdminDayNodeAction(params: {
   try {
     const node = getAdminArticleDayNode(params);
     const jsonPayload = getAdminDoc1aPayload(node);
-    const options = getAdminCalendarOptionsForCommodity(params.commodity || node['Food Focus']);
+    const options = getAdminCalendarOptionsForCommodity(
+      params.commodity || node['Food Focus'],
+      params.category || node['Category']
+    );
     return {
       success: true,
       node,
@@ -46,9 +49,9 @@ export async function fetchAdminDayNodeAction(params: {
   }
 }
 
-export async function fetchAdminCalendarOptionsAction(commodity: string): Promise<AdminCalendarOption[]> {
+export async function fetchAdminCalendarOptionsAction(commodity: string, category?: string): Promise<AdminCalendarOption[]> {
   try {
-    return getAdminCalendarOptionsForCommodity(commodity);
+    return getAdminCalendarOptionsForCommodity(commodity, category);
   } catch (error) {
     console.error('Error fetching calendar options for commodity:', error);
     return [];
