@@ -18,6 +18,7 @@ import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import ShieldIcon from '@mui/icons-material/Shield';
 import LockIcon from '@mui/icons-material/Lock';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import PlaceIcon from '@mui/icons-material/Place';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { PromptTerminalBox } from '@/components/prompts/PromptTerminalBox';
@@ -559,63 +560,45 @@ export function AdminArticlePromptSidePane({
               {/* Left Squircle: Commodity */}
               <Box
                 sx={{
-                  width: { xs: 105, sm: 120 },
-                  height: { xs: 105, sm: 120 },
-                  borderRadius: '26px',
+                  width: { xs: 104, sm: 118 },
+                  height: { xs: 104, sm: 118 },
+                  borderRadius: '28px',
                   overflow: 'hidden',
                   position: 'relative',
-                  backgroundImage: `url(${commodityMeta?.imageUrl || 'https://images.unsplash.com/photo-1599940824399-b87987ceb72a?auto=format&fit=crop&w=600&q=80'})`,
+                  backgroundImage: `url(${commodityMeta?.imageUrl || 'https://images.unsplash.com/photo-1599940824399-b87987ceb72a?auto=format&fit=crop&w=600&q=80'}), linear-gradient(135deg, #1e3a8a, #0f172a)`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
-                  border: '3px solid #ffffff',
-                  boxShadow: '0 16px 36px -8px rgba(0, 0, 0, 0.22), 0 4px 12px rgba(0, 0, 0, 0.08)',
+                  border: '2.5px solid rgba(255,255,255,0.25)',
+                  boxShadow: '0 12px 32px rgba(0,0,0,0.45)',
                   transform: 'rotate(-3deg)',
                   zIndex: 1,
-                  transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                  '&:hover': {
-                    transform: 'rotate(0deg) scale(1.05)',
-                    zIndex: 3,
-                    boxShadow: '0 20px 44px -8px rgba(0, 0, 0, 0.3)',
-                  },
+                  transition: 'all 0.3s ease',
+                  '&:hover': { transform: 'rotate(0deg) scale(1.05)', zIndex: 3 },
                 }}
               >
-                <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 35%, rgba(0, 0, 0, 0.85) 100%)' }} />
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    bottom: 8,
-                    left: 6,
-                    right: 6,
-                    p: '3px 8px',
-                    borderRadius: '10px',
-                    bgcolor: 'rgba(0, 0, 0, 0.65)',
-                    backdropFilter: 'blur(8px)',
-                    border: '1px solid rgba(255, 255, 255, 0.18)',
-                  }}
-                >
-                  <Typography sx={{ color: '#fff', fontSize: '0.72rem', fontWeight: 900, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    🌾 {(dayNode?.['Food Focus'] || commodity).split(',')[0]}
-                  </Typography>
-                </Box>
+                <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 35%, rgba(0,0,0,0.85) 100%)' }} />
+                <Typography sx={{ position: 'absolute', bottom: 7, left: 4, right: 4, color: '#fff', fontSize: '0.7rem', fontWeight: 900, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  🌾 {(dayNode?.['Food Focus'] || commodity).split(',')[0]}
+                </Typography>
               </Box>
 
               {/* Center Intersection Badge */}
               <Box
                 sx={{
-                  width: 34,
-                  height: 34,
+                  width: 32,
+                  height: 32,
                   borderRadius: '50%',
                   bgcolor: '#0f172a',
                   color: '#f59e0b',
-                  border: '3px solid #ffffff',
+                  border: '2px solid rgba(255,255,255,0.35)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '0.92rem',
+                  fontSize: '0.85rem',
                   fontWeight: 900,
                   zIndex: 2,
-                  mx: { xs: -2, sm: -2.5 },
-                  boxShadow: '0 6px 18px rgba(0, 0, 0, 0.3)',
+                  mx: { xs: -1.75, sm: -2 },
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.6)',
                 }}
               >
                 ×
@@ -624,156 +607,163 @@ export function AdminArticlePromptSidePane({
               {/* Right Squircle: Strategic Pillar with Short Name */}
               <Box
                 sx={{
-                  width: { xs: 105, sm: 120 },
-                  height: { xs: 105, sm: 120 },
-                  borderRadius: '26px',
+                  width: { xs: 104, sm: 118 },
+                  height: { xs: 104, sm: 118 },
+                  borderRadius: '28px',
                   overflow: 'hidden',
                   position: 'relative',
-                  backgroundImage: `url(${challengeMeta.imageUrl})`,
+                  backgroundImage: `url(${challengeMeta.imageUrl}), linear-gradient(135deg, #1e3a8a, #0f172a)`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
-                  border: '3px solid #ffffff',
-                  boxShadow: '0 16px 36px -8px rgba(0, 0, 0, 0.22), 0 4px 12px rgba(0, 0, 0, 0.08)',
+                  border: '2.5px solid rgba(255,255,255,0.25)',
+                  boxShadow: '0 12px 32px rgba(0,0,0,0.45)',
                   transform: 'rotate(3deg)',
                   zIndex: 1,
-                  transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                  '&:hover': {
-                    transform: 'rotate(0deg) scale(1.05)',
-                    zIndex: 3,
-                    boxShadow: '0 20px 44px -8px rgba(0, 0, 0, 0.3)',
-                  },
+                  transition: 'all 0.3s ease',
+                  '&:hover': { transform: 'rotate(0deg) scale(1.05)', zIndex: 3 },
                 }}
               >
-                <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 35%, rgba(0, 0, 0, 0.85) 100%)' }} />
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    bottom: 8,
-                    left: 6,
-                    right: 6,
-                    p: '3px 8px',
-                    borderRadius: '10px',
-                    bgcolor: 'rgba(0, 0, 0, 0.65)',
-                    backdropFilter: 'blur(8px)',
-                    border: '1px solid rgba(255, 255, 255, 0.18)',
-                  }}
-                >
-                  <Typography sx={{ color: '#93c5fd', fontSize: '0.72rem', fontWeight: 900, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    🛡️ {categoryShortName}
-                  </Typography>
-                </Box>
+                <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 35%, rgba(0,0,0,0.85) 100%)' }} />
+                <Typography sx={{ position: 'absolute', bottom: 7, left: 4, right: 4, color: '#93c5fd', fontSize: '0.7rem', fontWeight: 900, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  🛡️ {categoryShortName}
+                </Typography>
               </Box>
-            </Box>
-
-            {/* ═══ ACTIVE ANGLE SWITCHER (INTUITIVE PILL DROPDOWN) ═══ */}
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, flexWrap: 'wrap', mt: 0.5 }}>
-              <Typography sx={{ fontSize: '0.74rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b' }}>
-                Active Angle:
-              </Typography>
-              <PremiumDropdown
-                colorTheme="#f59e0b"
-                label={selectedOption?.subcategory || "Select Subcategory"}
-                popoverTitle={`Select ${categoryShortName} Subcategory`}
-                popoverSubtitle={`10 pre-planned editorial angles for ${(dayNode?.['Food Focus'] || commodity).split(',')[0]} × ${categoryShortName}`}
-                options={calendarOptions}
-                value={selectedOption}
-                onChange={handleSelectOption}
-                getOptionId={(opt) => opt.id}
-                getOptionLabel={(opt) => opt.subcategory}
-                getOptionSecondary={(opt) => opt.title}
-                getOptionTag={(opt) => `W${opt.globalWeek} • ${opt.day}`}
-                getOptionEmoji={() => '🌿'}
-              />
             </Box>
 
             {/* ═══ UNIFIED PRE-PLANNED EDITORIAL DOSSIER CARD ═══ */}
             <Box
               sx={{
                 width: '100%',
-                p: { xs: 2, sm: 2.25 },
-                borderRadius: '18px',
-                bgcolor: 'rgba(255, 255, 255, 0.88)',
-                backdropFilter: 'blur(16px)',
-                border: '1px solid rgba(0, 0, 0, 0.06)',
-                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)',
+                p: { xs: 2.25, sm: 2.5 },
+                borderRadius: '22px',
+                background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%)',
+                backdropFilter: 'blur(24px)',
+                border: '1.5px solid rgba(255, 255, 255, 0.95)',
+                boxShadow: '0 10px 32px -6px rgba(15, 23, 42, 0.07), 0 2px 8px rgba(0, 0, 0, 0.02)',
                 display: 'flex',
                 flexDirection: 'column',
-                alignItems: 'center',
-                textAlign: 'center',
-                gap: 1.25,
+                gap: 1.75,
               }}
             >
+              {/* Subcategory Selector Header & Trigger */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 0.5 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                    <Typography
+                      sx={{
+                        fontSize: '0.68rem',
+                        fontWeight: 900,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.08em',
+                        color: '#64748b',
+                      }}
+                    >
+                      Selected Subcategory
+                    </Typography>
+                    <Box
+                      sx={{
+                        width: 4,
+                        height: 4,
+                        borderRadius: '50%',
+                        bgcolor: '#cbd5e1',
+                      }}
+                    />
+                    <Typography
+                      sx={{
+                        fontSize: '0.68rem',
+                        fontWeight: 700,
+                        color: '#94a3b8',
+                      }}
+                    >
+                      {categoryShortName}
+                    </Typography>
+                  </Box>
+
+                  <Chip
+                    label={`${calendarOptions.length || 10} Angles`}
+                    size="small"
+                    sx={{
+                      bgcolor: 'rgba(245, 158, 11, 0.1)',
+                      color: '#b45309',
+                      fontWeight: 800,
+                      fontSize: '0.64rem',
+                      height: 20,
+                      borderRadius: '6px',
+                      border: '1px solid rgba(245, 158, 11, 0.2)',
+                    }}
+                  />
+                </Box>
+
+                {/* Subcategory Dropdown Pill */}
+                <PremiumDropdown
+                  fullWidth
+                  colorTheme="#f59e0b"
+                  label={selectedOption?.subcategory || "Select Subcategory"}
+                  popoverTitle={`Select ${categoryShortName} Subcategory`}
+                  popoverSubtitle={`10 pre-planned editorial angles for ${(dayNode?.['Food Focus'] || commodity).split(',')[0]} × ${categoryShortName}`}
+                  options={calendarOptions}
+                  value={selectedOption}
+                  onChange={handleSelectOption}
+                  getOptionId={(opt) => opt.id}
+                  getOptionLabel={(opt) => opt.subcategory}
+                  getOptionSecondary={(opt) => opt.title}
+                  getOptionTag={(opt) => `W${opt.globalWeek} • ${opt.day}`}
+                  getOptionEmoji={() => '🌿'}
+                />
+              </Box>
+
+              {/* Pre-Planned Headline & Minimal Context */}
               {loadingNode ? (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 1.5 }}>
-                  <CircularProgress size={18} sx={{ color: '#f59e0b' }} />
-                  <Typography sx={{ color: '#64748b', fontSize: '0.8rem', fontWeight: 600 }}>
-                    Loading Calendar Day Record...
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, py: 2 }}>
+                  <CircularProgress size={16} sx={{ color: '#f59e0b' }} />
+                  <Typography sx={{ color: '#64748b', fontSize: '0.78rem', fontWeight: 600 }}>
+                    Loading Calendar Record...
                   </Typography>
                 </Box>
               ) : (
-                <>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 1.25,
+                    pt: 1.5,
+                    borderTop: '1px solid rgba(0, 0, 0, 0.06)',
+                  }}
+                >
                   {/* Publishing Headline */}
                   <Typography
                     sx={{
                       color: '#0f172a',
                       fontWeight: 800,
-                      fontSize: { xs: '0.98rem', sm: '1.08rem' },
-                      lineHeight: 1.35,
+                      fontSize: { xs: '0.96rem', sm: '1.04rem' },
+                      lineHeight: 1.42,
                       letterSpacing: '-0.015em',
-                      maxWidth: '96%',
                     }}
                   >
                     "{dayNode?.['Publishing Headline / Editorial Title'] || dayNode?.['Article Working Title'] || 'Editorial Calendar Entry'}"
                   </Typography>
 
-                  {/* Single Clean Metadata Badges Line */}
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, flexWrap: 'wrap' }}>
-                    <Chip
-                      icon={<CalendarMonthIcon sx={{ fontSize: '13px !important', color: isToday ? '#dc2626' : '#b45309' }} />}
-                      label={
-                        isToday
-                          ? `Live Today • ${dayNode?.['Day'] || ''}, ${dayNode?.['Publication Date'] || ''}`
-                          : `📅 Planned for ${dayNode?.['Day'] || ''}, ${dayNode?.['Publication Date'] || ''} (W${dayNode?.['Global Week'] || 1})`
-                      }
-                      size="small"
-                      sx={{
-                        bgcolor: isToday ? '#fef2f2' : '#fef3c7',
-                        color: isToday ? '#dc2626' : '#b45309',
-                        fontWeight: 800,
-                        fontSize: '0.68rem',
-                        height: 22,
-                        borderRadius: '8px',
-                        border: `1px solid ${isToday ? '#fecaca' : '#fde68a'}`,
-                      }}
-                    />
-                    <Chip
-                      label={`📍 ${dayNode?.['Primary Country'] || dayNode?.['Candidate Country (Pre-Gate)'] || 'Nigeria'}`}
-                      size="small"
-                      sx={{
-                        bgcolor: '#f8fafc',
-                        color: '#475569',
-                        fontWeight: 700,
-                        fontSize: '0.68rem',
-                        height: 22,
-                        borderRadius: '8px',
-                        border: '1px solid #e2e8f0',
-                      }}
-                    />
-                    <Chip
-                      label={`🔒 ${dayNode?.['Article ID'] || '1820-CALENDAR'}`}
-                      size="small"
-                      sx={{
-                        bgcolor: '#f8fafc',
-                        color: '#64748b',
-                        fontWeight: 800,
-                        fontSize: '0.64rem',
-                        height: 22,
-                        borderRadius: '8px',
-                        border: '1px solid #e2e8f0',
-                      }}
-                    />
+                  {/* Clean Minimalist Metadata Ribbon */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
+                      <CalendarMonthIcon sx={{ fontSize: 14, color: isToday ? '#dc2626' : '#f59e0b' }} />
+                      <Typography sx={{ fontSize: '0.74rem', fontWeight: 700, color: isToday ? '#dc2626' : '#64748b' }}>
+                        {isToday
+                          ? `Live Today (${dayNode?.['Publication Date'] || ''})`
+                          : `${dayNode?.['Day'] || ''}, ${dayNode?.['Publication Date'] || ''} • W${dayNode?.['Global Week'] || 1}`}
+                      </Typography>
+                    </Box>
+
+                    <Typography sx={{ color: '#cbd5e1', fontSize: '0.74rem' }}>•</Typography>
+
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <PlaceIcon sx={{ fontSize: 14, color: '#94a3b8' }} />
+                      <Typography sx={{ fontSize: '0.74rem', fontWeight: 700, color: '#64748b' }}>
+                        {dayNode?.['Primary Country'] || dayNode?.['Candidate Country (Pre-Gate)'] || 'Nigeria'}
+                      </Typography>
+                    </Box>
                   </Box>
-                </>
+                </Box>
               )}
             </Box>
           </Box>

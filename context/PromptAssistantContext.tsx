@@ -14,6 +14,7 @@ import RemoveIcon from '@mui/icons-material/Remove';
 import OpenInFullIcon from '@mui/icons-material/OpenInFull';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForwardIos';
 import ContentPasteIcon from '@mui/icons-material/ContentPaste';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -644,57 +645,45 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
             {/* Left Squircle: Commodity */}
             <Box
               sx={{
-                width: { xs: 125, sm: 145 },
-                height: { xs: 125, sm: 145 },
-                borderRadius: '32px',
+                width: { xs: 104, sm: 118 },
+                height: { xs: 104, sm: 118 },
+                borderRadius: '28px',
                 overflow: 'hidden',
                 position: 'relative',
-                backgroundImage: `url(${getCommodityMeta(selectedCommodity)?.imageUrl || 'https://images.unsplash.com/photo-1599940824399-b87987ceb72a?auto=format&fit=crop&w=600&q=80'})`,
+                backgroundImage: `url(${getCommodityMeta(selectedCommodity)?.imageUrl || 'https://images.unsplash.com/photo-1599940824399-b87987ceb72a?auto=format&fit=crop&w=600&q=80'}), linear-gradient(135deg, #1e3a8a, #0f172a)`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
-                border: '3px solid #ffffff',
-                boxShadow: '0 16px 36px -8px rgba(0,0,0,0.22), 0 4px 12px rgba(0,0,0,0.08)',
+                border: '2.5px solid rgba(255,255,255,0.25)',
+                boxShadow: '0 12px 32px rgba(0,0,0,0.45)',
                 transform: 'rotate(-3deg)',
                 zIndex: 1,
-                transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                '&:hover': { transform: 'rotate(0deg) scale(1.06)', zIndex: 3, boxShadow: '0 20px 44px -8px rgba(0,0,0,0.3)' },
+                transition: 'all 0.3s ease',
+                '&:hover': { transform: 'rotate(0deg) scale(1.05)', zIndex: 3 },
               }}
             >
               <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 35%, rgba(0,0,0,0.85) 100%)' }} />
-              <Box sx={{
-                position: 'absolute',
-                bottom: 10,
-                left: 8,
-                right: 8,
-                p: '3px 8px',
-                borderRadius: '10px',
-                bgcolor: 'rgba(0,0,0,0.5)',
-                backdropFilter: 'blur(8px)',
-                border: '1px solid rgba(255,255,255,0.15)',
-              }}>
-                <Typography sx={{ color: '#fff', fontSize: '0.74rem', fontWeight: 900, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  🌾 {selectedCommodity.split(',')[0]}
-                </Typography>
-              </Box>
+              <Typography sx={{ position: 'absolute', bottom: 7, left: 4, right: 4, color: '#fff', fontSize: '0.7rem', fontWeight: 900, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                🌾 {selectedCommodity.split(',')[0]}
+              </Typography>
             </Box>
 
             {/* Center Intersection Badge */}
             <Box
               sx={{
-                width: 36,
-                height: 36,
+                width: 32,
+                height: 32,
                 borderRadius: '50%',
                 bgcolor: '#0f172a',
                 color: '#f59e0b',
-                border: '3px solid #ffffff',
+                border: '2px solid rgba(255,255,255,0.35)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '0.95rem',
+                fontSize: '0.85rem',
                 fontWeight: 900,
                 zIndex: 2,
-                mx: { xs: -2, sm: -2.5 },
-                boxShadow: '0 6px 18px rgba(0,0,0,0.3)',
+                mx: { xs: -1.75, sm: -2 },
+                boxShadow: '0 4px 16px rgba(0,0,0,0.6)',
               }}
             >
               ×
@@ -703,38 +692,26 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
             {/* Right Squircle: Strategic Pillar */}
             <Box
               sx={{
-                width: { xs: 125, sm: 145 },
-                height: { xs: 125, sm: 145 },
-                borderRadius: '32px',
+                width: { xs: 104, sm: 118 },
+                height: { xs: 104, sm: 118 },
+                borderRadius: '28px',
                 overflow: 'hidden',
                 position: 'relative',
                 backgroundImage: `url(${foodChallenges.find(c => c.id.toLowerCase() === selectedCategory.toLowerCase())?.imageUrl || '/images/challenges/insecurity.webp'}), linear-gradient(135deg, #1e3a8a, #0f172a)`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
-                border: '3px solid #ffffff',
-                boxShadow: '0 16px 36px -8px rgba(0,0,0,0.22), 0 4px 12px rgba(0,0,0,0.08)',
+                border: '2.5px solid rgba(255,255,255,0.25)',
+                boxShadow: '0 12px 32px rgba(0,0,0,0.45)',
                 transform: 'rotate(3deg)',
                 zIndex: 1,
-                transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                '&:hover': { transform: 'rotate(0deg) scale(1.06)', zIndex: 3, boxShadow: '0 20px 44px -8px rgba(0,0,0,0.3)' },
+                transition: 'all 0.3s ease',
+                '&:hover': { transform: 'rotate(0deg) scale(1.05)', zIndex: 3 },
               }}
             >
               <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 35%, rgba(0,0,0,0.85) 100%)' }} />
-              <Box sx={{
-                position: 'absolute',
-                bottom: 10,
-                left: 8,
-                right: 8,
-                p: '3px 8px',
-                borderRadius: '10px',
-                bgcolor: 'rgba(0,0,0,0.5)',
-                backdropFilter: 'blur(8px)',
-                border: '1px solid rgba(255,255,255,0.15)',
-              }}>
-                <Typography sx={{ color: '#93c5fd', fontSize: '0.74rem', fontWeight: 900, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  🛡️ {getCategoryShortName(selectedCategory)}
-                </Typography>
-              </Box>
+              <Typography sx={{ position: 'absolute', bottom: 7, left: 4, right: 4, color: '#93c5fd', fontSize: '0.7rem', fontWeight: 900, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                🛡️ {getCategoryShortName(selectedCategory)}
+              </Typography>
             </Box>
           </Box>
 
@@ -767,39 +744,144 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
                 return (
                   <Box
                     key={item.id}
-                    onClick={() => toggleChecklistItem(item.id)}
                     sx={{
-                      display: 'flex', alignItems: 'center', p: 1.25, borderRadius: '10px', cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      p: 1.25,
+                      borderRadius: '10px',
                       bgcolor: isChecked ? 'rgba(16, 185, 129, 0.06)' : '#ffffff',
                       border: isChecked ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(15, 23, 42, 0.12)',
                       transition: 'all 0.2s',
-                      '&:hover': { bgcolor: isChecked ? 'rgba(16, 185, 129, 0.1)' : 'rgba(15, 23, 42, 0.05)' }
+                      '&:hover': { bgcolor: isChecked ? 'rgba(16, 185, 129, 0.1)' : 'rgba(15, 23, 42, 0.05)' },
                     }}
                   >
-                    <Box sx={{
-                      width: 20, height: 20, borderRadius: '6px',
-                      border: '2px solid',
-                      borderColor: isChecked ? '#10b981' : '#0f172a',
-                      bgcolor: isChecked ? '#10b981' : 'transparent',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      mr: 1.25, flexShrink: 0,
-                      transition: 'all 0.2s'
-                    }}>
-                      {isChecked && (
-                        <svg width="10" height="8" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M1 5L5 9L13 1" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      )}
+                    <Box
+                      onClick={() => toggleChecklistItem(item.id)}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        cursor: 'pointer',
+                        width: '100%',
+                      }}
+                    >
+                      <Box sx={{
+                        width: 20, height: 20, borderRadius: '6px',
+                        border: '2px solid',
+                        borderColor: isChecked ? '#10b981' : '#0f172a',
+                        bgcolor: isChecked ? '#10b981' : 'transparent',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        mr: 1.25, flexShrink: 0,
+                        transition: 'all 0.2s'
+                      }}>
+                        {isChecked && (
+                          <svg width="10" height="8" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M1 5L5 9L13 1" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        )}
+                      </Box>
+                      <Typography sx={{
+                        fontSize: '0.85rem',
+                        color: isChecked ? '#94a3b8' : '#1e293b',
+                        textDecoration: isChecked ? 'line-through' : 'none',
+                        fontWeight: isChecked ? 500 : 700,
+                        lineHeight: 1.45
+                      }}>
+                        {item.text}
+                      </Typography>
                     </Box>
-                    <Typography sx={{
-                      fontSize: '0.85rem',
-                      color: isChecked ? '#94a3b8' : '#1e293b',
-                      textDecoration: isChecked ? 'line-through' : 'none',
-                      fontWeight: isChecked ? 500 : 700,
-                      lineHeight: 1.45
-                    }}>
-                      {item.text}
-                    </Typography>
+
+                    {/* AI Quick Launcher Buttons for item 2 */}
+                    {item.id === 'act_sop_0b' && (
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1,
+                          mt: 1,
+                          pl: 3.75,
+                          flexWrap: 'wrap',
+                        }}
+                      >
+                        <Button
+                          size="small"
+                          component="a"
+                          href="https://chatgpt.com"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!wikiChecklist['act_sop_0b']) toggleChecklistItem('act_sop_0b');
+                          }}
+                          endIcon={<OpenInNewIcon sx={{ fontSize: '13px !important' }} />}
+                          sx={{
+                            bgcolor: 'rgba(16, 163, 127, 0.08)',
+                            color: '#0d9488',
+                            border: '1px solid rgba(13, 148, 136, 0.3)',
+                            borderRadius: '8px',
+                            fontSize: '0.72rem',
+                            fontWeight: 800,
+                            textTransform: 'none',
+                            py: 0.35,
+                            px: 1.25,
+                            '&:hover': { bgcolor: 'rgba(16, 163, 127, 0.15)', borderColor: '#0d9488' },
+                          }}
+                        >
+                          ChatGPT
+                        </Button>
+                        <Button
+                          size="small"
+                          component="a"
+                          href="https://claude.ai"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!wikiChecklist['act_sop_0b']) toggleChecklistItem('act_sop_0b');
+                          }}
+                          endIcon={<OpenInNewIcon sx={{ fontSize: '13px !important' }} />}
+                          sx={{
+                            bgcolor: 'rgba(217, 119, 6, 0.08)',
+                            color: '#d97706',
+                            border: '1px solid rgba(217, 119, 6, 0.3)',
+                            borderRadius: '8px',
+                            fontSize: '0.72rem',
+                            fontWeight: 800,
+                            textTransform: 'none',
+                            py: 0.35,
+                            px: 1.25,
+                            '&:hover': { bgcolor: 'rgba(217, 119, 6, 0.15)', borderColor: '#d97706' },
+                          }}
+                        >
+                          Claude
+                        </Button>
+                        <Button
+                          size="small"
+                          component="a"
+                          href="https://gemini.google.com"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!wikiChecklist['act_sop_0b']) toggleChecklistItem('act_sop_0b');
+                          }}
+                          endIcon={<OpenInNewIcon sx={{ fontSize: '13px !important' }} />}
+                          sx={{
+                            bgcolor: 'rgba(37, 99, 235, 0.08)',
+                            color: '#2563eb',
+                            border: '1px solid rgba(37, 99, 235, 0.3)',
+                            borderRadius: '8px',
+                            fontSize: '0.72rem',
+                            fontWeight: 800,
+                            textTransform: 'none',
+                            py: 0.35,
+                            px: 1.25,
+                            '&:hover': { bgcolor: 'rgba(37, 99, 235, 0.15)', borderColor: '#2563eb' },
+                          }}
+                        >
+                          Gemini
+                        </Button>
+                      </Box>
+                    )}
                   </Box>
                 );
               })}

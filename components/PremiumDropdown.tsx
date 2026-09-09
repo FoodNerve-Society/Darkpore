@@ -21,6 +21,7 @@ export interface PremiumDropdownProps<T = any> {
   value: PremiumDropdownOption<T> | T | null;
   onChange: (option: any) => void;
   label?: string;
+  prefix?: string;
   popoverTitle?: string;
   popoverSubtitle?: string;
   colorTheme?: string;
@@ -41,6 +42,7 @@ export function PremiumDropdown<T = any>({
   value,
   onChange,
   label = 'Select option...',
+  prefix,
   popoverTitle,
   popoverSubtitle,
   colorTheme = '#f59e0b',
@@ -126,24 +128,24 @@ export function PremiumDropdown<T = any>({
         sx={{
           width: fullWidth ? '100%' : 'auto',
           justifyContent: fullWidth ? 'space-between' : 'center',
-          bgcolor: isOpen ? alpha(colorTheme, 0.18) : alpha(colorTheme, 0.1),
+          bgcolor: isOpen ? alpha(colorTheme, 0.16) : alpha(colorTheme, 0.08),
           color: colorTheme,
           fontWeight: 900,
           fontSize: '0.86rem',
           px: 2,
-          py: 0.65,
+          py: 0.8,
           borderRadius: '14px',
-          border: `1.5px solid ${isOpen ? colorTheme : alpha(colorTheme, 0.35)}`,
+          border: `1.5px solid ${isOpen ? colorTheme : alpha(colorTheme, 0.3)}`,
           textTransform: 'none',
           boxShadow: isOpen
             ? `0 4px 16px ${alpha(colorTheme, 0.2)}`
-            : `0 2px 10px ${alpha(colorTheme, 0.12)}`,
+            : `0 2px 8px ${alpha(colorTheme, 0.08)}`,
           transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
           '&:hover': {
-            bgcolor: alpha(colorTheme, 0.18),
+            bgcolor: alpha(colorTheme, 0.16),
             borderColor: colorTheme,
             transform: 'translateY(-1px)',
-            boxShadow: `0 4px 14px ${alpha(colorTheme, 0.22)}`,
+            boxShadow: `0 4px 14px ${alpha(colorTheme, 0.2)}`,
           },
           '&.Mui-disabled': {
             bgcolor: 'rgba(0,0,0,0.04)',
@@ -152,9 +154,25 @@ export function PremiumDropdown<T = any>({
           },
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.85, minWidth: 0 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.85, minWidth: 0, flex: fullWidth ? 1 : 'none', mr: fullWidth ? 1.5 : 0 }}>
+          {prefix && (
+            <Typography
+              component="span"
+              sx={{
+                fontWeight: 800,
+                fontSize: '0.72rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                color: alpha(colorTheme, 0.8),
+                mr: 0.25,
+                flexShrink: 0,
+              }}
+            >
+              {prefix}
+            </Typography>
+          )}
           {currentDisplayEmoji && (
-            <span style={{ fontSize: '0.95rem', lineHeight: 1 }}>{currentDisplayEmoji}</span>
+            <span style={{ fontSize: '0.95rem', lineHeight: 1, flexShrink: 0 }}>{currentDisplayEmoji}</span>
           )}
           <Typography
             sx={{
@@ -164,7 +182,8 @@ export function PremiumDropdown<T = any>({
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
-              maxWidth: { xs: 230, sm: 380 },
+              maxWidth: fullWidth ? '100%' : { xs: 230, sm: 380 },
+              textAlign: 'left',
             }}
           >
             {currentDisplayLabel}
