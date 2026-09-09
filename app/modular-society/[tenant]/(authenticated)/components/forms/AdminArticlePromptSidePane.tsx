@@ -17,21 +17,48 @@ import ContentPasteIcon from '@mui/icons-material/ContentPaste';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import ShieldIcon from '@mui/icons-material/Shield';
 import LockIcon from '@mui/icons-material/Lock';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { PromptTerminalBox } from '@/components/prompts/PromptTerminalBox';
 import { PromptChecklistItem } from '@/components/prompts/PromptChecklistItem';
 import { PromptFastIngestBox } from '@/components/prompts/PromptFastIngestBox';
+import PremiumAutocomplete from '@/components/PremiumAutocomplete';
 import { getCommodityMeta } from '@/lib/cms/commodities';
 import { foodChallenges } from '@/lib/cms/food/challenges';
 import { parseDoc1cArticles, ParsedArticleBrief } from '@/lib/config/editorialPrompts';
-import { AdminCalendarArticleRecord } from '@/lib/cms/adminEditorialCalendar';
+import { AdminCalendarArticleRecord, AdminCalendarOption } from '@/lib/cms/adminEditorialCalendar';
 import { fetchAdminDayNodeAction } from '@/lib/actions/adminEditorial';
 import {
   buildAdminDoc1aPrompt,
   buildAdminDoc1bPrompt,
   buildAdminDoc1cPrompt,
 } from '@/lib/config/adminEditorialPrompts';
+
+const CATEGORY_SHORT_NAMES: Record<string, string> = {
+  'capital': 'Capital',
+  'financial exclusion': 'Capital',
+  'land': 'Land Access',
+  'land access': 'Land Access',
+  'inputs': 'Agro Inputs',
+  'agricultural inputs': 'Agro Inputs',
+  'energy': 'Energy',
+  'energy poverty': 'Energy',
+  'insecurity': 'Insecurity',
+  'food-system insecurity': 'Insecurity',
+  'harvest-to-market': 'Post-Harvest',
+  'post-harvest': 'Post-Harvest',
+  'people': 'People & Skills',
+  'people, skills': 'People & Skills',
+};
+
+function getCategoryShortName(cat?: string, fallbackId?: string): string {
+  const target = (cat || fallbackId || '').toLowerCase();
+  for (const [key, val] of Object.entries(CATEGORY_SHORT_NAMES)) {
+    if (target.includes(key)) return val;
+  }
+  return cat ? cat.split(/[\s,&-]+/)[0] : 'Challenge';
+}
 
 export interface AdminArticlePromptSidePaneProps {
   open: boolean;
@@ -57,9 +84,11 @@ export function AdminArticlePromptSidePane({
   const [isMinimized, setIsMinimized] = useState(false);
   const [isDockVisible, setIsDockVisible] = useState(false);
 
-  // Active Day Node from 1820 Calendar (loaded on server)
+  // Active Day Node & Available Calendar Options from 1820 Calendar
   const [dayNode, setDayNode] = useState<AdminCalendarArticleRecord | null>(null);
   const [dayNodeJson, setDayNodeJson] = useState<string>('');
+  const [calendarOptions, setCalendarOptions] = useState<AdminCalendarOption[]>([]);
+  const [selectedOption, setSelectedOption] = useState<AdminCalendarOption | null>(null);
   const [loadingNode, setLoadingNode] = useState<boolean>(false);
 
   // Ingest state & local storage persistence
@@ -68,13 +97,42 @@ export function AdminArticlePromptSidePane({
   const [ingestError, setIngestError] = useState<string | null>(null);
   const [ingestSuccess, setIngestSuccess] = useState<boolean>(false);
 
-  // 4-Step Checklist state
+  // High-level execution roadmap & checklist state
   const [checklist, setChecklist] = useState<Record<string, boolean>>({
-    step1: false, // Doc 1a Copied
-    step2: false, // Doc 1b Copied
-    step3: false, // Doc 1c Copied
-    step4: false, // Ingested to Studio
+    step0_ai: false, // Step 0: Open AI in new tab
+    step0_seq: false, // Step 0: Sequential prompt workflow
+    step1: false,    // Step 1: Doc 1a Copied
+    step2: false,    // Step 2: Doc 1b Copied
+    step3: false,    // Step 3: Doc 1c Copied
+    step4: false,    // Step 4: Ingested to Studio
   });
+
+  const toggleChecklist = (key: string) => {
+    setChecklist(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  // Dedicated Per-Prompt Verifications (strictly 2 high-signal items each)
+  const [promptChecks, setPromptChecks] = useState<Record<string, boolean>>({
+    // Step 1 (Doc 1a)
+    '1a-payload-evidence': false,
+    '1a-titles-macro': false,
+
+    // Step 2 (Doc 1b)
+    '1b-context-drucker': false,
+    '1b-spectrum-osint': false,
+
+    // Step 3 (Doc 1c)
+    '1c-format-sentence': false,
+    '1c-schema-articles': false,
+
+    // Step 4 (Fast Ingest)
+    'ingest-syntax': false,
+    'ingest-apply': false,
+  });
+
+  const togglePromptCheck = (id: string) => {
+    setPromptChecks(prev => ({ ...prev, [id]: !prev[id] }));
+  };
 
   // Fetch the active day node whenever the side pane opens or context changes
   useEffect(() => {
@@ -90,6 +148,16 @@ export function AdminArticlePromptSidePane({
       if (isMounted && res.node) {
         setDayNode(res.node);
         setDayNodeJson(res.jsonPayload);
+        if (res.options && res.options.length > 0) {
+          setCalendarOptions(res.options);
+          const currentArticleId = res.node['Article ID'];
+          const matchedOpt = res.options.find(o => o.id === currentArticleId);
+          if (matchedOpt) {
+            setSelectedOption(matchedOpt);
+          } else {
+            setSelectedOption(res.options[0]);
+          }
+        }
       }
     }).catch(err => {
       console.error('Failed to load admin calendar node:', err);
@@ -101,6 +169,25 @@ export function AdminArticlePromptSidePane({
       isMounted = false;
     };
   }, [open, targetDate, commodity, category]);
+
+  // Handle switching subcategory / date via Autocomplete
+  const handleSelectOption = useCallback((opt: AdminCalendarOption) => {
+    setSelectedOption(opt);
+    setLoadingNode(true);
+    fetchAdminDayNodeAction({
+      articleId: opt.id,
+      commodity,
+    }).then(res => {
+      if (res.node) {
+        setDayNode(res.node);
+        setDayNodeJson(res.jsonPayload);
+      }
+    }).catch(err => {
+      console.error('Failed to load selected day node:', err);
+    }).finally(() => {
+      setLoadingNode(false);
+    });
+  }, [commodity]);
 
   // Hydrate persisted markdown
   useEffect(() => {
@@ -121,10 +208,6 @@ export function AdminArticlePromptSidePane({
     }
   };
 
-  const toggleChecklist = (id: string) => {
-    setChecklist(prev => ({ ...prev, [id]: !prev[id] }));
-  };
-
   // Visual Squircles Metadata
   const commodityMeta = getCommodityMeta(commodity);
   const challengeMeta = foodChallenges.find(c => c.id === category) || {
@@ -133,10 +216,17 @@ export function AdminArticlePromptSidePane({
     imageUrl: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=600&q=80',
   };
 
-  // ─────────────────────────────────────────────────────────────
-  // PROMPT 1: ADMIN DOC 1a (CALENDAR DAY ROW INGESTION & OSINT)
-  // Ready to receive exact prompt text from user
-  // ─────────────────────────────────────────────────────────────
+  const categoryShortName = useMemo(() => {
+    return getCategoryShortName(dayNode?.['Category'] || category, challengeMeta?.id);
+  }, [dayNode, category, challengeMeta]);
+
+  // Determine if today's date matches the calendar entry
+  const isToday = useMemo(() => {
+    if (!dayNode?.['Publication Date']) return false;
+    const todayStr = new Date().toISOString().split('T')[0];
+    return dayNode['Publication Date'] === todayStr;
+  }, [dayNode]);
+
   // ─────────────────────────────────────────────────────────────
   // PROMPTS 1, 2, 3: ADMIN MASTER PIPELINE
   // ─────────────────────────────────────────────────────────────
@@ -158,6 +248,21 @@ export function AdminArticlePromptSidePane({
     return parseDoc1cArticles(customIngestMarkdown, commodity);
   }, [customIngestMarkdown, commodity]);
 
+  // Auto-sync ingest checklist based on markdown state
+  useEffect(() => {
+    if (detectedArticles.length > 0) {
+      setPromptChecks(prev => ({
+        ...prev,
+        'ingest-syntax': true,
+      }));
+    } else {
+      setPromptChecks(prev => ({
+        ...prev,
+        'ingest-syntax': false,
+      }));
+    }
+  }, [detectedArticles.length]);
+
   const handleIngest = useCallback(() => {
     if (detectedArticles.length === 0) {
       setIngestError('No valid articles detected. Please paste the markdown generated from Document 1c.');
@@ -166,6 +271,7 @@ export function AdminArticlePromptSidePane({
 
     setIngestSuccess(true);
     setChecklist(prev => ({ ...prev, step4: true }));
+    setPromptChecks(prev => ({ ...prev, 'ingest-apply': true }));
     onIngest(detectedArticles);
 
     setTimeout(() => {
@@ -318,7 +424,7 @@ export function AdminArticlePromptSidePane({
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            bgcolor: 'rgba(255, 255, 255, 0.92)',
+            bgcolor: 'rgba(255, 255, 255, 0.94)',
             backdropFilter: 'blur(20px)',
             borderBottom: '1px solid rgba(0,0,0,0.06)',
             boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
@@ -422,193 +528,406 @@ export function AdminArticlePromptSidePane({
             p: { xs: 2, sm: 3.5 },
             display: 'flex',
             flexDirection: 'column',
-            gap: 3.5,
+            gap: 4,
             overflowY: 'auto',
             flex: 1,
           }}
         >
           {/* ──────────────────────────────────────────────────────────── */}
-          {/* SECTION 1: ACTIVE DAY SQUIRCIES ANCHOR & PRE-PLANNED NODE    */}
+          {/* VISUAL ANCHOR: FREE-FLOATING SQUIRCLES (NO BOUNDING BOX)     */}
           {/* ──────────────────────────────────────────────────────────── */}
-          <Paper
-            elevation={0}
+          <Box
             sx={{
-              p: { xs: 2.25, sm: 2.75 },
-              borderRadius: '24px',
-              bgcolor: '#0f172a',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              boxShadow: '0 12px 32px rgba(0,0,0,0.25)',
               display: 'flex',
-              flexDirection: { xs: 'column', md: 'row' },
+              flexDirection: 'column',
               alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 3,
+              gap: 1.5,
+              pt: 0.5,
+              overflow: 'visible',
             }}
           >
-            {/* Visual Overlapping Squircles */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexShrink: 0 }}>
-              {/* Commodity Squircle */}
+            {/* Squircles Pair (Unclipped, Dynamic Float with Drop Shadows) */}
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                py: 1,
+                overflow: 'visible',
+              }}
+            >
+              {/* Left Squircle: Commodity */}
               <Box
                 sx={{
-                  width: { xs: 72, sm: 84 },
-                  height: { xs: 72, sm: 84 },
-                  borderRadius: '22px',
+                  width: { xs: 105, sm: 120 },
+                  height: { xs: 105, sm: 120 },
+                  borderRadius: '26px',
                   overflow: 'hidden',
                   position: 'relative',
                   backgroundImage: `url(${commodityMeta?.imageUrl || 'https://images.unsplash.com/photo-1599940824399-b87987ceb72a?auto=format&fit=crop&w=600&q=80'})`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
-                  border: '2.5px solid rgba(255,255,255,0.2)',
-                  boxShadow: '0 8px 20px rgba(0,0,0,0.4)',
+                  border: '3px solid #ffffff',
+                  boxShadow: '0 16px 36px -8px rgba(0, 0, 0, 0.22), 0 4px 12px rgba(0, 0, 0, 0.08)',
+                  transform: 'rotate(-3deg)',
+                  zIndex: 1,
+                  transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                  '&:hover': {
+                    transform: 'rotate(0deg) scale(1.05)',
+                    zIndex: 3,
+                    boxShadow: '0 20px 44px -8px rgba(0, 0, 0, 0.3)',
+                  },
                 }}
               >
-                <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 35%, rgba(0,0,0,0.85) 100%)' }} />
-                <Typography sx={{ position: 'absolute', bottom: 4, left: 2, right: 2, color: '#fff', fontSize: '0.62rem', fontWeight: 900, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  🌾 {(dayNode?.['Food Focus'] || commodity).split(',')[0]}
-                </Typography>
+                <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 35%, rgba(0, 0, 0, 0.85) 100%)' }} />
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    bottom: 8,
+                    left: 6,
+                    right: 6,
+                    p: '3px 8px',
+                    borderRadius: '10px',
+                    bgcolor: 'rgba(0, 0, 0, 0.65)',
+                    backdropFilter: 'blur(8px)',
+                    border: '1px solid rgba(255, 255, 255, 0.18)',
+                  }}
+                >
+                  <Typography sx={{ color: '#fff', fontSize: '0.72rem', fontWeight: 900, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    🌾 {(dayNode?.['Food Focus'] || commodity).split(',')[0]}
+                  </Typography>
+                </Box>
               </Box>
 
               {/* Center Intersection Badge */}
               <Box
                 sx={{
-                  width: 28,
-                  height: 28,
+                  width: 34,
+                  height: 34,
                   borderRadius: '50%',
-                  bgcolor: '#f59e0b',
-                  color: '#000',
+                  bgcolor: '#0f172a',
+                  color: '#f59e0b',
+                  border: '3px solid #ffffff',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  fontSize: '0.92rem',
                   fontWeight: 900,
-                  fontSize: '0.74rem',
-                  boxShadow: '0 4px 10px rgba(245, 158, 11, 0.4)',
                   zIndex: 2,
+                  mx: { xs: -2, sm: -2.5 },
+                  boxShadow: '0 6px 18px rgba(0, 0, 0, 0.3)',
                 }}
               >
-                ✕
+                ×
               </Box>
 
-              {/* Challenge / Category Squircle */}
+              {/* Right Squircle: Strategic Pillar with Short Name */}
               <Box
                 sx={{
-                  width: { xs: 72, sm: 84 },
-                  height: { xs: 72, sm: 84 },
-                  borderRadius: '22px',
+                  width: { xs: 105, sm: 120 },
+                  height: { xs: 105, sm: 120 },
+                  borderRadius: '26px',
                   overflow: 'hidden',
                   position: 'relative',
                   backgroundImage: `url(${challengeMeta.imageUrl})`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
-                  border: '2.5px solid rgba(255,255,255,0.2)',
-                  boxShadow: '0 8px 20px rgba(0,0,0,0.4)',
+                  border: '3px solid #ffffff',
+                  boxShadow: '0 16px 36px -8px rgba(0, 0, 0, 0.22), 0 4px 12px rgba(0, 0, 0, 0.08)',
+                  transform: 'rotate(3deg)',
+                  zIndex: 1,
+                  transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                  '&:hover': {
+                    transform: 'rotate(0deg) scale(1.05)',
+                    zIndex: 3,
+                    boxShadow: '0 20px 44px -8px rgba(0, 0, 0, 0.3)',
+                  },
                 }}
               >
-                <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 35%, rgba(0,0,0,0.85) 100%)' }} />
-                <Typography sx={{ position: 'absolute', bottom: 4, left: 2, right: 2, color: '#93c5fd', fontSize: '0.62rem', fontWeight: 900, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  🛡️ {(dayNode?.['Category'] || challengeMeta.title).slice(0, 10)}
+                <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 35%, rgba(0, 0, 0, 0.85) 100%)' }} />
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    bottom: 8,
+                    left: 6,
+                    right: 6,
+                    p: '3px 8px',
+                    borderRadius: '10px',
+                    bgcolor: 'rgba(0, 0, 0, 0.65)',
+                    backdropFilter: 'blur(8px)',
+                    border: '1px solid rgba(255, 255, 255, 0.18)',
+                  }}
+                >
+                  <Typography sx={{ color: '#93c5fd', fontSize: '0.72rem', fontWeight: 900, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    🛡️ {categoryShortName}
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+
+            {/* Context Meta, Date & Autocomplete without Bounding Box */}
+            <Box sx={{ width: '100%', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+              {loadingNode ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 1 }}>
+                  <CircularProgress size={18} sx={{ color: '#f59e0b' }} />
+                  <Typography sx={{ color: '#64748b', fontSize: '0.8rem', fontWeight: 600 }}>Loading Calendar Day Record...</Typography>
+                </Box>
+              ) : (
+                <>
+                  {/* Planned Date / Live Badge */}
+                  <Chip
+                    icon={<CalendarMonthIcon sx={{ fontSize: '15px !important', color: isToday ? '#dc2626' : '#b45309' }} />}
+                    label={
+                      isToday
+                        ? `Live Today • ${dayNode?.['Day'] || ''}, ${dayNode?.['Publication Date'] || ''} • Global Week ${dayNode?.['Global Week'] || 1}`
+                        : `Planned for ${dayNode?.['Day'] || ''}, ${dayNode?.['Publication Date'] || ''} • Global Week ${dayNode?.['Global Week'] || 1}`
+                    }
+                    sx={{
+                      bgcolor: isToday ? '#fef2f2' : '#fef3c7',
+                      color: isToday ? '#dc2626' : '#b45309',
+                      border: `1px solid ${isToday ? '#fecaca' : '#fde68a'}`,
+                      fontWeight: 800,
+                      fontSize: '0.74rem',
+                      py: 0.25,
+                      px: 0.5,
+                      height: 26,
+                    }}
+                  />
+
+                  {/* Headline in crisp Dark Typography */}
+                  <Typography sx={{ color: '#0f172a', fontWeight: 900, fontSize: { xs: '1.02rem', sm: '1.14rem' }, lineHeight: 1.35, mt: 0.25, maxWidth: '94%' }}>
+                    "{dayNode?.['Publishing Headline / Editorial Title'] || dayNode?.['Article Working Title'] || 'Editorial Calendar Entry'}"
+                  </Typography>
+
+                  {/* Metadata Chips Row */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, flexWrap: 'wrap', mt: 0.25 }}>
+                    <Chip
+                      label={`🌿 ${dayNode?.['Subcategory'] || 'Active Subcategory'}`}
+                      size="small"
+                      sx={{
+                        bgcolor: '#eff6ff',
+                        color: '#1d4ed8',
+                        fontWeight: 800,
+                        fontSize: '0.68rem',
+                        height: 22,
+                        border: '1px solid #dbeafe',
+                      }}
+                    />
+                    <Chip
+                      label={`📍 ${dayNode?.['Primary Country'] || dayNode?.['Candidate Country (Pre-Gate)'] || 'Nigeria'}`}
+                      size="small"
+                      sx={{
+                        bgcolor: '#ffffff',
+                        color: '#475569',
+                        fontWeight: 700,
+                        fontSize: '0.68rem',
+                        height: 22,
+                        border: '1px solid #e2e8f0',
+                      }}
+                    />
+                    <Chip
+                      label={`🔒 ${dayNode?.['Article ID'] || '1820-CALENDAR'}`}
+                      size="small"
+                      sx={{
+                        bgcolor: '#fffbeb',
+                        color: '#b45309',
+                        fontWeight: 800,
+                        fontSize: '0.66rem',
+                        height: 22,
+                        border: '1px solid #fef3c7',
+                      }}
+                    />
+                  </Box>
+                </>
+              )}
+
+              {/* Premium Autocomplete: Subcategory & Planned Date Switcher */}
+              <Box sx={{ width: '100%', mt: 1.5, textAlign: 'left' }}>
+                <Typography sx={{ color: '#64748b', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em', mb: 0.75, pl: 0.5 }}>
+                  Switch Pre-Planned Subcategory or Calendar Date
+                </Typography>
+                <PremiumAutocomplete
+                  colorTheme="#f59e0b"
+                  label="Select Pre-Planned Subcategory / Date"
+                  placeholder="Type to search subcategories, dates, or headlines..."
+                  options={calendarOptions}
+                  getOptionLabel={(opt) => (typeof opt === 'string' ? opt : `${opt.subcategory} (${opt.day}, ${opt.date})`)}
+                  value={selectedOption}
+                  onChange={(_, newVal) => {
+                    if (newVal && typeof newVal !== 'string') {
+                      handleSelectOption(newVal);
+                    }
+                  }}
+                  isOptionEqualToValue={(opt, val) => opt.id === val.id}
+                  renderOption={(props, opt) => (
+                    <li {...props} key={opt.id}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.3, width: '100%' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                          <Typography sx={{ fontWeight: 800, fontSize: '0.88rem', color: '#0f172a' }}>
+                            {opt.subcategory}
+                          </Typography>
+                          <Chip
+                            label={`W${opt.globalWeek} • ${opt.day}`}
+                            size="small"
+                            sx={{ bgcolor: '#fef3c7', color: '#b45309', fontWeight: 800, fontSize: '0.62rem', height: 18 }}
+                          />
+                        </Box>
+                        <Typography sx={{ fontSize: '0.74rem', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {opt.title}
+                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 0.2 }}>
+                          <Typography sx={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 600 }}>
+                            📅 {opt.date}
+                          </Typography>
+                          <Typography sx={{ fontSize: '0.68rem', color: '#3b82f6', fontWeight: 700 }}>
+                            • {getCategoryShortName(opt.category)}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </li>
+                  )}
+                />
+              </Box>
+            </Box>
+          </Box>
+
+          {/* ──────────────────────────────────────────────────────────── */}
+          {/* STEP 0: WORKFLOW OVERVIEW                                    */}
+          {/* ──────────────────────────────────────────────────────────── */}
+          <Box id="admin-step-0" sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box sx={{ width: 32, height: 32, borderRadius: '50%', bgcolor: '#0f172a', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.88rem' }}>
+                0
+              </Box>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
+                  Step 0: How You Guide the AI
+                </Typography>
+                <Typography sx={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 600 }}>
+                  You are the Executive Editor steering the research; the AI is your OSINT Analyst.
                 </Typography>
               </Box>
             </Box>
 
-            {/* Calendar Node Intelligence Info */}
-            <Box sx={{ flex: 1, textAlign: { xs: 'center', md: 'left' } }}>
-              {loadingNode ? (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: { xs: 'center', md: 'flex-start' } }}>
-                  <CircularProgress size={16} sx={{ color: '#f59e0b' }} />
-                  <Typography sx={{ color: '#94a3b8', fontSize: '0.78rem' }}>Loading Day Record...</Typography>
+            {/* Step 0 Action Checklist (2 items) */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 2, border: '1px solid rgba(15, 23, 42, 0.12)', borderRadius: '16px', bgcolor: 'rgba(15, 23, 42, 0.02)' }}>
+              {/* Item 1: Open AI in new tab */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <PromptChecklistItem
+                  id="step0_ai"
+                  text="1. Open your AI in a new tab (ChatGPT, Claude, or Gemini)"
+                  checked={checklist.step0_ai}
+                  onToggle={() => toggleChecklist('step0_ai')}
+                  colorTheme="#0f172a"
+                  isImportant={!checklist.step0_ai}
+                />
+                {/* AI Quick Launcher Buttons */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, pl: 3.5, flexWrap: 'wrap' }}>
+                  <Button
+                    size="small"
+                    component="a"
+                    href="https://chatgpt.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setChecklist(prev => ({ ...prev, step0_ai: true }))}
+                    endIcon={<OpenInNewIcon sx={{ fontSize: '13px !important' }} />}
+                    sx={{
+                      bgcolor: 'rgba(16, 163, 127, 0.08)',
+                      color: '#0d9488',
+                      border: '1px solid rgba(13, 148, 136, 0.3)',
+                      borderRadius: '8px',
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      textTransform: 'none',
+                      py: 0.35,
+                      px: 1.25,
+                      '&:hover': { bgcolor: 'rgba(16, 163, 127, 0.15)', borderColor: '#0d9488' },
+                    }}
+                  >
+                    ChatGPT
+                  </Button>
+                  <Button
+                    size="small"
+                    component="a"
+                    href="https://claude.ai"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setChecklist(prev => ({ ...prev, step0_ai: true }))}
+                    endIcon={<OpenInNewIcon sx={{ fontSize: '13px !important' }} />}
+                    sx={{
+                      bgcolor: 'rgba(217, 119, 6, 0.08)',
+                      color: '#d97706',
+                      border: '1px solid rgba(217, 119, 6, 0.3)',
+                      borderRadius: '8px',
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      textTransform: 'none',
+                      py: 0.35,
+                      px: 1.25,
+                      '&:hover': { bgcolor: 'rgba(217, 119, 6, 0.15)', borderColor: '#d97706' },
+                    }}
+                  >
+                    Claude
+                  </Button>
+                  <Button
+                    size="small"
+                    component="a"
+                    href="https://gemini.google.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setChecklist(prev => ({ ...prev, step0_ai: true }))}
+                    endIcon={<OpenInNewIcon sx={{ fontSize: '13px !important' }} />}
+                    sx={{
+                      bgcolor: 'rgba(37, 99, 235, 0.08)',
+                      color: '#2563eb',
+                      border: '1px solid rgba(37, 99, 235, 0.3)',
+                      borderRadius: '8px',
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      textTransform: 'none',
+                      py: 0.35,
+                      px: 1.25,
+                      '&:hover': { bgcolor: 'rgba(37, 99, 235, 0.15)', borderColor: '#2563eb' },
+                    }}
+                  >
+                    Gemini
+                  </Button>
                 </Box>
-              ) : (
-                <>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: { xs: 'center', md: 'flex-start' }, gap: 1, mb: 0.5, flexWrap: 'wrap' }}>
-                    <CalendarMonthIcon sx={{ color: '#f59e0b', fontSize: 16 }} />
-                    <Typography sx={{ color: '#f59e0b', fontSize: '0.74rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                      {dayNode?.['Publication Date'] || targetDate || 'Scheduled Day'} • {dayNode?.['Day'] || ''} • Global Week {dayNode?.['Global Week'] || 1}
-                    </Typography>
-                    <Chip
-                      label={dayNode?.['Subcategory'] || 'Active Subcategory'}
-                      size="small"
-                      sx={{
-                        bgcolor: 'rgba(59, 130, 246, 0.2)',
-                        color: '#93c5fd',
-                        fontSize: '0.66rem',
-                        fontWeight: 800,
-                        height: 20,
-                      }}
-                    />
-                  </Box>
-                  <Typography sx={{ color: '#ffffff', fontWeight: 900, fontSize: '0.98rem', lineHeight: 1.35 }}>
-                    "{dayNode?.['Publishing Headline / Editorial Title'] || dayNode?.['Article Working Title'] || 'Editorial Calendar Entry'}"
-                  </Typography>
-                  <Typography sx={{ color: '#94a3b8', fontSize: '0.75rem', mt: 0.6 }}>
-                    📍 Primary: {dayNode?.['Primary Country'] || dayNode?.['Candidate Country (Pre-Gate)'] || 'Authoritative Global Signal'} • 6 Pre-Planned Articles
-                  </Typography>
-                </>
-              )}
-            </Box>
-          </Paper>
+              </Box>
 
-          {/* ──────────────────────────────────────────────────────────── */}
-          {/* SECTION 2: 4-STEP ACTION CHECKLIST (3 PROMPTS + INGEST)      */}
-          {/* ──────────────────────────────────────────────────────────── */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            <Typography sx={{ color: '#0f172a', fontWeight: 900, fontSize: '0.92rem', letterSpacing: '-0.01em' }}>
-              Execution Roadmap (3 Prompts + Fast Ingest)
-            </Typography>
-
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              {/* Item 2: Sequential Execution */}
               <PromptChecklistItem
-                id="step1"
-                text="1. Copy Admin Doc 1a (inserts active day JSON node directly with zero manual input)"
-                checked={checklist.step1}
-                onToggle={toggleChecklist}
-                colorTheme="#f59e0b"
-                isImportant={!checklist.step1}
-              />
-              <PromptChecklistItem
-                id="step2"
-                text="2. Copy Admin Doc 1b (runs Drucker sparring across the 6 pre-planned titles & spectrum ranks)"
-                checked={checklist.step2}
-                onToggle={toggleChecklist}
-                colorTheme="#8b5cf6"
-                isImportant={checklist.step1 && !checklist.step2}
-              />
-              <PromptChecklistItem
-                id="step3"
-                text="3. Copy Admin Doc 1c (compiles the 6 articles into the Studio Markdown Schema)"
-                checked={checklist.step3}
-                onToggle={toggleChecklist}
-                colorTheme="#10b981"
-                isImportant={checklist.step2 && !checklist.step3}
-              />
-              <PromptChecklistItem
-                id="step4"
-                text="4. Paste the output into the Fast Ingest box below and apply to your Studio board"
-                checked={checklist.step4}
-                onToggle={toggleChecklist}
-                colorTheme="#10b981"
-                isImportant={checklist.step3 && !checklist.step4}
+                id="step0_seq"
+                text="2. Copy Steps 1–3 sequentially into your AI thread, then paste output into Step 4"
+                checked={checklist.step0_seq}
+                onToggle={() => toggleChecklist('step0_seq')}
+                colorTheme="#0f172a"
+                isImportant={checklist.step0_ai && !checklist.step0_seq}
               />
             </Box>
           </Box>
 
           {/* ──────────────────────────────────────────────────────────── */}
-          {/* SECTION 3: ADMIN DOC 1a (STAGE-4 EVIDENCE & MACRO CONTEXT)   */}
+          {/* STEP 1: GROUND EVIDENCE & CONTEXT (ADMIN DOC 1a)             */}
           {/* ──────────────────────────────────────────────────────────── */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box id="admin-step-1" sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box sx={{ width: 32, height: 32, borderRadius: '50%', bgcolor: '#f59e0b', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.88rem' }}>
+                1
+              </Box>
               <Box>
-                <Typography sx={{ color: '#0f172a', fontWeight: 900, fontSize: '0.96rem' }}>
-                  Prompt 1: Admin Doc 1a (Stage-4 Grounded Evidence)
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
+                  Step 1: Ground Evidence & Context (Admin Doc 1a)
                 </Typography>
-                <Typography sx={{ color: '#64748b', fontSize: '0.76rem' }}>
-                  Injects the complete calendar JSON node for this day directly into your AI chat.
+                <Typography sx={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 600 }}>
+                  Injects the active calendar JSON row with Stage-4 FAOSTAT evidence and macro context.
                 </Typography>
               </Box>
             </Box>
 
             <PromptTerminalBox
-              title="Admin Doc 1a"
-              codeLabel="ADMIN 1a"
+              title="Admin Doc 1a (The Deterministic Context Engine)"
+              codeLabel="STEP 1"
               subtitle="Direct row insertion containing FAOSTAT signals, research questions, and 6 planned titles."
               prompt={prompt1Text}
               colorTheme="#f59e0b"
@@ -617,28 +936,83 @@ export function AdminArticlePromptSidePane({
               maxHeight={250}
               onCopy={() => {
                 setChecklist(prev => ({ ...prev, step1: true }));
+                setPromptChecks(prev => ({
+                  ...prev,
+                  '1a-payload-evidence': true,
+                  '1a-titles-macro': true,
+                }));
               }}
             />
+
+            {/* Dedicated 2-Item Checklist for Step 1 */}
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2,
+                borderRadius: '16px',
+                bgcolor: 'rgba(245, 158, 11, 0.04)',
+                border: '1px solid rgba(245, 158, 11, 0.2)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 1.25,
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography sx={{ color: '#b45309', fontWeight: 900, fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                  <span>📋</span> Admin Doc 1a Payload Ingredients
+                </Typography>
+                <Chip
+                  label={checklist.step1 ? "COPIED & INJECTED" : "2 VERIFICATIONS"}
+                  size="small"
+                  sx={{
+                    bgcolor: checklist.step1 ? '#d1fae5' : '#fef3c7',
+                    color: checklist.step1 ? '#065f46' : '#b45309',
+                    fontWeight: 900,
+                    fontSize: '0.62rem',
+                    height: 18,
+                  }}
+                />
+              </Box>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                <PromptChecklistItem
+                  id="1a-payload-evidence"
+                  text="Pre-Planned Row Injected: Complete 1,820 calendar JSON record injected directly with Stage-4 FAOSTAT evidence & zero manual typing"
+                  checked={promptChecks['1a-payload-evidence']}
+                  onToggle={togglePromptCheck}
+                  colorTheme="#f59e0b"
+                />
+                <PromptChecklistItem
+                  id="1a-titles-macro"
+                  text="6 Planned Titles & Macro Scope: Canonical evidence title + 5 exploratory titles framed across 20 value chain actors"
+                  checked={promptChecks['1a-titles-macro']}
+                  onToggle={togglePromptCheck}
+                  colorTheme="#f59e0b"
+                />
+              </Box>
+            </Paper>
           </Box>
 
           {/* ──────────────────────────────────────────────────────────── */}
-          {/* SECTION 4: ADMIN DOC 1b (DRUCKER SPARRING & SPECTRUM RANKS)  */}
+          {/* STEP 2: DRUCKER SPARRING & SPECTRUM RANKS (ADMIN DOC 1b)     */}
           {/* ──────────────────────────────────────────────────────────── */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box id="admin-step-2" sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box sx={{ width: 32, height: 32, borderRadius: '50%', bgcolor: '#8b5cf6', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.88rem' }}>
+                2
+              </Box>
               <Box>
-                <Typography sx={{ color: '#0f172a', fontWeight: 900, fontSize: '0.96rem' }}>
-                  Prompt 2: Admin Doc 1b (The Cognitive Spectrum & Drucker Sparring)
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
+                  Step 2: Drucker Sparring & Spectrum Ranks (Admin Doc 1b)
                 </Typography>
-                <Typography sx={{ color: '#64748b', fontSize: '0.76rem' }}>
-                  Maps the day's 6 pre-planned titles into Ranks 1 to 6 with deep operational friction.
+                <Typography sx={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 600 }}>
+                  Executes Drucker sparring across the 6 titles into Cognitive Spectrum Ranks #1 to #6.
                 </Typography>
               </Box>
             </Box>
 
             <PromptTerminalBox
-              title="Admin Doc 1b"
-              codeLabel="ADMIN 1b"
+              title="Admin Doc 1b (The Deterministic Drucker OSINT Engine)"
+              codeLabel="STEP 2"
               subtitle="Calibrates the 6 titles through Peter Drucker's 5 Cardinal Questions and political economy."
               prompt={prompt2Text}
               colorTheme="#8b5cf6"
@@ -647,28 +1021,83 @@ export function AdminArticlePromptSidePane({
               maxHeight={250}
               onCopy={() => {
                 setChecklist(prev => ({ ...prev, step2: true }));
+                setPromptChecks(prev => ({
+                  ...prev,
+                  '1b-context-drucker': true,
+                  '1b-spectrum-osint': true,
+                }));
               }}
             />
+
+            {/* Dedicated 2-Item Checklist for Step 2 */}
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2,
+                borderRadius: '16px',
+                bgcolor: 'rgba(139, 92, 246, 0.04)',
+                border: '1px solid rgba(139, 92, 246, 0.2)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 1.25,
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography sx={{ color: '#6d28d9', fontWeight: 900, fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                  <span>⚡</span> Admin Doc 1b Sparring & OSINT Ingredients
+                </Typography>
+                <Chip
+                  label={checklist.step2 ? "COPIED & CALIBRATED" : "2 VERIFICATIONS"}
+                  size="small"
+                  sx={{
+                    bgcolor: checklist.step2 ? '#d1fae5' : '#ede9fe',
+                    color: checklist.step2 ? '#065f46' : '#6d28d9',
+                    fontWeight: 900,
+                    fontSize: '0.62rem',
+                    height: 18,
+                  }}
+                />
+              </Box>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                <PromptChecklistItem
+                  id="1b-context-drucker"
+                  text="Continuous Context & Drucker Sparring: Interrogates the 6 titles with Peter Drucker's 5 Cardinal Questions without re-requesting payload"
+                  checked={promptChecks['1b-context-drucker']}
+                  onToggle={togglePromptCheck}
+                  colorTheme="#8b5cf6"
+                />
+                <PromptChecklistItem
+                  id="1b-spectrum-osint"
+                  text="Cognitive Spectrum & OSINT Reality: Calibrates Ranks #1 Bleeding Neck to #6 Black Swan with raw ground trade frictions & hard verbs"
+                  checked={promptChecks['1b-spectrum-osint']}
+                  onToggle={togglePromptCheck}
+                  colorTheme="#8b5cf6"
+                />
+              </Box>
+            </Paper>
           </Box>
 
           {/* ──────────────────────────────────────────────────────────── */}
-          {/* SECTION 5: ADMIN DOC 1c (MASTER STUDIO MARKDOWN COMPILER)    */}
+          {/* STEP 3: STUDIO MARKDOWN SYNTHESIZER (ADMIN DOC 1c)           */}
           {/* ──────────────────────────────────────────────────────────── */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box id="admin-step-3" sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box sx={{ width: 32, height: 32, borderRadius: '50%', bgcolor: '#10b981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.88rem' }}>
+                3
+              </Box>
               <Box>
-                <Typography sx={{ color: '#0f172a', fontWeight: 900, fontSize: '0.96rem' }}>
-                  Prompt 3: Admin Doc 1c (Master Studio Schema Compiler)
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
+                  Step 3: Studio Markdown Synthesizer (Admin Doc 1c)
                 </Typography>
-                <Typography sx={{ color: '#64748b', fontSize: '0.76rem' }}>
-                  Compiles the 6 articles into the exact Studio metadata and 6-sentence schema.
+                <Typography sx={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 600 }}>
+                  Translates external Franchises into internal formats & compiles all 6 articles into Studio schema.
                 </Typography>
               </Box>
             </Box>
 
             <PromptTerminalBox
-              title="Admin Doc 1c"
-              codeLabel="ADMIN 1c"
+              title="Admin Doc 1c (The Master Franchise Synthesizer)"
+              codeLabel="STEP 3"
               subtitle="Compiles exactly 6 articles matching the Studio metadata and 6-sentence schema."
               prompt={prompt3Text}
               colorTheme="#10b981"
@@ -677,22 +1106,88 @@ export function AdminArticlePromptSidePane({
               maxHeight={250}
               onCopy={() => {
                 setChecklist(prev => ({ ...prev, step3: true }));
+                setPromptChecks(prev => ({
+                  ...prev,
+                  '1c-format-sentence': true,
+                  '1c-schema-articles': true,
+                }));
               }}
             />
+
+            {/* Dedicated 2-Item Checklist for Step 3 */}
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2,
+                borderRadius: '16px',
+                bgcolor: 'rgba(16, 185, 129, 0.04)',
+                border: '1px solid rgba(16, 185, 129, 0.2)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 1.25,
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography sx={{ color: '#047857', fontWeight: 900, fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                  <span>🚀</span> Admin Doc 1c Studio Schema Ingredients
+                </Typography>
+                <Chip
+                  label={checklist.step3 ? "COPIED & COMPILED" : "2 VERIFICATIONS"}
+                  size="small"
+                  sx={{
+                    bgcolor: checklist.step3 ? '#d1fae5' : '#ecfdf5',
+                    color: checklist.step3 ? '#065f46' : '#047857',
+                    fontWeight: 900,
+                    fontSize: '0.62rem',
+                    height: 18,
+                  }}
+                />
+              </Box>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                <PromptChecklistItem
+                  id="1c-format-sentence"
+                  text="Franchise Translation & 6-Sentence Formula: Maps formats, 7 geographic hubs, and strict 6-sentence structures per article"
+                  checked={promptChecks['1c-format-sentence']}
+                  onToggle={togglePromptCheck}
+                  colorTheme="#10b981"
+                />
+                <PromptChecklistItem
+                  id="1c-schema-articles"
+                  text="Clean Studio Markdown: Compiles all 6 discrete articles with valid [SYSTEM_METADATA] ready for 1-click Fast Ingest"
+                  checked={promptChecks['1c-schema-articles']}
+                  onToggle={togglePromptCheck}
+                  colorTheme="#10b981"
+                />
+              </Box>
+            </Paper>
           </Box>
 
           {/* ──────────────────────────────────────────────────────────── */}
-          {/* SECTION 6: FAST INGEST RELAY TERMINAL                        */}
+          {/* STEP 4: FAST INGEST RELAY TERMINAL & APPLY TO STUDIO         */}
           {/* ──────────────────────────────────────────────────────────── */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          <Box id="admin-step-4" sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box sx={{ width: 32, height: 32, borderRadius: '50%', bgcolor: '#059669', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.88rem' }}>
+                4
+              </Box>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
+                  Step 4: Fast Ingest Relay (Apply to Studio)
+                </Typography>
+                <Typography sx={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 600 }}>
+                  Paste the generated markdown output from Step 3 to dispatch all 6 articles into Studio.
+                </Typography>
+              </Box>
+            </Box>
+
             <PromptFastIngestBox
               value={customIngestMarkdown}
               onChange={handleMarkdownChange}
               onIngest={handleIngest}
               title="Fast Ingest: 6 Admin Articles Relay"
               subtitle="Paste the generated markdown output from Admin Doc 1c below to apply to the Studio."
-              codeLabel="ADMIN INGEST"
-              colorTheme="#10b981"
+              codeLabel="STEP 4"
+              colorTheme="#059669"
               placeholder={`Paste the markdown output from Admin Doc 1c here...\n\nExample:\n---\n[SYSTEM_METADATA]\n- Category: ${category}\n- Subcategory: ${dayNode?.['Subcategory'] || 'sub-logistics'}\n- Commodity: ${commodity}\n- Format: brief\n- Era: present\n- Location: ${dayNode?.['Primary Country'] || 'National Corridor'}\n- Spectrum_Rank: #1 The Bleeding Neck\n- Target_Persona: Agro-Allocators & Fleet Operators\n\n### Title of the Article...\n\n**Description:**\n- Sentence 1...\n- Sentence 2...\n- Sentence 3...\n- Sentence 4...\n- Sentence 5...\n- Sentence 6...\n---`}
               liveBlockCount={detectedArticles.length}
               expectedBlockCount={6}
@@ -700,6 +1195,59 @@ export function AdminArticlePromptSidePane({
               error={ingestError}
               success={ingestSuccess}
             />
+
+            {/* Ingest Readiness 2-Item Checklist */}
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2,
+                borderRadius: '16px',
+                bgcolor: 'rgba(16, 185, 129, 0.04)',
+                border: '1px solid rgba(16, 185, 129, 0.2)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 1.25,
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography sx={{ color: '#047857', fontWeight: 900, fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                  <span>⚡</span> Fast Ingest Ingestion Status
+                </Typography>
+                <Chip
+                  label={
+                    detectedArticles.length === 6
+                      ? "6/6 READY TO APPLY"
+                      : detectedArticles.length > 0
+                      ? `${detectedArticles.length}/6 DETECTED`
+                      : "AWAITING PASTE"
+                  }
+                  size="small"
+                  sx={{
+                    bgcolor: detectedArticles.length === 6 ? '#d1fae5' : '#fef3c7',
+                    color: detectedArticles.length === 6 ? '#065f46' : '#b45309',
+                    fontWeight: 900,
+                    fontSize: '0.62rem',
+                    height: 18,
+                  }}
+                />
+              </Box>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                <PromptChecklistItem
+                  id="ingest-syntax"
+                  text={`Syntax Verification: Live parser detects ${detectedArticles.length} of 6 structured articles with valid metadata and complete sentences`}
+                  checked={promptChecks['ingest-syntax']}
+                  onToggle={togglePromptCheck}
+                  colorTheme="#10b981"
+                />
+                <PromptChecklistItem
+                  id="ingest-apply"
+                  text="Batch Dispatch: Pushes all 6 articles directly into your Creator Studio draft boards"
+                  checked={promptChecks['ingest-apply'] || checklist.step4}
+                  onToggle={togglePromptCheck}
+                  colorTheme="#10b981"
+                />
+              </Box>
+            </Paper>
           </Box>
         </Box>
       </Drawer>
@@ -708,3 +1256,5 @@ export function AdminArticlePromptSidePane({
 }
 
 export default AdminArticlePromptSidePane;
+
+

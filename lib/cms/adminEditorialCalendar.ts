@@ -93,12 +93,30 @@ export interface AdminCalendarArticleRecord {
 export const ADMIN_EDITORIAL_CALENDAR: AdminCalendarArticleRecord[] = rawCalendarData as AdminCalendarArticleRecord[];
 
 /**
+ * Lightweight representation for autocomplete and selectors
+ */
+export interface AdminCalendarOption {
+  id: string;
+  date: string;
+  day: string;
+  category: string;
+  subcategory: string;
+  title: string;
+  globalWeek: number;
+}
+
+/**
  * Fast Lookup Map indexed by Publication Date (YYYY-MM-DD)
  */
 const CALENDAR_BY_DATE_MAP: Map<string, AdminCalendarArticleRecord> = new Map();
+const CALENDAR_BY_ID_MAP: Map<string, AdminCalendarArticleRecord> = new Map();
+
 ADMIN_EDITORIAL_CALENDAR.forEach(item => {
   if (item['Publication Date']) {
     CALENDAR_BY_DATE_MAP.set(item['Publication Date'], item);
+  }
+  if (item['Article ID']) {
+    CALENDAR_BY_ID_MAP.set(item['Article ID'], item);
   }
 });
 
@@ -120,6 +138,36 @@ export function getAdminArticleByDate(dateInput?: string | Date): AdminCalendarA
   const dateStr = normalizeDateStr(dateInput);
   if (!dateStr) return null;
   return CALENDAR_BY_DATE_MAP.get(dateStr) || null;
+}
+
+/**
+ * Retrieves record by exact Article ID (e.g. "TOM-2027-W01-D1").
+ */
+export function getAdminArticleById(articleId: string): AdminCalendarArticleRecord | null {
+  if (!articleId) return null;
+  return CALENDAR_BY_ID_MAP.get(articleId) || null;
+}
+
+/**
+ * Returns all planned article options for a specific commodity focus from the 1,820 calendar.
+ */
+export function getAdminCalendarOptionsForCommodity(commodity: string): AdminCalendarOption[] {
+  const cleanComm = (commodity || '').toLowerCase().trim();
+  const matches = ADMIN_EDITORIAL_CALENDAR.filter(item => {
+    return item['Food Focus']?.toLowerCase().includes(cleanComm) || cleanComm.includes(item['Food Focus']?.toLowerCase());
+  });
+
+  const targetList = matches.length > 0 ? matches : ADMIN_EDITORIAL_CALENDAR.slice(0, 70);
+
+  return targetList.map(item => ({
+    id: item['Article ID'],
+    date: item['Publication Date'],
+    day: item['Day'],
+    category: item['Category'],
+    subcategory: item['Subcategory'],
+    title: item['Publishing Headline / Editorial Title'] || item['Article Working Title'],
+    globalWeek: item['Global Week'],
+  }));
 }
 
 /**
@@ -165,11 +213,18 @@ export function getAdminArticleByCommodityAndDay(
  * Resolves the active Admin Day Node based on available context.
  */
 export function getAdminArticleDayNode(params: {
+  articleId?: string;
   dateStr?: string | Date;
   commodity?: string;
   category?: string;
   dayOfWeek?: string;
 }): AdminCalendarArticleRecord {
+  // 0. Try exact Article ID
+  if (params.articleId) {
+    const byId = getAdminArticleById(params.articleId);
+    if (byId) return byId;
+  }
+
   // 1. Try exact publication date
   if (params.dateStr) {
     const byDate = getAdminArticleByDate(params.dateStr);
