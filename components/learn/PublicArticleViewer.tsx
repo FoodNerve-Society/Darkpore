@@ -13,6 +13,7 @@ import {
   ContentCopy as ContentCopyIcon
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
+import { normalizeArticleBlocks } from '@/lib/utils/normalizeArticleBlocks';
 
 const ERA_COLORS = {
   past: '#ef4444',    
@@ -54,8 +55,7 @@ export function PublicArticleViewer({
   const [activeInsightBlockId, setActiveInsightBlockId] = useState<string | null>(null);
 
   // Parse blocks
-  const rawBlocks = material.articleBlocks || [];
-  const parsedBlocks = typeof rawBlocks === 'string' ? JSON.parse(rawBlocks) : rawBlocks;
+  const parsedBlocks = normalizeArticleBlocks(material.articleBlocks);
 
   const activeInsightBlock = parsedBlocks.find((b: any) => b.id === activeInsightBlockId) || null;
 
@@ -355,7 +355,7 @@ export function PublicArticleViewer({
                 fontSize: '1.05rem', lineHeight: 1.8, color: themeMode === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)', whiteSpace: 'pre-line',
                 maskImage: `linear-gradient(to bottom, ${themeMode === 'dark' ? 'black' : 'white'} 0%, transparent 100%)`,
                 WebkitMaskImage: `linear-gradient(to bottom, ${themeMode === 'dark' ? 'black' : 'white'} 0%, transparent 100%)`,
-                pointerEvents: 'none', filter: 'blur(2px)',
+                pointerEvents: 'none',
               }}>
                 {material.fullContent?.substring(0, 800) || 'Premium intelligence blueprint content goes here...'}
               </Typography>
@@ -371,7 +371,6 @@ export function PublicArticleViewer({
               background: themeMode === 'dark' 
                 ? 'linear-gradient(180deg, rgba(15,23,42,0) 0%, rgba(15,23,42,0.85) 20%, rgba(15,23,42,1) 100%)'
                 : 'linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.9) 20%, rgba(255,255,255,1) 100%)',
-              backdropFilter: 'blur(12px)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',

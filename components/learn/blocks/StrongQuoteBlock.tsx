@@ -1,6 +1,8 @@
 import React from 'react';
 import { Box, Typography, Avatar } from '@mui/material';
 import { Verified as VerifiedIcon } from '@mui/icons-material';
+import { Link as LinkIcon } from '@mui/icons-material';
+import { MarkdownText } from '../MarkdownText';
 
 type StrongQuoteBlockProps = {
   content: {
@@ -9,6 +11,7 @@ type StrongQuoteBlockProps = {
     authorName?: string;
     authorRole?: string;
     avatarUrl?: string;
+    sourceUrl?: string;
     discussionPrompt?: string;
   };
   themeMode?: 'light' | 'dark';
@@ -20,6 +23,9 @@ type StrongQuoteBlockProps = {
 export const StrongQuoteBlock: React.FC<StrongQuoteBlockProps> = ({ content, themeMode = 'light', accentColor, author, triggerInsights }) => {
   const isDark = themeMode === 'dark';
   const isComplete = !!content.quote && content.quote.trim().length > 0;
+  const embeddedSourceUrl = content.attribution?.match(/https?:\/\/[^\s]+/)?.[0];
+  const sourceUrl = content.sourceUrl || embeddedSourceUrl;
+  const attributionText = content.attribution?.replace(/\s*Source:\s*https?:\/\/[^\s]+/i, '').trim();
 
   if (!content.quote) return null;
 
@@ -27,15 +33,15 @@ export const StrongQuoteBlock: React.FC<StrongQuoteBlockProps> = ({ content, the
     <Box sx={{ my: 6, px: { xs: 2, md: 4 } }}>
       <Box sx={{ position: 'relative' }}>
         {/* Giant Quote Mark */}
-        <Typography sx={{ 
+          <MarkdownText sx={{ 
           position: 'absolute', top: -40, left: -20, 
           fontSize: '6rem', color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)', 
           fontWeight: 900, lineHeight: 1, fontFamily: 'serif' 
         }}>
           &ldquo;
-        </Typography>
+        </MarkdownText>
 
-        <Typography sx={{ 
+        <MarkdownText sx={{ 
           color: isDark ? '#fff' : '#0f172a', 
           fontSize: { xs: '1.25rem', md: '1.75rem' }, 
           fontWeight: 700, 
@@ -44,9 +50,9 @@ export const StrongQuoteBlock: React.FC<StrongQuoteBlockProps> = ({ content, the
           position: 'relative',
           zIndex: 1,
           fontStyle: 'italic'
-        }}>
-          {content.quote}
-        </Typography>
+          }}>
+            {content.quote}
+          </MarkdownText>
       </Box>
 
       {(content.authorName || content.attribution) && (
@@ -70,7 +76,7 @@ export const StrongQuoteBlock: React.FC<StrongQuoteBlockProps> = ({ content, the
               fontSize: '1rem',
               letterSpacing: '-0.01em'
             }}>
-              {content.authorName || (content.attribution && content.attribution.split(',')[0].trim())}
+              {content.authorName || (attributionText && attributionText.split(',')[0].trim())}
             </Typography>
             <Typography sx={{ 
               color: isDark ? '#94a3b8' : '#64748b', 
@@ -80,8 +86,31 @@ export const StrongQuoteBlock: React.FC<StrongQuoteBlockProps> = ({ content, the
               letterSpacing: '0.05em',
               mt: 0.2
             }}>
-              {content.authorRole || (content.attribution && content.attribution.includes(',') ? content.attribution.split(',').slice(1).join(',').trim() : '')}
+              {content.authorRole || (attributionText && attributionText.includes(',') ? attributionText.split(',').slice(1).join(',').trim() : '')}
             </Typography>
+            {sourceUrl && (
+              <Box
+                component="a"
+                href={sourceUrl}
+                target="_blank"
+                rel="noreferrer noopener"
+                sx={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 0.35,
+                  mt: 0.75,
+                  color: accentColor || (isDark ? '#93c5fd' : '#2563eb'),
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  letterSpacing: '0.02em',
+                  textDecoration: 'none',
+                  '&:hover': { textDecoration: 'underline' }
+                }}
+              >
+                <LinkIcon sx={{ fontSize: 14 }} />
+                Source
+              </Box>
+            )}
           </Box>
         </Box>
       )}

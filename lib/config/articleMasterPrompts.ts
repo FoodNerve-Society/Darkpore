@@ -671,7 +671,7 @@ export function buildDoc4cPrompt(ctx: PromptContext): string {
 You are a strict Database Administrator and Backend Data Engineer for Food Nerve Society. Your ONLY job is to take human-readable Markdown text and convert it into a perfectly formatted, escaped JSON payload for our Headless CMS API.
 
 - **Zero Conversational Text:** You do not say "Here is your JSON." You output strictly valid, machine-readable JSON code starting with \`{\` and ending with \`}\`.
-- **Zero Hallucination:** Map the text from Markdown exactly as written. Do not edit or shorten text.
+- **Zero Hallucination:** Map the text from Markdown exactly as it is written, subject only to the Sanitization Rules below.
 
 **[INPUT PAYLOAD DEFINITION]**
 \`\`\`text
@@ -680,13 +680,18 @@ You are a strict Database Administrator and Backend Data Engineer for Food Nerve
 
 ---
 
-#### PHASE 1: Metadata & Top-Level Extraction
+#### PHASE 1: The Sanitization Sweep (CRITICAL)
+Before mapping the text to JSON, you MUST clean the data:
+1. **Eradicate AI Self-Talk:** Strip ANY bracketed editorial notes, correction logs, or internal AI reasoning, including text such as [Correction note preserved...] or [Updated by Step 3a]. Output ONLY public-facing editorial text.
+2. **Strict URL Formatting:** Any JSON key ending in Url or Link (including ctaLink, sourceUrl, avatarUrl, and imageUrl) MUST contain ONLY a valid raw URL starting with http://, https://, or /. Never include conversational text in these fields. If no valid URL exists, output an empty string.
+
+#### PHASE 2: Metadata & Top-Level Extraction
 Extract \`[SYSTEM_METADATA]\` and map to root JSON:
 - Extract Spiky Title from Block 1 for \`"title"\`.
 - Extract 1-2 sentence preview for \`"description"\`.
 - Map metadata fields into \`"metadata"\` JSON object, converting comma-separated strings into arrays.
 
-#### PHASE 2: Block Mapping & Stringification (CRITICAL RULE)
+#### PHASE 3: Block Mapping & Stringification (CRITICAL RULE)
 Convert each Markdown block into an element inside the \`"articleBlocks"\` array.
 **CRITICAL RULE:** The \`"content"\` field inside \`articleBlocks\` MUST be a **stringified JSON object** (using escaped quotes \`\\"\`), NOT a nested JSON object. Every internal double quote within the text must be escaped (\`\\\\\\"\`). Ensure \`orderIndex\` scales sequentially starting from \`0\`.
 
@@ -764,7 +769,7 @@ Convert each Markdown block into an element inside the \`"articleBlocks"\` array
     {
       "blockType": "pull_quote",
       "orderIndex": 11,
-      "content": "{\\"quote\\":\\"[Extract Quote Text]\\",\\"attribution\\":\\"[Extract Attribution]\\",\\"avatarUrl\\":\\"[Expanded Image Prompt]\\"}"
+      "content": "{\\"quote\\":\\"[Extract Quote Text]\\",\\"attribution\\":\\"[Extract Attribution]\\",\\"sourceUrl\\":\\"[Extract URL if present, else empty string]\\",\\"avatarUrl\\":\\"[Expanded Image Prompt or empty string]\\"}"
     },
     {
       "blockType": "ecosystem_embed",

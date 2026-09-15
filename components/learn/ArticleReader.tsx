@@ -54,6 +54,7 @@ import {
 import { useSociety } from "@/context/SocietyContext";
 import { ArticleBlockRenderer } from "@/components/learn/ArticleBlockRenderer";
 import { BlockInsightsDrawer } from "@/components/learn/BlockInsightsDrawer";
+import { normalizeArticleBlocks } from "@/lib/utils/normalizeArticleBlocks";
 
 // ═══════════════════════════════════════════════════════════
 // CONSTANTS
@@ -411,7 +412,8 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
     }
   };
 
-  const displayBlocks = article.articleBlocks?.filter((block: any) => isBlockComplete(block)) || [];
+  const normalizedBlocks = normalizeArticleBlocks(article.articleBlocks);
+  const displayBlocks = normalizedBlocks.filter((block: any) => isBlockComplete(block));
 
   // Determine accent color based on era tags
   const eraTag = article.tags?.find(t => ['past', 'present', 'future'].includes(t.toLowerCase()))?.toLowerCase();

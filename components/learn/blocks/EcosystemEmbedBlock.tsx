@@ -60,7 +60,7 @@ export const EcosystemEmbedBlock: React.FC<EcosystemEmbedBlockProps> = ({
         location: content.location,
         compensationOrTarget: content.compensationOrTarget,
         ctaText: content.ctaText,
-        ctaLink: content.ctaLink,
+        ctaLink: content.ctaLink || (content.embedType === 'deal' || content.embedType === 'cooperative' ? '/trade' : '/innovations/careers'),
         embedType: content.embedType || 'job'
       }]
     : [];

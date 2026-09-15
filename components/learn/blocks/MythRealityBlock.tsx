@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Typography, Avatar } from '@mui/material';
 import { Close as CloseIcon, Check as CheckIcon, Verified as VerifiedIcon } from '@mui/icons-material';
+import { MarkdownText } from '../MarkdownText';
 
 type MythRealityBlockProps = {
   content: {
@@ -49,7 +50,7 @@ export const MythRealityBlock: React.FC<MythRealityBlockProps> = ({ content, the
                   The Myth
                 </Typography>
               </Box>
-              <Typography sx={{ 
+              <MarkdownText sx={{ 
                 color: isDark ? 'rgba(255,255,255,0.4)' : '#94a3b8', 
                 fontSize: { xs: '1.1rem', md: '1.3rem' }, 
                 lineHeight: 1.5, 
@@ -57,7 +58,7 @@ export const MythRealityBlock: React.FC<MythRealityBlockProps> = ({ content, the
                 fontWeight: 500
               }}>
                 {pair.myth}
-              </Typography>
+              </MarkdownText>
             </Box>
           )}
 
@@ -70,14 +71,14 @@ export const MythRealityBlock: React.FC<MythRealityBlockProps> = ({ content, the
                   The Reality
                 </Typography>
               </Box>
-              <Typography sx={{ 
+              <MarkdownText sx={{ 
                 color: isDark ? '#fff' : '#0f172a', 
                 fontSize: { xs: '1.1rem', md: '1.3rem' }, 
                 lineHeight: 1.6, 
                 fontWeight: 600 
               }}>
                 {pair.fact}
-              </Typography>
+              </MarkdownText>
             </Box>
           )}
         </Box>

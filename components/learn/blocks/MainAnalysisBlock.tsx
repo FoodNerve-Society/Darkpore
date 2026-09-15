@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Typography, alpha, useTheme, Avatar } from '@mui/material';
 import { Verified as VerifiedIcon, FormatQuote as QuoteIcon } from '@mui/icons-material';
+import { MarkdownText } from '../MarkdownText';
 
 type MainAnalysisBlockProps = {
   content: {
@@ -28,14 +29,8 @@ export const MainAnalysisBlock: React.FC<MainAnalysisBlockProps> = ({ content, t
     const paragraphs = text.split(/\n+/).filter(p => p.trim() !== '');
     
     return paragraphs.map((p, i) => {
-      let html = p
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.*?)\*/g, '<em>$1</em>')
-        .replace(new RegExp('<u>(.*?)</u>', 'g'), '<span style="text-decoration: underline;">$1</span>')
-        .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color: #8b5cf6; text-decoration: underline;">$1</a>');
-      
       return (
-        <Typography 
+        <MarkdownText 
           key={i}
           sx={{ 
             color: isDark ? 'rgba(255,255,255,0.85)' : '#334155', 
@@ -48,8 +43,9 @@ export const MainAnalysisBlock: React.FC<MainAnalysisBlockProps> = ({ content, t
             '& em': { fontStyle: 'italic', color: isDark ? 'rgba(255,255,255,0.7)' : '#475569' },
             '& a': { color: '#8b5cf6', textDecoration: 'underline', transition: 'opacity 0.2s', '&:hover': { opacity: 0.8 } }
           }}
-          dangerouslySetInnerHTML={{ __html: html }}
-        />
+        >
+          {p}
+        </MarkdownText>
       );
     });
   };

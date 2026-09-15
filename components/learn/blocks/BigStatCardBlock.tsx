@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, Typography } from '@mui/material';
+import { MarkdownText } from '../MarkdownText';
 
 type BigStatCardBlockProps = {
   content: {
@@ -32,16 +33,9 @@ export const BigStatCardBlock: React.FC<BigStatCardBlockProps> = ({ content, the
     const renderMarkdown = (text: string) => {
       if (!text) return null;
       const paragraphs = text.split(/\n+/).filter(p => p.trim() !== '');
-      
-      return paragraphs.map((p, i) => {
-        let html = p
-          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-          .replace(/\*(.*?)\*/g, '<em>$1</em>')
-          .replace(new RegExp('<u>(.*?)</u>', 'g'), '<span style="text-decoration: underline;">$1</span>')
-          .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline;">$1</a>');
-        
-        return (
-          <Typography 
+
+      return paragraphs.map((p, i) => (
+          <MarkdownText 
             key={i}
             sx={{ 
               color: isDark ? '#fff' : '#0f172a', 
@@ -53,10 +47,10 @@ export const BigStatCardBlock: React.FC<BigStatCardBlockProps> = ({ content, the
               '& em': { fontStyle: 'italic', opacity: 0.9 },
               '& a': { opacity: 0.9, transition: 'opacity 0.2s', '&:hover': { opacity: 1 } }
             }}
-            dangerouslySetInnerHTML={{ __html: html }}
-          />
-        );
-      });
+          >
+            {p}
+          </MarkdownText>
+      ));
     };
 
     return (
