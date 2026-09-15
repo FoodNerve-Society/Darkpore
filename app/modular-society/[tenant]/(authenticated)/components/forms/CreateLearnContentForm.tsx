@@ -391,6 +391,13 @@ const slideUpFade = keyframes`
   to { opacity: 1; transform: translateY(0); }
 `;
 
+const toDateTimeLocalValue = (value: string) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const offset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+};
+
 // ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 // COMPONENT
 // ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
@@ -764,7 +771,10 @@ export default function CreateLearnContentForm({
       setSelectedEra(validEra);
     }
 
-    if (initialTaxonomy.targetDate) setTargetDate(initialTaxonomy.targetDate);
+    if (initialTaxonomy.targetDate) {
+      setTargetDate(toDateTimeLocalValue(initialTaxonomy.targetDate));
+      setPublishMode('scheduled');
+    }
     if (initialTaxonomy.title) setTitle(initialTaxonomy.title);
     if (initialTaxonomy.description) setDescription(initialTaxonomy.description);
 
@@ -811,7 +821,8 @@ export default function CreateLearnContentForm({
       if (initialDraftData.targetDate) {
         try {
           const d = new Date(initialDraftData.targetDate);
-          setTargetDate(d.toISOString());
+          setTargetDate(toDateTimeLocalValue(d.toISOString()));
+          setPublishMode('scheduled');
         } catch (e) {
           console.error('Invalid targetDate format', e);
         }
@@ -845,6 +856,7 @@ export default function CreateLearnContentForm({
   const [reportPdfUrl, setReportPdfUrl] = useState('');
   const [reportPages, setReportPages] = useState<number>(1);
   const [targetDate, setTargetDate] = useState<string>('');
+  const [publishMode, setPublishMode] = useState<'immediate' | 'scheduled'>('immediate');
 
   // Blocks fields (For Articles)
   const [blocks, setBlocks] = useState<Array<{ id: string, type: BlockType, content: Record<string, any>, role?: string, sopDesc?: string, sopHint?: string }>>([]);
@@ -1313,6 +1325,15 @@ export default function CreateLearnContentForm({
         return;
       }
     }
+
+    if (isPublish && publishMode === 'scheduled') {
+      const scheduledTime = new Date(targetDate).getTime();
+      if (!targetDate || Number.isNaN(scheduledTime) || scheduledTime <= Date.now()) {
+        setError('Choose a future date and time before scheduling this article.');
+        scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+    }
     
     setLoading(true);
     setError(null);
@@ -1406,7 +1427,7 @@ export default function CreateLearnContentForm({
         classDuration: type === 'class' ? duration : undefined,
         reportPdfUrl: type === 'report' ? reportPdfUrl : undefined,
         reportPages: type === 'report' ? reportPages : undefined,
-        targetDate: targetDate || undefined,
+        targetDate: isPublish && publishMode === 'scheduled' ? new Date(targetDate).toISOString() : undefined,
       };
 
       const result = await createLearnContent(payload, !isPublish);
@@ -2169,7 +2190,7 @@ export default function CreateLearnContentForm({
                                  {/* Right: Next / Save Action Button */}
                                  <Box>
                                    {blueprintConfigStep === 1 ? (
-                                     <Button
+                                    <Button
                                        variant="contained"
                                        disabled={!selectedSubcategory}
                                        onClick={() => setBlueprintConfigStep(2)}
@@ -4115,7 +4136,89 @@ export default function CreateLearnContentForm({
             </Button>
           ) : (
             /* ═══ STANDARD ACTIONS IN CANVAS MODE ═══ */
-            <Box sx={{ display: 'flex', gap: 2 }}>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end', width: '100%' }}>
+              {type === 'article' && (
+                <Box sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  mr: 'auto',
+                  flexWrap: 'wrap',
+                  p: 0.75,
+                  borderRadius: '16px',
+                  bgcolor: 'rgba(255,255,255,0.72)',
+                  border: '1px solid rgba(15,23,42,0.08)',
+                  boxShadow: '0 8px 24px rgba(15,23,42,0.06), inset 0 1px 0 rgba(255,255,255,0.95)',
+                  backdropFilter: 'blur(16px)',
+                }}>
+                  <Typography sx={{
+                    px: 1,
+                    color: '#64748b',
+                    fontSize: '0.68rem',
+                    fontWeight: 900,
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                  }}>
+                    Release
+                  </Typography>
+                  <Button
+                    size="small"
+                    variant={publishMode === 'immediate' ? 'contained' : 'outlined'}
+                    onClick={() => {
+                      setPublishMode('immediate');
+                    }}
+                    startIcon={<CheckIcon />}
+                    sx={{
+                      minHeight: 34,
+                      borderRadius: '11px',
+                      fontWeight: 800,
+                      fontSize: '0.76rem',
+                      bgcolor: publishMode === 'immediate' ? '#10b981' : 'transparent',
+                      borderColor: '#10b981',
+                      color: publishMode === 'immediate' ? '#fff' : '#047857',
+                      boxShadow: publishMode === 'immediate' ? '0 5px 14px rgba(16,185,129,0.24)' : 'none',
+                      '&:hover': { bgcolor: publishMode === 'immediate' ? '#059669' : 'rgba(16,185,129,0.08)' }
+                    }}
+                  >
+                    Publish Immediately
+                  </Button>
+                  <Button
+                    size="small"
+                    variant={publishMode === 'scheduled' ? 'contained' : 'outlined'}
+                    onClick={() => setPublishMode('scheduled')}
+                    startIcon={<CalendarIcon />}
+                    sx={{
+                      minHeight: 34,
+                      borderRadius: '11px',
+                      fontWeight: 800,
+                      fontSize: '0.76rem',
+                      bgcolor: publishMode === 'scheduled' ? '#3b82f6' : 'transparent',
+                      borderColor: '#3b82f6',
+                      color: publishMode === 'scheduled' ? '#fff' : '#2563eb',
+                      boxShadow: publishMode === 'scheduled' ? '0 5px 14px rgba(59,130,246,0.24)' : 'none',
+                      '&:hover': { bgcolor: publishMode === 'scheduled' ? '#2563eb' : 'rgba(59,130,246,0.08)' }
+                    }}
+                  >
+                    Schedule
+                  </Button>
+                  {publishMode === 'scheduled' && targetDate && (
+                    <Chip
+                      icon={<CalendarIcon />}
+                      label={`Scheduled for ${format(new Date(targetDate), 'EEE, MMM d, yyyy h:mm a')}`}
+                      size="small"
+                      sx={{
+                        height: 34,
+                        fontWeight: 800,
+                        fontSize: '0.72rem',
+                        color: '#1d4ed8',
+                        bgcolor: 'rgba(59,130,246,0.07)',
+                        border: '1px solid rgba(59,130,246,0.14)',
+                        '& .MuiChip-icon': { color: '#3b82f6' },
+                      }}
+                    />
+                  )}
+                </Box>
+              )}
               <Button
                 onClick={() => setPreviewOpen(true)}
                 startIcon={<SparkleIcon sx={{ color: '#8b5cf6' }} />}
