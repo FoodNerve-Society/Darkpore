@@ -32,6 +32,17 @@ import {
   PromptChecklistItem,
   PromptFastIngestBox,
 } from '@/components/prompts';
+import {
+  buildDoc2aPrompt,
+  buildDoc2bPrompt,
+  buildDoc2cPrompt,
+  buildDoc3aPrompt,
+  buildDoc3bPrompt,
+  buildDoc3cPrompt,
+  buildDoc4aPrompt,
+  buildDoc4bPrompt,
+  buildDoc4cPrompt,
+} from '@/lib/config/articleMasterPrompts';
 
 interface EditorialPromptSidePaneProps {
   open: boolean;
@@ -185,12 +196,14 @@ export function EditorialPromptSidePane({
       if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
         const parsed = JSON.parse(trimmed);
         if (Array.isArray(parsed)) return parsed.length;
+        if (parsed.articleBlocks && Array.isArray(parsed.articleBlocks)) return parsed.articleBlocks.length;
         if (parsed.blocks && Array.isArray(parsed.blocks)) return parsed.blocks.length;
       }
-      const jsonMatch = trimmed.match(/```json\s*([\s\S]*?)\s*```/) || trimmed.match(/\[\s*\{[\s\S]*\}\s*\]/);
+      const jsonMatch = trimmed.match(/```json\s*([\s\S]*?)\s*```/) || trimmed.match(/\[\s*\{[\s\S]*\}\s*\]/) || trimmed.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const extracted = JSON.parse(jsonMatch[1] || jsonMatch[0]);
         if (Array.isArray(extracted)) return extracted.length;
+        if (extracted.articleBlocks && Array.isArray(extracted.articleBlocks)) return extracted.articleBlocks.length;
         if (extracted.blocks && Array.isArray(extracted.blocks)) return extracted.blocks.length;
       }
     } catch {
@@ -199,158 +212,98 @@ export function EditorialPromptSidePane({
     return 0;
   }, [rawIngestPayload]);
 
-  // ═══════════════════════════════════════════════════════════
-  // DOCUMENT 2: NARRATIVE ARCHITECTURE & THESIS (2a, 2b, 2c)
-  // ═══════════════════════════════════════════════════════════
-  const doc2Prompts = useMemo(() => {
-    return [
-      {
-        key: 'doc_2a',
-        code: 'DOC 2a',
-        title: 'Narrative Angle & Spiky Hook Formulation',
-        role: 'Synthesize the central contrarian argument and attention-arresting hook',
-        prompt: `You are the Lead Agribusiness Editorial Strategist for Food Nerve (Nigeria).
-We are drafting an interactive strategic publication with the following specifications:
-- Commodity: "${commodity}"
-- Strategic Challenge: "${category}" (${subcategory || 'General'})
-- Format Lens: "${formatMeta.label}" (${format.toUpperCase()})
-- Temporal Era: "${eraMeta.label}" (${era.toUpperCase()} ERA)
-- Working Title: "${currentTitle || 'Agribusiness Strategic Intelligence'}"
-
-[TASK 2a: NARRATIVE ANGLE & SPIKY HOOK]
-1. Formulate 3 distinct "Spiky Points of View" that challenge lazy conventional assumptions in the Nigerian agricultural market.
-2. For each angle, write a 2-sentence opening hook designed to grab commercial aggregators, processors, and investors.
-3. Establish the central economic thesis: what structural bottleneck (e.g. FX volatility, storage losses, diesel costs, aggregation fragmentation) is creating the crisis or opportunity right now?`,
-      },
-      {
-        key: 'doc_2b',
-        code: 'DOC 2b',
-        title: 'Target Value Chain Persona & Operational Stakes',
-        role: 'Define reader persona, daily frictions, and financial downside of inaction',
-        prompt: `[TASK 2b: TARGET PERSONA & OPERATIONAL STAKES]
-Context: "${commodity}" × "${category}" (${subcategory || 'General'}) in Nigeria.
-Publication Type: ${formatMeta.label} (${eraMeta.label}).
-
-1. Identify the primary commercial operator affected (e.g., Northern Commodity Aggregator, Industrial Food Processor, Cold-Chain Fleet Operator, Commercial Farmer).
-2. Detail their current "Workaround" vs the "Real Cost of Inaction":
-   - Unit Economics impact: specify losses in ₦ per metric ton, percentage spoilage, or margin erosion.
-   - Seasonal operational timeline: when does the pressure peak (planting, harvest glut, or lean season)?
-3. Draft a crisp 1-paragraph Persona Dossier describing their operational reality on the ground.`,
-      },
-      {
-        key: 'doc_2c',
-        code: 'DOC 2c',
-        title: 'Blueprint Skeleton & Block Sequence Mapping',
-        role: `Map the narrative arc across all ${currentBlueprint.length} blueprint blocks`,
-        prompt: `[TASK 2c: BLUEPRINT SKELETON MAPPING]
-Our interactive publication requires exactly ${currentBlueprint.length} blocks following our structured editorial SOP:
-
-${currentBlueprint
-  .map(
-    (b, i) =>
-      `Block ${i + 1}: [${b.type.toUpperCase()}]\n- Editorial Role: "${b.role}"\n- SOP Directive: ${b.desc}\n- Core Hint: ${b.hint}`
-  )
-  .join('\n\n')}
-
-Review the topic: "${commodity}" in "${category}" (${subcategory || 'General'}).
-Map out a bulleted 1-sentence outline for each of the ${currentBlueprint.length} blocks above so the narrative flows seamlessly from opening hook to empirical proof, unit economics, and final strategic directive.`,
-      },
-    ];
-  }, [commodity, category, subcategory, formatMeta, eraMeta, format, era, currentTitle, currentBlueprint]);
+  const promptContext = useMemo(() => ({
+    format,
+    era,
+    commodity,
+    category,
+    subcategory,
+    currentTitle,
+    currentDescription,
+    currentBlueprint,
+    pinnedClips,
+  }), [format, era, commodity, category, subcategory, currentTitle, currentDescription, currentBlueprint, pinnedClips]);
 
   // ═══════════════════════════════════════════════════════════
-  // DOCUMENT 3: BLOCK-BY-BLOCK CONTENT DRAFTING (3a, 3b, 3c)
+  // DOCUMENT 2: THE DRAFTING ENGINE (2a, 2b, 2c)
   // ═══════════════════════════════════════════════════════════
-  const doc3Prompts = useMemo(() => {
-    return [
-      {
-        key: 'doc_3a',
-        code: 'DOC 3a',
-        title: 'Foundation Blocks: Hook, Subheading & 3-Point Executive Summary',
-        role: 'Draft the opening anchor blocks with temporal markers',
-        prompt: `[TASK 3a: FOUNDATION BLOCKS]
-Generate the opening content blocks for our ${formatMeta.label} on "${commodity}" (${category}):
-
-1. Subheading Block:
-   - A punchy 1-sentence subheadline with high operational specificity (mentioning corridors like Kano, Benue, Oyo, or Kaduna).
-
-2. Executive Summary Block (Strict 3-Point Structure for ${era.toUpperCase()} Era):
-   - Point 1 (${era === 'past' ? 'The Original Promise' : era === 'future' ? 'The Dying Paradigm' : 'The Crisis'}): State the empirical reality with concrete data.
-   - Point 2 (${era === 'past' ? 'The Friction Point' : era === 'future' ? 'The Disruption' : 'The Workaround'}): Detail the commercial bottleneck.
-   - Point 3 (${era === 'past' ? 'The Loss' : era === 'future' ? 'The Horizon Year' : 'The Primary Actor Affected'}): Summarize the net financial consequence in ₦ or percentage.`,
-      },
-      {
-        key: 'doc_3b',
-        code: 'DOC 3b',
-        title: 'Analytical & Interactive Core Blocks: Directives, Economics & Proof',
-        role: 'Draft unit economics calculations, comparison matrices, and tactical directives',
-        prompt: `[TASK 3b: ANALYTICAL & INTERACTIVE CORE BLOCKS]
-Draft the rigorous data and interactive blocks for "${commodity}" (${category}):
-
-1. Strategic Directive Block:
-   - Urgency Level: High / Critical / Immediate.
-   - Target Persona: Primary operator who must execute this directive.
-   - 3 Actionable Bullet Directives: Concrete operational instructions (storage temperature, aggregation protocol, contract hedging).
-
-2. Unit Economics / Comparison Matrix Block:
-   - Provide realistic Nigerian agribusiness figures (e.g. ₦350,000/ton farmgate vs ₦580,000/ton terminal market; 18-24% post-harvest loss; transport costs per truckload).
-   - Show the margin difference between business-as-usual vs the proposed intervention.
-
-3. Myth vs Fact / Core Interactive Block:
-   - Myth: Common misconception held by traders or farmers.
-   - Fact: Ground operational reality backed by logistics data.`,
-      },
-      {
-        key: 'doc_3c',
-        code: 'DOC 3c',
-        title: 'Ground Intelligence & Ecosystem Call to Action',
-        role: 'Synthesize field evidence, pull quotes, and final network action triggers',
-        prompt: `[TASK 3c: GROUND INTELLIGENCE & CALL TO ACTION]
-${pinnedClips.length > 0 ? `Incorporate the following attached field notes:\n${pinnedClips.join('\n---\n')}\n\n` : ''}
-1. Pull Quote / Field Voice:
-   - Draft a raw, authentic quote from a market operator, warehouse manager, or truck driver on the corridor.
-
-2. Call to Action (CTA) Block:
-   - What should the reader do next on the Food Nerve Network?
-   - Offer a clear next step: e.g. join the regional aggregation cooperative, access cold-storage capacity, apply for equipment leasing, or inspect live market prices.`,
-      },
-    ];
-  }, [commodity, category, formatMeta, era, pinnedClips]);
+  const doc2Prompts = useMemo(() => [
+    {
+      key: 'doc_2a',
+      code: 'DOC 2a',
+      title: 'The Emotional Wireframer (The Architect)',
+      role: `Map ${currentBlueprint.length} blocks sequence & assign emotional targets (Greed, Paranoia, Outrage, Clarity)`,
+      prompt: buildDoc2aPrompt(promptContext),
+    },
+    {
+      key: 'doc_2b',
+      code: 'DOC 2b',
+      title: 'The Intelligence Writer (The Muscle)',
+      role: 'Brutal 8th-grade investigative analysis, live OSINT grounding & raw block drafting',
+      prompt: buildDoc2bPrompt(promptContext),
+    },
+    {
+      key: 'doc_2c',
+      code: 'DOC 2c',
+      title: 'The Component Assembler (The Skin)',
+      role: 'Strict Markdown compilation matching 17 UI blocks with zero word alterations',
+      prompt: buildDoc2cPrompt(promptContext),
+    },
+  ], [promptContext, currentBlueprint.length]);
 
   // ═══════════════════════════════════════════════════════════
-  // DOCUMENT 4: FULL SYNTHESIS & INGESTION COMPOSER (4a, 4b)
+  // DOCUMENT 3: ENRICHMENT, VISUALS & CONVERSION QA (3a, 3b, 3c)
   // ═══════════════════════════════════════════════════════════
-  const doc4Prompts = useMemo(() => {
-    return [
-      {
-        key: 'doc_4a',
-        code: 'DOC 4a',
-        title: 'Master Multi-Block Blueprint Composer',
-        role: `Assemble all ${currentBlueprint.length} blocks into structured JSON for direct canvas import`,
-        prompt: `[TASK 4a: MASTER COMPILATION]
-You have conducted the research across Docs 2 and 3. Now compile the complete, publication-ready article payload for Food Nerve.
+  const doc3Prompts = useMemo(() => [
+    {
+      key: 'doc_3a',
+      code: 'DOC 3a',
+      title: 'The OSINT Fact-Checking & Sourcing Engine',
+      role: 'In-place factual audit, real price quotes, verified links, and live listings',
+      prompt: buildDoc3aPrompt(promptContext),
+    },
+    {
+      key: 'doc_3b',
+      code: 'DOC 3b',
+      title: 'The Art Director & Visual Asset Expansion Engine',
+      role: 'Documentary photojournalism Midjourney/DALL-E prompts with calibrated aspect ratios',
+      prompt: buildDoc3bPrompt(promptContext),
+    },
+    {
+      key: 'doc_3c',
+      code: 'DOC 3c',
+      title: 'The Conversion Architect & Structural QA Engine',
+      role: 'Canonical CTA catalog mapping & 5-point pre-flight structural QA audit',
+      prompt: buildDoc3cPrompt(promptContext),
+    },
+  ], [promptContext]);
 
-Return ONLY a valid JSON object with the following schema:
-{
-  "title": "${currentTitle || `Strategic Intelligence: ${commodity} on the ${category} Corridor`}",
-  "description": "${currentDescription || `A comprehensive ${formatMeta.label.toLowerCase()} evaluating unit economics, supply bottlenecks, and tactical directives for Nigerian operators.`}",
-  "blocks": [
-${currentBlueprint
-  .map(
-    (b, i) => `    {
-      "type": "${b.type}",
-      "role": "${b.role}",
-      "content": { /* Complete payload matching ${b.type} SOP requirements */ }
-    }`
-  )
-  .join(',\n')}
-  ]
-}
-
-Ensure all ${currentBlueprint.length} blocks contain substantive, realistic data in Naira (₦) for Nigerian agribusiness corridors. Do not truncate with placeholders.`,
-      },
-    ];
-  }, [commodity, category, formatMeta, currentTitle, currentDescription, currentBlueprint]);
+  // ═══════════════════════════════════════════════════════════
+  // DOCUMENT 4: REFINEMENT, BIONIC & CMS COMPILATION (4a, 4b, 4c)
+  // ═══════════════════════════════════════════════════════════
+  const doc4Prompts = useMemo(() => [
+    {
+      key: 'doc_4a',
+      code: 'DOC 4a',
+      title: 'The Jargon Translator & Headline Polisher',
+      role: 'Spiky Title badge formatting, plain 8th-grade English scrub & persona tuning',
+      prompt: buildDoc4aPrompt(promptContext),
+    },
+    {
+      key: 'doc_4b',
+      code: 'DOC 4b',
+      title: 'The Bionic Editor & Syntax Linter',
+      role: 'Mobile F-pattern bionic reading anchors & syntax linter for clean JSON parsing',
+      prompt: buildDoc4bPrompt(promptContext),
+    },
+    {
+      key: 'doc_4c',
+      code: 'DOC 4c',
+      title: 'The Payload Parser (CMS API Bridge)',
+      role: 'Final compilation into strictly valid, headless CMS JSON payload for direct canvas ingest',
+      prompt: buildDoc4cPrompt(promptContext),
+    },
+  ], [promptContext]);
 
   // Fast Ingest Parser handler with Fast Ingest Protocol Normalization
   const handleParseAndIngest = () => {
@@ -359,7 +312,7 @@ Ensure all ${currentBlueprint.length} blocks contain substantive, realistic data
 
     const trimmed = rawIngestPayload.trim();
     if (!trimmed) {
-      setIngestError('Please paste your generated JSON or block payload into the editor below.');
+      setIngestError('Please paste your generated JSON from Doc 4c into the editor below.');
       return;
     }
 
@@ -370,6 +323,16 @@ Ensure all ${currentBlueprint.length} blocks contain substantive, realistic data
         const parsed = JSON.parse(trimmed);
         if (Array.isArray(parsed)) {
           parsedBlocks = parsed;
+        } else if (parsed.articleBlocks && Array.isArray(parsed.articleBlocks)) {
+          parsedBlocks = parsed.articleBlocks;
+          if (parsed.title && onUpdateTitle) {
+            const rawTitle = Array.isArray(parsed.title) ? parsed.title[0] : parsed.title;
+            onUpdateTitle(String(rawTitle));
+          }
+          if (parsed.description && onUpdateDescription) {
+            const rawDesc = Array.isArray(parsed.description) ? parsed.description[0] : parsed.description;
+            onUpdateDescription(String(rawDesc));
+          }
         } else if (parsed.blocks && Array.isArray(parsed.blocks)) {
           parsedBlocks = parsed.blocks;
           if (parsed.title && onUpdateTitle) {
@@ -384,39 +347,89 @@ Ensure all ${currentBlueprint.length} blocks contain substantive, realistic data
       }
 
       if (parsedBlocks.length === 0) {
-        const jsonMatch = trimmed.match(/```json\s*([\s\S]*?)\s*```/) || trimmed.match(/\[\s*\{[\s\S]*\}\s*\]/);
+        const jsonMatch = trimmed.match(/```json\s*([\s\S]*?)\s*```/) || trimmed.match(/\[\s*\{[\s\S]*\}\s*\]/) || trimmed.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           const extracted = JSON.parse(jsonMatch[1] || jsonMatch[0]);
           if (Array.isArray(extracted)) {
             parsedBlocks = extracted;
+          } else if (extracted.articleBlocks && Array.isArray(extracted.articleBlocks)) {
+            parsedBlocks = extracted.articleBlocks;
+            if (extracted.title && onUpdateTitle) {
+              const rawTitle = Array.isArray(extracted.title) ? extracted.title[0] : extracted.title;
+              onUpdateTitle(String(rawTitle));
+            }
+            if (extracted.description && onUpdateDescription) {
+              const rawDesc = Array.isArray(extracted.description) ? extracted.description[0] : extracted.description;
+              onUpdateDescription(String(rawDesc));
+            }
           } else if (extracted.blocks && Array.isArray(extracted.blocks)) {
             parsedBlocks = extracted.blocks;
+            if (extracted.title && onUpdateTitle) {
+              const rawTitle = Array.isArray(extracted.title) ? extracted.title[0] : extracted.title;
+              onUpdateTitle(String(rawTitle));
+            }
+            if (extracted.description && onUpdateDescription) {
+              const rawDesc = Array.isArray(extracted.description) ? extracted.description[0] : extracted.description;
+              onUpdateDescription(String(rawDesc));
+            }
           }
         }
       }
 
       if (parsedBlocks.length === 0) {
-        setIngestError('Could not locate a valid block array in the pasted output. Please check formatting.');
+        setIngestError('Could not locate a valid block array in the pasted Doc 4c output. Please check formatting.');
         return;
       }
 
       if (onIngestAllBlocks) {
         const hydrated = parsedBlocks.map((b, idx) => {
           const sop = currentBlueprint[idx];
+          const rawType = b.blockType || b.type || sop?.type || 'core_interactive';
+          let blockContent = b.content || {};
+
+          // If content is stringified JSON (as generated by Doc 4c), safely parse it
+          if (typeof blockContent === 'string') {
+            try {
+              blockContent = JSON.parse(blockContent);
+            } catch (e) {
+              // fallback if it's already an unescaped or raw string
+            }
+          }
+
+          // Fast Ingest Ingestion Protocol: unwrap array wrappers across all fields
+          if (blockContent && typeof blockContent === 'object') {
+            for (const key of Object.keys(blockContent)) {
+              if (
+                Array.isArray(blockContent[key]) &&
+                blockContent[key].length === 1 &&
+                typeof blockContent[key][0] === 'string' &&
+                key !== 'checklist' &&
+                key !== 'rows' &&
+                key !== 'steps' &&
+                key !== 'milestones' &&
+                key !== 'pairs' &&
+                key !== 'items'
+              ) {
+                blockContent[key] = blockContent[key][0];
+              }
+            }
+          }
+
           return {
             id: `block_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 6)}`,
-            type: (b.type || sop?.type || 'core_interactive') as BlockType,
+            type: rawType as BlockType,
             role: b.role || sop?.role || 'Analysis',
             sopDesc: sop?.desc || '',
             sopHint: sop?.hint || '',
-            content: b.content || {},
+            content: blockContent,
           };
         });
+
         onIngestAllBlocks(hydrated);
         setIngestSuccess(true);
         setTimeout(() => {
           onClose();
-        }, 1200);
+        }, 1000);
       }
     } catch (err: any) {
       setIngestError(`Failed to parse payload: ${err.message}`);
@@ -913,7 +926,7 @@ Ensure all ${currentBlueprint.length} blocks contain substantive, realistic data
             }}
           >
             <Chip
-              label="DOC 2 · Architecture"
+              label="DOC 2 · Drafting Engine"
               size="small"
               onClick={() => scrollToSection('editorial-doc-2')}
               sx={{
@@ -927,7 +940,7 @@ Ensure all ${currentBlueprint.length} blocks contain substantive, realistic data
               }}
             />
             <Chip
-              label="DOC 3 · Block Drafting"
+              label="DOC 3 · Visuals & QA"
               size="small"
               onClick={() => scrollToSection('editorial-doc-3')}
               sx={{
@@ -941,7 +954,7 @@ Ensure all ${currentBlueprint.length} blocks contain substantive, realistic data
               }}
             />
             <Chip
-              label="DOC 4 · Ingest Relay"
+              label="DOC 4 · CMS Compiler"
               size="small"
               onClick={() => scrollToSection('editorial-doc-4')}
               sx={{
@@ -954,10 +967,24 @@ Ensure all ${currentBlueprint.length} blocks contain substantive, realistic data
                 '&:hover': { bgcolor: alpha('#10b981', 0.1) },
               }}
             />
+            <Chip
+              label="FAST INGEST · Canvas Relay"
+              size="small"
+              onClick={() => scrollToSection('editorial-doc-fast-ingest')}
+              sx={{
+                fontWeight: 900,
+                fontSize: '0.72rem',
+                bgcolor: '#0f172a',
+                color: '#10b981',
+                cursor: 'pointer',
+                border: '1px solid rgba(16, 185, 129, 0.45)',
+                '&:hover': { bgcolor: '#1e293b' },
+              }}
+            />
           </Box>
 
           {/* ──────────────────────────────────────────────────────────── */}
-          {/* SECTION 2: DOCUMENT 2 — ARCHITECTURE & THESIS (2a, 2b, 2c)   */}
+          {/* SECTION 2: DOCUMENT 2 — DRAFTING ENGINE (2a, 2b, 2c)         */}
           {/* ──────────────────────────────────────────────────────────── */}
           <Box id="editorial-doc-2" sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, scrollMarginTop: '80px' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -979,10 +1006,10 @@ Ensure all ${currentBlueprint.length} blocks contain substantive, realistic data
               </Box>
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.2 }}>
-                  Document 2: Architecture, Thesis &amp; Blueprint
+                  Document 2: The Drafting Engine (2a, 2b, 2c)
                 </Typography>
                 <Typography sx={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 600 }}>
-                  Establish contrarian angles, target commercial operators, and outline your {currentBlueprint.length} blocks.
+                  Map your {currentBlueprint.length} blocks, write brutal OSINT intelligence, and assemble component Markdown.
                 </Typography>
               </Box>
             </Box>
@@ -1000,9 +1027,9 @@ Ensure all ${currentBlueprint.length} blocks contain substantive, realistic data
               }}
             >
               {[
-                { id: 'sop_doc2_1', text: '1. Copy Doc 2a to discover 3 sharp contrarian angles in ChatGPT, Claude, or Gemini.' },
-                { id: 'sop_doc2_2', text: '2. Run Doc 2b to establish unit economics in Naira and primary operator stakes.' },
-                { id: 'sop_doc2_3', text: `3. Run Doc 2c to map the narrative flow across all ${currentBlueprint.length} blueprint blocks.` },
+                { id: 'sop_doc2_1', text: `1. Run Doc 2a to look up sequence & assign 4 emotional targets across ${currentBlueprint.length} blocks.` },
+                { id: 'sop_doc2_2', text: `2. Run Doc 2b with live OSINT to draft raw text in brutal 8th-grade English.` },
+                { id: 'sop_doc2_3', text: `3. Run Doc 2c to assemble raw text into canonical React component Markdown.` },
               ].map((item) => (
                 <PromptChecklistItem
                   key={item.id}
@@ -1033,7 +1060,7 @@ Ensure all ${currentBlueprint.length} blocks contain substantive, realistic data
           </Box>
 
           {/* ──────────────────────────────────────────────────────────── */}
-          {/* SECTION 3: DOCUMENT 3 — BLOCK CONTENT DRAFTING (3a, 3b, 3c)   */}
+          {/* SECTION 3: DOCUMENT 3 — ENRICHMENT, VISUALS & QA (3a, 3b, 3c)*/}
           {/* ──────────────────────────────────────────────────────────── */}
           <Box id="editorial-doc-3" sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, scrollMarginTop: '80px' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -1055,10 +1082,10 @@ Ensure all ${currentBlueprint.length} blocks contain substantive, realistic data
               </Box>
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.2 }}>
-                  Document 3: Block-by-Block Content Drafting
+                  Document 3: Enrichment, Visual Assets &amp; QA (3a, 3b, 3c)
                 </Typography>
                 <Typography sx={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 600 }}>
-                  Synthesize opening executive summaries, interactive economics directives, and ground evidence.
+                  Verify live metrics, calibrate documentary photojournalism prompts, and map conversion CTAs.
                 </Typography>
               </Box>
             </Box>
@@ -1076,9 +1103,9 @@ Ensure all ${currentBlueprint.length} blocks contain substantive, realistic data
               }}
             >
               {[
-                { id: 'sop_doc3_1', text: '1. Copy Doc 3a to draft the 3-point temporal executive summary with sharp data.' },
-                { id: 'sop_doc3_2', text: '2. Run Doc 3b to build unit economics cards, margin impacts, and strategic directives.' },
-                { id: 'sop_doc3_3', text: '3. Run Doc 3c to integrate field voices and ecosystem action triggers.' },
+                { id: 'sop_doc3_1', text: '1. Run Doc 3a for in-place factual audits, verified quotes & live ecosystem opportunities.' },
+                { id: 'sop_doc3_2', text: '2. Run Doc 3b to expand image placeholders into photojournalism prompts (-ar 16:9, -ar 1:1).' },
+                { id: 'sop_doc3_3', text: '3. Run Doc 3c to map canonical platform CTAs and complete the 5-point structural QA audit.' },
               ].map((item) => (
                 <PromptChecklistItem
                   key={item.id}
@@ -1109,7 +1136,7 @@ Ensure all ${currentBlueprint.length} blocks contain substantive, realistic data
           </Box>
 
           {/* ──────────────────────────────────────────────────────────── */}
-          {/* SECTION 4: DOCUMENT 4 — FULL SYNTHESIS & INGESTION (4a, 4b)   */}
+          {/* SECTION 4: DOCUMENT 4 — REFINEMENT & INGESTION (4a, 4b, 4c)  */}
           {/* ──────────────────────────────────────────────────────────── */}
           <Box id="editorial-doc-4" sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pb: 2, scrollMarginTop: '80px' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -1131,15 +1158,43 @@ Ensure all ${currentBlueprint.length} blocks contain substantive, realistic data
               </Box>
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.2 }}>
-                  Document 4: Multi-Block Assembly &amp; Direct Canvas Ingest
+                  Document 4: Refinement, Typography &amp; CMS Compilation (4a, 4b, 4c)
                 </Typography>
                 <Typography sx={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 600 }}>
-                  Assemble all {currentBlueprint.length} blocks into a single payload, then paste below to populate the canvas.
+                  Polish headlines, apply bionic bolding anchors, and compile into headless CMS JSON.
                 </Typography>
               </Box>
             </Box>
 
-            {/* Doc 4a: Master Compilation Prompt using PromptTerminalBox */}
+            {/* Action Checklist for Document 4 using PromptChecklistItem */}
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 1,
+                p: 1.75,
+                border: '1px solid rgba(16, 185, 129, 0.25)',
+                borderRadius: '14px',
+                bgcolor: 'rgba(16, 185, 129, 0.03)',
+              }}
+            >
+              {[
+                { id: 'sop_doc4_1', text: '1. Run Doc 4a to calibrate spiky headline for badge splitting and translate to plain English.' },
+                { id: 'sop_doc4_2', text: '2. Run Doc 4b to inject bionic reading bolding anchors and lint Markdown syntax.' },
+                { id: 'sop_doc4_3', text: '3. Run Doc 4c to compile the payload into strictly valid headless CMS JSON.' },
+              ].map((item) => (
+                <PromptChecklistItem
+                  key={item.id}
+                  id={item.id}
+                  text={item.text}
+                  checked={!!checklist[item.id]}
+                  onToggle={toggleChecklistItem}
+                  colorTheme="#10b981"
+                />
+              ))}
+            </Box>
+
+            {/* Prompt Cards for Document 4 (4a, 4b, 4c) using PromptTerminalBox */}
             {doc4Prompts.map((p) => (
               <PromptTerminalBox
                 key={p.key}
@@ -1149,31 +1204,33 @@ Ensure all ${currentBlueprint.length} blocks contain substantive, realistic data
                 subtitle={p.role}
                 prompt={p.prompt}
                 colorTheme="#10b981"
-                copyButtonLabel={`Copy ${p.code} Master Prompt`}
+                copyButtonLabel={`Copy ${p.code} Prompt`}
                 copiedBannerText={`${p.code} Copied to Clipboard!`}
                 onCopy={() => handleCopyPromptAutoCheck(p.key)}
               />
             ))}
 
-            {/* Doc 4b: Integrated Fast Ingest Relay Terminal using PromptFastIngestBox */}
-            <PromptFastIngestBox
-              value={rawIngestPayload}
-              onChange={(val) => {
-                setRawIngestPayload(val);
-                savePayloadToStorage(val);
-                if (ingestError) setIngestError(null);
-              }}
-              onIngest={handleParseAndIngest}
-              codeLabel="DOC 4b"
-              title="Fast Ingest Relay & Canvas Import"
-              subtitle={`Paste the JSON array output from Doc 4a below to automatically populate all ${currentBlueprint.length} blocks onto your canvas.`}
-              colorTheme="#10b981"
-              liveBlockCount={detectedBlockCount}
-              expectedBlockCount={currentBlueprint.length}
-              error={ingestError}
-              success={ingestSuccess}
-              buttonLabel="⚡ Ingest & Apply All Blocks to Canvas"
-            />
+            {/* Fast Ingest Relay Terminal using PromptFastIngestBox */}
+            <Box id="editorial-doc-fast-ingest" sx={{ scrollMarginTop: '80px', mt: 1 }}>
+              <PromptFastIngestBox
+                value={rawIngestPayload}
+                onChange={(val) => {
+                  setRawIngestPayload(val);
+                  savePayloadToStorage(val);
+                  if (ingestError) setIngestError(null);
+                }}
+                onIngest={handleParseAndIngest}
+                codeLabel="FAST INGEST"
+                title="Fast Ingest Relay & Canvas Import"
+                subtitle={`Paste the JSON output from Doc 4c below to automatically populate all ${currentBlueprint.length} blocks onto your canvas.`}
+                colorTheme="#10b981"
+                liveBlockCount={detectedBlockCount}
+                expectedBlockCount={currentBlueprint.length}
+                error={ingestError}
+                success={ingestSuccess}
+                buttonLabel="⚡ Ingest & Apply All Blocks to Canvas"
+              />
+            </Box>
           </Box>
         </Box>
       </Drawer>

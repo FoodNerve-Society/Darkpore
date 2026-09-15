@@ -45,6 +45,14 @@ export async function createLearnContent(data: CreateLearnContentPayload, isDraf
     const { determineInitialContentStatus } = await import('./org-approval');
     targetStatus = await determineInitialContentStatus(data.authorId, data.organizationId);
   }
+
+  // If approved to publish (not draft and not pending org approval), check if targetDate is scheduled for the future
+  if (!isDraft && targetStatus === 'published' && data.targetDate) {
+    const targetDateObj = new Date(data.targetDate);
+    if (!isNaN(targetDateObj.getTime()) && targetDateObj.getTime() > Date.now()) {
+      targetStatus = 'scheduled';
+    }
+  }
   
   // 1. Uniqueness check loop (only if new)
   if (!data.id) {
@@ -227,7 +235,7 @@ export async function createLearnContent(data: CreateLearnContentPayload, isDraf
     return content;
   });
 
-  if (result.status === 'published') {
+  if (result.status === 'published' || result.status === 'scheduled') {
     let orgName: string | undefined;
     if (result.organizationId) {
       const org = await prisma.organization.findUnique({
@@ -248,7 +256,7 @@ export async function createLearnContent(data: CreateLearnContentPayload, isDraf
       slug: result.slug,
       dateType,
       title: result.title,
-      date: result.createdAt,
+      date: result.targetDate || result.createdAt,
       imageUrl: result.thumbnailUrl ?? undefined,
       category: result.category ?? result.type,
       organizationName: orgName,
