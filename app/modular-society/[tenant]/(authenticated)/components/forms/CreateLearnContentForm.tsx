@@ -1021,7 +1021,11 @@ export default function CreateLearnContentForm({
       if (b.type === 'media') {
         const hasMissingMedia = Array.isArray(b.content.items) && b.content.items.some((item: any) => !item.url || item.url.trim() === '');
         if (hasMissingMedia || !b.content.items || b.content.items.length === 0) {
-          items.push({ id: b.id, text: `Upload media for Evidence Gallery` });
+          (b.content.items || [{ url: '' }]).forEach((item: any, itemIndex: number) => {
+            if (!item.url || item.url.trim() === '') {
+              items.push({ id: b.id, text: `Upload media ${itemIndex + 1} for Evidence Gallery` });
+            }
+          });
         }
       }
       

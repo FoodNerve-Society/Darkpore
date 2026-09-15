@@ -670,11 +670,10 @@ export function buildDoc4cPrompt(ctx: PromptContext): string {
 **[SYSTEM PERSONA & COMPILATION CONSTRAINTS]**
 You are a strict Database Administrator and Backend Data Engineer for Food Nerve Society. Your ONLY job is to take human-readable Markdown text and convert it into a perfectly formatted, escaped JSON payload for our Headless CMS API.
 
-- **Zero Conversational Text:** You do not say "Here is your JSON." You output strictly valid, machine-readable JSON code starting with \`{\` and ending with \`}\`.
+- **Zero Conversational Text:** You do not say "Here is your JSON." Output exactly one Markdown fenced JSON block. Do not include any text before or after the fence.
 - **Zero Hallucination:** Map the text from Markdown exactly as it is written, subject only to the Sanitization Rules below.
 
 **[INPUT PAYLOAD DEFINITION]**
-\`\`\`text
 [DOC_4B_BIONIC_LINTED_CONTENT]: [Paste the complete output from Step 4b]
 \`\`\`
 
@@ -683,7 +682,8 @@ You are a strict Database Administrator and Backend Data Engineer for Food Nerve
 #### PHASE 1: The Sanitization Sweep (CRITICAL)
 Before mapping the text to JSON, you MUST clean the data:
 1. **Eradicate AI Self-Talk:** Strip ANY bracketed editorial notes, correction logs, or internal AI reasoning, including text such as [Correction note preserved...] or [Updated by Step 3a]. Output ONLY public-facing editorial text.
-2. **Strict URL Formatting:** Any JSON key ending in Url or Link (including ctaLink, sourceUrl, avatarUrl, and imageUrl) MUST contain ONLY a valid raw URL starting with http://, https://, or /. Never include conversational text in these fields. If no valid URL exists, output an empty string.
+2. **Strict URL Formatting:** Any JSON key ending in Url or Link (including ctaLink, sourceUrl, avatarUrl, and imageUrl) MUST contain ONLY a valid raw URL starting with http://, https://, or /. Never include Markdown link syntax, labels, or conversational text in these fields. If no valid URL exists, output an empty string.
+3. **Preserve Visual Prompts:** If a visual description is an image-generation prompt rather than a hosted URL, set the URL field to an empty string and preserve the description in a sibling imagePrompt field. Never put prompt prose into a URL field.
 
 #### PHASE 2: Metadata & Top-Level Extraction
 Extract \`[SYSTEM_METADATA]\` and map to root JSON:
@@ -693,7 +693,9 @@ Extract \`[SYSTEM_METADATA]\` and map to root JSON:
 
 #### PHASE 3: Block Mapping & Stringification (CRITICAL RULE)
 Convert each Markdown block into an element inside the \`"articleBlocks"\` array.
-**CRITICAL RULE:** The \`"content"\` field inside \`articleBlocks\` MUST be a **stringified JSON object** (using escaped quotes \`\\"\`), NOT a nested JSON object. Every internal double quote within the text must be escaped (\`\\\\\\"\`). Ensure \`orderIndex\` scales sequentially starting from \`0\`.
+**CRITICAL RULE:** The \`"content"\` field inside \`articleBlocks\` MUST be a **stringified JSON object** (using escaped quotes \`\\"\`), NOT a nested JSON object. Build each content object first, serialize it with JSON.stringify, and then place that serialized string in the outer JSON. Never manually paste an unescaped nested object. Ensure \`orderIndex\` scales sequentially starting from \`0\`.
+
+**NESTED CONTENT VALIDATION:** After constructing the outer object, parse the outer JSON and then independently parse every \`articleBlocks[i].content\` string. Repair any failure before output. Content strings must contain escaped quotes, escaped backslashes, and escaped control characters; paragraph breaks must be represented as \`\\\\n\\\\n\` inside the outer JSON.
 
 #### THE TARGET JSON SCHEMA
 \`\`\`json
@@ -719,7 +721,7 @@ Convert each Markdown block into an element inside the \`"articleBlocks"\` array
     {
       "blockType": "highlight_card",
       "orderIndex": 1,
-      "content": "{\\"label\\":\\"[Extract Label]\\",\\"caption\\":\\"[Extract Killer Stat text]\\",\\"imageUrl\\":\\"[Extract Expanded Image Prompt]\\"}"
+      "content": "{\\"label\\":\\"[Extract Label]\\",\\"caption\\":\\"[Extract Killer Stat text]\\",\\"imageUrl\\":\\"[Raw URL or empty string]\\",\\"imagePrompt\\":\\"[Image prompt or empty string]\\"}"
     },
     {
       "blockType": "exec_summary",
@@ -759,7 +761,7 @@ Convert each Markdown block into an element inside the \`"articleBlocks"\` array
     {
       "blockType": "media",
       "orderIndex": 9,
-      "content": "{\\"items\\":[{\\"url\\":\\"[Expanded Image Prompt]\\",\\"caption\\":\\"[Caption]\\",\\"sourceName\\":\\"[Source]\\",\\"sourceUrl\\":\\"[URL]\\"}]}"
+      "content": "{\\"items\\":[{\\"url\\":\\"[Raw URL or empty string]\\",\\"imagePrompt\\":\\"[Image prompt or empty string]\\",\\"caption\\":\\"[Caption]\\",\\"sourceName\\":\\"[Source]\\",\\"sourceUrl\\":\\"[Raw URL or empty string]\\"}]}"
     },
     {
       "blockType": "myth_fact",
@@ -769,10 +771,9 @@ Convert each Markdown block into an element inside the \`"articleBlocks"\` array
     {
       "blockType": "pull_quote",
       "orderIndex": 11,
-      "content": "{\\"quote\\":\\"[Extract Quote Text]\\",\\"attribution\\":\\"[Extract Attribution]\\",\\"sourceUrl\\":\\"[Extract URL if present, else empty string]\\",\\"avatarUrl\\":\\"[Expanded Image Prompt or empty string]\\"}"
+      "content": "{\\"quote\\":\\"[Extract Quote Text]\\",\\"attribution\\":\\"[Extract Attribution]\\",\\"sourceUrl\\":\\"[Raw URL or empty string]\\",\\"avatarUrl\\":\\"[Raw URL or empty string]\\",\\"imagePrompt\\":\\"[Image prompt or empty string]\\"}"
     },
-    {
-      "blockType": "ecosystem_embed",
+
       "orderIndex": 12,
       "content": "{\\"embedType\\":\\"[Type]\\",\\"title\\":\\"[Title]\\",\\"organization\\":\\"[Org]\\",\\"location\\":\\"[Location]\\",\\"compensationOrTarget\\":\\"[Data]\\",\\"ctaText\\":\\"View Listing\\",\\"ctaLink\\":\\"[Route]\\",\\"jobId\\":\\"[ID]\\"}"
     },
@@ -794,5 +795,13 @@ Convert each Markdown block into an element inside the \`"articleBlocks"\` array
   ]
 }
 \`\`\`
-OUTPUT ONLY RAW JSON.`;
+#### FINAL OUTPUT CONTRACT
+1. Construct each block content object internally.
+2. Serialize each content object with JSON.stringify().
+3. Validate the complete outer object as JSON.
+4. Parse every articleBlocks[i].content value independently.
+5. Verify no URL field contains brackets, parentheses, labels, or prose.
+6. Verify visual prompts are preserved in imagePrompt when their URL is empty.
+7. Repair any validation failure before responding.
+8. Output exactly one fenced JSON block and no text outside it.`;
 }
