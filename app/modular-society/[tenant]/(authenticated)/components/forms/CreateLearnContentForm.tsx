@@ -1372,7 +1372,6 @@ export default function CreateLearnContentForm({
       if (postingAs === 'organization' && selectedOrgId) {
         const org = profile?.organizations?.find(o => o.id === selectedOrgId);
         if (org) {
-          finalAuthorId = org.id;
           finalAuthorName = org.name;
           finalAuthorAvatarUrl = org.logoUrl;
         }
@@ -1392,6 +1391,7 @@ export default function CreateLearnContentForm({
         authorId: finalAuthorId,
         authorName: finalAuthorName,
         authorAvatarUrl: finalAuthorAvatarUrl,
+        organizationId: postingAs === 'organization' ? selectedOrgId : null,
         
         articleBlocks: type === 'article' ? finalBlocks.map((b, idx) => ({
           blockType: b.type,

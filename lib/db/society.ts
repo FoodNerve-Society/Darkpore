@@ -74,11 +74,12 @@ export interface MeetEvent {
   wahaalaCategories?: string[];
 }
 
-export type LearnSwimlane = 'livestreams' | 'classes' | 'videos' | 'articles' | 'reports';
+export type LearnSwimlane = 'scheduled' | 'livestreams' | 'classes' | 'videos' | 'articles' | 'reports';
 
 export interface LearnContent {
   id: string;
   swimlane: LearnSwimlane;
+  status: 'draft' | 'scheduled' | 'published' | 'pending_org_review';
   title: string;
   description: string;
   thumbnailUrl: string;
@@ -207,9 +208,9 @@ export async function getEvents(options?: { limit?: number }) {
   }))));
 }
 
-export async function getLearnContent(options?: { swimlane?: LearnSwimlane; limit?: number }) {
+export async function getLearnContent(options?: { swimlane?: LearnSwimlane; limit?: number; includeScheduled?: boolean }) {
   // Map plural swimlane keys to singular Prisma types
-  const typeMap: Record<LearnSwimlane, string> = {
+  const typeMap: Record<Exclude<LearnSwimlane, 'scheduled'>, string> = {
     livestreams: 'livestream',
     classes: 'class',
     videos: 'video',
@@ -219,8 +220,8 @@ export async function getLearnContent(options?: { swimlane?: LearnSwimlane; limi
 
   const result = await prisma.learnContent.findMany({
     where: {
-      status: 'published',
-      ...(options?.swimlane ? { type: typeMap[options.swimlane] } : {})
+      status: options?.includeScheduled ? { in: ['published', 'scheduled'] } : 'published',
+      ...(options?.swimlane && options.swimlane !== 'scheduled' ? { type: typeMap[options.swimlane] } : {})
     },
     include: {
       article: {
@@ -258,7 +259,7 @@ export async function getLearnContent(options?: { swimlane?: LearnSwimlane; limi
 
     return {
       ...r,
-      swimlane: swimlaneMap[r.type] || 'articles',
+      swimlane: r.status === 'scheduled' ? 'scheduled' : (swimlaneMap[r.type] || 'articles'),
       author: {
         name: r.authorName,
         avatarUrl: r.authorAvatarUrl || '',

@@ -106,20 +106,7 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
     async function loadEvents() {
       try {
         const data = await getCalendarEvents(tenantId);
-        
-        // Inject mock data for visualization
-        const today = currentDate;
-        const y = today.getFullYear();
-        const m = today.getMonth();
-        const mockEvents: any[] = [
-          { id: 'm1', title: 'Ecosystem Launch Broadcast', date: new Date(y, m, today.getDate() + 1, 10, 0), endDate: new Date(y, m, today.getDate() + 1, 12, 0), visibility: 'society', category: 'Livestream', organizationName: 'FoodNerve HQ', dateType: 'START_TIME' },
-          { id: 'm2', title: 'Agro Investor Deal Room', date: new Date(y, m, today.getDate() + 2, 14, 0), endDate: new Date(y, m, today.getDate() + 2, 18, 0), visibility: 'organization', category: 'Networking', organizationName: 'Darkpore', dateType: 'DATE_RANGE' },
-          { id: 'm3', title: 'Farm Grant Applications Due', date: new Date(y, m, today.getDate() + 2, 23, 59), visibility: 'society', category: 'Deadline', organizationName: 'Gov', dateType: 'DEADLINE' },
-          { id: 'm4', title: 'Supply Chain Q&A', date: new Date(y, m, today.getDate() + 5, 18, 0), visibility: 'organization', category: 'Q&A', organizationName: 'Community', dateType: 'START_TIME' },
-          { id: 'm5', title: 'Quarterly Report Published', date: new Date(y, m, today.getDate(), 9, 30), visibility: 'personal', category: 'Article', organizationName: 'Self', dateType: 'PUBLISH_DATE' },
-        ];
-        
-        setEvents([...data, ...mockEvents]);
+        setEvents(data);
       } catch (err) {
         console.error("Failed to load events", err);
       } finally {

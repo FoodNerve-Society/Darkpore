@@ -275,7 +275,7 @@ export async function createLearnContent(data: CreateLearnContentPayload, isDraf
 
 export async function getLearnContentBySlug(slug: string) {
   const content = await prisma.learnContent.findUnique({
-    where: { slug },
+    where: { slug, status: 'published' },
     include: {
       article: {
         include: {

@@ -14,7 +14,7 @@ export default async function GlobalLearnContentPage({ params }: { params: Promi
   const tenant = getTenantConfig(tenantId);
   
   const material = await prisma.learnContent.findFirst({
-    where: { slug: slug, type: type },
+    where: { slug: slug, type: type, status: 'published' },
     include: {
       article: {
         include: {

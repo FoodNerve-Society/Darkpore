@@ -27,7 +27,7 @@ export const useCalendarOverlay = () => useContext(CalendarOverlayContext);
 
 export function CalendarOverlayProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [initialView, setInitialView] = useState<ViewMode>('month');
+  const [initialView, setInitialView] = useState<ViewMode>('week');
   const [initialDate, setInitialDate] = useState<Date | undefined>(undefined);
   
   const theme = useTheme();
@@ -39,9 +39,9 @@ export function CalendarOverlayProvider({ children }: { children: ReactNode }) {
       const viewParam = url.searchParams.get('view');
       const dateParam = url.searchParams.get('date');
       
-      if (viewParam === 'month' || viewParam === 'week' || viewParam === 'day') {
+      if (viewParam === 'week' || viewParam === 'day' || viewParam === 'month') {
         setIsOpen(true);
-        setInitialView(viewParam);
+        setInitialView(viewParam === 'month' ? 'week' : viewParam);
         if (dateParam) {
           const parsed = new Date(dateParam);
           if (!isNaN(parsed.getTime())) {

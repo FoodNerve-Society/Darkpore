@@ -35,6 +35,7 @@ import {
   ArrowBackIos as ArrowBackIcon,
   ChevronRight as ChevronRightIcon,
   CalendarMonth as CalendarIcon,
+  Schedule as ScheduleIcon,
   Replay as ReplayIcon,
   TuneRounded as TuneIcon,
   AccountCircle as AccountCircleIcon,
@@ -93,6 +94,12 @@ interface SwimlaneConfig {
 }
 
 const swimlaneConfigs: SwimlaneConfig[] = [
+  {
+    key: "scheduled",
+    title: "Scheduled",
+    icon: <ScheduleIcon sx={{ fontSize: 20 }} />,
+    emoji: "📅",
+  },
   {
     key: "livestreams",
     title: "Livestreams",
@@ -1377,6 +1384,7 @@ export default function LearnPage() {
   };
 
   const [contentMap, setContentMap] = useState<Record<LearnSwimlane, LearnContent[]>>({
+    scheduled: [],
     livestreams: [],
     classes: [],
     videos: [],
@@ -1475,6 +1483,7 @@ export default function LearnPage() {
     const tagMatches = filterConfig.tagMatches;
 
     const filtered: Record<LearnSwimlane, LearnContent[]> = {
+      scheduled: [],
       livestreams: [],
       classes: [],
       videos: [],
@@ -1500,10 +1509,11 @@ export default function LearnPage() {
     async function load() {
       setLoading(true);
       try {
-        const allContent = await getLearnContent();
+        const allContent = await getLearnContent({ includeScheduled: true });
         if (cancelled) return;
 
         const grouped: Record<LearnSwimlane, LearnContent[]> = {
+          scheduled: [],
           livestreams: [],
           classes: [],
           videos: [],

@@ -15,6 +15,7 @@ export default async function GlobalLearnHub() {
   let rawMaterials: any[] = [];
   try {
     const rawLC = await prisma.learnContent.findMany({
+      where: { status: 'published' },
       orderBy: { createdAt: 'desc' },
       include: {
         article: {
