@@ -2,8 +2,10 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import {
   Box, Typography, Paper, Chip, IconButton, alpha, Tooltip, CircularProgress, Button,
   Drawer, TextField, Accordion, AccordionSummary, AccordionDetails, Breadcrumbs, Link,
-  Alert, AlertTitle, Divider, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions
+  Alert, AlertTitle, Divider, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions,
+  Grid, Stack, Collapse, useTheme, useMediaQuery
 } from '@mui/material';
+import { AnimatePresence, motion, LayoutGroup, type Variants } from 'framer-motion';
 import {
   Article as ArticleIcon,
   VideoLibrary as VideoLibraryIcon,
@@ -15,6 +17,8 @@ import {
   ArrowBackIosNew as ArrowBackIcon,
   ArrowForward as ArrowForwardArrow,
   Minimize as MinimizeIcon,
+  KeyboardArrowUp as KeyboardArrowUpIcon,
+  KeyboardArrowDown as KeyboardArrowDownIcon,
   AutoAwesome as AutoAwesomeIcon,
   Edit as EditIcon,
   ContentPaste as ContentPasteIcon,
@@ -51,6 +55,13 @@ import {
   Folder as FolderIcon,
   PlayArrow as PlayArrowIcon,
   InfoOutlined as InfoOutlinedIcon,
+  Favorite as FavoriteIcon,
+  ThumbUp as ThumbUpIcon,
+  TouchApp as TouchAppIcon,
+  Visibility as VisibilityIcon,
+  FlipToBack as FlipIcon,
+  GridView as GridViewIcon,
+  Style as DeckIcon,
 } from '@mui/icons-material';
 import { keyframes } from '@mui/system';
 import WikiHotspot from '@/components/wiki/WikiHotspot';
@@ -75,36 +86,239 @@ const slideUpFade = keyframes`
   to { opacity: 1; transform: translateY(0); }
 `;
 
-const START_FRESH_OPTIONS = [
+const gridStaggerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+      delayChildren: 0.04,
+    }
+  }
+};
+
+const cardProgressiveTiltVariants: Variants = {
+  hidden: {
+    opacity: 0,
+    y: 35,
+    rotateX: -18,
+    scale: 0.94,
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    rotateX: 0,
+    scale: 1,
+    transition: {
+      type: 'spring',
+      stiffness: 340,
+      damping: 24,
+    }
+  }
+};
+
+const START_FRESH_OPTIONS: Array<{
+  type: string;
+  title: string;
+  value: string;
+  icon: React.ReactElement;
+  color: string;
+  grad: string;
+  readiness: 'live' | 'coming_soon';
+  badge?: { label: string; color: 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' };
+}> = [
   {
-    type: 'article', title: "Intelligence Brief", desc: "Write an in-depth article or report.",
-    icon: <ArticleIcon sx={{ fontSize: 32 }} />, color: "#3b82f6", grad: "linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)",
-    readiness: 'live'
+    type: 'article',
+    title: "Intelligence Brief",
+    value: "Write",
+    icon: <ArticleIcon sx={{ fontSize: 32 }} />,
+    color: "#3b82f6",
+    grad: "linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)",
+    readiness: 'live',
   },
   {
-    type: 'livestream', title: "Schedule Livestream", desc: "Host a live session.",
-    icon: <LiveTvIcon sx={{ fontSize: 32 }} />, color: "#10b981", grad: "linear-gradient(135deg, #065f46 0%, #10b981 100%)",
-    readiness: 'live'
+    type: 'livestream',
+    title: "Schedule Livestream",
+    value: "Go Live",
+    icon: <LiveTvIcon sx={{ fontSize: 32 }} />,
+    color: "#10b981",
+    grad: "linear-gradient(135deg, #065f46 0%, #10b981 100%)",
+    readiness: 'live',
   },
   {
-    type: 'video', title: "Video Insights", desc: "Share short-form video analysis.",
-    icon: <VideoLibraryIcon sx={{ fontSize: 32 }} />, color: "#ef4444", grad: "linear-gradient(135deg, #991b1b 0%, #ef4444 100%)",
-    readiness: 'coming_soon'
+    type: 'video',
+    title: "Video Insights",
+    value: "Record",
+    icon: <VideoLibraryIcon sx={{ fontSize: 32 }} />,
+    color: "#ef4444",
+    grad: "linear-gradient(135deg, #991b1b 0%, #ef4444 100%)",
+    readiness: 'coming_soon',
+    badge: { label: 'COMING SOON', color: 'default' as const }
   },
   {
-    type: 'class', title: "Masterclass", desc: "Create a multi-module learning experience.",
-    icon: <SchoolIcon sx={{ fontSize: 32 }} />, color: "#8b5cf6", grad: "linear-gradient(135deg, #5b21b6 0%, #8b5cf6 100%)",
-    readiness: 'coming_soon'
+    type: 'class',
+    title: "Masterclass",
+    value: "Teach",
+    icon: <SchoolIcon sx={{ fontSize: 32 }} />,
+    color: "#8b5cf6",
+    grad: "linear-gradient(135deg, #5b21b6 0%, #8b5cf6 100%)",
+    readiness: 'coming_soon',
+    badge: { label: 'COMING SOON', color: 'default' as const }
   }
 ];
 
+const StatTabHeader: React.FC<{
+  title: string;
+  value: string | number;
+  icon: React.ReactNode;
+  color: string;
+  onClose?: () => void;
+}> = ({ title, value, icon, color, onClose }) => (
+  <Box sx={{ p: { xs: 2.25, sm: 3 }, position: 'relative', overflow: 'hidden', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+    <Box sx={{
+      position: 'absolute',
+      right: -20,
+      bottom: -20,
+      zIndex: 0,
+      transform: 'rotate(-20deg)',
+      color: alpha('#fff', 0.18),
+      pointerEvents: 'none'
+    }}>
+      {React.isValidElement(icon) ? React.cloneElement(icon as any, { sx: { fontSize: { xs: '110px !important', sm: '140px !important' } } }) : icon}
+    </Box>
+    <Box sx={{ position: 'relative', zIndex: 1 }}>
+      <Typography variant="h4" sx={{ fontWeight: 900, color: '#fff', fontSize: { xs: '1.6rem', sm: '2.1rem' }, letterSpacing: '-0.02em', lineHeight: 1.1, textShadow: '0 2px 6px rgba(0,0,0,0.2)' }}>
+        {value}
+      </Typography>
+      <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.9)', fontWeight: 700, mt: 0.5, fontSize: '0.95rem' }}>
+        {title}
+      </Typography>
+    </Box>
+    {onClose && (
+      <IconButton
+        onClick={onClose}
+        sx={{
+          color: '#ffffff',
+          bgcolor: 'rgba(0, 0, 0, 0.2)',
+          border: '1px solid rgba(255, 255, 255, 0.25)',
+          zIndex: 1,
+          '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.35)', color: '#fff' }
+        }}
+      >
+        <CloseIcon sx={{ fontSize: 20 }} />
+      </IconButton>
+    )}
+  </Box>
+);
+
+const FreshCard: React.FC<{
+  opt: (typeof START_FRESH_OPTIONS)[number];
+  onClick: () => void;
+  compact?: boolean;
+}> = ({ opt, onClick, compact }) => {
+  const isLive = opt.readiness === 'live';
+  return (
+    <motion.div
+      layoutId={`stat-card-container-${opt.type}`}
+      style={{ height: '100%', cursor: isLive ? 'pointer' : 'not-allowed' }}
+      onClick={onClick}
+    >
+      <Paper
+        elevation={0}
+        sx={{
+          height: '100%',
+          width: compact ? 180 : '100%',
+          borderRadius: compact ? '16px' : '20px',
+          transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+          background: opt.grad,
+          color: '#ffffff',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          boxShadow: `0 10px 25px -5px ${alpha(opt.color, 0.4)}, 0 4px 10px -4px ${alpha(opt.color, 0.25)}`,
+          opacity: isLive ? 1 : 0.65,
+          position: 'relative',
+          overflow: 'hidden',
+          '&:hover': isLive ? {
+            transform: 'translateY(-4px)',
+            borderColor: 'rgba(255, 255, 255, 0.4)',
+            boxShadow: `0 16px 36px -6px ${alpha(opt.color, 0.55)}, 0 0 24px ${alpha(opt.color, 0.25)}`,
+          } : {}
+        }}
+      >
+        <Box sx={{ position: 'relative', overflow: 'hidden', p: compact ? 1.75 : 2.5, height: '100%' }}>
+          <Box sx={{
+            position: 'absolute',
+            right: -20,
+            bottom: -20,
+            zIndex: 0,
+            transform: 'rotate(-20deg)',
+            color: alpha('#fff', 0.18),
+            pointerEvents: 'none'
+          }}>
+            {React.cloneElement(opt.icon as React.ReactElement<{ sx?: any }>, {
+              sx: { fontSize: compact ? '70px !important' : '100px !important' }
+            })}
+          </Box>
+
+          <Stack sx={{ zIndex: 1, position: 'relative' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+              <Typography variant="h4" sx={{
+                color: '#ffffff',
+                fontWeight: 900,
+                fontSize: compact ? '1.15rem' : { xs: '1.45rem', sm: '1.75rem' },
+                letterSpacing: '-0.02em',
+                lineHeight: 1.15,
+                textShadow: '0 2px 4px rgba(0, 0, 0, 0.18)'
+              }}>
+                {opt.value}
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {opt.badge && (
+                  <Chip
+                    label={compact && opt.badge.label === 'COMING SOON' ? 'SOON' : opt.badge.label}
+                    size="small"
+                    sx={{
+                      fontWeight: 'bold',
+                      height: compact ? 18 : 22,
+                      fontSize: compact ? '0.55rem' : '0.625rem',
+                      letterSpacing: '0.04em',
+                      bgcolor: 'rgba(255, 255, 255, 0.22)',
+                      color: '#ffffff',
+                      border: '1px solid rgba(255, 255, 255, 0.35)',
+                      backdropFilter: 'blur(8px)'
+                    }}
+                  />
+                )}
+                {!compact && (
+                  <Box sx={{ color: 'rgba(255, 255, 255, 0.85)', '& svg': { color: 'rgba(255, 255, 255, 0.85)' } }}>
+                    <WikiHotspot id={`learn-start-fresh-${opt.type}`} label={opt.title} />
+                  </Box>
+                )}
+              </Box>
+            </Box>
+            <Typography variant="body2" sx={{
+              color: 'rgba(255, 255, 255, 0.9)',
+              fontWeight: 700,
+              fontSize: compact ? '0.8rem' : '0.875rem',
+              whiteSpace: compact ? 'nowrap' : 'normal',
+              overflow: compact ? 'hidden' : 'visible',
+              textOverflow: compact ? 'ellipsis' : 'clip'
+            }}>
+              {opt.title}
+            </Typography>
+          </Stack>
+        </Box>
+      </Paper>
+    </motion.div>
+  );
+};
+
 const SPECTRUM_CONFIG: Record<string, { label: string; shortLabel: string; color: string; emoji: string; bg: string }> = {
-  '1': { label: 'The Bleeding Neck', shortLabel: '#1 Bleeding Neck', color: '#3b82f6', emoji: '🔵', bg: 'rgba(59, 130, 246, 0.15)' },
+  '1': { label: 'The Bleeding Neck', shortLabel: '#1 Bleeding Neck', color: '#2563eb', emoji: '🔵', bg: 'rgba(37, 99, 235, 0.15)' },
   '2': { label: 'Institutional Pivot', shortLabel: '#2 Institutional Pivot', color: '#f59e0b', emoji: '🟡', bg: 'rgba(245, 158, 11, 0.15)' },
-  '3': { label: 'The Grassroots Hack', shortLabel: '#3 Grassroots Hack', color: '#f59e0b', emoji: '🟡', bg: 'rgba(245, 158, 11, 0.15)' },
-  '4': { label: 'The R&D Horizon', shortLabel: '#4 R&D Horizon', color: '#10b981', emoji: '🟢', bg: 'rgba(16, 185, 129, 0.15)' },
-  '5': { label: 'The Macro Threat', shortLabel: '#5 Macro Threat', color: '#10b981', emoji: '🟢', bg: 'rgba(16, 185, 129, 0.15)' },
-  '6': { label: 'The Black Swan', shortLabel: '#6 Black Swan', color: '#a855f7', emoji: '🟣', bg: 'rgba(168, 85, 247, 0.15)' },
+  '3': { label: 'The Grassroots Hack', shortLabel: '#3 Grassroots Hack', color: '#10b981', emoji: '🌱', bg: 'rgba(16, 185, 129, 0.15)' },
+  '4': { label: 'The R&D Horizon', shortLabel: '#4 R&D Horizon', color: '#0284c7', emoji: '🔬', bg: 'rgba(2, 132, 199, 0.15)' },
+  '5': { label: 'The Macro Threat', shortLabel: '#5 Macro Threat', color: '#ef4444', emoji: '🔴', bg: 'rgba(239, 68, 68, 0.15)' },
+  '6': { label: 'The Black Swan', shortLabel: '#6 Black Swan', color: '#9333ea', emoji: '🟣', bg: 'rgba(147, 51, 234, 0.15)' },
 };
 
 function getSpectrumMeta(spectrumRank?: string) {
@@ -128,6 +342,38 @@ function getSpectrumKey(spectrumRank?: string): string {
   if (spectrumRank.includes('6') || spectrumRank.toLowerCase().includes('black') || spectrumRank.toLowerCase().includes('swan')) return '6';
   return '1';
 }
+
+function getFlowSentence(
+  spectrumRank?: string,
+  formatName?: string,
+  subcategoryTitle?: string,
+  actorName?: string
+): string {
+  const key = getSpectrumKey(spectrumRank);
+  const articleType = (formatName || 'brief').toLowerCase();
+  const subcategory = subcategoryTitle ? `in ${subcategoryTitle}` : 'across key operational segments';
+  const cleanActor = (actorName && actorName.trim()) ? actorName.trim() : 'key value chain operators';
+  const actorStr = cleanActor.toLowerCase().startsWith('for ') ? cleanActor : `for ${cleanActor}`;
+
+  let flowTheme = 'practical operator workarounds, survival tactics, and informal hacks';
+  if (key === '1') {
+    flowTheme = 'urgent shortages, price shocks, and immediate pain points';
+  } else if (key === '2') {
+    flowTheme = 'corporate capital allocations, policy shifts, and institutional pivots';
+  } else if (key === '3') {
+    flowTheme = 'practical operator workarounds, survival tactics, and informal hacks';
+  } else if (key === '4') {
+    flowTheme = 'biological innovations, agronomy breakthroughs, and yield tech science';
+  } else if (key === '5') {
+    flowTheme = 'cross-border currency dynamics, regional tariffs, and systemic climate risks';
+  } else if (key === '6') {
+    flowTheme = 'unforeseen outlier disruptions, black swans, and radical industry ruptures';
+  }
+
+  return `This ${articleType} explores the ${flowTheme} ${subcategory} ${actorStr}.`;
+}
+
+
 
 const RANK_DETAILS = [
   { rank: '1', name: 'The Bleeding Neck', tag: 'Immediate Crisis', color: '#3b82f6', emoji: '🔵', desc: 'Urgent pain points, shortages, and price shocks needing immediate solutions today.' },
@@ -189,6 +435,10 @@ export default function CreatorStudioDashboard({
   userSpendableNP?: number;
   firebaseUid?: string;
 }) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
+
   const [expandedStartType, setExpandedStartType] = useState<string | null>(null);
 
   // ═══════════════════════════════════════════════════════════
@@ -208,6 +458,8 @@ export default function CreatorStudioDashboard({
   const [selectedCategory, setSelectedCategory] = useState<string>('land');
   const [selectedTargetDate, setSelectedTargetDate] = useState<string>(() => currentDate.toISOString());
   const [focusedDayIdx, setFocusedDayIdx] = useState<number>(0);
+  const [showAllCommodities, setShowAllCommodities] = useState(false);
+  const isInitialOpenRef = useRef(true);
   
   // Step 3 Insights State
   const [insights, setInsights] = useState<ArticleInsightItem[]>([]);
@@ -217,8 +469,46 @@ export default function CreatorStudioDashboard({
   const [spectrumFilter, setSpectrumFilter] = useState<string>('all');
   const [isRegenerateModalOpen, setIsRegenerateModalOpen] = useState(false);
   const [hasLaunchedAssistant, setHasLaunchedAssistant] = useState(false);
-  const [isGuideOpen, setIsGuideOpen] = useState(false);
-  const [collapsedRanks, setCollapsedRanks] = useState<Record<string, boolean>>({});
+
+  // Tinder-style Deck State
+  const [deckActiveIndex, setDeckActiveIndex] = useState(0);
+  const [isCardFlipped, setIsCardFlipped] = useState(false);
+  const [bookmarkedBriefIds, setBookmarkedBriefIds] = useState<Record<string, boolean>>({});
+
+  const displayCards = useMemo(() => {
+    if (!insights || !insights.length) return [];
+    return [
+      ...insights,
+      {
+        id: 'deck-end-retry-card',
+        isRetryCard: true,
+        title: 'All Editorial Briefs Reviewed',
+      } as any,
+    ];
+  }, [insights]);
+
+  const totalDeckCards = displayCards.length;
+  const currentDeckItem = displayCards[deckActiveIndex] || displayCards[0] || null;
+  const isCurrentRetryCard = Boolean(currentDeckItem?.isRetryCard);
+  const currentItem = isCurrentRetryCard ? (insights[0] || currentDeckItem) : currentDeckItem;
+
+  const handleNextCard = useCallback(() => {
+    setIsCardFlipped(false);
+    setDeckActiveIndex((prev) => Math.min(prev + 1, Math.max(0, displayCards.length - 1)));
+  }, [displayCards.length]);
+
+  const handlePrevCard = useCallback(() => {
+    setIsCardFlipped(false);
+    setDeckActiveIndex((prev) => Math.max(prev - 1, 0));
+  }, []);
+
+  const handleRestartDeck = useCallback(() => {
+    setIsCardFlipped(false);
+    setDeckActiveIndex(0);
+  }, []);
+
+  const isFirstCard = deckActiveIndex === 0;
+  const isLastCard = deckActiveIndex >= totalDeckCards - 1;
 
   // Society Profile & Admin Gating
   const { profile } = useSociety();
@@ -235,26 +525,6 @@ export default function CreatorStudioDashboard({
     }
   }, [selectedCommodity, selectedCategory]);
 
-  const toggleRankCollapse = useCallback((rankKey: string) => {
-    setCollapsedRanks(prev => ({ ...prev, [rankKey]: !prev[rankKey] }));
-  }, []);
-
-  const insightsByRank = useMemo(() => {
-    const groups: Record<string, ArticleInsightItem[]> = {
-      '1': [],
-      '2': [],
-      '3': [],
-      '4': [],
-      '5': [],
-      '6': [],
-    };
-    insights.forEach(item => {
-      const key = getSpectrumKey(item.spectrumRank);
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(item);
-    });
-    return groups;
-  }, [insights]);
 
   // Step 3 Prompts & Interactive Relay Terminal State
   const [rawPrompts, setRawPrompts] = useState<{
@@ -343,6 +613,8 @@ export default function CreatorStudioDashboard({
     setRegenerateError(null);
     setInsights([]);
     setRawPrompts(null);
+    setDeckActiveIndex(0);
+    setIsCardFlipped(false);
 
     // 1. Check local storage first for this specific pair
     if (typeof window !== 'undefined') {
@@ -353,6 +625,8 @@ export default function CreatorStudioDashboard({
           const parsed = JSON.parse(cached);
           if (Array.isArray(parsed) && parsed.length > 0) {
             setInsights(parsed);
+            setDeckActiveIndex(0);
+            setIsCardFlipped(false);
             setLoadingInsights(false);
             return;
           }
@@ -403,6 +677,8 @@ export default function CreatorStudioDashboard({
 
   const handleClose = () => {
     setExpandedStartType(null);
+    isInitialOpenRef.current = true;
+    setShowAllCommodities(false);
     setMatrixStep(1);
     setLsStep(1);
     setInsights([]);
@@ -410,6 +686,17 @@ export default function CreatorStudioDashboard({
     setLegacyCategory('');
     setLegacySubcategory('');
   };
+
+  useEffect(() => {
+    if (expandedStartType) {
+      const timer = setTimeout(() => {
+        isInitialOpenRef.current = false;
+      }, 500);
+      return () => clearTimeout(timer);
+    } else {
+      isInitialOpenRef.current = true;
+    }
+  }, [expandedStartType]);
 
   const handleSelectCommodityAndWeek = (week: number, commodity: string) => {
     setSelectedWeek(week);
@@ -559,21 +846,13 @@ export default function CreatorStudioDashboard({
     };
   });
 
-  // Auto-scroll Step 2 active day into center view
+  // Set Step 2 active day into focused view
   useEffect(() => {
     if (matrixStep === 2) {
       const todayFormatted = format(currentDate, 'yyyy-MM-dd');
       const todayIdx = weekDays.findIndex(d => format(d.date, 'yyyy-MM-dd') === todayFormatted);
       const targetIdx = todayIdx !== -1 ? todayIdx : 0;
       setFocusedDayIdx(targetIdx);
-
-      const timer = setTimeout(() => {
-        const activeEl = document.getElementById(`step2-day-${targetIdx}`);
-        if (activeEl) {
-          activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }, 150);
-      return () => clearTimeout(timer);
     }
   }, [matrixStep, selectedWeek, selectedYear]);
 
@@ -605,169 +884,169 @@ export default function CreatorStudioDashboard({
       </Box>
 
       {/* ================================================================ */}
+      {/* ================================================================ */}
       {/* START FRESH CARDS                                                */}
       {/* ================================================================ */}
-      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#64748b', fontSize: '0.9rem', textTransform: 'uppercase', mb: 2, letterSpacing: '0.05em' }}>
-        Start Fresh
-      </Typography>
+      <LayoutGroup id="creator-studio-hub">
+        <Box sx={{ mt: 1, mb: 2 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#64748b', fontSize: '0.9rem', textTransform: 'uppercase', mb: 2, letterSpacing: '0.05em' }}>
+            Start Fresh
+          </Typography>
 
-      {expandedStartType && (
-        <Box sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1.5,
-          overflowX: 'auto',
-          pb: 1.5,
-          mb: 2,
-          '&::-webkit-scrollbar': { display: 'none' },
-          scrollbarWidth: 'none',
-        }}>
-          {START_FRESH_OPTIONS.map((railOption) => {
-            const isActiveRailOption = railOption.type === expandedStartType;
-            return (
-              <Box key={railOption.type} sx={{ flexShrink: 0 }}>
-                {isActiveRailOption ? (
-                  <IconButton
-                    onClick={handleClose}
-                    aria-label="Collapse Start Fresh card"
-                    sx={{
-                      width: 48,
-                      height: 48,
-                      color: railOption.color,
-                      bgcolor: alpha(railOption.color, 0.16),
-                      border: `1px solid ${alpha(railOption.color, 0.4)}`,
-                      boxShadow: `0 8px 20px ${alpha(railOption.color, 0.2)}`,
-                      '&:hover': { bgcolor: alpha(railOption.color, 0.24) },
-                    }}
-                  >
-                    <MinimizeIcon />
-                  </IconButton>
-                ) : (
-                  <Paper
-                    elevation={0}
-                    onClick={() => railOption.readiness === 'live' && handleOpenCreator(railOption.type)}
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1,
-                      minWidth: { xs: 150, sm: 190 },
-                      px: 1.5,
-                      py: 1.1,
-                      borderRadius: '14px',
-                      color: '#fff',
-                      background: railOption.grad,
-                      opacity: railOption.readiness === 'live' ? 1 : 0.55,
-                      cursor: railOption.readiness === 'live' ? 'pointer' : 'not-allowed',
-                      border: '1px solid rgba(255,255,255,0.14)',
-                      boxShadow: `0 6px 18px ${alpha(railOption.color, 0.16)}`,
-                      '&:hover': railOption.readiness === 'live' ? { transform: 'translateY(-2px)' } : {},
-                      transition: 'transform 0.2s ease',
-                    }}
-                  >
-                    {React.cloneElement(railOption.icon as React.ReactElement<{ sx?: any }>, { sx: { fontSize: 20 } })}
-                    <Typography sx={{ fontWeight: 800, fontSize: '0.82rem', whiteSpace: 'nowrap' }}>
-                      {railOption.title}
-                    </Typography>
-                  </Paper>
-                )}
-              </Box>
-            );
-          })}
-        </Box>
-      )}
-
-      <Box sx={{
-        display: 'flex',
-        flexDirection: expandedStartType ? 'column' : 'row',
-        flexWrap: expandedStartType ? 'nowrap' : 'wrap',
-        gap: { xs: 2, sm: 3 },
-        width: '100%',
-        mb: 6
-      }}>
-        {(expandedStartType ? START_FRESH_OPTIONS.filter(o => o.type === expandedStartType) : START_FRESH_OPTIONS).map((opt) => {
-          const isExpanded = expandedStartType === opt.type;
-          const isActive = true;
-
-          return (
-            <Paper
-              key={opt.type}
-              elevation={0}
-              onClick={() => {
-                if (opt.readiness === 'coming_soon') return;
-                
-                if (!expandedStartType) {
-                  handleOpenCreator(opt.type);
-                }
-              }}
-              sx={{
-                flex: isExpanded ? '1 1 100%' : '1 1 calc(25% - 24px)',
-                minWidth: isExpanded ? '100%' : { xs: 140, sm: 220 },
-                maxWidth: isExpanded ? '100%' : { xs: 140, sm: 280 },
-                height: isExpanded ? 'auto' : { xs: 160, sm: 260 },
-                opacity: opt.readiness === 'live' ? 1 : 0.65,
-                p: isExpanded ? 0 : { xs: 1.5, sm: 2.5, md: 3 },
-                display: 'flex', flexDirection: 'column',
-                borderRadius: { xs: '16px', sm: '24px' }, 
-                cursor: isExpanded ? 'default' : (opt.readiness === 'live' ? 'pointer' : 'not-allowed'),
-                background: isExpanded ? `linear-gradient(135deg, #0f172a 0%, #1e293b 100%)` : opt.grad,
-                border: '1px solid rgba(255,255,255,0.15)',
-                boxShadow: `0 10px 30px ${alpha(opt.color, 0.2)}`,
-                position: 'relative', overflow: isExpanded ? 'visible' : 'hidden',
-                transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                '&:hover': !isExpanded && opt.readiness === 'live' ? {
-                  transform: 'translateY(-6px) scale(1.02)',
-                  boxShadow: `0 20px 40px ${alpha(opt.color, 0.35)}`,
-                } : {}
-              }}
-            >
-              {!isExpanded ? (
-                <>
-                  <Box sx={{ position: 'absolute', right: -20, bottom: -20, opacity: 0.12, transform: 'scale(4)', pointerEvents: 'none', color: '#fff' }}>
-                    {opt.icon}
-                  </Box>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <Box sx={{ p: 1.2, borderRadius: '14px', bgcolor: 'rgba(255,255,255,0.2)', color: '#fff' }}>
-                      {opt.icon}
-                    </Box>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
-                      {opt.readiness === 'coming_soon' && (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: 'rgba(0,0,0,0.2)', px: 1, py: 0.25, borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                          <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, color: 'rgba(255,255,255,0.6)', letterSpacing: '0.05em' }}>COMING SOON</Typography>
+          {expandedStartType ? (
+            <Box sx={{
+              overflowX: 'auto',
+              pb: 1,
+              mx: -2,
+              px: 2,
+              display: 'flex',
+              justifyContent: 'center',
+              width: '100%',
+              '&::-webkit-scrollbar': { display: 'none' },
+              scrollbarWidth: 'none',
+              mb: 2
+            }}>
+              <Stack
+                direction="row"
+                spacing={2}
+                sx={{
+                  alignItems: 'center',
+                  minWidth: 'min-content',
+                  mx: 'auto'
+                }}
+              >
+                {START_FRESH_OPTIONS.map((opt) => {
+                  const isActive = opt.type === expandedStartType;
+                  return (
+                    <Box
+                      key={opt.type}
+                      sx={{ transform: 'scale(0.85)', flexShrink: 0 }}
+                    >
+                      {isActive ? (
+                        <Box onClick={handleClose} sx={{ cursor: 'pointer' }}>
+                          <Paper
+                            elevation={0}
+                            sx={{
+                              width: 44,
+                              height: 44,
+                              borderRadius: '50%',
+                              bgcolor: alpha(opt.color, 0.15),
+                              border: `2px solid ${opt.color}`,
+                              boxShadow: `0 4px 14px ${alpha(opt.color, 0.25)}`,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              transition: 'all 0.2s ease',
+                              '&:hover': {
+                                bgcolor: alpha(opt.color, 0.25),
+                                transform: 'scale(1.08)'
+                              }
+                            }}
+                          >
+                            <KeyboardArrowUpIcon sx={{ color: opt.color, fontSize: 24 }} />
+                          </Paper>
                         </Box>
+                      ) : (
+                        <FreshCard
+                          opt={opt}
+                          compact
+                          onClick={() => {
+                            if (opt.readiness === 'live') {
+                              handleOpenCreator(opt.type);
+                            }
+                          }}
+                        />
                       )}
-                      <WikiHotspot id={`learn-start-fresh-${opt.type}`} label={opt.title} />
                     </Box>
-                  </Box>
-                  <Box sx={{ mt: 'auto', zIndex: 1 }}>
-                    <Typography sx={{ fontWeight: 900, fontSize: { xs: '0.9rem', sm: '1.15rem' }, color: '#fff', mb: 0.5 }}>
-                      {opt.title}
-                    </Typography>
-                    <Typography sx={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.8)', fontWeight: 500, display: { xs: 'none', sm: 'block' } }}>
-                      {opt.desc}
-                    </Typography>
-                  </Box>
-                </>
-              ) : (
-                /* ============================================================== */
-                /* EXPANDED 3-STEP WIZARD                                         */
-                /* ============================================================== */
-                <Box sx={{ p: { xs: 2.5, sm: 4, md: 5 }, width: '100%', position: 'relative' }}>
+                  );
+                })}
+              </Stack>
+            </Box>
+          ) : (
+            <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mb: 6 }}>
+              {START_FRESH_OPTIONS.map((opt) => (
+                <Grid key={opt.type} size={{ xs: 12, sm: 6, md: 3 }}>
+                  <FreshCard
+                    opt={opt}
+                    onClick={() => {
+                      if (opt.readiness === 'live') {
+                        handleOpenCreator(opt.type);
+                      }
+                    }}
+                  />
+                </Grid>
+              ))}
+            </Grid>
+          )}
+        </Box>
+
+        {/* EXPANDED CONTENT CONTAINER */}
+        <Box sx={{ position: 'relative', mt: 2, minHeight: expandedStartType ? '60vh' : 0 }}>
+          <AnimatePresence mode="popLayout">
+            {expandedStartType && (() => {
+              const activeOpt = START_FRESH_OPTIONS.find(o => o.type === expandedStartType);
+              if (!activeOpt) return null;
+
+              return (
+                <motion.div
+                  key={activeOpt.type}
+                  layoutId={`stat-card-container-${activeOpt.type}`}
+                  initial={false}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -40, transition: { duration: 0.25 } }}
+                  transition={{ type: 'spring', stiffness: 380, damping: 36 }}
+                >
+                  <Paper
+                    elevation={8}
+                    sx={{
+                      borderRadius: { xs: '20px', sm: '28px' },
+                      background: activeOpt.grad,
+                      boxShadow: `0 24px 50px -10px ${alpha(activeOpt.color, 0.45)}, 0 10px 20px -8px ${alpha(activeOpt.color, 0.3)}`,
+                      position: 'relative',
+                      overflow: 'hidden',
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      mb: 6
+                    }}
+                  >
+                    <StatTabHeader
+                      title={activeOpt.title}
+                      value={activeOpt.value}
+                      icon={activeOpt.icon}
+                      color={activeOpt.color}
+                      onClose={handleClose}
+                    />
+
+                    <Collapse in={true} timeout={400}>
+                      {/* Active Wizard Canvas: Clean Frosted Glass (Light Mode) */}
+                      <Box sx={{
+                        p: { xs: 2.5, sm: 3.5, md: 4.5 },
+                        m: { xs: 1.5, sm: 2 },
+                        mt: 0,
+                        borderRadius: { xs: '16px', sm: '20px' },
+                        bgcolor: 'rgba(255, 255, 255, 0.96)',
+                        backdropFilter: 'blur(20px)',
+                        border: '1px solid rgba(255, 255, 255, 0.8)',
+                        boxShadow: '0 12px 36px rgba(0, 0, 0, 0.08)',
+                        position: 'relative',
+                        zIndex: 1,
+                        color: '#0f172a'
+                      }}>
                   
-                  {opt.type === 'livestream' ? (
+                  {expandedStartType === 'livestream' ? (
                     // ───────────────────────────────────────────────────────────
                     // LIVESTREAM 3-STEP WIZARD
                     // ───────────────────────────────────────────────────────────
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                            <Box sx={{ p: 1.2, borderRadius: '14px', bgcolor: 'rgba(255,255,255,0.15)', color: '#fff' }}>
-                              {opt.icon}
+                            <Box sx={{ p: 1.2, borderRadius: '14px', bgcolor: alpha(activeOpt.color, 0.12), color: activeOpt.color }}>
+                              {activeOpt.icon}
                             </Box>
                             <Box>
-                              <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                              <Typography sx={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                                 Livestream Broadcast Studio
                               </Typography>
-                              <Typography variant="h5" sx={{ fontWeight: 900, color: '#fff', mt: 0.2 }}>
+                              <Typography variant="h5" sx={{ fontWeight: 900, color: '#0f172a', mt: 0.2 }}>
                                 {lsStep === 1 && "1. Select Community Engine"}
                                 {lsStep === 2 && "2. Anchor Your Article"}
                                 {lsStep === 3 && "3. Anchor Jobs & Finalize"}
@@ -784,8 +1063,9 @@ export default function CreatorStudioDashboard({
                                   sx={{
                                     width: 28, height: 28, borderRadius: '50%',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    bgcolor: lsStep === stepNum ? '#10b981' : lsStep > stepNum ? 'rgba(16,185,129,0.5)' : 'rgba(255,255,255,0.1)',
-                                    color: '#fff', fontSize: '0.75rem', fontWeight: 800,
+                                    bgcolor: lsStep === stepNum ? activeOpt.color : lsStep > stepNum ? alpha(activeOpt.color, 0.15) : 'rgba(0, 0, 0, 0.06)',
+                                    color: lsStep === stepNum ? '#fff' : lsStep > stepNum ? activeOpt.color : '#64748b',
+                                    fontSize: '0.75rem', fontWeight: 800,
                                     cursor: stepNum < lsStep ? 'pointer' : 'default',
                                     transition: 'all 0.2s'
                                   }}
@@ -794,13 +1074,13 @@ export default function CreatorStudioDashboard({
                                 </Box>
                               ))}
                             </Box>
-                            <Button onClick={(e) => { e.stopPropagation(); handleClose(); }} sx={{ minWidth: 0, p: 1, borderRadius: '12px', color: 'rgba(255,255,255,0.5)', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)', color: '#fff' } }}>✕</Button>
+                            <Button onClick={(e) => { e.stopPropagation(); handleClose(); }} sx={{ minWidth: 0, p: 1, borderRadius: '12px', color: '#64748b', '&:hover': { bgcolor: 'rgba(0,0,0,0.06)', color: '#0f172a' } }}>✕</Button>
                           </Box>
                        </Box>
 
                        {lsStep === 1 && (
                          <Box>
-                           <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 500, mb: 3 }}>
+                           <Typography sx={{ color: '#475569', fontWeight: 500, mb: 3 }}>
                              Select the strategic engine for your broadcast. This will smart-filter the available articles.
                            </Typography>
                            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' }, gap: 3 }}>
@@ -813,17 +1093,18 @@ export default function CreatorStudioDashboard({
                                  key={engine.id}
                                  onClick={() => { setLsEngine(engine.id as any); setLsStep(2); }}
                                  sx={{
-                                   p: 3, borderRadius: '16px', bgcolor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)',
+                                   p: 3, borderRadius: '16px', bgcolor: '#ffffff', border: '1px solid rgba(0, 0, 0, 0.08)',
+                                   boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
                                    cursor: 'pointer', transition: 'all 0.2s',
-                                   '&:hover': { bgcolor: 'rgba(255,255,255,0.06)', transform: 'translateY(-4px)', borderColor: 'rgba(255,255,255,0.3)' }
+                                   '&:hover': { bgcolor: '#ffffff', transform: 'translateY(-4px)', borderColor: activeOpt.color, boxShadow: `0 12px 28px -6px rgba(0, 0, 0, 0.08), 0 0 16px ${alpha(activeOpt.color, 0.15)}` }
                                  }}
                                >
                                  <Typography sx={{ fontSize: '2.5rem', mb: 1 }}>{engine.icon}</Typography>
-                                 <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: '1.2rem', mb: 0.5 }}>{engine.title}</Typography>
-                                 <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontWeight: 500, fontSize: '0.85rem', mb: 2 }}>{engine.desc}</Typography>
+                                 <Typography sx={{ color: '#0f172a', fontWeight: 800, fontSize: '1.2rem', mb: 0.5 }}>{engine.title}</Typography>
+                                 <Typography sx={{ color: '#64748b', fontWeight: 500, fontSize: '0.85rem', mb: 2 }}>{engine.desc}</Typography>
                                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                                    {engine.tags.map(t => (
-                                     <Chip key={t} label={t} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.8)', fontSize: '0.7rem', fontWeight: 700 }} />
+                                     <Chip key={t} label={t} size="small" sx={{ bgcolor: 'rgba(0, 0, 0, 0.04)', color: '#475569', fontSize: '0.7rem', fontWeight: 700, border: '1px solid rgba(0, 0, 0, 0.06)' }} />
                                    ))}
                                  </Box>
                                </Paper>
@@ -834,22 +1115,22 @@ export default function CreatorStudioDashboard({
 
                        {lsStep === 2 && (
                          <Box sx={{ minHeight: 300 }}>
-                           <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 500, mb: 3 }}>
-                             Select the Anchor Article. We've filtered the global database to only show formats compatible with <strong style={{ color: '#fff' }}>{lsEngine}</strong>.
+                           <Typography sx={{ color: '#475569', fontWeight: 500, mb: 3 }}>
+                             Select the Anchor Article. We've filtered the global database to only show formats compatible with <strong style={{ color: '#0f172a' }}>{lsEngine}</strong>.
                            </Typography>
                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                              {/* GLOBAL ARTICLES FROM DB */}
                              {lsLoadingDB ? (
-                               <Box sx={{ py: 4, display: 'flex', justifyContent: 'center' }}><CircularProgress size={32} sx={{ color: '#10b981' }} /></Box>
+                               <Box sx={{ py: 4, display: 'flex', justifyContent: 'center' }}><CircularProgress size={32} sx={{ color: activeOpt.color }} /></Box>
                              ) : lsArticles.length === 0 ? (
-                               <Typography sx={{ color: 'rgba(255,255,255,0.5)', py: 2 }}>No suitable articles found for this engine in the database.</Typography>
+                               <Typography sx={{ color: '#64748b', py: 2 }}>No suitable articles found for this engine in the database.</Typography>
                              ) : lsArticles.map((art) => (
-                               <Paper key={art.id} onClick={() => { setLsAnchorArticleId(art.id); setLsStep(3); }} sx={{ p: 2.5, borderRadius: '12px', bgcolor: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' }, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                               <Paper key={art.id} onClick={() => { setLsAnchorArticleId(art.id); setLsStep(3); }} sx={{ p: 2.5, borderRadius: '12px', bgcolor: '#ffffff', border: '1px solid rgba(0, 0, 0, 0.08)', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.03)', cursor: 'pointer', '&:hover': { bgcolor: alpha(activeOpt.color, 0.03), borderColor: activeOpt.color }, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                  <Box>
-                                   <Typography sx={{ color: '#fff', fontWeight: 700, mb: 0.5 }}>{art.title}</Typography>
-                                   <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem' }}>Anchoring research by {art.authorName || 'FoodNerve Intelligence'}</Typography>
+                                   <Typography sx={{ color: '#0f172a', fontWeight: 700, mb: 0.5 }}>{art.title}</Typography>
+                                   <Typography sx={{ color: '#64748b', fontSize: '0.8rem' }}>Anchoring research by {art.authorName || 'FoodNerve Intelligence'}</Typography>
                                  </Box>
-                                 <Chip label={art.subcategory || 'Article'} size="small" sx={{ bgcolor: 'rgba(255,255,255,0.1)', color: '#fff', fontWeight: 700, textTransform: 'capitalize' }} />
+                                 <Chip label={art.subcategory || 'Article'} size="small" sx={{ bgcolor: alpha(activeOpt.color, 0.1), color: activeOpt.color, fontWeight: 700, textTransform: 'capitalize' }} />
                                </Paper>
                              ))}
                            </Box>
@@ -858,31 +1139,31 @@ export default function CreatorStudioDashboard({
 
                        {lsStep === 3 && (
                          <Box sx={{ minHeight: 300 }}>
-                           <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: '1.2rem', mb: 1 }}>Attach Anchor Jobs (Optional)</Typography>
-                           <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem', mb: 3 }}>
+                           <Typography sx={{ color: '#0f172a', fontWeight: 800, fontSize: '1.2rem', mb: 1 }}>Attach Anchor Jobs (Optional)</Typography>
+                           <Typography sx={{ color: '#64748b', fontSize: '0.85rem', mb: 3 }}>
                              Select open roles to display during your broadcast. Essential for the Talent Liquidity engine.
                            </Typography>
                            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2, mb: 4 }}>
                              {lsLoadingDB ? (
-                               <Box sx={{ py: 4, display: 'flex', justifyContent: 'center', gridColumn: '1 / -1' }}><CircularProgress size={32} sx={{ color: '#10b981' }} /></Box>
+                               <Box sx={{ py: 4, display: 'flex', justifyContent: 'center', gridColumn: '1 / -1' }}><CircularProgress size={32} sx={{ color: activeOpt.color }} /></Box>
                              ) : lsJobs.length === 0 ? (
-                               <Typography sx={{ color: 'rgba(255,255,255,0.5)', gridColumn: '1 / -1' }}>No active jobs found in the global talent exchange.</Typography>
+                               <Typography sx={{ color: '#64748b', gridColumn: '1 / -1' }}>No active jobs found in the global talent exchange.</Typography>
                              ) : lsJobs.map(job => (
                                <Paper 
                                  key={job.id} 
                                  onClick={() => setLsAnchorJobIds(prev => prev.includes(job.id) ? prev.filter(x => x !== job.id) : [...prev, job.id])} 
-                                 sx={{ p: 2, bgcolor: lsAnchorJobIds.includes(job.id) ? 'rgba(16,185,129,0.1)' : 'rgba(255,255,255,0.05)', border: '1px solid', borderColor: lsAnchorJobIds.includes(job.id) ? '#10b981' : 'rgba(255,255,255,0.1)', cursor: 'pointer', borderRadius: '12px', '&:hover': { bgcolor: lsAnchorJobIds.includes(job.id) ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.08)' } }}
+                                 sx={{ p: 2, bgcolor: lsAnchorJobIds.includes(job.id) ? alpha(activeOpt.color, 0.08) : '#ffffff', border: '1px solid', borderColor: lsAnchorJobIds.includes(job.id) ? activeOpt.color : 'rgba(0, 0, 0, 0.08)', boxShadow: lsAnchorJobIds.includes(job.id) ? `0 4px 14px ${alpha(activeOpt.color, 0.15)}` : '0 2px 6px rgba(0,0,0,0.03)', cursor: 'pointer', borderRadius: '12px', '&:hover': { bgcolor: lsAnchorJobIds.includes(job.id) ? alpha(activeOpt.color, 0.12) : '#f8fafc' } }}
                                >
-                                 <Typography sx={{ color: '#fff', fontWeight: 700 }}>{job.title}</Typography>
-                                 <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem' }}>{job.organization?.name || 'Company'}</Typography>
+                                 <Typography sx={{ color: '#0f172a', fontWeight: 700 }}>{job.title}</Typography>
+                                 <Typography sx={{ color: '#64748b', fontSize: '0.75rem' }}>{job.organization?.name || 'Company'}</Typography>
                                </Paper>
                              ))}
                            </Box>
-                           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 4, pt: 3, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 4, pt: 3, borderTop: '1px solid rgba(0, 0, 0, 0.08)' }}>
                              <Button
                                variant="contained"
                                onClick={() => onStartFresh('livestream', { lsEngine, lsAnchorArticleId, lsAnchorJobIds })}
-                               sx={{ bgcolor: '#fff', color: '#000', fontWeight: 800, py: 1.5, px: 4, borderRadius: '12px', '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' } }}
+                               sx={{ bgcolor: activeOpt.color, color: '#ffffff', fontWeight: 800, py: 1.5, px: 4, borderRadius: '12px', boxShadow: `0 4px 14px ${alpha(activeOpt.color, 0.35)}`, '&:hover': { bgcolor: activeOpt.color, opacity: 0.9 } }}
                              >
                                Generate Studio & Rundown
                              </Button>
@@ -903,48 +1184,94 @@ export default function CreatorStudioDashboard({
                               onClick={() => setMatrixStep((matrixStep - 1) as any)}
                               size="small"
                               sx={{
-                                color: '#fff',
-                                bgcolor: 'rgba(255,255,255,0.08)',
-                                border: '1px solid rgba(255,255,255,0.12)',
-                                '&:hover': { bgcolor: 'rgba(255,255,255,0.16)' }
+                                color: '#0f172a',
+                                bgcolor: 'rgba(0, 0, 0, 0.05)',
+                                border: '1px solid rgba(0, 0, 0, 0.1)',
+                                '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.1)' }
                               }}
                             >
                               <ArrowBackIcon sx={{ fontSize: 16 }} />
                             </IconButton>
                           )}
-                          <Box sx={{ p: 1, borderRadius: '12px', bgcolor: 'rgba(255,255,255,0.2)', color: '#fff' }}>
-                            {opt.icon}
+                          <Box sx={{ p: 1, borderRadius: '12px', bgcolor: alpha(activeOpt.color, 0.12), color: activeOpt.color }}>
+                            {activeOpt.icon}
                           </Box>
                           <Box>
                             {matrixStep === 3 ? (
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 0.5 }}>
-                                <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: { xs: '0.75rem', sm: '0.85rem' }, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                                <Typography sx={{ color: '#64748b', fontSize: { xs: '0.75rem', sm: '0.85rem' }, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                                   🔥 Trending Titles for
                                 </Typography>
                                 <Box component="span" sx={{ color: ACCENT, fontWeight: 900, fontSize: { xs: '0.8rem', sm: '0.9rem' }, px: 1, py: 0.2, bgcolor: alpha(ACCENT, 0.12), borderRadius: '8px', border: `1px solid ${alpha(ACCENT, 0.3)}`, lineHeight: 1.2 }}>
                                   {selectedCommodity}
                                 </Box>
-                                <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75, bgcolor: 'rgba(255,255,255,0.06)', px: 1.2, py: 0.25, borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                  <Typography sx={{ color: '#93c5fd', fontSize: { xs: '0.75rem', sm: '0.82rem' }, fontWeight: 800 }}>
+                                <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75, bgcolor: 'rgba(0, 0, 0, 0.04)', px: 1.2, py: 0.25, borderRadius: '8px', border: '1px solid rgba(0, 0, 0, 0.08)' }}>
+                                  <Typography sx={{ color: '#2563eb', fontSize: { xs: '0.75rem', sm: '0.82rem' }, fontWeight: 800 }}>
                                     {challengesData.find(c => c.id === selectedCategory)?.title || selectedCategory}
                                   </Typography>
-                                  <Typography sx={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem' }}>•</Typography>
-                                  <Typography sx={{ color: 'rgba(255,255,255,0.85)', fontSize: { xs: '0.75rem', sm: '0.82rem' }, fontWeight: 700 }}>
+                                  <Typography sx={{ color: '#94a3b8', fontSize: '0.75rem' }}>•</Typography>
+                                  <Typography sx={{ color: '#475569', fontSize: { xs: '0.75rem', sm: '0.82rem' }, fontWeight: 700 }}>
                                     {weekDays.find(d => d.category === selectedCategory)?.dayName || 'Day'}, {format(new Date(selectedTargetDate), 'MMM d')}
                                   </Typography>
                                 </Box>
                               </Box>
-                            ) : (
-                              <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: { xs: '0.75rem', sm: '0.85rem' }, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>
-                                {opt.title} Setup {matrixStep > 1 && `· Week ${selectedWeek}: ${selectedCommodity}`}
+                            ) : matrixStep === 2 ? (
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                <Chip
+                                  label={`Week ${selectedWeek} · ${selectedCommodity}`}
+                                  size="small"
+                                  sx={{
+                                    bgcolor: alpha(activeOpt.color, 0.12),
+                                    color: activeOpt.color,
+                                    fontWeight: 900,
+                                    fontSize: '0.82rem',
+                                    borderRadius: '8px',
+                                    height: 24
+                                  }}
+                                />
+                              </Box>
+                            ) : null}
+                            <Typography variant="h5" sx={{ fontWeight: 900, letterSpacing: '-0.02em', color: '#0f172a', fontSize: { xs: '1.25rem', sm: '1.6rem' } }}>
+                              {matrixStep === 1
+                                ? "What commodity do you want to write about?"
+                                : matrixStep === 2
+                                ? "What do you want to focus on?"
+                                : `Pick one of the ${insights.length || 'articles'} to write on`}
+                            </Typography>
+                            {matrixStep === 1 && (
+                              <Typography sx={{ color: '#64748b', fontSize: { xs: '0.95rem', sm: '1.05rem' }, fontWeight: 700, mt: 0.5 }}>
+                                Tap one to continue.
                               </Typography>
                             )}
-                            <Typography variant="h5" sx={{ fontWeight: 900, letterSpacing: '-0.02em', color: '#fff', fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
-                              {matrixStep === 1 ? "Ready to create?" : matrixStep === 2 ? "Select Daily Strategic Pillar" : "Pick one to write on"}
-                            </Typography>
                           </Box>
                         </Box>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          {matrixStep === 3 && isAdmin && (
+                            <Button
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setIsAdminSidePaneOpen(true);
+                              }}
+                              startIcon={<LockIcon sx={{ fontSize: '13px !important' }} />}
+                              sx={{
+                                bgcolor: 'rgba(245, 158, 11, 0.12)',
+                                color: '#d97706',
+                                fontWeight: 800,
+                                fontSize: '0.74rem',
+                                borderRadius: '10px',
+                                px: 1.5,
+                                py: 0.6,
+                                textTransform: 'none',
+                                border: '1px solid rgba(245, 158, 11, 0.3)',
+                                '&:hover': {
+                                  bgcolor: 'rgba(245, 158, 11, 0.2)',
+                                }
+                              }}
+                            >
+                              Admin Flow
+                            </Button>
+                          )}
                           {matrixStep === 3 && (
                             <Tooltip title="Refresh Trending Angles (50 NP)">
                               <IconButton 
@@ -952,13 +1279,13 @@ export default function CreatorStudioDashboard({
                                 disabled={regenerating || loadingInsights}
                                 sx={{
                                   color: ACCENT,
-                                  bgcolor: 'rgba(245, 158, 11, 0.1)',
+                                  bgcolor: alpha(ACCENT, 0.1),
                                   border: `1px solid ${alpha(ACCENT, 0.25)}`,
                                   borderRadius: '12px',
                                   p: 1.1,
                                   transition: 'all 0.2s ease',
                                   '&:hover': {
-                                    bgcolor: 'rgba(245, 158, 11, 0.2)',
+                                    bgcolor: alpha(ACCENT, 0.2),
                                     transform: 'rotate(180deg)',
                                     borderColor: ACCENT,
                                   }
@@ -971,7 +1298,7 @@ export default function CreatorStudioDashboard({
                           <Tooltip title="Minimize">
                             <IconButton
                               onClick={(e) => { e.stopPropagation(); handleClose(); }}
-                              sx={{ color: 'rgba(255,255,255,0.8)', bgcolor: 'rgba(0,0,0,0.15)', '&:hover': { bgcolor: 'rgba(0,0,0,0.3)', color: '#fff' } }}
+                              sx={{ color: '#64748b', bgcolor: 'rgba(0, 0, 0, 0.05)', '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.1)', color: '#0f172a' } }}
                             >
                               <MinimizeIcon />
                             </IconButton>
@@ -980,21 +1307,28 @@ export default function CreatorStudioDashboard({
                       </Box>
 
                   {/* ──────────────────────────────────────────────────────────── */}
-                  {/* STEP 1: COMMODITY & WEEK SELECTION (BENTO GRID VIEW)         */}
+                  {/* STEP 1: COMMODITY & WEEK SELECTION (2-COLUMN GRID VIEW)      */}
                   {/* ──────────────────────────────────────────────────────────── */}
                   {matrixStep === 1 && (
-                    <Box sx={{ animation: `${slideUpFade} 0.3s ease` }}>
-                      {/* Bento Grid: Prominent Hero Tile for Active Week + Upcoming Tiles */}
-                      <Box sx={{
-                        display: 'grid',
-                        gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
-                        gap: 2,
-                        height: 'auto',
-                        overflow: 'visible',
-                        py: 1,
-                        px: 0.5,
-                        pb: 2,
-                      }}>
+                    <Box sx={{ overflow: 'visible' }}>
+                      {/* Bento Grid: 2-Column with Progressive 3D Tilt Cascade */}
+                      <Box
+                        component={motion.div}
+                        variants={gridStaggerVariants}
+                        initial="hidden"
+                        animate="visible"
+                        sx={{
+                          display: 'grid',
+                          gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' },
+                          gap: { xs: 2.5, sm: 3 },
+                          perspective: '1400px',
+                          height: 'auto',
+                          overflow: 'visible',
+                          py: 1,
+                          px: 0.5,
+                          pb: 2,
+                        }}
+                      >
                         {(() => {
                           const activeIdx = (currentWeek - 1) % commoditiesList.length;
                           const activeComm = commoditiesList[activeIdx];
@@ -1015,192 +1349,261 @@ export default function CreatorStudioDashboard({
                             return { comm, targetWeek, dateRangeStr, meta, offset };
                           }).sort((a, b) => a.offset - b.offset);
 
+                          const visibleUpcoming = showAllCommodities ? upcomingList : upcomingList.slice(0, 6);
+
                           return (
                             <>
-                              {/* ── BENTO HERO TILE: DISTINCT ACTIVE WEEK CARD ── */}
-                              <Paper
-                                elevation={0}
-                                onClick={() => handleSelectCommodityAndWeek(currentWeek, activeComm)}
+                              {/* ── BENTO HERO TILE: 80% WIDTH, CENTERED & TILTED UP ── */}
+                              <Box
+                                component={motion.div}
+                                variants={cardProgressiveTiltVariants}
                                 sx={{
-                                  gridColumn: { xs: '1 / -1', md: 'span 2' },
-                                  minHeight: { xs: 200, md: 220 },
-                                  borderRadius: '24px',
-                                  position: 'relative',
-                                  overflow: 'hidden',
-                                  cursor: 'pointer',
-                                  border: '2px solid #3b82f6',
-                                  boxShadow: '0 0 35px rgba(59, 130, 246, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
-                                  transition: 'all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                                  gridColumn: '1 / -1',
+                                  width: '100%',
                                   display: 'flex',
-                                  flexDirection: 'column',
-                                  justifyContent: 'space-between',
-                                  p: { xs: 2.5, sm: 3 },
-                                  '&:hover': {
-                                    transform: 'translateY(-4px) scale(1.01)',
-                                    borderColor: '#60a5fa',
-                                    boxShadow: '0 16px 40px rgba(59, 130, 246, 0.5)',
-                                    '& .hero-bg': { transform: 'scale(1.08)' }
-                                  }
+                                  justifyContent: 'center',
+                                  perspective: '1200px'
                                 }}
                               >
-                                {/* Background Image */}
-                                <Box
-                                  className="hero-bg"
-                                  sx={{
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 0,
-                                    right: 0,
-                                    bottom: 0,
-                                    backgroundImage: `url(${activeMeta.imageUrl})`,
-                                    backgroundSize: 'cover',
-                                    backgroundPosition: 'center',
-                                    transition: 'transform 0.6s ease',
-                                    zIndex: 0,
-                                  }}
-                                />
-
-                                {/* Dark Gradient Vignette */}
-                                <Box sx={{
-                                  position: 'absolute',
-                                  top: 0,
-                                  left: 0,
-                                  right: 0,
-                                  bottom: 0,
-                                  background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.5) 50%, rgba(15, 23, 42, 0.85) 100%)',
-                                  zIndex: 1,
-                                }} />
-
-                                {/* Top Badges */}
-                                <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
-                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <Chip
-                                      label={`⚡ ACTIVE WEEK ${currentWeek}`}
-                                      size="small"
-                                      sx={{
-                                        bgcolor: '#3b82f6',
-                                        color: '#fff',
-                                        fontWeight: 900,
-                                        fontSize: '0.72rem',
-                                        height: 24,
-                                        boxShadow: '0 4px 12px rgba(59, 130, 246, 0.5)'
-                                      }}
-                                    />
-                                    <Chip
-                                      label="LIVE FOCUS"
-                                      size="small"
-                                      sx={{
-                                        bgcolor: 'rgba(59, 130, 246, 0.2)',
-                                        color: '#93c5fd',
-                                        fontWeight: 800,
-                                        fontSize: '0.68rem',
-                                        height: 24,
-                                        border: '1px solid rgba(59, 130, 246, 0.4)'
-                                      }}
-                                    />
-                                  </Box>
-                                  <Typography sx={{ color: '#93c5fd', fontSize: '0.8rem', fontWeight: 700 }}>
-                                    {activeDateStr}
-                                  </Typography>
-                                </Box>
-
-                                {/* Bottom Title & Trigger */}
-                                <Box sx={{ position: 'relative', zIndex: 2, mt: 'auto', pt: 2 }}>
-                                  <Typography variant="h4" sx={{
-                                    color: '#fff',
-                                    fontWeight: 900,
-                                    letterSpacing: '-0.02em',
-                                    lineHeight: 1.15,
-                                    fontSize: { xs: '1.35rem', sm: '1.65rem' },
-                                    textShadow: '0 4px 14px rgba(0,0,0,0.7)'
-                                  }}>
-                                    {activeComm}
-                                  </Typography>
-                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, color: '#93c5fd', fontWeight: 800, fontSize: '0.82rem', mt: 0.75 }}>
-                                    Select Active Cycle <ArrowForwardArrow sx={{ fontSize: 15 }} />
-                                  </Box>
-                                </Box>
-                              </Paper>
-
-                              {/* ── BENTO UPCOMING TILES ── */}
-                              {upcomingList.map((item) => (
                                 <Paper
-                                  key={`${item.comm}-${item.targetWeek}`}
                                   elevation={0}
-                                  onClick={() => handleSelectCommodityAndWeek(item.targetWeek, item.comm)}
+                                  onClick={() => handleSelectCommodityAndWeek(currentWeek, activeComm)}
                                   sx={{
-                                    height: 160,
-                                    borderRadius: '20px',
+                                    width: { xs: '100%', md: '80%' },
+                                    minHeight: { xs: 220, sm: 240, md: 255 },
+                                    borderRadius: '24px',
                                     position: 'relative',
                                     overflow: 'hidden',
                                     cursor: 'pointer',
-                                    border: '1px solid rgba(255,255,255,0.12)',
-                                    transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                                    border: '2.5px solid #3b82f6',
+                                    boxShadow: '0 0 35px rgba(59, 130, 246, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                                    transform: { xs: 'none', md: 'rotateX(5deg)' },
+                                    transformOrigin: 'bottom center',
+                                    transition: 'all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)',
                                     display: 'flex',
                                     flexDirection: 'column',
                                     justifyContent: 'space-between',
-                                    p: 2,
+                                    p: { xs: 2.5, sm: 3.5 },
                                     '&:hover': {
-                                      transform: 'translateY(-3px) scale(1.02)',
-                                      borderColor: 'rgba(255,255,255,0.35)',
-                                      boxShadow: '0 12px 30px rgba(0,0,0,0.4)',
-                                      '& .bento-bg': { transform: 'scale(1.08)' }
+                                      transform: { xs: 'translateY(-4px) scale(1.01)', md: 'rotateX(0deg) translateY(-6px) scale(1.01)' },
+                                      borderColor: '#60a5fa',
+                                      boxShadow: '0 20px 48px rgba(59, 130, 246, 0.55)',
+                                      '& .hero-bg': { transform: 'scale(1.08)' }
                                     }
                                   }}
                                 >
                                   {/* Background Image */}
                                   <Box
-                                    className="bento-bg"
+                                    className="hero-bg"
                                     sx={{
                                       position: 'absolute',
                                       top: 0,
                                       left: 0,
                                       right: 0,
                                       bottom: 0,
-                                      backgroundImage: `url(${item.meta.imageUrl})`,
+                                      backgroundImage: `url(${activeMeta.imageUrl})`,
                                       backgroundSize: 'cover',
                                       backgroundPosition: 'center',
-                                      transition: 'transform 0.5s ease',
+                                      transition: 'transform 0.6s ease',
                                       zIndex: 0,
                                     }}
                                   />
 
-                                  {/* Dark Vignette Overlay */}
+                                  {/* Dark Gradient Vignette */}
                                   <Box sx={{
                                     position: 'absolute',
                                     top: 0,
                                     left: 0,
                                     right: 0,
                                     bottom: 0,
-                                    background: 'linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.35) 50%, rgba(0, 0, 0, 0.65) 100%)',
+                                    background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.5) 50%, rgba(15, 23, 42, 0.85) 100%)',
                                     zIndex: 1,
                                   }} />
 
-                                  {/* Top Bar: Week + Date Range */}
-                                  <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                    <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: '0.75rem', letterSpacing: '0.02em' }}>
-                                      Week {item.targetWeek}
-                                    </Typography>
-                                    <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem', fontWeight: 600 }}>
-                                      {item.dateRangeStr}
+                                  {/* Top Badges */}
+                                  <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                                      <Chip
+                                        label={`⚡ ACTIVE WEEK ${currentWeek}`}
+                                        size="small"
+                                        sx={{
+                                          bgcolor: '#3b82f6',
+                                          color: '#fff',
+                                          fontWeight: 900,
+                                          fontSize: '0.85rem',
+                                          height: 28,
+                                          px: 0.5,
+                                          boxShadow: '0 4px 12px rgba(59, 130, 246, 0.5)'
+                                        }}
+                                      />
+                                      <Chip
+                                        label="LIVE FOCUS"
+                                        size="small"
+                                        sx={{
+                                          bgcolor: 'rgba(59, 130, 246, 0.25)',
+                                          color: '#bfdbfe',
+                                          fontWeight: 900,
+                                          fontSize: '0.8rem',
+                                          height: 28,
+                                          border: '1px solid rgba(59, 130, 246, 0.5)'
+                                        }}
+                                      />
+                                    </Box>
+                                    <Typography sx={{ color: '#bfdbfe', fontSize: '1rem', fontWeight: 800 }}>
+                                      {activeDateStr}
                                     </Typography>
                                   </Box>
 
-                                  {/* Bottom: Commodity Title */}
-                                  <Box sx={{ position: 'relative', zIndex: 2 }}>
-                                    <Typography sx={{
+                                  {/* Bottom Title & Trigger */}
+                                  <Box sx={{ position: 'relative', zIndex: 2, mt: 'auto', pt: 2.5 }}>
+                                    <Typography variant="h4" sx={{
                                       color: '#fff',
                                       fontWeight: 900,
-                                      fontSize: '0.95rem',
-                                      lineHeight: 1.3,
-                                      letterSpacing: '-0.01em',
-                                      textShadow: '0 2px 4px rgba(0,0,0,0.6)'
+                                      letterSpacing: '-0.02em',
+                                      lineHeight: 1.15,
+                                      fontSize: { xs: '1.85rem', sm: '2.4rem', md: '2.75rem' },
+                                      textShadow: '0 4px 14px rgba(0,0,0,0.7)'
                                     }}>
-                                      {item.comm}
+                                      {activeComm}
                                     </Typography>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, color: '#93c5fd', fontWeight: 900, fontSize: '1.05rem', mt: 1 }}>
+                                      Select Active Cycle <ArrowForwardArrow sx={{ fontSize: 20 }} />
+                                    </Box>
                                   </Box>
                                 </Paper>
+                              </Box>
+
+                              {/* ── BENTO UPCOMING TILES (PROGRESSIVE TILT-IN) ── */}
+                              {visibleUpcoming.map((item) => (
+                                <Box
+                                  key={`${item.comm}-${item.targetWeek}`}
+                                  component={motion.div}
+                                  variants={cardProgressiveTiltVariants}
+                                  sx={{
+                                    width: '100%',
+                                    transformOrigin: 'bottom center'
+                                  }}
+                                >
+                                  <Paper
+                                    elevation={0}
+                                    onClick={() => handleSelectCommodityAndWeek(item.targetWeek, item.comm)}
+                                    sx={{
+                                      minHeight: { xs: 175, sm: 190, md: 205 },
+                                      borderRadius: '22px',
+                                      position: 'relative',
+                                      overflow: 'hidden',
+                                      cursor: 'pointer',
+                                      border: '1.5px solid rgba(255,255,255,0.18)',
+                                      transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      justifyContent: 'space-between',
+                                      p: { xs: 2.5, sm: 3 },
+                                      '&:hover': {
+                                        transform: 'translateY(-4px) scale(1.015)',
+                                        borderColor: 'rgba(255,255,255,0.4)',
+                                        boxShadow: '0 14px 34px rgba(0,0,0,0.45)',
+                                        '& .bento-bg': { transform: 'scale(1.08)' }
+                                      }
+                                    }}
+                                  >
+                                    {/* Background Image */}
+                                    <Box
+                                      className="bento-bg"
+                                      sx={{
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        right: 0,
+                                        bottom: 0,
+                                        backgroundImage: `url(${item.meta.imageUrl})`,
+                                        backgroundSize: 'cover',
+                                        backgroundPosition: 'center',
+                                        transition: 'transform 0.5s ease',
+                                        zIndex: 0,
+                                      }}
+                                    />
+
+                                    {/* Dark Vignette Overlay */}
+                                    <Box sx={{
+                                      position: 'absolute',
+                                      top: 0,
+                                      left: 0,
+                                      right: 0,
+                                      bottom: 0,
+                                      background: 'linear-gradient(to top, rgba(0, 0, 0, 0.92) 0%, rgba(0, 0, 0, 0.4) 50%, rgba(0, 0, 0, 0.7) 100%)',
+                                      zIndex: 1,
+                                    }} />
+
+                                    {/* Top Bar: Week + Date Range */}
+                                    <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                      <Chip
+                                        label={`Week ${item.targetWeek}`}
+                                        size="small"
+                                        sx={{
+                                          bgcolor: 'rgba(255, 255, 255, 0.2)',
+                                          color: '#fff',
+                                          fontWeight: 900,
+                                          fontSize: '0.88rem',
+                                          height: 26,
+                                          px: 0.5,
+                                          border: '1px solid rgba(255, 255, 255, 0.3)',
+                                          backdropFilter: 'blur(8px)'
+                                        }}
+                                      />
+                                      <Typography sx={{ color: 'rgba(255,255,255,0.9)', fontSize: '0.88rem', fontWeight: 800 }}>
+                                        {item.dateRangeStr}
+                                      </Typography>
+                                    </Box>
+
+                                    {/* Bottom: Commodity Title */}
+                                    <Box sx={{ position: 'relative', zIndex: 2 }}>
+                                      <Typography sx={{
+                                        color: '#fff',
+                                        fontWeight: 900,
+                                        fontSize: { xs: '1.35rem', sm: '1.55rem', md: '1.75rem' },
+                                        lineHeight: 1.2,
+                                        letterSpacing: '-0.02em',
+                                        textShadow: '0 2px 6px rgba(0,0,0,0.7)'
+                                      }}>
+                                        {item.comm}
+                                      </Typography>
+                                    </Box>
+                                  </Paper>
+                                </Box>
                               ))}
+
+                              {/* Toggle for remaining commodities beyond initial preview */}
+                              {upcomingList.length > 6 && (
+                                <Box
+                                  component={motion.div}
+                                  variants={cardProgressiveTiltVariants}
+                                  sx={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'center', mt: 1.5 }}
+                                >
+                                  <Button
+                                    onClick={() => setShowAllCommodities(!showAllCommodities)}
+                                    size="small"
+                                    sx={{
+                                      borderRadius: '20px',
+                                      textTransform: 'none',
+                                      fontWeight: 800,
+                                      fontSize: '0.9rem',
+                                      bgcolor: 'rgba(0, 0, 0, 0.05)',
+                                      color: '#334155',
+                                      border: '1px solid rgba(0, 0, 0, 0.1)',
+                                      px: 3,
+                                      py: 0.9,
+                                      '&:hover': {
+                                        bgcolor: 'rgba(0, 0, 0, 0.08)',
+                                        color: '#0f172a',
+                                        borderColor: '#3b82f6'
+                                      }
+                                    }}
+                                  >
+                                    {showAllCommodities ? 'Show less' : `Browse all ${upcomingList.length + 1} commodities (${upcomingList.length - 6} more)`}
+                                  </Button>
+                                </Box>
+                              )}
                             </>
                           );
                         })()}
@@ -1247,16 +1650,16 @@ export default function CreatorStudioDashboard({
                               sx={{
                                 width: cardWidth,
                                 mx: 'auto',
-                                borderRadius: '18px',
-                                p: { xs: 2, sm: 2.25 },
+                                borderRadius: '20px',
+                                p: { xs: 2.25, sm: 2.75 },
                                 bgcolor: isFocused
-                                  ? 'rgba(59, 130, 246, 0.16)'
-                                  : (isToday ? 'rgba(245, 158, 11, 0.08)' : 'rgba(255,255,255,0.03)'),
-                                border: '1.5px solid',
+                                  ? 'rgba(59, 130, 246, 0.08)'
+                                  : (isToday ? 'rgba(245, 158, 11, 0.05)' : '#ffffff'),
+                                border: '2px solid',
                                 borderColor: isFocused
                                   ? '#3b82f6'
-                                  : (isToday ? 'rgba(245, 158, 11, 0.35)' : 'rgba(255,255,255,0.08)'),
-                                boxShadow: isFocused ? '0 12px 30px rgba(59, 130, 246, 0.25)' : 'none',
+                                  : (isToday ? '#f59e0b' : 'rgba(0, 0, 0, 0.08)'),
+                                boxShadow: isFocused ? '0 14px 32px rgba(59, 130, 246, 0.2)' : '0 2px 10px rgba(0, 0, 0, 0.04)',
                                 cursor: 'pointer',
                                 transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
                                 transform: isFocused ? 'scale(1.02)' : `rotateX(${tiltDegree}deg)`,
@@ -1266,63 +1669,66 @@ export default function CreatorStudioDashboard({
                                 alignItems: 'center',
                                 justifyContent: 'space-between',
                                 '&:hover': {
-                                  bgcolor: isFocused ? 'rgba(59, 130, 246, 0.22)' : 'rgba(255,255,255,0.07)',
-                                  borderColor: '#60a5fa',
+                                  bgcolor: isFocused ? 'rgba(59, 130, 246, 0.12)' : '#f8fafc',
+                                  borderColor: '#3b82f6',
                                   transform: isFocused ? 'scale(1.02)' : `rotateX(${tiltDegree * 0.5}deg) translateY(-2px)`
                                 }
                               }}
                             >
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.25 }}>
                                 {/* Day Date Block */}
                                 <Box sx={{
-                                  width: 46,
-                                  height: 46,
-                                  borderRadius: '12px',
-                                  bgcolor: isFocused ? '#3b82f6' : (isToday ? '#f59e0b' : 'rgba(255,255,255,0.08)'),
-                                  color: '#fff',
+                                  width: { xs: 52, sm: 60 },
+                                  height: { xs: 52, sm: 60 },
+                                  borderRadius: '16px',
+                                  bgcolor: isFocused ? '#3b82f6' : (isToday ? '#f59e0b' : 'rgba(0, 0, 0, 0.05)'),
+                                  color: isFocused || isToday ? '#fff' : '#334155',
                                   display: 'flex',
                                   flexDirection: 'column',
                                   alignItems: 'center',
                                   justifyContent: 'center',
                                   flexShrink: 0,
-                                  boxShadow: isFocused ? '0 4px 12px rgba(59, 130, 246, 0.4)' : 'none'
+                                  boxShadow: isFocused ? '0 4px 14px rgba(59, 130, 246, 0.4)' : 'none'
                                 }}>
-                                  <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', lineHeight: 1 }}>
+                                  <Typography sx={{ fontSize: { xs: '0.7rem', sm: '0.78rem' }, fontWeight: 900, textTransform: 'uppercase', lineHeight: 1 }}>
                                     {item.dayName.slice(0, 3)}
                                   </Typography>
-                                  <Typography sx={{ fontSize: '1rem', fontWeight: 900, lineHeight: 1.1, mt: 0.25 }}>
+                                  <Typography sx={{ fontSize: { xs: '1.2rem', sm: '1.4rem' }, fontWeight: 900, lineHeight: 1.1, mt: 0.25 }}>
                                     {item.date.getDate()}
                                   </Typography>
                                 </Box>
 
                                 <Box>
-                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.35 }}>
-                                    <Typography sx={{ color: isFocused ? '#93c5fd' : 'rgba(255,255,255,0.55)', fontSize: '0.72rem', fontWeight: 700, lineHeight: 1.25 }}>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                    <Typography sx={{ color: isFocused ? '#2563eb' : '#64748b', fontSize: { xs: '0.85rem', sm: '0.95rem' }, fontWeight: 800, lineHeight: 1.25 }}>
                                       {item.challenge.title}
                                     </Typography>
                                     {isToday && (
-                                      <Chip label="TODAY" size="small" sx={{ height: 18, fontSize: '0.62rem', bgcolor: '#f59e0b', color: '#fff', fontWeight: 900, flexShrink: 0 }} />
+                                      <Chip label="TODAY" size="small" sx={{ height: 20, fontSize: '0.68rem', bgcolor: '#f59e0b', color: '#fff', fontWeight: 900, flexShrink: 0 }} />
                                     )}
                                   </Box>
-                                  <Typography variant="h6" sx={{ color: '#fff', fontWeight: 900, fontSize: { xs: '1.05rem', sm: '1.2rem' }, lineHeight: 1.2, letterSpacing: '-0.01em' }}>
+                                  <Typography variant="h6" sx={{ color: '#0f172a', fontWeight: 900, fontSize: { xs: '1.25rem', sm: '1.45rem' }, lineHeight: 1.25, letterSpacing: '-0.015em' }}>
                                     {getCategoryShortName(item.category)}
                                   </Typography>
                                 </Box>
                               </Box>
 
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexShrink: 0 }}>
-                                <Typography sx={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.75rem', fontWeight: 600, display: { xs: 'none', sm: 'block' } }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+                                <Typography sx={{ color: '#64748b', fontSize: { xs: '0.8rem', sm: '0.9rem' }, fontWeight: 700, display: { xs: 'none', sm: 'block' } }}>
                                   {item.dateFormatted}
                                 </Typography>
                                 <Box sx={{
                                   display: 'inline-flex',
                                   alignItems: 'center',
-                                  gap: 0.5,
-                                  color: isFocused ? '#93c5fd' : 'rgba(255,255,255,0.4)',
-                                  fontSize: '0.8rem',
-                                  fontWeight: 800
+                                  justifyContent: 'center',
+                                  width: 36,
+                                  height: 36,
+                                  borderRadius: '50%',
+                                  bgcolor: isFocused ? 'rgba(37, 99, 235, 0.12)' : 'rgba(0, 0, 0, 0.04)',
+                                  color: isFocused ? '#2563eb' : '#94a3b8',
+                                  transition: 'all 0.2s ease',
                                 }}>
-                                  <ArrowForwardArrow sx={{ fontSize: 16 }} />
+                                  <ArrowForwardArrow sx={{ fontSize: 20 }} />
                                 </Box>
                               </Box>
                             </Paper>
@@ -1342,7 +1748,7 @@ export default function CreatorStudioDashboard({
                       {loadingInsights ? (
                         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 8 }}>
                           <CircularProgress size={36} sx={{ color: ACCENT, mb: 2 }} />
-                          <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: '0.95rem' }}>
+                          <Typography sx={{ color: '#0f172a', fontWeight: 800, fontSize: '0.95rem' }}>
                             Loading Trending Editorial Angles...
                           </Typography>
                         </Box>
@@ -1350,25 +1756,31 @@ export default function CreatorStudioDashboard({
                         /* FALLBACK STATE: Responsive card - side-by-side on desktop, stacked on mobile */
                         <Box sx={{ my: 4 }}>
                           <Paper
-                          elevation={0}
-                          sx={{
-                            p: { xs: 3.5, sm: 4.5 },
-                            borderRadius: '32px',
-                            bgcolor: 'rgba(255,255,255,0.03)',
-                            border: '1px solid rgba(255,255,255,0.08)',
-                            backdropFilter: 'blur(24px)',
-                            boxShadow: '0 24px 60px rgba(0,0,0,0.3)',
-                            display: 'flex',
-                            flexDirection: { xs: 'column', md: 'row' },
-                            alignItems: { xs: 'center', md: 'stretch' },
-                            textAlign: { xs: 'center', md: 'left' },
-                            gap: { xs: 3, md: 4.5 },
-                            my: 4,
-                            maxWidth: { xs: 500, md: 740 },
-                            mx: 'auto',
-                            transition: 'all 0.3s ease',
-                          }}
-                        >
+                            elevation={0}
+                            sx={{
+                              p: { xs: 3.5, sm: 4.5 },
+                              borderRadius: '24px',
+                              background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+                              border: '2px solid #93c5fd',
+                              boxShadow: '0 20px 45px -10px rgba(59, 130, 246, 0.16), 0 4px 16px -2px rgba(59, 130, 246, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+                              display: 'flex',
+                              flexDirection: { xs: 'column', md: 'row' },
+                              alignItems: { xs: 'center', md: 'stretch' },
+                              textAlign: { xs: 'center', md: 'left' },
+                              gap: { xs: 3, md: 4.5 },
+                              my: 4,
+                              maxWidth: { xs: 500, md: 740 },
+                              mx: 'auto',
+                              position: 'relative',
+                              overflow: 'hidden',
+                              transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                              '&:hover': {
+                                transform: 'translateY(-2px)',
+                                borderColor: '#60a5fa',
+                                boxShadow: '0 24px 50px -10px rgba(59, 130, 246, 0.22), 0 8px 24px -4px rgba(59, 130, 246, 0.15)',
+                              }
+                            }}
+                          >
                           {/* Visual Column: Vertically Stacked Overlapping Squircles representing Commodity x Strategic Pillar */}
                           <Box
                             sx={{
@@ -1389,18 +1801,18 @@ export default function CreatorStudioDashboard({
                                 borderRadius: '28px',
                                 overflow: 'hidden',
                                 position: 'relative',
-                                backgroundImage: `url(${getCommodityMeta(selectedCommodity)?.imageUrl || 'https://images.unsplash.com/photo-1599940824399-b87987ceb72a?auto=format&fit=crop&w=600&q=80'})`,
+                                backgroundImage: `url(${getCommodityMeta(selectedCommodity)?.imageUrl || 'https://images.unsplash.com/photo-1599940824399-b87987ceb72a?auto=format&fit=crop&w=600&q=80'}), linear-gradient(135deg, #1e3a8a, #0f172a)`,
                                 backgroundSize: 'cover',
                                 backgroundPosition: 'center',
-                                border: '2.5px solid rgba(255,255,255,0.25)',
-                                boxShadow: '0 12px 32px rgba(0,0,0,0.45)',
+                                border: '2.5px solid rgba(255, 255, 255, 0.25)',
+                                boxShadow: '0 12px 32px rgba(0, 0, 0, 0.45)',
                                 transform: 'rotate(-3deg)',
                                 zIndex: 1,
                                 transition: 'all 0.3s ease',
                                 '&:hover': { transform: 'rotate(0deg) scale(1.05)', zIndex: 3 },
                               }}
                             >
-                              <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 35%, rgba(0,0,0,0.85) 100%)' }} />
+                              <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 35%, rgba(0, 0, 0, 0.85) 100%)' }} />
                               <Typography sx={{ position: 'absolute', bottom: 7, left: 4, right: 4, color: '#fff', fontSize: '0.7rem', fontWeight: 900, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                 🌾 {selectedCommodity.split(',')[0]}
                               </Typography>
@@ -1413,8 +1825,8 @@ export default function CreatorStudioDashboard({
                                 height: 32,
                                 borderRadius: '50%',
                                 bgcolor: '#0f172a',
-                                color: ACCENT,
-                                border: '2px solid rgba(255,255,255,0.35)',
+                                color: '#f59e0b',
+                                border: '2px solid rgba(255, 255, 255, 0.35)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -1422,7 +1834,7 @@ export default function CreatorStudioDashboard({
                                 fontWeight: 900,
                                 zIndex: 2,
                                 my: -2,
-                                boxShadow: '0 4px 16px rgba(0,0,0,0.6)',
+                                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.6)',
                               }}
                             >
                               ×
@@ -1439,15 +1851,15 @@ export default function CreatorStudioDashboard({
                                 backgroundImage: `url(${challengesData.find(c => c.id === selectedCategory)?.imageUrl || '/images/challenges/insecurity.webp'}), linear-gradient(135deg, #1e3a8a, #0f172a)`,
                                 backgroundSize: 'cover',
                                 backgroundPosition: 'center',
-                                border: '2.5px solid rgba(255,255,255,0.25)',
-                                boxShadow: '0 12px 32px rgba(0,0,0,0.45)',
+                                border: '2.5px solid rgba(255, 255, 255, 0.25)',
+                                boxShadow: '0 12px 32px rgba(0, 0, 0, 0.45)',
                                 transform: 'rotate(3deg)',
                                 zIndex: 1,
                                 transition: 'all 0.3s ease',
                                 '&:hover': { transform: 'rotate(0deg) scale(1.05)', zIndex: 3 },
                               }}
                             >
-                              <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 35%, rgba(0,0,0,0.85) 100%)' }} />
+                              <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 35%, rgba(0, 0, 0, 0.85) 100%)' }} />
                               <Typography sx={{ position: 'absolute', bottom: 7, left: 4, right: 4, color: '#93c5fd', fontSize: '0.7rem', fontWeight: 900, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                 🛡️ {getCategoryShortName(selectedCategory)}
                               </Typography>
@@ -1464,13 +1876,14 @@ export default function CreatorStudioDashboard({
                               alignItems: { xs: 'center', md: 'flex-start' },
                               gap: { xs: 2.5, md: 3 },
                               py: { xs: 0, md: 0.75 },
+                              zIndex: 1,
                             }}
                           >
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                              <Typography variant="h5" sx={{ color: '#fff', fontWeight: 900, letterSpacing: '-0.02em', fontSize: { xs: '1.25rem', sm: '1.45rem' } }}>
+                              <Typography variant="h5" sx={{ color: '#0f172a', fontWeight: 900, letterSpacing: '-0.02em', fontSize: { xs: '1.35rem', sm: '1.55rem' } }}>
                                 Get article ideas here
                               </Typography>
-                              <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.92rem', lineHeight: 1.6, fontWeight: 400 }}>
+                              <Typography sx={{ color: '#334155', fontSize: { xs: '0.92rem', sm: '0.96rem' }, lineHeight: 1.6, fontWeight: 500 }}>
                                 Spend 1 minute to get fresh, realistic article ideas people want to read, or choose Ignore to write yourself.
                               </Typography>
                             </Box>
@@ -1489,19 +1902,20 @@ export default function CreatorStudioDashboard({
                                 }}
                                 endIcon={<ArrowForwardIcon sx={{ fontSize: '14px !important' }} />}
                                 sx={{
-                                  bgcolor: '#fff',
-                                  color: '#000',
+                                  background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+                                  color: '#ffffff',
                                   fontWeight: 900,
-                                  px: 3.5,
-                                  py: 1.2,
+                                  px: 3.8,
+                                  py: 1.3,
                                   borderRadius: '14px',
                                   textTransform: 'none',
-                                  fontSize: '0.9rem',
-                                  boxShadow: '0 4px 20px rgba(255, 255, 255, 0.2)',
+                                  fontSize: '0.92rem',
+                                  boxShadow: '0 6px 20px rgba(15, 23, 42, 0.25)',
                                   transition: 'all 0.2s ease',
                                   '&:hover': {
-                                    bgcolor: 'rgba(255,255,255,0.9)',
-                                    transform: 'translateY(-1px)',
+                                    background: 'linear-gradient(135deg, #020617 0%, #0f172a 100%)',
+                                    transform: 'translateY(-2px)',
+                                    boxShadow: '0 10px 28px rgba(15, 23, 42, 0.35)',
                                   }
                                 }}
                               >
@@ -1511,16 +1925,21 @@ export default function CreatorStudioDashboard({
                                 variant="text"
                                 onClick={handleStartCustomArticle}
                                 sx={{
-                                  color: 'rgba(255,255,255,0.6)',
-                                  fontWeight: 700,
+                                  color: '#475569',
+                                  bgcolor: '#ffffff',
+                                  border: '1.5px solid #cbd5e1',
+                                  fontWeight: 800,
                                   px: 3,
-                                  py: 1.2,
+                                  py: 1.25,
                                   borderRadius: '14px',
                                   textTransform: 'none',
-                                  fontSize: '0.88rem',
+                                  fontSize: '0.9rem',
+                                  transition: 'all 0.2s ease',
                                   '&:hover': {
-                                    color: '#fff',
-                                    bgcolor: 'rgba(255,255,255,0.06)',
+                                    color: '#0f172a',
+                                    bgcolor: '#f8fafc',
+                                    borderColor: 'rgba(0, 0, 0, 0.25)',
+                                    transform: 'translateY(-1px)',
                                   }
                                 }}
                               >
@@ -1539,6 +1958,7 @@ export default function CreatorStudioDashboard({
                               borderRadius: '16px',
                               bgcolor: 'rgba(59, 130, 246, 0.08)',
                               border: '1px solid rgba(59, 130, 246, 0.25)',
+                              boxShadow: '0 4px 16px rgba(59, 130, 246, 0.06)',
                               maxWidth: { xs: 500, md: 740 },
                               mx: 'auto',
                               mt: 2.5,
@@ -1548,9 +1968,9 @@ export default function CreatorStudioDashboard({
                               animation: `${slideUpFade} 0.3s ease`,
                             }}
                           >
-                            <InfoOutlinedIcon sx={{ color: '#60a5fa', fontSize: 22, flexShrink: 0 }} />
+                            <InfoOutlinedIcon sx={{ color: '#2563eb', fontSize: 22, flexShrink: 0 }} />
                             <Box sx={{ flex: 1 }}>
-                              <Typography sx={{ color: '#bfdbfe', fontSize: '0.84rem', fontWeight: 600, lineHeight: 1.5 }}>
+                              <Typography sx={{ color: '#1e40af', fontSize: '0.84rem', fontWeight: 600, lineHeight: 1.5 }}>
                                 We haven't detected your ingested articles yet. Don't worry — your progress is saved in your browser, and you can resume anytime by clicking <strong>Start</strong> above.
                               </Typography>
                             </Box>
@@ -1564,63 +1984,67 @@ export default function CreatorStudioDashboard({
                           <Paper
                             elevation={0}
                             sx={{
-                              p: { xs: 2.5, sm: 3 },
+                              p: { xs: 2.75, sm: 3.25 },
                               borderRadius: '24px',
-                              bgcolor: 'rgba(245, 158, 11, 0.04)',
-                              border: '1.5px dashed rgba(245, 158, 11, 0.35)',
-                              backdropFilter: 'blur(16px)',
-                              boxShadow: '0 8px 32px rgba(245, 158, 11, 0.06)',
+                              background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
+                              border: '2px solid #fcd34d',
+                              boxShadow: '0 16px 36px -6px rgba(217, 119, 6, 0.18), 0 4px 12px -2px rgba(217, 119, 6, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9)',
                               maxWidth: { xs: 500, md: 740 },
                               mx: 'auto',
                               mt: 3,
+                              position: 'relative',
+                              overflow: 'hidden',
                               display: 'flex',
                               flexDirection: { xs: 'column', sm: 'row' },
                               alignItems: { xs: 'flex-start', sm: 'center' },
                               justifyContent: 'space-between',
                               gap: 2.5,
-                              transition: 'all 0.2s ease',
+                              transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
                               '&:hover': {
-                                borderColor: 'rgba(245, 158, 11, 0.6)',
-                                bgcolor: 'rgba(245, 158, 11, 0.07)',
+                                borderColor: '#f59e0b',
+                                transform: 'translateY(-2px)',
+                                boxShadow: '0 20px 42px -6px rgba(217, 119, 6, 0.25), 0 6px 16px -2px rgba(217, 119, 6, 0.1)',
                               }
                             }}
                           >
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.25 }}>
                               <Box
                                 sx={{
-                                  width: 44,
-                                  height: 44,
-                                  borderRadius: '14px',
+                                  width: 48,
+                                  height: 48,
+                                  borderRadius: '16px',
                                   background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
                                   color: '#ffffff',
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
-                                  boxShadow: '0 4px 14px rgba(245, 158, 11, 0.35)',
+                                  boxShadow: '0 6px 18px rgba(245, 158, 11, 0.35)',
                                   flexShrink: 0,
                                 }}
                               >
-                                <LockIcon sx={{ fontSize: 22 }} />
+                                <LockIcon sx={{ fontSize: 24 }} />
                               </Box>
                               <Box>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                  <Typography sx={{ color: '#fff', fontWeight: 900, fontSize: '1.05rem', letterSpacing: '-0.01em' }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 0.5 }}>
+                                  <Typography sx={{ color: '#0f172a', fontWeight: 900, fontSize: '1.08rem', letterSpacing: '-0.01em' }}>
                                     Admins Article Flow
                                   </Typography>
                                   <Chip
-                                    label="ADMIN"
+                                    label="ADMIN ONLY"
                                     size="small"
                                     sx={{
-                                      bgcolor: 'rgba(245, 158, 11, 0.2)',
-                                      color: '#fbbf24',
+                                      bgcolor: 'rgba(245, 158, 11, 0.22)',
+                                      color: '#b45309',
                                       fontWeight: 900,
-                                      fontSize: '0.62rem',
-                                      height: 18,
+                                      fontSize: '0.64rem',
+                                      height: 20,
                                       borderRadius: '6px',
+                                      border: '1px solid rgba(245, 158, 11, 0.4)',
+                                      letterSpacing: '0.04em',
                                     }}
                                   />
                                 </Box>
-                                <Typography sx={{ color: 'rgba(255, 255, 255, 0.72)', fontSize: '0.84rem', lineHeight: 1.5, mt: 0.25 }}>
+                                <Typography sx={{ color: '#475569', fontSize: '0.86rem', lineHeight: 1.55, fontWeight: 500 }}>
                                   This uses the admin internal calendar to help them write specific articles that have been pre-planned.
                                 </Typography>
                               </Box>
@@ -1631,20 +2055,21 @@ export default function CreatorStudioDashboard({
                               onClick={() => setIsAdminSidePaneOpen(true)}
                               endIcon={<ArrowForwardIcon sx={{ fontSize: '13px !important' }} />}
                               sx={{
-                                bgcolor: '#f59e0b',
-                                color: '#000',
+                                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                                color: '#ffffff',
                                 fontWeight: 900,
-                                px: 3,
-                                py: 1.1,
-                                borderRadius: '12px',
+                                px: 3.2,
+                                py: 1.2,
+                                borderRadius: '14px',
                                 textTransform: 'none',
-                                fontSize: '0.86rem',
+                                fontSize: '0.88rem',
                                 whiteSpace: 'nowrap',
-                                boxShadow: '0 4px 14px rgba(245, 158, 11, 0.35)',
+                                boxShadow: '0 6px 18px rgba(245, 158, 11, 0.35)',
                                 transition: 'all 0.2s ease',
                                 '&:hover': {
-                                  bgcolor: '#fbbf24',
+                                  background: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)',
                                   transform: 'translateY(-1px)',
+                                  boxShadow: '0 8px 24px rgba(245, 158, 11, 0.45)',
                                 }
                               }}
                             >
@@ -1657,353 +2082,920 @@ export default function CreatorStudioDashboard({
                         /* NORMAL STATE: Swimlane Grid Grouped by Spectrum Rank + Editorial Framework Guide */
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                           
-                          {/* EDITORIAL FRAMEWORK & RANKS GUIDE (Collapsible) */}
-                          <Box
-                            sx={{
-                              borderRadius: '20px',
-                              bgcolor: 'rgba(255,255,255,0.03)',
-                              border: '1px solid rgba(255,255,255,0.08)',
-                              backdropFilter: 'blur(16px)',
-                              overflow: 'hidden',
-                              transition: 'all 0.2s ease',
-                            }}
-                          >
-                            <Box
-                              onClick={() => setIsGuideOpen(!isGuideOpen)}
-                              sx={{
-                                p: { xs: 1.75, sm: 2 },
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                cursor: 'pointer',
-                                userSelect: 'none',
-                                '&:hover': { bgcolor: 'rgba(255,255,255,0.04)' }
-                              }}
-                            >
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                <Box sx={{ p: 0.8, borderRadius: '10px', bgcolor: alpha(ACCENT, 0.15), color: ACCENT, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                  <LightbulbIcon sx={{ fontSize: 18 }} />
-                                </Box>
-                                <Box>
-                                  <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: { xs: '0.88rem', sm: '0.95rem' } }}>
-                                    Editorial Guide: Ranks (1–6), Formats & Eras
-                                  </Typography>
-                                  <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.76rem' }}>
-                                    Learn how the 6 ranks, 5 article types, and 3 time eras shape your articles
-                                  </Typography>
-                                </Box>
-                              </Box>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                {isAdmin && (
-                                  <Button
-                                    size="small"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setIsAdminSidePaneOpen(true);
-                                    }}
-                                    startIcon={<LockIcon sx={{ fontSize: '13px !important' }} />}
-                                    sx={{
-                                      bgcolor: 'rgba(245, 158, 11, 0.15)',
-                                      color: '#f59e0b',
-                                      fontWeight: 800,
-                                      fontSize: '0.74rem',
-                                      borderRadius: '8px',
-                                      px: 1.5,
-                                      py: 0.4,
-                                      textTransform: 'none',
-                                      border: '1px solid rgba(245, 158, 11, 0.3)',
-                                      '&:hover': {
-                                        bgcolor: 'rgba(245, 158, 11, 0.25)',
-                                      }
-                                    }}
-                                  >
-                                    Admin Flow
-                                  </Button>
-                                )}
-                                <Chip
-                                  label={isGuideOpen ? "Hide" : "Explore"}
-                                  size="small"
-                                  sx={{
-                                    bgcolor: isGuideOpen ? 'rgba(255,255,255,0.1)' : alpha(ACCENT, 0.15),
-                                    color: isGuideOpen ? '#fff' : ACCENT,
-                                    fontWeight: 800,
-                                    fontSize: '0.72rem',
-                                    height: 24,
-                                    cursor: 'pointer'
-                                  }}
-                                />
-                                <ExpandMoreIcon sx={{ color: 'rgba(255,255,255,0.6)', transform: isGuideOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
-                              </Box>
-                            </Box>
-
-                            {/* Expanded Guide Content */}
-                            {isGuideOpen && (
-                              <Box sx={{ p: { xs: 2, sm: 2.5 }, pt: 0, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                                {/* 1. The 6 Ranks */}
-                                <Box sx={{ mt: 1.5 }}>
-                                  <Typography sx={{ color: ACCENT, fontWeight: 900, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 1 }}>
-                                    🎯 6 Cognitive Spectrum Ranks (Why the order matters)
-                                  </Typography>
-                                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr' }, gap: 1.25 }}>
-                                    {RANK_DETAILS.map(r => (
-                                      <Box key={r.rank} sx={{ p: 1.25, borderRadius: '12px', bgcolor: 'rgba(255,255,255,0.03)', border: `1px solid ${alpha(r.color, 0.2)}` }}>
-                                        <Typography sx={{ color: r.color, fontWeight: 800, fontSize: '0.82rem', mb: 0.25 }}>
-                                          {r.emoji} Rank #{r.rank}: {r.name}
-                                        </Typography>
-                                        <Typography sx={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.74rem', lineHeight: 1.4 }}>
-                                          {r.desc}
-                                        </Typography>
-                                      </Box>
-                                    ))}
-                                  </Box>
-                                </Box>
-
-                                {/* 2. Formats & Eras side by side */}
-                                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1.4fr 1fr' }, gap: 2 }}>
-                                  {/* Formats */}
-                                  <Box>
-                                    <Typography sx={{ color: '#60a5fa', fontWeight: 900, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 1 }}>
-                                      📑 5 Article Types (Formats)
+                          {/* ════════════════════════════════════════════════════════════ */}
+                          {/* SWIPEABLE EDITORIAL DECK                                     */}
+                          {/* ════════════════════════════════════════════════════════════ */}
+                          <Box sx={{ width: '100%', maxWidth: '100%', mx: 'auto', py: 1 }}>
+                            {displayCards.length > 0 && (
+                              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                                  {/* Progress & Quick Jump Strip */}
+                                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1 }}>
+                                    <Typography sx={{ color: '#64748b', fontSize: '0.84rem', fontWeight: 800 }}>
+                                      {isCurrentRetryCard ? (
+                                        <span style={{ color: '#0f172a' }}>Completion & Review</span>
+                                      ) : (
+                                        <>Article <strong style={{ color: '#0f172a' }}>{deckActiveIndex + 1}</strong> of {insights.length}</>
+                                      )}
                                     </Typography>
-                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-                                      {FORMAT_DETAILS.map(f => (
-                                        <Box key={f.format} sx={{ p: 1, borderRadius: '10px', bgcolor: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 1 }}>
-                                          <Typography sx={{ fontSize: '0.85rem' }}>{f.emoji}</Typography>
-                                          <Box>
-                                            <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: '0.78rem' }}>{f.format}</Typography>
-                                            <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.72rem' }}>{f.desc}</Typography>
-                                          </Box>
-                                        </Box>
-                                      ))}
-                                    </Box>
-                                  </Box>
-
-                                  {/* Eras */}
-                                  <Box>
-                                    <Typography sx={{ color: '#34d399', fontWeight: 900, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 1 }}>
-                                      ⏳ 3 Time Eras
-                                    </Typography>
-                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-                                      {ERA_DETAILS.map(e => (
-                                        <Box key={e.era} sx={{ p: 1, borderRadius: '10px', bgcolor: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: 1 }}>
-                                          <Typography sx={{ fontSize: '0.85rem' }}>{e.emoji}</Typography>
-                                          <Box>
-                                            <Typography sx={{ color: '#fff', fontWeight: 800, fontSize: '0.78rem' }}>{e.era}</Typography>
-                                            <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.72rem' }}>{e.desc}</Typography>
-                                          </Box>
-                                        </Box>
-                                      ))}
-                                    </Box>
-                                  </Box>
-                                </Box>
-                              </Box>
-                            )}
-                          </Box>
-
-                          {/* SWIMLANE GRID: Grouped by Spectrum Rank 1 to 6 */}
-                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                            {RANK_DETAILS.map((rMeta) => {
-                              const rankItems = insightsByRank[rMeta.rank] || [];
-                              if (rankItems.length === 0) return null;
-                              const isCollapsed = !!collapsedRanks[rMeta.rank];
-
-                              return (
-                                <Box
-                                  key={`rank-swimlane-${rMeta.rank}`}
-                                  sx={{
-                                    borderRadius: '22px',
-                                    bgcolor: 'rgba(255,255,255,0.02)',
-                                    border: `1px solid ${alpha(rMeta.color, 0.2)}`,
-                                    p: { xs: 1.75, sm: 2.25 },
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: 2,
-                                    transition: 'all 0.2s ease',
-                                  }}
-                                >
-                                  {/* Swimlane Header Dropdown */}
-                                  <Box
-                                    onClick={() => toggleRankCollapse(rMeta.rank)}
-                                    sx={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'space-between',
-                                      cursor: 'pointer',
-                                      userSelect: 'none',
-                                      p: 0.75,
-                                      borderRadius: '12px',
-                                      '&:hover': { bgcolor: 'rgba(255,255,255,0.04)' }
-                                    }}
-                                  >
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-                                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        <Typography sx={{ fontSize: '1.05rem' }}>{rMeta.emoji}</Typography>
-                                        <Typography sx={{ color: '#fff', fontWeight: 900, fontSize: { xs: '0.92rem', sm: '1.02rem' } }}>
-                                          Rank #{rMeta.rank}: {rMeta.name}
-                                        </Typography>
-                                      </Box>
-                                      <Chip
-                                        label={`${rankItems.length} ${rankItems.length === 1 ? 'idea' : 'ideas'}`}
-                                        size="small"
-                                        sx={{
-                                          bgcolor: alpha(rMeta.color, 0.15),
-                                          color: rMeta.color,
-                                          fontWeight: 800,
-                                          fontSize: '0.72rem',
-                                          height: 22,
-                                          border: `1px solid ${alpha(rMeta.color, 0.3)}`
-                                        }}
-                                      />
-                                      <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.78rem', display: { xs: 'none', md: 'block' } }}>
-                                        • {rMeta.tag}
-                                      </Typography>
-                                    </Box>
-
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'rgba(255,255,255,0.6)' }}>
-                                      <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, display: { xs: 'none', sm: 'block' } }}>
-                                        {isCollapsed ? 'Show' : 'Hide'}
-                                      </Typography>
-                                      <ExpandMoreIcon sx={{ transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
-                                    </Box>
-                                  </Box>
-
-                                  {/* Cards inside Swimlane */}
-                                  {!isCollapsed && (
-                                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
-                                      {rankItems.map((item, idx) => {
-                                        const fMeta = FORMAT_CONFIG[item.format] || FORMAT_CONFIG.brief;
-                                        const eraMeta = ERA_CONFIG[item.era || 'present'] || ERA_CONFIG.present;
-
+                                    
+                                    {/* Dot indicators for cards (includes completion dot) */}
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
+                                      {displayCards.slice(0, 14).map((dotItem, dotIdx) => {
+                                        const isRetryDot = Boolean(dotItem?.isRetryCard);
+                                        const dotKey = isRetryDot ? '1' : (dotItem?.spectrumRank ? getSpectrumKey(dotItem.spectrumRank) : String((dotIdx % 6) + 1));
+                                        const dotMeta = isRetryDot ? { color: '#0f172a' } : (SPECTRUM_CONFIG[dotKey] || SPECTRUM_CONFIG[String((dotIdx % 6) + 1)]);
+                                        const isCurrentDot = dotIdx === deckActiveIndex;
                                         return (
-                                          <Paper
-                                            key={item.id || `insight-${rMeta.rank}-${idx}`}
-                                            elevation={0}
-                                            onClick={() => handleSelectInsight(item)}
-                                            sx={{
-                                              p: 2.5,
-                                              borderRadius: '18px',
-                                              bgcolor: 'rgba(255,255,255,0.035)',
-                                              border: '1px solid rgba(255,255,255,0.07)',
-                                              backdropFilter: 'blur(16px)',
-                                              cursor: 'pointer',
-                                              transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
-                                              display: 'flex',
-                                              flexDirection: 'column',
-                                              justifyContent: 'space-between',
-                                              gap: 1.5,
-                                              position: 'relative',
-                                              overflow: 'hidden',
-                                              '&:hover': {
-                                                bgcolor: 'rgba(255,255,255,0.07)',
-                                                borderColor: alpha(rMeta.color, 0.5),
-                                                transform: 'translateY(-2px)',
-                                                boxShadow: `0 12px 28px rgba(0,0,0,0.25)`,
-                                                '& .card-cta-bar': {
-                                                  maxHeight: '40px',
-                                                  opacity: 1,
-                                                  mt: 1,
-                                                  pt: 1,
+                                           <Box
+                                             key={`deck-dot-${dotIdx}`}
+                                             onClick={() => {
+                                               setIsCardFlipped(false);
+                                               setDeckActiveIndex(dotIdx);
+                                             }}
+                                             sx={{
+                                               width: isCurrentDot ? 22 : 7,
+                                               height: 7,
+                                               borderRadius: '999px',
+                                               bgcolor: isCurrentDot ? dotMeta.color : alpha(dotMeta.color, 0.35),
+                                               cursor: 'pointer',
+                                               transition: 'all 0.25s ease',
+                                               '&:hover': { bgcolor: dotMeta.color }
+                                             }}
+                                           />
+                                         );
+                                       })}
+                                     </Box>
+
+                                     <Typography sx={{ color: '#94a3b8', fontSize: '0.78rem', fontWeight: 700 }}>
+                                       {isCurrentRetryCard ? 'End of Flow' : (isCardFlipped ? 'Inspect View' : 'Front View')}
+                                     </Typography>
+                                   </Box>
+
+                                  {/* ── 3D FLIPPABLE CARD CONTAINER WITH DROP STACK & FLOATING CONTROLS ── */}
+                                  <Box
+                                    sx={{
+                                      position: 'relative',
+                                      width: '100%',
+                                    }}
+                                  >
+                                      {/* Floating Previous Card Icon Button */}
+                                      <IconButton
+                                        onClick={handlePrevCard}
+                                        disabled={isFirstCard}
+                                        aria-label="Previous Brief"
+                                        sx={{
+                                          position: 'absolute',
+                                          left: { xs: '50%', sm: -16, md: -20 },
+                                          top: { xs: -14, sm: '50%' },
+                                          transform: { xs: 'translateX(-50%)', sm: 'translateY(-50%)' },
+                                          zIndex: 25,
+                                          width: { xs: 40, sm: 50 },
+                                          height: { xs: 40, sm: 50 },
+                                          bgcolor: '#ffffff',
+                                          border: '1.5px solid rgba(226, 232, 240, 0.95)',
+                                          boxShadow: '0 10px 28px rgba(15, 23, 42, 0.14), 0 2px 8px rgba(0,0,0,0.04)',
+                                          color: '#0f172a',
+                                          transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                                          opacity: isFirstCard ? 0.35 : 1,
+                                          pointerEvents: isFirstCard ? 'none' : 'auto',
+                                          '&:hover': {
+                                            bgcolor: '#0f172a',
+                                            color: '#ffffff',
+                                            borderColor: '#0f172a',
+                                            transform: { xs: 'translateX(-50%) scale(1.08)', sm: 'translateY(-50%) scale(1.1)' },
+                                            boxShadow: '0 14px 32px rgba(15, 23, 42, 0.24)',
+                                          }
+                                        }}
+                                      >
+                                        {isMobile ? (
+                                          <KeyboardArrowUpIcon sx={{ fontSize: 24 }} />
+                                        ) : (
+                                          <ArrowBackIcon sx={{ fontSize: { xs: 18, sm: 20 }, ml: '2px' }} />
+                                        )}
+                                      </IconButton>
+
+                                      {/* Floating Next Card Icon Button */}
+                                      <IconButton
+                                        onClick={handleNextCard}
+                                        disabled={isLastCard}
+                                        aria-label="Next Brief"
+                                        sx={{
+                                          position: 'absolute',
+                                          left: { xs: '50%', sm: 'auto' },
+                                          right: { xs: 'auto', sm: -16, md: -20 },
+                                          bottom: { xs: -20, sm: 'auto' },
+                                          top: { xs: 'auto', sm: '50%' },
+                                          transform: { xs: 'translateX(-50%)', sm: 'translateY(-50%)' },
+                                          zIndex: 25,
+                                          width: { xs: 44, sm: 50 },
+                                          height: { xs: 44, sm: 50 },
+                                          bgcolor: '#0f172a',
+                                          border: '1.5px solid #0f172a',
+                                          boxShadow: '0 12px 28px rgba(15, 23, 42, 0.28)',
+                                          color: '#ffffff',
+                                          transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                                          opacity: isLastCard ? 0.35 : 1,
+                                          pointerEvents: isLastCard ? 'none' : 'auto',
+                                          '&:hover': {
+                                            bgcolor: '#1e293b',
+                                            color: '#ffffff',
+                                            borderColor: '#1e293b',
+                                            transform: { xs: 'translateX(-50%) scale(1.08)', sm: 'translateY(-50%) scale(1.1)' },
+                                            boxShadow: '0 14px 32px rgba(15, 23, 42, 0.36)',
+                                          }
+                                        }}
+                                      >
+                                        {isMobile ? (
+                                          <KeyboardArrowDownIcon sx={{ fontSize: 24 }} />
+                                        ) : (
+                                          <ArrowForwardIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />
+                                        )}
+                                      </IconButton>
+
+                                        {/* ── 3D CAROUSEL STAGE (RESPONSIVE: VERTICAL ON MOBILE, HORIZONTAL ON DESKTOP) ── */}
+                                        <Box
+                                          sx={{
+                                            width: '100%',
+                                            minHeight: { xs: 520, sm: 540, md: 560 },
+                                            position: 'relative',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            overflow: 'visible',
+                                            perspective: '1400px',
+                                            py: { xs: 2, sm: 3 },
+                                          }}
+                                        >
+                                          <AnimatePresence initial={false} custom={deckActiveIndex}>
+                                            {displayCards.map((item, index) => {
+                                             // Non-looping linear index delta
+                                             const diff = index - deckActiveIndex;
+
+                                             // For mobile vertical deck: render exiting (-1), active (0), and stacked (1, 2)
+                                             // On desktop horizontal carousel: render active (0) and immediate neighbors (-1, 1)
+                                             if (isMobile) {
+                                               if (diff < -1 || diff > 2) return null;
+                                             } else {
+                                               if (Math.abs(diff) > 1) return null;
+                                             }
+
+                                              const isActive = diff === 0;
+
+                                              // Check if item is the completion/retry card
+                                              const isItemRetryCard = Boolean(item.isRetryCard);
+
+                                              const itemRankKey = item?.spectrumRank ? getSpectrumKey(item.spectrumRank) : String((index % 6) + 1);
+                                              const itemRMeta = isItemRetryCard 
+                                                ? { label: 'Completion & Review', shortLabel: 'Review', color: '#0f172a', emoji: '🏁', bg: 'rgba(15, 23, 42, 0.08)' }
+                                                : (SPECTRUM_CONFIG[itemRankKey] || SPECTRUM_CONFIG[String((index % 6) + 1)]);
+                                              const itemFMeta = FORMAT_CONFIG[item.format] || FORMAT_CONFIG.brief;
+                                              const itemArticleType = itemFMeta.label || item.format || 'Article';
+                                              const itemCommodityTarget = item.era
+                                                ? `${item.era.toUpperCase()} ERA`
+                                                : (selectedCommodity ? `${selectedCommodity.toUpperCase()} VALUE CHAIN` : 'AGRICULTURAL VALUE CHAIN');
+                                              const itemSubtitle = isItemRetryCard
+                                                ? 'EDITORIAL BRIEF CYCLE COMPLETE'
+                                                : `A${/^[AEIOU]/i.test(itemArticleType) ? 'N' : ''} ${itemArticleType.toUpperCase()} FOR THE ${itemCommodityTarget}`;
+
+                                              let x = 0;
+                                              let y = 0;
+                                              let scale = 1;
+                                              let zIndex = 0;
+                                              let opacity = 1;
+                                              let rotateX = 0;
+                                              let rotateY = 0;
+
+                                              if (isMobile) {
+                                                if (diff === 0) {
+                                                  // Active front card
+                                                  x = 0;
+                                                  y = 0;
+                                                  scale = 1;
+                                                  zIndex = 10;
+                                                  opacity = 1;
+                                                  rotateX = 0;
+                                                  rotateY = (!isItemRetryCard && isCardFlipped) ? 180 : 0;
+                                                } else if (diff === 1) {
+                                                  // 1st stacked card behind active (peeks 20px below)
+                                                  x = 0;
+                                                  y = 20;
+                                                  scale = 0.94;
+                                                  zIndex = 8;
+                                                  opacity = 1;
+                                                  rotateX = -2;
+                                                  rotateY = 0;
+                                                } else if (diff === 2) {
+                                                  // 2nd stacked card behind (peeks 38px below)
+                                                  x = 0;
+                                                  y = 38;
+                                                  scale = 0.88;
+                                                  zIndex = 6;
+                                                  opacity = 0.85;
+                                                  rotateX = -4;
+                                                  rotateY = 0;
+                                                } else if (diff === -1) {
+                                                  // Exiting card: drops down off the screen (top-to-bottom swipe animation)
+                                                  x = 0;
+                                                  y = 420;
+                                                  scale = 0.95;
+                                                  zIndex = 12;
+                                                  opacity = 0;
+                                                  rotateX = 6;
+                                                  rotateY = 0;
+                                                }
+                                              } else {
+                                                // Desktop horizontal 3D carousel
+                                                const xOffset = isTablet ? 340 : 420;
+                                                const scaleFactor = 0.88;
+                                                const rotateAngle = 12;
+
+                                                if (isActive) {
+                                                  x = 0;
+                                                  y = 0;
+                                                  scale = 1;
+                                                  zIndex = 10;
+                                                  opacity = 1;
+                                                  rotateX = 0;
+                                                  rotateY = (!isItemRetryCard && isCardFlipped) ? 180 : 0;
+                                                } else {
+                                                  x = diff * xOffset;
+                                                  y = 0;
+                                                  scale = scaleFactor;
+                                                  zIndex = 5;
+                                                  opacity = 1;
+                                                  rotateX = 0;
+                                                  rotateY = diff * -rotateAngle;
                                                 }
                                               }
-                                            }}
-                                          >
-                                            <Box>
-                                              {/* Top Pill Tags */}
-                                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.2, flexWrap: 'wrap' }}>
-                                                <Chip
-                                                  label={`${fMeta.emoji} ${fMeta.label}`}
-                                                  size="small"
-                                                  sx={{ bgcolor: alpha(fMeta.color, 0.15), color: fMeta.color, fontWeight: 800, fontSize: '0.68rem', height: 22 }}
-                                                />
-                                                <Chip
-                                                  label={`${eraMeta.emoji} ${eraMeta.label}`}
-                                                  size="small"
-                                                  sx={{ bgcolor: alpha(eraMeta.color, 0.15), color: eraMeta.color, fontWeight: 700, fontSize: '0.68rem', height: 22 }}
-                                                />
-                                                {item.subcategoryTitle && (
-                                                  <Chip
-                                                    label={item.subcategoryTitle}
-                                                    size="small"
-                                                    sx={{ bgcolor: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.7)', fontWeight: 600, fontSize: '0.68rem', height: 22 }}
-                                                  />
-                                                )}
-                                              </Box>
 
-                                              {/* Clean Authoritative Title */}
-                                              <Typography sx={{ color: '#fff', fontWeight: 900, fontSize: '1.02rem', lineHeight: 1.35, mb: 0.75, letterSpacing: '-0.015em' }}>
-                                                {item.title}
-                                              </Typography>
+                                              return (
+                                                <motion.div
+                                                  key={item.id || `deck-card-${index}`}
+                                                  drag={isActive && (!isCardFlipped || isItemRetryCard) ? (isMobile ? "y" : "x") : false}
+                                                  dragConstraints={isMobile ? { top: -40, bottom: 260 } : { left: 0, right: 0 }}
+                                                  dragElastic={0.45}
+                                                  onDragEnd={(_, { offset, velocity }) => {
+                                                    if (!isActive || (!isItemRetryCard && isCardFlipped)) return;
+                                                    if (isMobile) {
+                                                      // Top to bottom swipe (downward drag): offset.y > 40 or velocity.y > 220 -> Next card
+                                                      // Bottom to top swipe (upward drag): offset.y < -40 or velocity.y < -220 -> Prev card
+                                                      if (offset.y > 40 || velocity.y > 220) {
+                                                        handleNextCard();
+                                                      } else if (offset.y < -40 || velocity.y < -220) {
+                                                        handlePrevCard();
+                                                      }
+                                                    } else {
+                                                      const swipe = offset.x;
+                                                      const swipeVelocity = velocity.x;
+                                                      if (swipe < -50 || swipeVelocity < -400) handleNextCard();
+                                                      else if (swipe > 50 || swipeVelocity > 400) handlePrevCard();
+                                                    }
+                                                  }}
+                                                  animate={{ 
+                                                    x, 
+                                                    y,
+                                                    scale, 
+                                                    zIndex, 
+                                                    opacity, 
+                                                    rotateX,
+                                                    rotateY 
+                                                  }}
+                                                  transition={{ 
+                                                    type: "spring", 
+                                                    stiffness: 240, 
+                                                    damping: 24, 
+                                                    mass: 0.8 
+                                                  }}
+                                                  style={{
+                                                    position: 'absolute',
+                                                    width: isMobile ? '92%' : '100%',
+                                                    maxWidth: isMobile ? 420 : 760,
+                                                    minHeight: isMobile ? 420 : 500,
+                                                    transformStyle: 'preserve-3d',
+                                                    WebkitTransformStyle: 'preserve-3d',
+                                                    cursor: isActive ? (isItemRetryCard ? 'default' : (isCardFlipped ? 'default' : 'grab')) : 'pointer',
+                                                    borderRadius: '28px',
+                                                    touchAction: isMobile ? 'pan-x' : 'pan-y',
+                                                  }}
+                                                  onClick={() => {
+                                                    if (!isActive) {
+                                                      setIsCardFlipped(false);
+                                                      setDeckActiveIndex(index);
+                                                    }
+                                                  }}
+                                                >
+                                                 {/* ── CARD FRONT (3D FACE) ── */}
+                                                 <Box
+                                                   onClick={() => {
+                                                     if (isActive && !isCardFlipped && !isItemRetryCard) setIsCardFlipped(true);
+                                                   }}
+                                                   sx={{
+                                                     position: 'absolute',
+                                                     inset: 0,
+                                                     backfaceVisibility: 'hidden',
+                                                     WebkitBackfaceVisibility: 'hidden',
+                                                     transform: 'rotateY(0deg) translateZ(1px)',
+                                                     pointerEvents: (isActive && isCardFlipped) ? 'none' : 'auto',
+                                                     borderRadius: '28px',
+                                                     bgcolor: '#ffffff', // 100% Solid white opaque
+                                                     border: `1.5px solid ${alpha(itemRMeta.color, isActive ? 0.35 : 0.2)}`,
+                                                     boxShadow: isActive 
+                                                       ? `0 24px 60px -12px rgba(15, 23, 42, 0.16), 0 0 0 1px #ffffff inset, 0 12px 36px -8px ${alpha(itemRMeta.color, 0.22)}` 
+                                                       : '0 16px 38px -8px rgba(15, 23, 42, 0.12), 0 0 0 1px #ffffff inset',
+                                                     p: { xs: 2.5, sm: 4.5 },
+                                                     display: 'flex',
+                                                     flexDirection: 'column',
+                                                     justifyContent: 'space-between',
+                                                     alignItems: 'center',
+                                                     textAlign: 'center',
+                                                     background: '#ffffff', // Completely opaque solid background to prevent bleed
+                                                     overflow: 'hidden',
+                                                     userSelect: 'none',
+                                                     '&::before': {
+                                                       content: '""',
+                                                       position: 'absolute',
+                                                       top: 0,
+                                                       left: 0,
+                                                       right: 0,
+                                                       height: '35%',
+                                                       background: `linear-gradient(180deg, ${alpha(itemRMeta.color, 0.06)} 0%, rgba(255,255,255,0) 100%)`,
+                                                       pointerEvents: 'none',
+                                                       zIndex: 1,
+                                                     }
+                                                   }}
+                                                 >
+                                                   {isItemRetryCard ? (
+                                                     /* ── SPECIAL RETRY / RESTART CARD ── */
+                                                     isActive ? (
+                                                       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', my: 'auto', gap: { xs: 2, sm: 3 }, width: '100%', maxWidth: 600, position: 'relative', zIndex: 2 }}>
+                                                         {/* Big Icon / Badge */}
+                                                         <Box
+                                                           sx={{
+                                                             width: { xs: 56, sm: 76 },
+                                                             height: { xs: 56, sm: 76 },
+                                                             borderRadius: { xs: '18px', sm: '24px' },
+                                                             bgcolor: '#0f172a',
+                                                             color: '#ffffff',
+                                                             display: 'flex',
+                                                             alignItems: 'center',
+                                                             justifyContent: 'center',
+                                                             boxShadow: '0 16px 36px rgba(15, 23, 42, 0.28)',
+                                                             transform: 'rotate(-4deg)',
+                                                             mb: 0.5
+                                                           }}
+                                                         >
+                                                           <RefreshIcon sx={{ fontSize: { xs: 28, sm: 42 } }} />
+                                                         </Box>
 
-                                              {/* Brief ellipsis hook (clamped to 2 lines) */}
-                                              <Typography
-                                                sx={{
-                                                  color: 'rgba(255,255,255,0.65)',
-                                                  fontSize: '0.8rem',
-                                                  lineHeight: 1.45,
-                                                  fontWeight: 400,
-                                                  display: '-webkit-box',
-                                                  WebkitLineClamp: 2,
-                                                  WebkitBoxOrient: 'vertical',
-                                                  overflow: 'hidden',
-                                                  textOverflow: 'ellipsis',
-                                                }}
-                                              >
-                                                {item.hook || item.descriptionSentences?.[0] || `Strategic operational brief on ${selectedCommodity}.`}
-                                              </Typography>
-                                            </Box>
+                                                         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                                                           <Typography
+                                                             variant="h3"
+                                                             sx={{
+                                                               color: '#0f172a',
+                                                               fontWeight: 900,
+                                                               fontSize: { xs: '1.45rem', sm: '2.25rem' },
+                                                               lineHeight: 1.2,
+                                                               letterSpacing: '-0.03em',
+                                                             }}
+                                                           >
+                                                             You've Explored Every Angle
+                                                           </Typography>
+                                                           <Typography
+                                                             sx={{
+                                                               color: '#475569',
+                                                               fontSize: { xs: '0.88rem', sm: '1.05rem' },
+                                                               lineHeight: 1.6,
+                                                               fontWeight: 500,
+                                                               maxWidth: 520,
+                                                             }}
+                                                           >
+                                                             All {insights.length} editorial angles for the <strong>{selectedCommodity}</strong> value chain have been reviewed. Ready to start from Card 1 or regenerate new angles?
+                                                           </Typography>
+                                                         </Box>
 
-                                            {/* Start writing text - ONLY visible when interacted with / hovered */}
-                                            <Box
-                                              className="card-cta-bar"
-                                              sx={{
-                                                maxHeight: 0,
-                                                opacity: 0,
-                                                overflow: 'hidden',
-                                                borderTop: '1px solid rgba(255,255,255,0.08)',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'flex-end',
-                                                transition: 'all 0.22s ease-in-out',
-                                              }}
-                                            >
-                                              <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, color: rMeta.color, fontWeight: 800, fontSize: '0.78rem' }}>
-                                                Start Writing <ArrowForwardIcon sx={{ fontSize: 13 }} />
-                                              </Box>
-                                            </Box>
-                                          </Paper>
-                                        );
-                                      })}
-                                    </Box>
-                                  )}
+                                                         {/* Action Buttons */}
+                                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1.5, sm: 2 }, mt: 0.5, flexWrap: 'wrap', justifyContent: 'center' }}>
+                                                           <Button
+                                                             variant="contained"
+                                                             onClick={(e) => {
+                                                               e.stopPropagation();
+                                                               handleRestartDeck();
+                                                             }}
+                                                             startIcon={<RefreshIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />}
+                                                             sx={{
+                                                               bgcolor: '#0f172a',
+                                                               color: '#ffffff',
+                                                               fontWeight: 900,
+                                                               fontSize: { xs: '0.86rem', sm: '0.98rem' },
+                                                               px: { xs: 3, sm: 5 },
+                                                               py: { xs: 1.1, sm: 1.35 },
+                                                               borderRadius: '999px',
+                                                               textTransform: 'none',
+                                                               boxShadow: '0 10px 28px rgba(15, 23, 42, 0.28)',
+                                                               transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                                                               '&:hover': {
+                                                                 bgcolor: '#1e293b',
+                                                                 transform: 'translateY(-2px) scale(1.02)',
+                                                                 boxShadow: '0 14px 34px rgba(15, 23, 42, 0.36)',
+                                                               }
+                                                             }}
+                                                           >
+                                                             Start Again from Card 1
+                                                           </Button>
+
+                                                           <Button
+                                                             variant="outlined"
+                                                             onClick={(e) => {
+                                                               e.stopPropagation();
+                                                               handlePrevCard();
+                                                             }}
+                                                             startIcon={<ArrowBackIcon sx={{ fontSize: 16 }} />}
+                                                             sx={{
+                                                               color: '#475569',
+                                                               borderColor: 'rgba(203, 213, 225, 0.9)',
+                                                               fontWeight: 800,
+                                                               py: 1.35,
+                                                               borderRadius: '999px',
+                                                               textTransform: 'none',
+                                                               '&:hover': {
+                                                                 borderColor: '#0f172a',
+                                                                 color: '#0f172a',
+                                                                 bgcolor: 'rgba(15, 23, 42, 0.04)',
+                                                               }
+                                                             }}
+                                                           >
+                                                             Previous Card
+                                                           </Button>
+                                                         </Box>
+                                                       </Box>
+                                                     ) : (
+                                                       /* Neighbor Card View of Retry Card */
+                                                       <Box
+                                                         sx={{
+                                                           display: 'flex',
+                                                           flexDirection: 'column',
+                                                           alignItems: 'center',
+                                                           justifyContent: 'center',
+                                                           height: '100%',
+                                                           width: '100%',
+                                                           gap: 2.5,
+                                                           position: 'relative',
+                                                           zIndex: 2,
+                                                         }}
+                                                       >
+                                                         <Chip
+                                                           label="Review Finished"
+                                                           sx={{
+                                                             bgcolor: 'rgba(15, 23, 42, 0.08)',
+                                                             color: '#0f172a',
+                                                             fontWeight: 900,
+                                                             fontSize: '0.85rem',
+                                                             height: 32,
+                                                             px: 1.5,
+                                                             borderRadius: '999px',
+                                                             border: '1.5px solid rgba(15, 23, 42, 0.22)',
+                                                           }}
+                                                         />
+                                                         <Typography
+                                                           sx={{
+                                                             color: '#94a3b8',
+                                                             fontSize: '0.88rem',
+                                                             fontWeight: 700,
+                                                             letterSpacing: '0.04em',
+                                                             textTransform: 'uppercase',
+                                                           }}
+                                                         >
+                                                           Tap to Start Over
+                                                         </Typography>
+                                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#64748b' }}>
+                                                           <RefreshIcon sx={{ fontSize: 16, color: '#0f172a' }} />
+                                                           <Typography sx={{ fontSize: '0.85rem', fontWeight: 700, color: '#0f172a' }}>
+                                                             Restart Deck
+                                                           </Typography>
+                                                         </Box>
+                                                       </Box>
+                                                     )
+                                                   ) : isActive ? (
+                                                     /* ── ACTIVE REGULAR CARD: FULL EDITORIAL BRIEF DETAILS ── */
+                                                     <>
+                                                       {/* Top: Premium Subtitle Badge with flow accent color */}
+                                                       <Box
+                                                         sx={{
+                                                           display: 'inline-flex',
+                                                           alignItems: 'center',
+                                                           gap: 1,
+                                                           px: 2.2,
+                                                           py: 0.65,
+                                                           borderRadius: '999px',
+                                                           bgcolor: alpha(itemRMeta.color, 0.08),
+                                                           border: `1.5px solid ${alpha(itemRMeta.color, 0.26)}`,
+                                                           boxShadow: `0 4px 14px ${alpha(itemRMeta.color, 0.1)}`,
+                                                           position: 'relative',
+                                                           zIndex: 2,
+                                                         }}
+                                                       >
+                                                         <Box
+                                                           sx={{
+                                                             width: 7,
+                                                             height: 7,
+                                                             borderRadius: '50%',
+                                                             bgcolor: itemRMeta.color,
+                                                             boxShadow: `0 0 8px ${itemRMeta.color}`,
+                                                           }}
+                                                         />
+                                                         <Typography
+                                                           sx={{
+                                                             textTransform: 'uppercase',
+                                                             fontSize: { xs: '0.72rem', sm: '0.78rem' },
+                                                             fontWeight: 900,
+                                                             letterSpacing: '0.07em',
+                                                             color: itemRMeta.color,
+                                                           }}
+                                                         >
+                                                           {itemSubtitle}
+                                                         </Typography>
+                                                       </Box>
+
+                                                       {/* Middle Section: Bigger Title and Flow Sentence */}
+                                                       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: { xs: 1.5, sm: 2 }, my: 'auto', width: '100%', maxWidth: 660, position: 'relative', zIndex: 2 }}>
+                                                         <Typography
+                                                           variant="h3"
+                                                           sx={{
+                                                             color: '#0f172a',
+                                                             fontWeight: 900,
+                                                             fontSize: { xs: '1.35rem', sm: '2.15rem', md: '2.45rem' },
+                                                             lineHeight: 1.25,
+                                                             letterSpacing: '-0.03em',
+                                                             px: { xs: 0.5, sm: 2 },
+                                                           }}
+                                                         >
+                                                           {item.title}
+                                                         </Typography>
+
+                                                         {/* Contextual Flow Sentence */}
+                                                         <Typography
+                                                           sx={{
+                                                             color: '#475569',
+                                                             fontSize: { xs: '0.86rem', sm: '1rem' },
+                                                             lineHeight: 1.6,
+                                                             fontWeight: 500,
+                                                             maxWidth: 600,
+                                                           }}
+                                                         >
+                                                           {getFlowSentence(
+                                                             item.spectrumRank,
+                                                             itemArticleType,
+                                                             item.subcategoryTitle || item.subcategoryId,
+                                                             item.targetPersona || (item as any).valueChainActor || (item as any).actor || (item as any).jobFunction || 'Value Chain Operators'
+                                                           )}
+                                                         </Typography>
+                                                       </Box>
+
+                                                       {/* Bottom Row: Article Count (Bottom Left) & View More Details (Far Bottom Right) */}
+                                                       <Box 
+                                                         sx={{ 
+                                                           width: '100%', 
+                                                           pt: { xs: 1.5, sm: 2 }, 
+                                                           display: 'flex', 
+                                                           alignItems: 'center', 
+                                                           justifyContent: 'space-between', 
+                                                           position: 'relative', 
+                                                           zIndex: 2 
+                                                         }}
+                                                       >
+                                                         <Typography
+                                                           sx={{
+                                                             color: '#64748b',
+                                                             fontSize: { xs: '0.78rem', sm: '0.88rem' },
+                                                             fontWeight: 800,
+                                                             letterSpacing: '0.02em',
+                                                             textTransform: 'uppercase',
+                                                           }}
+                                                         >
+                                                           Article {index + 1} of {insights.length}
+                                                         </Typography>
+
+                                                         <Button
+                                                           variant="contained"
+                                                           onClick={(e) => {
+                                                             e.stopPropagation();
+                                                             setIsCardFlipped(true);
+                                                           }}
+                                                           sx={{
+                                                             width: 'auto',
+                                                             color: '#ffffff',
+                                                             bgcolor: '#0f172a',
+                                                             fontWeight: 800,
+                                                             fontSize: { xs: '0.82rem', sm: '0.9rem' },
+                                                             px: { xs: 2.5, sm: 4.5 },
+                                                             py: { xs: 1, sm: 1.25 },
+                                                             borderRadius: '999px',
+                                                             textTransform: 'none',
+                                                             boxShadow: '0 8px 24px rgba(15, 23, 42, 0.22)',
+                                                             transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                                                             '&:hover': {
+                                                               bgcolor: '#1e293b',
+                                                               transform: 'translateY(-2px) scale(1.02)',
+                                                               boxShadow: '0 12px 28px rgba(15, 23, 42, 0.32)',
+                                                             }
+                                                           }}
+                                                         >
+                                                           View More Details
+                                                         </Button>
+                                                       </Box>
+                                                     </>
+                                                   ) : (
+                                                     /* ── NEIGHBOR REGULAR CARD: SIMPLIFIED CLEAN OVERVIEW (AVOIDS BLEED) ── */
+                                                     <Box
+                                                       sx={{
+                                                         display: 'flex',
+                                                         flexDirection: 'column',
+                                                         alignItems: 'center',
+                                                         justifyContent: 'center',
+                                                         height: '100%',
+                                                         width: '100%',
+                                                         gap: 2.5,
+                                                         position: 'relative',
+                                                         zIndex: 2,
+                                                       }}
+                                                     >
+                                                       {/* Article Count Badge */}
+                                                       <Chip
+                                                         label={`Article ${index + 1} of ${insights.length}`}
+                                                         sx={{
+                                                           bgcolor: alpha(itemRMeta.color, 0.1),
+                                                           color: itemRMeta.color,
+                                                           fontWeight: 900,
+                                                           fontSize: '0.85rem',
+                                                           height: 32,
+                                                           px: 1.5,
+                                                           borderRadius: '999px',
+                                                           border: `1.5px solid ${alpha(itemRMeta.color, 0.28)}`,
+                                                         }}
+                                                       />
+
+                                                       {/* Tap to inspect prompt */}
+                                                       <Typography
+                                                         sx={{
+                                                           color: '#94a3b8',
+                                                           fontSize: '0.88rem',
+                                                           fontWeight: 700,
+                                                           letterSpacing: '0.04em',
+                                                           textTransform: 'uppercase',
+                                                         }}
+                                                       >
+                                                         Tap to View Article
+                                                       </Typography>
+
+                                                       {/* Flow Tag */}
+                                                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#64748b' }}>
+                                                         <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: itemRMeta.color }} />
+                                                         <Typography sx={{ fontSize: '0.85rem', fontWeight: 700 }}>
+                                                           {itemRMeta.label}
+                                                         </Typography>
+                                                       </Box>
+                                                     </Box>
+                                                   )}
+                                                 </Box>
+
+                                                 {/* ── CARD BACK (3D FACE ROTATED 180 DEG) ── */}
+                                                 {!isItemRetryCard && (
+                                                   <Box
+                                                     onClick={(e) => e.stopPropagation()}
+                                                     sx={{
+                                                       position: 'absolute',
+                                                       inset: 0,
+                                                       backfaceVisibility: 'hidden',
+                                                       WebkitBackfaceVisibility: 'hidden',
+                                                       transform: 'rotateY(180deg) translateZ(1px)',
+                                                       pointerEvents: (isActive && isCardFlipped) ? 'auto' : 'none',
+                                                       borderRadius: '28px',
+                                                       bgcolor: '#ffffff', // 100% solid white
+                                                       border: `2px solid ${alpha(itemRMeta.color, 0.55)}`,
+                                                       boxShadow: `0 24px 60px -12px rgba(15, 23, 42, 0.14), 0 0 0 1px #ffffff inset, 0 16px 40px -8px ${alpha(itemRMeta.color, 0.25)}`,
+                                                       p: { xs: 2.25, sm: 3.75 },
+                                                       display: 'flex',
+                                                       flexDirection: 'column',
+                                                       justifyContent: 'space-between',
+                                                       textAlign: 'left',
+                                                       background: '#ffffff', // 100% solid white
+                                                       overflow: 'hidden',
+                                                       '&::before': {
+                                                         content: '""',
+                                                         position: 'absolute',
+                                                         top: 0,
+                                                         left: 0,
+                                                         right: 0,
+                                                         height: '35%',
+                                                         background: `linear-gradient(180deg, ${alpha(itemRMeta.color, 0.05)} 0%, rgba(255,255,255,0) 100%)`,
+                                                         pointerEvents: 'none',
+                                                         zIndex: 1,
+                                                       }
+                                                     }}
+                                                   >
+                                                     <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between' }}>
+                                                       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                                                         {/* Top Bar: Back Button in Top Left, Rank Chip in Top Right */}
+                                                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5, pb: 1, borderBottom: '1px solid rgba(226, 232, 240, 0.7)' }}>
+                                                           {/* Back button on the TOP LEFT */}
+                                                           <Button
+                                                             size="small"
+                                                             onPointerDown={(e) => e.stopPropagation()}
+                                                             onClick={(e) => {
+                                                               e.stopPropagation();
+                                                               setIsCardFlipped(false);
+                                                             }}
+                                                             startIcon={<ArrowBackIcon sx={{ fontSize: 14 }} />}
+                                                             sx={{
+                                                               color: '#334155',
+                                                               bgcolor: 'rgba(0,0,0,0.05)',
+                                                               fontSize: '0.78rem',
+                                                               fontWeight: 800,
+                                                               textTransform: 'none',
+                                                               borderRadius: '999px',
+                                                               px: 2,
+                                                               py: 0.5,
+                                                               transition: 'all 0.2s ease',
+                                                               '&:hover': {
+                                                                 bgcolor: 'rgba(0,0,0,0.09)',
+                                                                 color: '#0f172a',
+                                                                 transform: 'translateX(-2px)',
+                                                               }
+                                                             }}
+                                                           >
+                                                             Back
+                                                           </Button>
+
+                                                           {/* Flow and Format Chips on the TOP RIGHT */}
+                                                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                             <Chip
+                                                               label={`${itemRMeta.emoji} ${itemRMeta.shortLabel || itemRMeta.label}`}
+                                                               size="small"
+                                                               sx={{
+                                                                 bgcolor: alpha(itemRMeta.color, 0.12),
+                                                                 color: itemRMeta.color,
+                                                                 fontWeight: 900,
+                                                                 fontSize: '0.74rem',
+                                                                 height: 26,
+                                                                 borderRadius: '999px',
+                                                                 border: `1px solid ${alpha(itemRMeta.color, 0.25)}`
+                                                               }}
+                                                             />
+                                                             <Chip
+                                                               label={`${itemFMeta.emoji} ${itemFMeta.label}`}
+                                                               size="small"
+                                                               sx={{
+                                                                 bgcolor: 'rgba(0, 0, 0, 0.04)',
+                                                                 color: '#475569',
+                                                                 fontWeight: 700,
+                                                                 fontSize: '0.7rem',
+                                                                 height: 26,
+                                                                 borderRadius: '999px'
+                                                               }}
+                                                             />
+                                                           </Box>
+                                                         </Box>
+
+                                                         {/* Smaller Title on Top */}
+                                                         <Typography
+                                                           sx={{
+                                                             color: '#0f172a',
+                                                             fontWeight: 900,
+                                                             fontSize: { xs: '1.05rem', sm: '1.28rem' },
+                                                             lineHeight: 1.3,
+                                                             letterSpacing: '-0.02em',
+                                                             mb: 1.5,
+                                                           }}
+                                                         >
+                                                           {item.title}
+                                                         </Typography>
+
+                                                         {/* List of Descriptions / Points - fills available space without redundant white gap */}
+                                                         <Box
+                                                           sx={{
+                                                             flex: 1,
+                                                             minHeight: 0,
+                                                             overflowY: 'auto',
+                                                             pr: 1,
+                                                             display: 'flex',
+                                                             flexDirection: 'column',
+                                                             gap: 1.5,
+                                                             '::-webkit-scrollbar': { width: '4px' },
+                                                             '::-webkit-scrollbar-thumb': { bgcolor: '#cbd5e1', borderRadius: '4px' },
+                                                           }}
+                                                         >
+                                                           {item.descriptionSentences && item.descriptionSentences.length > 0 ? (
+                                                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                                                               {item.descriptionSentences.map((sentence, sIdx) => (
+                                                                 <Box key={sIdx} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.25 }}>
+                                                                   <Box
+                                                                     sx={{
+                                                                       width: 7,
+                                                                       height: 7,
+                                                                       borderRadius: '50%',
+                                                                       bgcolor: itemRMeta.color,
+                                                                       mt: '8px',
+                                                                       flexShrink: 0,
+                                                                       boxShadow: `0 0 6px ${alpha(itemRMeta.color, 0.6)}`
+                                                                     }}
+                                                                   />
+                                                                   <Typography
+                                                                     sx={{
+                                                                       color: '#334155',
+                                                                       fontSize: { xs: '0.96rem', sm: '1.05rem' },
+                                                                       lineHeight: 1.55,
+                                                                       fontWeight: 500,
+                                                                     }}
+                                                                   >
+                                                                     {sentence}
+                                                                   </Typography>
+                                                                 </Box>
+                                                               ))}
+                                                             </Box>
+                                                           ) : (
+                                                             <Typography sx={{ color: '#475569', fontSize: { xs: '0.96rem', sm: '1.05rem' }, lineHeight: 1.6, fontStyle: 'italic' }}>
+                                                               "{item.hook || `Strategic editorial insight covering real-time dynamics in ${selectedCommodity}.`}"
+                                                             </Typography>
+                                                           )}
+
+                                                           {item.politicalEconomy && (
+                                                             <Box sx={{ mt: 1, p: 1.5, borderRadius: '14px', bgcolor: alpha(itemRMeta.color, 0.05), border: `1px solid ${alpha(itemRMeta.color, 0.18)}` }}>
+                                                               <Typography sx={{ color: itemRMeta.color, fontSize: '0.74rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.04em', mb: 0.35 }}>
+                                                                 Market Context & Political Economy
+                                                               </Typography>
+                                                               <Typography sx={{ color: '#334155', fontSize: { xs: '0.86rem', sm: '0.92rem' }, lineHeight: 1.5, fontWeight: 500 }}>
+                                                                 {item.politicalEconomy}
+                                                               </Typography>
+                                                             </Box>
+                                                           )}
+                                                         </Box>
+                                                       </Box>
+
+                                                       {/* Bottom Right: Start Writing Button */}
+                                                       <Box sx={{ width: '100%', display: 'flex', justifyContent: 'flex-end', pt: 1.5, borderTop: '1px solid rgba(226, 232, 240, 0.8)', mt: 1.25 }}>
+                                                         <Button
+                                                           variant="contained"
+                                                           onPointerDown={(e) => e.stopPropagation()}
+                                                           onClick={(e) => {
+                                                             e.stopPropagation();
+                                                             handleSelectInsight(item);
+                                                           }}
+                                                           endIcon={<ArrowForwardArrow sx={{ fontSize: 17 }} />}
+                                                           sx={{
+                                                             background: `linear-gradient(135deg, ${itemRMeta.color} 0%, ${alpha(itemRMeta.color, 0.9)} 100%)`,
+                                                             color: '#ffffff',
+                                                             fontWeight: 900,
+                                                             fontSize: '0.94rem',
+                                                             px: 4.5,
+                                                             py: 1.2,
+                                                             borderRadius: '999px',
+                                                             textTransform: 'none',
+                                                             boxShadow: `0 8px 24px ${alpha(itemRMeta.color, 0.4)}`,
+                                                             transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                                                             '&:hover': {
+                                                               background: `linear-gradient(135deg, ${itemRMeta.color} 0%, ${itemRMeta.color} 100%)`,
+                                                               transform: 'translateY(-2px) scale(1.02)',
+                                                               boxShadow: `0 12px 30px ${alpha(itemRMeta.color, 0.55)}`,
+                                                             }
+                                                           }}
+                                                         >
+                                                           Start Writing
+                                                         </Button>
+                                                       </Box>
+                                                     </Box>
+                                                   </Box>
+                                               )}
+                                             </motion.div>
+                                           );
+                                         })}
+                                        </AnimatePresence>
+                                      </Box>
+                                  </Box>
                                 </Box>
-                              );
-                            })}
+                              )}
                           </Box>
 
                           {/* Bottom Action Row: Write Custom Title & Clear Saved Briefs */}
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, pt: 1, pb: 2, flexWrap: 'wrap' }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, pt: { xs: 3.5, sm: 1.5 }, pb: 2, flexWrap: 'wrap' }}>
                             <Button
                               variant="contained"
                               onClick={handleStartCustomArticle}
                               startIcon={<EditIcon sx={{ fontSize: 16 }} />}
                               sx={{
-                                bgcolor: 'rgba(255,255,255,0.08)',
-                                color: '#fff',
-                                border: '1px solid rgba(255,255,255,0.15)',
-                                backdropFilter: 'blur(12px)',
+                                bgcolor: '#0f172a',
+                                color: '#ffffff',
                                 fontWeight: 800,
                                 fontSize: '0.88rem',
                                 px: 3.5,
                                 py: 1.2,
                                 borderRadius: '14px',
                                 textTransform: 'none',
-                                boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                                boxShadow: '0 4px 14px rgba(15, 23, 42, 0.15)',
                                 transition: 'all 0.2s ease',
                                 '&:hover': {
-                                  bgcolor: '#fff',
-                                  color: '#000',
+                                  bgcolor: '#1e293b',
                                   transform: 'translateY(-2px)',
-                                  boxShadow: '0 8px 24px rgba(255,255,255,0.2)',
+                                  boxShadow: '0 8px 24px rgba(15, 23, 42, 0.25)',
                                 }
                               }}
                             >
@@ -2013,12 +3005,11 @@ export default function CreatorStudioDashboard({
                             <Button
                               variant="text"
                               onClick={handleClearSavedBriefs}
-                              startIcon={<DeleteOutlineIcon sx={{ fontSize: 16, color: '#f87171' }} />}
+                              startIcon={<DeleteOutlineIcon sx={{ fontSize: 16, color: '#ef4444' }} />}
                               sx={{
-                                color: '#f87171',
-                                bgcolor: 'rgba(239, 68, 68, 0.08)',
+                                color: '#ef4444',
+                                bgcolor: 'rgba(239, 68, 68, 0.06)',
                                 border: '1px solid rgba(239, 68, 68, 0.2)',
-                                backdropFilter: 'blur(12px)',
                                 fontWeight: 700,
                                 fontSize: '0.84rem',
                                 px: 2.5,
@@ -2027,8 +3018,8 @@ export default function CreatorStudioDashboard({
                                 textTransform: 'none',
                                 transition: 'all 0.2s ease',
                                 '&:hover': {
-                                  bgcolor: 'rgba(239, 68, 68, 0.16)',
-                                  borderColor: 'rgba(239, 68, 68, 0.4)',
+                                  bgcolor: 'rgba(239, 68, 68, 0.12)',
+                                  borderColor: 'rgba(239, 68, 68, 0.35)',
                                   transform: 'translateY(-2px)',
                                 }
                               }}
@@ -2043,11 +3034,14 @@ export default function CreatorStudioDashboard({
                 </Box>
               )}
             </Box>
-          )}
+          </Collapse>
         </Paper>
-      );
-    })}
+        </motion.div>
+        );
+      })()}
+    </AnimatePresence>
   </Box>
+</LayoutGroup>
 
       {/* ================================================================ */}
       {/* WORKSPACE CONTENT MANAGER                                        */}
@@ -2082,25 +3076,25 @@ export default function CreatorStudioDashboard({
           paper: {
             sx: {
               borderRadius: '24px',
-              bgcolor: '#0f172a',
-              color: '#fff',
-              border: '1px solid rgba(255,255,255,0.12)',
-              backdropFilter: 'blur(20px)',
+              bgcolor: '#ffffff',
+              color: '#0f172a',
+              border: '1px solid rgba(0, 0, 0, 0.08)',
+              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.12)',
               p: 1.5,
               maxWidth: 440,
             }
           }
         }}
       >
-        <DialogTitle sx={{ fontWeight: 900, fontSize: '1.2rem', pb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+        <DialogTitle sx={{ fontWeight: 900, fontSize: '1.2rem', pb: 1, display: 'flex', alignItems: 'center', gap: 1, color: '#0f172a' }}>
           <AutoAwesomeIcon sx={{ color: ACCENT }} /> Regenerate Fresh Angles
         </DialogTitle>
         <DialogContent>
-          <DialogContentText sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem', lineHeight: 1.5, mb: 2 }}>
-            This will run the AI intelligence engine to generate 10 new, localized editorial angles for <strong>{selectedCommodity}</strong> ({selectedCategory}).
+          <DialogContentText sx={{ color: '#475569', fontSize: '0.9rem', lineHeight: 1.5, mb: 2 }}>
+            This will run the AI intelligence engine to generate 10 new, localized editorial angles for <strong style={{ color: '#0f172a' }}>{selectedCommodity}</strong> ({selectedCategory}).
           </DialogContentText>
-          <Box sx={{ p: 2, borderRadius: '14px', bgcolor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography sx={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>
+          <Box sx={{ p: 2, borderRadius: '14px', bgcolor: '#f8fafc', border: '1px solid rgba(0, 0, 0, 0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography sx={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>
               Cost:
             </Typography>
             <Typography sx={{ fontSize: '0.95rem', color: ACCENT, fontWeight: 900 }}>
@@ -2108,15 +3102,15 @@ export default function CreatorStudioDashboard({
             </Typography>
           </Box>
           <Box sx={{ mt: 1, px: 0.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography sx={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.5)' }}>
+            <Typography sx={{ fontSize: '0.78rem', color: '#64748b' }}>
               Your Balance:
             </Typography>
-            <Typography sx={{ fontSize: '0.82rem', color: userSpendableNP >= 50 ? '#10b981' : '#ef4444', fontWeight: 800 }}>
+            <Typography sx={{ fontSize: '0.82rem', color: userSpendableNP >= 50 ? '#059669' : '#ef4444', fontWeight: 800 }}>
               {userSpendableNP} NP {userSpendableNP < 50 && '(Insufficient balance)'}
             </Typography>
           </Box>
           {regenerateError && (
-            <Alert severity="error" sx={{ mt: 2, bgcolor: 'rgba(239, 68, 68, 0.1)', color: '#fca5a5', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '10px' }}>
+            <Alert severity="error" sx={{ mt: 2, bgcolor: 'rgba(239, 68, 68, 0.08)', color: '#b91c1c', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '10px' }}>
               {regenerateError}
             </Alert>
           )}
@@ -2125,7 +3119,7 @@ export default function CreatorStudioDashboard({
           <Button
             onClick={() => setIsRegenerateModalOpen(false)}
             disabled={regenerating}
-            sx={{ color: 'rgba(255,255,255,0.6)', textTransform: 'none', fontWeight: 700 }}
+            sx={{ color: '#64748b', textTransform: 'none', fontWeight: 700, '&:hover': { bgcolor: 'rgba(0,0,0,0.04)', color: '#0f172a' } }}
           >
             Cancel
           </Button>
