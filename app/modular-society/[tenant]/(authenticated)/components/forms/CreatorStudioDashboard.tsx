@@ -300,10 +300,6 @@ export default function CreatorStudioDashboard({
   const [legacyCategory, setLegacyCategory] = useState('');
   const [legacySubcategory, setLegacySubcategory] = useState('');
 
-  // Fast Ingest State
-  const [fastPayloadText, setFastPayloadText] = useState('');
-  const [fastIngestError, setFastIngestError] = useState('');
-
   const activeOption = START_FRESH_OPTIONS.find(o => o.type === expandedStartType);
 
   // ═══════════════════════════════════════════════════════════
@@ -581,28 +577,6 @@ export default function CreatorStudioDashboard({
     }
   }, [matrixStep, selectedWeek, selectedYear]);
 
-  const handleFastIngest = () => {
-    setFastIngestError('');
-    if (!fastPayloadText.trim()) return;
-    try {
-      const parsed = JSON.parse(fastPayloadText);
-      if (!parsed || typeof parsed !== 'object') throw new Error("Payload must be a JSON object.");
-      
-      const type = parsed.type || 'article';
-      const category = parsed.category || '';
-      const subcategory = parsed.subcategory || '';
-      const timeframe = parsed.timeframe || '';
-      
-      delete parsed.authorName;
-      delete parsed.authorAvatarUrl;
-      delete parsed.authorId;
-
-      (onStartFresh as any)(type, { category, subcategory, timeframe }, parsed);
-    } catch (e: any) {
-      setFastIngestError(e.message || "Invalid JSON payload.");
-    }
-  };
-
   const currentHour = new Date().getHours();
   const greeting = currentHour < 12 ? 'Morning' : currentHour < 18 ? 'Afternoon' : 'Evening';
 
@@ -617,10 +591,10 @@ export default function CreatorStudioDashboard({
       
       {/* Greeting */}
       <Box sx={{ mb: { xs: 2.5, sm: 4, md: 6 }, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-        <Typography variant="h3" sx={{ fontFamily: 'Caveat, cursive', color: ACCENT, mb: 0.5, fontSize: { xs: '1.4rem', sm: '2.5rem', md: '3rem' } }}>
+        <Typography variant="h3" sx={{ fontFamily: 'Caveat, cursive', color: ACCENT, mb: 0.5, fontSize: { xs: '1.7rem', sm: '2.7rem', md: '3.2rem' } }}>
           Good {greeting}, {userName || 'Creator'}.
         </Typography>
-        <Typography variant="h4" sx={{ fontWeight: 900, letterSpacing: '-0.02em', mb: 1.5, color: '#1e293b', fontSize: { xs: '1.1rem', sm: '1.75rem', md: '2.125rem' } }}>
+        <Typography variant="h4" sx={{ fontWeight: 900, letterSpacing: '-0.02em', mb: 1.5, color: '#1e293b', fontSize: { xs: '1.35rem', sm: '1.9rem', md: '2.3rem' } }}>
           Welcome to the Studio
         </Typography>
         <Chip
@@ -630,64 +604,77 @@ export default function CreatorStudioDashboard({
         />
       </Box>
 
-      {/* FAST INGEST SECTION */}
-      <Box sx={{ mb: 5 }}>
-        <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', mb: 2, letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 1 }}>
-          <AutoAwesomeIcon sx={{ fontSize: 16, color: ACCENT }} /> Fast Ingest
-        </Typography>
-        <Paper 
-          elevation={0} 
-          sx={{ 
-            borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(0,0,0,0.06)', bgcolor: '#0f172a',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.08)'
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1.2, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', fontFamily: 'monospace', fontSize: '0.75rem' }}>
-              payload.json
-            </Typography>
-            <Tooltip title="Paste JSON payload">
-              <IconButton 
-                size="small" 
-                onClick={async () => {
-                  try {
-                    const text = await navigator.clipboard.readText();
-                    setFastPayloadText(text);
-                    setFastIngestError('');
-                  } catch (err) {}
-                }}
-                sx={{ color: 'rgba(255,255,255,0.5)', '&:hover': { color: '#fff' } }}
-              >
-                <ContentPasteIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          </Box>
-          <textarea
-            placeholder='Paste article JSON payload...'
-            value={fastPayloadText}
-            onChange={(e) => { setFastPayloadText(e.target.value); setFastIngestError(''); }}
-            style={{
-              width: '100%', minHeight: '80px', maxHeight: '200px', backgroundColor: 'transparent',
-              color: '#e2e8f0', border: 'none', padding: '12px 16px', fontFamily: 'monospace', fontSize: '0.8rem', outline: 'none'
-            }}
-          />
-          {fastPayloadText.trim() && (
-            <Box sx={{ p: 1.5, borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="caption" sx={{ color: '#ef4444', fontWeight: 600 }}>{fastIngestError}</Typography>
-              <Button onClick={handleFastIngest} variant="contained" size="small" sx={{ bgcolor: ACCENT, color: '#fff', fontWeight: 700, borderRadius: '8px' }}>
-                Ingest Payload
-              </Button>
-            </Box>
-          )}
-        </Paper>
-      </Box>
-
       {/* ================================================================ */}
       {/* START FRESH CARDS                                                */}
       {/* ================================================================ */}
-      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', mb: 2, letterSpacing: '0.05em' }}>
+      <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#64748b', fontSize: '0.9rem', textTransform: 'uppercase', mb: 2, letterSpacing: '0.05em' }}>
         Start Fresh
       </Typography>
+
+      {expandedStartType && (
+        <Box sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1.5,
+          overflowX: 'auto',
+          pb: 1.5,
+          mb: 2,
+          '&::-webkit-scrollbar': { display: 'none' },
+          scrollbarWidth: 'none',
+        }}>
+          {START_FRESH_OPTIONS.map((railOption) => {
+            const isActiveRailOption = railOption.type === expandedStartType;
+            return (
+              <Box key={railOption.type} sx={{ flexShrink: 0 }}>
+                {isActiveRailOption ? (
+                  <IconButton
+                    onClick={handleClose}
+                    aria-label="Collapse Start Fresh card"
+                    sx={{
+                      width: 48,
+                      height: 48,
+                      color: railOption.color,
+                      bgcolor: alpha(railOption.color, 0.16),
+                      border: `1px solid ${alpha(railOption.color, 0.4)}`,
+                      boxShadow: `0 8px 20px ${alpha(railOption.color, 0.2)}`,
+                      '&:hover': { bgcolor: alpha(railOption.color, 0.24) },
+                    }}
+                  >
+                    <MinimizeIcon />
+                  </IconButton>
+                ) : (
+                  <Paper
+                    elevation={0}
+                    onClick={() => railOption.readiness === 'live' && handleOpenCreator(railOption.type)}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      minWidth: { xs: 150, sm: 190 },
+                      px: 1.5,
+                      py: 1.1,
+                      borderRadius: '14px',
+                      color: '#fff',
+                      background: railOption.grad,
+                      opacity: railOption.readiness === 'live' ? 1 : 0.55,
+                      cursor: railOption.readiness === 'live' ? 'pointer' : 'not-allowed',
+                      border: '1px solid rgba(255,255,255,0.14)',
+                      boxShadow: `0 6px 18px ${alpha(railOption.color, 0.16)}`,
+                      '&:hover': railOption.readiness === 'live' ? { transform: 'translateY(-2px)' } : {},
+                      transition: 'transform 0.2s ease',
+                    }}
+                  >
+                    {React.cloneElement(railOption.icon as React.ReactElement<{ sx?: any }>, { sx: { fontSize: 20 } })}
+                    <Typography sx={{ fontWeight: 800, fontSize: '0.82rem', whiteSpace: 'nowrap' }}>
+                      {railOption.title}
+                    </Typography>
+                  </Paper>
+                )}
+              </Box>
+            );
+          })}
+        </Box>
+      )}
 
       <Box sx={{
         display: 'flex',

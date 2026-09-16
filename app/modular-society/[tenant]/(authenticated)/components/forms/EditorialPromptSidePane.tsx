@@ -30,7 +30,6 @@ import { foodChallenges } from '@/lib/cms/food/challenges';
 import {
   PromptTerminalBox,
   PromptChecklistItem,
-  PromptFastIngestBox,
 } from '@/components/prompts';
 import {
   buildDoc2aPrompt,
@@ -967,20 +966,6 @@ export function EditorialPromptSidePane({
                 '&:hover': { bgcolor: alpha('#10b981', 0.1) },
               }}
             />
-            <Chip
-              label="FAST INGEST · Canvas Relay"
-              size="small"
-              onClick={() => scrollToSection('editorial-doc-fast-ingest')}
-              sx={{
-                fontWeight: 900,
-                fontSize: '0.72rem',
-                bgcolor: '#0f172a',
-                color: '#10b981',
-                cursor: 'pointer',
-                border: '1px solid rgba(16, 185, 129, 0.45)',
-                '&:hover': { bgcolor: '#1e293b' },
-              }}
-            />
           </Box>
 
           {/* ──────────────────────────────────────────────────────────── */}
@@ -1210,27 +1195,6 @@ export function EditorialPromptSidePane({
               />
             ))}
 
-            {/* Fast Ingest Relay Terminal using PromptFastIngestBox */}
-            <Box id="editorial-doc-fast-ingest" sx={{ scrollMarginTop: '80px', mt: 1 }}>
-              <PromptFastIngestBox
-                value={rawIngestPayload}
-                onChange={(val) => {
-                  setRawIngestPayload(val);
-                  savePayloadToStorage(val);
-                  if (ingestError) setIngestError(null);
-                }}
-                onIngest={handleParseAndIngest}
-                codeLabel="FAST INGEST"
-                title="Fast Ingest Relay & Canvas Import"
-                subtitle={`Paste the JSON output from Doc 4c below to automatically populate all ${currentBlueprint.length} blocks onto your canvas.`}
-                colorTheme="#10b981"
-                liveBlockCount={detectedBlockCount}
-                expectedBlockCount={currentBlueprint.length}
-                error={ingestError}
-                success={ingestSuccess}
-                buttonLabel="⚡ Ingest & Apply All Blocks to Canvas"
-              />
-            </Box>
           </Box>
         </Box>
       </Drawer>
