@@ -436,10 +436,39 @@ export async function fetchLivestreamContentPool(userId: string, orgId: string |
   return { articles, jobs };
 }
 
-export async function fetchGlobalLivestreamArticles(engine: 'the_breakdown' | 'the_masterclass' | 'the_opportunity_desk') {
+export async function fetchGlobalLivestreamArticles(engine: 'production_foundations' | 'resilience_disruption' | 'markets_people_solutions' | 'the_breakdown' | 'the_masterclass' | 'the_opportunity_desk' | string) {
   let orConditions: any[] = [];
   
-  if (engine === 'the_breakdown') {
+  if (engine === 'production_foundations') {
+    orConditions = [
+      { category: { in: ['capital', 'land', 'inputs', 'finance', 'financial-exclusion', 'financial_exclusion', 'land-access', 'land_access', 'inputs-production', 'inputs_production'] } },
+      { subcategory: { in: ['credit_loans', 'affording_land', 'getting_seeds', 'breeding_animals', 'capital', 'land', 'inputs', 'finance', 'mechanization', 'fertilizer', 'irrigation'] } },
+      { bottleneckTags: { contains: 'capital' } },
+      { bottleneckTags: { contains: 'land' } },
+      { bottleneckTags: { contains: 'inputs' } },
+      { bottleneckTags: { contains: 'credit' } },
+      { bottleneckTags: { contains: 'production' } },
+    ];
+  } else if (engine === 'resilience_disruption') {
+    orConditions = [
+      { category: { in: ['energy', 'insecurity', 'energy-poverty', 'energy_poverty', 'food-insecurity', 'food_insecurity', 'food-system-insecurity', 'food_system_insecurity'] } },
+      { subcategory: { in: ['reliable_energy', 'banditry_crime', 'insecurity', 'energy', 'cold_grid', 'theft', 'tariffs', 'risk'] } },
+      { bottleneckTags: { contains: 'energy' } },
+      { bottleneckTags: { contains: 'insecurity' } },
+      { bottleneckTags: { contains: 'risk' } },
+      { bottleneckTags: { contains: 'banditry' } },
+    ];
+  } else if (engine === 'markets_people_solutions') {
+    orConditions = [
+      { category: { in: ['harvest-to-market', 'people', 'post-harvest', 'postharvest', 'post_harvest', 'market-access', 'market_access', 'workforce', 'talent', 'people_skills'] } },
+      { subcategory: { in: ['harvesting_handling', 'cold_chain', 'building_enterprises', 'hiring_talent', 'post-harvest', 'people', 'workforce', 'talent', 'market', 'storage', 'processing'] } },
+      { bottleneckTags: { contains: 'harvest' } },
+      { bottleneckTags: { contains: 'market' } },
+      { bottleneckTags: { contains: 'people' } },
+      { bottleneckTags: { contains: 'talent' } },
+      { bottleneckTags: { contains: 'workforce' } },
+    ];
+  } else if (engine === 'the_breakdown') {
     orConditions = [
       { subcategory: 'culture', timeframe: { in: ['present', 'future'] } },
       { subcategory: 'brief', timeframe: 'past' },
@@ -457,22 +486,66 @@ export async function fetchGlobalLivestreamArticles(engine: 'the_breakdown' | 't
     ];
   }
 
-  const articles = await prisma.learnContent.findMany({
+  let articles = await prisma.learnContent.findMany({
     where: {
       type: 'article',
       status: 'published',
-      OR: orConditions
+      ...(orConditions.length > 0 ? { OR: orConditions } : {})
     },
     select: {
       id: true,
       title: true,
+      description: true,
       authorName: true,
+      category: true,
       subcategory: true,
-      timeframe: true
+      timeframe: true,
+      thumbnailUrl: true,
+      createdAt: true,
+      organization: {
+        select: {
+          id: true,
+          name: true,
+          logoUrl: true
+        }
+      }
     },
     orderBy: { createdAt: 'desc' },
-    take: 20
+    take: 24
   });
+
+  // Fallback if very few matches in DB so creators always have relevant articles to select from
+  if (articles.length < 3) {
+    const existingIds = articles.map(a => a.id);
+    const fallbackArticles = await prisma.learnContent.findMany({
+      where: {
+        type: 'article',
+        status: 'published',
+        ...(existingIds.length > 0 ? { id: { notIn: existingIds } } : {})
+      },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        authorName: true,
+        category: true,
+        subcategory: true,
+        timeframe: true,
+        thumbnailUrl: true,
+        createdAt: true,
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            logoUrl: true
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 12
+    });
+    articles = [...articles, ...fallbackArticles];
+  }
 
   return articles;
 }
