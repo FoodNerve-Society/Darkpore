@@ -575,11 +575,11 @@ export async function fetchGlobalJobs() {
 
 export async function fetchGlobalCtaAssets() {
   try {
-    const [jobs, articles, listings, campaigns] = await Promise.all([
-      // 1. Jobs & Internships
+    const [jobs, listings, campaigns] = await Promise.all([
+      // 1. Talent Exchange & Career Roles (Jobs, Internships, Volunteering)
       prisma.tradeListing.findMany({
         where: {
-          category: { in: ['jobs', 'volunteer'] },
+          category: { in: ['jobs', 'job', 'volunteer', 'internship', 'internships'] },
           status: 'active'
         },
         select: {
@@ -589,42 +589,37 @@ export async function fetchGlobalCtaAssets() {
           location: true,
           workModel: true,
           priceOrAsk: true,
+          nervePointsCost: true,
           imageUrl: true,
+          postedAt: true,
+          jobSource: true,
+          compType: true,
+          npReward: true,
+          minRank: true,
+          currency: true,
+          minSalary: true,
+          maxSalary: true,
           organization: {
             select: {
               name: true,
-              logoUrl: true
+              logoUrl: true,
+              isPlatformOwner: true,
+              isExternal: true,
+              rank: true,
+              verified: true,
+            }
+          },
+          postedBy: {
+            select: {
+              name: true,
+              avatarUrl: true
             }
           }
         },
         orderBy: { postedAt: 'desc' },
-        take: 20
+        take: 30
       }),
-      // 2. Published Research Articles
-      prisma.learnContent.findMany({
-        where: {
-          type: 'article',
-          status: 'published'
-        },
-        select: {
-          id: true,
-          title: true,
-          category: true,
-          subcategory: true,
-          timeframe: true,
-          thumbnailUrl: true,
-          authorName: true,
-          organization: {
-            select: {
-              name: true,
-              logoUrl: true
-            }
-          }
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 20
-      }),
-      // 3. Trade Listings & Offtake Deals
+      // 2. Trade Listings & Offtake Deals
       prisma.tradeListing.findMany({
         where: {
           category: { in: ['group-buy', 'flash-sale', 'swap', 'need'] },
@@ -639,6 +634,7 @@ export async function fetchGlobalCtaAssets() {
           priceOrAsk: true,
           location: true,
           imageUrl: true,
+          postedAt: true,
           organization: {
             select: {
               name: true,
@@ -647,9 +643,9 @@ export async function fetchGlobalCtaAssets() {
           }
         },
         orderBy: { postedAt: 'desc' },
-        take: 20
+        take: 30
       }),
-      // 4. Community Campaigns & Initiatives
+      // 3. Community Campaigns & Initiatives
       prisma.campaign.findMany({
         where: {
           status: { in: ['funding', 'active_deployment', 'completed'] }
@@ -661,6 +657,7 @@ export async function fetchGlobalCtaAssets() {
           goalAmount: true,
           raisedAmount: true,
           imageUrl: true,
+          createdAt: true,
           organization: {
             select: {
               name: true,
@@ -669,13 +666,12 @@ export async function fetchGlobalCtaAssets() {
           }
         },
         orderBy: { createdAt: 'desc' },
-        take: 20
+        take: 30
       })
     ]);
 
     return {
       jobs: jobs || [],
-      articles: articles || [],
       listings: listings || [],
       campaigns: campaigns || []
     };
@@ -683,7 +679,6 @@ export async function fetchGlobalCtaAssets() {
     console.error('Failed to fetch CTA assets:', error);
     return {
       jobs: [],
-      articles: [],
       listings: [],
       campaigns: []
     };

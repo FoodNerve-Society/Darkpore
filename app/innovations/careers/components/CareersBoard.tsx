@@ -103,9 +103,9 @@ function CoherentExecutiveJobCard({
 
   const org = job.organization;
   const isExternal = org?.isExternal;
-  const orgName = isExternal ? org.externalEntityName : (org?.name || job.postedBy?.name || "FoodNerve Operator");
-  const orgLogo = isExternal ? org.externalEntityLogoUrl : (org?.logoUrl || job.postedBy?.avatarUrl || "");
-  const initial = orgName.charAt(0).toUpperCase() || "O";
+  const orgName = org?.name || job.postedBy?.name || (isExternal ? "Partner Entity" : "FoodNerve Operator");
+  const orgLogo = org?.logoUrl || job.postedBy?.avatarUrl || "";
+  const initial = orgName ? orgName.charAt(0).toUpperCase() : "O";
 
   const { label: catLabel, color: categoryColor } = getCategoryTheme(job.category);
   const tier = getCompanyTier(job);
