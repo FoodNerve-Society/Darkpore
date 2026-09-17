@@ -559,9 +559,11 @@ export async function fetchGlobalJobs() {
     select: {
       id: true,
       title: true,
+      location: true,
       organization: {
         select: {
-          name: true
+          name: true,
+          logoUrl: true
         }
       }
     },
@@ -569,4 +571,121 @@ export async function fetchGlobalJobs() {
     take: 20
   });
   return jobs;
+}
+
+export async function fetchGlobalCtaAssets() {
+  try {
+    const [jobs, articles, listings, campaigns] = await Promise.all([
+      // 1. Jobs & Internships
+      prisma.tradeListing.findMany({
+        where: {
+          category: { in: ['jobs', 'volunteer'] },
+          status: 'active'
+        },
+        select: {
+          id: true,
+          title: true,
+          category: true,
+          location: true,
+          workModel: true,
+          priceOrAsk: true,
+          imageUrl: true,
+          organization: {
+            select: {
+              name: true,
+              logoUrl: true
+            }
+          }
+        },
+        orderBy: { postedAt: 'desc' },
+        take: 20
+      }),
+      // 2. Published Research Articles
+      prisma.learnContent.findMany({
+        where: {
+          type: 'article',
+          status: 'published'
+        },
+        select: {
+          id: true,
+          title: true,
+          category: true,
+          subcategory: true,
+          timeframe: true,
+          thumbnailUrl: true,
+          authorName: true,
+          organization: {
+            select: {
+              name: true,
+              logoUrl: true
+            }
+          }
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 20
+      }),
+      // 3. Trade Listings & Offtake Deals
+      prisma.tradeListing.findMany({
+        where: {
+          category: { in: ['group-buy', 'flash-sale', 'swap', 'need'] },
+          status: 'active'
+        },
+        select: {
+          id: true,
+          title: true,
+          category: true,
+          commodity: true,
+          quantity: true,
+          priceOrAsk: true,
+          location: true,
+          imageUrl: true,
+          organization: {
+            select: {
+              name: true,
+              logoUrl: true
+            }
+          }
+        },
+        orderBy: { postedAt: 'desc' },
+        take: 20
+      }),
+      // 4. Community Campaigns & Initiatives
+      prisma.campaign.findMany({
+        where: {
+          status: { in: ['funding', 'active_deployment', 'completed'] }
+        },
+        select: {
+          id: true,
+          title: true,
+          tier: true,
+          goalAmount: true,
+          raisedAmount: true,
+          imageUrl: true,
+          organization: {
+            select: {
+              name: true,
+              logoUrl: true
+            }
+          }
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 20
+      })
+    ]);
+
+    return {
+      jobs: jobs || [],
+      articles: articles || [],
+      listings: listings || [],
+      campaigns: campaigns || []
+    };
+  } catch (error) {
+    console.error('Failed to fetch CTA assets:', error);
+    return {
+      jobs: [],
+      articles: [],
+      listings: [],
+      campaigns: []
+    };
+  }
 }

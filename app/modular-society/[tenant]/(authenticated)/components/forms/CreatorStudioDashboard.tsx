@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
-  Box, Typography, Paper, Chip, IconButton, alpha, Tooltip, CircularProgress, Button,
+  Box, Typography, Paper, Card, Chip, IconButton, alpha, Tooltip, CircularProgress, Button,
   Drawer, TextField, Accordion, AccordionSummary, AccordionDetails, Breadcrumbs, Link,
   Alert, AlertTitle, Divider, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions,
   Grid, Stack, Collapse, useTheme, useMediaQuery
@@ -75,7 +75,7 @@ import { getISOWeek, startOfISOWeek, addDays, format, getYear } from 'date-fns';
 import { CATEGORY_MAP } from '@/lib/config/editorialMatrix';
 import { getDailyEditorialIntel, regenerateCustomAnglesAction, ArticleInsightItem } from '@/lib/actions/editorialMatrix';
 import { FORMAT_CONFIG, ERA_CONFIG, ArticleFormat, ArticleEra } from '@/lib/config/articleBlueprints';
-import { fetchGlobalLivestreamArticles, fetchGlobalJobs } from '@/lib/actions/learn';
+import { fetchGlobalLivestreamArticles, fetchGlobalJobs, fetchGlobalCtaAssets } from '@/lib/actions/learn';
 import { parseDoc1cArticles, buildDoc1aPrompt, buildDoc1bPrompt, buildDoc1cPrompt } from '@/lib/config/editorialPrompts';
 import { foodChallenges } from '@/lib/cms/food/challenges';
 const ACCENT = "#f59e0b";
@@ -118,32 +118,34 @@ const cardProgressiveTiltVariants: Variants = {
 };
 
 const START_FRESH_OPTIONS: Array<{
-  type: string;
+  type: 'article' | 'livestream' | 'video' | 'class';
   title: string;
   value: string;
-  icon: React.ReactElement;
+  icon: React.ReactNode;
   color: string;
   grad: string;
   readiness: 'live' | 'coming_soon';
-  badge?: { label: string; color: 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' };
+  badge?: { label: string; color: 'success' | 'default' };
 }> = [
   {
     type: 'article',
-    title: "Intelligence Brief",
+    title: "Article Matrix",
     value: "Write",
     icon: <ArticleIcon sx={{ fontSize: 32 }} />,
     color: "#3b82f6",
-    grad: "linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)",
+    grad: "linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%)",
     readiness: 'live',
+    badge: { label: 'LIVE', color: 'success' as const }
   },
   {
     type: 'livestream',
     title: "Schedule Livestream",
-    value: "Go Live",
+    value: "Stream",
     icon: <LiveTvIcon sx={{ fontSize: 32 }} />,
-    color: "#10b981",
-    grad: "linear-gradient(135deg, #065f46 0%, #10b981 100%)",
+    color: "#f59e0b",
+    grad: "linear-gradient(135deg, #b45309 0%, #f59e0b 100%)",
     readiness: 'live',
+    badge: { label: 'LIVE', color: 'success' as const }
   },
   {
     type: 'video',
@@ -171,39 +173,33 @@ export const MASTER_LIVESTREAM_HUBS = [
   {
     id: 'production_foundations',
     icon: '🏗️',
-    title: 'Production Foundations',
-    subtitle: 'Finance, Land & Inputs',
-    badge: 'Mon · Tue · Wed Pillars',
+    title: 'Production & Capital',
+    categories: ['Capital', 'Land', 'Inputs'],
     color: '#3b82f6',
     grad: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)',
-    desc: 'Synthesizes capital access, land tenure, seeds, fertilizers, feeds & mechanization bottlenecks.',
-    tags: ['Capital & Credit', 'Land Rights', 'Seeds & Inputs', 'Mechanization'],
+    imageUrl: 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?auto=format&fit=crop&w=800&q=80',
     underlyingCategories: ['capital', 'land', 'inputs'],
     targetAudience: 'Operators, Farm Managers, Agronomists, Financial Institutions',
   },
   {
     id: 'resilience_disruption',
     icon: '⚡',
-    title: 'Resilience & Disruption',
-    subtitle: 'Energy, Insecurity & Risk',
-    badge: 'Thu · Fri Pillars',
+    title: 'Energy & Security',
+    categories: ['Energy', 'Insecurity'],
     color: '#ef4444',
     grad: 'linear-gradient(135deg, #991b1b 0%, #ef4444 100%)',
-    desc: 'Autopsies on energy poverty, cold grid failures, insecurity, banditry, extortion & systemic shocks.',
-    tags: ['Energy Poverty', 'Cold Grid', 'Food Insecurity', 'Banditry & Crime'],
+    imageUrl: 'https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=800&q=80',
     underlyingCategories: ['energy', 'insecurity'],
     targetAudience: 'Policymakers, Security Analysts, Logistics Heads, Risk Officers',
   },
   {
     id: 'markets_people_solutions',
     icon: '🤝',
-    title: 'Markets, People & Solutions',
-    subtitle: 'Post-Harvest, Workforce & Enterprise',
-    badge: 'Sat · Sun Pillars',
+    title: 'Markets & Talent',
+    categories: ['Post-Harvest', 'People & Talent'],
     color: '#10b981',
     grad: 'linear-gradient(135deg, #065f46 0%, #10b981 100%)',
-    desc: 'Market linkage mechanics, reducing spoilage, cold chain logistics, talent hiring & agro-enterprises.',
-    tags: ['Post-Harvest Systems', 'Market Access', 'Workforce & Talent', 'Enterprise Building'],
+    imageUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80',
     underlyingCategories: ['harvest-to-market', 'people'],
     targetAudience: 'Founders, Off-takers, Recruiters, Job Seekers, Agro-Processors',
   },
@@ -615,22 +611,40 @@ export default function CreatorStudioDashboard({
   // ═══════════════════════════════════════════════════════════
   const [lsStep, setLsStep] = useState<1 | 2 | 3>(1);
   const [lsEngine, setLsEngine] = useState<'production_foundations' | 'resilience_disruption' | 'markets_people_solutions' | 'the_breakdown' | 'the_masterclass' | 'the_opportunity_desk' | string | null>(null);
-  const [lsAnchorArticleId, setLsAnchorArticleId] = useState<string | null>(null);
+  const [lsAnchorArticleIds, setLsAnchorArticleIds] = useState<string[]>([]);
   const [lsAnchorJobIds, setLsAnchorJobIds] = useState<string[]>([]);
+  const [lsCtaArticleIds, setLsCtaArticleIds] = useState<string[]>([]);
+  const [lsCtaListingIds, setLsCtaListingIds] = useState<string[]>([]);
+  const [lsCtaCampaignIds, setLsCtaCampaignIds] = useState<string[]>([]);
+  const [lsCtaTab, setLsCtaTab] = useState<'jobs' | 'articles' | 'listings' | 'campaigns'>('jobs');
   const [lsArticleSearch, setLsArticleSearch] = useState('');
   
   // Real DB state
   const [lsArticles, setLsArticles] = useState<any[]>([]);
   const [lsJobs, setLsJobs] = useState<any[]>([]);
+  const [lsCtaAssets, setLsCtaAssets] = useState<{ jobs: any[], articles: any[], listings: any[], campaigns: any[] }>({
+    jobs: [],
+    articles: [],
+    listings: [],
+    campaigns: []
+  });
   const [lsLoadingDB, setLsLoadingDB] = useState(false);
 
   const activeLsHub = useMemo(() => {
     return MASTER_LIVESTREAM_HUBS.find(h => h.id === lsEngine) || MASTER_LIVESTREAM_HUBS[0];
   }, [lsEngine]);
 
+  const selectedAnchorArticles = useMemo(() => {
+    return lsArticles.filter(a => lsAnchorArticleIds.includes(a.id));
+  }, [lsArticles, lsAnchorArticleIds]);
+
   const selectedAnchorArticle = useMemo(() => {
-    return lsArticles.find(a => a.id === lsAnchorArticleId) || null;
-  }, [lsArticles, lsAnchorArticleId]);
+    return selectedAnchorArticles[0] || null;
+  }, [selectedAnchorArticles]);
+
+  const totalSelectedCtas = useMemo(() => {
+    return lsAnchorJobIds.length + lsCtaArticleIds.length + lsCtaListingIds.length + lsCtaCampaignIds.length;
+  }, [lsAnchorJobIds, lsCtaArticleIds, lsCtaListingIds, lsCtaCampaignIds]);
 
   const filteredLsArticles = useMemo(() => {
     if (!lsArticleSearch.trim()) return lsArticles;
@@ -649,10 +663,11 @@ export default function CreatorStudioDashboard({
       setLsLoadingDB(true);
       Promise.all([
         fetchGlobalLivestreamArticles(lsEngine),
-        fetchGlobalJobs()
-      ]).then(([articles, jobs]) => {
+        fetchGlobalCtaAssets()
+      ]).then(([articles, ctaData]) => {
         setLsArticles(articles);
-        setLsJobs(jobs);
+        setLsCtaAssets(ctaData);
+        setLsJobs(ctaData.jobs || []);
         setLsLoadingDB(false);
       }).catch(err => {
         console.error('Failed to fetch livestream data:', err);
@@ -721,8 +736,11 @@ export default function CreatorStudioDashboard({
     if (type === 'livestream') {
       setLsStep(1);
       setLsEngine(null);
-      setLsAnchorArticleId(null);
+      setLsAnchorArticleIds([]);
       setLsAnchorJobIds([]);
+      setLsCtaArticleIds([]);
+      setLsCtaListingIds([]);
+      setLsCtaCampaignIds([]);
     } else {
       setMatrixStep(1);
       setSelectedWeek(currentWeek);
@@ -1093,580 +1111,1085 @@ export default function CreatorStudioDashboard({
                   
                   {expandedStartType === 'livestream' ? (
                     // ───────────────────────────────────────────────────────────
-                    // LIVESTREAM 3-STEP WIZARD
+                    // LIVESTREAM 3-STEP WIZARD (MATCHING ARTICLE FLOW DESIGN SYSTEM)
                     // ───────────────────────────────────────────────────────────
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5 }}>
-                       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                            {lsStep > 1 && (
-                              <IconButton
-                                onClick={() => setLsStep((lsStep - 1) as any)}
-                                size="small"
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                      {/* Container Header & Controls */}
+                      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: { xs: 1, sm: 2 } }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1.5, sm: 2 } }}>
+                          {lsStep > 1 && (
+                            <IconButton
+                              onClick={() => setLsStep((lsStep - 1) as any)}
+                              size="small"
+                              sx={{
+                                color: '#0f172a',
+                                bgcolor: 'rgba(0, 0, 0, 0.05)',
+                                border: '1px solid rgba(0, 0, 0, 0.1)',
+                                '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.1)' }
+                              }}
+                            >
+                              <ArrowBackIcon sx={{ fontSize: 16 }} />
+                            </IconButton>
+                          )}
+                          <Box>
+                            {lsStep === 3 ? (
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 0.5 }}>
+                                <Chip
+                                  label={`${activeLsHub.icon} ${activeLsHub.title}`}
+                                  size="small"
+                                  sx={{
+                                    bgcolor: alpha(activeLsHub.color, 0.12),
+                                    color: activeLsHub.color,
+                                    fontWeight: 900,
+                                    fontSize: '0.82rem',
+                                    borderRadius: '8px',
+                                    height: 24,
+                                    border: `1px solid ${alpha(activeLsHub.color, 0.3)}`
+                                  }}
+                                />
+                                <Chip
+                                  label={`⚓ ${lsAnchorArticleIds.length} Guiding Article${lsAnchorArticleIds.length !== 1 ? 's' : ''}`}
+                                  size="small"
+                                  sx={{ bgcolor: 'rgba(0, 0, 0, 0.04)', color: '#0f172a', fontWeight: 800, fontSize: '0.78rem', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.08)' }}
+                                />
+                                {totalSelectedCtas > 0 && (
+                                  <Chip
+                                    label={`⚡ ${totalSelectedCtas} CTA${totalSelectedCtas !== 1 ? 's' : ''}`}
+                                    size="small"
+                                    sx={{ bgcolor: alpha(activeLsHub.color, 0.12), color: activeLsHub.color, fontWeight: 800, fontSize: '0.78rem', borderRadius: '8px' }}
+                                  />
+                                )}
+                              </Box>
+                            ) : lsStep === 2 ? (
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                <Chip
+                                  label={`${activeLsHub.icon} ${activeLsHub.title} · ${activeLsHub.categories?.join(' · ')}`}
+                                  size="small"
+                                  sx={{
+                                    bgcolor: alpha(activeLsHub.color, 0.12),
+                                    color: activeLsHub.color,
+                                    fontWeight: 900,
+                                    fontSize: '0.82rem',
+                                    borderRadius: '8px',
+                                    height: 24,
+                                    border: `1px solid ${alpha(activeLsHub.color, 0.3)}`
+                                  }}
+                                />
+                                {lsAnchorArticleIds.length > 0 && (
+                                  <Chip
+                                    label={`${lsAnchorArticleIds.length} Selected`}
+                                    size="small"
+                                    sx={{ bgcolor: activeLsHub.color, color: '#ffffff', fontWeight: 900, fontSize: '0.75rem', borderRadius: '8px', height: 22 }}
+                                  />
+                                )}
+                              </Box>
+                            ) : null}
+                            <Typography variant="h5" sx={{ fontWeight: 900, letterSpacing: '-0.02em', color: '#0f172a', fontSize: { xs: '1.25rem', sm: '1.6rem' } }}>
+                              {lsStep === 1
+                                ? "What do you want to talk about?"
+                                : lsStep === 2
+                                ? "What articles would guide your conversation?"
+                                : "What would your call to action(s) be?"}
+                            </Typography>
+                            {lsStep === 1 ? (
+                              <Typography sx={{ color: '#64748b', fontSize: { xs: '0.95rem', sm: '1.05rem' }, fontWeight: 700, mt: 0.5 }}>
+                                Tap one to continue.
+                              </Typography>
+                            ) : lsStep === 2 ? (
+                              <Typography sx={{ color: '#64748b', fontSize: { xs: '0.88rem', sm: '0.96rem' }, fontWeight: 600, mt: 0.5 }}>
+                                Select at least 1 article to anchor and structure your broadcast talking points.
+                              </Typography>
+                            ) : (
+                              <Typography sx={{ color: '#64748b', fontSize: { xs: '0.88rem', sm: '0.96rem' }, fontWeight: 600, mt: 0.5 }}>
+                                Choose jobs, articles, trade listings, or campaigns to attach as actionable takeaways.
+                              </Typography>
+                            )}
+                          </Box>
+                        </Box>
+
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Tooltip title="Minimize">
+                            <IconButton
+                              onClick={(e) => { e.stopPropagation(); handleClose(); }}
+                              sx={{ color: '#64748b', bgcolor: 'rgba(0, 0, 0, 0.05)', '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.1)', color: '#0f172a' } }}
+                            >
+                              <MinimizeIcon />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      </Box>
+
+                      {/* ──────────────────────────────────────────────────────────── */}
+                      {/* STEP 1: 3 MASTER CATEGORY HUBS (3D BENTO HERO & CARDS)       */}
+                      {/* ──────────────────────────────────────────────────────────── */}
+                      {lsStep === 1 && (
+                        <Box sx={{ overflow: 'visible' }}>
+                          <Box
+                            component={motion.div}
+                            variants={gridStaggerVariants}
+                            initial="hidden"
+                            animate="visible"
+                            sx={{
+                              display: 'grid',
+                              gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
+                              gap: { xs: 2.5, sm: 3 },
+                              perspective: '1400px',
+                              height: 'auto',
+                              overflow: 'visible',
+                              py: 1,
+                              px: 0.5,
+                              pb: 2,
+                            }}
+                          >
+                            {MASTER_LIVESTREAM_HUBS.map((hub) => (
+                              <Box
+                                key={hub.id}
+                                component={motion.div}
+                                variants={cardProgressiveTiltVariants}
                                 sx={{
-                                  color: '#0f172a',
-                                  bgcolor: 'rgba(0, 0, 0, 0.05)',
-                                  border: '1px solid rgba(0, 0, 0, 0.1)',
-                                  '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.1)' }
+                                  width: '100%',
+                                  display: 'flex',
+                                  perspective: '1200px',
                                 }}
                               >
-                                <ArrowBackIcon sx={{ fontSize: 16 }} />
-                              </IconButton>
-                            )}
-                            <Box sx={{ p: 1.2, borderRadius: '14px', bgcolor: alpha(activeOpt.color, 0.12), color: activeOpt.color }}>
-                              {activeOpt.icon}
-                            </Box>
-                            <Box>
-                              <Typography sx={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                Livestream Broadcast Studio
-                              </Typography>
-                              <Typography variant="h5" sx={{ fontWeight: 900, color: '#0f172a', mt: 0.2 }}>
-                                {lsStep === 1 && "1. Select Master Category Hub"}
-                                {lsStep === 2 && "2. Anchor Published Research"}
-                                {lsStep === 3 && "3. Attach Anchor Jobs & Finalize"}
-                              </Typography>
-                            </Box>
-                          </Box>
-                          
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                            <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 1 }}>
-                              {[1, 2, 3].map(stepNum => (
-                                <Box
-                                  key={stepNum}
-                                  onClick={() => stepNum < lsStep && setLsStep(stepNum as any)}
+                                <Paper
+                                  elevation={0}
+                                  onClick={() => {
+                                    setLsEngine(hub.id);
+                                    setLsAnchorArticleIds([]);
+                                    setLsStep(2);
+                                  }}
                                   sx={{
-                                    width: 28, height: 28, borderRadius: '50%',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    bgcolor: lsStep === stepNum ? (activeLsHub?.color || activeOpt.color) : lsStep > stepNum ? alpha(activeLsHub?.color || activeOpt.color, 0.15) : 'rgba(0, 0, 0, 0.06)',
-                                    color: lsStep === stepNum ? '#fff' : lsStep > stepNum ? (activeLsHub?.color || activeOpt.color) : '#64748b',
-                                    fontSize: '0.75rem', fontWeight: 800,
-                                    cursor: stepNum < lsStep ? 'pointer' : 'default',
-                                    transition: 'all 0.2s'
+                                    width: '100%',
+                                    minHeight: { xs: 260, sm: 290, md: 320 },
+                                    borderRadius: '26px',
+                                    position: 'relative',
+                                    overflow: 'hidden',
+                                    cursor: 'pointer',
+                                    bgcolor: '#0f172a',
+                                    border: '2.5px solid rgba(255, 255, 255, 0.25)',
+                                    boxShadow: '0 12px 32px rgba(0, 0, 0, 0.45)',
+                                    transform: { xs: 'none', md: 'rotateX(3deg)' },
+                                    transformOrigin: 'bottom center',
+                                    transition: 'all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    justifyContent: 'space-between',
+                                    p: { xs: 2.25, sm: 3 },
+                                    '&:hover': {
+                                      transform: { xs: 'translateY(-4px) scale(1.01)', md: 'rotateX(0deg) translateY(-6px) scale(1.01)' },
+                                      borderColor: 'rgba(255, 255, 255, 0.55)',
+                                      boxShadow: `0 20px 48px rgba(0, 0, 0, 0.55), 0 0 30px ${alpha(hub.color, 0.35)}`,
+                                      '& .hub-bg': { transform: 'scale(1.06)' },
+                                      '& .hub-pill': { transform: 'scale(1.02)', boxShadow: '0 10px 28px rgba(0,0,0,0.4)' }
+                                    }
                                   }}
                                 >
-                                  {stepNum}
-                                </Box>
+                                  {/* Full-Bleed Image Background */}
+                                  <Box
+                                    className="hub-bg"
+                                    sx={{
+                                      position: 'absolute',
+                                      inset: 0,
+                                      backgroundImage: `url(${hub.imageUrl})`,
+                                      backgroundSize: 'cover',
+                                      backgroundPosition: 'center',
+                                      transition: 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
+                                      zIndex: 0,
+                                    }}
+                                  />
+
+                                  {/* Top Subtle Gradient */}
+                                  <Box
+                                    sx={{
+                                      position: 'absolute',
+                                      top: 0,
+                                      left: 0,
+                                      right: 0,
+                                      height: '55%',
+                                      background: 'linear-gradient(180deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.2) 65%, transparent 100%)',
+                                      zIndex: 1,
+                                    }}
+                                  />
+
+                                  {/* Bottom Gradient for Legibility */}
+                                  <Box
+                                    sx={{
+                                      position: 'absolute',
+                                      bottom: 0,
+                                      left: 0,
+                                      right: 0,
+                                      height: '65%',
+                                      background: 'linear-gradient(0deg, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.65) 60%, transparent 100%)',
+                                      zIndex: 1,
+                                    }}
+                                  />
+
+                                  {/* Top Row: Mapped Categories List */}
+                                  <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                    {hub.categories.map((cat) => (
+                                      <Box
+                                        key={cat}
+                                        sx={{
+                                          bgcolor: 'rgba(255, 255, 255, 0.22)',
+                                          backdropFilter: 'blur(10px)',
+                                          border: '1px solid rgba(255, 255, 255, 0.45)',
+                                          color: '#ffffff',
+                                          px: 1.75,
+                                          py: 0.5,
+                                          borderRadius: '999px',
+                                          fontWeight: 800,
+                                          fontSize: { xs: '0.82rem', sm: '0.92rem' },
+                                          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+                                          letterSpacing: '0.01em'
+                                        }}
+                                      >
+                                        {cat}
+                                      </Box>
+                                    ))}
+                                  </Box>
+
+                                  {/* Bottom Row: White Capsule Pill with Hub Title (Bigger Text) */}
+                                  <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', mt: 'auto' }}>
+                                    <Box
+                                      className="hub-pill"
+                                      sx={{
+                                        bgcolor: '#ffffff',
+                                        borderRadius: '999px',
+                                        py: { xs: 1.1, sm: 1.3 },
+                                        px: { xs: 2.25, sm: 2.75 },
+                                        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.35)',
+                                        border: '1px solid rgba(255, 255, 255, 0.9)',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        width: '100%',
+                                        gap: 1.5,
+                                        transition: 'all 0.25s ease'
+                                      }}
+                                    >
+                                      <Typography
+                                        sx={{
+                                          color: '#0f172a',
+                                          fontWeight: 900,
+                                          fontSize: { xs: '1.05rem', sm: '1.25rem', md: '1.38rem' },
+                                          letterSpacing: '-0.025em',
+                                          lineHeight: 1.2,
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          gap: 1.25,
+                                          minWidth: 0,
+                                          overflow: 'hidden',
+                                          textOverflow: 'ellipsis',
+                                          whiteSpace: 'nowrap'
+                                        }}
+                                      >
+                                        <span>{hub.icon}</span>
+                                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{hub.title}</span>
+                                      </Typography>
+                                      <Box
+                                        sx={{
+                                          width: 30,
+                                          height: 30,
+                                          borderRadius: '50%',
+                                          bgcolor: alpha(hub.color, 0.12),
+                                          color: hub.color,
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          flexShrink: 0
+                                        }}
+                                      >
+                                        <ArrowForwardArrow sx={{ fontSize: 16 }} />
+                                      </Box>
+                                    </Box>
+                                  </Box>
+                                </Paper>
+                              </Box>
+                            ))}
+                          </Box>
+                        </Box>
+                      )}
+
+                      {/* ──────────────────────────────────────────────────────────── */}
+                      {/* STEP 2: GUIDING RESEARCH ARTICLES (HOMEPAGE CARD DESIGN)     */}
+                      {/* ──────────────────────────────────────────────────────────── */}
+                      {lsStep === 2 && (
+                        <Box sx={{ animation: `${slideUpFade} 0.3s ease`, minHeight: 380 }}>
+                          {/* Search & Selection Summary Bar */}
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5, flexWrap: 'wrap', gap: 1.5 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: 1, maxWidth: 400 }}>
+                              <TextField
+                                size="small"
+                                fullWidth
+                                placeholder={`Search articles for ${activeLsHub.title}...`}
+                                value={lsArticleSearch}
+                                onChange={(e) => setLsArticleSearch(e.target.value)}
+                                sx={{
+                                  '& .MuiOutlinedInput-root': {
+                                    borderRadius: '12px',
+                                    bgcolor: '#ffffff',
+                                    fontSize: '0.86rem'
+                                  }
+                                }}
+                              />
+                            </Box>
+
+                            <Chip
+                              label={`${lsAnchorArticleIds.length} Article${lsAnchorArticleIds.length !== 1 ? 's' : ''} Selected`}
+                              sx={{
+                                bgcolor: lsAnchorArticleIds.length > 0 ? alpha(activeLsHub.color, 0.12) : 'rgba(0, 0, 0, 0.05)',
+                                color: lsAnchorArticleIds.length > 0 ? activeLsHub.color : '#64748b',
+                                fontWeight: 900,
+                                fontSize: '0.84rem',
+                                border: `1px solid ${lsAnchorArticleIds.length > 0 ? alpha(activeLsHub.color, 0.3) : 'transparent'}`
+                              }}
+                            />
+                          </Box>
+
+                          {/* Articles Grid with FoodNerve .com Homepage Aesthetic */}
+                          {lsLoadingDB ? (
+                            <Box sx={{ py: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1.5 }}>
+                              <CircularProgress size={36} sx={{ color: activeLsHub.color }} />
+                              <Typography sx={{ color: '#0f172a', fontSize: '0.92rem', fontWeight: 800 }}>
+                                Curating peer-reviewed research for {activeLsHub.title}...
+                              </Typography>
+                            </Box>
+                          ) : filteredLsArticles.length === 0 ? (
+                            <Paper sx={{ p: 4, textAlign: 'center', borderRadius: '20px', bgcolor: '#f8fafc', border: '2px dashed rgba(0,0,0,0.12)' }}>
+                              <Typography sx={{ color: '#0f172a', fontWeight: 800, fontSize: '1rem', mb: 1 }}>
+                                No research articles matched your filter
+                              </Typography>
+                              <Typography sx={{ color: '#64748b', fontSize: '0.85rem', mb: 2 }}>
+                                Try searching for another topic or clear the filter.
+                              </Typography>
+                              <Button size="small" onClick={() => setLsArticleSearch('')} sx={{ color: activeLsHub.color, fontWeight: 800, textTransform: 'none' }}>
+                                Clear Search Filter
+                              </Button>
+                            </Paper>
+                          ) : (
+                            <Box
+                              sx={{
+                                display: 'grid',
+                                gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
+                                gap: { xs: 2.5, sm: 3 },
+                                maxHeight: 520,
+                                overflowY: 'auto',
+                                pr: 0.5,
+                                py: 1,
+                              }}
+                            >
+                              {filteredLsArticles.map((art) => {
+                                const isSelected = lsAnchorArticleIds.includes(art.id);
+                                const eraRaw = (art.timeframe || 'present').toLowerCase();
+                                const eraLabel = (art.timeframe || 'Present').toUpperCase();
+                                const subcatTag = (art.subcategory || art.category || 'ANALYSIS').toUpperCase();
+                                const author = art.authorName || art.organization?.name || 'FoodNerve Editorial';
+                                const imgUrl = art.thumbnailUrl || 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?auto=format&fit=crop&w=800&q=80';
+
+                                const eraBg = eraRaw.includes('future')
+                                  ? 'rgba(147, 51, 234, 0.85)'
+                                  : eraRaw.includes('past')
+                                  ? 'rgba(217, 119, 6, 0.85)'
+                                  : 'rgba(22, 163, 74, 0.85)';
+
+                                return (
+                                  <Card
+                                    key={art.id}
+                                    variant="outlined"
+                                    onClick={() => {
+                                      setLsAnchorArticleIds(prev =>
+                                        prev.includes(art.id)
+                                          ? prev.filter(x => x !== art.id)
+                                          : [...prev, art.id]
+                                      );
+                                    }}
+                                    sx={{
+                                      height: '100%',
+                                      bgcolor: 'transparent',
+                                      border: 'none',
+                                      boxShadow: 'none',
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      overflow: 'visible',
+                                      position: 'relative',
+                                      p: 0,
+                                      cursor: 'pointer',
+                                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                      '&:hover': {
+                                        transform: 'translateY(-4px)',
+                                        '& .art-img': { transform: 'scale(1.06)' },
+                                        '& .art-base': {
+                                          borderColor: isSelected ? activeLsHub.color : 'rgba(0,0,0,0.18)',
+                                          boxShadow: isSelected
+                                            ? `0 20px 40px -6px ${alpha(activeLsHub.color, 0.35)}`
+                                            : '0 16px 32px -6px rgba(0,0,0,0.12)'
+                                        }
+                                      }
+                                    }}
+                                  >
+                                    {/* TOP DUAL-PILL CAPSULE */}
+                                    <Box
+                                      sx={{
+                                        position: 'absolute',
+                                        top: -8,
+                                        left: '50%',
+                                        transform: 'translateX(-50%)',
+                                        zIndex: 25,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 0.3,
+                                        width: 'max-content',
+                                      }}
+                                    >
+                                      {/* Subcategory Pill */}
+                                      <Chip
+                                        label={subcatTag}
+                                        size="small"
+                                        sx={{
+                                          bgcolor: 'rgba(15, 23, 42, 0.75)',
+                                          backdropFilter: 'blur(8px)',
+                                          color: '#ffffff',
+                                          fontWeight: 900,
+                                          fontSize: '0.62rem',
+                                          height: 20,
+                                          px: 0.8,
+                                          borderRadius: '999px 12px 12px 999px',
+                                          letterSpacing: '0.05em',
+                                        }}
+                                      />
+                                      {/* Era Pill */}
+                                      <Chip
+                                        label={eraLabel}
+                                        size="small"
+                                        sx={{
+                                          bgcolor: eraBg,
+                                          backdropFilter: 'blur(8px)',
+                                          color: '#ffffff',
+                                          fontWeight: 900,
+                                          fontSize: '0.62rem',
+                                          height: 20,
+                                          px: 0.8,
+                                          borderRadius: '12px 999px 999px 12px',
+                                          letterSpacing: '0.05em',
+                                        }}
+                                      />
+                                    </Box>
+
+                                    {/* SELECTION BUBBLE (TOP RIGHT) */}
+                                    <Box
+                                      sx={{
+                                        position: 'absolute',
+                                        top: 10,
+                                        right: '7%',
+                                        zIndex: 30,
+                                        width: 28,
+                                        height: 28,
+                                        borderRadius: '50%',
+                                        bgcolor: isSelected ? activeLsHub.color : 'rgba(0, 0, 0, 0.45)',
+                                        backdropFilter: 'blur(8px)',
+                                        border: '2px solid #ffffff',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        color: '#ffffff',
+                                        boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                                        transition: 'all 0.2s ease',
+                                        transform: isSelected ? 'scale(1.08)' : 'scale(1)'
+                                      }}
+                                    >
+                                      {isSelected ? <CheckIcon sx={{ fontSize: 16 }} /> : <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.7)' }} />}
+                                    </Box>
+
+                                    {/* COVER IMAGE CONTAINER */}
+                                    <Box
+                                      sx={{
+                                        position: 'relative',
+                                        width: '92%',
+                                        mx: 'auto',
+                                        mt: 1,
+                                        pt: '52%',
+                                        bgcolor: '#0f172a',
+                                        borderRadius: '20px 20px 0 0',
+                                        overflow: 'hidden',
+                                        boxShadow: '0 8px 20px rgba(0,0,0,0.12)',
+                                      }}
+                                    >
+                                      <Box
+                                        component="img"
+                                        className="art-img"
+                                        src={imgUrl}
+                                        alt={art.title}
+                                        sx={{
+                                          position: 'absolute',
+                                          top: 0,
+                                          left: 0,
+                                          width: '100%',
+                                          height: '100%',
+                                          objectFit: 'cover',
+                                          transition: 'transform 0.4s ease',
+                                        }}
+                                      />
+                                      <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 60%, rgba(15,23,42,0.35) 100%)' }} />
+                                    </Box>
+
+                                    {/* OVERLAPPING WHITE BASE */}
+                                    <Box
+                                      className="art-base"
+                                      sx={{
+                                        bgcolor: '#ffffff',
+                                        border: '2px solid',
+                                        borderColor: isSelected ? activeLsHub.color : '#e2e8f0',
+                                        borderRadius: '20px',
+                                        mt: '-16px',
+                                        position: 'relative',
+                                        zIndex: 2,
+                                        p: { xs: 2, sm: 2.25 },
+                                        pt: 2.5,
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        flex: 1,
+                                        justifyContent: 'space-between',
+                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                        boxShadow: isSelected
+                                          ? `0 16px 36px -6px ${alpha(activeLsHub.color, 0.25)}`
+                                          : '0 6px 20px -4px rgba(0,0,0,0.05)',
+                                      }}
+                                    >
+                                      <Box>
+                                        <Typography
+                                          sx={{
+                                            fontWeight: 900,
+                                            color: '#0f172a',
+                                            lineHeight: 1.3,
+                                            fontSize: { xs: '0.94rem', sm: '1.02rem' },
+                                            letterSpacing: '-0.01em',
+                                            mb: 1.2,
+                                            display: '-webkit-box',
+                                            WebkitLineClamp: 2,
+                                            WebkitBoxOrient: 'vertical',
+                                            overflow: 'hidden',
+                                          }}
+                                        >
+                                          {art.title}
+                                        </Typography>
+
+                                        {art.description && (
+                                          <Typography
+                                            sx={{
+                                              color: '#64748b',
+                                              fontSize: '0.78rem',
+                                              lineHeight: 1.45,
+                                              mb: 1.5,
+                                              display: '-webkit-box',
+                                              WebkitLineClamp: 2,
+                                              WebkitBoxOrient: 'vertical',
+                                              overflow: 'hidden',
+                                            }}
+                                          >
+                                            {art.description}
+                                          </Typography>
+                                        )}
+                                      </Box>
+
+                                      {/* FOOTER: Author & Selection Toggle */}
+                                      <Box sx={{ pt: 1.2, borderTop: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+                                          <Box
+                                            component="img"
+                                            src={art.organization?.logoUrl || '/images/default-avatar.png'}
+                                            alt={author}
+                                            onError={(e: any) => { e.currentTarget.src = '/images/default-avatar.png'; }}
+                                            sx={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover', border: '1px solid #e2e8f0', flexShrink: 0 }}
+                                          />
+                                          <Box sx={{ minWidth: 0 }}>
+                                            <Typography sx={{ fontWeight: 800, fontSize: '0.75rem', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                              {author}
+                                            </Typography>
+                                          </Box>
+                                        </Box>
+
+                                        <Chip
+                                          label={isSelected ? '✓ Selected' : '+ Select'}
+                                          size="small"
+                                          sx={{
+                                            bgcolor: isSelected ? activeLsHub.color : 'rgba(0, 0, 0, 0.05)',
+                                            color: isSelected ? '#ffffff' : '#475569',
+                                            fontWeight: 900,
+                                            fontSize: '0.7rem',
+                                            height: 24,
+                                            borderRadius: '999px',
+                                            flexShrink: 0,
+                                            cursor: 'pointer'
+                                          }}
+                                        />
+                                      </Box>
+                                    </Box>
+                                  </Card>
+                                );
+                              })}
+                            </Box>
+                          )}
+
+                          {/* Bottom Action Bar (No Skip - Minimum 1 Required) */}
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 3, pt: 2.5, borderTop: '1px solid rgba(0, 0, 0, 0.08)', flexWrap: 'wrap', gap: 1.5 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Typography sx={{ color: lsAnchorArticleIds.length === 0 ? '#ef4444' : '#64748b', fontWeight: 700, fontSize: '0.86rem' }}>
+                                {lsAnchorArticleIds.length === 0
+                                  ? '⚠️ Please select at least 1 guiding article to continue'
+                                  : `✓ ${lsAnchorArticleIds.length} article${lsAnchorArticleIds.length !== 1 ? 's' : ''} selected`}
+                              </Typography>
+                            </Box>
+
+                            <Button
+                              variant="contained"
+                              disabled={lsAnchorArticleIds.length === 0}
+                              onClick={() => setLsStep(3)}
+                              endIcon={<ArrowForwardArrow sx={{ fontSize: 16 }} />}
+                              sx={{
+                                bgcolor: activeLsHub.color,
+                                color: '#ffffff',
+                                fontWeight: 900,
+                                fontSize: '0.92rem',
+                                px: 4,
+                                py: 1.3,
+                                borderRadius: '14px',
+                                textTransform: 'none',
+                                boxShadow: `0 6px 20px ${alpha(activeLsHub.color, 0.35)}`,
+                                transition: 'all 0.2s ease',
+                                '&:hover': {
+                                  bgcolor: activeLsHub.color,
+                                  opacity: 0.95,
+                                  transform: 'translateY(-1px)',
+                                  boxShadow: `0 10px 26px ${alpha(activeLsHub.color, 0.45)}`
+                                },
+                                '&.Mui-disabled': {
+                                  bgcolor: '#e2e8f0',
+                                  color: '#94a3b8'
+                                }
+                              }}
+                            >
+                              Continue to Calls to Action →
+                            </Button>
+                          </Box>
+                        </Box>
+                      )}
+
+                      {/* ──────────────────────────────────────────────────────────── */}
+                      {/* STEP 3: ATTACH CALLS TO ACTION & LAUNCH BROADCAST            */}
+                      {/* ──────────────────────────────────────────────────────────── */}
+                      {lsStep === 3 && (
+                        <Box sx={{ animation: `${slideUpFade} 0.3s ease`, minHeight: 380 }}>
+                          {/* CTA Selector Tabs & Counter */}
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5, flexWrap: 'wrap', gap: 1.5 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, overflowX: 'auto', pb: 0.5, maxWidth: '100%' }}>
+                              {[
+                                { id: 'jobs', label: '💼 Jobs & Roles', count: lsCtaAssets.jobs.length, selectedCount: lsAnchorJobIds.length },
+                                { id: 'articles', label: '📰 Research Articles', count: lsCtaAssets.articles.length, selectedCount: lsCtaArticleIds.length },
+                                { id: 'listings', label: '📦 Trade & Offtake Deals', count: lsCtaAssets.listings.length, selectedCount: lsCtaListingIds.length },
+                                { id: 'campaigns', label: '🤝 Community Campaigns', count: lsCtaAssets.campaigns.length, selectedCount: lsCtaCampaignIds.length },
+                              ].map(tab => (
+                                <Button
+                                  key={tab.id}
+                                  onClick={() => setLsCtaTab(tab.id as any)}
+                                  variant={lsCtaTab === tab.id ? 'contained' : 'outlined'}
+                                  size="small"
+                                  sx={{
+                                    bgcolor: lsCtaTab === tab.id ? activeLsHub.color : 'transparent',
+                                    color: lsCtaTab === tab.id ? '#ffffff' : '#475569',
+                                    borderColor: lsCtaTab === tab.id ? activeLsHub.color : 'rgba(0,0,0,0.12)',
+                                    fontWeight: 800,
+                                    fontSize: '0.8rem',
+                                    borderRadius: '999px',
+                                    textTransform: 'none',
+                                    px: 2,
+                                    py: 0.6,
+                                    flexShrink: 0,
+                                    '&:hover': {
+                                      bgcolor: lsCtaTab === tab.id ? activeLsHub.color : alpha(activeLsHub.color, 0.08),
+                                      borderColor: activeLsHub.color
+                                    }
+                                  }}
+                                >
+                                  {tab.label}
+                                  {tab.selectedCount > 0 && (
+                                    <Box component="span" sx={{ ml: 1, px: 0.8, py: 0.1, borderRadius: '999px', bgcolor: lsCtaTab === tab.id ? 'rgba(255,255,255,0.25)' : activeLsHub.color, color: '#ffffff', fontSize: '0.7rem', fontWeight: 900 }}>
+                                      {tab.selectedCount}
+                                    </Box>
+                                  )}
+                                </Button>
                               ))}
                             </Box>
-                            <Button onClick={(e) => { e.stopPropagation(); handleClose(); }} sx={{ minWidth: 0, p: 1, borderRadius: '12px', color: '#64748b', '&:hover': { bgcolor: 'rgba(0,0,0,0.06)', color: '#0f172a' } }}>✕</Button>
+
+                            <Chip
+                              label={`${totalSelectedCtas} CTA${totalSelectedCtas !== 1 ? 's' : ''} Selected`}
+                              sx={{
+                                bgcolor: totalSelectedCtas > 0 ? alpha(activeLsHub.color, 0.12) : 'rgba(0, 0, 0, 0.05)',
+                                color: totalSelectedCtas > 0 ? activeLsHub.color : '#64748b',
+                                fontWeight: 900,
+                                fontSize: '0.82rem',
+                                border: `1px solid ${totalSelectedCtas > 0 ? alpha(activeLsHub.color, 0.3) : 'transparent'}`
+                              }}
+                            />
                           </Box>
-                       </Box>
 
-                       {/* STEP 1: 3 MASTER CATEGORY HUBS */}
-                       {lsStep === 1 && (
-                         <Box>
-                           <Typography sx={{ color: '#475569', fontWeight: 500, mb: 3, fontSize: { xs: '0.9rem', sm: '1rem' } }}>
-                             Choose one of the <strong>3 Master Category Hubs</strong> for your broadcast. This dynamically filters published research across connected value-chain pillars.
-                           </Typography>
-                           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' }, gap: { xs: 2.5, sm: 3 } }}>
-                             {MASTER_LIVESTREAM_HUBS.map(hub => (
-                               <Paper
-                                 key={hub.id}
-                                 onClick={() => {
-                                   setLsEngine(hub.id);
-                                   setLsAnchorArticleId(null);
-                                   setLsStep(2);
-                                 }}
-                                 sx={{
-                                   p: { xs: 2.5, sm: 3 },
-                                   borderRadius: '20px',
-                                   bgcolor: '#ffffff',
-                                   border: '1.5px solid rgba(0, 0, 0, 0.08)',
-                                   boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)',
-                                   cursor: 'pointer',
-                                   transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                                   display: 'flex',
-                                   flexDirection: 'column',
-                                   justifyContent: 'space-between',
-                                   position: 'relative',
-                                   overflow: 'hidden',
-                                   '&:hover': {
-                                     bgcolor: '#ffffff',
-                                     transform: 'translateY(-5px)',
-                                     borderColor: hub.color,
-                                     boxShadow: `0 16px 36px -6px rgba(0, 0, 0, 0.12), 0 0 20px ${alpha(hub.color, 0.2)}`
-                                   },
-                                   '&::before': {
-                                     content: '""',
-                                     position: 'absolute',
-                                     top: 0,
-                                     left: 0,
-                                     right: 0,
-                                     height: '4px',
-                                     bgcolor: hub.color
-                                   }
-                                 }}
-                               >
-                                 <Box>
-                                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-                                     <Chip
-                                       label={hub.badge}
-                                       size="small"
-                                       sx={{
-                                         bgcolor: alpha(hub.color, 0.1),
-                                         color: hub.color,
-                                         fontWeight: 900,
-                                         fontSize: '0.72rem',
-                                         height: 24,
-                                         borderRadius: '999px',
-                                         border: `1px solid ${alpha(hub.color, 0.25)}`
-                                       }}
-                                     />
-                                     <Typography sx={{ fontSize: '1.8rem' }}>{hub.icon}</Typography>
-                                   </Box>
+                          {/* Dynamic CTA Grid for the active tab */}
+                          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2, mb: 3, maxHeight: 320, overflowY: 'auto', pr: 0.5 }}>
+                            {lsLoadingDB ? (
+                              <Box sx={{ py: 4, display: 'flex', justifyContent: 'center', gridColumn: '1 / -1' }}>
+                                <CircularProgress size={32} sx={{ color: activeLsHub.color }} />
+                              </Box>
+                            ) : lsCtaTab === 'jobs' ? (
+                              lsCtaAssets.jobs.length === 0 ? (
+                                <Paper sx={{ p: 3, textAlign: 'center', borderRadius: '16px', bgcolor: '#f8fafc', gridColumn: '1 / -1', border: '1px dashed rgba(0,0,0,0.12)' }}>
+                                  <Typography sx={{ color: '#64748b', fontSize: '0.88rem', fontWeight: 600 }}>
+                                    No active roles currently open in the talent exchange.
+                                  </Typography>
+                                </Paper>
+                              ) : (
+                                lsCtaAssets.jobs.map(job => {
+                                  const isSelected = lsAnchorJobIds.includes(job.id);
+                                  return (
+                                    <Paper
+                                      key={job.id}
+                                      onClick={() => setLsAnchorJobIds(prev => prev.includes(job.id) ? prev.filter(x => x !== job.id) : [...prev, job.id])}
+                                      sx={{
+                                        p: 2.25,
+                                        borderRadius: '16px',
+                                        bgcolor: isSelected ? alpha(activeLsHub.color, 0.08) : '#ffffff',
+                                        border: '1.5px solid',
+                                        borderColor: isSelected ? activeLsHub.color : 'rgba(0, 0, 0, 0.08)',
+                                        boxShadow: isSelected ? `0 6px 18px ${alpha(activeLsHub.color, 0.15)}` : '0 2px 6px rgba(0,0,0,0.03)',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s ease',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        gap: 1.5,
+                                        '&:hover': {
+                                          bgcolor: isSelected ? alpha(activeLsHub.color, 0.12) : '#f8fafc',
+                                          borderColor: activeLsHub.color,
+                                          transform: 'translateY(-1px)'
+                                        }
+                                      }}
+                                    >
+                                      <Box sx={{ minWidth: 0, flex: 1 }}>
+                                        <Typography sx={{ color: '#0f172a', fontWeight: 800, fontSize: '0.94rem', lineHeight: 1.3 }}>
+                                          {job.title}
+                                        </Typography>
+                                        <Typography sx={{ color: '#64748b', fontSize: '0.8rem', mt: 0.25 }}>
+                                          {job.organization?.name || 'Agro Enterprise'}
+                                        </Typography>
+                                        {job.location && (
+                                          <Typography sx={{ color: '#94a3b8', fontSize: '0.74rem', mt: 0.25 }}>
+                                            📍 {job.location} {job.workModel ? `• ${job.workModel}` : ''}
+                                          </Typography>
+                                        )}
+                                      </Box>
+                                      <Box
+                                        sx={{
+                                          width: 24,
+                                          height: 24,
+                                          borderRadius: '7px',
+                                          border: '1.5px solid',
+                                          borderColor: isSelected ? activeLsHub.color : '#cbd5e1',
+                                          bgcolor: isSelected ? activeLsHub.color : 'transparent',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          flexShrink: 0,
+                                          transition: 'all 0.2s ease'
+                                        }}
+                                      >
+                                        {isSelected && <CheckIcon sx={{ fontSize: 15, color: '#ffffff' }} />}
+                                      </Box>
+                                    </Paper>
+                                  );
+                                })
+                              )
+                            ) : lsCtaTab === 'articles' ? (
+                              lsCtaAssets.articles.length === 0 ? (
+                                <Paper sx={{ p: 3, textAlign: 'center', borderRadius: '16px', bgcolor: '#f8fafc', gridColumn: '1 / -1', border: '1px dashed rgba(0,0,0,0.12)' }}>
+                                  <Typography sx={{ color: '#64748b', fontSize: '0.88rem', fontWeight: 600 }}>
+                                    No additional research publications found.
+                                  </Typography>
+                                </Paper>
+                              ) : (
+                                lsCtaAssets.articles.map(art => {
+                                  const isSelected = lsCtaArticleIds.includes(art.id);
+                                  return (
+                                    <Paper
+                                      key={art.id}
+                                      onClick={() => setLsCtaArticleIds(prev => prev.includes(art.id) ? prev.filter(x => x !== art.id) : [...prev, art.id])}
+                                      sx={{
+                                        p: 2.25,
+                                        borderRadius: '16px',
+                                        bgcolor: isSelected ? alpha(activeLsHub.color, 0.08) : '#ffffff',
+                                        border: '1.5px solid',
+                                        borderColor: isSelected ? activeLsHub.color : 'rgba(0, 0, 0, 0.08)',
+                                        boxShadow: isSelected ? `0 6px 18px ${alpha(activeLsHub.color, 0.15)}` : '0 2px 6px rgba(0,0,0,0.03)',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s ease',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        gap: 1.5,
+                                        '&:hover': {
+                                          bgcolor: isSelected ? alpha(activeLsHub.color, 0.12) : '#f8fafc',
+                                          borderColor: activeLsHub.color,
+                                          transform: 'translateY(-1px)'
+                                        }
+                                      }}
+                                    >
+                                      <Box sx={{ minWidth: 0, flex: 1 }}>
+                                        <Typography sx={{ color: '#0f172a', fontWeight: 800, fontSize: '0.94rem', lineHeight: 1.3 }}>
+                                          {art.title}
+                                        </Typography>
+                                        <Typography sx={{ color: '#64748b', fontSize: '0.8rem', mt: 0.25 }}>
+                                          By {art.authorName || art.organization?.name || 'FoodNerve Editorial'}
+                                        </Typography>
+                                        <Typography sx={{ color: '#94a3b8', fontSize: '0.74rem', mt: 0.25 }}>
+                                          📰 {(art.category || 'ANALYSIS').toUpperCase()}
+                                        </Typography>
+                                      </Box>
+                                      <Box
+                                        sx={{
+                                          width: 24,
+                                          height: 24,
+                                          borderRadius: '7px',
+                                          border: '1.5px solid',
+                                          borderColor: isSelected ? activeLsHub.color : '#cbd5e1',
+                                          bgcolor: isSelected ? activeLsHub.color : 'transparent',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          flexShrink: 0,
+                                          transition: 'all 0.2s ease'
+                                        }}
+                                      >
+                                        {isSelected && <CheckIcon sx={{ fontSize: 15, color: '#ffffff' }} />}
+                                      </Box>
+                                    </Paper>
+                                  );
+                                })
+                              )
+                            ) : lsCtaTab === 'listings' ? (
+                              lsCtaAssets.listings.length === 0 ? (
+                                <Paper sx={{ p: 3, textAlign: 'center', borderRadius: '16px', bgcolor: '#f8fafc', gridColumn: '1 / -1', border: '1px dashed rgba(0,0,0,0.12)' }}>
+                                  <Typography sx={{ color: '#64748b', fontSize: '0.88rem', fontWeight: 600 }}>
+                                    No active commodity listings or offtake deals found.
+                                  </Typography>
+                                </Paper>
+                              ) : (
+                                lsCtaAssets.listings.map(listing => {
+                                  const isSelected = lsCtaListingIds.includes(listing.id);
+                                  return (
+                                    <Paper
+                                      key={listing.id}
+                                      onClick={() => setLsCtaListingIds(prev => prev.includes(listing.id) ? prev.filter(x => x !== listing.id) : [...prev, listing.id])}
+                                      sx={{
+                                        p: 2.25,
+                                        borderRadius: '16px',
+                                        bgcolor: isSelected ? alpha(activeLsHub.color, 0.08) : '#ffffff',
+                                        border: '1.5px solid',
+                                        borderColor: isSelected ? activeLsHub.color : 'rgba(0, 0, 0, 0.08)',
+                                        boxShadow: isSelected ? `0 6px 18px ${alpha(activeLsHub.color, 0.15)}` : '0 2px 6px rgba(0,0,0,0.03)',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s ease',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        gap: 1.5,
+                                        '&:hover': {
+                                          bgcolor: isSelected ? alpha(activeLsHub.color, 0.12) : '#f8fafc',
+                                          borderColor: activeLsHub.color,
+                                          transform: 'translateY(-1px)'
+                                        }
+                                      }}
+                                    >
+                                      <Box sx={{ minWidth: 0, flex: 1 }}>
+                                        <Typography sx={{ color: '#0f172a', fontWeight: 800, fontSize: '0.94rem', lineHeight: 1.3 }}>
+                                          {listing.title}
+                                        </Typography>
+                                        <Typography sx={{ color: '#64748b', fontSize: '0.8rem', mt: 0.25 }}>
+                                          {listing.commodity ? `🌾 ${listing.commodity} • ` : ''}{listing.priceOrAsk || 'Inquire'}
+                                        </Typography>
+                                        {listing.location && (
+                                          <Typography sx={{ color: '#94a3b8', fontSize: '0.74rem', mt: 0.25 }}>
+                                            📍 {listing.location}
+                                          </Typography>
+                                        )}
+                                      </Box>
+                                      <Box
+                                        sx={{
+                                          width: 24,
+                                          height: 24,
+                                          borderRadius: '7px',
+                                          border: '1.5px solid',
+                                          borderColor: isSelected ? activeLsHub.color : '#cbd5e1',
+                                          bgcolor: isSelected ? activeLsHub.color : 'transparent',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          flexShrink: 0,
+                                          transition: 'all 0.2s ease'
+                                        }}
+                                      >
+                                        {isSelected && <CheckIcon sx={{ fontSize: 15, color: '#ffffff' }} />}
+                                      </Box>
+                                    </Paper>
+                                  );
+                                })
+                              )
+                            ) : (
+                              lsCtaAssets.campaigns.length === 0 ? (
+                                <Paper sx={{ p: 3, textAlign: 'center', borderRadius: '16px', bgcolor: '#f8fafc', gridColumn: '1 / -1', border: '1px dashed rgba(0,0,0,0.12)' }}>
+                                  <Typography sx={{ color: '#64748b', fontSize: '0.88rem', fontWeight: 600 }}>
+                                    No active community campaigns found.
+                                  </Typography>
+                                </Paper>
+                              ) : (
+                                lsCtaAssets.campaigns.map(camp => {
+                                  const isSelected = lsCtaCampaignIds.includes(camp.id);
+                                  return (
+                                    <Paper
+                                      key={camp.id}
+                                      onClick={() => setLsCtaCampaignIds(prev => prev.includes(camp.id) ? prev.filter(x => x !== camp.id) : [...prev, camp.id])}
+                                      sx={{
+                                        p: 2.25,
+                                        borderRadius: '16px',
+                                        bgcolor: isSelected ? alpha(activeLsHub.color, 0.08) : '#ffffff',
+                                        border: '1.5px solid',
+                                        borderColor: isSelected ? activeLsHub.color : 'rgba(0, 0, 0, 0.08)',
+                                        boxShadow: isSelected ? `0 6px 18px ${alpha(activeLsHub.color, 0.15)}` : '0 2px 6px rgba(0,0,0,0.03)',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s ease',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        gap: 1.5,
+                                        '&:hover': {
+                                          bgcolor: isSelected ? alpha(activeLsHub.color, 0.12) : '#f8fafc',
+                                          borderColor: activeLsHub.color,
+                                          transform: 'translateY(-1px)'
+                                        }
+                                      }}
+                                    >
+                                      <Box sx={{ minWidth: 0, flex: 1 }}>
+                                        <Typography sx={{ color: '#0f172a', fontWeight: 800, fontSize: '0.94rem', lineHeight: 1.3 }}>
+                                          {camp.title}
+                                        </Typography>
+                                        <Typography sx={{ color: '#64748b', fontSize: '0.8rem', mt: 0.25 }}>
+                                          Tier: {(camp.tier || 'Initiative').toUpperCase()} • Goal: ₦{(camp.goalAmount || 0).toLocaleString()}
+                                        </Typography>
+                                        <Typography sx={{ color: '#94a3b8', fontSize: '0.74rem', mt: 0.25 }}>
+                                          Raised: ₦{(camp.raisedAmount || 0).toLocaleString()}
+                                        </Typography>
+                                      </Box>
+                                      <Box
+                                        sx={{
+                                          width: 24,
+                                          height: 24,
+                                          borderRadius: '7px',
+                                          border: '1.5px solid',
+                                          borderColor: isSelected ? activeLsHub.color : '#cbd5e1',
+                                          bgcolor: isSelected ? activeLsHub.color : 'transparent',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          flexShrink: 0,
+                                          transition: 'all 0.2s ease'
+                                        }}
+                                      >
+                                        {isSelected && <CheckIcon sx={{ fontSize: 15, color: '#ffffff' }} />}
+                                      </Box>
+                                    </Paper>
+                                  );
+                                })
+                              )
+                            )}
+                          </Box>
 
-                                   <Typography sx={{ color: '#0f172a', fontWeight: 900, fontSize: { xs: '1.15rem', sm: '1.3rem' }, lineHeight: 1.25, mb: 0.5 }}>
-                                     {hub.title}
-                                   </Typography>
-                                   <Typography sx={{ color: hub.color, fontWeight: 800, fontSize: '0.85rem', mb: 1.5 }}>
-                                     {hub.subtitle}
-                                   </Typography>
-                                   <Typography sx={{ color: '#475569', fontWeight: 500, fontSize: '0.84rem', lineHeight: 1.5, mb: 2 }}>
-                                     {hub.desc}
-                                   </Typography>
-                                 </Box>
+                          {/* Launch Studio Rundown Card & Button */}
+                          <Paper
+                            elevation={0}
+                            sx={{
+                              p: { xs: 2.5, sm: 3 },
+                              borderRadius: '20px',
+                              background: `linear-gradient(135deg, ${alpha(activeLsHub.color, 0.08)} 0%, rgba(255, 255, 255, 0.95) 100%)`,
+                              border: `1.5px solid ${alpha(activeLsHub.color, 0.25)}`,
+                              display: 'flex',
+                              flexDirection: { xs: 'column', sm: 'row' },
+                              alignItems: { xs: 'flex-start', sm: 'center' },
+                              justifyContent: 'space-between',
+                              gap: 2,
+                              mt: 2,
+                            }}
+                          >
+                            <Box>
+                              <Typography sx={{ color: '#0f172a', fontWeight: 900, fontSize: '1.05rem', letterSpacing: '-0.01em' }}>
+                                Ready to Broadcast
+                              </Typography>
+                              <Typography sx={{ color: '#475569', fontSize: '0.85rem', mt: 0.25 }}>
+                                Launching with <strong>{activeLsHub.title}</strong>
+                                {selectedAnchorArticles.length > 0
+                                  ? ` anchored by ${selectedAnchorArticles.length} research article${selectedAnchorArticles.length !== 1 ? 's' : ''}`
+                                  : ''}
+                                {` and ${totalSelectedCtas} attached call${totalSelectedCtas !== 1 ? 's' : ''} to action.`}
+                              </Typography>
+                            </Box>
 
-                                 <Box>
-                                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mb: 2 }}>
-                                     {hub.tags.map(t => (
-                                       <Chip
-                                         key={t}
-                                         label={t}
-                                         size="small"
-                                         sx={{
-                                           bgcolor: 'rgba(0, 0, 0, 0.04)',
-                                           color: '#475569',
-                                           fontSize: '0.7rem',
-                                           fontWeight: 700,
-                                           border: '1px solid rgba(0, 0, 0, 0.06)'
-                                         }}
-                                       />
-                                     ))}
-                                   </Box>
-
-                                   <Box sx={{ pt: 1.5, borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                     <Typography sx={{ color: '#64748b', fontSize: '0.74rem', fontWeight: 700 }}>
-                                       Audience: {hub.targetAudience.split(',')[0]}
-                                     </Typography>
-                                     <Box sx={{ color: hub.color, display: 'flex', alignItems: 'center' }}>
-                                       <ArrowForwardArrow sx={{ fontSize: 18 }} />
-                                     </Box>
-                                   </Box>
-                                 </Box>
-                               </Paper>
-                             ))}
-                           </Box>
-                         </Box>
-                       )}
-
-                       {/* STEP 2: ANCHOR RESEARCH ARTICLE */}
-                       {lsStep === 2 && (
-                         <Box sx={{ minHeight: 350 }}>
-                           {/* Step 2 Top Bar with Back Action & Active Hub Header */}
-                           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5, pb: 1.5, borderBottom: '1px solid rgba(0, 0, 0, 0.08)', flexWrap: 'wrap', gap: 1.5 }}>
-                             <Button
-                               size="small"
-                               onClick={() => setLsStep(1)}
-                               startIcon={<ArrowBackIcon sx={{ fontSize: 14 }} />}
-                               sx={{
-                                 color: '#475569',
-                                 bgcolor: 'rgba(0, 0, 0, 0.05)',
-                                 fontWeight: 800,
-                                 fontSize: '0.82rem',
-                                 textTransform: 'none',
-                                 borderRadius: '999px',
-                                 px: 2,
-                                 py: 0.5,
-                                 '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.09)', color: '#0f172a' }
-                               }}
-                             >
-                               Change Hub
-                             </Button>
-
-                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                               <Chip
-                                 label={`${activeLsHub.icon} ${activeLsHub.title}`}
-                                 sx={{
-                                   bgcolor: alpha(activeLsHub.color, 0.12),
-                                   color: activeLsHub.color,
-                                   fontWeight: 900,
-                                   fontSize: '0.82rem',
-                                   border: `1px solid ${alpha(activeLsHub.color, 0.3)}`
-                                 }}
-                               />
-                               <Chip
-                                 label={activeLsHub.subtitle}
-                                 size="small"
-                                 sx={{ bgcolor: 'rgba(0,0,0,0.05)', color: '#475569', fontWeight: 700, fontSize: '0.75rem', display: { xs: 'none', sm: 'inline-flex' } }}
-                               />
-                             </Box>
-                           </Box>
-
-                           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, flexWrap: 'wrap', gap: 1.5 }}>
-                             <Box>
-                               <Typography sx={{ color: '#0f172a', fontWeight: 900, fontSize: { xs: '1.05rem', sm: '1.2rem' } }}>
-                                 Select Anchor Research Article
-                               </Typography>
-                               <Typography sx={{ color: '#64748b', fontSize: '0.85rem' }}>
-                                 Found {lsArticles.length} published research articles in the <strong>{activeLsHub.title}</strong> ecosystem.
-                               </Typography>
-                             </Box>
-
-                             <TextField
-                               size="small"
-                               placeholder="Search articles..."
-                               value={lsArticleSearch}
-                               onChange={(e) => setLsArticleSearch(e.target.value)}
-                               sx={{
-                                 width: { xs: '100%', sm: 260 },
-                                 '& .MuiOutlinedInput-root': {
-                                   borderRadius: '12px',
-                                   bgcolor: '#ffffff',
-                                   fontSize: '0.86rem'
-                                 }
-                               }}
-                             />
-                           </Box>
-
-                           {/* ARTICLES LIST */}
-                           {lsLoadingDB ? (
-                             <Box sx={{ py: 6, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1.5 }}>
-                               <CircularProgress size={36} sx={{ color: activeLsHub.color }} />
-                               <Typography sx={{ color: '#64748b', fontSize: '0.9rem', fontWeight: 600 }}>
-                                 Curating research articles for {activeLsHub.title}...
-                               </Typography>
-                             </Box>
-                           ) : filteredLsArticles.length === 0 ? (
-                             <Paper sx={{ p: 4, textAlign: 'center', borderRadius: '16px', bgcolor: '#f8fafc', border: '1px dashed rgba(0,0,0,0.15)' }}>
-                               <Typography sx={{ color: '#64748b', fontWeight: 700, mb: 1 }}>
-                                 No published articles matched your search filter.
-                               </Typography>
-                               <Button size="small" onClick={() => setLsArticleSearch('')} sx={{ color: activeLsHub.color, fontWeight: 800, textTransform: 'none' }}>
-                                 Clear Search Filter
-                               </Button>
-                             </Paper>
-                           ) : (
-                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, maxHeight: 420, overflowY: 'auto', pr: 0.5 }}>
-                               {filteredLsArticles.map((art) => {
-                                 const isSelected = lsAnchorArticleId === art.id;
-                                 return (
-                                   <Paper
-                                     key={art.id}
-                                     onClick={() => setLsAnchorArticleId(isSelected ? null : art.id)}
-                                     sx={{
-                                       p: { xs: 2, sm: 2.25 },
-                                       borderRadius: '16px',
-                                       bgcolor: isSelected ? alpha(activeLsHub.color, 0.05) : '#ffffff',
-                                       border: '2px solid',
-                                       borderColor: isSelected ? activeLsHub.color : 'rgba(0, 0, 0, 0.08)',
-                                       boxShadow: isSelected ? `0 8px 24px ${alpha(activeLsHub.color, 0.18)}` : '0 2px 6px rgba(0, 0, 0, 0.03)',
-                                       cursor: 'pointer',
-                                       transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                                       display: 'flex',
-                                       alignItems: 'center',
-                                       justifyContent: 'space-between',
-                                       gap: 2,
-                                       '&:hover': {
-                                         bgcolor: isSelected ? alpha(activeLsHub.color, 0.08) : '#f8fafc',
-                                         borderColor: activeLsHub.color,
-                                         transform: 'translateY(-2px)'
-                                       }
-                                     }}
-                                   >
-                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, minWidth: 0 }}>
-                                       {/* Radio Indicator */}
-                                       <Box
-                                         sx={{
-                                           width: 22,
-                                           height: 22,
-                                           borderRadius: '50%',
-                                           border: '2px solid',
-                                           borderColor: isSelected ? activeLsHub.color : '#cbd5e1',
-                                           bgcolor: isSelected ? activeLsHub.color : 'transparent',
-                                           display: 'flex',
-                                           alignItems: 'center',
-                                           justifyContent: 'center',
-                                           flexShrink: 0,
-                                           transition: 'all 0.2s ease'
-                                         }}
-                                       >
-                                         {isSelected && <CheckIcon sx={{ fontSize: 14, color: '#ffffff' }} />}
-                                       </Box>
-
-                                       <Box sx={{ flex: 1, minWidth: 0 }}>
-                                         <Typography sx={{ color: '#0f172a', fontWeight: 800, fontSize: { xs: '0.94rem', sm: '1.05rem' }, lineHeight: 1.3, mb: 0.5 }}>
-                                           {art.title}
-                                         </Typography>
-                                         {art.description && (
-                                           <Typography
-                                             sx={{
-                                               color: '#64748b',
-                                               fontSize: '0.82rem',
-                                               lineHeight: 1.4,
-                                               display: '-webkit-box',
-                                               WebkitLineClamp: 2,
-                                               WebkitBoxOrient: 'vertical',
-                                               overflow: 'hidden',
-                                               mb: 0.75
-                                             }}
-                                           >
-                                             {art.description}
-                                           </Typography>
-                                         )}
-                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-                                           <Typography sx={{ color: '#94a3b8', fontSize: '0.76rem', fontWeight: 600 }}>
-                                             By {art.organization?.name || art.authorName || 'FoodNerve Intelligence'}
-                                           </Typography>
-                                           {art.timeframe && (
-                                             <Chip
-                                               label={art.timeframe.toUpperCase()}
-                                               size="small"
-                                               sx={{ height: 20, fontSize: '0.65rem', fontWeight: 800, bgcolor: 'rgba(0,0,0,0.04)', color: '#475569' }}
-                                             />
-                                           )}
-                                         </Box>
-                                       </Box>
-                                     </Box>
-
-                                     <Chip
-                                       label={art.subcategory || art.category || 'Research'}
-                                       size="small"
-                                       sx={{
-                                         bgcolor: alpha(activeLsHub.color, 0.1),
-                                         color: activeLsHub.color,
-                                         fontWeight: 800,
-                                         textTransform: 'capitalize',
-                                         fontSize: '0.74rem',
-                                         flexShrink: 0
-                                       }}
-                                     />
-                                   </Paper>
-                                 );
-                               })}
-                             </Box>
-                           )}
-
-                           {/* Bottom Action Bar */}
-                           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 3, pt: 2.5, borderTop: '1px solid rgba(0, 0, 0, 0.08)', flexWrap: 'wrap', gap: 1.5 }}>
-                             <Button
-                               variant="text"
-                               onClick={() => {
-                                 setLsAnchorArticleId(null);
-                                 setLsStep(3);
-                               }}
-                               sx={{ color: '#64748b', fontWeight: 700, fontSize: '0.84rem', textTransform: 'none' }}
-                             >
-                               Skip Article (Create Open Broadcast)
-                             </Button>
-
-                             <Button
-                               variant="contained"
-                               onClick={() => setLsStep(3)}
-                               endIcon={<ArrowForwardArrow sx={{ fontSize: 16 }} />}
-                               sx={{
-                                 bgcolor: activeLsHub.color,
-                                 color: '#ffffff',
-                                 fontWeight: 900,
-                                 fontSize: '0.9rem',
-                                 px: 3.5,
-                                 py: 1.2,
-                                 borderRadius: '12px',
-                                 textTransform: 'none',
-                                 boxShadow: `0 6px 20px ${alpha(activeLsHub.color, 0.35)}`,
-                                 '&:hover': {
-                                   bgcolor: activeLsHub.color,
-                                   opacity: 0.9,
-                                   transform: 'translateY(-1px)'
-                                 }
-                               }}
-                             >
-                               {lsAnchorArticleId ? 'Continue with Selected Article →' : 'Continue to Attach Jobs →'}
-                             </Button>
-                           </Box>
-                         </Box>
-                       )}
-
-                       {/* STEP 3: ATTACH ANCHOR JOBS & FINALIZE */}
-                       {lsStep === 3 && (
-                         <Box sx={{ minHeight: 350 }}>
-                           {/* Step 3 Top Bar with Back Action & Summary Header */}
-                           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5, pb: 1.5, borderBottom: '1px solid rgba(0, 0, 0, 0.08)', flexWrap: 'wrap', gap: 1.5 }}>
-                             <Button
-                               size="small"
-                               onClick={() => setLsStep(2)}
-                               startIcon={<ArrowBackIcon sx={{ fontSize: 14 }} />}
-                               sx={{
-                                 color: '#475569',
-                                 bgcolor: 'rgba(0, 0, 0, 0.05)',
-                                 fontWeight: 800,
-                                 fontSize: '0.82rem',
-                                 textTransform: 'none',
-                                 borderRadius: '999px',
-                                 px: 2,
-                                 py: 0.5,
-                                 '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.09)', color: '#0f172a' }
-                               }}
-                             >
-                               Back to Articles
-                             </Button>
-
-                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                               <Chip
-                                 label={`${activeLsHub.icon} ${activeLsHub.title}`}
-                                 sx={{
-                                   bgcolor: alpha(activeLsHub.color, 0.12),
-                                   color: activeLsHub.color,
-                                   fontWeight: 900,
-                                   fontSize: '0.82rem',
-                                   border: `1px solid ${alpha(activeLsHub.color, 0.3)}`
-                                 }}
-                               />
-                               {selectedAnchorArticle ? (
-                                 <Chip
-                                   label={`⚓ ${selectedAnchorArticle.title.slice(0, 28)}...`}
-                                   size="small"
-                                   sx={{ bgcolor: 'rgba(0,0,0,0.05)', color: '#0f172a', fontWeight: 800, fontSize: '0.75rem' }}
-                                 />
-                               ) : (
-                                 <Chip
-                                   label="Freeform Thesis"
-                                   size="small"
-                                   sx={{ bgcolor: 'rgba(0,0,0,0.05)', color: '#64748b', fontWeight: 700, fontSize: '0.75rem' }}
-                                 />
-                               )}
-                             </Box>
-                           </Box>
-
-                           <Box sx={{ mb: 2 }}>
-                             <Typography sx={{ color: '#0f172a', fontWeight: 900, fontSize: { xs: '1.05rem', sm: '1.2rem' } }}>
-                               Attach Anchor Jobs (Optional)
-                             </Typography>
-                             <Typography sx={{ color: '#64748b', fontSize: '0.85rem' }}>
-                               Select open roles from the talent exchange to feature during your broadcast's Talent Liquidity close.
-                             </Typography>
-                           </Box>
-
-                           {/* JOBS GRID */}
-                           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2, mb: 3, maxHeight: 300, overflowY: 'auto', pr: 0.5 }}>
-                             {lsLoadingDB ? (
-                               <Box sx={{ py: 4, display: 'flex', justifyContent: 'center', gridColumn: '1 / -1' }}>
-                                 <CircularProgress size={32} sx={{ color: activeLsHub.color }} />
-                               </Box>
-                             ) : lsJobs.length === 0 ? (
-                               <Paper sx={{ p: 3, textAlign: 'center', borderRadius: '12px', bgcolor: '#f8fafc', gridColumn: '1 / -1', border: '1px dashed rgba(0,0,0,0.1)' }}>
-                                 <Typography sx={{ color: '#64748b', fontSize: '0.85rem' }}>
-                                   No active jobs currently available in the global talent exchange.
-                                 </Typography>
-                               </Paper>
-                             ) : (
-                               lsJobs.map(job => {
-                                 const isJobSelected = lsAnchorJobIds.includes(job.id);
-                                 return (
-                                   <Paper
-                                     key={job.id}
-                                     onClick={() => setLsAnchorJobIds(prev => prev.includes(job.id) ? prev.filter(x => x !== job.id) : [...prev, job.id])}
-                                     sx={{
-                                       p: 2,
-                                       borderRadius: '14px',
-                                       bgcolor: isJobSelected ? alpha(activeLsHub.color, 0.08) : '#ffffff',
-                                       border: '1.5px solid',
-                                       borderColor: isJobSelected ? activeLsHub.color : 'rgba(0, 0, 0, 0.08)',
-                                       boxShadow: isJobSelected ? `0 4px 14px ${alpha(activeLsHub.color, 0.15)}` : '0 2px 6px rgba(0,0,0,0.03)',
-                                       cursor: 'pointer',
-                                       transition: 'all 0.2s ease',
-                                       display: 'flex',
-                                       alignItems: 'center',
-                                       justifyContent: 'space-between',
-                                       gap: 1.5,
-                                       '&:hover': {
-                                         bgcolor: isJobSelected ? alpha(activeLsHub.color, 0.12) : '#f8fafc',
-                                         borderColor: activeLsHub.color
-                                       }
-                                     }}
-                                   >
-                                     <Box sx={{ minWidth: 0, flex: 1 }}>
-                                       <Typography sx={{ color: '#0f172a', fontWeight: 800, fontSize: '0.92rem', lineHeight: 1.3 }}>
-                                         {job.title}
-                                       </Typography>
-                                       <Typography sx={{ color: '#64748b', fontSize: '0.78rem', mt: 0.25 }}>
-                                         {job.organization?.name || 'Agro Enterprise'}
-                                       </Typography>
-                                     </Box>
-                                     <Box
-                                       sx={{
-                                         width: 20,
-                                         height: 20,
-                                         borderRadius: '6px',
-                                         border: '1.5px solid',
-                                         borderColor: isJobSelected ? activeLsHub.color : '#cbd5e1',
-                                         bgcolor: isJobSelected ? activeLsHub.color : 'transparent',
-                                         display: 'flex',
-                                         alignItems: 'center',
-                                         justifyContent: 'center',
-                                         flexShrink: 0
-                                       }}
-                                     >
-                                       {isJobSelected && <CheckIcon sx={{ fontSize: 13, color: '#ffffff' }} />}
-                                     </Box>
-                                   </Paper>
-                                 );
-                               })
-                             )}
-                           </Box>
-
-                           {/* Launch Studio Button & Summary */}
-                           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 3, pt: 2.5, borderTop: '1px solid rgba(0, 0, 0, 0.08)', flexWrap: 'wrap', gap: 2 }}>
-                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                               <Chip
-                                 label={`${lsAnchorJobIds.length} Job${lsAnchorJobIds.length !== 1 ? 's' : ''} Attached`}
-                                 size="small"
-                                 sx={{ bgcolor: 'rgba(0,0,0,0.05)', color: '#475569', fontWeight: 700 }}
-                               />
-                             </Box>
-
-                             <Button
-                               variant="contained"
-                               onClick={() => {
-                                 onStartFresh(
-                                   'livestream',
-                                   {
-                                     lsEngine,
-                                     lsAnchorArticleId,
-                                     lsAnchorJobIds,
-                                     category: activeLsHub.underlyingCategories[0],
-                                     subcategory: '',
-                                     timeframe: 'present'
-                                   },
-                                   {
-                                     title: selectedAnchorArticle?.title ? `${selectedAnchorArticle.title} — Livestream` : `${activeLsHub.title} Broadcast`,
-                                     description: selectedAnchorArticle?.description || `Livestream broadcast focusing on ${activeLsHub.subtitle}.`,
-                                     category: activeLsHub.underlyingCategories[0]
-                                   }
-                                 );
-                               }}
-                               sx={{
-                                 bgcolor: activeLsHub.color,
-                                 color: '#ffffff',
-                                 fontWeight: 900,
-                                 fontSize: '0.95rem',
-                                 py: 1.4,
-                                 px: 4,
-                                 borderRadius: '14px',
-                                 textTransform: 'none',
-                                 boxShadow: `0 8px 24px ${alpha(activeLsHub.color, 0.35)}`,
-                                 transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                                 '&:hover': {
-                                   bgcolor: activeLsHub.color,
-                                   opacity: 0.95,
-                                   transform: 'translateY(-2px)',
-                                   boxShadow: `0 12px 30px ${alpha(activeLsHub.color, 0.45)}`
-                                 }
-                               }}
-                             >
-                               🚀 Launch Livestream Studio
-                             </Button>
-                           </Box>
-                         </Box>
-                       )}
+                            <Button
+                              variant="contained"
+                              onClick={() => {
+                                onStartFresh(
+                                  'livestream',
+                                  {
+                                    lsEngine,
+                                    lsAnchorArticleId: lsAnchorArticleIds[0] || null,
+                                    lsAnchorArticleIds,
+                                    lsAnchorJobIds,
+                                    lsCtaArticleIds,
+                                    lsCtaListingIds,
+                                    lsCtaCampaignIds,
+                                    category: activeLsHub.underlyingCategories[0],
+                                    subcategory: '',
+                                    timeframe: 'present'
+                                  },
+                                  {
+                                    title: selectedAnchorArticles.length > 0
+                                      ? `${selectedAnchorArticles.map(a => a.title).slice(0, 2).join(' & ')} — Livestream`
+                                      : `${activeLsHub.title} Broadcast`,
+                                    description: selectedAnchorArticles[0]?.description || `Livestream broadcast focusing on ${activeLsHub.categories.join(' · ')}.`,
+                                    category: activeLsHub.underlyingCategories[0]
+                                  }
+                                );
+                              }}
+                              sx={{
+                                bgcolor: activeLsHub.color,
+                                color: '#ffffff',
+                                fontWeight: 900,
+                                fontSize: '0.95rem',
+                                py: 1.4,
+                                px: 4,
+                                borderRadius: '14px',
+                                textTransform: 'none',
+                                whiteSpace: 'nowrap',
+                                boxShadow: `0 8px 24px ${alpha(activeLsHub.color, 0.35)}`,
+                                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                                '&:hover': {
+                                  bgcolor: activeLsHub.color,
+                                  opacity: 0.95,
+                                  transform: 'translateY(-2px)',
+                                  boxShadow: `0 12px 30px ${alpha(activeLsHub.color, 0.45)}`
+                                }
+                              }}
+                            >
+                              🚀 Launch Livestream Studio
+                            </Button>
+                          </Paper>
+                        </Box>
+                      )}
                     </Box>
                   ) : (
                     // ───────────────────────────────────────────────────────────
@@ -1690,9 +2213,6 @@ export default function CreatorStudioDashboard({
                               <ArrowBackIcon sx={{ fontSize: 16 }} />
                             </IconButton>
                           )}
-                          <Box sx={{ p: 1, borderRadius: '12px', bgcolor: alpha(activeOpt.color, 0.12), color: activeOpt.color }}>
-                            {activeOpt.icon}
-                          </Box>
                           <Box>
                             {matrixStep === 3 ? (
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 0.5 }}>
