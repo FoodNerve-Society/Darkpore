@@ -385,32 +385,28 @@ function getSpectrumKey(spectrumRank?: string): string {
   return '1';
 }
 
+function getFlowTheme(spectrumRank?: string): string {
+  const key = getSpectrumKey(spectrumRank);
+  if (key === '1') return 'urgent shortages, price shocks, and immediate pain points';
+  if (key === '2') return 'corporate capital allocations, policy shifts, and institutional pivots';
+  if (key === '3') return 'practical operator workarounds, survival tactics, and informal hacks';
+  if (key === '4') return 'biological innovations, agronomy breakthroughs, and yield tech science';
+  if (key === '5') return 'cross-border currency dynamics, regional tariffs, and systemic climate risks';
+  if (key === '6') return 'unforeseen outlier disruptions, black swans, and radical industry ruptures';
+  return 'practical operator workarounds, survival tactics, and informal hacks';
+}
+
 function getFlowSentence(
   spectrumRank?: string,
   formatName?: string,
   subcategoryTitle?: string,
   actorName?: string
 ): string {
-  const key = getSpectrumKey(spectrumRank);
   const articleType = (formatName || 'brief').toLowerCase();
   const subcategory = subcategoryTitle ? `in ${subcategoryTitle}` : 'across key operational segments';
   const cleanActor = (actorName && actorName.trim()) ? actorName.trim() : 'key value chain operators';
   const actorStr = cleanActor.toLowerCase().startsWith('for ') ? cleanActor : `for ${cleanActor}`;
-
-  let flowTheme = 'practical operator workarounds, survival tactics, and informal hacks';
-  if (key === '1') {
-    flowTheme = 'urgent shortages, price shocks, and immediate pain points';
-  } else if (key === '2') {
-    flowTheme = 'corporate capital allocations, policy shifts, and institutional pivots';
-  } else if (key === '3') {
-    flowTheme = 'practical operator workarounds, survival tactics, and informal hacks';
-  } else if (key === '4') {
-    flowTheme = 'biological innovations, agronomy breakthroughs, and yield tech science';
-  } else if (key === '5') {
-    flowTheme = 'cross-border currency dynamics, regional tariffs, and systemic climate risks';
-  } else if (key === '6') {
-    flowTheme = 'unforeseen outlier disruptions, black swans, and radical industry ruptures';
-  }
+  const flowTheme = getFlowTheme(spectrumRank);
 
   return `This ${articleType} explores the ${flowTheme} ${subcategory} ${actorStr}.`;
 }
@@ -1871,55 +1867,55 @@ export default function CreatorStudioDashboard({
                                   onClick={() => handleSelectCommodityAndWeek(currentWeek, activeComm)}
                                   sx={{
                                     width: { xs: '100%', md: '80%' },
-                                    minHeight: { xs: 220, sm: 240, md: 255 },
-                                    borderRadius: '24px',
+                                    minHeight: { xs: 210, sm: 240, md: 260 },
+                                    borderRadius: '28px',
                                     position: 'relative',
                                     overflow: 'hidden',
                                     cursor: 'pointer',
-                                    border: '2.5px solid #3b82f6',
-                                    boxShadow: '0 0 35px rgba(59, 130, 246, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
-                                    transform: { xs: 'none', md: 'rotateX(5deg)' },
+                                    bgcolor: '#0f172a',
+                                    border: '2.5px solid rgba(255, 255, 255, 0.25)',
+                                    boxShadow: '0 12px 32px rgba(0, 0, 0, 0.45)',
+                                    transform: { xs: 'none', md: 'rotateX(4deg)' },
                                     transformOrigin: 'bottom center',
                                     transition: 'all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)',
                                     display: 'flex',
                                     flexDirection: 'column',
                                     justifyContent: 'space-between',
-                                    p: { xs: 2.5, sm: 3.5 },
+                                    p: { xs: 2.25, sm: 3 },
                                     '&:hover': {
                                       transform: { xs: 'translateY(-4px) scale(1.01)', md: 'rotateX(0deg) translateY(-6px) scale(1.01)' },
-                                      borderColor: '#60a5fa',
-                                      boxShadow: '0 20px 48px rgba(59, 130, 246, 0.55)',
-                                      '& .hero-bg': { transform: 'scale(1.08)' }
+                                      borderColor: 'rgba(255, 255, 255, 0.55)',
+                                      boxShadow: '0 20px 48px rgba(0, 0, 0, 0.55)',
+                                      '& .hero-bg': { transform: 'scale(1.06)' }
                                     }
                                   }}
                                 >
-                                  {/* Background Image */}
+                                  {/* Background Image (Clean without dark filter) */}
                                   <Box
                                     className="hero-bg"
+                                    sx={{
+                                      position: 'absolute',
+                                      inset: 0,
+                                      backgroundImage: `url(${activeMeta.imageUrl})`,
+                                      backgroundSize: 'cover',
+                                      backgroundPosition: 'center',
+                                      transition: 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
+                                      zIndex: 0,
+                                    }}
+                                  />
+
+                                  {/* Top Gradient for Date & Badges */}
+                                  <Box
                                     sx={{
                                       position: 'absolute',
                                       top: 0,
                                       left: 0,
                                       right: 0,
-                                      bottom: 0,
-                                      backgroundImage: `url(${activeMeta.imageUrl})`,
-                                      backgroundSize: 'cover',
-                                      backgroundPosition: 'center',
-                                      transition: 'transform 0.6s ease',
-                                      zIndex: 0,
+                                      height: '55%',
+                                      background: 'linear-gradient(180deg, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.2) 65%, transparent 100%)',
+                                      zIndex: 1,
                                     }}
                                   />
-
-                                  {/* Dark Gradient Vignette */}
-                                  <Box sx={{
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 0,
-                                    right: 0,
-                                    bottom: 0,
-                                    background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.5) 50%, rgba(15, 23, 42, 0.85) 100%)',
-                                    zIndex: 1,
-                                  }} />
 
                                   {/* Top Badges */}
                                   <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
@@ -1941,34 +1937,74 @@ export default function CreatorStudioDashboard({
                                         label="LIVE FOCUS"
                                         size="small"
                                         sx={{
-                                          bgcolor: 'rgba(59, 130, 246, 0.25)',
-                                          color: '#bfdbfe',
+                                          bgcolor: 'rgba(255, 255, 255, 0.25)',
+                                          color: '#ffffff',
                                           fontWeight: 900,
                                           fontSize: '0.8rem',
                                           height: 28,
-                                          border: '1px solid rgba(59, 130, 246, 0.5)'
+                                          border: '1px solid rgba(255, 255, 255, 0.4)',
+                                          backdropFilter: 'blur(8px)'
                                         }}
                                       />
                                     </Box>
-                                    <Typography sx={{ color: '#bfdbfe', fontSize: '1rem', fontWeight: 800 }}>
+                                    <Typography sx={{ color: '#ffffff', fontSize: '0.95rem', fontWeight: 800, textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}>
                                       {activeDateStr}
                                     </Typography>
                                   </Box>
 
-                                  {/* Bottom Title & Trigger */}
-                                  <Box sx={{ position: 'relative', zIndex: 2, mt: 'auto', pt: 2.5 }}>
-                                    <Typography variant="h4" sx={{
-                                      color: '#fff',
-                                      fontWeight: 900,
-                                      letterSpacing: '-0.02em',
-                                      lineHeight: 1.15,
-                                      fontSize: { xs: '1.85rem', sm: '2.4rem', md: '2.75rem' },
-                                      textShadow: '0 4px 14px rgba(0,0,0,0.7)'
-                                    }}>
-                                      {activeComm}
-                                    </Typography>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, color: '#93c5fd', fontWeight: 900, fontSize: '1.05rem', mt: 1 }}>
-                                      Select Active Cycle <ArrowForwardArrow sx={{ fontSize: 20 }} />
+                                  {/* Bottom Row: Commodity White Pill & Action Pill */}
+                                  <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5, mt: 'auto' }}>
+                                    <Box
+                                      sx={{
+                                        bgcolor: '#ffffff',
+                                        color: '#0f172a',
+                                        px: { xs: 2.25, sm: 3 },
+                                        py: { xs: 0.85, sm: 1.1 },
+                                        borderRadius: '999px',
+                                        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
+                                        border: '1px solid rgba(255, 255, 255, 0.9)',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 1
+                                      }}
+                                    >
+                                      <Typography
+                                        sx={{
+                                          color: '#0f172a',
+                                          fontWeight: 900,
+                                          letterSpacing: '-0.02em',
+                                          lineHeight: 1.2,
+                                          fontSize: { xs: '1.25rem', sm: '1.55rem', md: '1.75rem' }
+                                        }}
+                                      >
+                                        🌾 {activeComm}
+                                      </Typography>
+                                    </Box>
+
+                                    <Box
+                                      sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 1,
+                                        bgcolor: 'rgba(255, 255, 255, 0.92)',
+                                        color: '#0f172a',
+                                        fontWeight: 900,
+                                        fontSize: { xs: '0.88rem', sm: '0.95rem' },
+                                        px: 2.5,
+                                        py: 1,
+                                        borderRadius: '999px',
+                                        boxShadow: '0 6px 20px rgba(0, 0, 0, 0.25)',
+                                        backdropFilter: 'blur(8px)',
+                                        border: '1px solid rgba(255, 255, 255, 0.8)',
+                                        flexShrink: 0,
+                                        transition: 'all 0.2s ease',
+                                        '&:hover': {
+                                          bgcolor: '#3b82f6',
+                                          color: '#ffffff'
+                                        }
+                                      }}
+                                    >
+                                      Select Active Cycle <ArrowForwardArrow sx={{ fontSize: 18 }} />
                                     </Box>
                                   </Box>
                                 </Paper>
@@ -1989,86 +2025,111 @@ export default function CreatorStudioDashboard({
                                     elevation={0}
                                     onClick={() => handleSelectCommodityAndWeek(item.targetWeek, item.comm)}
                                     sx={{
-                                      minHeight: { xs: 175, sm: 190, md: 205 },
-                                      borderRadius: '22px',
+                                      borderRadius: '26px',
+                                      minHeight: { xs: 170, sm: 190, md: 210 },
                                       position: 'relative',
                                       overflow: 'hidden',
                                       cursor: 'pointer',
-                                      border: '1.5px solid rgba(255,255,255,0.18)',
+                                      bgcolor: '#0f172a',
+                                      border: '2.5px solid rgba(255, 255, 255, 0.25)',
+                                      boxShadow: '0 12px 32px rgba(0, 0, 0, 0.35)',
                                       transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
                                       display: 'flex',
                                       flexDirection: 'column',
                                       justifyContent: 'space-between',
-                                      p: { xs: 2.5, sm: 3 },
+                                      p: { xs: 1.75, sm: 2.25 },
                                       '&:hover': {
-                                        transform: 'translateY(-4px) scale(1.015)',
-                                        borderColor: 'rgba(255,255,255,0.4)',
-                                        boxShadow: '0 14px 34px rgba(0,0,0,0.45)',
-                                        '& .bento-bg': { transform: 'scale(1.08)' }
+                                        transform: 'translateY(-4px) scale(1.02)',
+                                        borderColor: 'rgba(255, 255, 255, 0.55)',
+                                        boxShadow: '0 18px 42px rgba(0, 0, 0, 0.45)',
+                                        '& .bento-bg': { transform: 'scale(1.08)' },
+                                        '& .bento-pill': { transform: 'scale(1.03)', boxShadow: '0 8px 24px rgba(0,0,0,0.35)' }
                                       }
                                     }}
                                   >
-                                    {/* Background Image */}
+                                    {/* Background Image (Clean without dark filter) */}
                                     <Box
                                       className="bento-bg"
+                                      sx={{
+                                        position: 'absolute',
+                                        inset: 0,
+                                        backgroundImage: `url(${item.meta.imageUrl})`,
+                                        backgroundSize: 'cover',
+                                        backgroundPosition: 'center',
+                                        transition: 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+                                        zIndex: 0,
+                                      }}
+                                    />
+
+                                    {/* Top Gradient for Date & Week */}
+                                    <Box
                                       sx={{
                                         position: 'absolute',
                                         top: 0,
                                         left: 0,
                                         right: 0,
-                                        bottom: 0,
-                                        backgroundImage: `url(${item.meta.imageUrl})`,
-                                        backgroundSize: 'cover',
-                                        backgroundPosition: 'center',
-                                        transition: 'transform 0.5s ease',
-                                        zIndex: 0,
+                                        height: '55%',
+                                        background: 'linear-gradient(180deg, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.2) 65%, transparent 100%)',
+                                        zIndex: 1,
                                       }}
                                     />
 
-                                    {/* Dark Vignette Overlay */}
-                                    <Box sx={{
-                                      position: 'absolute',
-                                      top: 0,
-                                      left: 0,
-                                      right: 0,
-                                      bottom: 0,
-                                      background: 'linear-gradient(to top, rgba(0, 0, 0, 0.92) 0%, rgba(0, 0, 0, 0.4) 50%, rgba(0, 0, 0, 0.7) 100%)',
-                                      zIndex: 1,
-                                    }} />
-
                                     {/* Top Bar: Week + Date Range */}
-                                    <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
                                       <Chip
                                         label={`Week ${item.targetWeek}`}
                                         size="small"
                                         sx={{
-                                          bgcolor: 'rgba(255, 255, 255, 0.2)',
-                                          color: '#fff',
+                                          bgcolor: 'rgba(255, 255, 255, 0.25)',
+                                          color: '#ffffff',
                                           fontWeight: 900,
-                                          fontSize: '0.88rem',
+                                          fontSize: '0.82rem',
                                           height: 26,
                                           px: 0.5,
-                                          border: '1px solid rgba(255, 255, 255, 0.3)',
+                                          border: '1px solid rgba(255, 255, 255, 0.4)',
                                           backdropFilter: 'blur(8px)'
                                         }}
                                       />
-                                      <Typography sx={{ color: 'rgba(255,255,255,0.9)', fontSize: '0.88rem', fontWeight: 800 }}>
+                                      <Typography sx={{ color: '#ffffff', fontSize: '0.84rem', fontWeight: 800, textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
                                         {item.dateRangeStr}
                                       </Typography>
                                     </Box>
 
-                                    {/* Bottom: Commodity Title */}
-                                    <Box sx={{ position: 'relative', zIndex: 2 }}>
-                                      <Typography sx={{
-                                        color: '#fff',
-                                        fontWeight: 900,
-                                        fontSize: { xs: '1.35rem', sm: '1.55rem', md: '1.75rem' },
-                                        lineHeight: 1.2,
-                                        letterSpacing: '-0.02em',
-                                        textShadow: '0 2px 6px rgba(0,0,0,0.7)'
-                                      }}>
-                                        {item.comm}
-                                      </Typography>
+                                    {/* Bottom: White Pill with Commodity Title */}
+                                    <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', mt: 'auto' }}>
+                                      <Box
+                                        className="bento-pill"
+                                        sx={{
+                                          bgcolor: '#ffffff',
+                                          color: '#0f172a',
+                                          px: { xs: 1.75, sm: 2.25 },
+                                          py: { xs: 0.6, sm: 0.8 },
+                                          borderRadius: '999px',
+                                          boxShadow: '0 6px 20px rgba(0, 0, 0, 0.25)',
+                                          border: '1px solid rgba(255, 255, 255, 0.85)',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: 1,
+                                          maxWidth: '100%',
+                                          transition: 'all 0.25s ease'
+                                        }}
+                                      >
+                                        <Typography
+                                          sx={{
+                                            color: '#0f172a',
+                                            fontWeight: 900,
+                                            fontSize: { xs: '0.95rem', sm: '1.05rem', md: '1.15rem' },
+                                            lineHeight: 1.2,
+                                            letterSpacing: '-0.02em',
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis'
+                                          }}
+                                        >
+                                          🌾 {item.comm}
+                                        </Typography>
+                                        <ArrowForwardArrow sx={{ fontSize: 16, color: '#3b82f6', flexShrink: 0 }} />
+                                      </Box>
                                     </Box>
                                   </Paper>
                                 </Box>
@@ -2729,17 +2790,8 @@ export default function CreatorStudioDashboard({
                                         >
                                           <AnimatePresence initial={false} custom={deckActiveIndex}>
                                             {displayCards.map((item, index) => {
-                                             // Non-looping linear index delta
-                                             const diff = index - deckActiveIndex;
-
-                                             // For mobile vertical deck: render exiting (-1), active (0), and stacked (1, 2)
-                                             // On desktop horizontal carousel: render active (0) and immediate neighbors (-1, 1)
-                                             if (isMobile) {
-                                               if (diff < -1 || diff > 2) return null;
-                                             } else {
-                                               if (Math.abs(diff) > 1) return null;
-                                             }
-
+                                              // Non-looping linear index delta
+                                              const diff = index - deckActiveIndex;
                                               const isActive = diff === 0;
 
                                               // Check if item is the completion/retry card
@@ -2794,6 +2846,15 @@ export default function CreatorStudioDashboard({
                                                   opacity = 0.85;
                                                   rotateX = -4;
                                                   rotateY = 0;
+                                                } else if (diff > 2) {
+                                                  // Deep stacked cards waiting behind stack (smooth glide-in)
+                                                  x = 0;
+                                                  y = 52 + (diff - 3) * 10;
+                                                  scale = Math.max(0.72, 0.82 - (diff - 3) * 0.04);
+                                                  zIndex = Math.max(1, 5 - diff);
+                                                  opacity = 0;
+                                                  rotateX = -6;
+                                                  rotateY = 0;
                                                 } else if (diff === -1) {
                                                   // Exiting card: drops down off the screen (top-to-bottom swipe animation)
                                                   x = 0;
@@ -2803,6 +2864,15 @@ export default function CreatorStudioDashboard({
                                                   opacity = 0;
                                                   rotateX = 6;
                                                   rotateY = 0;
+                                                } else {
+                                                  // Older exited cards
+                                                  x = 0;
+                                                  y = 500 + Math.abs(diff + 1) * 40;
+                                                  scale = 0.9;
+                                                  zIndex = 1;
+                                                  opacity = 0;
+                                                  rotateX = 8;
+                                                  rotateY = 0;
                                                 }
                                               } else {
                                                 // Desktop horizontal 3D carousel
@@ -2810,7 +2880,7 @@ export default function CreatorStudioDashboard({
                                                 const scaleFactor = 0.88;
                                                 const rotateAngle = 12;
 
-                                                if (isActive) {
+                                                if (diff === 0) {
                                                   x = 0;
                                                   y = 0;
                                                   scale = 1;
@@ -2818,14 +2888,40 @@ export default function CreatorStudioDashboard({
                                                   opacity = 1;
                                                   rotateX = 0;
                                                   rotateY = (!isItemRetryCard && isCardFlipped) ? 180 : 0;
-                                                } else {
-                                                  x = diff * xOffset;
+                                                } else if (diff === 1) {
+                                                  x = xOffset;
                                                   y = 0;
                                                   scale = scaleFactor;
                                                   zIndex = 5;
                                                   opacity = 1;
                                                   rotateX = 0;
-                                                  rotateY = diff * -rotateAngle;
+                                                  rotateY = -rotateAngle;
+                                                } else if (diff === -1) {
+                                                  x = -xOffset;
+                                                  y = 0;
+                                                  scale = scaleFactor;
+                                                  zIndex = 5;
+                                                  opacity = 1;
+                                                  rotateX = 0;
+                                                  rotateY = rotateAngle;
+                                                } else if (diff > 1) {
+                                                  // Upcoming cards waiting on the right (smooth glide-in)
+                                                  x = diff * xOffset;
+                                                  y = 0;
+                                                  scale = Math.max(0.68, scaleFactor - (diff - 1) * 0.08);
+                                                  zIndex = Math.max(1, 5 - diff);
+                                                  opacity = 0;
+                                                  rotateX = 0;
+                                                  rotateY = -rotateAngle * 1.4;
+                                                } else {
+                                                  // Past cards exited to the left
+                                                  x = diff * xOffset;
+                                                  y = 0;
+                                                  scale = Math.max(0.68, scaleFactor - (Math.abs(diff) - 1) * 0.08);
+                                                  zIndex = Math.max(1, 5 - Math.abs(diff));
+                                                  opacity = 0;
+                                                  rotateX = 0;
+                                                  rotateY = rotateAngle * 1.4;
                                                 }
                                               }
 
@@ -2874,283 +2970,315 @@ export default function CreatorStudioDashboard({
                                                     minHeight: isMobile ? 420 : 500,
                                                     transformStyle: 'preserve-3d',
                                                     WebkitTransformStyle: 'preserve-3d',
-                                                    cursor: isActive ? (isItemRetryCard ? 'default' : (isCardFlipped ? 'default' : 'grab')) : 'pointer',
+                                                    cursor: isActive ? (isItemRetryCard ? 'default' : (isCardFlipped ? 'default' : 'grab')) : (Math.abs(diff) === 1 ? 'pointer' : 'default'),
                                                     borderRadius: '28px',
                                                     touchAction: isMobile ? 'pan-x' : 'pan-y',
+                                                    pointerEvents: (isMobile ? (diff > 2 || diff < 0) : Math.abs(diff) > 1) ? 'none' : 'auto',
                                                   }}
                                                   onClick={() => {
-                                                    if (!isActive) {
+                                                    if (!isActive && Math.abs(diff) === 1) {
                                                       setIsCardFlipped(false);
                                                       setDeckActiveIndex(index);
                                                     }
                                                   }}
                                                 >
                                                  {/* ── CARD FRONT (3D FACE) ── */}
-                                                 <Box
-                                                   onClick={() => {
-                                                     if (isActive && !isCardFlipped && !isItemRetryCard) setIsCardFlipped(true);
-                                                   }}
-                                                   sx={{
-                                                     position: 'absolute',
-                                                     inset: 0,
-                                                     backfaceVisibility: 'hidden',
-                                                     WebkitBackfaceVisibility: 'hidden',
-                                                     transform: 'rotateY(0deg) translateZ(1px)',
-                                                     pointerEvents: (isActive && isCardFlipped) ? 'none' : 'auto',
-                                                     borderRadius: '28px',
-                                                     bgcolor: '#ffffff', // 100% Solid white opaque
-                                                     border: `1.5px solid ${alpha(itemRMeta.color, isActive ? 0.35 : 0.2)}`,
-                                                     boxShadow: isActive 
-                                                       ? `0 24px 60px -12px rgba(15, 23, 42, 0.16), 0 0 0 1px #ffffff inset, 0 12px 36px -8px ${alpha(itemRMeta.color, 0.22)}` 
-                                                       : '0 16px 38px -8px rgba(15, 23, 42, 0.12), 0 0 0 1px #ffffff inset',
-                                                     p: { xs: 2.5, sm: 4.5 },
-                                                     display: 'flex',
-                                                     flexDirection: 'column',
-                                                     justifyContent: 'space-between',
-                                                     alignItems: 'center',
-                                                     textAlign: 'center',
-                                                     background: '#ffffff', // Completely opaque solid background to prevent bleed
-                                                     overflow: 'hidden',
-                                                     userSelect: 'none',
-                                                     '&::before': {
-                                                       content: '""',
-                                                       position: 'absolute',
-                                                       top: 0,
-                                                       left: 0,
-                                                       right: 0,
-                                                       height: '35%',
-                                                       background: `linear-gradient(180deg, ${alpha(itemRMeta.color, 0.06)} 0%, rgba(255,255,255,0) 100%)`,
-                                                       pointerEvents: 'none',
-                                                       zIndex: 1,
-                                                     }
-                                                   }}
-                                                 >
-                                                   {isItemRetryCard ? (
-                                                     /* ── SPECIAL RETRY / RESTART CARD ── */
-                                                     isActive ? (
-                                                       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', my: 'auto', gap: { xs: 2, sm: 3 }, width: '100%', maxWidth: 600, position: 'relative', zIndex: 2 }}>
-                                                         {/* Big Icon / Badge */}
-                                                         <Box
-                                                           sx={{
-                                                             width: { xs: 56, sm: 76 },
-                                                             height: { xs: 56, sm: 76 },
-                                                             borderRadius: { xs: '18px', sm: '24px' },
-                                                             bgcolor: '#0f172a',
-                                                             color: '#ffffff',
-                                                             display: 'flex',
-                                                             alignItems: 'center',
-                                                             justifyContent: 'center',
-                                                             boxShadow: '0 16px 36px rgba(15, 23, 42, 0.28)',
-                                                             transform: 'rotate(-4deg)',
-                                                             mb: 0.5
-                                                           }}
-                                                         >
-                                                           <RefreshIcon sx={{ fontSize: { xs: 28, sm: 42 } }} />
-                                                         </Box>
+                                                  <Box
+                                                    onClick={() => {
+                                                      if (isActive && !isCardFlipped && !isItemRetryCard) setIsCardFlipped(true);
+                                                    }}
+                                                    sx={{
+                                                      position: 'absolute',
+                                                      inset: 0,
+                                                      backfaceVisibility: 'hidden',
+                                                      WebkitBackfaceVisibility: 'hidden',
+                                                      transform: 'rotateY(0deg) translateZ(1px)',
+                                                      pointerEvents: (isActive && isCardFlipped) ? 'none' : 'auto',
+                                                      borderRadius: '28px',
+                                                      bgcolor: isItemRetryCard ? '#090d16' : '#ffffff',
+                                                      border: isItemRetryCard 
+                                                        ? '1.5px solid rgba(255, 255, 255, 0.18)' 
+                                                        : `1.5px solid ${alpha(itemRMeta.color, isActive ? 0.35 : 0.2)}`,
+                                                      boxShadow: isItemRetryCard 
+                                                        ? '0 28px 64px -12px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.08) inset, 0 12px 36px -8px rgba(0, 0, 0, 0.5)' 
+                                                        : (isActive 
+                                                            ? `0 24px 60px -12px rgba(15, 23, 42, 0.16), 0 0 0 1px #ffffff inset, 0 12px 36px -8px ${alpha(itemRMeta.color, 0.22)}` 
+                                                            : '0 16px 38px -8px rgba(15, 23, 42, 0.12), 0 0 0 1px #ffffff inset'),
+                                                      p: { xs: 2.5, sm: 4.5 },
+                                                      display: 'flex',
+                                                      flexDirection: 'column',
+                                                      justifyContent: 'space-between',
+                                                      alignItems: 'center',
+                                                      textAlign: 'center',
+                                                      background: isItemRetryCard ? 'linear-gradient(135deg, #090d16 0%, #0f172a 100%)' : '#ffffff',
+                                                      overflow: 'hidden',
+                                                      userSelect: 'none',
+                                                      '&::before': {
+                                                        content: '""',
+                                                        position: 'absolute',
+                                                        top: 0,
+                                                        left: 0,
+                                                        right: 0,
+                                                        height: '35%',
+                                                        background: isItemRetryCard 
+                                                          ? 'linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, rgba(9, 13, 22, 0) 100%)'
+                                                          : `linear-gradient(180deg, ${alpha(itemRMeta.color, 0.06)} 0%, rgba(255,255,255,0) 100%)`,
+                                                        pointerEvents: 'none',
+                                                        zIndex: 1,
+                                                      }
+                                                    }}
+                                                  >
+                                                    {isItemRetryCard ? (
+                                                      /* ── SPECIAL RETRY / RESTART CARD (DARK COLOR INVERTED) ── */
+                                                      isActive ? (
+                                                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', my: 'auto', gap: { xs: 2, sm: 3 }, width: '100%', maxWidth: 600, position: 'relative', zIndex: 2 }}>
+                                                          {/* Big Icon / Badge */}
+                                                          <Box
+                                                            sx={{
+                                                              width: { xs: 56, sm: 76 },
+                                                              height: { xs: 56, sm: 76 },
+                                                              borderRadius: { xs: '18px', sm: '24px' },
+                                                              bgcolor: 'rgba(255, 255, 255, 0.1)',
+                                                              color: '#ffffff',
+                                                              display: 'flex',
+                                                              alignItems: 'center',
+                                                              justifyContent: 'center',
+                                                              boxShadow: '0 16px 36px rgba(0, 0, 0, 0.4)',
+                                                              border: '1.5px solid rgba(255, 255, 255, 0.2)',
+                                                              backdropFilter: 'blur(10px)',
+                                                              transform: 'rotate(-4deg)',
+                                                              mb: 0.5
+                                                            }}
+                                                          >
+                                                            <RefreshIcon sx={{ fontSize: { xs: 28, sm: 42 } }} />
+                                                          </Box>
 
-                                                         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                                                           <Typography
-                                                             variant="h3"
-                                                             sx={{
-                                                               color: '#0f172a',
-                                                               fontWeight: 900,
-                                                               fontSize: { xs: '1.45rem', sm: '2.25rem' },
-                                                               lineHeight: 1.2,
-                                                               letterSpacing: '-0.03em',
-                                                             }}
-                                                           >
-                                                             You've Explored Every Angle
-                                                           </Typography>
-                                                           <Typography
-                                                             sx={{
-                                                               color: '#475569',
-                                                               fontSize: { xs: '0.88rem', sm: '1.05rem' },
-                                                               lineHeight: 1.6,
-                                                               fontWeight: 500,
-                                                               maxWidth: 520,
-                                                             }}
-                                                           >
-                                                             All {insights.length} editorial angles for the <strong>{selectedCommodity}</strong> value chain have been reviewed. Ready to start from Card 1 or regenerate new angles?
-                                                           </Typography>
-                                                         </Box>
+                                                          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                                                            <Typography
+                                                              variant="h3"
+                                                              sx={{
+                                                                color: '#ffffff',
+                                                                fontWeight: 900,
+                                                                fontSize: { xs: '1.45rem', sm: '2.25rem' },
+                                                                lineHeight: 1.2,
+                                                                letterSpacing: '-0.03em',
+                                                              }}
+                                                            >
+                                                              You've Explored Every Angle
+                                                            </Typography>
+                                                            <Typography
+                                                              sx={{
+                                                                color: '#94a3b8',
+                                                                fontSize: { xs: '0.88rem', sm: '1.05rem' },
+                                                                lineHeight: 1.6,
+                                                                fontWeight: 500,
+                                                                maxWidth: 520,
+                                                              }}
+                                                            >
+                                                              All {insights.length} editorial angles for the <strong style={{ color: '#ffffff' }}>{selectedCommodity}</strong> value chain have been reviewed. Ready to start from Card 1 or regenerate new angles?
+                                                            </Typography>
+                                                          </Box>
 
-                                                         {/* Action Buttons */}
-                                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1.5, sm: 2 }, mt: 0.5, flexWrap: 'wrap', justifyContent: 'center' }}>
-                                                           <Button
-                                                             variant="contained"
-                                                             onClick={(e) => {
-                                                               e.stopPropagation();
-                                                               handleRestartDeck();
-                                                             }}
-                                                             startIcon={<RefreshIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />}
-                                                             sx={{
-                                                               bgcolor: '#0f172a',
-                                                               color: '#ffffff',
-                                                               fontWeight: 900,
-                                                               fontSize: { xs: '0.86rem', sm: '0.98rem' },
-                                                               px: { xs: 3, sm: 5 },
-                                                               py: { xs: 1.1, sm: 1.35 },
-                                                               borderRadius: '999px',
-                                                               textTransform: 'none',
-                                                               boxShadow: '0 10px 28px rgba(15, 23, 42, 0.28)',
-                                                               transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                                                               '&:hover': {
-                                                                 bgcolor: '#1e293b',
-                                                                 transform: 'translateY(-2px) scale(1.02)',
-                                                                 boxShadow: '0 14px 34px rgba(15, 23, 42, 0.36)',
-                                                               }
-                                                             }}
-                                                           >
-                                                             Start Again from Card 1
-                                                           </Button>
+                                                          {/* Action Buttons */}
+                                                          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1.5, sm: 2 }, mt: 0.5, flexWrap: 'wrap', justifyContent: 'center' }}>
+                                                            <Button
+                                                              variant="contained"
+                                                              onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleRestartDeck();
+                                                              }}
+                                                              startIcon={<RefreshIcon sx={{ fontSize: { xs: 18, sm: 20 } }} />}
+                                                              sx={{
+                                                                bgcolor: '#ffffff',
+                                                                color: '#090d16',
+                                                                fontWeight: 900,
+                                                                fontSize: { xs: '0.86rem', sm: '0.98rem' },
+                                                                px: { xs: 3, sm: 5 },
+                                                                py: { xs: 1.1, sm: 1.35 },
+                                                                borderRadius: '999px',
+                                                                textTransform: 'none',
+                                                                boxShadow: '0 10px 28px rgba(0, 0, 0, 0.4)',
+                                                                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                                                                '&:hover': {
+                                                                  bgcolor: '#f1f5f9',
+                                                                  transform: 'translateY(-2px) scale(1.02)',
+                                                                  boxShadow: '0 14px 34px rgba(0, 0, 0, 0.5)',
+                                                                }
+                                                              }}
+                                                            >
+                                                              Start Again from Card 1
+                                                            </Button>
 
-                                                           <Button
-                                                             variant="outlined"
-                                                             onClick={(e) => {
-                                                               e.stopPropagation();
-                                                               handlePrevCard();
-                                                             }}
-                                                             startIcon={<ArrowBackIcon sx={{ fontSize: 16 }} />}
-                                                             sx={{
-                                                               color: '#475569',
-                                                               borderColor: 'rgba(203, 213, 225, 0.9)',
-                                                               fontWeight: 800,
-                                                               py: 1.35,
-                                                               borderRadius: '999px',
-                                                               textTransform: 'none',
-                                                               '&:hover': {
-                                                                 borderColor: '#0f172a',
-                                                                 color: '#0f172a',
-                                                                 bgcolor: 'rgba(15, 23, 42, 0.04)',
-                                                               }
-                                                             }}
-                                                           >
-                                                             Previous Card
-                                                           </Button>
-                                                         </Box>
-                                                       </Box>
-                                                     ) : (
-                                                       /* Neighbor Card View of Retry Card */
-                                                       <Box
-                                                         sx={{
-                                                           display: 'flex',
-                                                           flexDirection: 'column',
-                                                           alignItems: 'center',
-                                                           justifyContent: 'center',
-                                                           height: '100%',
-                                                           width: '100%',
-                                                           gap: 2.5,
-                                                           position: 'relative',
-                                                           zIndex: 2,
-                                                         }}
-                                                       >
-                                                         <Chip
-                                                           label="Review Finished"
-                                                           sx={{
-                                                             bgcolor: 'rgba(15, 23, 42, 0.08)',
-                                                             color: '#0f172a',
-                                                             fontWeight: 900,
-                                                             fontSize: '0.85rem',
-                                                             height: 32,
-                                                             px: 1.5,
-                                                             borderRadius: '999px',
-                                                             border: '1.5px solid rgba(15, 23, 42, 0.22)',
-                                                           }}
-                                                         />
-                                                         <Typography
-                                                           sx={{
-                                                             color: '#94a3b8',
-                                                             fontSize: '0.88rem',
-                                                             fontWeight: 700,
-                                                             letterSpacing: '0.04em',
-                                                             textTransform: 'uppercase',
-                                                           }}
-                                                         >
-                                                           Tap to Start Over
-                                                         </Typography>
-                                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#64748b' }}>
-                                                           <RefreshIcon sx={{ fontSize: 16, color: '#0f172a' }} />
-                                                           <Typography sx={{ fontSize: '0.85rem', fontWeight: 700, color: '#0f172a' }}>
-                                                             Restart Deck
-                                                           </Typography>
-                                                         </Box>
-                                                       </Box>
-                                                     )
-                                                   ) : isActive ? (
-                                                     /* ── ACTIVE REGULAR CARD: FULL EDITORIAL BRIEF DETAILS ── */
-                                                     <>
-                                                       {/* Top: Premium Subtitle Badge with flow accent color */}
-                                                       <Box
-                                                         sx={{
-                                                           display: 'inline-flex',
-                                                           alignItems: 'center',
-                                                           gap: 1,
-                                                           px: 2.2,
-                                                           py: 0.65,
-                                                           borderRadius: '999px',
-                                                           bgcolor: alpha(itemRMeta.color, 0.08),
-                                                           border: `1.5px solid ${alpha(itemRMeta.color, 0.26)}`,
-                                                           boxShadow: `0 4px 14px ${alpha(itemRMeta.color, 0.1)}`,
-                                                           position: 'relative',
-                                                           zIndex: 2,
-                                                         }}
-                                                       >
-                                                         <Box
-                                                           sx={{
-                                                             width: 7,
-                                                             height: 7,
-                                                             borderRadius: '50%',
-                                                             bgcolor: itemRMeta.color,
-                                                             boxShadow: `0 0 8px ${itemRMeta.color}`,
-                                                           }}
-                                                         />
-                                                         <Typography
-                                                           sx={{
-                                                             textTransform: 'uppercase',
-                                                             fontSize: { xs: '0.72rem', sm: '0.78rem' },
-                                                             fontWeight: 900,
-                                                             letterSpacing: '0.07em',
-                                                             color: itemRMeta.color,
-                                                           }}
-                                                         >
-                                                           {itemSubtitle}
-                                                         </Typography>
-                                                       </Box>
+                                                            <Button
+                                                              variant="outlined"
+                                                              onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handlePrevCard();
+                                                              }}
+                                                              startIcon={<ArrowBackIcon sx={{ fontSize: 16 }} />}
+                                                              sx={{
+                                                                color: '#cbd5e1',
+                                                                borderColor: 'rgba(255, 255, 255, 0.25)',
+                                                                bgcolor: 'rgba(255, 255, 255, 0.05)',
+                                                                fontWeight: 800,
+                                                                py: 1.35,
+                                                                borderRadius: '999px',
+                                                                textTransform: 'none',
+                                                                '&:hover': {
+                                                                  borderColor: '#ffffff',
+                                                                  color: '#ffffff',
+                                                                  bgcolor: 'rgba(255, 255, 255, 0.12)',
+                                                                }
+                                                              }}
+                                                            >
+                                                              Previous Card
+                                                            </Button>
+                                                          </Box>
+                                                        </Box>
+                                                      ) : (
+                                                        /* Neighbor Card View of Retry Card (Dark Theme) */
+                                                        <Box
+                                                          sx={{
+                                                            display: 'flex',
+                                                            flexDirection: 'column',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            height: '100%',
+                                                            width: '100%',
+                                                            gap: 2.5,
+                                                            position: 'relative',
+                                                            zIndex: 2,
+                                                          }}
+                                                        >
+                                                          <Chip
+                                                            label="Review Finished"
+                                                            sx={{
+                                                              bgcolor: 'rgba(255, 255, 255, 0.12)',
+                                                              color: '#ffffff',
+                                                              fontWeight: 900,
+                                                              fontSize: '0.85rem',
+                                                              height: 32,
+                                                              px: 1.5,
+                                                              borderRadius: '999px',
+                                                              border: '1.5px solid rgba(255, 255, 255, 0.25)',
+                                                            }}
+                                                          />
+                                                          <Typography
+                                                            sx={{
+                                                              color: '#64748b',
+                                                              fontSize: '0.88rem',
+                                                              fontWeight: 700,
+                                                              letterSpacing: '0.04em',
+                                                              textTransform: 'uppercase',
+                                                            }}
+                                                          >
+                                                            Tap to Start Over
+                                                          </Typography>
+                                                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#94a3b8' }}>
+                                                            <RefreshIcon sx={{ fontSize: 16, color: '#ffffff' }} />
+                                                            <Typography sx={{ fontSize: '0.85rem', fontWeight: 700, color: '#ffffff' }}>
+                                                              Restart Deck
+                                                            </Typography>
+                                                          </Box>
+                                                        </Box>
+                                                      )
+                                                    ) : isActive ? (
+                                                      /* ── ACTIVE REGULAR CARD: FULL EDITORIAL BRIEF DETAILS ── */
+                                                      <>
+                                                        {/* Middle Section: Subtitle Pill On Top of Title, Big Title, and Flow Sentence with Capital Blocks */}
+                                                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: { xs: 1.5, sm: 2 }, my: 'auto', width: '100%', maxWidth: 660, position: 'relative', zIndex: 2 }}>
+                                                          {/* Contrasting Container with Color of Card Directly on Top of Title */}
+                                                          <Box
+                                                            sx={{
+                                                              bgcolor: itemRMeta.color,
+                                                              color: '#ffffff',
+                                                              px: { xs: 2.2, sm: 3 },
+                                                              py: { xs: 0.65, sm: 0.85 },
+                                                              borderRadius: '999px',
+                                                              boxShadow: `0 6px 18px ${alpha(itemRMeta.color, 0.38)}`,
+                                                              display: 'inline-flex',
+                                                              alignItems: 'center',
+                                                              gap: 1,
+                                                              mb: 0.5
+                                                            }}
+                                                          >
+                                                            <Typography
+                                                              sx={{
+                                                                textTransform: 'uppercase',
+                                                                fontSize: { xs: '0.74rem', sm: '0.82rem' },
+                                                                fontWeight: 900,
+                                                                letterSpacing: '0.06em',
+                                                                color: '#ffffff',
+                                                              }}
+                                                            >
+                                                              {itemSubtitle}
+                                                            </Typography>
+                                                          </Box>
 
-                                                       {/* Middle Section: Bigger Title and Flow Sentence */}
-                                                       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: { xs: 1.5, sm: 2 }, my: 'auto', width: '100%', maxWidth: 660, position: 'relative', zIndex: 2 }}>
-                                                         <Typography
-                                                           variant="h3"
-                                                           sx={{
-                                                             color: '#0f172a',
-                                                             fontWeight: 900,
-                                                             fontSize: { xs: '1.35rem', sm: '2.15rem', md: '2.45rem' },
-                                                             lineHeight: 1.25,
-                                                             letterSpacing: '-0.03em',
-                                                             px: { xs: 0.5, sm: 2 },
-                                                           }}
-                                                         >
-                                                           {item.title}
-                                                         </Typography>
+                                                          <Typography
+                                                            variant="h3"
+                                                            sx={{
+                                                              color: '#0f172a',
+                                                              fontWeight: 900,
+                                                              fontSize: { xs: '1.35rem', sm: '2.15rem', md: '2.45rem' },
+                                                              lineHeight: 1.25,
+                                                              letterSpacing: '-0.03em',
+                                                              px: { xs: 0.5, sm: 2 },
+                                                            }}
+                                                          >
+                                                            {item.title}
+                                                          </Typography>
 
-                                                         {/* Contextual Flow Sentence */}
-                                                         <Typography
-                                                           sx={{
-                                                             color: '#475569',
-                                                             fontSize: { xs: '0.86rem', sm: '1rem' },
-                                                             lineHeight: 1.6,
-                                                             fontWeight: 500,
-                                                             maxWidth: 600,
-                                                           }}
-                                                         >
-                                                           {getFlowSentence(
-                                                             item.spectrumRank,
-                                                             itemArticleType,
-                                                             item.subcategoryTitle || item.subcategoryId,
-                                                             item.targetPersona || (item as any).valueChainActor || (item as any).actor || (item as any).jobFunction || 'Value Chain Operators'
-                                                           )}
-                                                         </Typography>
-                                                       </Box>
+                                                          {/* Contextual Flow Sentence with Subcategory and Value Chain Actor in Matching Capital Blocks */}
+                                                          {(() => {
+                                                            const rawActor = (item.targetPersona || (item as any).valueChainActor || (item as any).actor || (item as any).jobFunction || 'Value Chain Operators') as string;
+                                                            const cleanActor = rawActor.replace(/^for\s+/i, '').trim();
+                                                            const theme = getFlowTheme(item.spectrumRank);
+                                                            const rawSubcat = item.subcategoryTitle || item.subcategoryId || 'Key Operational Segments';
+                                                            const cleanSubcat = rawSubcat.replace(/^in\s+/i, '').trim();
+
+                                                            const capitalBlockSx = {
+                                                              display: 'inline-block',
+                                                              bgcolor: alpha(itemRMeta.color, 0.12),
+                                                              color: itemRMeta.color,
+                                                              border: `1.5px solid ${alpha(itemRMeta.color, 0.3)}`,
+                                                              px: 1.25,
+                                                              py: 0.25,
+                                                              borderRadius: '8px',
+                                                              fontWeight: 900,
+                                                              fontSize: '0.84em',
+                                                              letterSpacing: '0.04em',
+                                                              textTransform: 'uppercase' as const,
+                                                              verticalAlign: 'baseline',
+                                                              mx: 0.35,
+                                                              boxShadow: `0 2px 6px ${alpha(itemRMeta.color, 0.1)}`
+                                                            };
+
+                                                            return (
+                                                              <Typography
+                                                                sx={{
+                                                                  color: '#475569',
+                                                                  fontSize: { xs: '0.86rem', sm: '1rem' },
+                                                                  lineHeight: 1.65,
+                                                                  fontWeight: 500,
+                                                                  maxWidth: 620,
+                                                                  textAlign: 'center',
+                                                                  mt: 0.5
+                                                                }}
+                                                              >
+                                                                {`This ${(itemArticleType || 'brief').toLowerCase()} explores the ${theme} in `}
+                                                                <Box component="span" sx={capitalBlockSx}>
+                                                                  {cleanSubcat.toUpperCase()}
+                                                                </Box>
+                                                                {` for `}
+                                                                <Box component="span" sx={capitalBlockSx}>
+                                                                  {cleanActor.toUpperCase()}
+                                                                </Box>
+                                                                .
+                                                              </Typography>
+                                                            );
+                                                          })()}
+                                                        </Box>
 
                                                        {/* Bottom Row: Article Count (Bottom Left) & View More Details (Far Bottom Right) */}
                                                        <Box 
@@ -3365,7 +3493,7 @@ export default function CreatorStudioDashboard({
                                                              fontSize: { xs: '1.05rem', sm: '1.28rem' },
                                                              lineHeight: 1.3,
                                                              letterSpacing: '-0.02em',
-                                                             mb: 1.5,
+                                                             mb: 1,
                                                            }}
                                                          >
                                                            {item.title}
