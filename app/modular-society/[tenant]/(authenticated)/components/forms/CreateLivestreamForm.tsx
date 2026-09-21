@@ -2,14 +2,34 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Box, Typography, Button, TextField, MenuItem, Select, FormControl, InputLabel, CircularProgress, Chip, IconButton, Alert, Paper } from '@mui/material';
-import { ArrowBack as ArrowBackIcon, CheckCircle as CheckCircleIcon, Article as ArticleIcon, AutoAwesome as SparkleIcon, Check as CheckIcon, Info as InfoIcon } from '@mui/icons-material';
+import { ArrowBack as ArrowBackIcon, CheckCircle as CheckCircleIcon, Article as ArticleIcon, AutoAwesome as SparkleIcon, Check as CheckIcon, Info as InfoIcon, ArrowForward as ArrowForwardIcon } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import { useSociety } from '@/context/SocietyContext';
 import { fetchLivestreamContentPool, createLearnContent } from '@/lib/actions/learn';
 import LivestreamRundownBuilder from './livestream/LivestreamRundownBuilder';
 import LivestreamIdeasSidePane from './livestream/LivestreamIdeasSidePane';
+import PremiumTextField from '@/components/PremiumTextField';
+import PremiumDatePicker from '@/components/PremiumDatePicker';
+import PremiumTimePicker from '@/components/PremiumTimePicker';
+import PremiumDropdown from '@/components/PremiumDropdown';
 import { useStorageUpload } from '@/hooks/useStorageUpload';
 import { alpha } from '@mui/system';
+
+const CATEGORY_OPTIONS = [
+  { id: 'capital', label: 'Capital', secondaryLabel: 'Financing, credit, investments & subsidies', emoji: '💰' },
+  { id: 'land', label: 'Land', secondaryLabel: 'Tenure, soil health, clustering & spatial planning', emoji: '🌾' },
+  { id: 'inputs', label: 'Inputs', secondaryLabel: 'Certified seeds, fertilizer & biological treatments', emoji: '🧪' },
+  { id: 'energy', label: 'Energy', secondaryLabel: 'Solar cold storage, off-grid power & processing fuels', emoji: '⚡' },
+  { id: 'insecurity', label: 'Insecurity', secondaryLabel: 'Risk mitigation, pastoral conflict & insurance', emoji: '🛡️' },
+  { id: 'post-harvest', label: 'Post-Harvest', secondaryLabel: 'Cold chain, transit loss, aggregation & grading', emoji: '🚚' },
+  { id: 'people-talent', label: 'People & Talent', secondaryLabel: 'Skilled labor, youth upskilling & agronomy', emoji: '👥' },
+];
+
+const TIMEFRAME_OPTIONS = [
+  { id: 'present', label: 'Present Era', secondaryLabel: 'Immediate friction, active market disconnects & live offtake pitches', emoji: '⚡', tag: '⚡ Current' },
+  { id: 'future', label: 'Future Era', secondaryLabel: 'Next-gen mechanization, AI tech & emerging career pathways', emoji: '🚀', tag: '🚀 2030' },
+  { id: 'past', label: 'Past Era', secondaryLabel: 'Historical retrospect, colonial legacy & failed policy case studies', emoji: '📜', tag: '📜 History' },
+];
 
 const ERA_CONFIG: Record<string, any> = {
   past: { label: 'Past', color: '#6366f1', emoji: '📜' },
@@ -80,9 +100,64 @@ export default function CreateLivestreamForm({
   const [audienceButtonLink, setAudienceButtonLink] = useState(initialDraftData?.livestream?.communications?.audienceMessage?.buttonLink || '');
   
   // Taxonomy State
-  const [category, setCategory] = useState(initialTaxonomy?.category || 'technology');
+  const [category, setCategory] = useState(initialTaxonomy?.category || 'capital');
   const [subcategory, setSubcategory] = useState(initialTaxonomy?.subcategory || '');
   const [timeframe, setTimeframe] = useState(initialTaxonomy?.timeframe || 'present');
+
+  // Split eventDate into date and time components for PremiumDatePicker and PremiumTimePicker
+  const eventDatePart = useMemo(() => {
+    if (!eventDate) return '';
+    try {
+      if (eventDate.includes('T')) {
+        return eventDate.split('T')[0];
+      }
+      const d = new Date(eventDate);
+      if (!isNaN(d.getTime())) {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+      return '';
+    } catch {
+      return '';
+    }
+  }, [eventDate]);
+
+  const eventTimePart = useMemo(() => {
+    if (!eventDate) return '10:00';
+    try {
+      if (eventDate.includes('T')) {
+        const timeSub = eventDate.split('T')[1];
+        return timeSub.substring(0, 5);
+      }
+      const d = new Date(eventDate);
+      if (!isNaN(d.getTime())) {
+        const hours = String(d.getHours()).padStart(2, '0');
+        const mins = String(d.getMinutes()).padStart(2, '0');
+        return `${hours}:${mins}`;
+      }
+      return '10:00';
+    } catch {
+      return '10:00';
+    }
+  }, [eventDate]);
+
+  const handleDateChange = (newDateStr: string) => {
+    const time = eventTimePart || '10:00';
+    if (newDateStr) {
+      setEventDate(`${newDateStr}T${time}:00`);
+    } else {
+      setEventDate('');
+    }
+  };
+
+  const handleTimeChange = (newTimeStr: string) => {
+    const date = eventDatePart || new Date().toISOString().split('T')[0];
+    if (newTimeStr) {
+      setEventDate(`${date}T${newTimeStr}:00`);
+    }
+  };
 
   // Rundown Blocks
   const [rundownBlocks, setRundownBlocks] = useState<any[]>(
@@ -304,40 +379,304 @@ export default function CreateLivestreamForm({
         </Box>
 
         {step === 1 && (
-          <Box sx={{ maxWidth: 800, mx: 'auto', width: '100%' }}>
-            <Typography variant="h4" sx={{ fontWeight: 900, mb: 1, color: '#0f172a', letterSpacing: '-0.02em' }}>
-              Livestream Details
-            </Typography>
-            <Typography sx={{ color: '#475569', mb: 4, fontWeight: 500, fontSize: '1.05rem' }}>
-              Define the core metadata for your livestream before building the rundown.
-            </Typography>
+          <Box sx={{ maxWidth: 840, mx: 'auto', width: '100%' }}>
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="h4" sx={{ fontWeight: 900, mb: 0.5, color: '#0f172a', letterSpacing: '-0.02em' }}>
+                Livestream Details
+              </Typography>
+              <Typography sx={{ color: '#475569', fontWeight: 500, fontSize: '1.05rem' }}>
+                Define the core metadata for your livestream before building the rundown.
+              </Typography>
+            </Box>
 
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, bgcolor: '#fff', p: 4, borderRadius: '24px', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 12px 40px rgba(0,0,0,0.03)' }}>
-              <TextField fullWidth label="Livestream Title" value={title} onChange={e => setTitle(e.target.value)} />
-              <TextField fullWidth multiline rows={4} label="Description / Overview" value={description} onChange={e => setDescription(e.target.value)} />
+            {/* ── GET LIVESTREAM IDEAS HERE (Exact Article Replica Architecture) ── */}
+            {!dismissedIdeasCard && (
+              <Paper
+                elevation={0}
+                sx={{
+                  p: { xs: 2.5, sm: 3.5 },
+                  mb: 4,
+                  borderRadius: '28px',
+                  background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%)',
+                  border: '1.5px solid rgba(226, 232, 240, 0.9)',
+                  boxShadow: '0 12px 36px -10px rgba(0, 0, 0, 0.05)',
+                  display: 'flex',
+                  flexDirection: { xs: 'column', md: 'row' },
+                  alignItems: { xs: 'flex-start', md: 'center' },
+                  gap: { xs: 2.5, md: 4 },
+                  position: 'relative',
+                  overflow: 'hidden',
+                }}
+              >
+                {/* Left Visual: 2 Overlapping Squircles (Live Studio Screen + Master Hub Topic) with "×" connector */}
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    position: 'relative',
+                    py: { xs: 1, md: 1.5 },
+                    px: { xs: 1, md: 1.5 },
+                    flexShrink: 0,
+                    mx: { xs: 'auto', md: 0 },
+                  }}
+                >
+                  {/* Top Squircle: Livestream Interface */}
+                  <Box
+                    sx={{
+                      width: { xs: 104, sm: 116 },
+                      height: { xs: 104, sm: 116 },
+                      borderRadius: '28px',
+                      overflow: 'hidden',
+                      position: 'relative',
+                      background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+                      border: '2.5px solid rgba(255, 255, 255, 0.95)',
+                      boxShadow: '0 12px 32px rgba(15, 23, 42, 0.25)',
+                      transform: 'rotate(-4deg)',
+                      zIndex: 2,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.3s ease',
+                      '&:hover': { transform: 'rotate(0deg) scale(1.05)', zIndex: 3 },
+                    }}
+                  >
+                    <Box sx={{ position: 'relative', mb: 0.5 }}>
+                      <Typography sx={{ fontSize: '2rem' }}>🎙️</Typography>
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          top: 0,
+                          right: 0,
+                          width: 8,
+                          height: 8,
+                          borderRadius: '50%',
+                          bgcolor: '#22c55e',
+                          boxShadow: '0 0 0 2px #ffffff',
+                        }}
+                      />
+                    </Box>
+                    <Typography sx={{ color: '#ffffff', fontSize: '0.72rem', fontWeight: 900, letterSpacing: '0.02em' }}>
+                      Live Studio
+                    </Typography>
+                  </Box>
+
+                  {/* Center "×" Badge */}
+                  <Box
+                    sx={{
+                      width: 26,
+                      height: 26,
+                      borderRadius: '50%',
+                      bgcolor: '#0f172a',
+                      color: '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 900,
+                      fontSize: '0.85rem',
+                      border: '2px solid #ffffff',
+                      zIndex: 3,
+                      my: -2,
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+                    }}
+                  >
+                    ×
+                  </Box>
+
+                  {/* Bottom Squircle: Active Master Hub Topic */}
+                  <Box
+                    sx={{
+                      width: { xs: 104, sm: 116 },
+                      height: { xs: 104, sm: 116 },
+                      borderRadius: '28px',
+                      overflow: 'hidden',
+                      position: 'relative',
+                      background: `linear-gradient(135deg, ${hubColor} 0%, #0f172a 100%)`,
+                      border: '2.5px solid rgba(255, 255, 255, 0.95)',
+                      boxShadow: '0 12px 32px rgba(0, 0, 0, 0.2)',
+                      transform: 'rotate(4deg)',
+                      zIndex: 1,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.3s ease',
+                      '&:hover': { transform: 'rotate(0deg) scale(1.05)', zIndex: 3 },
+                    }}
+                  >
+                    <Typography sx={{ fontSize: '1.75rem', mb: 0.5 }}>
+                      {initialTaxonomy?.hubId === 'energy-security' ? '⚡' : initialTaxonomy?.hubId === 'markets-talent' ? '🤝' : '🏗️'}
+                    </Typography>
+                    <Typography sx={{ color: '#ffffff', fontSize: '0.72rem', fontWeight: 900, textAlign: 'center', px: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
+                      {hubTitle}
+                    </Typography>
+                  </Box>
+                </Box>
+
+                {/* Content Section: Title, Description & Action Buttons (Exact Article Hierarchy) */}
+                <Box
+                  sx={{
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    alignItems: { xs: 'center', md: 'flex-start' },
+                    gap: 2.5,
+                    py: { xs: 0, md: 0.5 },
+                    zIndex: 1,
+                  }}
+                >
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                    <Typography variant="h5" sx={{ color: '#0f172a', fontWeight: 900, letterSpacing: '-0.02em', fontSize: { xs: '1.35rem', sm: '1.55rem' } }}>
+                      Get livestream ideas here
+                    </Typography>
+                    <Typography sx={{ color: '#334155', fontSize: { xs: '0.92rem', sm: '0.96rem' }, lineHeight: 1.6, fontWeight: 500 }}>
+                      Spend 1 minute to get fresh, realistic livestream ideas people want to watch, or choose Ignore to write yourself.
+                    </Typography>
+                  </Box>
+
+                  {/* Buttons underneath the text */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: { xs: 'center', md: 'flex-start' }, gap: 2, flexWrap: 'wrap' }}>
+                    <Button
+                      variant="contained"
+                      onClick={() => setIsIdeasDrawerOpen(true)}
+                      endIcon={<ArrowForwardIcon sx={{ fontSize: '14px !important' }} />}
+                      sx={{
+                        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+                        color: '#ffffff',
+                        fontWeight: 900,
+                        px: 3.8,
+                        py: 1.3,
+                        borderRadius: '14px',
+                        textTransform: 'none',
+                        fontSize: '0.92rem',
+                        boxShadow: '0 6px 20px rgba(15, 23, 42, 0.25)',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          background: 'linear-gradient(135deg, #020617 0%, #0f172a 100%)',
+                          transform: 'translateY(-2px)',
+                          boxShadow: '0 10px 28px rgba(15, 23, 42, 0.35)',
+                        }
+                      }}
+                    >
+                      Start (~1 min)
+                    </Button>
+                    <Button
+                      variant="text"
+                      onClick={() => setDismissedIdeasCard(true)}
+                      sx={{
+                        color: '#475569',
+                        bgcolor: '#ffffff',
+                        border: '1.5px solid #cbd5e1',
+                        fontWeight: 800,
+                        px: 3,
+                        py: 1.25,
+                        borderRadius: '14px',
+                        textTransform: 'none',
+                        fontSize: '0.9rem',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          color: '#0f172a',
+                          bgcolor: '#f8fafc',
+                          borderColor: 'rgba(0, 0, 0, 0.25)',
+                          transform: 'translateY(-1px)',
+                        }
+                      }}
+                    >
+                      Ignore
+                    </Button>
+                  </Box>
+                </Box>
+              </Paper>
+            )}
+
+            {/* ── CORE METADATA FORM BOX (Using Premium Components) ── */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, bgcolor: '#ffffff', p: { xs: 3, sm: 4.5 }, borderRadius: '28px', border: '1.5px solid rgba(226, 232, 240, 0.9)', boxShadow: '0 12px 40px rgba(0,0,0,0.03)' }}>
+              <PremiumTextField
+                fullWidth
+                label="Livestream Title"
+                placeholder="e.g. Mechanization Bottlenecks in Southwest Cassava Clusters"
+                value={title}
+                onChange={e => setTitle(e.target.value)}
+                colorTheme={hubColor}
+              />
+
+              <PremiumTextField
+                fullWidth
+                multiline
+                rows={4}
+                label="Description / Overview"
+                placeholder="Explain what topics, field case studies, and actionable takeaways will be discussed..."
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                colorTheme={hubColor}
+              />
               
-              <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', md: 'row' } }}>
-                <TextField fullWidth type="datetime-local" label="Event Date & Time" value={eventDate} onChange={e => setEventDate(e.target.value)} slotProps={{ inputLabel: { shrink: true } }} />
+              {/* Event Date & Time Pickers */}
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
+                <PremiumDatePicker
+                  fullWidth
+                  label="Event Date"
+                  value={eventDatePart}
+                  onChange={(e) => handleDateChange(e.target.value)}
+                  colorTheme={hubColor}
+                  minDate={new Date()}
+                />
+                <PremiumTimePicker
+                  fullWidth
+                  label="Event Time"
+                  value={eventTimePart}
+                  onChange={(e) => handleTimeChange(e.target.value)}
+                  colorTheme={hubColor}
+                />
               </Box>
 
-              <Typography variant="h6" sx={{ fontWeight: 800, mt: 2, mb: 1, color: '#0f172a' }}>Taxonomy</Typography>
-              <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', md: 'row' } }}>
-                <FormControl fullWidth>
-                  <InputLabel>Category</InputLabel>
-                  <Select value={category} label="Category" onChange={e => setCategory(e.target.value)}>
-                    <MenuItem value="technology">Technology</MenuItem>
-                    <MenuItem value="agriculture">Agriculture</MenuItem>
-                    <MenuItem value="finance">Finance</MenuItem>
-                  </Select>
-                </FormControl>
-                <FormControl fullWidth>
-                  <InputLabel>Timeframe</InputLabel>
-                  <Select value={timeframe} label="Timeframe" onChange={e => setTimeframe(e.target.value)}>
-                    <MenuItem value="past">Past</MenuItem>
-                    <MenuItem value="present">Present</MenuItem>
-                    <MenuItem value="future">Future</MenuItem>
-                  </Select>
-                </FormControl>
+              <Typography variant="h6" sx={{ fontWeight: 900, mt: 1, mb: 0.5, color: '#0f172a', fontSize: '1rem', letterSpacing: '-0.01em' }}>
+                Taxonomy & Timeline
+              </Typography>
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <Typography sx={{ fontSize: '0.85rem', fontWeight: 800, color: '#475569', ml: 0.5 }}>
+                    Category Focus
+                  </Typography>
+                  <PremiumDropdown
+                    fullWidth
+                    colorTheme={hubColor}
+                    label={CATEGORY_OPTIONS.find(c => c.id === category)?.label || 'Select Category'}
+                    popoverTitle="Select Category Focus"
+                    popoverSubtitle="Choose the structural pillar this broadcast addresses"
+                    options={CATEGORY_OPTIONS}
+                    value={CATEGORY_OPTIONS.find(c => c.id === category) || null}
+                    onChange={(opt) => setCategory(opt?.id || opt)}
+                    getOptionId={(opt) => opt?.id || opt}
+                    getOptionLabel={(opt) => opt?.label || opt}
+                    getOptionSecondary={(opt) => opt?.secondaryLabel}
+                    getOptionEmoji={(opt) => opt?.emoji}
+                  />
+                </Box>
+
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <Typography sx={{ fontSize: '0.85rem', fontWeight: 800, color: '#475569', ml: 0.5 }}>
+                    Temporal Timeframe & Era
+                  </Typography>
+                  <PremiumDropdown
+                    fullWidth
+                    colorTheme={hubColor}
+                    label={TIMEFRAME_OPTIONS.find(t => t.id === timeframe)?.label || 'Select Timeframe'}
+                    popoverTitle="Select Broadcast Timeframe"
+                    popoverSubtitle="Determines presentation narrative arc and default segment templates"
+                    options={TIMEFRAME_OPTIONS}
+                    value={TIMEFRAME_OPTIONS.find(t => t.id === timeframe) || null}
+                    onChange={(opt) => setTimeframe(opt?.id || opt)}
+                    getOptionId={(opt) => opt?.id || opt}
+                    getOptionLabel={(opt) => opt?.label || opt}
+                    getOptionSecondary={(opt) => opt?.secondaryLabel}
+                    getOptionTag={(opt) => opt?.tag}
+                    getOptionEmoji={(opt) => opt?.emoji}
+                  />
+                </Box>
               </Box>
             </Box>
           </Box>
@@ -534,8 +873,8 @@ export default function CreateLivestreamForm({
           <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 1 }}>
             {[1, 2, 3].map((s) => (
               <Box key={s} sx={{
-                width: s === step ? 32 : 12, height: 4, borderRadius: 2,
-                bgcolor: s === step ? '#3b82f6' : (s < step ? '#10b981' : 'rgba(0,0,0,0.1)'),
+                width: s === step ? 32 : 12, height: 5, borderRadius: 3,
+                bgcolor: s === step ? hubColor : (s < step ? '#10b981' : 'rgba(0,0,0,0.12)'),
                 transition: 'all 0.3s ease'
               }} />
             ))}
@@ -561,10 +900,24 @@ export default function CreateLivestreamForm({
             <Button 
               variant="contained" 
               onClick={() => setStep(step + 1)}
+              endIcon={<ArrowForwardIcon sx={{ fontSize: 18 }} />}
               sx={{ 
-                borderRadius: '14px', fontWeight: 800, px: 4, bgcolor: '#0f172a',
-                boxShadow: '0 4px 12px rgba(15,23,42,0.2)',
-                '&:hover': { bgcolor: '#1e293b' }
+                borderRadius: '14px', 
+                fontWeight: 900, 
+                px: 4, 
+                py: 1.25,
+                background: `linear-gradient(135deg, ${hubColor} 0%, ${alpha(hubColor, 0.88)} 100%)`,
+                color: '#ffffff',
+                boxShadow: `0 8px 24px ${alpha(hubColor, 0.4)}`,
+                textTransform: 'none',
+                fontSize: '0.95rem',
+                letterSpacing: '-0.01em',
+                transition: 'all 0.2s ease',
+                '&:hover': { 
+                  background: `linear-gradient(135deg, ${hubColor} 0%, ${hubColor} 100%)`,
+                  transform: 'translateY(-1px)',
+                  boxShadow: `0 10px 28px ${alpha(hubColor, 0.5)}`
+                }
               }}
             >
               Next Step
@@ -575,9 +928,27 @@ export default function CreateLivestreamForm({
               onClick={() => handleSave(true)}
               disabled={!canPublish || isSubmitting}
               sx={{ 
-                borderRadius: '14px', fontWeight: 800, px: 4, bgcolor: '#3b82f6',
-                boxShadow: '0 4px 12px rgba(59,130,246,0.3)',
-                '&:hover': { bgcolor: '#2563eb' }
+                borderRadius: '14px', 
+                fontWeight: 900, 
+                px: 4, 
+                py: 1.25,
+                background: `linear-gradient(135deg, #10b981 0%, #059669 100%)`,
+                color: '#ffffff',
+                boxShadow: '0 8px 24px rgba(16,185,129,0.35)',
+                textTransform: 'none',
+                fontSize: '0.95rem',
+                letterSpacing: '-0.01em',
+                transition: 'all 0.2s ease',
+                '&:hover': { 
+                  background: `linear-gradient(135deg, #059669 0%, #047857 100%)`,
+                  transform: 'translateY(-1px)',
+                  boxShadow: '0 10px 28px rgba(16,185,129,0.45)'
+                },
+                '&.Mui-disabled': {
+                  background: 'rgba(15,23,42,0.12)',
+                  color: 'rgba(15,23,42,0.38)',
+                  boxShadow: 'none'
+                }
               }}
             >
               Schedule & Publish
@@ -585,6 +956,39 @@ export default function CreateLivestreamForm({
           )}
         </Box>
       </Box>
+
+      {/* ── LIVESTREAM AI IDEAS SLIDE-OVER DRAWER ── */}
+      <LivestreamIdeasSidePane
+        open={isIdeasDrawerOpen}
+        onClose={() => setIsIdeasDrawerOpen(false)}
+        hubTitle={hubTitle}
+        hubColor={hubColor}
+        currentCategory={category}
+        guidingArticles={guidingArticles}
+        onApplyIdea={(idea) => {
+          setTitle(idea.title);
+          setDescription(idea.description);
+          if (idea.timeframe) {
+            setTimeframe(idea.timeframe);
+            const framework = LIVESTREAM_FRAMEWORKS[idea.timeframe] || LIVESTREAM_FRAMEWORKS.present;
+            const initialPlaceholders = framework.map((f: any) => ({
+              id: Math.random().toString(),
+              sourceType: 'transition',
+              originalBlockType: 'transition',
+              originalContent: { 
+                role: f.role, 
+                description: f.desc,
+                focusSummary: idea.title 
+              },
+              speakerNotes: '',
+              durationStr: '~15m'
+            }));
+            setRundownBlocks(initialPlaceholders);
+            setFrameworkLoaded(true);
+          }
+          if (idea.category) setCategory(idea.category);
+        }}
+      />
     </Box>
   );
 }
