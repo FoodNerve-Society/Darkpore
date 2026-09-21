@@ -81,6 +81,8 @@ export default function CreateLivestreamForm({
   const hubTitle = initialTaxonomy?.hubTitle || initialDraftData?.livestream?.hub?.title || 'Production & Capital';
   const hubColor = initialTaxonomy?.hubColor || initialDraftData?.livestream?.hub?.color || '#10b981';
   const guidingArticles = initialDraftData?.anchorArticles || initialDraftData?.livestream?.anchorArticles || [];
+  const guidingJobs = initialDraftData?.livestream?.ctaJobs || [];
+  const guidingListings = initialDraftData?.livestream?.ctaListings || [];
 
   // Form State
   const [title, setTitle] = useState(initialDraftData?.title || '');
@@ -965,6 +967,8 @@ export default function CreateLivestreamForm({
         hubColor={hubColor}
         currentCategory={category}
         guidingArticles={guidingArticles}
+        guidingJobs={guidingJobs}
+        guidingListings={guidingListings}
         onApplyIdea={(idea) => {
           setTitle(idea.title);
           setDescription(idea.description);

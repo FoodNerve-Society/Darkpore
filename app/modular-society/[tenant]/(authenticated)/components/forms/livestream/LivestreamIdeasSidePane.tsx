@@ -56,7 +56,9 @@ interface LivestreamIdeasSidePaneProps {
   hubTitle?: string;
   hubColor?: string;
   currentCategory?: string;
-  guidingArticles?: Array<{ id: string; title: string; description?: string }>;
+  guidingArticles?: Array<{ id: string; title: string; description?: string; [key: string]: any }>;
+  guidingJobs?: Array<{ id: string; title: string; compensationOrTarget?: string; organizationChallenges?: string; [key: string]: any }>;
+  guidingListings?: Array<{ id: string; title: string; [key: string]: any }>;
   onApplyIdea: (idea: {
     title: string;
     description: string;
@@ -80,7 +82,6 @@ function parseLivestreamPayload(rawText: string, fallbackHub: string, fallbackCa
     const titleMatch = sec.match(/###?\s*(?:Blueprint\s*\d*[:.-]?\s*)?([^\n\r]+)/i) ||
                        sec.match(/[*•-]?\s*\*?\*?Title\*?\*?:\s*([^\n\r*]+)/i);
     const title = titleMatch ? titleMatch[1].replace(/[*_`]/g, '').trim() : '';
-    if (!title && sec.length < 30) return;
 
     const eraMatch = sec.match(/[*•-]?\s*\*?\*?(?:Era|Timeframe)\*?\*?:\s*([^\n\r*]+)/i);
     const rawEra = eraMatch ? eraMatch[1].toLowerCase().trim() : 'present';
@@ -93,10 +94,11 @@ function parseLivestreamPayload(rawText: string, fallbackHub: string, fallbackCa
     const description = descMatch ? descMatch[1].replace(/[*_`]/g, '').trim() : `Comprehensive live panel on ${title || fallbackHub}.`;
 
     const hookMatch = sec.match(/[*•-]?\s*\*?\*?(?:Hook|Angle|Core Debate)\*?\*?:\s*([^\n\r*]+)/i);
-    const hook = hookMatch ? hookMatch[1].replace(/[*_`]/g, '').trim() : 'Unpack the operational frictions and commercial opportunities.';
+    const hook = hookMatch ? hookMatch[1].replace(/[*_`]/g, '').trim() : `Unpack the structural mechanics behind ${title || fallbackHub}.`;
 
-    const rundownMatch = sec.match(/[*•-]?\s*\*?\*?(?:Rundown|Segments|Framework)\*?\*?:([\s\S]*?)(?=(?:[*•-]?\s*\*?\*?(?:Key Questions|Questions|---)|$))/i);
+    // Parse rundown / segments
     const segments: LivestreamRundownSegment[] = [];
+    const rundownMatch = sec.match(/[*•-]?\s*\*?\*?(?:Rundown|Segments|Framework)\*?\*?:([\s\S]*?)(?=(?:[*•-]?\s*\*?\*?(?:Key Questions|Questions|---)|$))/i);
     if (rundownMatch) {
       const segLines = rundownMatch[1].split('\n').filter(l => l.trim().length > 0);
       segLines.forEach((line) => {
