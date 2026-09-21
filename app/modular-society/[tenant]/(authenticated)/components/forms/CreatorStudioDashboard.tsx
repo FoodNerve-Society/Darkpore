@@ -2893,31 +2893,79 @@ export default function CreatorStudioDashboard({
                           <Paper
                             elevation={0}
                             sx={{
-                              p: { xs: 2.5, sm: 3 },
-                              borderRadius: '20px',
-                              background: `linear-gradient(135deg, ${alpha(activeLsHub.color, 0.08)} 0%, rgba(255, 255, 255, 0.95) 100%)`,
-                              border: `1.5px solid ${alpha(activeLsHub.color, 0.25)}`,
+                              p: { xs: 3.5, sm: 4.5 },
+                              borderRadius: '28px',
+                              background: `linear-gradient(180deg, ${alpha(activeLsHub.color, 0.12)} 0%, rgba(255, 255, 255, 0.98) 40%, ${alpha(activeLsHub.color, 0.05)} 100%)`,
+                              backdropFilter: 'blur(28px)',
+                              WebkitBackdropFilter: 'blur(28px)',
+                              border: `1.5px solid ${alpha(activeLsHub.color, 0.3)}`,
+                              boxShadow: `0 20px 45px -10px ${alpha(activeLsHub.color, 0.18)}, 0 4px 12px rgba(0,0,0,0.03)`,
                               display: 'flex',
-                              flexDirection: { xs: 'column', sm: 'row' },
-                              alignItems: { xs: 'flex-start', sm: 'center' },
-                              justifyContent: 'space-between',
-                              gap: 2,
-                              mt: 2,
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              textAlign: 'center',
+                              maxWidth: { xs: '100%', sm: 540 },
+                              mx: 'auto',
+                              mt: 4,
+                              position: 'relative',
+                              overflow: 'hidden',
+                              '&::before': {
+                                content: '""',
+                                position: 'absolute',
+                                top: 0,
+                                left: '15%',
+                                right: '15%',
+                                height: '3px',
+                                background: `linear-gradient(90deg, transparent, ${activeLsHub.color}, transparent)`,
+                                opacity: 0.9
+                              }
                             }}
                           >
-                            <Box>
-                              <Typography sx={{ color: '#0f172a', fontWeight: 900, fontSize: '1.05rem', letterSpacing: '-0.01em' }}>
-                                Ready to Broadcast
-                              </Typography>
-                              <Typography sx={{ color: '#475569', fontSize: '0.85rem', mt: 0.25 }}>
-                                Launching with <strong>{activeLsHub.title}</strong>
-                                {selectedAnchorArticles.length > 0
-                                  ? ` anchored by ${selectedAnchorArticles.length} research article${selectedAnchorArticles.length !== 1 ? 's' : ''}`
-                                  : ''}
-                                {` and ${totalSelectedCtas} attached call${totalSelectedCtas !== 1 ? 's' : ''} to action.`}
-                              </Typography>
+                            {/* 1. Icon on Top */}
+                            <Box
+                              sx={{
+                                width: 58,
+                                height: 58,
+                                borderRadius: '20px',
+                                bgcolor: alpha(activeLsHub.color, 0.14),
+                                border: `1.5px solid ${alpha(activeLsHub.color, 0.35)}`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '1.75rem',
+                                position: 'relative',
+                                mb: 2,
+                                boxShadow: `0 8px 20px ${alpha(activeLsHub.color, 0.22)}`,
+                              }}
+                            >
+                              <span>📡</span>
+                              <Box
+                                sx={{
+                                  position: 'absolute',
+                                  top: 7,
+                                  right: 7,
+                                  width: 9,
+                                  height: 9,
+                                  borderRadius: '50%',
+                                  bgcolor: '#22c55e',
+                                  boxShadow: '0 0 0 3px rgba(34, 197, 94, 0.3)',
+                                }}
+                              />
                             </Box>
 
+                            {/* 2. Texts */}
+                            <Typography sx={{ color: '#0f172a', fontWeight: 900, fontSize: { xs: '1.25rem', sm: '1.45rem' }, letterSpacing: '-0.02em', mb: 1 }}>
+                              Ready to Broadcast
+                            </Typography>
+                            <Typography sx={{ color: '#475569', fontSize: { xs: '0.88rem', sm: '0.94rem' }, lineHeight: 1.65, maxWidth: 460, mb: 3 }}>
+                              Launching with <strong style={{ color: '#0f172a' }}>{activeLsHub.title}</strong>
+                              {selectedAnchorArticles.length > 0
+                                ? ` anchored by ${selectedAnchorArticles.length} research article${selectedAnchorArticles.length !== 1 ? 's' : ''}`
+                                : ''}
+                              {` and ${totalSelectedCtas} attached call${totalSelectedCtas !== 1 ? 's' : ''} to action.`}
+                            </Typography>
+
+                            {/* 3. Button */}
                             <Button
                               variant="contained"
                               onClick={() => {
@@ -2932,34 +2980,55 @@ export default function CreatorStudioDashboard({
                                     lsCtaCampaignIds,
                                     category: activeLsHub.underlyingCategories[0],
                                     subcategory: '',
-                                    timeframe: 'present'
+                                    timeframe: 'present',
+                                    hubId: activeLsHub.id,
+                                    hubTitle: activeLsHub.title,
+                                    hubColor: activeLsHub.color,
+                                    hubCategories: activeLsHub.categories,
                                   },
                                   {
                                     title: selectedAnchorArticles.length > 0
                                       ? `${selectedAnchorArticles.map(a => a.title).slice(0, 2).join(' & ')} — Livestream`
                                       : `${activeLsHub.title} Broadcast`,
                                     description: selectedAnchorArticles[0]?.description || `Livestream broadcast focusing on ${activeLsHub.categories.join(' · ')}.`,
-                                    category: activeLsHub.underlyingCategories[0]
+                                    category: activeLsHub.underlyingCategories[0],
+                                    coverImageUrl: selectedAnchorArticles[0]?.coverImageUrl || activeLsHub.imageUrl,
+                                    anchorArticles: selectedAnchorArticles,
+                                    anchorJobIds: lsAnchorJobIds,
+                                    ctaListingIds: lsCtaListingIds,
+                                    ctaCampaignIds: lsCtaCampaignIds,
+                                    selectedCtasCount: totalSelectedCtas,
+                                    livestream: {
+                                      status: 'scheduled',
+                                      eventDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                                      hub: activeLsHub,
+                                      anchorArticles: selectedAnchorArticles,
+                                      ctaJobs: filteredCtaJobs.filter(j => lsAnchorJobIds.includes(j.id)),
+                                      ctaListings: filteredCtaListings.filter(l => lsCtaListingIds.includes(l.id)),
+                                      ctaCampaigns: filteredCtaCampaigns.filter(c => lsCtaCampaignIds.includes(c.id)),
+                                    }
                                   }
                                 );
                               }}
                               sx={{
-                                bgcolor: activeLsHub.color,
+                                width: { xs: '100%', sm: 'auto' },
+                                minWidth: 280,
+                                background: `linear-gradient(135deg, ${activeLsHub.color} 0%, ${alpha(activeLsHub.color, 0.88)} 100%)`,
                                 color: '#ffffff',
                                 fontWeight: 900,
-                                fontSize: '0.95rem',
-                                py: 1.4,
-                                px: 4,
-                                borderRadius: '14px',
+                                fontSize: '0.98rem',
+                                letterSpacing: '-0.01em',
+                                py: 1.6,
+                                px: 4.5,
+                                borderRadius: '16px',
                                 textTransform: 'none',
                                 whiteSpace: 'nowrap',
-                                boxShadow: `0 8px 24px ${alpha(activeLsHub.color, 0.35)}`,
-                                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                                boxShadow: `0 14px 32px ${alpha(activeLsHub.color, 0.4)}, inset 0 1px 1px rgba(255,255,255,0.4)`,
+                                transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
                                 '&:hover': {
-                                  bgcolor: activeLsHub.color,
-                                  opacity: 0.95,
-                                  transform: 'translateY(-2px)',
-                                  boxShadow: `0 12px 30px ${alpha(activeLsHub.color, 0.45)}`
+                                  background: `linear-gradient(135deg, ${activeLsHub.color} 0%, ${activeLsHub.color} 100%)`,
+                                  transform: 'translateY(-2px) scale(1.02)',
+                                  boxShadow: `0 18px 40px ${alpha(activeLsHub.color, 0.5)}, inset 0 1px 1px rgba(255,255,255,0.6)`
                                 }
                               }}
                             >

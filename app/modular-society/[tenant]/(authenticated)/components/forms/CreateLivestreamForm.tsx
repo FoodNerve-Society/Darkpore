@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Box, Typography, Button, TextField, MenuItem, Select, FormControl, InputLabel, CircularProgress, Chip, IconButton, Alert } from '@mui/material';
+import { Box, Typography, Button, TextField, MenuItem, Select, FormControl, InputLabel, CircularProgress, Chip, IconButton, Alert, Paper } from '@mui/material';
 import { ArrowBack as ArrowBackIcon, CheckCircle as CheckCircleIcon, Article as ArticleIcon, AutoAwesome as SparkleIcon, Check as CheckIcon, Info as InfoIcon } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import { useSociety } from '@/context/SocietyContext';
 import { fetchLivestreamContentPool, createLearnContent } from '@/lib/actions/learn';
 import LivestreamRundownBuilder from './livestream/LivestreamRundownBuilder';
+import LivestreamIdeasSidePane from './livestream/LivestreamIdeasSidePane';
 import { useStorageUpload } from '@/hooks/useStorageUpload';
 import { alpha } from '@mui/system';
 
@@ -51,6 +52,15 @@ export default function CreateLivestreamForm({
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [contentPool, setContentPool] = useState<{ articles: any[], jobs: any[] } | null>(null);
+
+  // Ideation Assistant Drawer State
+  const [isIdeasDrawerOpen, setIsIdeasDrawerOpen] = useState(false);
+  const [dismissedIdeasCard, setDismissedIdeasCard] = useState(false);
+
+  // Hub & Context from Studio Handoff
+  const hubTitle = initialTaxonomy?.hubTitle || initialDraftData?.livestream?.hub?.title || 'Production & Capital';
+  const hubColor = initialTaxonomy?.hubColor || initialDraftData?.livestream?.hub?.color || '#10b981';
+  const guidingArticles = initialDraftData?.anchorArticles || initialDraftData?.livestream?.anchorArticles || [];
 
   // Form State
   const [title, setTitle] = useState(initialDraftData?.title || '');
