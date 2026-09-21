@@ -70,12 +70,117 @@ interface LivestreamIdeasSidePaneProps {
 
 /**
  * Parses raw text containing livestream blueprint payloads.
+ * Supports both [LIVESTREAM_MENU_PAYLOAD] (LS-Doc 1c) and legacy delimiter formats.
  */
 function parseLivestreamPayload(rawText: string, fallbackHub: string, fallbackCategory: string): LivestreamIdeaOption[] {
   if (!rawText || !rawText.trim()) return [];
 
   const results: LivestreamIdeaOption[] = [];
   const normalized = rawText.replace(/\r\n/g, '\n');
+
+  const eraConfigMap: Record<string, { badge: string; color: string; icon: string }> = {
+    present: { badge: '⚡ Present Era', color: '#10b981', icon: '⚡' },
+    future: { badge: '🚀 Future Era', color: '#8b5cf6', icon: '🚀' },
+    past: { badge: '📜 Past Era', color: '#6366f1', icon: '📜' },
+  };
+
+  // ── DETECTION 1: LS-Doc 1c [LIVESTREAM_MENU_PAYLOAD] ──
+  if (normalized.includes('OPTION') || normalized.includes('LIVESTREAM_MENU_PAYLOAD') || normalized.includes('Act 1') || normalized.includes('THE OPEN')) {
+    const optionSections = normalized.split(/(?:###\s*(?:[🔴🟡🟢🔵]?\s*OPTION|\bOPTION\b|\d+\.))/i).map(s => s.trim()).filter(Boolean);
+
+    optionSections.forEach((sec, idx) => {
+      // Skip top metadata header if it contains no broadcast content
+      if (sec.includes('[LIVESTREAM_MENU_PAYLOAD]') && !sec.includes('Broadcast Title') && !sec.includes('Act 1')) {
+        return;
+      }
+
+      const firstLine = sec.split('\n')[0].replace(/^[:\s\d.-]+/, '').replace(/[*_`#]/g, '').trim();
+      const personaMatch = firstLine.match(/(?:The\s+)?([^:\n\r]+(?:Approach|Focus|Model|Persona|Angle|Teardown|Pitch))/i) || [null, firstLine];
+      const personaTitle = personaMatch[1]?.trim() || `Option ${idx + 1} Blueprint`;
+
+      // Extract Broadcast Title
+      const titleMatch = sec.match(/[*•-]?\s*\*?\*?Broadcast Title\*?\*?:\s*([^\n\r*]+)/i) ||
+                         sec.match(/[*•-]?\s*\*?\*?Title\*?\*?:\s*([^\n\r*]+)/i);
+      const title = titleMatch ? titleMatch[1].replace(/[*_`]/g, '').trim() : (firstLine || `${fallbackHub} Broadcast Option ${idx + 1}`);
+
+      // Extract Acts & CTA
+      const act1Match = sec.match(/[*•-]?\s*\*?\*?Act 1[^\n\r*]*\*?\*?:\s*([\s\S]*?)(?=(?:[*•-]?\s*\*?\*?Act 2|$))/i);
+      const act2Match = sec.match(/[*•-]?\s*\*?\*?Act 2[^\n\r*]*\*?\*?:\s*([\s\S]*?)(?=(?:[*•-]?\s*\*?\*?Act 3|$))/i);
+      const act3Match = sec.match(/[*•-]?\s*\*?\*?Act 3[^\n\r*]*\*?\*?:\s*([\s\S]*?)(?=(?:[*•-]?\s*\*?\*?The Ecosystem Push|[*•-]?\s*\*?\*?CTA|###|$))/i);
+      const ctaMatch = sec.match(/[*•-]?\s*\*?\*?(?:The Ecosystem Push|CTA)[^\n\r*]*\*?\*?:\s*([\s\S]*?)(?=(?:###|---|$))/i);
+
+      const act1Text = act1Match ? act1Match[1].replace(/[*_`]/g, '').trim() : '';
+      const act2Text = act2Match ? act2Match[1].replace(/[*_`]/g, '').trim() : '';
+      const act3Text = act3Match ? act3Match[1].replace(/[*_`]/g, '').trim() : '';
+      const ctaText = ctaMatch ? ctaMatch[1].replace(/[*_`]/g, '').trim() : '';
+
+      // Build 3 DEF Timeline Segments
+      const segments: LivestreamRundownSegment[] = [];
+      if (act1Text || act2Text || act3Text) {
+        segments.push({
+          time: '00-15m',
+          role: 'Act 1: The Open (Tension & Reframe)',
+          desc: act1Text || 'State the anchor tension and reframe conventional assumptions with hard field evidence.',
+          speakerNotes: act1Text,
+        });
+        segments.push({
+          time: '15-35m',
+          role: 'Act 2: The Meat (Map System & Defend)',
+          desc: act2Text || 'Expose the systemic villain, present unit economics, and dismantle skeptic counter-arguments live.',
+          speakerNotes: act2Text,
+        });
+        segments.push({
+          time: '35-50m',
+          role: 'Act 3: The Close (Fork & Ecosystem CTA)',
+          desc: `${act3Text}${ctaText ? ` | Conversion: ${ctaText}` : ''}`,
+          speakerNotes: `${act3Text}\n\nEcosystem CTA:\n${ctaText}`,
+        });
+      }
+
+      // Determine era and iconography
+      const eraOptions: Array<'present' | 'future' | 'past'> = ['present', 'present', 'past', 'future', 'future'];
+      const timeframe: 'past' | 'present' | 'future' = eraOptions[idx % eraOptions.length];
+      const icons = ['🔴', '🟡', '🟢', '🔵', '⚡'];
+      const typeIcon = icons[idx % icons.length];
+
+      // Extract hook & questions
+      const hook = act1Text ? act1Text.slice(0, 140) + '...' : `Strategic livestream teardown for ${personaTitle}.`;
+      const questions: string[] = [];
+      const questionMatches = sec.match(/"([^"]+\?)"/g) || sec.match(/[*•-]\s*([^?\n\r]+?\?)/g);
+      if (questionMatches) {
+        questionMatches.forEach(q => {
+          const cleanQ = q.replace(/^["*•\s-]+|["\s]+$/g, '').trim();
+          if (cleanQ.length > 10) questions.push(cleanQ);
+        });
+      }
+
+      if (title || segments.length > 0) {
+        results.push({
+          id: `ls-def-${idx}-${Date.now()}`,
+          typeTitle: personaTitle,
+          typeIcon,
+          timeframe,
+          eraBadge: eraConfigMap[timeframe]?.badge || '⚡ Present Era',
+          eraColor: eraConfigMap[timeframe]?.color || '#10b981',
+          category: fallbackCategory,
+          title,
+          description: act1Text ? `${act1Text.slice(0, 220)}...` : `Broadcast blueprint engineered for ${personaTitle}.`,
+          hook,
+          timelinePillars: segments.length > 0 ? segments : [
+            { time: '00-15m', role: 'Act 1: The Open', desc: 'Anchor Tension & Reframe Question' },
+            { time: '15-35m', role: 'Act 2: The Meat', desc: 'Map System & Skeptic Defense' },
+            { time: '35-50m', role: 'Act 3: The Close', desc: 'Forked Close & Job/Deal Spotlight' }
+          ],
+          keyQuestions: questions.length > 0 ? questions : undefined,
+          suggestedJobsFocus: ctaText || undefined,
+        });
+      }
+    });
+
+    if (results.length > 0) return results;
+  }
+
+  // ── DETECTION 2: DELIMITER / HEADLINE PARSER (FALLBACK) ──
   const sections = normalized.split(/(?:---|\n(?=###?\s*(?:Blueprint|Livestream|Format|\d+\.)))/i).map(s => s.trim()).filter(Boolean);
 
   sections.forEach((sec, idx) => {
@@ -116,9 +221,9 @@ function parseLivestreamPayload(rawText: string, fallbackHub: string, fallbackCa
 
     if (segments.length === 0) {
       segments.push(
-        { time: '00-15m', role: 'Intro: The Disconnect', desc: 'Framing the immediate operational bottleneck' },
-        { time: '15-35m', role: 'Deep Dive: Field Reality', desc: 'Case study analysis and live stakeholder discussion' },
-        { time: '35-50m', role: 'Actionable Takeaways & Next Steps', desc: 'Practical calls to action and verified opportunities' }
+        { time: '00-15m', role: 'Act 1: The Open', desc: 'Framing the immediate operational bottleneck' },
+        { time: '15-35m', role: 'Act 2: The Meat', desc: 'Case study analysis and live stakeholder discussion' },
+        { time: '35-50m', role: 'Act 3: The Close', desc: 'Practical calls to action and verified opportunities' }
       );
     }
 
@@ -130,12 +235,6 @@ function parseLivestreamPayload(rawText: string, fallbackHub: string, fallbackCa
         if (cleanQ.length > 5) keyQuestions.push(cleanQ);
       });
     }
-
-    const eraConfigMap: Record<string, { badge: string; color: string; icon: string }> = {
-      present: { badge: '⚡ Present Era', color: '#10b981', icon: '⚡' },
-      future: { badge: '🚀 Future Era', color: '#8b5cf6', icon: '🚀' },
-      past: { badge: '📜 Past Era', color: '#6366f1', icon: '📜' },
-    };
 
     if (title) {
       results.push({
@@ -165,6 +264,8 @@ export default function LivestreamIdeasSidePane({
   hubColor = '#10b981',
   currentCategory = 'capital',
   guidingArticles = [],
+  guidingJobs = [],
+  guidingListings = [],
   onApplyIdea,
 }: LivestreamIdeasSidePaneProps) {
   const defaultTopic = useMemo(() => {
@@ -180,9 +281,10 @@ export default function LivestreamIdeasSidePane({
   const [checklist, setChecklist] = useState<Record<string, boolean>>({});
   const [copiedPromptTab, setCopiedPromptTab] = useState<string | null>(null);
 
-  // Ingest state
+  // Ingestion & Step Bridge States (LS-Doc 1a & 1b outputs)
+  const [lsAssetMapInput, setLsAssetMapInput] = useState('');
+  const [lsConflictMatrixInput, setLsConflictMatrixInput] = useState('');
   const [customIngestMarkdown, setCustomIngestMarkdown] = useState('');
-  const [customIngestError, setCustomIngestError] = useState('');
   const [deckActiveIndex, setDeckActiveIndex] = useState(0);
 
   const toggleChecklistItem = (id: string) => {
@@ -296,107 +398,281 @@ export default function LivestreamIdeasSidePane({
     return liveParsedBriefs.length > 0 ? liveParsedBriefs : defaultIdeas;
   }, [liveParsedBriefs, defaultIdeas]);
 
-  // ── COMPILED 3 PROMPTS ──
+  // ── SERIALIZED DATA PAYLOADS AUTO-APPENDED TO PROMPTS ──
+  const articleJsonPayload = useMemo(() => {
+    if (!guidingArticles || guidingArticles.length === 0) {
+      return JSON.stringify([
+        {
+          id: 'article-brief-01',
+          title: topicInput || `${hubTitle} Value Chain Intelligence`,
+          description: `Empirical research brief on ${hubTitle} and ${currentCategory}.`,
+          blocks: [
+            { type: 'highlight_card', metricHeadline: 'Critical Systemic Metric', stat: '₦2.4M Loss per transit', caption: 'High friction and post-harvest spoilage across freight corridors' },
+            { type: 'strategic_directive', urgency: 'critical', threat: 'Severe capital and logistics paralysis directly impacting producers and aggregators' },
+            { type: 'myth_fact', myth: 'Farmers lack yield capacity', fact: 'Yield is sufficient but lack of preservation and transport causes 45% post-harvest collapse' }
+          ]
+        }
+      ], null, 2);
+    }
+    return JSON.stringify(guidingArticles.map(a => ({
+      id: a.id,
+      title: a.title,
+      description: a.description,
+      coverImageUrl: a.coverImageUrl,
+      category: a.category,
+      blocks: a.blocks || a.contentBlocks || [
+        { type: 'highlight_card', metricHeadline: a.title, stat: 'Verified Field Metric', caption: a.description || 'Primary evidence block' },
+        { type: 'strategic_directive', urgency: 'critical', threat: a.description || 'Operational deadlock across the value chain' },
+        { type: 'myth_fact', myth: 'Conventional market dogma', fact: a.description || 'Ground-level operational reality' }
+      ]
+    })), null, 2);
+  }, [guidingArticles, topicInput, hubTitle, currentCategory]);
+
+  const ecosystemJsonPayload = useMemo(() => {
+    const combined = [...guidingJobs, ...guidingListings];
+    if (combined.length === 0) {
+      return JSON.stringify([
+        {
+          id: 'cta-listing-1',
+          type: 'Job / Bounty',
+          jobTitle: `${hubTitle} Logistics & Field Dispatch Lead`,
+          organizationName: 'Food Nerve Ecosystem Partner',
+          location: targetLocation || 'Nigeria (Dawanau / Bodija / Mile 12)',
+          compensationOrTarget: '₦850,000 / month (Paystack Escrow Locked)',
+          description: `Direct operational role deploying decentralised preservation infrastructure and routing solutions for ${hubTitle}.`,
+          skills: ['Cold-Chain Telemetry', 'Cluster Aggregation', 'Dispatch Optimization']
+        }
+      ], null, 2);
+    }
+    return JSON.stringify(combined.map(item => ({
+      id: item.id,
+      type: item.salaryRange || item.compensationOrTarget ? 'Job / Bounty' : 'Trade Listing / Deal',
+      jobTitle: item.title || item.name,
+      organizationName: item.organization?.name || item.orgName || 'Food Nerve Ecosystem Partner',
+      location: item.location || item.state || targetLocation || 'Nigeria',
+      compensationOrTarget: item.salaryRange || item.compensationOrTarget || 'Disclosed via Escrow',
+      description: item.description || item.challenges || item.organizationChallenges || 'Execution mandate resolving systemic bottlenecks.',
+      skills: item.skills || item.requiredSkills || []
+    })), null, 2);
+  }, [guidingJobs, guidingListings, hubTitle, targetLocation]);
+
+  // ── COMPILED MASTER PROMPTS (LS-DOC 1a, 1b, 1c) ──
   const compiledPrompt1 = useMemo(() => {
-    const articlesList = guidingArticles.map(a => `* ${a.title}: ${a.description || 'Verified research brief'}`).join('\n');
-    return `### 📄 STEP 1: LIVESTREAM STRATEGIC ANGLE & AUDIENCE DISCONNECT
+    return `### 📄 LS-DOCUMENT 1a: THE ASSET INGESTOR & BRIDGE BUILDER (MASTER PROMPT)
 
-[MASTER CONTEXT]
-* Master Category Hub: ${hubTitle}
-* Focus Pillar / Category: ${currentCategory.toUpperCase()}
-* Focus Topic: ${topicInput}
-* Target Audience: ${targetAudience}
-* Location / Hotspots: ${targetLocation}
-* Anchor Research Articles:
-${articlesList || '* General Sector Intelligence'}
+**[SYSTEM PERSONA & EXTRACTION CONSTRAINTS]**
+You are the Senior Broadcast Architect and Data Ingestor for Food Nerve Society operating in September 2026. Your ONLY job is to digest raw JSON payloads from published articles and ecosystem listings, and calculate the logical "Bridge" connecting the systemic crisis to the actionable solution.
 
-[OBJECTIVE]
-You are a Senior Broadcast Director at an elite Agribusiness Intelligence Network in August 2026.
-Conduct a rigorous OSINT & field friction analysis on "${hubTitle}" and "${currentCategory}".
+- **Zero Hallucination:** You must only extract data explicitly present in the provided JSON payloads. Do not invent stats or jobs.
+- **Tone:** Highly analytical, strict third-person. Use hard verbs (*extracted, linked, bridged*).
 
-Deliver the following in structured markdown:
-1. 🎯 **The 3 Sharpest Audience Frictions:** What exact commercial fights are happening between farmgate producers, processors, and institutional financiers right now?
-2. 🎙️ **The Host Opening Monologue Hook:** A 3-sentence brutal, high-engagement hook framing the stakes for viewers.
-3. 💬 **Top 3 Debate Questions:** Controversial, data-grounded questions guaranteed to spark comments in the live chat.`;
-  }, [hubTitle, currentCategory, topicInput, targetAudience, targetLocation, guidingArticles]);
+**[INPUT PAYLOAD DEFINITION]**
+
+\`\`\`
+Hub Title & Category: ${hubTitle} | ${currentCategory}
+Livestream Timeframe: Present
+[ANCHOR_ARTICLE_JSON_ARRAY]: 
+${articleJsonPayload}
+
+[ANCHOR_ECOSYSTEM_JSON_ARRAY]: 
+${ecosystemJsonPayload}
+\`\`\`
+
+---
+
+#### PHASE 1: Article Data Extraction (The Bleed)
+
+Scan the \`[ANCHOR_ARTICLE_JSON_ARRAY]\`. For each article, extract the core systemic crisis:
+
+1. **The Killer Stat:** Extract the exact metric and image context from Block 1 (\`highlight_card\`).
+2. **The Systemic Threat:** Extract the exact bottleneck and value chain actor affected from the Executive Summary and Block 8 (\`strategic_directive\`).
+3. **The Micro-Geography:** Note the specific Level-5 / Level-4 geographic location where this crisis is happening.
+
+#### PHASE 2: Ecosystem Data Extraction (The Cure)
+
+Scan the \`[ANCHOR_ECOSYSTEM_JSON_ARRAY]\`. For each job, bounty, or deal, extract the core execution data:
+
+1. **The Target Profile:** Extract the \`jobTitle\` or Deal Name, the \`organizationName\`, and the \`location\`.
+2. **The Capital/Compensation:** Extract the \`salaryRange\`, \`compensationOrTarget\`, or facility size.
+3. **The Execution Mandate:** Extract the core skills or terms from the \`description\` that indicate *how* this listing solves a problem.
+
+#### PHASE 3: The Strategic Bridge Calculation
+
+Calculate the operational link between Phase 1 and Phase 2.
+
+- *The Logic:* How does deploying human capital (the Job) or financial capital (the Deal) from Phase 2 directly neutralize the systemic threat identified in Phase 1?
+- *Example:* "Article A identifies a ₦2M freight tax due to checkpoint extortion. Listing B is a $2M debt facility for a farm-gate processing plant. **The Bridge:** Funding the farm-gate processing plant shortens the transit distance, permanently bypassing the highway extortion checkpoints."
+
+---
+
+#### OUTPUT FORMAT (LS-DOC 1a PAYLOAD)
+
+Output your entire response inside this single, clean Markdown block:
+
+\`\`\`markdown
+# [LS_ASSET_MAP]
+
+**Broadcast Context:** Hub: ${hubTitle} | Timeframe: Present
+
+### 1. Extracted Crisis Data (The Bleed)
+*   **Micro-Geography:** [Extracted Location]
+*   **Value Chain Actor:** [Extracted Actor]
+*   **The Killer Stat:** [Extracted metric from Highlight Card]
+*   **The Threat:** [Extracted threat from Strategic Directive]
+
+### 2. Extracted Ecosystem Data (The Cure)
+*   **Listing Type:** [Job / Bounty / Deal]
+*   **Title & Organization:** [Extracted Title at Org Name]
+*   **Compensation / Capital:** [Extracted Salary or Deal Size]
+*   **Execution Mandate:** [Extracted core responsibility or deal requirement]
+
+### 3. The Strategic Bridge (The Logic Link)
+*   **The Bridge:** [2-3 sentences brutally explaining the mathematical or operational link between the Crisis and the Cure. Explain EXACTLY how executing the Ecosystem Listing neutralizes the Article's Threat].
+\`\`\``;
+  }, [hubTitle, currentCategory, articleJsonPayload, ecosystemJsonPayload]);
 
   const compiledPrompt2 = useMemo(() => {
-    return `### 📄 STEP 2: 50-MINUTE SHOW RUNDOWN & GUEST SEGMENTS
+    return `### 📄 LS-DOCUMENT 1b: THE CONFLICT ENGINE (MASTER PROMPT)
 
-[INPUT PAYLOAD]
-* Topic: ${topicInput}
-* Hub: ${hubTitle} (${currentCategory})
-* Target Audience: ${targetAudience}
-* Focus Epicenters: ${targetLocation}
+**[SYSTEM PERSONA & EXTRACTION CONSTRAINTS]**
+You are the Senior Broadcast Producer and Debate Architect for Food Nerve Society operating in September 2026. Your ONLY job is to analyze the strategic bridge and the source articles to manufacture the cognitive friction, tension, and debate necessary for a high-retention livestream.
 
-[OBJECTIVE]
-Design an exact 50-minute live presentation rundown structured across 3 distinct ~15m segments.
+- **Tone:** Aggressive, analytical, strict third-person. Use hard verbs (*extorts, monopolizes, paralyzes*).
+- **Zero Hallucination:** All defenses against objections MUST be rooted in the data provided in the article JSON.
 
-Provide:
-1. **Segment 1 (00-15m) — Macro Reality & Friction:**
-   - Segment Title & Role
-   - Host Key Talking Points (3 bullet points)
-   - Visual Slide / Chart recommendation
-2. **Segment 2 (15-35m) — Field Witness & Live Deal Pitch:**
-   - Segment Title & Role
-   - Recommended Guest Persona (e.g. Cooperative Head, Sourcing Director)
-   - 3 Hard-Hitting Interview Questions
-3. **Segment 3 (35-50m) — Audience Q&A & Verified Action:**
-   - Segment Title & Role
-   - Live Call to Action (Job Attachments, Trade Escrow Listing, or Campaign)`;
-  }, [topicInput, hubTitle, currentCategory, targetAudience, targetLocation]);
+**[INPUT PAYLOAD DEFINITION]**
+
+\`\`\`
+[LS_ASSET_MAP]: 
+${lsAssetMapInput.trim() ? lsAssetMapInput.trim() : '[Paste the output from LS-Doc 1a into the input field above, or reference the extracted asset map]'}
+
+[ANCHOR_ARTICLE_JSON_ARRAY]: 
+${articleJsonPayload}
+\`\`\`
+
+---
+
+#### PHASE 1: The Villain & The Tension (Act 1 Setup)
+
+Scan the \`[LS_ASSET_MAP]\` and the \`[ANCHOR_ARTICLE_JSON_ARRAY]\`.
+
+1. **Extract the Anchor Tension:** Identify the brutal, unacceptable reality that opens the broadcast (derived from the Killer Stat).
+2. **Identify the Political Economy (The Villain):** Locate Sentence 6 of the article description or the core analysis blocks to explicitly name who is currently profiting from this crisis (e.g., *corrupt checkpoint police, legacy middlemen cartels, lazy import monopolies*).
+3. **Extract the Reframe (The Myth):** Locate Block 5 (\`myth_fact\`). What is the lazy, widely accepted industry assumption about this problem, and how does the data destroy it?
+
+#### PHASE 2: The Skeptic’s FAQ (Act 2 Defense)
+
+Livestream audiences are highly cynical operators, VCs, and policymakers. Anticipate their pushback.
+
+1. **Formulate 3 Skeptical Objections:** Write three distinct, aggressive questions that a live chat viewer would ask to invalidate the "Strategic Bridge" (the proposed cure) generated in LS-Doc 1a.
+    - *Example:* "Local processing sounds great on paper, but there is zero reliable grid power in that LGA. How does a startup actually run the mill without burning their margins on diesel?"
+2. **Formulate the Data-Backed Defense:** For each objection, extract the exact data point, workaround, or unit-economic metric from the article JSON that the Host will use to destroy the objection live on air.
+
+---
+
+#### OUTPUT FORMAT (LS-DOC 1b PAYLOAD)
+
+Output your entire response inside this single, clean Markdown block:
+
+\`\`\`markdown
+# [LS_CONFLICT_MATRIX]
+
+### 1. The Core Tension & The Villain
+*   **The Anchor Tension:** [1-2 sentences stating the brutal, unacceptable reality that hooks the audience].
+*   **The Political Economy (The Villain):** [Explicitly name the specific cartel, official, or legacy entity profiting from this bottleneck].
+
+### 2. The Reframe (Myth vs. Reality)
+*   **The Audience's False Assumption:** [The official myth or lazy industry consensus].
+*   **The Live Reframe:** [The data-backed truth the Host will use to pivot the conversation].
+
+### 3. The Skeptic's FAQ (Pre-empting the Chat)
+*   **Skeptic Objection 1 (The Operational Doubt):** "[Insert cynical chat question about logistics/physics]"
+    *   **The Host's Defense:** [Insert hard data/hack from the article proving it works].
+*   **Skeptic Objection 2 (The Financial Doubt):** "[Insert cynical chat question about unit economics/CAPEX]"
+    *   **The Host's Defense:** [Insert financial metric or deal structure from the article].
+*   **Skeptic Objection 3 (The Policy/Scaling Doubt):** "[Insert cynical chat question about government interference/scaling limits]"
+    *   **The Host's Defense:** [Insert policy workaround or infrastructure timeline from the article].
+\`\`\``;
+  }, [lsAssetMapInput, articleJsonPayload]);
 
   const compiledPrompt3 = useMemo(() => {
-    return `### 📄 STEP 3: FAST INGEST LIVESTREAM FORMATS (STRUCTURED PAYLOAD)
+    return `### 📄 LS-DOCUMENT 1c: THE BROADCAST SYNTHESIZER (MASTER PROMPT)
 
-[OBJECTIVE]
-Output 3 to 4 complete, distinct broadcast blueprints tailored to "${topicInput}" under "${hubTitle}".
-Ensure a mix of Present (⚡), Future (🚀), and Past (📜) Eras.
+**[SYSTEM PERSONA & SYNTHESIS CONSTRAINTS]**
+You are the Executive Producer for Food Nerve Society operating in September 2026. Your ONLY job is to take raw broadcast assets and conflict matrices, and synthesize them into 4-5 highly distinct, high-retention Livestream Pitches.
 
-Format your entire response strictly using this markdown delimiter structure so it can be parsed in 1-click:
+- **Tone:** Aggressive, highly structured, strict third-person. Use hard verbs. No fluffy adjectives.
+- **The DEF Rule:** Every single pitch MUST obey the Determinant Engagement Framework: Act 1 (Open/Tension) $\\to$ Act 2 (Meat/Defense) $\\to$ Act 3 (Close/Conversion).
 
----
-### Groundwork Town Hall: [Insert Clickable Title]
-* **Era:** Present
-* **Category:** ${currentCategory}
-* **Description:** [2-3 sentences summarizing the show]
-* **Hook:** [1-sentence punchy teaser]
-* **Rundown:**
-  - 00-15m: [Role 1] - [Description of segment 1]
-  - 15-35m: [Role 2] - [Description of segment 2]
-  - 35-50m: [Role 3] - [Description of segment 3]
-* **Key Questions:**
-  - [Question 1]
-  - [Question 2]
-  - [Question 3]
+**[INPUT PAYLOAD DEFINITION]**
+
+\`\`\`
+Hub Title & Category: ${hubTitle} | ${currentCategory}
+[LS_ASSET_MAP]: 
+${lsAssetMapInput.trim() ? lsAssetMapInput.trim() : '[Paste the output from LS-Doc 1a into Step 2]'}
+
+[LS_CONFLICT_MATRIX]: 
+${lsConflictMatrixInput.trim() ? lsConflictMatrixInput.trim() : '[Paste the output from LS-Doc 1b into Step 3]'}
+\`\`\`
 
 ---
-### Offtake Pitchroom: [Insert Clickable Title]
-* **Era:** Present
-* **Category:** ${currentCategory}
-* **Description:** [2-3 sentences]
-* **Hook:** [1 sentence]
-* **Rundown:**
-  - 00-15m: [Role 1] - [Description]
-  - 15-35m: [Role 2] - [Description]
-  - 35-50m: [Role 3] - [Description]
-* **Key Questions:**
-  - [Question 1]
-  - [Question 2]
+
+#### PHASE 1: Vibe & Alignment Check
+
+Read the \`hubTitle\` and \`category\`. Your 4-5 generated pitches must natively fit the psychological vibe of this Hub:
+
+- *If "Production Foundations":* Skew toward unit economics, land tenure, and CAPEX.
+- *If "Resilience & Disruption":* Skew toward war-room tactics, surviving extortion, and climate shocks.
+- *If "Markets, People & Solutions":* Skew toward sociology, talent liquidity, and cartel bypassing.
+
+#### PHASE 2: Generation of the 4-5 Pitch Options
+
+Using the \`[LS_ASSET_MAP]\` and \`[LS_CONFLICT_MATRIX]\`, generate 4 to 5 distinct broadcast options. Vary the core focus of each option to target different segments of the audience (e.g., Option 1 for Logistics Operators, Option 2 for Policymakers, Option 3 for VCs/Deal-Flow, Option 4 for Talent/Job Seekers).
+
+#### PHASE 3: The DEF Structure Enforcement
+
+For every pitch option, you must format the broadcast into the 3-Act DEF structure:
+
+1. **Act 1 (THE OPEN):** State the Anchor Tension (The Killer Stat) and the Reframe Question to break the audience's assumptions immediately.
+2. **Act 2 (THE MEAT):** Map the system. Expose the Villain (Political Economy). Bring up the Skeptic's FAQ (from Doc 1b) and provide the data-backed defense.
+3. **Act 3 (THE CLOSE):** Force the audience into a corner. Provide the Forked Close: A Binary Choice (for a room that needs to make a decision today) OR an Open Question (for a room setting policy/research boundaries).
+4. **The Ecosystem Push:** Explicitly state how the Job/Deal from the \`[LS_ASSET_MAP]\` is injected at the climax of the show.
 
 ---
-### Future Showcase: [Insert Clickable Title]
-* **Era:** Future
-* **Category:** ${currentCategory}
-* **Description:** [2-3 sentences]
-* **Hook:** [1 sentence]
-* **Rundown:**
-  - 00-15m: [Role 1] - [Description]
-  - 15-35m: [Role 2] - [Description]
-  - 35-50m: [Role 3] - [Description]
 
----`;
-  }, [topicInput, hubTitle, currentCategory]);
+#### OUTPUT FORMAT (LS-DOC 1c PAYLOAD)
+
+Output your entire response inside this single, clean Markdown block:
+
+\`\`\`markdown
+# [LIVESTREAM_MENU_PAYLOAD]
+**Hub:** ${hubTitle} | **Category:** ${currentCategory}
+
+### 🔴 OPTION 1: The [Insert Target Persona] Approach
+*   **Broadcast Title:** [Punchy, Action-Spiky Title targeting a specific actor]
+*   **Act 1 (THE OPEN - Tension):** We open with [Insert Killer Stat]. We reframe the narrative by asking the audience: *"[Insert Reframe Question]"*
+*   **Act 2 (THE MEAT - Map & Defend):** We expose [Insert Villain/Profiteer]. We preempt the audience's primary objection: *"[Insert Skeptic FAQ 1]"* and destroy it live on air using [Insert Data Defense].
+*   **Act 3 (THE CLOSE - The Fork):** [Binary Choice OR Open Question].
+    *   *Path A (Status Quo):* [Cost of doing nothing].
+    *   *Path B (Intervention):* [The specific workaround/hack].
+*   **The Ecosystem Push (CTA):** We climax the stream by flashing \`[Insert Job/Deal Title]\` on screen to help operators execute Path B today.
+
+### 🟡 OPTION 2: The [Insert Target Persona] Approach
+*   **Broadcast Title:** [Punchy, Action-Spiky Title targeting a specific actor]
+*   **Act 1 (THE OPEN - Tension):** [Content]
+*   **Act 2 (THE MEAT - Map & Defend):** [Content]
+*   **Act 3 (THE CLOSE - The Fork):** [Content]
+*   **The Ecosystem Push (CTA):** [Content]
+
+### 🟢 OPTION 3: The [Insert Target Persona] Approach
+*   [Follow identical structure...]
+
+### 🔵 OPTION 4: The [Insert Target Persona] Approach
+*   [Follow identical structure...]
+
+*(Generate OPTION 5 only if the data supports a wildly contrarian or obscure "Black Swan" broadcast angle).*
+\`\`\``;
+  }, [hubTitle, currentCategory, lsAssetMapInput, lsConflictMatrixInput]);
 
   const handleApplyBlueprint = (blueprint: LivestreamIdeaOption) => {
     onApplyIdea({
@@ -763,7 +1039,7 @@ Format your entire response strictly using this markdown delimiter structure so 
         </Box>
 
         {/* ──────────────────────────────────────────────────────────── */}
-        {/* STEP 1: STRATEGIC ANGLE & AUDIENCE DISCONNECT                */}
+        {/* STEP 1: ASSET INGESTOR & BRIDGE BUILDER (LS-DOC 1a)          */}
         {/* ──────────────────────────────────────────────────────────── */}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -771,19 +1047,33 @@ Format your entire response strictly using this markdown delimiter structure so 
               1
             </Box>
             <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>
-              Step 1: Where is the Friction Happening?
+              Step 1: The Asset Ingestor & Bridge Builder (LS-Doc 1a)
             </Typography>
           </Box>
 
-          {/* Quick Inputs */}
+          {/* Quick Inputs & Injected Payloads */}
           <Box sx={{ p: 2.25, borderRadius: '16px', bgcolor: '#ffffff', border: '1px solid rgba(59, 130, 246, 0.25)', boxShadow: '0 4px 16px rgba(59, 130, 246, 0.05)', display: 'flex', flexDirection: 'column', gap: 2 }}>
             <Box>
               <Typography sx={{ fontSize: '0.84rem', fontWeight: 800, color: '#1e40af', display: 'flex', alignItems: 'center', gap: 0.8 }}>
                 <span>🎯</span> Who & Where are we broadcasting for?
               </Typography>
               <Typography sx={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500, mt: 0.25 }}>
-                Tell the AI who your target live audience is and key operational hubs.
+                Context for the AI to calculate the causal link between your selected articles and CTA listings.
               </Typography>
+            </Box>
+
+            {/* Auto-Injected Data Status Badges */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+              <Chip
+                size="small"
+                label={`✓ ${guidingArticles.length} Anchor Articles Auto-Injected`}
+                sx={{ bgcolor: 'rgba(59, 130, 246, 0.09)', color: '#1d4ed8', fontWeight: 800, fontSize: '0.72rem', border: '1px solid rgba(59, 130, 246, 0.22)' }}
+              />
+              <Chip
+                size="small"
+                label={`✓ ${guidingJobs.length + guidingListings.length} Ecosystem CTA Listings Injected`}
+                sx={{ bgcolor: 'rgba(59, 130, 246, 0.09)', color: '#1d4ed8', fontWeight: 800, fontSize: '0.72rem', border: '1px solid rgba(59, 130, 246, 0.22)' }}
+              />
             </Box>
 
             <PremiumTextField
@@ -817,7 +1107,7 @@ Format your entire response strictly using this markdown delimiter structure so 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
                 <CheckCircleIcon sx={{ color: '#3b82f6' }} />
                 <Typography sx={{ color: '#1e40af', fontWeight: 700, fontSize: '0.9rem' }}>
-                  Step 1 Prompt Copied to Clipboard!
+                  LS-Doc 1a Master Prompt Copied to Clipboard!
                 </Typography>
               </Box>
               <Button size="small" onClick={() => setCopiedPromptTab(null)} sx={{ textTransform: 'none', fontWeight: 700, borderRadius: '8px', color: '#2563eb' }}>
@@ -833,7 +1123,7 @@ Format your entire response strictly using this markdown delimiter structure so 
                   <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: '#10b981' }} />
                 </Box>
                 <Typography sx={{ color: '#94a3b8', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                  STEP 1 PROMPT · AUDIENCE DISCONNECT & HOOK
+                  STEP 1 PROMPT · ASSET INGESTOR & BRIDGE BUILDER (LS-DOC 1a)
                 </Typography>
                 <Box sx={{ width: 33 }} />
               </Box>
@@ -862,7 +1152,7 @@ Format your entire response strictly using this markdown delimiter structure so 
                   }}
                 >
                   <ContentCopyIcon sx={{ mr: 1, fontSize: 16 }} />
-                  Copy Step 1 Prompt (Audience Disconnect)
+                  Copy Step 1 Prompt (LS-Doc 1a: Asset Ingestor)
                 </Button>
               </Box>
             </Box>
@@ -872,7 +1162,7 @@ Format your entire response strictly using this markdown delimiter structure so 
         <Box sx={{ borderBottom: '1px solid rgba(0,0,0,0.08)', my: 0.5 }} />
 
         {/* ──────────────────────────────────────────────────────────── */}
-        {/* STEP 2: 50-MINUTE SHOW RUNDOWN & GUEST SEGMENTS              */}
+        {/* STEP 2: THE CONFLICT ENGINE & SKEPTIC PRE-EMPTS (LS-DOC 1b)  */}
         {/* ──────────────────────────────────────────────────────────── */}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -880,8 +1170,30 @@ Format your entire response strictly using this markdown delimiter structure so 
               2
             </Box>
             <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>
-              Step 2: 50-Minute Show Rundown & Guests
+              Step 2: The Conflict Engine & Skeptic Pre-Empts (LS-Doc 1b)
             </Typography>
+          </Box>
+
+          {/* Optional Paste Area for Step 1 Output */}
+          <Box sx={{ p: 2.25, borderRadius: '16px', bgcolor: '#ffffff', border: '1px solid rgba(245, 158, 11, 0.25)', boxShadow: '0 4px 16px rgba(245, 158, 11, 0.05)', display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography sx={{ fontSize: '0.82rem', fontWeight: 800, color: '#92400e', display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                <span>📥</span> Optional: Paste [LS_ASSET_MAP] Output from Step 1
+              </Typography>
+              {lsAssetMapInput.trim() && (
+                <Chip label="Auto-Embedded Below ✓" size="small" sx={{ bgcolor: '#ecfdf5', color: '#047857', fontWeight: 800, fontSize: '0.68rem' }} />
+              )}
+            </Box>
+            <Typography sx={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 500 }}>
+              Paste the Markdown response from Step 1 here to auto-embed it into the Step 2 and Step 3 prompts.
+            </Typography>
+            <PremiumMarkdownEditor
+              colorTheme="#f59e0b"
+              minRows={3}
+              placeholder="# [LS_ASSET_MAP] ... (Paste Step 1 output here)"
+              value={lsAssetMapInput}
+              onChange={(e: any) => setLsAssetMapInput(e.target.value)}
+            />
           </Box>
 
           {/* Terminal Box for Step 2 Prompt */}
@@ -890,7 +1202,7 @@ Format your entire response strictly using this markdown delimiter structure so 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
                 <CheckCircleIcon sx={{ color: '#f59e0b' }} />
                 <Typography sx={{ color: '#b45309', fontWeight: 700, fontSize: '0.9rem' }}>
-                  Step 2 Prompt Copied to Clipboard!
+                  LS-Doc 1b Master Prompt Copied to Clipboard!
                 </Typography>
               </Box>
               <Button size="small" onClick={() => setCopiedPromptTab(null)} sx={{ textTransform: 'none', fontWeight: 700, borderRadius: '8px', color: '#b45309' }}>
@@ -906,7 +1218,7 @@ Format your entire response strictly using this markdown delimiter structure so 
                   <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: '#10b981' }} />
                 </Box>
                 <Typography sx={{ color: '#fbbf24', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                  STEP 2 PROMPT · 50-MIN RUNDOWN & GUESTS
+                  STEP 2 PROMPT · THE CONFLICT ENGINE (LS-DOC 1b)
                 </Typography>
                 <Box sx={{ width: 33 }} />
               </Box>
@@ -935,7 +1247,7 @@ Format your entire response strictly using this markdown delimiter structure so 
                   }}
                 >
                   <ContentCopyIcon sx={{ mr: 1, fontSize: 16 }} />
-                  Copy Step 2 Prompt (Show Rundown)
+                  Copy Step 2 Prompt (LS-Doc 1b: Conflict Engine)
                 </Button>
               </Box>
             </Box>
@@ -945,7 +1257,7 @@ Format your entire response strictly using this markdown delimiter structure so 
         <Box sx={{ borderBottom: '1px solid rgba(0,0,0,0.08)', my: 0.5 }} />
 
         {/* ──────────────────────────────────────────────────────────── */}
-        {/* STEP 3: STRUCTURED BLUEPRINT GENERATOR (FAST INGEST)         */}
+        {/* STEP 3: BROADCAST SYNTHESIZER & DEF MENU (LS-DOC 1c)         */}
         {/* ──────────────────────────────────────────────────────────── */}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -965,8 +1277,30 @@ Format your entire response strictly using this markdown delimiter structure so 
               3
             </Box>
             <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>
-              Step 3: Generate Structured Broadcast Formats
+              Step 3: Broadcast Synthesizer & DEF Menu (LS-Doc 1c)
             </Typography>
+          </Box>
+
+          {/* Optional Paste Area for Step 2 Output */}
+          <Box sx={{ p: 2.25, borderRadius: '16px', bgcolor: '#ffffff', border: '1px solid rgba(168, 85, 247, 0.25)', boxShadow: '0 4px 16px rgba(168, 85, 247, 0.05)', display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography sx={{ fontSize: '0.82rem', fontWeight: 800, color: '#6b21a8', display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                <span>📥</span> Optional: Paste [LS_CONFLICT_MATRIX] Output from Step 2
+              </Typography>
+              {lsConflictMatrixInput.trim() && (
+                <Chip label="Auto-Embedded Below ✓" size="small" sx={{ bgcolor: '#ecfdf5', color: '#047857', fontWeight: 800, fontSize: '0.68rem' }} />
+              )}
+            </Box>
+            <Typography sx={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 500 }}>
+              Paste the Markdown response from Step 2 here to auto-embed it into the final blueprint synthesis prompt.
+            </Typography>
+            <PremiumMarkdownEditor
+              colorTheme="#a855f7"
+              minRows={3}
+              placeholder="# [LS_CONFLICT_MATRIX] ... (Paste Step 2 output here)"
+              value={lsConflictMatrixInput}
+              onChange={(e: any) => setLsConflictMatrixInput(e.target.value)}
+            />
           </Box>
 
           {/* Terminal Box for Step 3 Prompt */}
@@ -975,7 +1309,7 @@ Format your entire response strictly using this markdown delimiter structure so 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
                 <CheckCircleIcon sx={{ color: '#a855f7' }} />
                 <Typography sx={{ color: '#6b21a8', fontWeight: 700, fontSize: '0.9rem' }}>
-                  Step 3 Prompt Copied to Clipboard!
+                  LS-Doc 1c Master Prompt Copied to Clipboard!
                 </Typography>
               </Box>
               <Button size="small" onClick={() => setCopiedPromptTab(null)} sx={{ textTransform: 'none', fontWeight: 700, borderRadius: '8px', color: '#6b21a8' }}>
@@ -991,7 +1325,7 @@ Format your entire response strictly using this markdown delimiter structure so 
                   <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: '#10b981' }} />
                 </Box>
                 <Typography sx={{ color: '#c084fc', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                  STEP 3 PROMPT · GENERATE 4 BROADCAST BLUEPRINTS
+                  STEP 3 PROMPT · BROADCAST SYNTHESIZER (LS-DOC 1c)
                 </Typography>
                 <Box sx={{ width: 33 }} />
               </Box>
@@ -1020,7 +1354,7 @@ Format your entire response strictly using this markdown delimiter structure so 
                   }}
                 >
                   <ContentCopyIcon sx={{ mr: 1, fontSize: 16 }} />
-                  Copy Step 3 Prompt (Generate Formats)
+                  Copy Step 3 Prompt (LS-Doc 1c: Broadcast Synthesizer)
                 </Button>
               </Box>
             </Box>
@@ -1038,7 +1372,7 @@ Format your entire response strictly using this markdown delimiter structure so 
               4
             </Box>
             <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>
-              Step 4: Import Blueprints into Studio
+              Step 4: Import Broadcast Blueprints into Studio
             </Typography>
           </Box>
 
@@ -1067,7 +1401,7 @@ Format your entire response strictly using this markdown delimiter structure so 
               colorTheme="#10b981"
               minRows={6}
               fullWidth
-              placeholder={`---\n### Groundwork Town Hall: Cassava Farmgate Realities\n* Era: Present\n* Category: ${currentCategory}\n* Description: An interactive live panel on cluster bottlenecks...\n* Hook: Real cash-to-farmgate data direct from producers.\n* Rundown:\n  - 00-15m: Field Data - Farmgate spread\n  - 15-35m: Producer Interview - Cluster logistics\n  - 35-50m: Audience Q&A - Escrow deals\n---`}
+              placeholder={`# [LIVESTREAM_MENU_PAYLOAD]\n**Hub:** ${hubTitle} | **Category:** ${currentCategory}\n\n### 🔴 OPTION 1: The Logistics Operator Approach\n* **Broadcast Title:** Bypassing the Highway: Kaduna Farm-Gate Processing\n* **Act 1 (THE OPEN - Tension):** We open with ₦2.4M freight loss. We reframe: "What if the solution isn't safer trucks, but zero trucks?"\n* **Act 2 (THE MEAT - Map & Defend):** We expose checkpoint extortion syndicates. We preempt skepticism with micro-mill unit economics.\n* **Act 3 (THE CLOSE - The Fork):** Binary Choice.\n  * Path A: Keep bleeding transit rot.\n  * Path B: Deploy capital into local processing.\n* **The Ecosystem Push (CTA):** Flash [Deal ID: Sabou Capital $2M Facility] on screen.\n\n### 🟡 OPTION 2: The Deal Room Pitch (VC & Capital Focus)\n...`}
               value={customIngestMarkdown}
               onChange={(e: any) => setCustomIngestMarkdown(e.target.value)}
             />

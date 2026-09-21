@@ -974,6 +974,11 @@ export default function CreateLivestreamForm({
           setDescription(idea.description);
           if (idea.timeframe) {
             setTimeframe(idea.timeframe);
+          }
+          if (idea.blocks && idea.blocks.length > 0) {
+            setRundownBlocks(idea.blocks);
+            setFrameworkLoaded(true);
+          } else if (idea.timeframe) {
             const framework = LIVESTREAM_FRAMEWORKS[idea.timeframe] || LIVESTREAM_FRAMEWORKS.present;
             const initialPlaceholders = framework.map((f: any) => ({
               id: Math.random().toString(),
