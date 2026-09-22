@@ -83,6 +83,7 @@ export default function CreateLivestreamForm({
   const guidingArticles = initialDraftData?.anchorArticles || initialDraftData?.livestream?.anchorArticles || [];
   const guidingJobs = initialDraftData?.livestream?.ctaJobs || [];
   const guidingListings = initialDraftData?.livestream?.ctaListings || [];
+  const guidingCampaigns = initialDraftData?.livestream?.ctaCampaigns || [];
 
   // Form State
   const [title, setTitle] = useState(initialDraftData?.title || '');
@@ -969,6 +970,7 @@ export default function CreateLivestreamForm({
         guidingArticles={guidingArticles}
         guidingJobs={guidingJobs}
         guidingListings={guidingListings}
+        guidingCampaigns={guidingCampaigns}
         onApplyIdea={(idea) => {
           setTitle(idea.title);
           setDescription(idea.description);

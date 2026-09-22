@@ -492,21 +492,21 @@ export async function fetchGlobalLivestreamArticles(engine: 'production_foundati
       status: 'published',
       ...(orConditions.length > 0 ? { OR: orConditions } : {})
     },
-    select: {
-      id: true,
-      title: true,
-      description: true,
-      authorName: true,
-      category: true,
-      subcategory: true,
-      timeframe: true,
-      thumbnailUrl: true,
-      createdAt: true,
+    include: {
       organization: {
         select: {
           id: true,
           name: true,
           logoUrl: true
+        }
+      },
+      article: {
+        include: {
+          blocks: {
+            orderBy: {
+              orderIndex: 'asc'
+            }
+          }
         }
       }
     },
@@ -523,21 +523,21 @@ export async function fetchGlobalLivestreamArticles(engine: 'production_foundati
         status: 'published',
         ...(existingIds.length > 0 ? { id: { notIn: existingIds } } : {})
       },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        authorName: true,
-        category: true,
-        subcategory: true,
-        timeframe: true,
-        thumbnailUrl: true,
-        createdAt: true,
+      include: {
         organization: {
           select: {
             id: true,
             name: true,
             logoUrl: true
+          }
+        },
+        article: {
+          include: {
+            blocks: {
+              orderBy: {
+                orderIndex: 'asc'
+              }
+            }
           }
         }
       },
@@ -585,8 +585,10 @@ export async function fetchGlobalCtaAssets() {
         select: {
           id: true,
           title: true,
+          description: true,
           category: true,
           location: true,
+          lga: true,
           workModel: true,
           priceOrAsk: true,
           nervePointsCost: true,
@@ -599,6 +601,10 @@ export async function fetchGlobalCtaAssets() {
           currency: true,
           minSalary: true,
           maxSalary: true,
+          jobFunction: true,
+          challenges: true,
+          subcategories: true,
+          duration: true,
           organization: {
             select: {
               name: true,
@@ -628,11 +634,13 @@ export async function fetchGlobalCtaAssets() {
         select: {
           id: true,
           title: true,
+          description: true,
           category: true,
           commodity: true,
           quantity: true,
           priceOrAsk: true,
           location: true,
+          lga: true,
           imageUrl: true,
           postedAt: true,
           organization: {
@@ -653,9 +661,12 @@ export async function fetchGlobalCtaAssets() {
         select: {
           id: true,
           title: true,
+          description: true,
           tier: true,
           goalAmount: true,
           raisedAmount: true,
+          tractionMetric: true,
+          originTag: true,
           imageUrl: true,
           createdAt: true,
           organization: {

@@ -59,6 +59,7 @@ interface LivestreamIdeasSidePaneProps {
   guidingArticles?: Array<{ id: string; title: string; description?: string; [key: string]: any }>;
   guidingJobs?: Array<{ id: string; title: string; compensationOrTarget?: string; organizationChallenges?: string; [key: string]: any }>;
   guidingListings?: Array<{ id: string; title: string; [key: string]: any }>;
+  guidingCampaigns?: Array<{ id: string; title: string; [key: string]: any }>;
   onApplyIdea: (idea: {
     title: string;
     description: string;
@@ -266,6 +267,7 @@ export default function LivestreamIdeasSidePane({
   guidingArticles = [],
   guidingJobs = [],
   guidingListings = [],
+  guidingCampaigns = [],
   onApplyIdea,
 }: LivestreamIdeasSidePaneProps) {
   const defaultTopic = useMemo(() => {
@@ -414,22 +416,50 @@ export default function LivestreamIdeasSidePane({
         }
       ], null, 2);
     }
-    return JSON.stringify(guidingArticles.map(a => ({
-      id: a.id,
-      title: a.title,
-      description: a.description,
-      coverImageUrl: a.coverImageUrl,
-      category: a.category,
-      blocks: a.blocks || a.contentBlocks || [
-        { type: 'highlight_card', metricHeadline: a.title, stat: 'Verified Field Metric', caption: a.description || 'Primary evidence block' },
-        { type: 'strategic_directive', urgency: 'critical', threat: a.description || 'Operational deadlock across the value chain' },
-        { type: 'myth_fact', myth: 'Conventional market dogma', fact: a.description || 'Ground-level operational reality' }
-      ]
-    })), null, 2);
+    return JSON.stringify(guidingArticles.map(a => {
+      const rawBlocks = a.article?.blocks || a.blocks || a.contentBlocks || [];
+      const parsedBlocks = rawBlocks.map((b: any, bIdx: number) => {
+        let contentObj: any = {};
+        if (typeof b.content === 'string') {
+          try {
+            contentObj = JSON.parse(b.content);
+          } catch {
+            contentObj = { text: b.content };
+          }
+        } else if (b.content && typeof b.content === 'object') {
+          contentObj = b.content;
+        } else {
+          const { id, articleId, orderIndex, blockType, type, content, revisions, comments, ...rest } = b;
+          contentObj = rest;
+        }
+
+        return {
+          orderIndex: typeof b.orderIndex === 'number' ? b.orderIndex : bIdx + 1,
+          type: b.blockType || b.type || contentObj.type || 'content_block',
+          ...contentObj
+        };
+      });
+
+      return {
+        id: a.id,
+        title: a.title,
+        description: a.description,
+        category: a.category,
+        subcategory: a.subcategory,
+        timeframe: a.timeframe,
+        authorName: a.authorName,
+        organization: a.organization?.name || 'Food Nerve Society',
+        blocks: parsedBlocks.length > 0 ? parsedBlocks : [
+          { type: 'highlight_card', metricHeadline: a.title, stat: 'Verified Field Metric', caption: a.description || 'Primary evidence block' },
+          { type: 'strategic_directive', urgency: 'critical', threat: a.description || 'Operational deadlock across the value chain' },
+          { type: 'myth_fact', myth: 'Conventional market dogma', fact: a.description || 'Ground-level operational reality' }
+        ]
+      };
+    }), null, 2);
   }, [guidingArticles, topicInput, hubTitle, currentCategory]);
 
   const ecosystemJsonPayload = useMemo(() => {
-    const combined = [...guidingJobs, ...guidingListings];
+    const combined = [...guidingJobs, ...guidingListings, ...(guidingCampaigns || [])];
     if (combined.length === 0) {
       return JSON.stringify([
         {
@@ -444,17 +474,51 @@ export default function LivestreamIdeasSidePane({
         }
       ], null, 2);
     }
-    return JSON.stringify(combined.map(item => ({
-      id: item.id,
-      type: item.salaryRange || item.compensationOrTarget ? 'Job / Bounty' : 'Trade Listing / Deal',
-      jobTitle: item.title || item.name,
-      organizationName: item.organization?.name || item.orgName || 'Food Nerve Ecosystem Partner',
-      location: item.location || item.state || targetLocation || 'Nigeria',
-      compensationOrTarget: item.salaryRange || item.compensationOrTarget || 'Disclosed via Escrow',
-      description: item.description || item.challenges || item.organizationChallenges || 'Execution mandate resolving systemic bottlenecks.',
-      skills: item.skills || item.requiredSkills || []
-    })), null, 2);
-  }, [guidingJobs, guidingListings, hubTitle, targetLocation]);
+    return JSON.stringify(combined.map(item => {
+      let comp = 'Disclosed via Escrow';
+      if (item.minSalary && item.maxSalary) {
+        const cur = item.currency || '₦';
+        comp = `${cur}${Number(item.minSalary).toLocaleString()} - ${cur}${Number(item.maxSalary).toLocaleString()}${item.compType === 'volunteer' ? ' (Volunteer Stipend)' : ' / month'}`;
+      } else if (item.priceOrAsk) {
+        comp = item.priceOrAsk;
+      } else if (item.salaryRange || item.compensationOrTarget) {
+        comp = item.salaryRange || item.compensationOrTarget;
+      } else if (item.goalAmount) {
+        comp = `Target: ₦${Number(item.goalAmount).toLocaleString()}`;
+      } else if (item.npReward) {
+        comp = `${item.npReward.toLocaleString()} NervePoints (Escrow Locked)`;
+      }
+
+      const loc = item.location 
+        ? `${item.location}${item.lga ? ` (${item.lga} LGA)` : ''}`
+        : (item.state || targetLocation || 'Nigeria');
+
+      let challengesList: any = item.challenges;
+      if (typeof challengesList === 'string') {
+        try {
+          challengesList = JSON.parse(challengesList);
+        } catch {
+          challengesList = [item.challenges];
+        }
+      }
+
+      const isJobType = item.category === 'jobs' || item.category === 'job' || item.category === 'volunteer' || item.category === 'internship' || Boolean(item.jobSource) || Boolean(item.minSalary);
+
+      return {
+        id: item.id,
+        type: isJobType ? 'Job / Bounty' : (item.goalAmount ? 'Campaign / Initiative' : 'Trade Listing / Deal'),
+        jobTitle: item.title || item.name,
+        organizationName: item.organization?.name || item.orgName || 'Food Nerve Ecosystem Partner',
+        category: item.category || item.tier || 'ecosystem',
+        jobFunction: item.jobFunction || (item.commodity ? `Commodity: ${item.commodity}` : undefined),
+        location: loc,
+        compensationOrTarget: comp,
+        description: item.description || item.challenges || item.organizationChallenges || 'Execution mandate resolving systemic bottlenecks.',
+        skills: item.skills || item.requiredSkills || challengesList || [],
+        challenges: challengesList || []
+      };
+    }), null, 2);
+  }, [guidingJobs, guidingListings, guidingCampaigns, hubTitle, targetLocation]);
 
   // ── COMPILED MASTER PROMPTS (LS-DOC 1a, 1b, 1c) ──
   const compiledPrompt1 = useMemo(() => {
@@ -542,19 +606,14 @@ You are the Senior Broadcast Producer and Debate Architect for Food Nerve Societ
 
 **[INPUT PAYLOAD DEFINITION]**
 
-\`\`\`
-[LS_ASSET_MAP]: 
-${lsAssetMapInput.trim() ? lsAssetMapInput.trim() : '[Paste the output from LS-Doc 1a into the input field above, or reference the extracted asset map]'}
-
-[ANCHOR_ARTICLE_JSON_ARRAY]: 
-${articleJsonPayload}
-\`\`\`
+* Reference the **[ANCHOR_ARTICLE_JSON_ARRAY]** and context already provided in Step 1.
+${lsAssetMapInput.trim() ? `\n\`\`\`markdown\n# [LS_ASSET_MAP]\n${lsAssetMapInput.trim()}\n\`\`\`` : '* Reference the **[LS_ASSET_MAP]** you generated in Step 1.'}
 
 ---
 
 #### PHASE 1: The Villain & The Tension (Act 1 Setup)
 
-Scan the \`[LS_ASSET_MAP]\` and the \`[ANCHOR_ARTICLE_JSON_ARRAY]\`.
+Scan the \`[LS_ASSET_MAP]\` and the source article data from Step 1.
 
 1. **Extract the Anchor Tension:** Identify the brutal, unacceptable reality that opens the broadcast (derived from the Killer Stat).
 2. **Identify the Political Economy (The Villain):** Locate Sentence 6 of the article description or the core analysis blocks to explicitly name who is currently profiting from this crisis (e.g., *corrupt checkpoint police, legacy middlemen cartels, lazy import monopolies*).
@@ -593,7 +652,7 @@ Output your entire response inside this single, clean Markdown block:
 *   **Skeptic Objection 3 (The Policy/Scaling Doubt):** "[Insert cynical chat question about government interference/scaling limits]"
     *   **The Host's Defense:** [Insert policy workaround or infrastructure timeline from the article].
 \`\`\``;
-  }, [lsAssetMapInput, articleJsonPayload]);
+  }, [lsAssetMapInput]);
 
   const compiledPrompt3 = useMemo(() => {
     return `### 📄 LS-DOCUMENT 1c: THE BROADCAST SYNTHESIZER (MASTER PROMPT)
@@ -606,14 +665,11 @@ You are the Executive Producer for Food Nerve Society operating in September 202
 
 **[INPUT PAYLOAD DEFINITION]**
 
-\`\`\`
 Hub Title & Category: ${hubTitle} | ${currentCategory}
-[LS_ASSET_MAP]: 
-${lsAssetMapInput.trim() ? lsAssetMapInput.trim() : '[Paste the output from LS-Doc 1a into Step 2]'}
-
-[LS_CONFLICT_MATRIX]: 
-${lsConflictMatrixInput.trim() ? lsConflictMatrixInput.trim() : '[Paste the output from LS-Doc 1b into Step 3]'}
-\`\`\`
+* Reference the **[ANCHOR_ARTICLE_JSON_ARRAY]** and **[LS_ASSET_MAP]** from Step 1.
+* Reference the **[LS_CONFLICT_MATRIX]** from Step 2.
+${lsAssetMapInput.trim() ? `\n\`\`\`markdown\n# [LS_ASSET_MAP]\n${lsAssetMapInput.trim()}\n\`\`\`` : ''}
+${lsConflictMatrixInput.trim() ? `\n\`\`\`markdown\n# [LS_CONFLICT_MATRIX]\n${lsConflictMatrixInput.trim()}\n\`\`\`` : ''}
 
 ---
 
