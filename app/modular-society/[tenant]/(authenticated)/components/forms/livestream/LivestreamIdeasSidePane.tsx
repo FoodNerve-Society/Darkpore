@@ -87,7 +87,7 @@ function parseLivestreamPayload(rawText: string, fallbackHub: string, fallbackCa
 
   // ── DETECTION 1: LS-Doc 1c [LIVESTREAM_MENU_PAYLOAD] ──
   if (normalized.includes('OPTION') || normalized.includes('LIVESTREAM_MENU_PAYLOAD') || normalized.includes('Act 1') || normalized.includes('THE OPEN')) {
-    const optionSections = normalized.split(/(?:###\s*(?:[🔴🟡🟢🔵]?\s*OPTION|\bOPTION\b|\d+\.))/i).map(s => s.trim()).filter(Boolean);
+    const optionSections = normalized.split(/(?:###\s*(?:[🔴🟡🟢🔵🟣⚡]?\s*OPTION|\bOPTION\b|\d+\.))/i).map(s => s.trim()).filter(Boolean);
 
     optionSections.forEach((sec, idx) => {
       // Skip top metadata header if it contains no broadcast content
@@ -96,8 +96,19 @@ function parseLivestreamPayload(rawText: string, fallbackHub: string, fallbackCa
       }
 
       const firstLine = sec.split('\n')[0].replace(/^[:\s\d.-]+/, '').replace(/[*_`#]/g, '').trim();
-      const personaMatch = firstLine.match(/(?:The\s+)?([^:\n\r]+(?:Approach|Focus|Model|Persona|Angle|Teardown|Pitch))/i) || [null, firstLine];
-      const personaTitle = personaMatch[1]?.trim() || `Option ${idx + 1} Blueprint`;
+
+      // 4 DEF Angles of Attack config
+      const angleDefaults = [
+        { title: 'The Head-On Assault', icon: '🔴', color: '#ef4444', badge: '🔴 Head-On Assault' },
+        { title: 'The Flank / Sideways Attack', icon: '🟡', color: '#f59e0b', badge: '🟡 Flank Attack' },
+        { title: 'The Trojan Horse', icon: '🟢', color: '#10b981', badge: '🟢 Trojan Horse' },
+        { title: 'The Contrarian Crossfire', icon: '🟣', color: '#a855f7', badge: '🟣 Contrarian Crossfire' },
+      ];
+      const angleConfig = angleDefaults[idx % angleDefaults.length];
+      const typeIcon = angleConfig.icon;
+      const eraColor = angleConfig.color;
+      const eraBadge = angleConfig.badge;
+      const personaTitle = firstLine && firstLine.length > 2 ? firstLine : angleConfig.title;
 
       // Extract Broadcast Title
       const titleMatch = sec.match(/[*•-]?\s*\*?\*?Broadcast Title\*?\*?:\s*([^\n\r*]+)/i) ||
@@ -138,11 +149,10 @@ function parseLivestreamPayload(rawText: string, fallbackHub: string, fallbackCa
         });
       }
 
-      // Determine era and iconography
-      const eraOptions: Array<'present' | 'future' | 'past'> = ['present', 'present', 'past', 'future', 'future'];
-      const timeframe: 'past' | 'present' | 'future' = eraOptions[idx % eraOptions.length];
-      const icons = ['🔴', '🟡', '🟢', '🔵', '⚡'];
-      const typeIcon = icons[idx % icons.length];
+      // Determine era
+      const timeframe: 'past' | 'present' | 'future' = 
+        /future|horizon|203\d/i.test(sec) ? 'future' :
+        /past|historical|origin/i.test(sec) ? 'past' : 'present';
 
       // Extract hook & questions
       const hook = act1Text ? act1Text.slice(0, 140) + '...' : `Strategic livestream teardown for ${personaTitle}.`;
@@ -161,8 +171,8 @@ function parseLivestreamPayload(rawText: string, fallbackHub: string, fallbackCa
           typeTitle: personaTitle,
           typeIcon,
           timeframe,
-          eraBadge: eraConfigMap[timeframe]?.badge || '⚡ Present Era',
-          eraColor: eraConfigMap[timeframe]?.color || '#10b981',
+          eraBadge,
+          eraColor,
           category: fallbackCategory,
           title,
           description: act1Text ? `${act1Text.slice(0, 220)}...` : `Broadcast blueprint engineered for ${personaTitle}.`,
@@ -282,6 +292,18 @@ export default function LivestreamIdeasSidePane({
   const [targetLocation, setTargetLocation] = useState('Dawanau Hub, Kano & Bodija Cluster, Ibadan');
   const [checklist, setChecklist] = useState<Record<string, boolean>>({});
   const [copiedPromptTab, setCopiedPromptTab] = useState<string | null>(null);
+
+  // Dynamic Date Hooks (Zero Hardcoding)
+  const currentDate = useMemo(() => new Date(), []);
+  const currentMonthYear = useMemo(() => {
+    return currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  }, [currentDate]);
+  const currentYear = useMemo(() => {
+    return currentDate.getFullYear().toString();
+  }, [currentDate]);
+  const futureHorizonYear = useMemo(() => {
+    return (currentDate.getFullYear() + 4).toString();
+  }, [currentDate]);
 
   // Ingestion & Step Bridge States (LS-Doc 1a & 1b outputs)
   const [lsAssetMapInput, setLsAssetMapInput] = useState('');
@@ -522,50 +544,47 @@ export default function LivestreamIdeasSidePane({
 
   // ── COMPILED MASTER PROMPTS (LS-DOC 1a, 1b, 1c) ──
   const compiledPrompt1 = useMemo(() => {
-    return `### 📄 LS-DOCUMENT 1a: THE ASSET INGESTOR & BRIDGE BUILDER (MASTER PROMPT)
+    return `### 📄 LS-DOCUMENT 1a: THE DEEP DOSSIER ENGINE (MASTER PROMPT)
 
 **[SYSTEM PERSONA & EXTRACTION CONSTRAINTS]**
-You are the Senior Broadcast Architect and Data Ingestor for Food Nerve Society operating in September 2026. Your ONLY job is to digest raw JSON payloads from published articles and ecosystem listings, and calculate the logical "Bridge" connecting the systemic crisis to the actionable solution.
+You are the Senior Broadcast Architect and Data Ingestor for Food Nerve Society operating in ${currentMonthYear}. Your ONLY job is to digest raw JSON payloads from published articles and ecosystem CTAs (Jobs, Deals, Grants, Opportunities) and extract them into deep, structured intelligence dossiers.
 
-- **Zero Hallucination:** You must only extract data explicitly present in the provided JSON payloads. Do not invent stats or jobs.
-- **Tone:** Highly analytical, strict third-person. Use hard verbs (*extracted, linked, bridged*).
+- **Zero Synthesis Rule:** Do NOT attempt to connect the articles together, find commonalities, or build a "bridge" between the problems and the solutions yet. Your job is pure, isolated, deep extraction for each asset provided.
+- **Elasticity:** You must process every single item provided, whether there is 1 article or 5, and 1 CTA or 5.
+- **Tone:** Highly analytical, strict third-person. Use hard verbs.
 
 **[INPUT PAYLOAD DEFINITION]**
 
 \`\`\`
-Hub Title & Category: ${hubTitle} | ${currentCategory}
+Broadcast Hub & Category: ${hubTitle} | ${currentCategory}
 Livestream Timeframe: Present
 [ANCHOR_ARTICLE_JSON_ARRAY]: 
 ${articleJsonPayload}
 
-[ANCHOR_ECOSYSTEM_JSON_ARRAY]: 
+[ANCHOR_CTA_JSON_ARRAY]: 
 ${ecosystemJsonPayload}
 \`\`\`
 
 ---
 
-#### PHASE 1: Article Data Extraction (The Bleed)
+#### PHASE 1: Deep Article Dissection
 
-Scan the \`[ANCHOR_ARTICLE_JSON_ARRAY]\`. For each article, extract the core systemic crisis:
+Iterate through EVERY article provided in the \`[ANCHOR_ARTICLE_JSON_ARRAY]\`. For each article, you must extract a rich, 6-point systemic insight (mirroring the depth of our editorial blueprints):
 
-1. **The Killer Stat:** Extract the exact metric and image context from Block 1 (\`highlight_card\`).
-2. **The Systemic Threat:** Extract the exact bottleneck and value chain actor affected from the Executive Summary and Block 8 (\`strategic_directive\`).
-3. **The Micro-Geography:** Note the specific Level-5 / Level-4 geographic location where this crisis is happening.
+1. **The Metadata:** Title, Era, and Micro-Geography.
+2. **The Killer Stat:** Extract the exact metric and image context from Block 1 (\`highlight_card\`).
+3. **The Core Problem:** What is the fundamental crisis or bottleneck?
+4. **The Mechanics:** How exactly does the operational reality or the workaround function on the ground?
+5. **The Value Chain Impact:** Explicitly name the Value Chain Actor affected and the systemic/financial outcome.
+6. **The Political Economy:** Who explicitly benefits from this problem persisting? (Extracted from the \`myth_fact\` or core analysis blocks).
 
-#### PHASE 2: Ecosystem Data Extraction (The Cure)
+#### PHASE 2: Ecosystem CTA Dissection
 
-Scan the \`[ANCHOR_ECOSYSTEM_JSON_ARRAY]\`. For each job, bounty, or deal, extract the core execution data:
+Iterate through EVERY listing provided in the \`[ANCHOR_CTA_JSON_ARRAY]\`. A CTA might be a Job, a Corporate Deal, a Government Grant, or a Bounty. For each, extract:
 
-1. **The Target Profile:** Extract the \`jobTitle\` or Deal Name, the \`organizationName\`, and the \`location\`.
-2. **The Capital/Compensation:** Extract the \`salaryRange\`, \`compensationOrTarget\`, or facility size.
-3. **The Execution Mandate:** Extract the core skills or terms from the \`description\` that indicate *how* this listing solves a problem.
-
-#### PHASE 3: The Strategic Bridge Calculation
-
-Calculate the operational link between Phase 1 and Phase 2.
-
-- *The Logic:* How does deploying human capital (the Job) or financial capital (the Deal) from Phase 2 directly neutralize the systemic threat identified in Phase 1?
-- *Example:* "Article A identifies a ₦2M freight tax due to checkpoint extortion. Listing B is a $2M debt facility for a farm-gate processing plant. **The Bridge:** Funding the farm-gate processing plant shortens the transit distance, permanently bypassing the highway extortion checkpoints."
+1. **The Opportunity Profile:** Title, Listing Type (Job/Deal/Grant/etc.), and Organization.
+2. **The Capital/Compensation:** The exact salary, grant size, or deal facility limit.
+3. **The Execution Mandate:** The core skills, deliverables, or operational requirements needed to execute or win this opportunity.
 
 ---
 
@@ -574,58 +593,80 @@ Calculate the operational link between Phase 1 and Phase 2.
 Output your entire response inside this single, clean Markdown block:
 
 \`\`\`markdown
-# [LS_ASSET_MAP]
+# [LS_ASSET_INVENTORY]
 
-**Broadcast Context:** Hub: ${hubTitle} | Timeframe: Present
+**Broadcast Context:** Hub: ${hubTitle} | Category: ${currentCategory} | Timeframe: Present
 
-### 1. Extracted Crisis Data (The Bleed)
-*   **Micro-Geography:** [Extracted Location]
-*   **Value Chain Actor:** [Extracted Actor]
-*   **The Killer Stat:** [Extracted metric from Highlight Card]
-*   **The Threat:** [Extracted threat from Strategic Directive]
+### PART 1: The Article Dossiers
+*(Generate a dossier for EACH article provided in the payload)*
 
-### 2. Extracted Ecosystem Data (The Cure)
-*   **Listing Type:** [Job / Bounty / Deal]
-*   **Title & Organization:** [Extracted Title at Org Name]
-*   **Compensation / Capital:** [Extracted Salary or Deal Size]
-*   **Execution Mandate:** [Extracted core responsibility or deal requirement]
+#### 📄 Article 1: [Extracted Publishing Headline]
+*   **Era & Location:** [Extracted Era] | [Extracted Micro-Geography]
+*   **The Killer Stat:** [Extracted metric/data point]
+*   **The Core Problem:** [1 sentence plainly stating the bottleneck]
+*   **The Mechanics:** [1-2 sentences explaining the operational reality/workaround]
+*   **Value Chain Impact:** [Actor affected and the financial/systemic outcome]
+*   **Political Economy:** [Who profits from this problem persisting]
 
-### 3. The Strategic Bridge (The Logic Link)
-*   **The Bridge:** [2-3 sentences brutally explaining the mathematical or operational link between the Crisis and the Cure. Explain EXACTLY how executing the Ecosystem Listing neutralizes the Article's Threat].
-\`\`\``;
-  }, [hubTitle, currentCategory, articleJsonPayload, ecosystemJsonPayload]);
+#### 📄 Article 2: [Extracted Publishing Headline] *(If present)*
+*   [Repeat structure...]
 
-  const compiledPrompt2 = useMemo(() => {
-    return `### 📄 LS-DOCUMENT 1b: THE CONFLICT ENGINE (MASTER PROMPT)
-
-**[SYSTEM PERSONA & EXTRACTION CONSTRAINTS]**
-You are the Senior Broadcast Producer and Debate Architect for Food Nerve Society operating in September 2026. Your ONLY job is to analyze the strategic bridge and the source articles to manufacture the cognitive friction, tension, and debate necessary for a high-retention livestream.
-
-- **Tone:** Aggressive, analytical, strict third-person. Use hard verbs (*extorts, monopolizes, paralyzes*).
-- **Zero Hallucination:** All defenses against objections MUST be rooted in the data provided in the article JSON.
-
-**[INPUT PAYLOAD DEFINITION]**
-
-* Reference the **[ANCHOR_ARTICLE_JSON_ARRAY]** and context already provided in Step 1.
-${lsAssetMapInput.trim() ? `\n\`\`\`markdown\n# [LS_ASSET_MAP]\n${lsAssetMapInput.trim()}\n\`\`\`` : '* Reference the **[LS_ASSET_MAP]** you generated in Step 1.'}
+#### 📄 Article 3: [Extracted Publishing Headline] *(If present)*
+*   [Repeat structure...]
 
 ---
 
-#### PHASE 1: The Villain & The Tension (Act 1 Setup)
+### PART 2: The Ecosystem CTA Dossiers
+*(Generate a dossier for EACH opportunity provided in the payload)*
 
-Scan the \`[LS_ASSET_MAP]\` and the source article data from Step 1.
+#### 💼 CTA 1: [Extracted Title]
+*   **Type & Organization:** [Job / Deal / Grant] | [Organization Name]
+*   **Capital / Compensation:** [Salary, Deal Size, or Bounty Reward]
+*   **Execution Mandate:** [1-2 sentences explaining exactly what physical/intellectual work is required to fulfill this opportunity]
 
-1. **Extract the Anchor Tension:** Identify the brutal, unacceptable reality that opens the broadcast (derived from the Killer Stat).
-2. **Identify the Political Economy (The Villain):** Locate Sentence 6 of the article description or the core analysis blocks to explicitly name who is currently profiting from this crisis (e.g., *corrupt checkpoint police, legacy middlemen cartels, lazy import monopolies*).
-3. **Extract the Reframe (The Myth):** Locate Block 5 (\`myth_fact\`). What is the lazy, widely accepted industry assumption about this problem, and how does the data destroy it?
+#### 💼 CTA 2: [Extracted Title] *(If present)*
+*   [Repeat structure...]
+\`\`\``;
+  }, [hubTitle, currentCategory, articleJsonPayload, ecosystemJsonPayload, currentMonthYear]);
 
-#### PHASE 2: The Skeptic’s FAQ (Act 2 Defense)
+  const compiledPrompt2 = useMemo(() => {
+    return `### 📄 LS-DOCUMENT 1b: THE PATTERN & INTERSECTION MAPPING (MASTER PROMPT)
 
-Livestream audiences are highly cynical operators, VCs, and policymakers. Anticipate their pushback.
+**[SYSTEM PERSONA & EXTRACTION CONSTRAINTS]**
+You are a Senior Intelligence Analyst and Debate Architect for Food Nerve Society operating in ${currentMonthYear}. Your job is to take the isolated dossiers from Step 1a and find the "Smear"—the deep, underlying patterns, the brutal contradictions, and the timeline evolutions that connect these assets together.
 
-1. **Formulate 3 Skeptical Objections:** Write three distinct, aggressive questions that a live chat viewer would ask to invalidate the "Strategic Bridge" (the proposed cure) generated in LS-Doc 1a.
-    - *Example:* "Local processing sounds great on paper, but there is zero reliable grid power in that LGA. How does a startup actually run the mill without burning their margins on diesel?"
-2. **Formulate the Data-Backed Defense:** For each objection, extract the exact data point, workaround, or unit-economic metric from the article JSON that the Host will use to destroy the objection live on air.
+- **Zero Broadcasting Strategy Yet:** Do not write livestream pitches or format ideas. Focus purely on mapping how the information interacts.
+- **Deep Extraction Rule:** Do not provide a single sentence per section. You must provide an extended, highly detailed list of insights (3-4 bullet points minimum) for each analytical category to give the production team deep material to work with.
+- **Tone:** Highly analytical, strict third-person, brutal honesty.
+
+**[INPUT PAYLOAD DEFINITION]**
+
+\`\`\`
+[LS_ASSET_INVENTORY]: 
+${lsAssetMapInput.trim() ? lsAssetMapInput.trim() : '[Paste the complete Markdown output block from LS-Document 1a]'}
+\`\`\`
+
+---
+
+#### PHASE 1: The Commonalities (The Core Through-lines)
+
+Analyze all provided Articles and CTAs. Identify the undeniable shared realities. What systemic bottlenecks, macro-economic triggers, or resource deficits appear across multiple assets? How does the "Execution Mandate" of the CTAs perfectly map to the "Core Problem" of the articles?
+
+#### PHASE 2: The Contradictions & Friction (The Tension)
+
+Livestreams thrive on conflict. Look for where the data fights itself.
+
+- Does Article A's solution contradict Article B's reality?
+- Does the compensation/target of the CTA seem inadequate for the brutal reality described in the articles?
+- Is there a gap between what the "Myth" says and what the CTAs are actually funding?
+
+#### PHASE 3: The Era & Trajectory Shifts (The Evolution)
+
+Map how the information moves through time. If there are Past, Present, and Future articles, how did the historical failure birth the current ${currentYear} hack? How will the current ${currentYear} crisis force the ${futureHorizonYear} technology adoption?
+
+#### PHASE 4: The Political Economy Nexus (The Profiteers)
+
+Synthesize the "Villains." Across all the assets, who is consistently capturing the margins? Is there a shared cartel, legacy policy, or middleman network that benefits from these combined problems persisting?
 
 ---
 
@@ -634,65 +675,76 @@ Livestream audiences are highly cynical operators, VCs, and policymakers. Antici
 Output your entire response inside this single, clean Markdown block:
 
 \`\`\`markdown
-# [LS_CONFLICT_MATRIX]
+# [LS_THE_SMEAR_MATRIX]
 
-### 1. The Core Tension & The Villain
-*   **The Anchor Tension:** [1-2 sentences stating the brutal, unacceptable reality that hooks the audience].
-*   **The Political Economy (The Villain):** [Explicitly name the specific cartel, official, or legacy entity profiting from this bottleneck].
+**Broadcast Context:** Derived from [LS_ASSET_INVENTORY]
 
-### 2. The Reframe (Myth vs. Reality)
-*   **The Audience's False Assumption:** [The official myth or lazy industry consensus].
-*   **The Live Reframe:** [The data-backed truth the Host will use to pivot the conversation].
+### 1. The Commonalities (The Core Through-lines)
+*(List 3-4 detailed analytical insights where the articles and CTAs perfectly intersect)*
+*   **[Insight Title]:** [2-3 sentences explaining how Article X and Asset Y share a fundamental operational reality, bottleneck, or technological requirement].
+*   **[Insight Title]:** [2-3 sentences detailing...].
+*   **[Insight Title]:** [2-3 sentences detailing...].
+*   **[Insight Title]:** [2-3 sentences detailing...].
 
-### 3. The Skeptic's FAQ (Pre-empting the Chat)
-*   **Skeptic Objection 1 (The Operational Doubt):** "[Insert cynical chat question about logistics/physics]"
-    *   **The Host's Defense:** [Insert hard data/hack from the article proving it works].
-*   **Skeptic Objection 2 (The Financial Doubt):** "[Insert cynical chat question about unit economics/CAPEX]"
-    *   **The Host's Defense:** [Insert financial metric or deal structure from the article].
-*   **Skeptic Objection 3 (The Policy/Scaling Doubt):** "[Insert cynical chat question about government interference/scaling limits]"
-    *   **The Host's Defense:** [Insert policy workaround or infrastructure timeline from the article].
+### 2. The Contradictions & Friction Points (The Tension)
+*(List 3-4 detailed analytical insights where the assets contradict, reveal market gaps, or expose flaws)*
+*   **[Friction Point Title]:** [2-3 sentences exposing a contradiction between the articles, or highlighting why a proposed CTA solution might fail against the brutal ground truth of an article].
+*   **[Friction Point Title]:** [2-3 sentences detailing...].
+*   **[Friction Point Title]:** [2-3 sentences detailing...].
+*   **[Friction Point Title]:** [2-3 sentences detailing...].
+
+### 3. The Era & Trajectory Shifts (The Evolution)
+*(List 3-4 detailed analytical insights tracking the movement of time across the assets)*
+*   **[Trajectory Shift Title]:** [2-3 sentences mapping how a historical root caused a present crisis, or how a present workaround sets the stage for a future ${futureHorizonYear} disruption].
+*   **[Trajectory Shift Title]:** [2-3 sentences detailing...].
+*   **[Trajectory Shift Title]:** [2-3 sentences detailing...].
+
+### 4. The Political Economy Nexus (The Profiteers)
+*(List 2-3 detailed insights synthesizing who is making money off the systemic failure)*
+*   **[Profiteer/Cartel Identification]:** [2-3 sentences explicitly naming the actors who benefit from the combined problems persisting across these assets, and how they extract their margin].
+*   **[Profiteer/Cartel Identification]:** [2-3 sentences detailing...].
 \`\`\``;
-  }, [lsAssetMapInput]);
+  }, [lsAssetMapInput, currentMonthYear, currentYear, futureHorizonYear]);
 
   const compiledPrompt3 = useMemo(() => {
-    return `### 📄 LS-DOCUMENT 1c: THE BROADCAST SYNTHESIZER (MASTER PROMPT)
+    return `### 📄 LS-DOCUMENT 1c: THE ANGLES OF ATTACK & BROADCAST SYNTHESIZER (MASTER PROMPT)
 
 **[SYSTEM PERSONA & SYNTHESIS CONSTRAINTS]**
-You are the Executive Producer for Food Nerve Society operating in September 2026. Your ONLY job is to take raw broadcast assets and conflict matrices, and synthesize them into 4-5 highly distinct, high-retention Livestream Pitches.
+You are the Executive Producer and Showrunner for Food Nerve Society operating in ${currentMonthYear}. Your ONLY job is to take the raw inventory and the analytical "Smear" matrices, and synthesize them into 4 to 5 highly distinct, high-retention Livestream Pitches.
 
 - **Tone:** Aggressive, highly structured, strict third-person. Use hard verbs. No fluffy adjectives.
-- **The DEF Rule:** Every single pitch MUST obey the Determinant Engagement Framework: Act 1 (Open/Tension) $\\to$ Act 2 (Meat/Defense) $\\to$ Act 3 (Close/Conversion).
+- **The DEF Rule:** Every single pitch MUST obey the Determinant Engagement Framework: Act 1 (Open/Tension) $\\to$ Act 2 (Meat/Diagnosis & Defense) $\\to$ Act 3 (Close/Conversion).
 
 **[INPUT PAYLOAD DEFINITION]**
 
+\`\`\`
 Hub Title & Category: ${hubTitle} | ${currentCategory}
-* Reference the **[ANCHOR_ARTICLE_JSON_ARRAY]** and **[LS_ASSET_MAP]** from Step 1.
-* Reference the **[LS_CONFLICT_MATRIX]** from Step 2.
-${lsAssetMapInput.trim() ? `\n\`\`\`markdown\n# [LS_ASSET_MAP]\n${lsAssetMapInput.trim()}\n\`\`\`` : ''}
-${lsConflictMatrixInput.trim() ? `\n\`\`\`markdown\n# [LS_CONFLICT_MATRIX]\n${lsConflictMatrixInput.trim()}\n\`\`\`` : ''}
+[LS_ASSET_INVENTORY]: 
+${lsAssetMapInput.trim() ? lsAssetMapInput.trim() : '[Paste the output from LS-Doc 1a]'}
+
+[LS_THE_SMEAR_MATRIX]: 
+${lsConflictMatrixInput.trim() ? lsConflictMatrixInput.trim() : '[Paste the output from LS-Doc 1b]'}
+\`\`\`
 
 ---
 
-#### PHASE 1: Vibe & Alignment Check
+#### PHASE 1: The "Angles of Attack" Mapping
 
-Read the \`hubTitle\` and \`category\`. Your 4-5 generated pitches must natively fit the psychological vibe of this Hub:
+Read the \`[LS_THE_SMEAR_MATRIX]\`. You must generate exactly 4 Livestream pitch options by applying these 4 specific editorial "Angles of Attack" to the data:
 
-- *If "Production Foundations":* Skew toward unit economics, land tenure, and CAPEX.
-- *If "Resilience & Disruption":* Skew toward war-room tactics, surviving extortion, and climate shocks.
-- *If "Markets, People & Solutions":* Skew toward sociology, talent liquidity, and cartel bypassing.
+1. **The Head-On Assault (The Obvious Bleed):** Attack the biggest, most undeniable "Commonality" found in Doc 1b. This is a direct problem-and-solution broadcast targeting the primary victim of the crisis.
+2. **The Flank / Sideways Attack (The Ignored Actor):** Do not focus on the obvious victim (e.g., the farmer). Focus on the hidden secondary actor (e.g., the truck mechanic, the warehouse guard, the local bureaucrat). Build the broadcast around how fixing *their* problem solves the macro crisis.
+3. **The Trojan Horse (The Bait & Switch):** Hook the audience using a highly relatable, everyday pain point (from a Present-era article), but midway through the Meat, execute a radical pivot to pitch a futuristic, obscure, or ${futureHorizonYear} technology (from a Future-era article or CTA) as the only real solution.
+4. **The Contrarian Crossfire (The Debate):** Build the entire broadcast around the biggest "Contradiction/Friction Point" found in Doc 1b. Pit the official narrative directly against the grassroots hack. This stream is designed for high-conflict live chat engagement.
 
-#### PHASE 2: Generation of the 4-5 Pitch Options
-
-Using the \`[LS_ASSET_MAP]\` and \`[LS_CONFLICT_MATRIX]\`, generate 4 to 5 distinct broadcast options. Vary the core focus of each option to target different segments of the audience (e.g., Option 1 for Logistics Operators, Option 2 for Policymakers, Option 3 for VCs/Deal-Flow, Option 4 for Talent/Job Seekers).
-
-#### PHASE 3: The DEF Structure Enforcement
+#### PHASE 2: The DEF Structure Enforcement
 
 For every pitch option, you must format the broadcast into the 3-Act DEF structure:
 
 1. **Act 1 (THE OPEN):** State the Anchor Tension (The Killer Stat) and the Reframe Question to break the audience's assumptions immediately.
-2. **Act 2 (THE MEAT):** Map the system. Expose the Villain (Political Economy). Bring up the Skeptic's FAQ (from Doc 1b) and provide the data-backed defense.
-3. **Act 3 (THE CLOSE):** Force the audience into a corner. Provide the Forked Close: A Binary Choice (for a room that needs to make a decision today) OR an Open Question (for a room setting policy/research boundaries).
-4. **The Ecosystem Push:** Explicitly state how the Job/Deal from the \`[LS_ASSET_MAP]\` is injected at the climax of the show.
+2. **Act 2 (THE MEAT):** Map the system. Expose the Villain (Political Economy). Preempt the audience's primary objection (The Skeptic's FAQ) and destroy it live using the data.
+3. **Act 3 (THE CLOSE):** Force the audience into a corner. Provide the Forked Close: A Binary Choice (for a room that needs to make a decision today) OR an Open Question (for a room setting boundaries).
+4. **The Ecosystem Push:** Explicitly state how the Job/Deal/Grant from the \`[LS_ASSET_INVENTORY]\` is injected at the climax of the show.
 
 ---
 
@@ -702,33 +754,40 @@ Output your entire response inside this single, clean Markdown block:
 
 \`\`\`markdown
 # [LIVESTREAM_MENU_PAYLOAD]
-**Hub:** ${hubTitle} | **Category:** ${currentCategory}
 
-### 🔴 OPTION 1: The [Insert Target Persona] Approach
-*   **Broadcast Title:** [Punchy, Action-Spiky Title targeting a specific actor]
+**Broadcast Hub:** ${hubTitle} | **Category:** ${currentCategory}
+
+### 🔴 OPTION 1: The Head-On Assault (Targeting: [Insert Persona])
+*   **Broadcast Title:** [Punchy, Action-Spiky Title targeting the core crisis]
 *   **Act 1 (THE OPEN - Tension):** We open with [Insert Killer Stat]. We reframe the narrative by asking the audience: *"[Insert Reframe Question]"*
-*   **Act 2 (THE MEAT - Map & Defend):** We expose [Insert Villain/Profiteer]. We preempt the audience's primary objection: *"[Insert Skeptic FAQ 1]"* and destroy it live on air using [Insert Data Defense].
+*   **Act 2 (THE MEAT - Map & Defend):** We expose [Insert Villain/Profiteer]. We preempt the audience's primary objection: *"[Insert Skeptic FAQ]"* and destroy it live using [Insert Data Defense].
 *   **Act 3 (THE CLOSE - The Fork):** [Binary Choice OR Open Question].
     *   *Path A (Status Quo):* [Cost of doing nothing].
     *   *Path B (Intervention):* [The specific workaround/hack].
-*   **The Ecosystem Push (CTA):** We climax the stream by flashing \`[Insert Job/Deal Title]\` on screen to help operators execute Path B today.
+*   **The Ecosystem Push (CTA):** We climax the stream by flashing \`[Insert Job/Deal Title]\` on screen to execute Path B today.
 
-### 🟡 OPTION 2: The [Insert Target Persona] Approach
-*   **Broadcast Title:** [Punchy, Action-Spiky Title targeting a specific actor]
-*   **Act 1 (THE OPEN - Tension):** [Content]
-*   **Act 2 (THE MEAT - Map & Defend):** [Content]
-*   **Act 3 (THE CLOSE - The Fork):** [Content]
-*   **The Ecosystem Push (CTA):** [Content]
+### 🟡 OPTION 2: The Flank / Sideways Attack (Targeting: [Secondary Actor])
+*   **Broadcast Title:** [Punchy, Action-Spiky Title targeting the ignored actor]
+*   **Act 1 (THE OPEN - Tension):** [Content mapped to the DEF]
+*   **Act 2 (THE MEAT - Map & Defend):** [Content mapped to the DEF]
+*   **Act 3 (THE CLOSE - The Fork):** [Content mapped to the DEF]
+*   **The Ecosystem Push (CTA):** [Content mapped to the DEF]
 
-### 🟢 OPTION 3: The [Insert Target Persona] Approach
-*   [Follow identical structure...]
+### 🟢 OPTION 3: The Trojan Horse (Targeting: [Investors/Visionaries])
+*   **Broadcast Title:** [Punchy, Action-Spiky Title bridging a present crisis to a future tech]
+*   **Act 1 (THE OPEN - Tension):** [Content mapped to the DEF]
+*   **Act 2 (THE MEAT - Map & Defend):** [Content mapped to the DEF - Must include the radical pivot]
+*   **Act 3 (THE CLOSE - The Fork):** [Content mapped to the DEF]
+*   **The Ecosystem Push (CTA):** [Content mapped to the DEF]
 
-### 🔵 OPTION 4: The [Insert Target Persona] Approach
-*   [Follow identical structure...]
-
-*(Generate OPTION 5 only if the data supports a wildly contrarian or obscure "Black Swan" broadcast angle).*
+### 🟣 OPTION 4: The Contrarian Crossfire (Targeting: [Operators/Policymakers])
+*   **Broadcast Title:** [Punchy, Action-Spiky Title highlighting a deep contradiction]
+*   **Act 1 (THE OPEN - Tension):** [Content mapped to the DEF]
+*   **Act 2 (THE MEAT - Map & Defend):** [Content mapped to the DEF - Must highlight the clash between models]
+*   **Act 3 (THE CLOSE - The Fork):** [Content mapped to the DEF]
+*   **The Ecosystem Push (CTA):** [Content mapped to the DEF]
 \`\`\``;
-  }, [hubTitle, currentCategory, lsAssetMapInput, lsConflictMatrixInput]);
+  }, [hubTitle, currentCategory, lsAssetMapInput, lsConflictMatrixInput, currentMonthYear, futureHorizonYear]);
 
   const handleApplyBlueprint = (blueprint: LivestreamIdeaOption) => {
     onApplyIdea({
@@ -1095,7 +1154,7 @@ Output your entire response inside this single, clean Markdown block:
         </Box>
 
         {/* ──────────────────────────────────────────────────────────── */}
-        {/* STEP 1: ASSET INGESTOR & BRIDGE BUILDER (LS-DOC 1a)          */}
+        {/* STEP 1: THE DEEP DOSSIER ENGINE (LS-DOC 1a)                  */}
         {/* ──────────────────────────────────────────────────────────── */}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -1103,7 +1162,7 @@ Output your entire response inside this single, clean Markdown block:
               1
             </Box>
             <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>
-              Step 1: The Asset Ingestor & Bridge Builder (LS-Doc 1a)
+              Step 1: The Deep Dossier Engine (LS-Doc 1a)
             </Typography>
           </Box>
 
@@ -1114,7 +1173,7 @@ Output your entire response inside this single, clean Markdown block:
                 <span>🎯</span> Who & Where are we broadcasting for?
               </Typography>
               <Typography sx={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500, mt: 0.25 }}>
-                Context for the AI to calculate the causal link between your selected articles and CTA listings.
+                Context for the AI to extract deep, structured intelligence dossiers for your selected articles and CTA listings.
               </Typography>
             </Box>
 
@@ -1179,7 +1238,7 @@ Output your entire response inside this single, clean Markdown block:
                   <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: '#10b981' }} />
                 </Box>
                 <Typography sx={{ color: '#94a3b8', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                  STEP 1 PROMPT · ASSET INGESTOR & BRIDGE BUILDER (LS-DOC 1a)
+                  STEP 1 PROMPT · THE DEEP DOSSIER ENGINE (LS-DOC 1a)
                 </Typography>
                 <Box sx={{ width: 33 }} />
               </Box>
@@ -1208,7 +1267,7 @@ Output your entire response inside this single, clean Markdown block:
                   }}
                 >
                   <ContentCopyIcon sx={{ mr: 1, fontSize: 16 }} />
-                  Copy Step 1 Prompt (LS-Doc 1a: Asset Ingestor)
+                  Copy Step 1 Prompt (LS-Doc 1a: Deep Dossier Engine)
                 </Button>
               </Box>
             </Box>
@@ -1218,7 +1277,7 @@ Output your entire response inside this single, clean Markdown block:
         <Box sx={{ borderBottom: '1px solid rgba(0,0,0,0.08)', my: 0.5 }} />
 
         {/* ──────────────────────────────────────────────────────────── */}
-        {/* STEP 2: THE CONFLICT ENGINE & SKEPTIC PRE-EMPTS (LS-DOC 1b)  */}
+        {/* STEP 2: THE PATTERN & INTERSECTION MAPPING (LS-DOC 1b)       */}
         {/* ──────────────────────────────────────────────────────────── */}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -1226,7 +1285,7 @@ Output your entire response inside this single, clean Markdown block:
               2
             </Box>
             <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>
-              Step 2: The Conflict Engine & Skeptic Pre-Empts (LS-Doc 1b)
+              Step 2: The Pattern & Intersection Mapping (LS-Doc 1b)
             </Typography>
           </Box>
 
@@ -1234,7 +1293,7 @@ Output your entire response inside this single, clean Markdown block:
           <Box sx={{ p: 2.25, borderRadius: '16px', bgcolor: '#ffffff', border: '1px solid rgba(245, 158, 11, 0.25)', boxShadow: '0 4px 16px rgba(245, 158, 11, 0.05)', display: 'flex', flexDirection: 'column', gap: 1.25 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Typography sx={{ fontSize: '0.82rem', fontWeight: 800, color: '#92400e', display: 'flex', alignItems: 'center', gap: 0.8 }}>
-                <span>📥</span> Optional: Paste [LS_ASSET_MAP] Output from Step 1
+                <span>📥</span> Optional: Paste [LS_ASSET_INVENTORY] Output from Step 1
               </Typography>
               {lsAssetMapInput.trim() && (
                 <Chip label="Auto-Embedded Below ✓" size="small" sx={{ bgcolor: '#ecfdf5', color: '#047857', fontWeight: 800, fontSize: '0.68rem' }} />
@@ -1246,7 +1305,7 @@ Output your entire response inside this single, clean Markdown block:
             <PremiumMarkdownEditor
               colorTheme="#f59e0b"
               minRows={3}
-              placeholder="# [LS_ASSET_MAP] ... (Paste Step 1 output here)"
+              placeholder="# [LS_ASSET_INVENTORY] ... (Paste Step 1 output here)"
               value={lsAssetMapInput}
               onChange={(e: any) => setLsAssetMapInput(e.target.value)}
             />
@@ -1274,7 +1333,7 @@ Output your entire response inside this single, clean Markdown block:
                   <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: '#10b981' }} />
                 </Box>
                 <Typography sx={{ color: '#fbbf24', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                  STEP 2 PROMPT · THE CONFLICT ENGINE (LS-DOC 1b)
+                  STEP 2 PROMPT · PATTERN & INTERSECTION MAPPING (LS-DOC 1b)
                 </Typography>
                 <Box sx={{ width: 33 }} />
               </Box>
@@ -1303,7 +1362,7 @@ Output your entire response inside this single, clean Markdown block:
                   }}
                 >
                   <ContentCopyIcon sx={{ mr: 1, fontSize: 16 }} />
-                  Copy Step 2 Prompt (LS-Doc 1b: Conflict Engine)
+                  Copy Step 2 Prompt (LS-Doc 1b: The Smear Matrix)
                 </Button>
               </Box>
             </Box>
@@ -1313,7 +1372,7 @@ Output your entire response inside this single, clean Markdown block:
         <Box sx={{ borderBottom: '1px solid rgba(0,0,0,0.08)', my: 0.5 }} />
 
         {/* ──────────────────────────────────────────────────────────── */}
-        {/* STEP 3: BROADCAST SYNTHESIZER & DEF MENU (LS-DOC 1c)         */}
+        {/* STEP 3: ANGLES OF ATTACK & BROADCAST SYNTHESIZER (LS-DOC 1c) */}
         {/* ──────────────────────────────────────────────────────────── */}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -1333,7 +1392,7 @@ Output your entire response inside this single, clean Markdown block:
               3
             </Box>
             <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>
-              Step 3: Broadcast Synthesizer & DEF Menu (LS-Doc 1c)
+              Step 3: The Angles of Attack & Broadcast Synthesizer (LS-Doc 1c)
             </Typography>
           </Box>
 
@@ -1341,7 +1400,7 @@ Output your entire response inside this single, clean Markdown block:
           <Box sx={{ p: 2.25, borderRadius: '16px', bgcolor: '#ffffff', border: '1px solid rgba(168, 85, 247, 0.25)', boxShadow: '0 4px 16px rgba(168, 85, 247, 0.05)', display: 'flex', flexDirection: 'column', gap: 1.25 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Typography sx={{ fontSize: '0.82rem', fontWeight: 800, color: '#6b21a8', display: 'flex', alignItems: 'center', gap: 0.8 }}>
-                <span>📥</span> Optional: Paste [LS_CONFLICT_MATRIX] Output from Step 2
+                <span>📥</span> Optional: Paste [LS_THE_SMEAR_MATRIX] Output from Step 2
               </Typography>
               {lsConflictMatrixInput.trim() && (
                 <Chip label="Auto-Embedded Below ✓" size="small" sx={{ bgcolor: '#ecfdf5', color: '#047857', fontWeight: 800, fontSize: '0.68rem' }} />
@@ -1353,7 +1412,7 @@ Output your entire response inside this single, clean Markdown block:
             <PremiumMarkdownEditor
               colorTheme="#a855f7"
               minRows={3}
-              placeholder="# [LS_CONFLICT_MATRIX] ... (Paste Step 2 output here)"
+              placeholder="# [LS_THE_SMEAR_MATRIX] ... (Paste Step 2 output here)"
               value={lsConflictMatrixInput}
               onChange={(e: any) => setLsConflictMatrixInput(e.target.value)}
             />
@@ -1381,7 +1440,7 @@ Output your entire response inside this single, clean Markdown block:
                   <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: '#10b981' }} />
                 </Box>
                 <Typography sx={{ color: '#c084fc', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                  STEP 3 PROMPT · BROADCAST SYNTHESIZER (LS-DOC 1c)
+                  STEP 3 PROMPT · ANGLES OF ATTACK & BROADCAST SYNTHESIZER (LS-DOC 1c)
                 </Typography>
                 <Box sx={{ width: 33 }} />
               </Box>
