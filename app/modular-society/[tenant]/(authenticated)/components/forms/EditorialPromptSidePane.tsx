@@ -30,6 +30,7 @@ import { foodChallenges } from '@/lib/cms/food/challenges';
 import {
   PromptTerminalBox,
   PromptChecklistItem,
+  PromptFastIngestBox,
 } from '@/components/prompts';
 import {
   buildDoc2aPrompt,
@@ -165,6 +166,9 @@ export function EditorialPromptSidePane({
       doc_3a: 'sop_doc3_1',
       doc_3b: 'sop_doc3_2',
       doc_3c: 'sop_doc3_3',
+      doc_4a: 'sop_doc4_1',
+      doc_4b: 'sop_doc4_2',
+      doc_4c: 'sop_doc4_3',
     };
     const targetCheck = map[promptKey];
     if (targetCheck) {
@@ -233,6 +237,8 @@ export function EditorialPromptSidePane({
       title: 'The Emotional Wireframer (The Architect)',
       role: `Map ${currentBlueprint.length} blocks sequence & assign emotional targets (Greed, Paranoia, Outrage, Clarity)`,
       prompt: buildDoc2aPrompt(promptContext),
+      checkId: 'sop_doc2_1',
+      checkText: `Run Doc 2a to look up sequence & assign 4 emotional targets across ${currentBlueprint.length} blocks.`,
     },
     {
       key: 'doc_2b',
@@ -240,6 +246,8 @@ export function EditorialPromptSidePane({
       title: 'The Intelligence Writer (The Muscle)',
       role: 'Brutal 8th-grade investigative analysis, live OSINT grounding & raw block drafting',
       prompt: buildDoc2bPrompt(promptContext),
+      checkId: 'sop_doc2_2',
+      checkText: 'Run Doc 2b with live OSINT to draft raw text in brutal 8th-grade English.',
     },
     {
       key: 'doc_2c',
@@ -247,6 +255,8 @@ export function EditorialPromptSidePane({
       title: 'The Component Assembler (The Skin)',
       role: 'Strict Markdown compilation matching 17 UI blocks with zero word alterations',
       prompt: buildDoc2cPrompt(promptContext),
+      checkId: 'sop_doc2_3',
+      checkText: 'Run Doc 2c to assemble raw text into canonical React component Markdown.',
     },
   ], [promptContext, currentBlueprint.length]);
 
@@ -260,6 +270,8 @@ export function EditorialPromptSidePane({
       title: 'The OSINT Fact-Checking & Sourcing Engine',
       role: 'In-place factual audit, real price quotes, verified links, and live listings',
       prompt: buildDoc3aPrompt(promptContext),
+      checkId: 'sop_doc3_1',
+      checkText: 'Run Doc 3a for in-place factual audits, verified quotes & live ecosystem opportunities.',
     },
     {
       key: 'doc_3b',
@@ -267,6 +279,8 @@ export function EditorialPromptSidePane({
       title: 'The Art Director & Visual Asset Expansion Engine',
       role: 'Documentary photojournalism Midjourney/DALL-E prompts with calibrated aspect ratios',
       prompt: buildDoc3bPrompt(promptContext),
+      checkId: 'sop_doc3_2',
+      checkText: 'Run Doc 3b to expand image placeholders into photojournalism prompts (-ar 16:9, -ar 1:1).',
     },
     {
       key: 'doc_3c',
@@ -274,6 +288,8 @@ export function EditorialPromptSidePane({
       title: 'The Conversion Architect & Structural QA Engine',
       role: 'Canonical CTA catalog mapping & 5-point pre-flight structural QA audit',
       prompt: buildDoc3cPrompt(promptContext),
+      checkId: 'sop_doc3_3',
+      checkText: 'Run Doc 3c to map canonical platform CTAs and complete the 5-point structural QA audit.',
     },
   ], [promptContext]);
 
@@ -287,6 +303,8 @@ export function EditorialPromptSidePane({
       title: 'The Jargon Translator & Headline Polisher',
       role: 'Spiky Title badge formatting, plain 8th-grade English scrub & persona tuning',
       prompt: buildDoc4aPrompt(promptContext),
+      checkId: 'sop_doc4_1',
+      checkText: 'Run Doc 4a to calibrate spiky headline for badge splitting and translate to plain English.',
     },
     {
       key: 'doc_4b',
@@ -294,6 +312,8 @@ export function EditorialPromptSidePane({
       title: 'The Bionic Editor & Syntax Linter',
       role: 'Mobile F-pattern bionic reading anchors & syntax linter for clean JSON parsing',
       prompt: buildDoc4bPrompt(promptContext),
+      checkId: 'sop_doc4_2',
+      checkText: 'Run Doc 4b to inject bionic reading bolding anchors and lint Markdown syntax.',
     },
     {
       key: 'doc_4c',
@@ -301,6 +321,8 @@ export function EditorialPromptSidePane({
       title: 'The Payload Parser (CMS API Bridge)',
       role: 'Final compilation into strictly valid, headless CMS JSON payload for direct canvas ingest',
       prompt: buildDoc4cPrompt(promptContext),
+      checkId: 'sop_doc4_3',
+      checkText: 'Run Doc 4c to compile the payload into strictly valid headless CMS JSON.',
     },
   ], [promptContext]);
 
