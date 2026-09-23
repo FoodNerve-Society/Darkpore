@@ -15,6 +15,8 @@ export interface PromptFastIngestBoxProps {
   subtitle?: string;
   codeLabel?: string;
   colorTheme?: string;
+  fileName?: string;
+  unitLabel?: string;
   placeholder?: string;
   error?: string | null;
   success?: boolean;
@@ -29,6 +31,8 @@ export function PromptFastIngestBox({
   onChange,
   onIngest,
   colorTheme = '#10b981',
+  fileName = 'payload.json',
+  unitLabel = 'blocks',
   placeholder,
   error,
   success = false,
@@ -91,7 +95,7 @@ export function PromptFastIngestBox({
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Chip
             size="small"
-            label="payload.json"
+            label={fileName}
             sx={{
               height: 22,
               fontSize: '0.68rem',
@@ -211,10 +215,10 @@ export function PromptFastIngestBox({
                 }}
               >
                 {isComplete
-                  ? `Ready · ${liveBlockCount}${expectedBlockCount ? ` of ${expectedBlockCount}` : ''} blocks detected`
+                  ? `Ready · ${liveBlockCount}${expectedBlockCount ? ` of ${expectedBlockCount}` : ''} ${unitLabel} detected`
                   : liveBlockCount > 0
-                    ? `Partial · ${liveBlockCount}${expectedBlockCount ? ` of ${expectedBlockCount}` : ''} blocks found`
-                    : 'Awaiting valid payload'}
+                    ? `Partial · ${liveBlockCount}${expectedBlockCount ? ` of ${expectedBlockCount}` : ''} ${unitLabel} found`
+                    : `Awaiting valid ${fileName}`}
               </Typography>
             </Box>
             {expectedBlockCount ? (
@@ -269,7 +273,7 @@ export function PromptFastIngestBox({
             }}
           >
             <Typography sx={{ color: colorTheme, fontSize: '0.82rem', fontWeight: 800 }}>
-              ✓ Ingested successfully. Blocks applied to the canvas.
+              ✓ Ingested successfully. Content applied to the canvas.
             </Typography>
           </Box>
         )}
@@ -281,7 +285,7 @@ export function PromptFastIngestBox({
           disabled={!hasPayload || isIngesting}
           startIcon={<BoltIcon sx={{ fontSize: 20 }} />}
           sx={{
-            background: `linear-gradient(135deg, ${colorTheme} 0%, #047857 100%)`,
+            background: `linear-gradient(135deg, ${colorTheme} 0%, ${alpha(colorTheme, 0.82)} 100%)`,
             color: '#ffffff',
             fontWeight: 900,
             py: 1.35,
@@ -292,7 +296,8 @@ export function PromptFastIngestBox({
             boxShadow: `0 6px 18px ${alpha(colorTheme, 0.32)}`,
             transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
             '&:hover': {
-              background: `linear-gradient(135deg, #34d399 0%, ${colorTheme} 100%)`,
+              background: `linear-gradient(135deg, ${colorTheme} 0%, ${colorTheme} 100%)`,
+              filter: 'brightness(1.08)',
               transform: 'translateY(-1px)',
               boxShadow: `0 8px 24px ${alpha(colorTheme, 0.42)}`,
             },

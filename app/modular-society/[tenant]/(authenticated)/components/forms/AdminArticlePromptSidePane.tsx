@@ -320,63 +320,79 @@ export function AdminArticlePromptSidePane({
               elevation={0}
               onClick={handleRestore}
               sx={{
-                p: 1.5,
-                pr: 2,
-                borderRadius: '20px',
-                bgcolor: 'rgba(15, 23, 42, 0.92)',
-                backdropFilter: 'blur(20px)',
-                border: '1.5px solid rgba(245, 158, 11, 0.4)',
-                boxShadow: '0 12px 36px rgba(0, 0, 0, 0.45)',
+                py: 0.85,
+                px: 1.6,
+                borderRadius: '999px',
+                background: 'rgba(15, 23, 42, 0.78)',
+                backdropFilter: 'blur(20px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                border: '1px solid rgba(255, 255, 255, 0.14)',
+                boxShadow: '0 12px 32px rgba(0, 0, 0, 0.4), inset 0 1px 1px 0 rgba(255, 255, 255, 0.2)',
+                color: '#fff',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 1.5,
-                cursor: 'pointer',
-                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                gap: 1.25,
                 '&:hover': {
                   transform: 'translateY(-2px)',
-                  borderColor: '#f59e0b',
-                  boxShadow: '0 16px 40px rgba(245, 158, 11, 0.25)',
+                  background: 'rgba(15, 23, 42, 0.88)',
+                  borderColor: 'rgba(255, 255, 255, 0.25)',
+                  boxShadow: '0 16px 36px rgba(0, 0, 0, 0.5), inset 0 1px 1px 0 rgba(255, 255, 255, 0.3)',
                 },
               }}
             >
+              {/* Minimal Amber Icon with Soft Glow */}
               <Box
                 sx={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: '12px',
-                  background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                  color: '#ffffff',
+                  width: 26,
+                  height: 26,
+                  borderRadius: '50%',
+                  bgcolor: 'rgba(245, 158, 11, 0.2)',
+                  border: '1px solid rgba(245, 158, 11, 0.4)',
+                  color: '#f59e0b',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 4px 14px rgba(245, 158, 11, 0.4)',
+                  flexShrink: 0,
                 }}
               >
-                <LockIcon sx={{ fontSize: 18 }} />
+                <AutoAwesomeIcon sx={{ fontSize: 14 }} />
               </Box>
 
-              <Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                  <Typography sx={{ color: '#fff', fontWeight: 900, fontSize: '0.86rem' }}>
-                    Admin Flow Dock
-                  </Typography>
-                  <Chip
-                    label={dayNode?.['Article ID'] || '6 Articles'}
-                    size="small"
-                    sx={{
-                      bgcolor: 'rgba(245, 158, 11, 0.2)',
-                      color: '#fbbf24',
-                      fontWeight: 800,
-                      fontSize: '0.66rem',
-                      height: 18,
-                    }}
-                  />
-                </Box>
-                <Typography sx={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '0.72rem' }}>
-                  {commodity.split(',')[0]} • Click to expand
-                </Typography>
+              {/* Minimal Clean 1-Line Meta */}
+              <Typography
+                sx={{
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  color: '#f8fafc',
+                  letterSpacing: '-0.01em',
+                  whiteSpace: 'nowrap',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.6,
+                }}
+              >
+                <span>Article Ideas</span>
+                <span style={{ color: 'rgba(255,255,255,0.3)' }}>·</span>
+                <span style={{ color: '#fbbf24', fontWeight: 600 }}>{commodity.split(',')[0]}</span>
+              </Typography>
+
+              {/* Minimal Expand Icon */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  color: 'rgba(255, 255, 255, 0.5)',
+                  ml: 0.2,
+                  transition: 'color 0.2s',
+                  '&:hover': { color: '#fff' },
+                }}
+              >
+                <OpenInFullIcon sx={{ fontSize: 12 }} />
               </Box>
 
+              {/* Minimal Dismiss (X) */}
               <IconButton
                 size="small"
                 onClick={(e) => {
@@ -385,11 +401,15 @@ export function AdminArticlePromptSidePane({
                 }}
                 sx={{
                   color: 'rgba(255, 255, 255, 0.4)',
-                  p: 0.5,
-                  '&:hover': { color: '#ef4444', bgcolor: 'rgba(239, 68, 68, 0.15)' },
+                  p: 0.35,
+                  ml: -0.5,
+                  '&:hover': {
+                    color: '#ef4444',
+                    bgcolor: 'rgba(239, 68, 68, 0.15)',
+                  },
                 }}
               >
-                <CloseIcon sx={{ fontSize: 16 }} />
+                <CloseIcon sx={{ fontSize: 13 }} />
               </IconButton>
             </Paper>
           </motion.div>
@@ -427,6 +447,7 @@ export function AdminArticlePromptSidePane({
             alignItems: 'center',
             bgcolor: 'rgba(255, 255, 255, 0.94)',
             backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
             borderBottom: '1px solid rgba(0,0,0,0.06)',
             boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
             position: 'sticky',
@@ -450,38 +471,42 @@ export function AdminArticlePromptSidePane({
                 flexShrink: 0,
               }}
             >
-              <ShieldIcon sx={{ fontSize: 22 }} />
+              <AutoAwesomeIcon sx={{ fontSize: 22 }} />
             </Box>
             <Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography
-                  variant="h6"
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 900,
+                  color: '#0f172a',
+                  lineHeight: 1.25,
+                  fontSize: { xs: '1.05rem', sm: '1.18rem' },
+                  letterSpacing: '-0.025em',
+                }}
+              >
+                Get Article Ideas Here
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 0.35 }}>
+                <Box
                   sx={{
-                    fontWeight: 900,
-                    color: '#0f172a',
-                    lineHeight: 1.25,
-                    fontSize: { xs: '1.05rem', sm: '1.18rem' },
-                    letterSpacing: '-0.025em',
-                  }}
-                >
-                  Admins Article Flow
-                </Typography>
-                <Chip
-                  label={dayNode?.['Article ID'] ? `🔒 ${dayNode['Article ID']}` : '🔒 1,820 CALENDAR'}
-                  size="small"
-                  sx={{
-                    bgcolor: '#fef3c7',
-                    color: '#b45309',
-                    fontWeight: 900,
-                    fontSize: '0.64rem',
-                    height: 20,
-                    borderRadius: '6px',
+                    width: 7,
+                    height: 7,
+                    borderRadius: '50%',
+                    bgcolor: '#f59e0b',
+                    boxShadow: '0 0 8px #f59e0b',
                   }}
                 />
+                <Typography
+                  sx={{
+                    color: '#64748b',
+                    fontWeight: 600,
+                    fontSize: '0.8rem',
+                    letterSpacing: '-0.01em',
+                  }}
+                >
+                  Spend 1 minute to generate fresh, realistic article ideas from the 1,820 editorial calendar
+                </Typography>
               </Box>
-              <Typography sx={{ color: '#64748b', fontWeight: 600, fontSize: '0.78rem', mt: 0.25 }}>
-                Zero-input automated pipeline powered by pre-planned calendar row
-              </Typography>
             </Box>
           </Box>
 
@@ -492,17 +517,17 @@ export function AdminArticlePromptSidePane({
               onClick={handleMinimize}
               startIcon={<RemoveIcon sx={{ fontSize: '16px !important' }} />}
               sx={{
-                bgcolor: 'rgba(0,0,0,0.04)',
+                bgcolor: 'rgba(0, 0, 0, 0.04)',
                 color: '#334155',
-                border: '1px solid rgba(0,0,0,0.06)',
+                border: '1px solid rgba(0, 0, 0, 0.06)',
                 borderRadius: '12px',
                 px: 1.5,
-                py: 0.7,
+                py: 0.6,
+                fontWeight: 700,
                 fontSize: '0.78rem',
-                fontWeight: 800,
                 textTransform: 'none',
-                display: { xs: 'none', sm: 'inline-flex' },
-                '&:hover': { bgcolor: 'rgba(0,0,0,0.08)' },
+                transition: 'all 0.2s ease',
+                '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.08)', transform: 'translateY(-1px)' },
               }}
             >
               Minimize
@@ -513,9 +538,16 @@ export function AdminArticlePromptSidePane({
               onClick={onClose}
               sx={{
                 color: '#64748b',
-                p: 1,
+                bgcolor: 'rgba(0, 0, 0, 0.04)',
+                border: '1px solid rgba(0, 0, 0, 0.06)',
                 borderRadius: '12px',
-                '&:hover': { color: '#0f172a', bgcolor: 'rgba(0,0,0,0.05)' },
+                p: 0.85,
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  bgcolor: 'rgba(239, 68, 68, 0.1)',
+                  color: '#ef4444',
+                  transform: 'scale(1.05)',
+                },
               }}
             >
               <CloseIcon sx={{ fontSize: 20 }} />
@@ -904,13 +936,14 @@ export function AdminArticlePromptSidePane({
 
             <PromptTerminalBox
               title="Admin Doc 1a (The Deterministic Context Engine)"
-              codeLabel="STEP 1"
+              codeLabel="DOC 1a"
               subtitle="Direct row insertion containing FAOSTAT signals, research questions, and 6 planned titles."
               prompt={prompt1Text}
               colorTheme="#f59e0b"
               copiedBannerText="Admin Doc 1a Copied to Clipboard!"
               copyButtonLabel="Copy Admin Doc 1a Prompt"
               maxHeight={250}
+              isCopiedExternal={checklist.step1}
               onCopy={() => {
                 setChecklist(prev => ({ ...prev, step1: true }));
                 setPromptChecks(prev => ({
@@ -989,13 +1022,14 @@ export function AdminArticlePromptSidePane({
 
             <PromptTerminalBox
               title="Admin Doc 1b (The Deterministic Drucker OSINT Engine)"
-              codeLabel="STEP 2"
+              codeLabel="DOC 1b"
               subtitle="Calibrates the 6 titles through Peter Drucker's 5 Cardinal Questions and political economy."
               prompt={prompt2Text}
               colorTheme="#8b5cf6"
               copiedBannerText="Admin Doc 1b Copied to Clipboard!"
               copyButtonLabel="Copy Admin Doc 1b Prompt"
               maxHeight={250}
+              isCopiedExternal={checklist.step2}
               onCopy={() => {
                 setChecklist(prev => ({ ...prev, step2: true }));
                 setPromptChecks(prev => ({
@@ -1074,13 +1108,14 @@ export function AdminArticlePromptSidePane({
 
             <PromptTerminalBox
               title="Admin Doc 1c (The Master Franchise Synthesizer)"
-              codeLabel="STEP 3"
+              codeLabel="DOC 1c"
               subtitle="Compiles exactly 6 articles matching the Studio metadata and 6-sentence schema."
               prompt={prompt3Text}
               colorTheme="#10b981"
               copiedBannerText="Admin Doc 1c Copied to Clipboard!"
               copyButtonLabel="Copy Admin Doc 1c Prompt"
               maxHeight={250}
+              isCopiedExternal={checklist.step3}
               onCopy={() => {
                 setChecklist(prev => ({ ...prev, step3: true }));
                 setPromptChecks(prev => ({
@@ -1163,7 +1198,9 @@ export function AdminArticlePromptSidePane({
               onIngest={handleIngest}
               title="Fast Ingest: 6 Admin Articles Relay"
               subtitle="Paste the generated markdown output from Admin Doc 1c below to apply to the Studio."
-              codeLabel="STEP 4"
+              codeLabel="FAST INGEST"
+              fileName="articles.md"
+              unitLabel="articles"
               colorTheme="#059669"
               placeholder={`Paste the markdown output from Admin Doc 1c here...\n\nExample:\n---\n[SYSTEM_METADATA]\n- Category: ${category}\n- Subcategory: ${dayNode?.['Subcategory'] || 'sub-logistics'}\n- Commodity: ${commodity}\n- Format: brief\n- Era: present\n- Location: ${dayNode?.['Primary Country'] || 'National Corridor'}\n- Spectrum_Rank: #1 The Bleeding Neck\n- Target_Persona: Agro-Allocators & Fleet Operators\n\n### Title of the Article...\n\n**Description:**\n- Sentence 1...\n- Sentence 2...\n- Sentence 3...\n- Sentence 4...\n- Sentence 5...\n- Sentence 6...\n---`}
               liveBlockCount={detectedArticles.length}

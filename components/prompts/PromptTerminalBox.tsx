@@ -36,6 +36,13 @@ export function PromptTerminalBox({
   const [isMinimized, setIsMinimized] = useState(false);
   const [justReCopied, setJustReCopied] = useState(false);
 
+  React.useEffect(() => {
+    if (isCopiedExternal !== undefined) {
+      setIsCopied(Boolean(isCopiedExternal));
+      setIsMinimized(Boolean(isCopiedExternal));
+    }
+  }, [isCopiedExternal]);
+
   const handleCopy = () => {
     navigator.clipboard.writeText(prompt);
     setIsCopied(true);
@@ -68,8 +75,8 @@ export function PromptTerminalBox({
         sx={{
           bgcolor: '#0f172a',
           borderRadius: '14px',
-          border: '1.5px solid rgba(16, 185, 129, 0.4)',
-          boxShadow: '0 6px 20px rgba(0, 0, 0, 0.25), 0 0 14px rgba(16, 185, 129, 0.1)',
+          border: `1.5px solid ${alpha(colorTheme, 0.45)}`,
+          boxShadow: `0 6px 20px rgba(0, 0, 0, 0.25), 0 0 14px ${alpha(colorTheme, 0.16)}`,
           px: { xs: 1.75, sm: 2.25 },
           py: 1.25,
           display: 'flex',
@@ -80,8 +87,8 @@ export function PromptTerminalBox({
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, minWidth: 0 }}>
-          {/* Green Verified Checkmark */}
-          <CheckCircleIcon sx={{ color: '#10b981', fontSize: 19, flexShrink: 0 }} />
+          {/* Stage Checkmark with colorTheme */}
+          <CheckCircleIcon sx={{ color: colorTheme, fontSize: 19, flexShrink: 0 }} />
 
           {/* Code Label Badge - Non-wrapping Box immune to MUI Chip clipping */}
           {codeLabel && (
@@ -93,7 +100,7 @@ export function PromptTerminalBox({
                 px: 1,
                 py: 0.4,
                 borderRadius: '6px',
-                bgcolor: '#10b981',
+                bgcolor: colorTheme,
                 color: '#ffffff',
                 fontWeight: 900,
                 fontSize: '0.68rem',
@@ -123,7 +130,7 @@ export function PromptTerminalBox({
 
           <Typography
             sx={{
-              color: '#34d399',
+              color: colorTheme,
               fontSize: '0.72rem',
               fontWeight: 700,
               display: { xs: 'none', md: 'inline-block' },
@@ -156,15 +163,15 @@ export function PromptTerminalBox({
             {justReCopied ? 'Copied!' : 'Re-copy'}
           </Button>
 
-          {/* Expand button to return to uncopied full terminal */}
+          {/* Expand button to return to uncopied full terminal with matching colorTheme */}
           <Button
             size="small"
             onClick={handleExpand}
             endIcon={<OpenInFullIcon sx={{ fontSize: '13px !important' }} />}
             sx={{
-              color: '#38bdf8',
-              bgcolor: 'rgba(56, 189, 248, 0.1)',
-              border: '1px solid rgba(56, 189, 248, 0.25)',
+              color: colorTheme,
+              bgcolor: alpha(colorTheme, 0.12),
+              border: `1px solid ${alpha(colorTheme, 0.3)}`,
               fontSize: '0.74rem',
               fontWeight: 800,
               textTransform: 'none',
@@ -173,8 +180,8 @@ export function PromptTerminalBox({
               borderRadius: '8px',
               transition: 'all 0.18s ease',
               '&:hover': {
-                bgcolor: 'rgba(56, 189, 248, 0.2)',
-                borderColor: '#38bdf8',
+                bgcolor: alpha(colorTheme, 0.22),
+                borderColor: colorTheme,
                 transform: 'scale(1.02)',
               },
             }}
@@ -196,9 +203,12 @@ export function PromptTerminalBox({
         bgcolor: '#0f172a',
         borderRadius: '16px',
         overflow: 'hidden',
-        boxShadow: '0 10px 28px rgba(0, 0, 0, 0.16)',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
+        boxShadow: `0 10px 28px rgba(0, 0, 0, 0.16), 0 0 16px ${alpha(colorTheme, 0.12)}`,
+        border: `1.5px solid ${alpha(colorTheme, 0.35)}`,
         transition: 'all 0.2s ease',
+        '&:hover': {
+          borderColor: alpha(colorTheme, 0.55),
+        },
       }}
     >
       {/* 3-Dot macOS Window Header */}
