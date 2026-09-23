@@ -1,11 +1,11 @@
 'use client';
 
 import React from 'react';
-import { Box, Typography, Button, Chip, alpha, TextField, LinearProgress } from '@mui/material';
+import { Box, Typography, Button, Chip, alpha, LinearProgress } from '@mui/material';
 import ContentPasteIcon from '@mui/icons-material/ContentPaste';
 import BoltIcon from '@mui/icons-material/Bolt';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import PremiumMarkdownEditor from '@/components/PremiumMarkdownEditor';
 
 export interface PromptFastIngestBoxProps {
   value: string;
@@ -28,9 +28,6 @@ export function PromptFastIngestBox({
   value,
   onChange,
   onIngest,
-  title = 'Fast Ingest Relay & Canvas Import',
-  subtitle = 'Paste your generated JSON or markdown payload below to populate your blocks onto the canvas.',
-  codeLabel = 'DOC 4b',
   colorTheme = '#10b981',
   placeholder,
   error,
@@ -70,91 +67,54 @@ export function PromptFastIngestBox({
       sx={{
         position: 'relative',
         overflow: 'hidden',
-        borderRadius: '22px',
-        bgcolor: '#0b1220',
-        border: `1px solid ${alpha(colorTheme, 0.28)}`,
-        boxShadow: `0 22px 50px -16px ${alpha(colorTheme, 0.38)}, 0 10px 28px rgba(0, 0, 0, 0.32)`,
+        borderRadius: '20px',
+        bgcolor: '#ffffff',
+        border: '1.5px solid rgba(226, 232, 240, 0.9)',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.04)',
         display: 'flex',
         flexDirection: 'column',
+        transition: 'all 0.25s ease',
       }}
     >
+      {/* Light Mode Clean Top Action Bar */}
       <Box
         sx={{
-          position: 'absolute',
-          inset: 0,
-          pointerEvents: 'none',
-          background: `radial-gradient(90% 70% at 0% -10%, ${alpha(colorTheme, 0.22)}, transparent 58%), radial-gradient(70% 50% at 100% 100%, ${alpha('#38bdf8', 0.08)}, transparent 50%)`,
-        }}
-      />
-
-      <Box
-        sx={{
-          position: 'relative',
           display: 'flex',
-          alignItems: 'flex-start',
+          alignItems: 'center',
           justifyContent: 'space-between',
-          gap: 1.5,
-          flexWrap: 'wrap',
-          px: { xs: 2.25, sm: 2.75 },
-          pt: 2.5,
-          pb: 2,
-          borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+          px: { xs: 2, sm: 2.5 },
+          py: 1.5,
+          bgcolor: '#f8fafc',
+          borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, minWidth: 0 }}>
-          <Box
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Chip
+            size="small"
+            label="payload.json"
             sx={{
-              width: 42,
-              height: 42,
-              borderRadius: '13px',
-              flexShrink: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: `linear-gradient(145deg, ${colorTheme} 0%, #047857 100%)`,
-              boxShadow: `0 8px 20px ${alpha(colorTheme, 0.4)}`,
-              border: '1px solid rgba(255, 255, 255, 0.22)',
+              height: 22,
+              fontSize: '0.68rem',
+              fontWeight: 800,
+              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+              bgcolor: '#ffffff',
+              color: '#334155',
+              border: '1px solid #e2e8f0',
             }}
-          >
-            <AutoAwesomeIcon sx={{ fontSize: 20, color: '#fff' }} />
-          </Box>
-          <Box sx={{ minWidth: 0 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.45, flexWrap: 'wrap' }}>
-              {codeLabel && (
-                <Chip
-                  label={codeLabel}
-                  size="small"
-                  sx={{
-                    height: 20,
-                    borderRadius: '6px',
-                    bgcolor: alpha(colorTheme, 0.16),
-                    color: colorTheme,
-                    fontWeight: 900,
-                    fontSize: '0.62rem',
-                    letterSpacing: '0.08em',
-                    border: `1px solid ${alpha(colorTheme, 0.35)}`,
-                  }}
-                />
-              )}
-              <Typography
-                sx={{
-                  fontSize: '0.62rem',
-                  fontWeight: 800,
-                  letterSpacing: '0.14em',
-                  textTransform: 'uppercase',
-                  color: alpha('#fff', 0.45),
-                }}
-              >
-                Payload Terminal
-              </Typography>
-            </Box>
-            <Typography sx={{ fontWeight: 900, color: '#f8fafc', fontSize: '1.02rem', lineHeight: 1.2, letterSpacing: '-0.03em' }}>
-              {title}
-            </Typography>
-            <Typography sx={{ fontSize: '0.76rem', color: 'rgba(226, 232, 240, 0.62)', mt: 0.45, lineHeight: 1.45, fontWeight: 500 }}>
-              {subtitle}
-            </Typography>
-          </Box>
+          />
+          {hasPayload && (
+            <Chip
+              size="small"
+              label={`${value.trim().length.toLocaleString()} chars`}
+              sx={{
+                height: 20,
+                fontSize: '0.64rem',
+                fontWeight: 700,
+                bgcolor: alpha(colorTheme, 0.08),
+                color: colorTheme,
+              }}
+            />
+          )}
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
@@ -164,15 +124,15 @@ export function PromptFastIngestBox({
             startIcon={<ContentPasteIcon sx={{ fontSize: '15px !important' }} />}
             sx={{
               color: colorTheme,
-              bgcolor: alpha(colorTheme, 0.12),
-              border: `1px solid ${alpha(colorTheme, 0.28)}`,
+              bgcolor: alpha(colorTheme, 0.08),
+              border: `1px solid ${alpha(colorTheme, 0.25)}`,
               fontWeight: 800,
               borderRadius: '10px',
-              px: 1.4,
-              py: 0.55,
-              fontSize: '0.74rem',
+              px: 1.5,
+              py: 0.5,
+              fontSize: '0.76rem',
               textTransform: 'none',
-              '&:hover': { bgcolor: alpha(colorTheme, 0.2) },
+              '&:hover': { bgcolor: alpha(colorTheme, 0.16) },
             }}
           >
             {hasPayload ? 'Replace' : 'Paste'}
@@ -182,14 +142,14 @@ export function PromptFastIngestBox({
               size="small"
               onClick={handleClear}
               sx={{
-                color: 'rgba(148, 163, 184, 0.9)',
+                color: '#64748b',
                 fontWeight: 700,
                 borderRadius: '10px',
-                px: 1.1,
-                py: 0.55,
+                px: 1.25,
+                py: 0.5,
                 fontSize: '0.74rem',
                 textTransform: 'none',
-                '&:hover': { color: '#fca5a5', bgcolor: 'rgba(239, 68, 68, 0.12)' },
+                '&:hover': { color: '#ef4444', bgcolor: 'rgba(239, 68, 68, 0.08)' },
               }}
             >
               Clear
@@ -198,108 +158,58 @@ export function PromptFastIngestBox({
         </Box>
       </Box>
 
-      <Box sx={{ position: 'relative', px: { xs: 2.25, sm: 2.75 }, py: 2.25, display: 'flex', flexDirection: 'column', gap: 1.75 }}>
-        <Box
-          sx={{
-            position: 'relative',
-            borderRadius: '16px',
-            overflow: 'hidden',
-            bgcolor: '#060b14',
-            border: `1px solid ${hasPayload ? alpha(colorTheme, 0.32) : 'rgba(255, 255, 255, 0.08)'}`,
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
-            transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
-            '&:focus-within': {
-              borderColor: alpha(colorTheme, 0.55),
-              boxShadow: `inset 0 1px 0 rgba(255,255,255,0.06), 0 0 0 3px ${alpha(colorTheme, 0.16)}`,
-            },
-          }}
-        >
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              px: 1.75,
-              py: 0.85,
-              bgcolor: 'rgba(255, 255, 255, 0.03)',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.7 }}>
-              <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#ef4444' }} />
-              <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#f59e0b' }} />
-              <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#10b981' }} />
-              <Typography sx={{ ml: 1, fontSize: '0.64rem', fontWeight: 800, letterSpacing: '0.12em', color: 'rgba(148, 163, 184, 0.8)', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>
-                payload.json
-              </Typography>
-            </Box>
-            <Chip
-              size="small"
-              label={hasPayload ? `${value.trim().length.toLocaleString()} chars` : 'empty'}
-              sx={{
-                height: 18,
-                fontSize: '0.6rem',
-                fontWeight: 800,
-                bgcolor: 'rgba(255,255,255,0.06)',
-                color: 'rgba(226, 232, 240, 0.7)',
-              }}
-            />
-          </Box>
-          <TextField
-            fullWidth
-            multiline
-            minRows={7}
+      {/* Editor & Actions Body */}
+      <Box sx={{ p: { xs: 2, sm: 2.5 }, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {/* Ingest Text Field using PremiumMarkdownEditor */}
+        <Box sx={{ width: '100%' }}>
+          <PremiumMarkdownEditor
+            colorTheme={colorTheme}
             value={value}
-            onChange={(e) => onChange(e.target.value)}
+            onChange={(e: any) => {
+              const val = e?.target ? e.target.value : (typeof e === 'string' ? e : '');
+              onChange(val);
+            }}
+            minRows={7}
+            rows={8}
             placeholder={
               placeholder ||
               `{\n  "title": "Strategic Title...",\n  "description": "...",\n  "blocks": [\n    { "type": "subheading", "content": { ... } }\n  ]\n}`
             }
-            variant="filled"
-            slotProps={{ input: { disableUnderline: true } }}
-            sx={{
-              '& .MuiFilledInput-root': {
-                bgcolor: 'transparent',
-                alignItems: 'flex-start',
-                p: 0,
-                '&:hover, &.Mui-focused': { bgcolor: 'transparent' },
-              },
-              '& .MuiInputBase-input': {
-                px: 1.85,
-                py: 1.6,
-                color: '#e2e8f0',
-                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
-                fontSize: '0.78rem',
-                lineHeight: 1.7,
-                fontWeight: 500,
-                caretColor: colorTheme,
-              },
-              '& .MuiInputBase-input::placeholder': {
-                color: 'rgba(148, 163, 184, 0.55)',
-                opacity: 1,
-                whiteSpace: 'pre-wrap',
-              },
-            }}
           />
         </Box>
 
+        {/* Live Block Detection & Progress Meter */}
         <Box
           sx={{
             borderRadius: '14px',
-            px: 1.75,
+            px: 2,
             py: 1.35,
-            bgcolor: alpha(isComplete ? colorTheme : '#fff', isComplete ? 0.1 : 0.03),
-            border: `1px solid ${alpha(isComplete ? colorTheme : '#fff', isComplete ? 0.32 : 0.06)}`,
+            bgcolor: isComplete ? alpha(colorTheme, 0.06) : '#f8fafc',
+            border: `1px solid ${isComplete ? alpha(colorTheme, 0.3) : 'rgba(226, 232, 240, 0.9)'}`,
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 0.85 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.85 }}>
               {isComplete ? (
                 <CheckCircleIcon sx={{ color: colorTheme, fontSize: 18 }} />
               ) : (
-                <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: hasPayload ? '#f59e0b' : 'rgba(148,163,184,0.5)', boxShadow: hasPayload ? '0 0 8px #f59e0b' : 'none' }} />
+                <Box
+                  sx={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    bgcolor: hasPayload ? '#f59e0b' : '#94a3b8',
+                    boxShadow: hasPayload ? '0 0 8px #f59e0b' : 'none',
+                  }}
+                />
               )}
-              <Typography sx={{ color: isComplete ? colorTheme : 'rgba(226, 232, 240, 0.78)', fontWeight: 800, fontSize: '0.78rem' }}>
+              <Typography
+                sx={{
+                  color: isComplete ? colorTheme : '#334155',
+                  fontWeight: 800,
+                  fontSize: '0.8rem',
+                }}
+              >
                 {isComplete
                   ? `Ready · ${liveBlockCount}${expectedBlockCount ? ` of ${expectedBlockCount}` : ''} blocks detected`
                   : liveBlockCount > 0
@@ -308,7 +218,7 @@ export function PromptFastIngestBox({
               </Typography>
             </Box>
             {expectedBlockCount ? (
-              <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: 'rgba(148, 163, 184, 0.9)', letterSpacing: '0.06em' }}>
+              <Typography sx={{ fontSize: '0.72rem', fontWeight: 800, color: '#64748b' }}>
                 {liveBlockCount}/{expectedBlockCount}
               </Typography>
             ) : null}
@@ -319,7 +229,7 @@ export function PromptFastIngestBox({
             sx={{
               height: 5,
               borderRadius: 99,
-              bgcolor: 'rgba(255,255,255,0.06)',
+              bgcolor: '#e2e8f0',
               '& .MuiLinearProgress-bar': {
                 borderRadius: 99,
                 background: isComplete
@@ -330,38 +240,41 @@ export function PromptFastIngestBox({
           />
         </Box>
 
+        {/* Error message */}
         {error && (
           <Box
             sx={{
               px: 1.75,
               py: 1.2,
               borderRadius: '12px',
-              bgcolor: 'rgba(239, 68, 68, 0.12)',
-              border: '1px solid rgba(239, 68, 68, 0.28)',
+              bgcolor: 'rgba(239, 68, 68, 0.08)',
+              border: '1px solid rgba(239, 68, 68, 0.25)',
             }}
           >
-            <Typography sx={{ color: '#fca5a5', fontSize: '0.8rem', fontWeight: 700 }}>
+            <Typography sx={{ color: '#dc2626', fontSize: '0.8rem', fontWeight: 700 }}>
               {error}
             </Typography>
           </Box>
         )}
 
+        {/* Success message */}
         {success && (
           <Box
             sx={{
               px: 1.75,
               py: 1.2,
               borderRadius: '12px',
-              bgcolor: alpha(colorTheme, 0.12),
-              border: `1px solid ${alpha(colorTheme, 0.32)}`,
+              bgcolor: alpha(colorTheme, 0.08),
+              border: `1px solid ${alpha(colorTheme, 0.3)}`,
             }}
           >
             <Typography sx={{ color: colorTheme, fontSize: '0.82rem', fontWeight: 800 }}>
-              Ingested. Blocks applied to the canvas.
+              ✓ Ingested successfully. Blocks applied to the canvas.
             </Typography>
           </Box>
         )}
 
+        {/* Primary Action Ingest Button */}
         <Button
           variant="contained"
           onClick={onIngest}
@@ -371,21 +284,21 @@ export function PromptFastIngestBox({
             background: `linear-gradient(135deg, ${colorTheme} 0%, #047857 100%)`,
             color: '#ffffff',
             fontWeight: 900,
-            py: 1.5,
+            py: 1.35,
             borderRadius: '14px',
-            fontSize: '0.92rem',
-            letterSpacing: '-0.02em',
+            fontSize: '0.9rem',
+            letterSpacing: '-0.01em',
             textTransform: 'none',
-            boxShadow: `0 10px 28px ${alpha(colorTheme, 0.38)}`,
+            boxShadow: `0 6px 18px ${alpha(colorTheme, 0.32)}`,
             transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
             '&:hover': {
               background: `linear-gradient(135deg, #34d399 0%, ${colorTheme} 100%)`,
               transform: 'translateY(-1px)',
-              boxShadow: `0 14px 32px ${alpha(colorTheme, 0.48)}`,
+              boxShadow: `0 8px 24px ${alpha(colorTheme, 0.42)}`,
             },
             '&.Mui-disabled': {
-              background: 'rgba(255,255,255,0.06)',
-              color: 'rgba(148, 163, 184, 0.7)',
+              bgcolor: 'rgba(0, 0, 0, 0.06)',
+              color: '#94a3b8',
               boxShadow: 'none',
             },
           }}

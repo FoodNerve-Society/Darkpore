@@ -1531,9 +1531,8 @@ export default function CreateLearnContentForm({
                   const formatsList: ArticleFormat[] = ['brief', 'memo', 'playbook', 'comparison', 'culture'];
                   const erasList: ArticleEra[] = ['past', 'present', 'future'];
 
-                  const blueprintFilledCount = (isSubcategoryValid ? 1 : 0) + (selectedFormat ? 1 : 0) + (selectedEra ? 1 : 0);
+                  const blueprintFilledCount = (selectedFormat ? 1 : 0) + (selectedEra ? 1 : 0) + (isSubcategoryValid ? 1 : 0);
                   const isBlueprintFilled = blueprintFilledCount === 3;
-                  const blueprintFillPercent = Math.round((blueprintFilledCount / 3) * 100);
 
                   return (
                     <Box sx={{ mb: 6, animation: 'fadeIn 0.3s ease' }}>
@@ -1559,63 +1558,153 @@ export default function CreateLearnContentForm({
                       >
                         {/* Top Question & Parameters Status */}
                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75 }}>
-                            <Box sx={{
-                              width: 44,
-                              height: 44,
-                              borderRadius: '14px',
-                              bgcolor: alpha(activeFormatMeta.color, 0.12),
-                              border: `1.5px solid ${alpha(activeFormatMeta.color, 0.3)}`,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              color: activeFormatMeta.color,
-                              boxShadow: `0 4px 14px ${alpha(activeFormatMeta.color, 0.18)}`,
-                              flexShrink: 0
-                            }}>
-                              <SparkleIcon sx={{ fontSize: 22 }} />
-                            </Box>
-                            <Box>
-                              <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.25, fontSize: { xs: '1.05rem', sm: '1.2rem' }, letterSpacing: '-0.02em' }}>
-                                Which structural subcategory and temporal era are you anchoring this article to?
-                              </Typography>
-                              <Typography sx={{ color: '#64748b', fontSize: '0.84rem', fontWeight: 500, mt: 0.35 }}>
-                                {isBlueprintFilled
-                                  ? `Targeting ${(selectedSubObj?.title || 'Selected Subcategory').replace(/\s*\(.*?\)\s*$/, '').trim()} · ${activeEraMeta.label} Horizon (${activeFormatMeta.label})`
-                                  : `Select your parameters below to generate the verified ${currentBlueprint.length}-block SOP framework.`}
-                              </Typography>
-                            </Box>
+                          <Box>
+                            <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.25, fontSize: { xs: '1.05rem', sm: '1.25rem' }, letterSpacing: '-0.02em' }}>
+                              Which subcategory and article type are you writing today?
+                            </Typography>
+                            <Typography sx={{ color: '#64748b', fontSize: '0.84rem', fontWeight: 500, mt: 0.35 }}>
+                              {isBlueprintFilled
+                                ? `Targeting ${(selectedSubObj?.title || 'Selected Subcategory').replace(/\s*\(.*?\)\s*$/, '').trim()} · ${activeEraMeta.label} Horizon (${activeFormatMeta.label})`
+                                : `Select all three parameters below to generate your verified ${currentBlueprint.length}-block SOP framework.`}
+                            </Typography>
                           </Box>
 
-                          <Chip
-                            label={isBlueprintFilled ? '✓ Blueprint Configured' : `${blueprintFilledCount} / 3 Selected`}
-                            size="small"
-                            sx={{
-                              bgcolor: isBlueprintFilled ? alpha(activeFormatMeta.color, 0.14) : 'rgba(245, 158, 11, 0.12)',
-                              color: isBlueprintFilled ? activeFormatMeta.color : '#d97706',
-                              border: `1.5px solid ${isBlueprintFilled ? alpha(activeFormatMeta.color, 0.35) : 'rgba(245, 158, 11, 0.3)'}`,
-                              fontWeight: 900,
-                              fontSize: '0.74rem',
-                              borderRadius: '999px',
-                              px: 0.5
-                            }}
-                          />
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                            <Chip
+                              label={`${currentBlueprint.length} SOP Blocks Loaded`}
+                              size="small"
+                              sx={{
+                                bgcolor: alpha(activeFormatMeta.color, 0.1),
+                                color: activeFormatMeta.color,
+                                fontWeight: 800,
+                                fontSize: '0.72rem',
+                                borderRadius: '8px'
+                              }}
+                            />
+                            <Chip
+                              label={isBlueprintFilled ? '✓ Blueprint Configured' : `${blueprintFilledCount} / 3 Selected`}
+                              size="small"
+                              sx={{
+                                bgcolor: isBlueprintFilled ? alpha(activeFormatMeta.color, 0.14) : 'rgba(245, 158, 11, 0.12)',
+                                color: isBlueprintFilled ? activeFormatMeta.color : '#d97706',
+                                border: `1.5px solid ${isBlueprintFilled ? alpha(activeFormatMeta.color, 0.35) : 'rgba(245, 158, 11, 0.3)'}`,
+                                fontWeight: 900,
+                                fontSize: '0.74rem',
+                                borderRadius: '999px',
+                                px: 0.5
+                              }}
+                            />
+                          </Box>
                         </Box>
 
-                        {/* Dropdown Options Grid */}
-                        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2.5 }}>
+                        {/* Three Dropdown Options Grid */}
+                        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 2 }}>
                           
-                          {/* Option 1: Subcategory Focus */}
+                          {/* Dropdown 1: Article Type (Format) */}
                           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                             <Typography sx={{ fontSize: '0.84rem', fontWeight: 800, color: '#334155', ml: 0.5, display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                              <span>🎯</span> Subcategory Focus ({currentChallenge?.title || 'Category'})
+                              <span>⚡</span> Article Type
                             </Typography>
                             <PremiumDropdown
                               fullWidth
                               colorTheme={activeFormatMeta.color}
-                              label="Select Subcategory Focus..."
+                              label="Select Article Type..."
+                              popoverTitle="Select Article Type"
+                              popoverSubtitle="Choose the structural format and depth for this publication"
+                              options={formatsList.map(fmt => {
+                                const meta = FORMAT_CONFIG[fmt];
+                                const bp = getBlueprint(fmt, selectedEra);
+                                return {
+                                  id: fmt,
+                                  label: meta.label,
+                                  secondaryLabel: `${bp.length} Blocks · ${FORMAT_SHORT_DESCRIPTIONS[fmt] || meta.desc}`,
+                                  emoji: meta.emoji,
+                                };
+                              })}
+                              value={selectedFormat ? {
+                                id: selectedFormat,
+                                label: activeFormatMeta.label,
+                                secondaryLabel: `${currentBlueprint.length} Blocks · ${FORMAT_SHORT_DESCRIPTIONS[selectedFormat] || activeFormatMeta.desc}`,
+                                emoji: activeFormatMeta.emoji,
+                              } : null}
+                              onChange={(opt: any) => {
+                                const fmt = opt?.id || opt;
+                                if (fmt) setSelectedFormat(fmt as ArticleFormat);
+                              }}
+                              getOptionId={(opt: any) => opt?.id || opt}
+                              getOptionLabel={(opt: any) => opt?.label || opt}
+                              getOptionSecondary={(opt: any) => opt?.secondaryLabel}
+                              getOptionEmoji={(opt: any) => opt?.emoji}
+                            />
+                          </Box>
+
+                          {/* Dropdown 2: Temporal Horizon & Era */}
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            <Typography sx={{ fontSize: '0.84rem', fontWeight: 800, color: '#334155', ml: 0.5, display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                              <span>⏳</span> Temporal Era
+                            </Typography>
+                            <PremiumDropdown
+                              fullWidth
+                              colorTheme={activeEraMeta.color || activeFormatMeta.color}
+                              label="Select Temporal Era..."
+                              popoverTitle="Select Temporal Horizon"
+                              popoverSubtitle="Determines narrative arc, historical perspective, and SOP block definitions"
+                              options={[
+                                {
+                                  id: 'past',
+                                  label: 'Past Era (The Autopsy)',
+                                  secondaryLabel: 'Root cause autopsy, historical context & breakdown',
+                                  emoji: '📜',
+                                  tag: 'PAST'
+                                },
+                                {
+                                  id: 'present',
+                                  label: 'Present Era (The Battlefield)',
+                                  secondaryLabel: 'Active operational bottleneck & ground truth',
+                                  emoji: '⚡',
+                                  tag: 'PRESENT'
+                                },
+                                {
+                                  id: 'future',
+                                  label: 'Future Era (The Foresight)',
+                                  secondaryLabel: 'Horizon technologies & 2030 predictions',
+                                  emoji: '🚀',
+                                  tag: 'FUTURE'
+                                }
+                              ]}
+                              value={selectedEra ? {
+                                id: selectedEra,
+                                label: `${activeEraMeta.label} Era`,
+                                secondaryLabel: activeEraMeta.desc || (selectedEra === 'past' ? 'The Autopsy (Historical root cause)' : selectedEra === 'present' ? 'The Battlefield (Active field crisis)' : 'The Foresight (2030 horizon tech)'),
+                                emoji: activeEraMeta.emoji || '⚡',
+                                tag: selectedEra.toUpperCase()
+                              } : null}
+                              onChange={(opt: any) => {
+                                const eraId = (opt?.id || opt) as ArticleEra;
+                                if (eraId) {
+                                  setSelectedEra(eraId);
+                                  setSelectedTimeframe(eraId as any);
+                                }
+                              }}
+                              getOptionId={(opt: any) => opt?.id || opt}
+                              getOptionLabel={(opt: any) => opt?.label || opt}
+                              getOptionSecondary={(opt: any) => opt?.secondaryLabel}
+                              getOptionTag={(opt: any) => opt?.tag}
+                              getOptionEmoji={(opt: any) => opt?.emoji}
+                            />
+                          </Box>
+
+                          {/* Dropdown 3: Subcategory Focus */}
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            <Typography sx={{ fontSize: '0.84rem', fontWeight: 800, color: '#334155', ml: 0.5, display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                              <span>🎯</span> Subcategory Focus
+                            </Typography>
+                            <PremiumDropdown
+                              fullWidth
+                              colorTheme={activeFormatMeta.color}
+                              label="Select Subcategory..."
                               popoverTitle="Select Subcategory Focus"
-                              popoverSubtitle={`Choose the structural focus area within ${currentChallenge?.title || 'this category'}`}
+                              popoverSubtitle={`Choose structural focus within ${currentChallenge?.title || 'this category'}`}
                               options={subcategoriesList.map(sub => {
                                 const rawTitle = sub.title || '';
                                 const bracketMatch = rawTitle.match(/^(.*?)\s*\((.+)\)\s*$/);
@@ -1635,130 +1724,16 @@ export default function CreateLearnContentForm({
                                 secondaryLabel: (selectedSubObj as any).description || (selectedSubObj as any).desc || '',
                                 emoji: '🎯',
                               } : null}
-                              onChange={(opt) => {
+                              onChange={(opt: any) => {
                                 const subId = opt?.id || opt;
                                 setSelectedSubcategory(subId);
                               }}
-                              getOptionId={(opt) => opt?.id || opt}
-                              getOptionLabel={(opt) => opt?.label || opt?.title || opt}
+                              getOptionId={(opt: any) => opt?.id || opt}
+                              getOptionLabel={(opt: any) => opt?.label || opt?.title || opt}
                               getOptionSecondary={(opt: any) => opt?.secondaryLabel || opt?.description || opt?.desc}
-                              getOptionEmoji={(opt) => opt?.emoji || '🎯'}
+                              getOptionEmoji={(opt: any) => opt?.emoji || '🎯'}
                             />
                           </Box>
-
-                          {/* Option 2: Temporal Timeframe & Era */}
-                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                            <Typography sx={{ fontSize: '0.84rem', fontWeight: 800, color: '#334155', ml: 0.5, display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                              <span>⏳</span> Temporal Timeframe & Era
-                            </Typography>
-                            <PremiumDropdown
-                              fullWidth
-                              colorTheme={activeEraMeta.color || activeFormatMeta.color}
-                              label="Select Temporal Horizon..."
-                              popoverTitle="Select Temporal Horizon"
-                              popoverSubtitle="Determines narrative arc, historical perspective, and SOP block definitions"
-                              options={[
-                                {
-                                  id: 'past',
-                                  label: 'Past Era (The Autopsy)',
-                                  secondaryLabel: 'Root cause autopsy, historical context & systemic breakdown',
-                                  emoji: '📜',
-                                  tag: 'PAST'
-                                },
-                                {
-                                  id: 'present',
-                                  label: 'Present Era (The Battlefield)',
-                                  secondaryLabel: 'Active operational bottleneck, ground truth & field evidence',
-                                  emoji: '⚡',
-                                  tag: 'PRESENT'
-                                },
-                                {
-                                  id: 'future',
-                                  label: 'Future Era (The Foresight)',
-                                  secondaryLabel: 'Horizon technologies, 2030 predictions & paradigm shifts',
-                                  emoji: '🚀',
-                                  tag: 'FUTURE'
-                                }
-                              ]}
-                              value={selectedEra ? {
-                                id: selectedEra,
-                                label: `${activeEraMeta.label} Era`,
-                                secondaryLabel: activeEraMeta.desc || (selectedEra === 'past' ? 'The Autopsy (Historical root cause)' : selectedEra === 'present' ? 'The Battlefield (Active field crisis)' : 'The Foresight (2030 horizon tech)'),
-                                emoji: activeEraMeta.emoji || '⚡',
-                                tag: selectedEra.toUpperCase()
-                              } : null}
-                              onChange={(opt) => {
-                                const eraId = (opt?.id || opt) as ArticleEra;
-                                setSelectedEra(eraId);
-                                setSelectedTimeframe(eraId as any);
-                              }}
-                              getOptionId={(opt) => opt?.id || opt}
-                              getOptionLabel={(opt) => opt?.label || opt}
-                              getOptionSecondary={(opt) => opt?.secondaryLabel}
-                              getOptionTag={(opt) => opt?.tag}
-                              getOptionEmoji={(opt) => opt?.emoji}
-                            />
-                          </Box>
-                        </Box>
-
-                        {/* Article Format Selector Ribbon (Matching Canvas Blueprint Switcher) */}
-                        <Box sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          flexWrap: 'wrap',
-                          gap: 1.5,
-                          pt: 2,
-                          borderTop: '1px solid rgba(226, 232, 240, 0.8)'
-                        }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                            <Typography sx={{ fontSize: '0.74rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b' }}>
-                              Article Format:
-                            </Typography>
-                            {formatsList.map(fmt => {
-                              const meta = FORMAT_CONFIG[fmt];
-                              const isSelected = selectedFormat === fmt;
-                              return (
-                                <Button
-                                  key={fmt}
-                                  size="small"
-                                  onClick={() => setSelectedFormat(fmt)}
-                                  sx={{
-                                    bgcolor: isSelected ? meta.color : alpha(meta.color, 0.08),
-                                    color: isSelected ? '#ffffff' : meta.color,
-                                    fontWeight: 800,
-                                    fontSize: '0.78rem',
-                                    px: 1.5,
-                                    py: 0.5,
-                                    borderRadius: '10px',
-                                    border: `1.5px solid ${isSelected ? meta.color : alpha(meta.color, 0.25)}`,
-                                    textTransform: 'none',
-                                    boxShadow: isSelected ? `0 4px 12px ${alpha(meta.color, 0.3)}` : 'none',
-                                    transition: 'all 0.18s ease',
-                                    '&:hover': {
-                                      bgcolor: isSelected ? meta.color : alpha(meta.color, 0.15),
-                                      transform: 'translateY(-1px)'
-                                    }
-                                  }}
-                                >
-                                  <span style={{ marginRight: 5 }}>{meta.emoji}</span>
-                                  {meta.label}
-                                </Button>
-                              );
-                            })}
-                          </Box>
-
-                          <Chip
-                            label={`${currentBlueprint.length} SOP Blocks Loaded`}
-                            size="small"
-                            sx={{
-                              bgcolor: alpha(activeFormatMeta.color, 0.1),
-                              color: activeFormatMeta.color,
-                              fontWeight: 800,
-                              fontSize: '0.72rem',
-                              borderRadius: '8px'
-                            }}
-                          />
                         </Box>
                       </Paper>
 

@@ -1046,6 +1046,7 @@ export function EditorialPromptSidePane({
                   colorTheme="#3b82f6"
                   copyButtonLabel={`Copy ${p.code} Prompt`}
                   copiedBannerText={`${p.code} Copied to Clipboard!`}
+                  isCopiedExternal={!!checklist[p.checkId]}
                   onCopy={() => handleCopyPromptAutoCheck(p.key)}
                 />
                 <PromptChecklistItem
@@ -1101,6 +1102,7 @@ export function EditorialPromptSidePane({
                   colorTheme="#f59e0b"
                   copyButtonLabel={`Copy ${p.code} Prompt`}
                   copiedBannerText={`${p.code} Copied to Clipboard!`}
+                  isCopiedExternal={!!checklist[p.checkId]}
                   onCopy={() => handleCopyPromptAutoCheck(p.key)}
                 />
                 <PromptChecklistItem
@@ -1156,6 +1158,7 @@ export function EditorialPromptSidePane({
                   colorTheme="#10b981"
                   copyButtonLabel={`Copy ${p.code} Prompt`}
                   copiedBannerText={`${p.code} Copied to Clipboard!`}
+                  isCopiedExternal={!!checklist[p.checkId]}
                   onCopy={() => handleCopyPromptAutoCheck(p.key)}
                 />
                 <PromptChecklistItem
@@ -1168,33 +1171,14 @@ export function EditorialPromptSidePane({
               </Box>
             ))}
 
-            <Box id="editorial-doc-fast-ingest" sx={{ display: 'flex', flexDirection: 'column', gap: 2, scrollMarginTop: '80px', mt: 1.5, pb: 1 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Box
-                  sx={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: '50%',
-                    background: 'linear-gradient(145deg, #10b981 0%, #047857 100%)',
-                    color: '#fff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 900,
-                    fontSize: '0.9rem',
-                    boxShadow: '0 8px 18px rgba(16, 185, 129, 0.35)',
-                  }}
-                >
-                  5
-                </Box>
-                <Box>
-                  <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.2 }}>
-                    Final Relay: Ingest to Canvas
-                  </Typography>
-                  <Typography sx={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 600 }}>
-                    Paste Doc 4c JSON. We parse the payload and hydrate every SOP block.
-                  </Typography>
-                </Box>
+            <Box id="editorial-doc-fast-ingest" sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, scrollMarginTop: '80px', mt: 1.5, pb: 1 }}>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.25, fontSize: '1.05rem' }}>
+                  Ingest to Canvas
+                </Typography>
+                <Typography sx={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 500, mt: 0.25 }}>
+                  Paste Doc 4c JSON payload to populate all {currentBlueprint.length} blocks in one pass.
+                </Typography>
               </Box>
 
               <PromptFastIngestBox
@@ -1205,9 +1189,6 @@ export function EditorialPromptSidePane({
                   if (ingestError) setIngestError(null);
                 }}
                 onIngest={handleParseAndIngest}
-                codeLabel="STEP 5"
-                title="Fast Ingest Relay"
-                subtitle={`Drop the compiled JSON from Doc 4c to populate all ${currentBlueprint.length} canvas blocks in one pass.`}
                 colorTheme="#10b981"
                 liveBlockCount={detectedBlockCount}
                 expectedBlockCount={currentBlueprint.length}
