@@ -1408,7 +1408,7 @@ export default function LearnPage() {
     let cancelled = false;
     async function fetchWorkspaceData() {
       if (profile?.uid) {
-        const userDrafts = await getUserDrafts(profile.uid);
+        const userDrafts = await getUserDrafts(profile.uid, profile.email);
         const userPublished = await getUserPublishedContent(profile.uid);
         if (cancelled) return;
 
@@ -2186,6 +2186,10 @@ export default function LearnPage() {
           }}
           onEditDraft={(draftId) => {
             setSelectedDraftId(draftId);
+            const foundDraft = drafts.find((d: any) => d.id === draftId);
+            if (foundDraft?.type) {
+              setCreateContentType(foundDraft.type);
+            }
           }}
           onDeleteDraft={async (draftId) => {
             await deleteLearnContent(draftId);

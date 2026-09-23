@@ -50,6 +50,7 @@ interface CoAuthorModalProps {
   currentUserName?: string;
   themeColor?: string;
   tenant?: string;
+  onSaveDraft?: () => Promise<string | null>;
 }
 
 export function CoAuthorModal({
@@ -62,7 +63,8 @@ export function CoAuthorModal({
   currentUserId,
   currentUserName,
   themeColor = '#f59e0b',
-  tenant = 'society',
+  tenant = 'food',
+  onSaveDraft,
 }: CoAuthorModalProps) {
   const [activeTab, setActiveTab] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState('');
@@ -153,7 +155,8 @@ export function CoAuthorModal({
         draftId: draftId || undefined,
         collaborator: newCollab,
         inviterName: currentUserName,
-        articleTitle
+        articleTitle,
+        tenant,
       });
 
       if (res.success) {
@@ -161,8 +164,8 @@ export function CoAuthorModal({
         setNotification({
           type: 'success',
           message: upgradePrompt
-            ? `Upgrade prompt sent to ${entity.name}. They will receive instructions to upgrade and co-author.`
-            : `Invitation sent to ${entity.name}. Added as co-author!`
+            ? `Upgrade prompt and email dispatched to ${entity.name}. They will receive instructions to upgrade and co-author.`
+            : `Invitation and email dispatched to ${entity.name}. Added as co-author!`
         });
       } else {
         setNotification({ type: 'error', message: res.error || 'Failed to send invite' });
@@ -199,7 +202,9 @@ export function CoAuthorModal({
         draftId: draftId || undefined,
         collaborator: newCollab,
         inviterName: currentUserName,
-        articleTitle
+        articleTitle,
+        tenant,
+        note: noteInput.trim() || undefined,
       });
 
       if (res.success) {
@@ -355,25 +360,47 @@ export function CoAuthorModal({
                 Quick Share Collaboration Link
               </Typography>
               <Typography sx={{ fontSize: '0.75rem', color: '#64748b' }}>
-                Anyone with this link who signs in will be added as a co-author to this draft.
+                {draftId && draftId !== 'new'
+                  ? 'Anyone with this link who signs in will be added as a co-author to this draft.'
+                  : 'Save your draft first to generate a shareable collaboration link.'}
               </Typography>
             </Box>
           </Box>
-          <Button
-            variant="contained"
-            size="small"
-            onClick={handleCopyLink}
-            startIcon={copiedLink ? <CheckIcon /> : <ContentCopyIcon />}
-            sx={{
-              bgcolor: copiedLink ? '#10b981' : themeColor,
-              color: '#fff', fontWeight: 800, borderRadius: '10px',
-              textTransform: 'none', px: 2, py: 0.8, flexShrink: 0,
-              boxShadow: `0 4px 12px ${alpha(themeColor, 0.25)}`,
-              '&:hover': { bgcolor: copiedLink ? '#059669' : alpha(themeColor, 0.85) }
-            }}
-          >
-            {copiedLink ? 'Link Copied!' : 'Copy Invite Link'}
-          </Button>
+          {draftId && draftId !== 'new' ? (
+            <Button
+              variant="contained"
+              size="small"
+              onClick={handleCopyLink}
+              startIcon={copiedLink ? <CheckIcon /> : <ContentCopyIcon />}
+              sx={{
+                bgcolor: copiedLink ? '#10b981' : themeColor,
+                color: '#fff', fontWeight: 800, borderRadius: '10px',
+                textTransform: 'none', px: 2, py: 0.8, flexShrink: 0,
+                boxShadow: `0 4px 12px ${alpha(themeColor, 0.25)}`,
+                '&:hover': { bgcolor: copiedLink ? '#059669' : alpha(themeColor, 0.85) }
+              }}
+            >
+              {copiedLink ? 'Link Copied!' : 'Copy Invite Link'}
+            </Button>
+          ) : (
+            <Button
+              variant="contained"
+              size="small"
+              onClick={async () => {
+                if (onSaveDraft) {
+                  await onSaveDraft();
+                }
+              }}
+              sx={{
+                bgcolor: themeColor,
+                color: '#fff', fontWeight: 800, borderRadius: '10px',
+                textTransform: 'none', px: 2, py: 0.8, flexShrink: 0,
+                '&:hover': { bgcolor: alpha(themeColor, 0.85) }
+              }}
+            >
+              Save Draft & Generate Link
+            </Button>
+          )}
         </Box>
 
         {/* ─── TABS NAVIGATION ─── */}

@@ -93,7 +93,7 @@ import { EditorialPromptSidePane } from './EditorialPromptSidePane';
 import { GeneratedBlockResult } from '@/lib/actions/articleDraftPipeline';
 import { ParsedStreamBlock } from '@/lib/utils/articleStreamParser';
 import { usePromptAssistant } from '@/context/PromptAssistantContext';
-import { AddCustomBlockGrid } from './AddCustomBlockGrid';
+import { AddCustomBlockGrid, RICH_BLOCK_OPTIONS } from './AddCustomBlockGrid';
 import { CoAuthorModal, CollaboratorItem } from './CoAuthorModal';
 import { PublishConfigModal } from './PublishConfigModal';
 

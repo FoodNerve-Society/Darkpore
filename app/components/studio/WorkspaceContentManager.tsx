@@ -314,19 +314,21 @@ function ContentRow({ item, colorTheme, onEdit, onDelete }: { item: WorkspaceIte
   const completionTint = isComplete ? '#047857' : '#b45309'; // Very Dark Emerald (700), Very Dark Amber (700)
   
   return (
-    <Box sx={{
-      display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-      minWidth: 280, maxWidth: 280, height: 210,
-      p: 2.5, borderRadius: '24px', 
-      bgcolor: alpha(completionTint, 0.08), 
-      backdropFilter: 'blur(24px)',
-      WebkitBackdropFilter: 'blur(24px)',
-      border: `1px solid ${alpha(completionTint, 0.15)}`, 
-      boxShadow: `0 8px 32px rgba(15, 23, 42, 0.03), inset 0 2px 6px rgba(255,255,255,0.8)`,
-      transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)',
-      cursor: 'pointer',
-      position: 'relative',
-      flexShrink: 0,
+    <Box 
+      onClick={() => onEdit(item.id, item.type)}
+      sx={{
+        display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+        minWidth: 280, maxWidth: 280, height: 210,
+        p: 2.5, borderRadius: '24px', 
+        bgcolor: alpha(completionTint, 0.08), 
+        backdropFilter: 'blur(24px)',
+        WebkitBackdropFilter: 'blur(24px)',
+        border: `1px solid ${alpha(completionTint, 0.15)}`, 
+        boxShadow: `0 8px 32px rgba(15, 23, 42, 0.03), inset 0 2px 6px rgba(255,255,255,0.8)`,
+        transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)',
+        cursor: 'pointer',
+        position: 'relative',
+        flexShrink: 0,
       '&:hover': {
         bgcolor: alpha(completionTint, 0.12),
         boxShadow: `0 16px 40px ${alpha(completionTint, 0.15)}, inset 0 2px 4px rgba(255,255,255,1)`,
@@ -441,7 +443,7 @@ function ContentRow({ item, colorTheme, onEdit, onDelete }: { item: WorkspaceIte
           >
             {isComplete ? <ViewIcon fontSize="small" /> : <EditIcon fontSize="small" />}
           </IconButton>
-          {!isComplete && (
+          {!isComplete && !item.isCoAuthor && (
             <IconButton 
               size="small" 
               onClick={(e) => { e.stopPropagation(); onDelete(item.id, item.type); }} 

@@ -54,15 +54,26 @@ export function PublishConfigModal({
   const [publishMode, setPublishMode] = useState<'immediate' | 'scheduled'>(initialPublishMode);
   const [targetDate, setTargetDate] = useState<string>(initialTargetDate || '');
 
-  // Handle default target date if scheduled selected but no date yet
+  // Sync state when modal opens
+  React.useEffect(() => {
+    if (open) {
+      setPostingAs(initialPostingAs);
+      setSelectedOrgId(initialOrgId || (organizations[0]?.id ?? null));
+      setPublishMode(initialPublishMode);
+      setTargetDate(initialTargetDate || '');
+    }
+  }, [open, initialPostingAs, initialOrgId, initialPublishMode, initialTargetDate, organizations]);
+
+  // Handle default target date if scheduled selected but no date yet (using local timezone)
   const handleSelectSchedule = () => {
     setPublishMode('scheduled');
     if (!targetDate) {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
       tomorrow.setHours(9, 0, 0, 0);
-      const iso = tomorrow.toISOString().slice(0, 16);
-      setTargetDate(iso);
+      const offset = tomorrow.getTimezoneOffset() * 60000;
+      const localIso = new Date(tomorrow.getTime() - offset).toISOString().slice(0, 16);
+      setTargetDate(localIso);
     }
   };
 
@@ -75,7 +86,8 @@ export function PublishConfigModal({
     });
   };
 
-  const isScheduleValid = publishMode === 'immediate' || (publishMode === 'scheduled' && targetDate);
+  const isTargetDateInFuture = targetDate ? new Date(targetDate).getTime() > Date.now() : false;
+  const isScheduleValid = publishMode === 'immediate' || (publishMode === 'scheduled' && isTargetDateInFuture);
 
   return (
     <Dialog
@@ -360,8 +372,10 @@ export function PublishConfigModal({
                 slotProps={{ inputLabel: { shrink: true } }}
                 sx={{ bgcolor: '#fff', borderRadius: '10px' }}
               />
-              <Typography sx={{ fontSize: '0.72rem', color: '#64748b' }}>
-                Article will be queued in the Global Editorial Calendar and automatically published at this time.
+              <Typography sx={{ fontSize: '0.72rem', color: targetDate && !isTargetDateInFuture ? '#ef4444' : '#64748b', fontWeight: targetDate && !isTargetDateInFuture ? 700 : 500 }}>
+                {targetDate && !isTargetDateInFuture
+                  ? 'Scheduled date & time must be set in the future.'
+                  : 'Article will be queued in the Global Editorial Calendar and automatically published at this time.'}
               </Typography>
             </Box>
           )}

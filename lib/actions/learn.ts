@@ -2,6 +2,9 @@
 
 import { prisma } from '@/lib/db/client';
 import { syncCalendarEvent, removeCalendarEvent } from '@/lib/calendar-sync';
+import { Resend } from 'resend';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export type ArticleBlockPayload = {
   blockType: string;
@@ -299,13 +302,36 @@ export async function getLearnContentBySlug(slug: string) {
   return content;
 }
 
-export async function getUserDrafts(userId: string) {
+export async function getUserDrafts(userId: string, userEmail?: string) {
+  let aliases: string[] = [userId];
+  if (userEmail) aliases.push(userEmail);
+
+  try {
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { id: userId },
+          { firebaseUid: userId },
+          ...(userEmail ? [{ email: userEmail }] : [])
+        ]
+      },
+      select: { id: true, firebaseUid: true, email: true }
+    });
+    if (user) {
+      if (user.id) aliases.push(user.id);
+      if (user.firebaseUid) aliases.push(user.firebaseUid);
+      if (user.email) aliases.push(user.email);
+    }
+  } catch (e) {}
+
+  aliases = Array.from(new Set(aliases.filter(Boolean)));
+
   return await prisma.learnContent.findMany({
     where: {
       status: 'draft',
       OR: [
-        { authorId: userId },
-        { collaborators: { contains: userId } }
+        { authorId: { in: aliases } },
+        ...aliases.map(a => ({ collaborators: { contains: a } }))
       ]
     },
     orderBy: { createdAt: 'desc' },
@@ -708,6 +734,31 @@ export async function fetchGlobalCtaAssets() {
 
 // ─── CO-AUTHORING ACTIONS ──────────────────────────────────────────
 
+function hasBlockInformation(blocks?: any[]): boolean {
+  if (!blocks || blocks.length === 0) return false;
+  return blocks.some(b => {
+    let parsed: any = b.content;
+    if (typeof parsed === 'string') {
+      try { parsed = JSON.parse(parsed); } catch (e) { return false; }
+    }
+    if (!parsed || typeof parsed !== 'object') return false;
+    return Object.values(parsed).some((val: any) => {
+      if (typeof val === 'string') return val.trim().length > 0;
+      if (typeof val === 'number') return true;
+      if (Array.isArray(val)) {
+        return val.length > 0 && val.some((v: any) => {
+          if (typeof v === 'string') return v.trim().length > 0;
+          if (typeof v === 'object' && v !== null) {
+            return Object.values(v).some(subVal => typeof subVal === 'string' && subVal.trim().length > 0);
+          }
+          return false;
+        });
+      }
+      return false;
+    });
+  });
+}
+
 export async function getPotentialCoAuthors(query?: string) {
   try {
     const userWhere: any = {};
@@ -741,7 +792,7 @@ export async function getPotentialCoAuthors(query?: string) {
           specialization: true,
         },
         orderBy: { rank: 'desc' },
-        take: 60,
+        take: 120,
       }),
       prisma.organization.findMany({
         where: orgWhere,
@@ -753,9 +804,18 @@ export async function getPotentialCoAuthors(query?: string) {
           rank: true,
           verified: true,
           isPlatformOwner: true,
+          members: {
+            where: { role: { in: ['owner', 'admin'] } },
+            take: 1,
+            select: {
+              user: {
+                select: { email: true, name: true }
+              }
+            }
+          }
         },
         orderBy: { rank: 'desc' },
-        take: 60,
+        take: 80,
       })
     ]);
 
@@ -777,6 +837,7 @@ export async function getPotentialCoAuthors(query?: string) {
         id: o.id,
         name: o.name,
         slug: o.slug,
+        email: o.members?.[0]?.user?.email || `${o.slug || o.name.toLowerCase().replace(/\s+/g, '')}@foodnerve.org`,
         logoUrl: o.logoUrl,
         rank: o.rank,
         verified: o.verified,
@@ -805,6 +866,8 @@ export async function inviteCoAuthorAction(data: {
   };
   inviterName?: string;
   articleTitle?: string;
+  tenant?: string;
+  note?: string;
 }) {
   try {
     const timestamp = new Date().toISOString();
@@ -829,18 +892,106 @@ export async function inviteCoAuthorAction(data: {
           collabs = [];
         }
 
-        const already = collabs.some(c => 
+        const existingIdx = collabs.findIndex(c => 
           (data.collaborator.email && c.email?.toLowerCase() === data.collaborator.email.toLowerCase()) ||
           (data.collaborator.uid && c.uid === data.collaborator.uid)
         );
 
-        if (!already) {
+        if (existingIdx !== -1) {
+          collabs[existingIdx] = {
+            ...collabs[existingIdx],
+            ...newCollab,
+            timestamp,
+          };
+        } else {
           collabs.push(newCollab);
-          await prisma.learnContent.update({
-            where: { id: data.draftId },
-            data: { collaborators: JSON.stringify(collabs) }
-          });
         }
+
+        await prisma.learnContent.update({
+          where: { id: data.draftId },
+          data: { collaborators: JSON.stringify(collabs) }
+        });
+      }
+    }
+
+    // Build collaboration URL for email
+    const appBase = process.env.NEXT_PUBLIC_APP_URL || 'https://darkpore.com';
+    const targetDraftParam = data.draftId || '';
+    const collaborationUrl = targetDraftParam
+      ? `${appBase}/modular-society/${data.tenant || 'food'}/learn?draftId=${targetDraftParam}&invite=true`
+      : `${appBase}/modular-society/${data.tenant || 'food'}/learn`;
+
+    // Attempt email dispatch via Resend
+    if (data.collaborator.email) {
+      if (process.env.RESEND_API_KEY) {
+        try {
+          const isUpgrade = !!data.collaborator.upgradePrompt;
+          const subject = isUpgrade
+            ? `Editorial Invitation & Rank Upgrade Required for "${data.articleTitle || 'New Editorial Brief'}"`
+            : `You're invited to co-author "${data.articleTitle || 'New Editorial Brief'}" on FoodNerve`;
+
+          const emailHtml = `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #0f172a; line-height: 1.6;">
+              <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding: 24px; border-radius: 16px; margin-bottom: 24px; text-align: center;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 800;">FoodNerve Editorial Intelligence</h1>
+                <p style="color: #94a3b8; margin: 6px 0 0 0; font-size: 14px;">Collaborative Co-Authorship</p>
+              </div>
+
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; margin-bottom: 24px;">
+                <p style="margin-top: 0; font-size: 16px; font-weight: 600; color: #1e293b;">
+                  Hello ${data.collaborator.name},
+                </p>
+                <p style="font-size: 15px; color: #475569;">
+                  <strong>${data.inviterName || 'A collaborator'}</strong> has invited you to write and co-author the article:
+                </p>
+                <div style="background: #ffffff; border-left: 4px solid #f59e0b; padding: 14px 18px; border-radius: 8px; margin: 16px 0; font-weight: 700; font-size: 17px; color: #0f172a;">
+                  "${data.articleTitle || 'Untitled Editorial Brief'}"
+                </div>
+                ${data.note ? `
+                  <div style="background: #f1f5f9; border-radius: 8px; padding: 12px 16px; margin: 16px 0; font-size: 14px; color: #475569; font-style: italic;">
+                    <strong>Personal note:</strong> "${data.note}"
+                  </div>
+                ` : ''}
+                ${isUpgrade ? `
+                  <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 14px 16px; margin: 16px 0;">
+                    <p style="margin: 0; font-size: 14px; color: #1d4ed8; font-weight: 700;">
+                      💡 Editorial Rank Authorization:
+                    </p>
+                    <p style="margin: 6px 0 0 0; font-size: 13px; color: #334155; line-height: 1.5;">
+                      Official editorial co-authors on the FoodNerve network require Rank 4+ authorization. Use the link below to join the canvas and upgrade your rank to unlock full co-author publishing privileges.
+                    </p>
+                  </div>
+                ` : ''}
+                <div style="text-align: center; margin-top: 24px;">
+                  <a href="${collaborationUrl}" style="display: inline-block; background: #0f172a; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 12px; font-weight: 800; font-size: 15px; box-shadow: 0 4px 12px rgba(15,23,42,0.2);">
+                    ${isUpgrade ? 'Open Canvas & Upgrade Rank' : 'Join Collaborative Canvas'}
+                  </a>
+                </div>
+              </div>
+
+              <p style="font-size: 12px; color: #94a3b8; text-align: center; margin: 0;">
+                FoodNerve Editorial Intelligence Network • Collaborative Writing Studio
+              </p>
+            </div>
+          `;
+
+          const emailRes = await resend.emails.send({
+            from: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
+            to: data.collaborator.email,
+            subject,
+            html: emailHtml,
+          });
+
+          if (emailRes.error) {
+            console.error('Failed to dispatch co-author email via Resend:', emailRes.error);
+          } else {
+            console.log(`Co-author invitation email successfully dispatched to ${data.collaborator.email}`);
+          }
+        } catch (mailErr) {
+          console.error('Error sending co-author email:', mailErr);
+        }
+      } else {
+        console.log(`[SIMULATED EMAIL DISPATCH] To: ${data.collaborator.email} | Subject: Invitation to Co-Author "${data.articleTitle}" | URL: ${collaborationUrl}`);
       }
     }
 
@@ -848,8 +999,8 @@ export async function inviteCoAuthorAction(data: {
       success: true, 
       collaborator: newCollab,
       message: data.collaborator.upgradePrompt 
-        ? `Upgrade invitation sent to ${data.collaborator.name} (${data.collaborator.email})`
-        : `Co-author invitation sent to ${data.collaborator.name} (${data.collaborator.email})`
+        ? `Upgrade invitation and email dispatched to ${data.collaborator.name} (${data.collaborator.email})`
+        : `Co-author invitation and email dispatched to ${data.collaborator.name} (${data.collaborator.email})`
     };
   } catch (err: any) {
     console.error('Error inviting co-author:', err);
@@ -859,19 +1010,45 @@ export async function inviteCoAuthorAction(data: {
 
 export async function findMatchingDraft({
   userId,
+  userEmail,
   category,
   subcategory,
   era,
   commodity,
 }: {
   userId?: string;
+  userEmail?: string;
   category?: string;
   subcategory?: string;
   era?: string;
   commodity?: string;
 }) {
   try {
-    if (!userId) return { success: false, draft: null };
+    if (!userId && !userEmail) return { success: false, draft: null };
+
+    // Resolve aliases
+    let aliases: string[] = [];
+    if (userId) aliases.push(userId);
+    if (userEmail) aliases.push(userEmail);
+
+    try {
+      const user = await prisma.user.findFirst({
+        where: {
+          OR: [
+            ...(userId ? [{ id: userId }, { firebaseUid: userId }] : []),
+            ...(userEmail ? [{ email: userEmail }] : [])
+          ]
+        },
+        select: { id: true, firebaseUid: true, email: true }
+      });
+      if (user) {
+        if (user.id) aliases.push(user.id);
+        if (user.firebaseUid) aliases.push(user.firebaseUid);
+        if (user.email) aliases.push(user.email);
+      }
+    } catch (e) {}
+
+    aliases = Array.from(new Set(aliases.filter(Boolean)));
 
     const drafts = await prisma.learnContent.findMany({
       where: {
@@ -881,8 +1058,8 @@ export async function findMatchingDraft({
         subcategory: subcategory || undefined,
         timeframe: era || undefined,
         OR: [
-          { authorId: userId },
-          { collaborators: { contains: userId } }
+          { authorId: { in: aliases } },
+          ...aliases.map(a => ({ collaborators: { contains: a } }))
         ]
       },
       orderBy: { updatedAt: 'desc' },
@@ -901,21 +1078,28 @@ export async function findMatchingDraft({
       return { success: true, draft: null };
     }
 
+    // Filter to drafts that actually contain user-inputted information in some block
+    const draftsWithInfo = drafts.filter(d => hasBlockInformation(d.article?.blocks));
+    if (draftsWithInfo.length === 0) {
+      return { success: true, draft: null };
+    }
+
+    // Exact commodity check
     if (commodity) {
-      const matchingCommodityDraft = drafts.find(d => {
+      const targetComm = commodity.toLowerCase().trim();
+      const matchingCommodityDraft = draftsWithInfo.find(d => {
         try {
           const tags = JSON.parse(d.bottleneckTags || '[]');
-          return tags.includes(commodity) || tags.some((t: string) => t.toLowerCase() === commodity.toLowerCase());
+          return Array.isArray(tags) && tags.some((t: string) => t.toLowerCase().trim() === targetComm);
         } catch (e) {
           return false;
         }
       });
-      if (matchingCommodityDraft) {
-        return { success: true, draft: matchingCommodityDraft };
-      }
+      // MUST match commodity if commodity was requested!
+      return { success: true, draft: matchingCommodityDraft || null };
     }
 
-    return { success: true, draft: drafts[0] };
+    return { success: true, draft: draftsWithInfo[0] };
   } catch (err: any) {
     console.error('Error finding matching draft:', err);
     return { success: false, draft: null, error: err.message };
@@ -945,8 +1129,13 @@ export async function getCollaborationDraft(draftId: string, userId?: string) {
 
     let authorProfile: any = null;
     if (draft.authorId) {
-      const author = await prisma.user.findUnique({
-        where: { id: draft.authorId },
+      const author = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { id: draft.authorId },
+            { firebaseUid: draft.authorId }
+          ]
+        },
         select: { id: true, name: true, avatarUrl: true, firstName: true }
       });
       if (author) authorProfile = author;
@@ -982,8 +1171,23 @@ export async function joinCollaborationDraft(draftId: string, user: { uid: strin
       collabs = [];
     }
 
-    const exists = collabs.some(c => c.uid === user.uid || (user.email && c.email?.toLowerCase() === user.email.toLowerCase()));
-    if (!exists) {
+    const existingIdx = collabs.findIndex(c => 
+      c.uid === user.uid || 
+      (user.email && c.email && c.email.toLowerCase() === user.email.toLowerCase())
+    );
+
+    if (existingIdx !== -1) {
+      // Reconcile and bond the logged-in user's UID to their invited record
+      collabs[existingIdx] = {
+        ...collabs[existingIdx],
+        uid: user.uid,
+        name: user.name || collabs[existingIdx].name,
+        email: user.email || collabs[existingIdx].email,
+        avatarUrl: user.avatarUrl || collabs[existingIdx].avatarUrl,
+        status: 'accepted',
+        joinedAt: new Date().toISOString()
+      };
+    } else {
       collabs.push({
         uid: user.uid,
         name: user.name,
@@ -993,11 +1197,13 @@ export async function joinCollaborationDraft(draftId: string, user: { uid: strin
         status: 'accepted',
         timestamp: new Date().toISOString()
       });
-      await prisma.learnContent.update({
-        where: { id: draftId },
-        data: { collaborators: JSON.stringify(collabs) }
-      });
     }
+
+    await prisma.learnContent.update({
+      where: { id: draftId },
+      data: { collaborators: JSON.stringify(collabs) }
+    });
+
     return { success: true };
   } catch (err: any) {
     console.error('Error joining collaboration draft:', err);
