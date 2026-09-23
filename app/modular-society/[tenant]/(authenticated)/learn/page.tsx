@@ -46,7 +46,7 @@ import {
   DeleteOutline as DeleteOutlineIcon,
 } from "@mui/icons-material";
 
-import { useRouter, useParams, usePathname } from "next/navigation";
+import { useRouter, useParams, usePathname, useSearchParams } from "next/navigation";
 import {
   getLearnContent,
   type LearnContent,
@@ -54,7 +54,7 @@ import {
 } from "@/lib/db/society";
 import { useSociety, type Challenge, RANK_NAMES, type RankLevel } from "@/context/SocietyContext";
 import { getTenantConfig } from "@/lib/cms";
-import { getUserDrafts, deleteLearnContent, getOrgLearnContent, getUserPublishedContent } from "@/lib/actions/learn";
+import { getUserDrafts, deleteLearnContent, getOrgLearnContent, getUserPublishedContent, getCollaborationDraft, joinCollaborationDraft } from "@/lib/actions/learn";
 import FlipContainer from "../components/shared/FlipContainer";
 import CreateLearnContentForm from "../components/forms/CreateLearnContentForm";
 import CreateLivestreamForm from "../components/forms/CreateLivestreamForm";
@@ -1313,6 +1313,7 @@ export default function LearnPage() {
   const router = useRouter();
   const pathname = usePathname();
   const params = useParams();
+  const searchParams = useSearchParams();
   const tenantId = (params?.tenant as string) || 'food';
   const tenantConfig = getTenantConfig(tenantId);
 
@@ -1412,13 +1413,36 @@ export default function LearnPage() {
         if (cancelled) return;
 
         let personalItems: any[] = [
-          ...userDrafts.map(d => ({ id: d.id, title: d.title, type: d.type, status: d.status, date: d.createdAt.toString(), authorName: profile.displayName })),
+          ...userDrafts.map(d => ({ 
+            id: d.id, 
+            title: d.title, 
+            type: d.type, 
+            status: d.status, 
+            date: d.createdAt.toString(), 
+            authorName: d.authorId === profile.uid ? profile.displayName : (d.authorName || 'Lead Author'),
+            isCoAuthor: d.authorId !== profile.uid
+          })),
           ...userPublished.map(p => ({ id: p.id, title: p.title, type: p.type, status: p.status, date: p.createdAt.toString(), authorName: profile.displayName }))
         ];
         // Sort newest first
         personalItems.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
         let newTabs: any[] = [{ id: 'personal', label: 'Personal', items: personalItems }];
+
+        // Check if there are any co-authored drafts
+        const coAuthoredDrafts = userDrafts.filter(d => d.authorId !== profile.uid);
+        if (coAuthoredDrafts.length > 0) {
+          const coAuthoredItems = coAuthoredDrafts.map(d => ({
+            id: d.id,
+            title: d.title,
+            type: d.type,
+            status: d.status,
+            date: d.createdAt.toString(),
+            authorName: d.authorName || 'Lead Author',
+            isCoAuthor: true
+          }));
+          newTabs.push({ id: 'co-authored', label: 'Co-Authored', items: coAuthoredItems });
+        }
 
         if (profile.organizations && profile.organizations.length > 0) {
           for (const org of profile.organizations) {
@@ -1438,6 +1462,36 @@ export default function LearnPage() {
     fetchWorkspaceData();
     return () => { cancelled = true; };
   }, [profile?.uid, profile?.organizations, isFlipped]);
+
+  // Handle direct collaboration link (e.g., ?draftId=[id]&invite=true)
+  useEffect(() => {
+    const draftIdParam = searchParams?.get('draftId');
+    const isInvite = searchParams?.get('invite') === 'true';
+
+    if (draftIdParam) {
+      setSelectedDraftId(draftIdParam);
+      setIsFlipped(true);
+
+      if (profile?.uid) {
+        if (isInvite) {
+          joinCollaborationDraft(draftIdParam, {
+            uid: profile.uid,
+            name: profile.displayName || profile.firstName || 'Collaborator',
+            email: profile.email || '',
+            avatarUrl: profile.avatarUrl || ''
+          });
+        }
+        getCollaborationDraft(draftIdParam, profile.uid).then(res => {
+          if (res.success && res.draft) {
+            setFastPayload(res.draft);
+            if (res.draft.type) {
+              setCreateContentType(res.draft.type);
+            }
+          }
+        });
+      }
+    }
+  }, [searchParams, profile?.uid]);
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
   const [draftTaxonomy, setDraftTaxonomy] = useState<any>(null);
   const [expandedDraftId, setExpandedDraftId] = useState<string | null>(null);

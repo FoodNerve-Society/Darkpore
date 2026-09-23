@@ -23,6 +23,7 @@ export interface WorkspaceItem {
   date: string;
   authorName?: string;
   authorAvatar?: string;
+  isCoAuthor?: boolean;
   stats?: { views?: number; likes?: number; applications?: number; attendees?: number };
 }
 
@@ -347,19 +348,37 @@ function ContentRow({ item, colorTheme, onEdit, onDelete }: { item: WorkspaceIte
         }}>
           {getTypeIcon(item.type, colorTheme)}
         </Box>
-        <Chip 
-          label={item.status.replace(/_/g, ' ')} 
-          size="small" 
-          icon={<Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: completionTint, ml: '10px !important' }} />}
-          sx={{ 
-            bgcolor: alpha(completionTint, 0.15), color: completionTint, 
-            backdropFilter: 'blur(12px)',
-            fontWeight: 900, fontSize: '0.7rem', textTransform: 'capitalize',
-            borderRadius: '10px', height: 26, px: 0.5,
-            border: `1px solid ${alpha(completionTint, 0.3)}`,
-            boxShadow: `inset 0 1px 4px rgba(255,255,255,0.6)`
-          }} 
-        />
+        <Box sx={{ display: 'flex', gap: 0.75, alignItems: 'center' }}>
+          {item.isCoAuthor && (
+            <Chip 
+              label="Co-Author" 
+              size="small" 
+              sx={{ 
+                bgcolor: 'rgba(59, 130, 246, 0.12)', 
+                color: '#2563eb', 
+                fontWeight: 900, 
+                fontSize: '0.68rem', 
+                borderRadius: '8px', 
+                height: 24, 
+                px: 0.5,
+                border: '1px solid rgba(59, 130, 246, 0.25)' 
+              }} 
+            />
+          )}
+          <Chip 
+            label={item.status.replace(/_/g, ' ')} 
+            size="small" 
+            icon={<Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: completionTint, ml: '10px !important' }} />}
+            sx={{ 
+              bgcolor: alpha(completionTint, 0.15), color: completionTint, 
+              backdropFilter: 'blur(12px)',
+              fontWeight: 900, fontSize: '0.7rem', textTransform: 'capitalize',
+              borderRadius: '10px', height: 26, px: 0.5,
+              border: `1px solid ${alpha(completionTint, 0.3)}`,
+              boxShadow: `inset 0 1px 4px rgba(255,255,255,0.6)`
+            }} 
+          />
+        </Box>
       </Box>
 
       {/* Middle Section: Title & Date */}
@@ -371,9 +390,16 @@ function ContentRow({ item, colorTheme, onEdit, onDelete }: { item: WorkspaceIte
         }}>
           {item.title}
         </Typography>
-        <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#64748b' }}>
-          {new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+          <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#64748b' }}>
+            {new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+          </Typography>
+          {item.isCoAuthor && item.authorName && (
+            <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: '#2563eb' }}>
+              • Lead: {item.authorName}
+            </Typography>
+          )}
+        </Box>
       </Box>
 
       {/* Bottom Section: Stats & Actions */}

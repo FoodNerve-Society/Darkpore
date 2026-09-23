@@ -46,6 +46,7 @@ import {
   Edit as EditIcon,
   AutoAwesome as AutoAwesomeIcon,
   InfoOutlined as InfoOutlinedIcon,
+  People as PeopleIcon,
 } from '@mui/icons-material';
 import { keyframes } from '@mui/system';
 import {
@@ -65,7 +66,7 @@ import {
   useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { createLearnContent, CreateLearnContentPayload, ArticleBlockPayload } from '@/lib/actions/learn';
+import { createLearnContent, CreateLearnContentPayload, ArticleBlockPayload, findMatchingDraft } from '@/lib/actions/learn';
 import { useSociety } from '@/context/SocietyContext';
 import PremiumCard from '@/components/PremiumCard';
 import { useParams } from 'next/navigation';
@@ -92,6 +93,9 @@ import { EditorialPromptSidePane } from './EditorialPromptSidePane';
 import { GeneratedBlockResult } from '@/lib/actions/articleDraftPipeline';
 import { ParsedStreamBlock } from '@/lib/utils/articleStreamParser';
 import { usePromptAssistant } from '@/context/PromptAssistantContext';
+import { AddCustomBlockGrid } from './AddCustomBlockGrid';
+import { CoAuthorModal, CollaboratorItem } from './CoAuthorModal';
+import { PublishConfigModal } from './PublishConfigModal';
 
 // ----------------------------------------------------------------------
 // POLL OPTIONS EDITOR
@@ -518,6 +522,22 @@ export default function CreateLearnContentForm({
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(draftId && draftId !== 'new' ? draftId : null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
+  // Collaborators & Co-authorship State
+  const [collaborators, setCollaborators] = useState<CollaboratorItem[]>([]);
+  const [isCoAuthorModalOpen, setIsCoAuthorModalOpen] = useState(false);
+
+  // Publish Configuration Modal State
+  const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+
+  // Autosave State
+  const [lastAutosavedAt, setLastAutosavedAt] = useState<Date | null>(null);
+  const [isAutosaving, setIsAutosaving] = useState(false);
+  const lastSavedContentRef = useRef<string>('');
+
+  // Framework In-Progress Draft Resumption
+  const [detectedDraft, setDetectedDraft] = useState<any>(null);
+  const [checkingDraft, setCheckingDraft] = useState(false);
+
   // Auto-cycle accordion when not locked
   useEffect(() => {
     if (step !== 2 || categoryLocked) return;
@@ -792,6 +812,26 @@ export default function CreateLearnContentForm({
         }
       }
       
+      if (initialDraftData.collaborators) {
+        try {
+          const parsed = typeof initialDraftData.collaborators === 'string'
+            ? JSON.parse(initialDraftData.collaborators)
+            : initialDraftData.collaborators;
+          if (Array.isArray(parsed)) setCollaborators(parsed);
+        } catch (e) {
+          console.error('Invalid collaborators format', e);
+        }
+      }
+
+      if (!initialDraftData.commodity && initialDraftData.bottleneckTags) {
+        try {
+          const tags = JSON.parse(initialDraftData.bottleneckTags);
+          if (Array.isArray(tags) && tags.length > 2) {
+            setSelectedCommodity(tags[tags.length - 1]);
+          }
+        } catch (e) {}
+      }
+
       const sourceBlocks = initialDraftData.articleBlocks || initialDraftData.article?.blocks;
       if (sourceBlocks && sourceBlocks.length > 0) {
         // Sort blocks by orderIndex just in case
@@ -1256,9 +1296,21 @@ export default function CreateLearnContentForm({
     return stats.filled >= stats.total;
   };
 
-  const handleSubmit = async (isPublish = true) => {
-    if (loading) return;
+  const handleSubmit = async (isPublish = true, publishOverrides?: {
+    postingAs?: 'user' | 'organization';
+    selectedOrgId?: string | null;
+    publishMode?: 'immediate' | 'scheduled';
+    targetDate?: string;
+    isAutoSave?: boolean;
+  }) => {
+    const isAuto = !!publishOverrides?.isAutoSave;
+    if (loading && !isAuto) return;
     
+    const effectivePostingAs = publishOverrides?.postingAs ?? postingAs;
+    const effectiveOrgId = publishOverrides?.selectedOrgId !== undefined ? publishOverrides.selectedOrgId : selectedOrgId;
+    const effectivePublishMode = publishOverrides?.publishMode ?? publishMode;
+    const effectiveTargetDate = publishOverrides?.targetDate !== undefined ? publishOverrides.targetDate : targetDate;
+
     let finalTitle = title;
     let finalDesc = description;
 
@@ -1274,9 +1326,6 @@ export default function CreateLearnContentForm({
       }
     }
 
-    // Removed strict Title and Description validation as requested.
-    // The backend payload mapping natively falls back to "Draft Content" and "No description provided."
-    
     if (isPublish && blocks.length > 0) {
       const incompleteBlocks = blocks.filter(b => !isBlockFilled(b));
       if (incompleteBlocks.length > 0) {
@@ -1294,18 +1343,20 @@ export default function CreateLearnContentForm({
       }
     }
 
-    if (isPublish && publishMode === 'scheduled') {
-      const scheduledTime = new Date(targetDate).getTime();
-      if (!targetDate || Number.isNaN(scheduledTime) || scheduledTime <= Date.now()) {
+    if (isPublish && effectivePublishMode === 'scheduled') {
+      const scheduledTime = new Date(effectiveTargetDate).getTime();
+      if (!effectiveTargetDate || Number.isNaN(scheduledTime) || scheduledTime <= Date.now()) {
         setError('Choose a future date and time before scheduling this article.');
         scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
         return;
       }
     }
     
-    setLoading(true);
-    setError(null);
-    setSuccessMsg(null);
+    if (!isAuto) {
+      setLoading(true);
+      setError(null);
+      setSuccessMsg(null);
+    }
 
     try {
       // 1. Upload pending files first
@@ -1316,19 +1367,17 @@ export default function CreateLearnContentForm({
         const file = pendingFiles[pendingKey];
         const res = await uploadFile(file);
         if (res?.secure_url) {
-          // If the key is composite (e.g. blockId::blobUrl), extract the blockId. Otherwise it's the raw blockId.
           const blockId = pendingKey.includes('::') ? pendingKey.split('::')[0] : pendingKey;
           const targetBlobUrl = pendingKey.includes('::') ? pendingKey.split('::').slice(1).join('::') : null;
 
           finalBlocks = finalBlocks.map(b => {
             if (b.id === blockId) {
-              const newContent = JSON.parse(JSON.stringify(b.content)); // deep clone
+              const newContent = JSON.parse(JSON.stringify(b.content));
               
               const replaceBlobDeep = (obj: any) => {
                 if (!obj) return;
                 Object.keys(obj).forEach(k => {
                   if (typeof obj[k] === 'string' && obj[k].startsWith('blob:')) {
-                    // If targetBlobUrl is specified, only replace exact matches. Otherwise replace any blob (legacy behavior)
                     if (!targetBlobUrl || obj[k] === targetBlobUrl) {
                       obj[k] = res.secure_url;
                     }
@@ -1354,12 +1403,19 @@ export default function CreateLearnContentForm({
         }
       }
 
-      let finalAuthorId = profile?.uid;
-      let finalAuthorName = profile?.displayName;
-      let finalAuthorAvatarUrl = profile?.avatarUrl;
+      // If collaborating on an existing draft, preserve the original lead author
+      const isCollaboratingOnExistingDraft = !!(initialDraftData?.authorId && profile?.uid && initialDraftData.authorId !== profile.uid);
 
-      if (postingAs === 'organization' && selectedOrgId) {
-        const org = profile?.organizations?.find(o => o.id === selectedOrgId);
+      let finalAuthorId = isCollaboratingOnExistingDraft ? initialDraftData.authorId : profile?.uid;
+      let finalAuthorName = isCollaboratingOnExistingDraft 
+        ? (initialDraftData.authorName || 'Lead Author') 
+        : profile?.displayName;
+      let finalAuthorAvatarUrl = isCollaboratingOnExistingDraft 
+        ? initialDraftData.authorAvatarUrl 
+        : profile?.avatarUrl;
+
+      if (!isCollaboratingOnExistingDraft && effectivePostingAs === 'organization' && effectiveOrgId) {
+        const org = profile?.organizations?.find(o => o.id === effectiveOrgId);
         if (org) {
           finalAuthorName = org.name;
           finalAuthorAvatarUrl = org.logoUrl;
@@ -1372,7 +1428,9 @@ export default function CreateLearnContentForm({
         slug: generateSlug(finalTitle.trim() || 'Draft Content'),
         description: finalDesc.trim() || 'No description provided.',
         type: type as "article" | "video" | "class" | "livestream" | "report",
-        bottleneckTags: selectedSubcategory ? [selectedSubcategory, selectedCategory] : [selectedCategory],
+        bottleneckTags: selectedSubcategory 
+          ? [selectedSubcategory, selectedCategory, selectedCommodity].filter(Boolean) 
+          : [selectedCategory, selectedCommodity].filter(Boolean),
         category: selectedCategory,
         subcategory: selectedSubcategory,
         timeframe: selectedTimeframe,
@@ -1380,7 +1438,9 @@ export default function CreateLearnContentForm({
         authorId: finalAuthorId,
         authorName: finalAuthorName,
         authorAvatarUrl: finalAuthorAvatarUrl,
-        organizationId: postingAs === 'organization' ? selectedOrgId : null,
+        organizationId: effectivePostingAs === 'organization' ? effectiveOrgId : null,
+        collaborators: collaborators.length > 0 ? collaborators : undefined,
+        commodity: selectedCommodity,
         
         articleBlocks: type === 'article' ? finalBlocks.map((b, idx) => ({
           blockType: b.type,
@@ -1395,7 +1455,7 @@ export default function CreateLearnContentForm({
         classDuration: type === 'class' ? duration : undefined,
         reportPdfUrl: type === 'report' ? reportPdfUrl : undefined,
         reportPages: type === 'report' ? reportPages : undefined,
-        targetDate: isPublish && publishMode === 'scheduled' ? new Date(targetDate).toISOString() : undefined,
+        targetDate: isPublish && effectivePublishMode === 'scheduled' ? new Date(effectiveTargetDate).toISOString() : undefined,
       };
 
       const result = await createLearnContent(payload, !isPublish);
@@ -1404,16 +1464,137 @@ export default function CreateLearnContentForm({
           onSuccess?.();
         } else {
           setCurrentDraftId(result.id);
-          setSuccessMsg(`Draft saved successfully at ${new Date().toLocaleTimeString()}`);
-          scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+          setLastAutosavedAt(new Date());
+          if (!isAuto) {
+            setSuccessMsg(`Draft saved successfully at ${new Date().toLocaleTimeString()}`);
+            scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+          }
         }
       }
     } catch (err: any) {
-      setError(err.message || 'Something went wrong.');
-      scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      if (!isAuto) {
+        setError(err.message || 'Something went wrong.');
+        scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     } finally {
-      setLoading(false);
+      if (!isAuto) {
+        setLoading(false);
+      }
     }
+  };
+
+  // ─── AUTOSAVE DEBOUNCED EFFECT ───
+  useEffect(() => {
+    if (step !== 3 || type !== 'article' || blocks.length === 0) return;
+
+    // Check if any block has user-inputted information
+    const hasInfo = blocks.some(b => {
+      if (!b.content) return false;
+      return Object.values(b.content).some(val => {
+        if (typeof val === 'string') return val.trim().length > 0;
+        if (Array.isArray(val)) return val.length > 0;
+        return false;
+      });
+    });
+
+    if (!hasInfo) return;
+
+    const serializedState = JSON.stringify({
+      title,
+      description,
+      blocks: blocks.map(b => ({ type: b.type, content: b.content })),
+      collaborators
+    });
+
+    if (serializedState === lastSavedContentRef.current) return;
+
+    const timer = setTimeout(async () => {
+      setIsAutosaving(true);
+      try {
+        await handleSubmit(false, { isAutoSave: true });
+        lastSavedContentRef.current = serializedState;
+      } catch (err) {
+        console.error('Autosave failure:', err);
+      } finally {
+        setIsAutosaving(false);
+      }
+    }, 2500);
+
+    return () => clearTimeout(timer);
+  }, [step, type, blocks, title, description, collaborators]);
+
+  // ─── LOAD FRAMEWORK IN-PROGRESS DRAFT DETECTION ───
+  useEffect(() => {
+    if (type !== 'article' || articleEditorMode !== 'framework') return;
+    if (!selectedCategory || !selectedSubcategory || !selectedEra) return;
+
+    let active = true;
+    async function checkDraft() {
+      setCheckingDraft(true);
+      try {
+        const res = await findMatchingDraft({
+          userId: profile?.uid,
+          category: selectedCategory,
+          subcategory: selectedSubcategory,
+          era: selectedEra,
+          commodity: selectedCommodity,
+        });
+
+        if (active && res.success && res.draft) {
+          // If not currently working on this draft already
+          if (res.draft.id !== currentDraftId) {
+            setDetectedDraft(res.draft);
+          }
+        } else if (active) {
+          setDetectedDraft(null);
+        }
+      } catch (err) {
+        console.error('Failed checking matching draft:', err);
+      } finally {
+        if (active) setCheckingDraft(false);
+      }
+    }
+
+    checkDraft();
+    return () => { active = false; };
+  }, [type, articleEditorMode, selectedCategory, selectedSubcategory, selectedEra, selectedCommodity, profile?.uid, currentDraftId]);
+
+  const handleResumeDraft = (draft: any) => {
+    setCurrentDraftId(draft.id);
+    if (draft.title) setTitle(draft.title);
+    if (draft.description) setDescription(draft.description);
+    if (draft.collaborators) {
+      try {
+        const parsed = typeof draft.collaborators === 'string' ? JSON.parse(draft.collaborators) : draft.collaborators;
+        if (Array.isArray(parsed)) setCollaborators(parsed);
+      } catch (e) {}
+    }
+    const sourceBlocks = draft.article?.blocks || draft.articleBlocks;
+    if (sourceBlocks && sourceBlocks.length > 0) {
+      const sorted = [...sourceBlocks].sort((a: any, b: any) => a.orderIndex - b.orderIndex);
+      const hydrated = sorted.map((b: any, idx: number) => {
+        let content = {};
+        try {
+          content = typeof b.content === 'string' ? JSON.parse(b.content) : (b.content || {});
+        } catch (e) {}
+        return {
+          id: b.id || `block_${Date.now()}_${idx}`,
+          type: b.blockType as BlockType,
+          role: BLOCK_DEFINITIONS[b.blockType as BlockType]?.label || 'Analysis',
+          content
+        };
+      });
+      setBlocks(hydrated);
+    }
+    setDetectedDraft(null);
+    setArticleEditorMode('canvas');
+  };
+
+  const handleStartFresh = () => {
+    setCurrentDraftId(null);
+    setDetectedDraft(null);
+    applyFramework(selectedFormat, selectedEra);
+    setArticleEditorMode('canvas');
   };
 
   return (
@@ -1504,8 +1685,46 @@ export default function CreateLearnContentForm({
                         />
                       </Box>
 
-                      {/* Right Controls: Mode Switcher */}
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {/* Right Controls: Autosave, Co-Authors, Mode Switcher */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                        {/* Autosave Status Indicator */}
+                        {isAutosaving ? (
+                          <Chip
+                            icon={<CircularProgress size={12} sx={{ color: '#d97706' }} />}
+                            label="Autosaving..."
+                            size="small"
+                            sx={{ height: 28, fontSize: '0.72rem', fontWeight: 800, bgcolor: 'rgba(245, 158, 11, 0.12)', color: '#d97706', border: '1px solid rgba(245, 158, 11, 0.25)' }}
+                          />
+                        ) : lastAutosavedAt ? (
+                          <Chip
+                            icon={<CheckIcon sx={{ fontSize: '13px !important', color: '#10b981' }} />}
+                            label={`Saved ${format(lastAutosavedAt, 'h:mm a')}`}
+                            size="small"
+                            sx={{ height: 28, fontSize: '0.72rem', fontWeight: 800, bgcolor: 'rgba(16, 185, 129, 0.1)', color: '#047857', border: '1px solid rgba(16, 185, 129, 0.2)' }}
+                          />
+                        ) : null}
+
+                        {/* Co-Authors Button */}
+                        <Tooltip title="Manage Co-Authors & Collaboration Directory">
+                          <Button
+                            size="small"
+                            onClick={() => setIsCoAuthorModalOpen(true)}
+                            startIcon={<PeopleIcon sx={{ fontSize: 16 }} />}
+                            sx={{
+                              height: 28, borderRadius: '10px', textTransform: 'none',
+                              bgcolor: collaborators.length > 0 ? 'rgba(59, 130, 246, 0.1)' : 'rgba(0,0,0,0.04)',
+                              color: collaborators.length > 0 ? '#2563eb' : '#475569',
+                              fontWeight: 800, fontSize: '0.74rem', px: 1.5,
+                              border: '1px solid',
+                              borderColor: collaborators.length > 0 ? 'rgba(59, 130, 246, 0.3)' : 'rgba(0,0,0,0.08)',
+                              boxShadow: collaborators.length > 0 ? '0 2px 6px rgba(59,130,246,0.15)' : 'none',
+                              '&:hover': { bgcolor: 'rgba(59, 130, 246, 0.2)' }
+                            }}
+                          >
+                            {collaborators.length > 0 ? `${collaborators.length} Co-Author${collaborators.length > 1 ? 's' : ''}` : '+ Co-Author'}
+                          </Button>
+                        </Tooltip>
+
                         <Tooltip title={articleEditorMode === 'framework' ? "Viewing Framework Configurator" : "Tap to Switch to Framework Configurator"}>
                           <Chip 
                             icon={draftId && draftId !== 'new' ? <AccessTimeIcon sx={{ fontSize: 14 }} /> : <AddIcon sx={{ fontSize: 14 }} />}
@@ -1570,6 +1789,77 @@ export default function CreateLearnContentForm({
                           transition: 'all 0.25s ease'
                         }}
                       >
+                        {/* IN-PROGRESS DRAFT RESUMPTION BANNER */}
+                        {detectedDraft && (
+                          <Paper
+                            elevation={0}
+                            sx={{
+                              p: 2.5,
+                              borderRadius: '20px',
+                              bgcolor: 'rgba(245, 158, 11, 0.08)',
+                              border: '1.5px solid rgba(245, 158, 11, 0.35)',
+                              boxShadow: '0 8px 24px rgba(245, 158, 11, 0.1)',
+                              display: 'flex',
+                              flexDirection: { xs: 'column', md: 'row' },
+                              alignItems: { md: 'center' },
+                              justifyContent: 'space-between',
+                              gap: 2,
+                              mb: 1
+                            }}
+                          >
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75 }}>
+                              <Box sx={{
+                                width: 44, height: 44, borderRadius: '14px',
+                                bgcolor: '#f59e0b', color: '#fff',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                              }}>
+                                <ArticleIcon sx={{ fontSize: 24 }} />
+                              </Box>
+                              <Box>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                  <Typography sx={{ fontWeight: 900, fontSize: '0.98rem', color: '#0f172a' }}>
+                                    In-Progress Draft Detected
+                                  </Typography>
+                                  <Chip
+                                    label="Auto-Saved Work Found"
+                                    size="small"
+                                    sx={{ bgcolor: 'rgba(245, 158, 11, 0.2)', color: '#b45309', fontWeight: 800, fontSize: '0.7rem' }}
+                                  />
+                                </Box>
+                                <Typography sx={{ color: '#475569', fontSize: '0.84rem', mt: 0.25 }}>
+                                  You previously worked on &quot;<strong>{detectedDraft.title || 'Untitled Draft'}</strong>&quot; for {(selectedSubObj?.title || selectedSubcategory || '').replace(/\s*\(.*?\)\s*$/, '').trim()} • {activeEraMeta.label} ({detectedDraft.article?.blocks?.length || 0} blocks populated).
+                                </Typography>
+                              </Box>
+                            </Box>
+
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexShrink: 0 }}>
+                              <Button
+                                variant="contained"
+                                onClick={() => handleResumeDraft(detectedDraft)}
+                                startIcon={<CheckIcon />}
+                                sx={{
+                                  bgcolor: '#f59e0b', color: '#fff', fontWeight: 900,
+                                  borderRadius: '12px', textTransform: 'none', px: 2.5, py: 1,
+                                  '&:hover': { bgcolor: '#d97706' }
+                                }}
+                              >
+                                Continue Working on Draft
+                              </Button>
+                              <Button
+                                variant="outlined"
+                                onClick={() => handleStartFresh()}
+                                sx={{
+                                  borderColor: 'rgba(15, 23, 42, 0.2)', color: '#0f172a', fontWeight: 800,
+                                  borderRadius: '12px', textTransform: 'none', px: 2, py: 1,
+                                  '&:hover': { borderColor: '#0f172a', bgcolor: 'rgba(15, 23, 42, 0.04)' }
+                                }}
+                              >
+                                Start Fresh
+                              </Button>
+                            </Box>
+                          </Paper>
+                        )}
+
                         {/* Top Question & Parameters Status */}
                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
                           <Box>
@@ -1987,6 +2277,44 @@ export default function CreateLearnContentForm({
                 {/* ═══ ACTIVE BLOCK CANVAS ═══ */}
                 {articleEditorMode === 'canvas' && (
                   <Box sx={{ animation: 'fadeIn 0.25s ease' }}>
+                    {/* Collaborative Co-Authoring Indicator */}
+                    {initialDraftData?.authorId && profile?.uid && initialDraftData.authorId !== profile.uid && (
+                      <Paper
+                        elevation={0}
+                        sx={{
+                          p: 2,
+                          px: 2.5,
+                          mb: 3,
+                          borderRadius: '16px',
+                          bgcolor: 'rgba(59, 130, 246, 0.08)',
+                          border: '1.5px solid rgba(59, 130, 246, 0.25)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          flexWrap: 'wrap',
+                          gap: 1.5
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          <Avatar src={initialDraftData.authorAvatarUrl} sx={{ width: 34, height: 34, bgcolor: '#3b82f6' }}>
+                            {initialDraftData.authorName?.charAt(0) || 'A'}
+                          </Avatar>
+                          <Box>
+                            <Typography sx={{ fontWeight: 800, fontSize: '0.88rem', color: '#1e3a8a', lineHeight: 1.2 }}>
+                              Collaborative Co-Author Workspace
+                            </Typography>
+                            <Typography sx={{ fontSize: '0.76rem', color: '#475569' }}>
+                              You are collaborating on this draft with <strong>{initialDraftData.authorName || 'the lead author'}</strong>. Edits you make will auto-save to the shared draft.
+                            </Typography>
+                          </Box>
+                        </Box>
+                        <Chip
+                          label="Co-Author Privileges Active"
+                          size="small"
+                          sx={{ bgcolor: '#3b82f6', color: '#fff', fontWeight: 800, fontSize: '0.72rem' }}
+                        />
+                      </Paper>
+                    )}
                     {/* ═══ CANVAS BLUEPRINT & TEMPORAL LENS SWITCHER ═══ */}
                     {(() => {
                       const fMeta = FORMAT_CONFIG[selectedFormat] || FORMAT_CONFIG.brief;
@@ -3575,38 +3903,12 @@ export default function CreateLearnContentForm({
                       </SortableContext>
                     </DndContext>
 
-                    {/* ─── ADD BLOCK BAR ─── */}
-                    <Box sx={{
-                      mt: 4, p: 3, borderRadius: '24px',
-                      background: 'rgba(255,255,255,0.8)',
-                      border: '1px dashed rgba(0,0,0,0.15)',
-                      backdropFilter: 'blur(12px)',
-                    }}>
-                      <Typography sx={{ color: '#0f172a', fontWeight: 800, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.1em', mb: 2 }}>
-                        + Add Custom Block
-                      </Typography>
-                      <Box sx={{
-                        display: 'flex', gap: 1.5, overflowX: 'auto', pb: 1,
-                        '&::-webkit-scrollbar': { display: 'none' },
-                      }}>
-                        {Object.entries(BLOCK_DEFINITIONS).map(([key, def]) => (
-                          <Chip
-                            key={key}
-                            label={def.label}
-                            onClick={() => handleAddBlock(key as BlockType)}
-                            sx={{
-                              flexShrink: 0, cursor: 'pointer',
-                              bgcolor: alpha(def.color, 0.1), color: def.color,
-                              border: `1px solid ${alpha(def.color, 0.3)}`,
-                              fontWeight: 800, fontSize: '0.85rem', px: 1, py: 2.5, borderRadius: '12px',
-                              boxShadow: `0 2px 8px ${alpha(def.color, 0.1)}`,
-                              '&:hover': { bgcolor: alpha(def.color, 0.2), borderColor: alpha(def.color, 0.6), transform: 'translateY(-2px)', boxShadow: `0 6px 16px ${alpha(def.color, 0.2)}` },
-                              transition: 'all 0.2s',
-                            }}
-                          />
-                        ))}
-                      </Box>
-                    </Box>
+                    {/* ─── ADD CUSTOM BLOCK EXPANSIVE GRID ─── */}
+                    <AddCustomBlockGrid
+                      onAddBlock={handleAddBlock}
+                      activeThemeColor={activeThemeColor}
+                      currentBlockCount={blocks.length}
+                    />
                   </Box>
                 )}
               </Box>
@@ -3664,88 +3966,6 @@ export default function CreateLearnContentForm({
           ) : (
             /* ═══ STANDARD ACTIONS IN CANVAS MODE ═══ */
             <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end', width: '100%' }}>
-              {type === 'article' && (
-                <Box sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1,
-                  mr: 'auto',
-                  flexWrap: 'wrap',
-                  p: 0.75,
-                  borderRadius: '16px',
-                  bgcolor: 'rgba(255,255,255,0.72)',
-                  border: '1px solid rgba(15,23,42,0.08)',
-                  boxShadow: '0 8px 24px rgba(15,23,42,0.06), inset 0 1px 0 rgba(255,255,255,0.95)',
-                  backdropFilter: 'blur(16px)',
-                }}>
-                  <Typography sx={{
-                    px: 1,
-                    color: '#64748b',
-                    fontSize: '0.68rem',
-                    fontWeight: 900,
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
-                  }}>
-                    Release
-                  </Typography>
-                  <Button
-                    size="small"
-                    variant={publishMode === 'immediate' ? 'contained' : 'outlined'}
-                    onClick={() => {
-                      setPublishMode('immediate');
-                    }}
-                    startIcon={<CheckIcon />}
-                    sx={{
-                      minHeight: 34,
-                      borderRadius: '11px',
-                      fontWeight: 800,
-                      fontSize: '0.76rem',
-                      bgcolor: publishMode === 'immediate' ? '#10b981' : 'transparent',
-                      borderColor: '#10b981',
-                      color: publishMode === 'immediate' ? '#fff' : '#047857',
-                      boxShadow: publishMode === 'immediate' ? '0 5px 14px rgba(16,185,129,0.24)' : 'none',
-                      '&:hover': { bgcolor: publishMode === 'immediate' ? '#059669' : 'rgba(16,185,129,0.08)' }
-                    }}
-                  >
-                    Publish Immediately
-                  </Button>
-                  <Button
-                    size="small"
-                    variant={publishMode === 'scheduled' ? 'contained' : 'outlined'}
-                    onClick={() => setPublishMode('scheduled')}
-                    startIcon={<CalendarIcon />}
-                    sx={{
-                      minHeight: 34,
-                      borderRadius: '11px',
-                      fontWeight: 800,
-                      fontSize: '0.76rem',
-                      bgcolor: publishMode === 'scheduled' ? '#3b82f6' : 'transparent',
-                      borderColor: '#3b82f6',
-                      color: publishMode === 'scheduled' ? '#fff' : '#2563eb',
-                      boxShadow: publishMode === 'scheduled' ? '0 5px 14px rgba(59,130,246,0.24)' : 'none',
-                      '&:hover': { bgcolor: publishMode === 'scheduled' ? '#2563eb' : 'rgba(59,130,246,0.08)' }
-                    }}
-                  >
-                    Schedule
-                  </Button>
-                  {publishMode === 'scheduled' && targetDate && (
-                    <Chip
-                      icon={<CalendarIcon />}
-                      label={`Scheduled for ${format(new Date(targetDate), 'EEE, MMM d, yyyy h:mm a')}`}
-                      size="small"
-                      sx={{
-                        height: 34,
-                        fontWeight: 800,
-                        fontSize: '0.72rem',
-                        color: '#1d4ed8',
-                        bgcolor: 'rgba(59,130,246,0.07)',
-                        border: '1px solid rgba(59,130,246,0.14)',
-                        '& .MuiChip-icon': { color: '#3b82f6' },
-                      }}
-                    />
-                  )}
-                </Box>
-              )}
               <Button
                 onClick={() => setPreviewOpen(true)}
                 startIcon={<SparkleIcon sx={{ color: '#8b5cf6' }} />}
@@ -3786,7 +4006,13 @@ export default function CreateLearnContentForm({
               </Button>
               <Button 
                 variant="contained" 
-                onClick={() => handleSubmit(true)} 
+                onClick={() => {
+                  if (type === 'article') {
+                    setIsPublishModalOpen(true);
+                  } else {
+                    handleSubmit(true);
+                  }
+                }} 
                 disabled={loading} 
                 sx={{ 
                   bgcolor: activeThemeColor, 
@@ -4081,6 +4307,45 @@ export default function CreateLearnContentForm({
         }}
         onUpdateTitle={(newTitle) => setTitle(newTitle)}
         onUpdateDescription={(newDesc) => setDescription(newDesc)}
+      />
+
+      {/* ─── PUBLISH CONFIGURATION MODAL ─── */}
+      <PublishConfigModal
+        open={isPublishModalOpen}
+        onClose={() => setIsPublishModalOpen(false)}
+        userProfile={profile}
+        organizations={profile?.organizations || []}
+        initialPostingAs={postingAs === 'organization' ? 'organization' : 'user'}
+        initialOrgId={selectedOrgId}
+        initialPublishMode={publishMode}
+        initialTargetDate={targetDate}
+        themeColor={activeThemeColor}
+        loading={loading}
+        onConfirmPublish={(cfg) => {
+          setPublishMode(cfg.publishMode);
+          setTargetDate(cfg.targetDate);
+          setIsPublishModalOpen(false);
+          handleSubmit(true, {
+            postingAs: cfg.postingAs,
+            selectedOrgId: cfg.selectedOrgId,
+            publishMode: cfg.publishMode,
+            targetDate: cfg.targetDate
+          });
+        }}
+      />
+
+      {/* ─── CO-AUTHORS & COLLABORATORS MODAL ─── */}
+      <CoAuthorModal
+        open={isCoAuthorModalOpen}
+        onClose={() => setIsCoAuthorModalOpen(false)}
+        draftId={currentDraftId}
+        articleTitle={title}
+        collaborators={collaborators}
+        onUpdateCollaborators={(newCollabs) => setCollaborators(newCollabs)}
+        currentUserId={profile?.uid}
+        currentUserName={profile?.displayName}
+        themeColor={activeThemeColor}
+        tenant={tenantId}
       />
 
     </Box>

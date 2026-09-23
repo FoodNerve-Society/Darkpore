@@ -23,6 +23,8 @@ export type CreateLearnContentPayload = {
   authorName?: string;
   authorAvatarUrl?: string;
   organizationId?: string | null;
+  collaborators?: any[];
+  commodity?: string;
   // Specific fields depending on type:
   articleBlocks?: ArticleBlockPayload[];
   videoUrl?: string;
@@ -94,6 +96,7 @@ export async function createLearnContent(data: CreateLearnContentPayload, isDraf
           authorName: data.authorName,
           authorAvatarUrl: data.authorAvatarUrl,
           organizationId: data.organizationId || null,
+          collaborators: data.collaborators ? (typeof data.collaborators === 'string' ? data.collaborators : JSON.stringify(data.collaborators)) : undefined,
           targetDate: data.targetDate ? new Date(data.targetDate) : null,
         },
       });
@@ -114,6 +117,7 @@ export async function createLearnContent(data: CreateLearnContentPayload, isDraf
           authorName: data.authorName,
           authorAvatarUrl: data.authorAvatarUrl,
           organizationId: data.organizationId || null,
+          collaborators: data.collaborators ? (typeof data.collaborators === 'string' ? data.collaborators : JSON.stringify(data.collaborators)) : '[]',
           targetDate: data.targetDate ? new Date(data.targetDate) : null,
         },
       });
@@ -297,7 +301,13 @@ export async function getLearnContentBySlug(slug: string) {
 
 export async function getUserDrafts(userId: string) {
   return await prisma.learnContent.findMany({
-    where: { authorId: userId, status: 'draft' },
+    where: {
+      status: 'draft',
+      OR: [
+        { authorId: userId },
+        { collaborators: { contains: userId } }
+      ]
+    },
     orderBy: { createdAt: 'desc' },
     include: {
       article: {
@@ -695,3 +705,303 @@ export async function fetchGlobalCtaAssets() {
     };
   }
 }
+
+// ─── CO-AUTHORING ACTIONS ──────────────────────────────────────────
+
+export async function getPotentialCoAuthors(query?: string) {
+  try {
+    const userWhere: any = {};
+    const orgWhere: any = {};
+    
+    if (query && query.trim()) {
+      const q = query.trim();
+      userWhere.OR = [
+        { name: { contains: q } },
+        { email: { contains: q } },
+        { bio: { contains: q } }
+      ];
+      orgWhere.OR = [
+        { name: { contains: q } },
+        { slug: { contains: q } }
+      ];
+    }
+
+    const [users, orgs] = await Promise.all([
+      prisma.user.findMany({
+        where: userWhere,
+        select: {
+          id: true,
+          firebaseUid: true,
+          name: true,
+          email: true,
+          avatarUrl: true,
+          role: true,
+          rank: true,
+          bio: true,
+          specialization: true,
+        },
+        orderBy: { rank: 'desc' },
+        take: 60,
+      }),
+      prisma.organization.findMany({
+        where: orgWhere,
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          logoUrl: true,
+          rank: true,
+          verified: true,
+          isPlatformOwner: true,
+        },
+        orderBy: { rank: 'desc' },
+        take: 60,
+      })
+    ]);
+
+    return {
+      success: true,
+      members: users.map(u => ({
+        id: u.id,
+        uid: u.firebaseUid || u.id,
+        name: u.name,
+        email: u.email,
+        avatarUrl: u.avatarUrl,
+        role: u.role,
+        rank: u.rank,
+        bio: u.bio || u.specialization || '',
+        isOrg: false,
+        canCoAuthor: u.rank >= 4,
+      })),
+      organizations: orgs.map(o => ({
+        id: o.id,
+        name: o.name,
+        slug: o.slug,
+        logoUrl: o.logoUrl,
+        rank: o.rank,
+        verified: o.verified,
+        isPlatformOwner: o.isPlatformOwner,
+        isOrg: true,
+        canCoAuthor: o.rank >= 4,
+      }))
+    };
+  } catch (err: any) {
+    console.error('Error fetching potential co-authors:', err);
+    return { success: false, members: [], organizations: [], error: err.message };
+  }
+}
+
+export async function inviteCoAuthorAction(data: {
+  draftId?: string;
+  collaborator: {
+    name: string;
+    email: string;
+    uid?: string;
+    avatarUrl?: string;
+    role?: string;
+    rank?: number;
+    isOrg?: boolean;
+    upgradePrompt?: boolean;
+  };
+  inviterName?: string;
+  articleTitle?: string;
+}) {
+  try {
+    const timestamp = new Date().toISOString();
+    const newCollab = {
+      ...data.collaborator,
+      role: data.collaborator.role || 'Co-Author',
+      status: 'invited',
+      timestamp,
+    };
+
+    if (data.draftId) {
+      const existing = await prisma.learnContent.findUnique({
+        where: { id: data.draftId },
+        select: { id: true, collaborators: true, title: true }
+      });
+
+      if (existing) {
+        let collabs: any[] = [];
+        try {
+          collabs = JSON.parse(existing.collaborators || '[]');
+        } catch (e) {
+          collabs = [];
+        }
+
+        const already = collabs.some(c => 
+          (data.collaborator.email && c.email?.toLowerCase() === data.collaborator.email.toLowerCase()) ||
+          (data.collaborator.uid && c.uid === data.collaborator.uid)
+        );
+
+        if (!already) {
+          collabs.push(newCollab);
+          await prisma.learnContent.update({
+            where: { id: data.draftId },
+            data: { collaborators: JSON.stringify(collabs) }
+          });
+        }
+      }
+    }
+
+    return { 
+      success: true, 
+      collaborator: newCollab,
+      message: data.collaborator.upgradePrompt 
+        ? `Upgrade invitation sent to ${data.collaborator.name} (${data.collaborator.email})`
+        : `Co-author invitation sent to ${data.collaborator.name} (${data.collaborator.email})`
+    };
+  } catch (err: any) {
+    console.error('Error inviting co-author:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+export async function findMatchingDraft({
+  userId,
+  category,
+  subcategory,
+  era,
+  commodity,
+}: {
+  userId?: string;
+  category?: string;
+  subcategory?: string;
+  era?: string;
+  commodity?: string;
+}) {
+  try {
+    if (!userId) return { success: false, draft: null };
+
+    const drafts = await prisma.learnContent.findMany({
+      where: {
+        status: 'draft',
+        type: 'article',
+        category: category || undefined,
+        subcategory: subcategory || undefined,
+        timeframe: era || undefined,
+        OR: [
+          { authorId: userId },
+          { collaborators: { contains: userId } }
+        ]
+      },
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        article: {
+          include: {
+            blocks: {
+              orderBy: { orderIndex: 'asc' }
+            }
+          }
+        }
+      }
+    });
+
+    if (!drafts || drafts.length === 0) {
+      return { success: true, draft: null };
+    }
+
+    if (commodity) {
+      const matchingCommodityDraft = drafts.find(d => {
+        try {
+          const tags = JSON.parse(d.bottleneckTags || '[]');
+          return tags.includes(commodity) || tags.some((t: string) => t.toLowerCase() === commodity.toLowerCase());
+        } catch (e) {
+          return false;
+        }
+      });
+      if (matchingCommodityDraft) {
+        return { success: true, draft: matchingCommodityDraft };
+      }
+    }
+
+    return { success: true, draft: drafts[0] };
+  } catch (err: any) {
+    console.error('Error finding matching draft:', err);
+    return { success: false, draft: null, error: err.message };
+  }
+}
+
+export async function getCollaborationDraft(draftId: string, userId?: string) {
+  try {
+    const draft = await prisma.learnContent.findUnique({
+      where: { id: draftId },
+      include: {
+        article: {
+          include: {
+            blocks: {
+              orderBy: { orderIndex: 'asc' }
+            }
+          }
+        },
+        video: true,
+        class: true,
+        livestream: true,
+        report: true,
+      }
+    });
+
+    if (!draft) return { success: false, draft: null, error: 'Draft not found' };
+
+    let authorProfile: any = null;
+    if (draft.authorId) {
+      const author = await prisma.user.findUnique({
+        where: { id: draft.authorId },
+        select: { id: true, name: true, avatarUrl: true, firstName: true }
+      });
+      if (author) authorProfile = author;
+    }
+
+    return {
+      success: true,
+      draft: {
+        ...draft,
+        authorName: draft.authorName || authorProfile?.name || authorProfile?.firstName || 'Lead Author',
+        authorAvatarUrl: draft.authorAvatarUrl || authorProfile?.avatarUrl || ''
+      }
+    };
+  } catch (err: any) {
+    console.error('Error fetching collaboration draft:', err);
+    return { success: false, draft: null, error: err.message };
+  }
+}
+
+export async function joinCollaborationDraft(draftId: string, user: { uid: string; name: string; email?: string; avatarUrl?: string }) {
+  try {
+    const draft = await prisma.learnContent.findUnique({
+      where: { id: draftId },
+      select: { id: true, authorId: true, collaborators: true }
+    });
+    if (!draft) return { success: false, error: 'Draft not found' };
+    if (draft.authorId === user.uid) return { success: true };
+
+    let collabs: any[] = [];
+    try {
+      collabs = JSON.parse(draft.collaborators || '[]');
+    } catch (e) {
+      collabs = [];
+    }
+
+    const exists = collabs.some(c => c.uid === user.uid || (user.email && c.email?.toLowerCase() === user.email.toLowerCase()));
+    if (!exists) {
+      collabs.push({
+        uid: user.uid,
+        name: user.name,
+        email: user.email || '',
+        avatarUrl: user.avatarUrl || '',
+        role: 'Co-Author',
+        status: 'accepted',
+        timestamp: new Date().toISOString()
+      });
+      await prisma.learnContent.update({
+        where: { id: draftId },
+        data: { collaborators: JSON.stringify(collabs) }
+      });
+    }
+    return { success: true };
+  } catch (err: any) {
+    console.error('Error joining collaboration draft:', err);
+    return { success: false, error: err.message };
+  }
+}
+
