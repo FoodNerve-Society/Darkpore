@@ -445,10 +445,23 @@ export default function CreateLearnContentForm({
   const [pendingFiles, setPendingFiles] = useState<Record<string, File>>({});
   
   const { uploadFile, uploading } = useStorageUpload();
+  const { suspendDock } = usePromptAssistant();
 
   // Wizard State
   const [step, setStep] = useState(1);
   const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Suspend background Ideas Assistant while working inside the Article Canvas (Step 3)
+  useEffect(() => {
+    if (step === 3) {
+      suspendDock(true);
+    } else {
+      suspendDock(false);
+    }
+    return () => {
+      suspendDock(false);
+    };
+  }, [step, suspendDock]);
 
   const isBlockComplete = (b: any) => {
     switch (b.type) {
@@ -3898,7 +3911,7 @@ export default function CreateLearnContentForm({
       {step === 3 && actionItems.length > 0 && (
         <Box sx={{
           position: 'fixed',
-          bottom: { xs: 80, md: 40 },
+          bottom: { xs: 100, md: 84 },
           left: { xs: 20, md: 40 }, // Moved to left to avoid covering submit buttons on the right
           zIndex: 1000,
           width: { xs: 'calc(100% - 40px)', sm: 340 },

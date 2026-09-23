@@ -24,6 +24,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { PromptTerminalBox } from '@/components/prompts/PromptTerminalBox';
 import { PromptChecklistItem } from '@/components/prompts/PromptChecklistItem';
 import { PromptFastIngestBox } from '@/components/prompts/PromptFastIngestBox';
+import { usePromptAssistant } from '@/context/PromptAssistantContext';
 import PremiumDropdown from '@/components/PremiumDropdown';
 import { getCommodityMeta } from '@/lib/cms/commodities';
 import { foodChallenges } from '@/lib/cms/food/challenges';
@@ -84,6 +85,31 @@ export function AdminArticlePromptSidePane({
   // Side Pane Drawer & Dock State
   const [isMinimized, setIsMinimized] = useState(false);
   const [isDockVisible, setIsDockVisible] = useState(false);
+  const { suspendDock, setHasEditorDock } = usePromptAssistant();
+
+  // Idea 2: Drawer-Aware Auto-Tuck - Suppress background floating docks while this drawer is open
+  useEffect(() => {
+    if (open && !isMinimized) {
+      suspendDock(true);
+    } else {
+      suspendDock(false);
+    }
+    return () => {
+      suspendDock(false);
+    };
+  }, [open, isMinimized, suspendDock]);
+
+  // Idea 4: Stacking Coordination - Inform global context when this local dock is active
+  useEffect(() => {
+    if (open && isMinimized && isDockVisible) {
+      setHasEditorDock(true);
+    } else {
+      setHasEditorDock(false);
+    }
+    return () => {
+      setHasEditorDock(false);
+    };
+  }, [open, isMinimized, isDockVisible, setHasEditorDock]);
 
   // Active Day Node & Available Calendar Options from 1820 Calendar
   const [dayNode, setDayNode] = useState<AdminCalendarArticleRecord | null>(null);
