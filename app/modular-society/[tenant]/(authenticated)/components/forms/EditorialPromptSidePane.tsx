@@ -988,6 +988,20 @@ export function EditorialPromptSidePane({
                 '&:hover': { bgcolor: alpha('#10b981', 0.1) },
               }}
             />
+            <Chip
+              label="FAST INGEST · Canvas Relay"
+              size="small"
+              onClick={() => scrollToSection('editorial-doc-fast-ingest')}
+              sx={{
+                fontWeight: 900,
+                fontSize: '0.72rem',
+                bgcolor: '#0f172a',
+                color: '#10b981',
+                cursor: 'pointer',
+                border: '1px solid rgba(16, 185, 129, 0.45)',
+                '&:hover': { bgcolor: '#1e293b' },
+              }}
+            />
           </Box>
 
           {/* ──────────────────────────────────────────────────────────── */}
@@ -1021,48 +1035,27 @@ export function EditorialPromptSidePane({
               </Box>
             </Box>
 
-            {/* Action Checklist for Document 2 using PromptChecklistItem */}
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 1,
-                p: 1.75,
-                border: '1px solid rgba(59, 130, 246, 0.25)',
-                borderRadius: '14px',
-                bgcolor: 'rgba(59, 130, 246, 0.03)',
-              }}
-            >
-              {[
-                { id: 'sop_doc2_1', text: `1. Run Doc 2a to look up sequence & assign 4 emotional targets across ${currentBlueprint.length} blocks.` },
-                { id: 'sop_doc2_2', text: `2. Run Doc 2b with live OSINT to draft raw text in brutal 8th-grade English.` },
-                { id: 'sop_doc2_3', text: `3. Run Doc 2c to assemble raw text into canonical React component Markdown.` },
-              ].map((item) => (
+            {doc2Prompts.map((p) => (
+              <Box key={p.key} sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <PromptTerminalBox
+                  id={p.key}
+                  codeLabel={p.code}
+                  title={p.title}
+                  subtitle={p.role}
+                  prompt={p.prompt}
+                  colorTheme="#3b82f6"
+                  copyButtonLabel={`Copy ${p.code} Prompt`}
+                  copiedBannerText={`${p.code} Copied to Clipboard!`}
+                  onCopy={() => handleCopyPromptAutoCheck(p.key)}
+                />
                 <PromptChecklistItem
-                  key={item.id}
-                  id={item.id}
-                  text={item.text}
-                  checked={!!checklist[item.id]}
+                  id={p.checkId}
+                  text={p.checkText}
+                  checked={!!checklist[p.checkId]}
                   onToggle={toggleChecklistItem}
                   colorTheme="#3b82f6"
                 />
-              ))}
-            </Box>
-
-            {/* Prompt Cards for Document 2 using PromptTerminalBox */}
-            {doc2Prompts.map((p) => (
-              <PromptTerminalBox
-                key={p.key}
-                id={p.key}
-                codeLabel={p.code}
-                title={p.title}
-                subtitle={p.role}
-                prompt={p.prompt}
-                colorTheme="#3b82f6"
-                copyButtonLabel={`Copy ${p.code} Prompt`}
-                copiedBannerText={`${p.code} Copied to Clipboard!`}
-                onCopy={() => handleCopyPromptAutoCheck(p.key)}
-              />
+              </Box>
             ))}
           </Box>
 
@@ -1097,48 +1090,27 @@ export function EditorialPromptSidePane({
               </Box>
             </Box>
 
-            {/* Action Checklist for Document 3 using PromptChecklistItem */}
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 1,
-                p: 1.75,
-                border: '1px solid rgba(245, 158, 11, 0.25)',
-                borderRadius: '14px',
-                bgcolor: 'rgba(245, 158, 11, 0.03)',
-              }}
-            >
-              {[
-                { id: 'sop_doc3_1', text: '1. Run Doc 3a for in-place factual audits, verified quotes & live ecosystem opportunities.' },
-                { id: 'sop_doc3_2', text: '2. Run Doc 3b to expand image placeholders into photojournalism prompts (-ar 16:9, -ar 1:1).' },
-                { id: 'sop_doc3_3', text: '3. Run Doc 3c to map canonical platform CTAs and complete the 5-point structural QA audit.' },
-              ].map((item) => (
+            {doc3Prompts.map((p) => (
+              <Box key={p.key} sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <PromptTerminalBox
+                  id={p.key}
+                  codeLabel={p.code}
+                  title={p.title}
+                  subtitle={p.role}
+                  prompt={p.prompt}
+                  colorTheme="#f59e0b"
+                  copyButtonLabel={`Copy ${p.code} Prompt`}
+                  copiedBannerText={`${p.code} Copied to Clipboard!`}
+                  onCopy={() => handleCopyPromptAutoCheck(p.key)}
+                />
                 <PromptChecklistItem
-                  key={item.id}
-                  id={item.id}
-                  text={item.text}
-                  checked={!!checklist[item.id]}
+                  id={p.checkId}
+                  text={p.checkText}
+                  checked={!!checklist[p.checkId]}
                   onToggle={toggleChecklistItem}
                   colorTheme="#f59e0b"
                 />
-              ))}
-            </Box>
-
-            {/* Prompt Cards for Document 3 using PromptTerminalBox */}
-            {doc3Prompts.map((p) => (
-              <PromptTerminalBox
-                key={p.key}
-                id={p.key}
-                codeLabel={p.code}
-                title={p.title}
-                subtitle={p.role}
-                prompt={p.prompt}
-                colorTheme="#f59e0b"
-                copyButtonLabel={`Copy ${p.code} Prompt`}
-                copiedBannerText={`${p.code} Copied to Clipboard!`}
-                onCopy={() => handleCopyPromptAutoCheck(p.key)}
-              />
+              </Box>
             ))}
           </Box>
 
@@ -1173,50 +1145,77 @@ export function EditorialPromptSidePane({
               </Box>
             </Box>
 
-            {/* Action Checklist for Document 4 using PromptChecklistItem */}
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 1,
-                p: 1.75,
-                border: '1px solid rgba(16, 185, 129, 0.25)',
-                borderRadius: '14px',
-                bgcolor: 'rgba(16, 185, 129, 0.03)',
-              }}
-            >
-              {[
-                { id: 'sop_doc4_1', text: '1. Run Doc 4a to calibrate spiky headline for badge splitting and translate to plain English.' },
-                { id: 'sop_doc4_2', text: '2. Run Doc 4b to inject bionic reading bolding anchors and lint Markdown syntax.' },
-                { id: 'sop_doc4_3', text: '3. Run Doc 4c to compile the payload into strictly valid headless CMS JSON.' },
-              ].map((item) => (
+            {doc4Prompts.map((p) => (
+              <Box key={p.key} sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <PromptTerminalBox
+                  id={p.key}
+                  codeLabel={p.code}
+                  title={p.title}
+                  subtitle={p.role}
+                  prompt={p.prompt}
+                  colorTheme="#10b981"
+                  copyButtonLabel={`Copy ${p.code} Prompt`}
+                  copiedBannerText={`${p.code} Copied to Clipboard!`}
+                  onCopy={() => handleCopyPromptAutoCheck(p.key)}
+                />
                 <PromptChecklistItem
-                  key={item.id}
-                  id={item.id}
-                  text={item.text}
-                  checked={!!checklist[item.id]}
+                  id={p.checkId}
+                  text={p.checkText}
+                  checked={!!checklist[p.checkId]}
                   onToggle={toggleChecklistItem}
                   colorTheme="#10b981"
                 />
-              ))}
-            </Box>
-
-            {/* Prompt Cards for Document 4 (4a, 4b, 4c) using PromptTerminalBox */}
-            {doc4Prompts.map((p) => (
-              <PromptTerminalBox
-                key={p.key}
-                id={p.key}
-                codeLabel={p.code}
-                title={p.title}
-                subtitle={p.role}
-                prompt={p.prompt}
-                colorTheme="#10b981"
-                copyButtonLabel={`Copy ${p.code} Prompt`}
-                copiedBannerText={`${p.code} Copied to Clipboard!`}
-                onCopy={() => handleCopyPromptAutoCheck(p.key)}
-              />
+              </Box>
             ))}
 
+            <Box id="editorial-doc-fast-ingest" sx={{ display: 'flex', flexDirection: 'column', gap: 2, scrollMarginTop: '80px', mt: 1.5, pb: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box
+                  sx={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: '50%',
+                    background: 'linear-gradient(145deg, #10b981 0%, #047857 100%)',
+                    color: '#fff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 900,
+                    fontSize: '0.9rem',
+                    boxShadow: '0 8px 18px rgba(16, 185, 129, 0.35)',
+                  }}
+                >
+                  5
+                </Box>
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.2 }}>
+                    Final Relay: Ingest to Canvas
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 600 }}>
+                    Paste Doc 4c JSON. We parse the payload and hydrate every SOP block.
+                  </Typography>
+                </Box>
+              </Box>
+
+              <PromptFastIngestBox
+                value={rawIngestPayload}
+                onChange={(val) => {
+                  setRawIngestPayload(val);
+                  savePayloadToStorage(val);
+                  if (ingestError) setIngestError(null);
+                }}
+                onIngest={handleParseAndIngest}
+                codeLabel="STEP 5"
+                title="Fast Ingest Relay"
+                subtitle={`Drop the compiled JSON from Doc 4c to populate all ${currentBlueprint.length} canvas blocks in one pass.`}
+                colorTheme="#10b981"
+                liveBlockCount={detectedBlockCount}
+                expectedBlockCount={currentBlueprint.length}
+                error={ingestError}
+                success={ingestSuccess}
+                buttonLabel="Ingest & Apply All Blocks to Canvas"
+              />
+            </Box>
           </Box>
         </Box>
       </Drawer>
