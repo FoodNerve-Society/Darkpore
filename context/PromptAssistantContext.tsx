@@ -79,6 +79,8 @@ export interface PromptAssistantOpenOptions {
 interface PromptAssistantContextType {
   isOpen: boolean;
   isDockVisible: boolean;
+  isSuspended: boolean;
+  hasEditorDock: boolean;
   selectedCommodity: string;
   selectedCategory: string;
   selectedTargetDate: string;
@@ -90,6 +92,8 @@ interface PromptAssistantContextType {
   minimizeAssistant: () => void;
   maximizeAssistant: () => void;
   dismissDock: () => void;
+  suspendDock: (suspend: boolean) => void;
+  setHasEditorDock: (active: boolean) => void;
   setCommodity: (c: string) => void;
   setCategory: (c: string) => void;
   setTargetDate: (d: string) => void;
@@ -102,6 +106,8 @@ interface PromptAssistantContextType {
 const PromptAssistantContext = createContext<PromptAssistantContextType>({
   isOpen: false,
   isDockVisible: false,
+  isSuspended: false,
+  hasEditorDock: false,
   selectedCommodity: 'Ginger',
   selectedCategory: 'land',
   selectedTargetDate: new Date().toISOString(),
@@ -113,6 +119,8 @@ const PromptAssistantContext = createContext<PromptAssistantContextType>({
   minimizeAssistant: () => {},
   maximizeAssistant: () => {},
   dismissDock: () => {},
+  suspendDock: () => {},
+  setHasEditorDock: () => {},
   setCommodity: () => {},
   setCategory: () => {},
   setTargetDate: () => {},
@@ -152,6 +160,12 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
 
   const [isOpen, setIsOpen] = useState(false);
   const [isDockVisible, setIsDockVisible] = useState(false);
+  const [isSuspended, setIsSuspended] = useState(false);
+  const [hasEditorDock, setHasEditorDock] = useState(false);
+
+  const suspendDock = useCallback((suspend: boolean) => {
+    setIsSuspended(suspend);
+  }, []);
 
   const [selectedCommodity, setSelectedCommodity] = useState('Ginger');
   const [selectedCategory, setSelectedCategory] = useState('land');
@@ -379,7 +393,7 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
       }
 
       setIsOpen(false);
-      setIsDockVisible(true);
+      setIsDockVisible(false); // Idea 1: Auto-dismiss ideas dock on ingest once briefs are rendered to Studio
     } catch (err: any) {
       setCustomIngestError(err.message || 'Failed to parse custom article outlines.');
     }
@@ -390,6 +404,8 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
       value={{
         isOpen,
         isDockVisible,
+        isSuspended,
+        hasEditorDock,
         selectedCommodity,
         selectedCategory,
         selectedTargetDate,
@@ -401,6 +417,8 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
         minimizeAssistant,
         maximizeAssistant,
         dismissDock,
+        suspendDock,
+        setHasEditorDock,
         setCommodity: setSelectedCommodity,
         setCategory: setSelectedCategory,
         setTargetDate: setSelectedTargetDate,
@@ -416,7 +434,7 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
       {/* MINIMAL LIQUID GLASS FLOATING DOCK                          */}
       {/* ═══════════════════════════════════════════════════════════ */}
       <AnimatePresence>
-        {!isOpen && isDockVisible && (
+        {!isOpen && isDockVisible && !isSuspended && (
           <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.92 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -424,7 +442,7 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
             transition={{ type: 'spring', stiffness: 450, damping: 30 }}
             style={{
               position: 'fixed',
-              bottom: isMobile ? 86 : 24,
+              bottom: isMobile ? (hasEditorDock ? 146 : 86) : (hasEditorDock ? 82 : 24),
               right: isMobile ? 16 : 24,
               zIndex: 1250,
             }}

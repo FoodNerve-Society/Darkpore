@@ -32,6 +32,7 @@ import {
   PromptChecklistItem,
   PromptFastIngestBox,
 } from '@/components/prompts';
+import { usePromptAssistant } from '@/context/PromptAssistantContext';
 import {
   buildDoc2aPrompt,
   buildDoc2bPrompt,
@@ -100,6 +101,7 @@ export function EditorialPromptSidePane({
 
   // Floating dock visibility (mimics PromptAssistantContext minimal liquid glass dock)
   const [isDockVisible, setIsDockVisible] = useState(false);
+  const { suspendDock, setHasEditorDock } = usePromptAssistant();
 
   // Fast Ingest State under Document 4
   const [rawIngestPayload, setRawIngestPayload] = useState('');
@@ -116,6 +118,30 @@ export function EditorialPromptSidePane({
       setIsDockVisible(true);
     }
   }, [open]);
+
+  // Idea 2: Drawer-Aware Auto-Tuck - Suppress background floating docks while this drawer is open
+  useEffect(() => {
+    if (open) {
+      suspendDock(true);
+    } else {
+      suspendDock(false);
+    }
+    return () => {
+      suspendDock(false);
+    };
+  }, [open, suspendDock]);
+
+  // Idea 4: Stacking Coordination - Inform global context when this local dock is active to stack without collision
+  useEffect(() => {
+    if (!open && isDockVisible) {
+      setHasEditorDock(true);
+    } else {
+      setHasEditorDock(false);
+    }
+    return () => {
+      setHasEditorDock(false);
+    };
+  }, [open, isDockVisible, setHasEditorDock]);
 
   // Restore persistence on commodity / category switch
   useEffect(() => {

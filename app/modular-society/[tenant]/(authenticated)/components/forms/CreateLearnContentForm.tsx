@@ -91,6 +91,7 @@ import { BlockScratchpadModal } from './BlockScratchpadModal';
 import { EditorialPromptSidePane } from './EditorialPromptSidePane';
 import { GeneratedBlockResult } from '@/lib/actions/articleDraftPipeline';
 import { ParsedStreamBlock } from '@/lib/utils/articleStreamParser';
+import { usePromptAssistant } from '@/context/PromptAssistantContext';
 
 // ----------------------------------------------------------------------
 // POLL OPTIONS EDITOR
