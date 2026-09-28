@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Box, Typography, Button, TextField, MenuItem, Select, FormControl, InputLabel, CircularProgress, Chip, IconButton, Alert, Paper } from '@mui/material';
-import { ArrowBack as ArrowBackIcon, CheckCircle as CheckCircleIcon, Article as ArticleIcon, AutoAwesome as SparkleIcon, Check as CheckIcon, Info as InfoIcon, ArrowForward as ArrowForwardIcon } from '@mui/icons-material';
+import { Box, Typography, Button, TextField, MenuItem, Select, FormControl, InputLabel, CircularProgress, Chip, IconButton, Alert, Paper, useTheme, useMediaQuery } from '@mui/material';
+import { ArrowBack as ArrowBackIcon, CheckCircle as CheckCircleIcon, Article as ArticleIcon, AutoAwesome as SparkleIcon, Check as CheckIcon, Info as InfoIcon, ArrowForward as ArrowForwardIcon, Close as CloseIcon, Bolt as BoltIcon } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import { useSociety } from '@/context/SocietyContext';
 import { fetchLivestreamContentPool, createLearnContent } from '@/lib/actions/learn';
 import LivestreamRundownBuilder from './livestream/LivestreamRundownBuilder';
-import LivestreamIdeasSidePane from './livestream/LivestreamIdeasSidePane';
+import LivestreamIdeasSidePane, { LivestreamIdeaOption } from './livestream/LivestreamIdeasSidePane';
+import { motion, AnimatePresence } from 'framer-motion';
 import PremiumTextField from '@/components/PremiumTextField';
 import PremiumDatePicker from '@/components/PremiumDatePicker';
 import PremiumTimePicker from '@/components/PremiumTimePicker';
@@ -36,6 +37,39 @@ const ERA_CONFIG: Record<string, any> = {
   present: { label: 'Present', color: '#10b981', emoji: '⚡' },
   future: { label: 'Future', color: '#f59e0b', emoji: '🚀' },
 };
+
+export const CATEGORY_TO_DAY_MAP: Record<string, number> = {
+  capital: 1,             // Monday
+  land: 2,                // Tuesday
+  inputs: 3,              // Wednesday
+  energy: 4,              // Thursday
+  insecurity: 5,          // Friday
+  'post-harvest': 6,      // Saturday
+  'harvest-to-market': 6, // Saturday
+  'people-talent': 0,     // Sunday
+  people: 0,              // Sunday
+};
+
+export const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+export function getNextSlotForCategory(categorySlug: string, defaultHour = 10, defaultMinute = 0): Date {
+  const normKey = (categorySlug || 'capital').toLowerCase().trim();
+  const targetDay = CATEGORY_TO_DAY_MAP[normKey] !== undefined ? CATEGORY_TO_DAY_MAP[normKey] : 1;
+  const now = new Date();
+  const currentDay = now.getDay();
+
+  let daysToAdd = (targetDay - currentDay + 7) % 7;
+  const candidate = new Date(now);
+  candidate.setDate(now.getDate() + daysToAdd);
+  candidate.setHours(defaultHour, defaultMinute, 0, 0);
+
+  // If candidate is in the past or within 2 hours from now, schedule for next week's occurrence
+  if (candidate.getTime() - now.getTime() < 2 * 60 * 60 * 1000) {
+    candidate.setDate(candidate.getDate() + 7);
+  }
+
+  return candidate;
+}
 
 const LIVESTREAM_FRAMEWORKS: Record<string, any[]> = {
   past: [
@@ -68,14 +102,77 @@ export default function CreateLivestreamForm({
   const { profile } = useSociety();
   const { uploadFile, uploading } = useStorageUpload();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
   
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [contentPool, setContentPool] = useState<{ articles: any[], jobs: any[] } | null>(null);
 
-  // Ideation Assistant Drawer State
+  // Ideation Assistant & Studio Slideshow State
   const [isIdeasDrawerOpen, setIsIdeasDrawerOpen] = useState(false);
-  const [dismissedIdeasCard, setDismissedIdeasCard] = useState(false);
+  const [ingestedBlueprints, setIngestedBlueprints] = useState<LivestreamIdeaOption[]>([]);
+  const [deckActiveIndex, setDeckActiveIndex] = useState(0);
+  const [isCardFlipped, setIsCardFlipped] = useState(false);
+  const [isIdeasCardFlipped, setIsIdeasCardFlipped] = useState(() => Boolean(initialDraftData?.title || initialDraftData?.description));
+  const [appliedBlueprint, setAppliedBlueprint] = useState<any>(initialDraftData?.livestream?.blueprint || null);
+  const manualFieldsRef = useRef<HTMLDivElement>(null);
+
+  const handleNextCard = () => {
+    setIsCardFlipped(false);
+    setDeckActiveIndex(prev => Math.min(ingestedBlueprints.length - 1, prev + 1));
+  };
+
+  const handlePrevCard = () => {
+    setIsCardFlipped(false);
+    setDeckActiveIndex(prev => Math.max(0, prev - 1));
+  };
+
+  const currentBlueprint = (ingestedBlueprints.length > 0 && ingestedBlueprints[deckActiveIndex]) ? ingestedBlueprints[deckActiveIndex] : (ingestedBlueprints[0] || null);
+
+  const handleSelectBlueprint = (blueprint: any) => {
+    if (!blueprint) return;
+    setAppliedBlueprint(blueprint);
+    if (blueprint.title) setTitle(blueprint.title);
+    if (blueprint.description) setDescription(blueprint.description);
+    if (blueprint.timeframe) setTimeframe(blueprint.timeframe);
+    
+    const chosenCategory = blueprint.category || category || 'capital';
+    if (blueprint.category) setCategory(blueprint.category);
+
+    // Auto-calculate exact scheduled livestream date & time based on Category Group in the Editorial Matrix!
+    const slotDate = getNextSlotForCategory(chosenCategory, 10, 0);
+    const year = slotDate.getFullYear();
+    const month = String(slotDate.getMonth() + 1).padStart(2, '0');
+    const day = String(slotDate.getDate()).padStart(2, '0');
+    const hours = String(slotDate.getHours()).padStart(2, '0');
+    const mins = String(slotDate.getMinutes()).padStart(2, '0');
+    setEventDate(`${year}-${month}-${day}T${hours}:${mins}:00`);
+
+    if (blueprint.timelinePillars && blueprint.timelinePillars.length > 0) {
+      setRundownBlocks(
+        blueprint.timelinePillars.map((p: any) => ({
+          id: Math.random().toString(),
+          sourceType: 'transition',
+          originalBlockType: 'transition',
+          originalContent: {
+            role: p.role,
+            description: p.desc,
+            focusSummary: blueprint.title,
+          },
+          speakerNotes: p.speakerNotes || '',
+          durationStr: p.time,
+        }))
+      );
+      setFrameworkLoaded(true);
+    }
+    setIsIdeasCardFlipped(true);
+    setIsCardFlipped(false);
+    setTimeout(() => {
+      manualFieldsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  };
 
   // Hub & Context from Studio Handoff
   const hubTitle = initialTaxonomy?.hubTitle || initialDraftData?.livestream?.hub?.title || 'Production & Capital';
@@ -195,14 +292,14 @@ export default function CreateLivestreamForm({
     });
     return articleIds.size;
   };
-  const distinctArticles = getDistinctArticleCount();
-  const canPublish = distinctArticles >= 5 && title && description && category && eventDate && streamUrl;
+  const canPublish = distinctArticles >= 5 && title.trim() && description.trim() && category && eventDatePart && eventTimePart && streamUrl;
+  const canAdvanceStep1 = Boolean(title.trim() && eventDatePart && eventTimePart);
 
   // Action Items Checklist
   const actionItems = useMemo(() => {
     const items = [];
-    if (!eventDate) items.push('Set Event Date & Time');
-    if (!title) items.push('Add Livestream Title');
+    if (!title.trim()) items.push('Add Livestream Title');
+    if (!eventDatePart || !eventTimePart) items.push('Select Event Date & Time');
     if (!coverImage) items.push('Upload Cover Image');
     
     if (step >= 2) {
@@ -214,7 +311,7 @@ export default function CreateLivestreamForm({
       if (!streamUrl) items.push('Configure Public Stream URL');
     }
     return items;
-  }, [streamUrl, eventDate, title, coverImage, distinctArticles, step]);
+  }, [streamUrl, eventDatePart, eventTimePart, title, coverImage, distinctArticles, step]);
 
   const [isActionItemsMinimized, setIsActionItemsMinimized] = useState(false);
 
@@ -392,296 +489,1225 @@ export default function CreateLivestreamForm({
               </Typography>
             </Box>
 
-            {/* ── GET LIVESTREAM IDEAS HERE (Exact Article Replica Architecture) ── */}
-            {!dismissedIdeasCard && (
-              <Paper
-                elevation={0}
-                sx={{
-                  p: { xs: 2.5, sm: 3.5 },
-                  mb: 4,
-                  borderRadius: '28px',
-                  background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%)',
-                  border: '1.5px solid rgba(226, 232, 240, 0.9)',
-                  boxShadow: '0 12px 36px -10px rgba(0, 0, 0, 0.05)',
-                  display: 'flex',
-                  flexDirection: { xs: 'column', md: 'row' },
-                  alignItems: { xs: 'flex-start', md: 'center' },
-                  gap: { xs: 2.5, md: 4 },
+            {/* ── 3D FLIPPABLE "GET LIVESTREAM IDEAS HERE" CARD (Front: AI Ideation, Back: Manual Form Textfields) ── */}
+            <Box
+              ref={manualFieldsRef}
+              sx={{
+                width: '100%',
+                mb: 4,
+                perspective: '2000px',
+                position: 'relative',
+              }}
+            >
+              <motion.div
+                animate={{ rotateY: isIdeasCardFlipped ? 180 : 0 }}
+                transition={{ type: 'spring', stiffness: 200, damping: 24, mass: 0.8 }}
+                style={{
+                  width: '100%',
                   position: 'relative',
-                  overflow: 'hidden',
+                  transformStyle: 'preserve-3d',
+                  WebkitTransformStyle: 'preserve-3d',
                 }}
               >
-                {/* Left Visual: 2 Overlapping Squircles (Live Studio Screen + Master Hub Topic) with "×" connector */}
-                <Box
+                {/* ── CARD FRONT (AI IDEATION INVITATION) ── */}
+                <Paper
+                  elevation={0}
                   sx={{
+                    p: { xs: 2.5, sm: 3.5 },
+                    borderRadius: '28px',
+                    background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%)',
+                    border: '1.5px solid rgba(226, 232, 240, 0.9)',
+                    boxShadow: '0 12px 36px -10px rgba(0, 0, 0, 0.05)',
                     display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    position: 'relative',
-                    py: { xs: 1, md: 1.5 },
-                    px: { xs: 1, md: 1.5 },
-                    flexShrink: 0,
-                    mx: { xs: 'auto', md: 0 },
+                    flexDirection: { xs: 'column', md: 'row' },
+                    alignItems: { xs: 'flex-start', md: 'center' },
+                    gap: { xs: 2.5, md: 4 },
+                    position: isIdeasCardFlipped ? 'absolute' : 'relative',
+                    inset: isIdeasCardFlipped ? 0 : 'auto',
+                    backfaceVisibility: 'hidden',
+                    WebkitBackfaceVisibility: 'hidden',
+                    transform: 'rotateY(0deg) translateZ(1px)',
+                    pointerEvents: isIdeasCardFlipped ? 'none' : 'auto',
+                    overflow: 'hidden',
                   }}
                 >
-                  {/* Top Squircle: Livestream Interface */}
+                  {/* Left Visual: 2 Overlapping Squircles (Live Studio Screen + Master Hub Topic) with "×" connector */}
                   <Box
                     sx={{
-                      width: { xs: 104, sm: 116 },
-                      height: { xs: 104, sm: 116 },
-                      borderRadius: '28px',
-                      overflow: 'hidden',
-                      position: 'relative',
-                      background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-                      border: '2.5px solid rgba(255, 255, 255, 0.95)',
-                      boxShadow: '0 12px 32px rgba(15, 23, 42, 0.25)',
-                      transform: 'rotate(-4deg)',
-                      zIndex: 2,
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      transition: 'all 0.3s ease',
-                      '&:hover': { transform: 'rotate(0deg) scale(1.05)', zIndex: 3 },
-                    }}
-                  >
-                    <Box sx={{ position: 'relative', mb: 0.5 }}>
-                      <Typography sx={{ fontSize: '2rem' }}>🎙️</Typography>
-                      <Box
-                        sx={{
-                          position: 'absolute',
-                          top: 0,
-                          right: 0,
-                          width: 8,
-                          height: 8,
-                          borderRadius: '50%',
-                          bgcolor: '#22c55e',
-                          boxShadow: '0 0 0 2px #ffffff',
-                        }}
-                      />
-                    </Box>
-                    <Typography sx={{ color: '#ffffff', fontSize: '0.72rem', fontWeight: 900, letterSpacing: '0.02em' }}>
-                      Live Studio
-                    </Typography>
-                  </Box>
-
-                  {/* Center "×" Badge */}
-                  <Box
-                    sx={{
-                      width: 26,
-                      height: 26,
-                      borderRadius: '50%',
-                      bgcolor: '#0f172a',
-                      color: '#ffffff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 900,
-                      fontSize: '0.85rem',
-                      border: '2px solid #ffffff',
-                      zIndex: 3,
-                      my: -2,
-                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
-                    }}
-                  >
-                    ×
-                  </Box>
-
-                  {/* Bottom Squircle: Active Master Hub Topic */}
-                  <Box
-                    sx={{
-                      width: { xs: 104, sm: 116 },
-                      height: { xs: 104, sm: 116 },
-                      borderRadius: '28px',
-                      overflow: 'hidden',
                       position: 'relative',
-                      background: `linear-gradient(135deg, ${hubColor} 0%, #0f172a 100%)`,
-                      border: '2.5px solid rgba(255, 255, 255, 0.95)',
-                      boxShadow: '0 12px 32px rgba(0, 0, 0, 0.2)',
-                      transform: 'rotate(4deg)',
-                      zIndex: 1,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      transition: 'all 0.3s ease',
-                      '&:hover': { transform: 'rotate(0deg) scale(1.05)', zIndex: 3 },
+                      py: { xs: 1, md: 1.5 },
+                      px: { xs: 1, md: 1.5 },
+                      flexShrink: 0,
+                      mx: { xs: 'auto', md: 0 },
                     }}
                   >
-                    <Typography sx={{ fontSize: '1.75rem', mb: 0.5 }}>
-                      {initialTaxonomy?.hubId === 'energy-security' ? '⚡' : initialTaxonomy?.hubId === 'markets-talent' ? '🤝' : '🏗️'}
-                    </Typography>
-                    <Typography sx={{ color: '#ffffff', fontSize: '0.72rem', fontWeight: 900, textAlign: 'center', px: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
-                      {hubTitle}
-                    </Typography>
-                  </Box>
-                </Box>
-
-                {/* Content Section: Title, Description & Action Buttons (Exact Article Hierarchy) */}
-                <Box
-                  sx={{
-                    flex: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    alignItems: { xs: 'center', md: 'flex-start' },
-                    gap: 2.5,
-                    py: { xs: 0, md: 0.5 },
-                    zIndex: 1,
-                  }}
-                >
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-                    <Typography variant="h5" sx={{ color: '#0f172a', fontWeight: 900, letterSpacing: '-0.02em', fontSize: { xs: '1.35rem', sm: '1.55rem' } }}>
-                      Get livestream ideas here
-                    </Typography>
-                    <Typography sx={{ color: '#334155', fontSize: { xs: '0.92rem', sm: '0.96rem' }, lineHeight: 1.6, fontWeight: 500 }}>
-                      Spend 1 minute to get fresh, realistic livestream ideas people want to watch, or choose Ignore to write yourself.
-                    </Typography>
-                  </Box>
-
-                  {/* Buttons underneath the text */}
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: { xs: 'center', md: 'flex-start' }, gap: 2, flexWrap: 'wrap' }}>
-                    <Button
-                      variant="contained"
-                      onClick={() => setIsIdeasDrawerOpen(true)}
-                      endIcon={<ArrowForwardIcon sx={{ fontSize: '14px !important' }} />}
+                    {/* Top Squircle: Livestream Interface */}
+                    <Box
                       sx={{
+                        width: { xs: 104, sm: 116 },
+                        height: { xs: 104, sm: 116 },
+                        borderRadius: '28px',
+                        overflow: 'hidden',
+                        position: 'relative',
                         background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-                        color: '#ffffff',
-                        fontWeight: 900,
-                        px: 3.8,
-                        py: 1.3,
-                        borderRadius: '14px',
-                        textTransform: 'none',
-                        fontSize: '0.92rem',
-                        boxShadow: '0 6px 20px rgba(15, 23, 42, 0.25)',
-                        transition: 'all 0.2s ease',
-                        '&:hover': {
-                          background: 'linear-gradient(135deg, #020617 0%, #0f172a 100%)',
-                          transform: 'translateY(-2px)',
-                          boxShadow: '0 10px 28px rgba(15, 23, 42, 0.35)',
-                        }
+                        border: '2.5px solid rgba(255, 255, 255, 0.95)',
+                        boxShadow: '0 12px 32px rgba(15, 23, 42, 0.25)',
+                        transform: 'rotate(-4deg)',
+                        zIndex: 2,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.3s ease',
+                        '&:hover': { transform: 'rotate(0deg) scale(1.05)', zIndex: 3 },
                       }}
                     >
-                      Start (~1 min)
-                    </Button>
+                      <Box sx={{ position: 'relative', mb: 0.5 }}>
+                        <Typography sx={{ fontSize: '2rem' }}>🎙️</Typography>
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            top: 0,
+                            right: 0,
+                            width: 8,
+                            height: 8,
+                            borderRadius: '50%',
+                            bgcolor: '#22c55e',
+                            boxShadow: '0 0 0 2px #ffffff',
+                          }}
+                        />
+                      </Box>
+                      <Typography sx={{ color: '#ffffff', fontSize: '0.72rem', fontWeight: 900, letterSpacing: '0.02em' }}>
+                        Live Studio
+                      </Typography>
+                    </Box>
+
+                    {/* Center "×" Badge */}
+                    <Box
+                      sx={{
+                        width: 26,
+                        height: 26,
+                        borderRadius: '50%',
+                        bgcolor: '#0f172a',
+                        color: '#ffffff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 900,
+                        fontSize: '0.85rem',
+                        border: '2px solid #ffffff',
+                        zIndex: 3,
+                        my: -2,
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+                      }}
+                    >
+                      ×
+                    </Box>
+
+                    {/* Bottom Squircle: Active Master Hub Topic */}
+                    <Box
+                      sx={{
+                        width: { xs: 104, sm: 116 },
+                        height: { xs: 104, sm: 116 },
+                        borderRadius: '28px',
+                        overflow: 'hidden',
+                        position: 'relative',
+                        background: `linear-gradient(135deg, ${hubColor} 0%, #0f172a 100%)`,
+                        border: '2.5px solid rgba(255, 255, 255, 0.95)',
+                        boxShadow: '0 12px 32px rgba(0, 0, 0, 0.2)',
+                        transform: 'rotate(4deg)',
+                        zIndex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.3s ease',
+                        '&:hover': { transform: 'rotate(0deg) scale(1.05)', zIndex: 3 },
+                      }}
+                    >
+                      <Typography sx={{ fontSize: '1.75rem', mb: 0.5 }}>
+                        {initialTaxonomy?.hubId === 'energy-security' ? '⚡' : initialTaxonomy?.hubId === 'markets-talent' ? '🤝' : '🏗️'}
+                      </Typography>
+                      <Typography sx={{ color: '#ffffff', fontSize: '0.72rem', fontWeight: 900, textAlign: 'center', px: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
+                        {hubTitle}
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  {/* Content Section: Title, Description & Action Buttons */}
+                  <Box
+                    sx={{
+                      flex: 1,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      alignItems: { xs: 'center', md: 'flex-start' },
+                      gap: 2.5,
+                      py: { xs: 0, md: 0.5 },
+                      zIndex: 1,
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                      <Typography variant="h5" sx={{ color: '#0f172a', fontWeight: 900, letterSpacing: '-0.02em', fontSize: { xs: '1.35rem', sm: '1.55rem' } }}>
+                        Get livestream ideas here
+                      </Typography>
+                      <Typography sx={{ color: '#334155', fontSize: { xs: '0.92rem', sm: '0.96rem' }, lineHeight: 1.6, fontWeight: 500 }}>
+                        Spend 1 minute to get fresh, realistic livestream ideas people want to watch, or choose Ignore to write yourself.
+                      </Typography>
+                    </Box>
+
+                    {/* Buttons underneath the text */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: { xs: 'center', md: 'flex-start' }, gap: 2, flexWrap: 'wrap' }}>
+                      <Button
+                        variant="contained"
+                        onClick={() => setIsIdeasDrawerOpen(true)}
+                        endIcon={<ArrowForwardIcon sx={{ fontSize: '14px !important' }} />}
+                        sx={{
+                          background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+                          color: '#ffffff',
+                          fontWeight: 900,
+                          px: 3.8,
+                          py: 1.3,
+                          borderRadius: '14px',
+                          textTransform: 'none',
+                          fontSize: '0.92rem',
+                          boxShadow: '0 6px 20px rgba(15, 23, 42, 0.25)',
+                          transition: 'all 0.2s ease',
+                          '&:hover': {
+                            background: 'linear-gradient(135deg, #020617 0%, #0f172a 100%)',
+                            transform: 'translateY(-2px)',
+                            boxShadow: '0 10px 28px rgba(15, 23, 42, 0.35)',
+                          }
+                        }}
+                      >
+                        Start (~1 min)
+                      </Button>
+                      <Button
+                        variant="text"
+                        onClick={() => {
+                          setIsIdeasCardFlipped(true);
+                          if (!eventDate) {
+                            const slotDate = getNextSlotForCategory(category || 'capital', 10, 0);
+                            const year = slotDate.getFullYear();
+                            const month = String(slotDate.getMonth() + 1).padStart(2, '0');
+                            const day = String(slotDate.getDate()).padStart(2, '0');
+                            const hours = String(slotDate.getHours()).padStart(2, '0');
+                            const mins = String(slotDate.getMinutes()).padStart(2, '0');
+                            setEventDate(`${year}-${month}-${day}T${hours}:${mins}:00`);
+                          }
+                        }}
+                        sx={{
+                          color: '#475569',
+                          bgcolor: '#ffffff',
+                          border: '1.5px solid #cbd5e1',
+                          fontWeight: 800,
+                          px: 3,
+                          py: 1.25,
+                          borderRadius: '14px',
+                          textTransform: 'none',
+                          fontSize: '0.9rem',
+                          transition: 'all 0.2s ease',
+                          '&:hover': {
+                            color: '#0f172a',
+                            bgcolor: '#f8fafc',
+                            borderColor: 'rgba(0, 0, 0, 0.25)',
+                            transform: 'translateY(-1px)',
+                          }
+                        }}
+                      >
+                        Ignore
+                      </Button>
+                    </Box>
+                  </Box>
+                </Paper>
+
+                {/* ── CARD BACK (MANUAL BROADCAST DETAILS FORM) ── */}
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: { xs: 3, sm: 4.5 },
+                    borderRadius: '28px',
+                    bgcolor: '#ffffff',
+                    border: '1.5px solid rgba(226, 232, 240, 0.9)',
+                    boxShadow: '0 16px 48px rgba(0,0,0,0.06)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 3,
+                    position: isIdeasCardFlipped ? 'relative' : 'absolute',
+                    inset: isIdeasCardFlipped ? 'auto' : 0,
+                    backfaceVisibility: 'hidden',
+                    WebkitBackfaceVisibility: 'hidden',
+                    transform: 'rotateY(180deg) translateZ(1px)',
+                    pointerEvents: isIdeasCardFlipped ? 'auto' : 'none',
+                  }}
+                >
+                  {/* Top Bar on Back of Card */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 2, borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap', gap: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      <Box sx={{ width: 40, height: 40, borderRadius: '12px', bgcolor: 'rgba(15,23,42,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Typography sx={{ fontSize: '1.25rem' }}>✍️</Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', fontSize: '1.1rem', letterSpacing: '-0.01em' }}>
+                          {appliedBlueprint ? 'Fine-Tune Broadcast Details' : 'Manual Broadcast Details'}
+                        </Typography>
+                        <Typography sx={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>
+                          {appliedBlueprint ? 'Adjust pre-populated values or set the exact date, time, and taxonomy below.' : 'Fill in your custom livestream title, overview, and schedule manually.'}
+                        </Typography>
+                      </Box>
+                    </Box>
+
                     <Button
-                      variant="text"
-                      onClick={() => setDismissedIdeasCard(true)}
+                      size="small"
+                      onClick={() => setIsIdeasCardFlipped(false)}
+                      startIcon={<ArrowBackIcon sx={{ fontSize: 15 }} />}
                       sx={{
                         color: '#475569',
-                        bgcolor: '#ffffff',
-                        border: '1.5px solid #cbd5e1',
+                        bgcolor: '#f1f5f9',
+                        fontSize: '0.8rem',
                         fontWeight: 800,
-                        px: 3,
-                        py: 1.25,
-                        borderRadius: '14px',
                         textTransform: 'none',
-                        fontSize: '0.9rem',
+                        borderRadius: '999px',
+                        px: 2.2,
+                        py: 0.7,
                         transition: 'all 0.2s ease',
                         '&:hover': {
+                          bgcolor: '#e2e8f0',
                           color: '#0f172a',
-                          bgcolor: '#f8fafc',
-                          borderColor: 'rgba(0, 0, 0, 0.25)',
-                          transform: 'translateY(-1px)',
+                          transform: 'translateX(-2px)',
                         }
                       }}
                     >
-                      Ignore
+                      Back to AI Ideas
                     </Button>
                   </Box>
-                </Box>
-              </Paper>
-            )}
 
-            {/* ── CORE METADATA FORM BOX (Using Premium Components) ── */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, bgcolor: '#ffffff', p: { xs: 3, sm: 4.5 }, borderRadius: '28px', border: '1.5px solid rgba(226, 232, 240, 0.9)', boxShadow: '0 12px 40px rgba(0,0,0,0.03)' }}>
-              <PremiumTextField
-                fullWidth
-                label="Livestream Title"
-                placeholder="e.g. Mechanization Bottlenecks in Southwest Cassava Clusters"
-                value={title}
-                onChange={e => setTitle(e.target.value)}
-                colorTheme={hubColor}
-              />
-
-              <PremiumTextField
-                fullWidth
-                multiline
-                rows={4}
-                label="Description / Overview"
-                placeholder="Explain what topics, field case studies, and actionable takeaways will be discussed..."
-                value={description}
-                onChange={e => setDescription(e.target.value)}
-                colorTheme={hubColor}
-              />
-              
-              {/* Event Date & Time Pickers */}
-              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
-                <PremiumDatePicker
-                  fullWidth
-                  label="Event Date"
-                  value={eventDatePart}
-                  onChange={(e) => handleDateChange(e.target.value)}
-                  colorTheme={hubColor}
-                  minDate={new Date()}
-                />
-                <PremiumTimePicker
-                  fullWidth
-                  label="Event Time"
-                  value={eventTimePart}
-                  onChange={(e) => handleTimeChange(e.target.value)}
-                  colorTheme={hubColor}
-                />
-              </Box>
-
-              <Typography variant="h6" sx={{ fontWeight: 900, mt: 1, mb: 0.5, color: '#0f172a', fontSize: '1rem', letterSpacing: '-0.01em' }}>
-                Taxonomy & Timeline
-              </Typography>
-              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                  <Typography sx={{ fontSize: '0.85rem', fontWeight: 800, color: '#475569', ml: 0.5 }}>
-                    Category Focus
-                  </Typography>
-                  <PremiumDropdown
+                  {/* Form Textfields */}
+                  <PremiumTextField
                     fullWidth
+                    label="Livestream Title"
+                    placeholder="e.g. Mechanization Bottlenecks in Southwest Cassava Clusters"
+                    value={title}
+                    onChange={e => setTitle(e.target.value)}
                     colorTheme={hubColor}
-                    label={CATEGORY_OPTIONS.find(c => c.id === category)?.label || 'Select Category'}
-                    popoverTitle="Select Category Focus"
-                    popoverSubtitle="Choose the structural pillar this broadcast addresses"
-                    options={CATEGORY_OPTIONS}
-                    value={CATEGORY_OPTIONS.find(c => c.id === category) || null}
-                    onChange={(opt) => setCategory(opt?.id || opt)}
-                    getOptionId={(opt) => opt?.id || opt}
-                    getOptionLabel={(opt) => opt?.label || opt}
-                    getOptionSecondary={(opt) => opt?.secondaryLabel}
-                    getOptionEmoji={(opt) => opt?.emoji}
                   />
-                </Box>
 
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                  <Typography sx={{ fontSize: '0.85rem', fontWeight: 800, color: '#475569', ml: 0.5 }}>
-                    Temporal Timeframe & Era
-                  </Typography>
-                  <PremiumDropdown
+                  <PremiumTextField
                     fullWidth
+                    multiline
+                    rows={4}
+                    label="Description / Overview"
+                    placeholder="Explain what topics, field case studies, and actionable takeaways will be discussed..."
+                    value={description}
+                    onChange={e => setDescription(e.target.value)}
                     colorTheme={hubColor}
-                    label={TIMEFRAME_OPTIONS.find(t => t.id === timeframe)?.label || 'Select Timeframe'}
-                    popoverTitle="Select Broadcast Timeframe"
-                    popoverSubtitle="Determines presentation narrative arc and default segment templates"
-                    options={TIMEFRAME_OPTIONS}
-                    value={TIMEFRAME_OPTIONS.find(t => t.id === timeframe) || null}
-                    onChange={(opt) => setTimeframe(opt?.id || opt)}
-                    getOptionId={(opt) => opt?.id || opt}
-                    getOptionLabel={(opt) => opt?.label || opt}
-                    getOptionSecondary={(opt) => opt?.secondaryLabel}
-                    getOptionTag={(opt) => opt?.tag}
-                    getOptionEmoji={(opt) => opt?.emoji}
                   />
-                </Box>
-              </Box>
+
+                  {/* Event Date & Time Pickers */}
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
+                    <PremiumDatePicker
+                      fullWidth
+                      label="Event Date"
+                      value={eventDatePart}
+                      onChange={(e) => handleDateChange(e.target.value)}
+                      colorTheme={hubColor}
+                      minDate={new Date()}
+                    />
+                    <PremiumTimePicker
+                      fullWidth
+                      label="Event Time"
+                      value={eventTimePart}
+                      onChange={(e) => handleTimeChange(e.target.value)}
+                      colorTheme={hubColor}
+                    />
+                  </Box>
+
+                  {/* Editorial Matrix Category Slot Sync Strip */}
+                  <Box 
+                    sx={{ 
+                      p: 2, 
+                      borderRadius: '16px', 
+                      bgcolor: alpha(hubColor, 0.05), 
+                      border: `1.5px solid ${alpha(hubColor, 0.2)}`,
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between', 
+                      flexWrap: 'wrap', 
+                      gap: 1.5 
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                      <Box sx={{ width: 36, height: 36, borderRadius: '10px', bgcolor: alpha(hubColor, 0.12), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Typography sx={{ fontSize: '1.1rem' }}>📅</Typography>
+                      </Box>
+                      <Box>
+                        <Typography sx={{ fontSize: '0.86rem', color: '#0f172a', fontWeight: 800 }}>
+                          Editorial Matrix Sync: Every <strong>{DAY_NAMES[CATEGORY_TO_DAY_MAP[category] || 1]}</strong>
+                        </Typography>
+                        <Typography sx={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 500 }}>
+                          The <strong>{CATEGORY_OPTIONS.find(c => c.id === category)?.label || category}</strong> focus airs weekly at 10:00 AM WAT.
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Button
+                      size="small"
+                      onClick={() => {
+                        const slotDate = getNextSlotForCategory(category, 10, 0);
+                        const year = slotDate.getFullYear();
+                        const month = String(slotDate.getMonth() + 1).padStart(2, '0');
+                        const day = String(slotDate.getDate()).padStart(2, '0');
+                        const hours = String(slotDate.getHours()).padStart(2, '0');
+                        const mins = String(slotDate.getMinutes()).padStart(2, '0');
+                        setEventDate(`${year}-${month}-${day}T${hours}:${mins}:00`);
+                      }}
+                      sx={{
+                        color: hubColor,
+                        bgcolor: '#ffffff',
+                        border: `1.5px solid ${alpha(hubColor, 0.3)}`,
+                        fontWeight: 800,
+                        fontSize: '0.76rem',
+                        borderRadius: '10px',
+                        px: 2,
+                        py: 0.6,
+                        textTransform: 'none',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                        transition: 'all 0.2s ease',
+                        '&:hover': { 
+                          bgcolor: alpha(hubColor, 0.08),
+                          transform: 'translateY(-1px)'
+                        }
+                      }}
+                    >
+                      Sync to Next {DAY_NAMES[CATEGORY_TO_DAY_MAP[category] || 1]} (10:00 AM)
+                    </Button>
+                  </Box>
+
+                  <Typography variant="h6" sx={{ fontWeight: 900, mt: 1, mb: 0.5, color: '#0f172a', fontSize: '1rem', letterSpacing: '-0.01em' }}>
+                    Taxonomy & Timeline
+                  </Typography>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      <Typography sx={{ fontSize: '0.85rem', fontWeight: 800, color: '#475569', ml: 0.5 }}>
+                        Category Focus
+                      </Typography>
+                      <PremiumDropdown
+                        fullWidth
+                        colorTheme={hubColor}
+                        label={CATEGORY_OPTIONS.find(c => c.id === category)?.label || 'Select Category'}
+                        popoverTitle="Select Category Focus"
+                        popoverSubtitle="Choose the structural pillar this broadcast addresses"
+                        options={CATEGORY_OPTIONS}
+                        value={CATEGORY_OPTIONS.find(c => c.id === category) || null}
+                        onChange={(opt) => setCategory(opt?.id || opt)}
+                        getOptionId={(opt) => opt?.id || opt}
+                        getOptionLabel={(opt) => opt?.label || opt}
+                        getOptionSecondary={(opt) => opt?.secondaryLabel}
+                        getOptionEmoji={(opt) => opt?.emoji}
+                      />
+                    </Box>
+
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      <Typography sx={{ fontSize: '0.85rem', fontWeight: 800, color: '#475569', ml: 0.5 }}>
+                        Temporal Timeframe & Era
+                      </Typography>
+                      <PremiumDropdown
+                        fullWidth
+                        colorTheme={hubColor}
+                        label={TIMEFRAME_OPTIONS.find(t => t.id === timeframe)?.label || 'Select Timeframe'}
+                        popoverTitle="Select Broadcast Timeframe"
+                        popoverSubtitle="Determines presentation narrative arc and default segment templates"
+                        options={TIMEFRAME_OPTIONS}
+                        value={TIMEFRAME_OPTIONS.find(t => t.id === timeframe) || null}
+                        onChange={(opt) => setTimeframe(opt?.id || opt)}
+                        getOptionId={(opt) => opt?.id || opt}
+                        getOptionLabel={(opt) => opt?.label || opt}
+                        getOptionSecondary={(opt) => opt?.secondaryLabel}
+                        getOptionTag={(opt) => opt?.tag}
+                        getOptionEmoji={(opt) => opt?.emoji}
+                      />
+                    </Box>
+                  </Box>
+                </Paper>
+              </motion.div>
             </Box>
+
+            {/* ── BROADCAST BLUEPRINTS 3D CAROUSEL STAGE (When Blueprints Ingested) ── */}
+            {ingestedBlueprints.length > 0 && (
+              <Box sx={{ width: '100%', mb: 4 }}>
+                {/* Progress & Quick Jump Strip */}
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1, mb: 2 }}>
+                  <Typography sx={{ color: '#64748b', fontSize: '0.84rem', fontWeight: 800 }}>
+                    Broadcast Blueprint <strong style={{ color: '#0f172a' }}>{deckActiveIndex + 1}</strong> of {ingestedBlueprints.length}
+                  </Typography>
+                  
+                  {/* Dot indicators */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                    {ingestedBlueprints.map((item, dotIdx) => {
+                      const isCurrentDot = dotIdx === deckActiveIndex;
+                      const dotColor = item.eraColor || '#10b981';
+                      return (
+                        <Box
+                          key={`blueprint-dot-${dotIdx}`}
+                          onClick={() => {
+                            setIsCardFlipped(false);
+                            setDeckActiveIndex(dotIdx);
+                          }}
+                          sx={{
+                            width: isCurrentDot ? 26 : 8,
+                            height: 8,
+                            borderRadius: '999px',
+                            bgcolor: isCurrentDot ? dotColor : alpha(dotColor, 0.3),
+                            cursor: 'pointer',
+                            transition: 'all 0.25s ease',
+                            '&:hover': { bgcolor: dotColor }
+                          }}
+                        />
+                      );
+                    })}
+                  </Box>
+
+                  <Typography sx={{ color: '#94a3b8', fontSize: '0.78rem', fontWeight: 700 }}>
+                    {currentBlueprint?.eraBadge || 'Broadcast Blueprint'}
+                  </Typography>
+                </Box>
+
+                {/* 3D Carousel Stage with Floating Prev/Next Buttons */}
+                <Box sx={{ position: 'relative', width: '100%' }}>
+                  {/* Floating Previous Button */}
+                  <IconButton
+                    onClick={handlePrevCard}
+                    disabled={deckActiveIndex === 0}
+                    aria-label="Previous Blueprint"
+                    sx={{
+                      position: 'absolute',
+                      left: { xs: -8, sm: -18, md: -28 },
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      zIndex: 25,
+                      width: { xs: 40, sm: 48 },
+                      height: { xs: 40, sm: 48 },
+                      bgcolor: '#ffffff',
+                      border: '1.5px solid rgba(226, 232, 240, 0.95)',
+                      boxShadow: '0 8px 24px rgba(15, 23, 42, 0.12)',
+                      color: '#0f172a',
+                      transition: 'all 0.2s ease',
+                      opacity: deckActiveIndex === 0 ? 0.3 : 1,
+                      pointerEvents: deckActiveIndex === 0 ? 'none' : 'auto',
+                      '&:hover': {
+                        bgcolor: '#0f172a',
+                        color: '#ffffff',
+                        transform: 'translateY(-50%) scale(1.08)',
+                      }
+                    }}
+                  >
+                    <ArrowBackIcon sx={{ fontSize: 18 }} />
+                  </IconButton>
+
+                  {/* Floating Next Button */}
+                  <IconButton
+                    onClick={handleNextCard}
+                    disabled={deckActiveIndex === ingestedBlueprints.length - 1}
+                    aria-label="Next Blueprint"
+                    sx={{
+                      position: 'absolute',
+                      right: { xs: -8, sm: -18, md: -28 },
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      zIndex: 25,
+                      width: { xs: 40, sm: 48 },
+                      height: { xs: 40, sm: 48 },
+                      bgcolor: '#0f172a',
+                      border: '1.5px solid #0f172a',
+                      boxShadow: '0 8px 24px rgba(15, 23, 42, 0.25)',
+                      color: '#ffffff',
+                      transition: 'all 0.2s ease',
+                      opacity: deckActiveIndex === ingestedBlueprints.length - 1 ? 0.3 : 1,
+                      pointerEvents: deckActiveIndex === ingestedBlueprints.length - 1 ? 'none' : 'auto',
+                      '&:hover': {
+                        bgcolor: '#1e293b',
+                        transform: 'translateY(-50%) scale(1.08)',
+                      }
+                    }}
+                  >
+                    <ArrowForwardIcon sx={{ fontSize: 18 }} />
+                  </IconButton>
+
+                  {/* Stage Area: Perspective & Stack */}
+                  <Box
+                    sx={{
+                      width: '100%',
+                      minHeight: { xs: 460, sm: 500, md: 520 },
+                      position: 'relative',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      overflow: 'visible',
+                      perspective: '1400px',
+                      py: { xs: 1, sm: 2 },
+                    }}
+                  >
+                    <AnimatePresence initial={false} custom={deckActiveIndex}>
+                      {ingestedBlueprints.map((item, index) => {
+                        const diff = index - deckActiveIndex;
+                        const isActive = diff === 0;
+
+                        let x = 0;
+                        let y = 0;
+                        let scale = 1;
+                        let zIndex = 0;
+                        let opacity = 1;
+                        let rotateX = 0;
+                        let rotateY = 0;
+
+                        if (isMobile) {
+                          if (diff === 0) {
+                            x = 0;
+                            y = 0;
+                            scale = 1;
+                            zIndex = 10;
+                            opacity = 1;
+                            rotateX = 0;
+                            rotateY = isCardFlipped ? 180 : 0;
+                          } else if (diff === 1) {
+                            x = 0;
+                            y = 20;
+                            scale = 0.94;
+                            zIndex = 8;
+                            opacity = 1;
+                            rotateX = -2;
+                            rotateY = 0;
+                          } else if (diff === 2) {
+                            x = 0;
+                            y = 38;
+                            scale = 0.88;
+                            zIndex = 6;
+                            opacity = 0.85;
+                            rotateX = -4;
+                            rotateY = 0;
+                          } else if (diff > 2) {
+                            x = 0;
+                            y = 52 + (diff - 3) * 10;
+                            scale = Math.max(0.72, 0.82 - (diff - 3) * 0.04);
+                            zIndex = Math.max(1, 5 - diff);
+                            opacity = 0;
+                            rotateX = -6;
+                            rotateY = 0;
+                          } else if (diff === -1) {
+                            x = 0;
+                            y = 420;
+                            scale = 0.95;
+                            zIndex = 12;
+                            opacity = 0;
+                            rotateX = 6;
+                            rotateY = 0;
+                          } else {
+                            x = 0;
+                            y = 500 + Math.abs(diff + 1) * 40;
+                            scale = 0.9;
+                            zIndex = 1;
+                            opacity = 0;
+                            rotateX = 8;
+                            rotateY = 0;
+                          }
+                        } else {
+                          // Desktop horizontal 3D carousel
+                          const xOffset = isTablet ? 340 : 420;
+                          const scaleFactor = 0.88;
+                          const rotateAngle = 12;
+
+                          if (diff === 0) {
+                            x = 0;
+                            y = 0;
+                            scale = 1;
+                            zIndex = 10;
+                            opacity = 1;
+                            rotateX = 0;
+                            rotateY = isCardFlipped ? 180 : 0;
+                          } else if (diff === 1) {
+                            x = xOffset;
+                            y = 0;
+                            scale = scaleFactor;
+                            zIndex = 5;
+                            opacity = 1;
+                            rotateX = 0;
+                            rotateY = -rotateAngle;
+                          } else if (diff === -1) {
+                            x = -xOffset;
+                            y = 0;
+                            scale = scaleFactor;
+                            zIndex = 5;
+                            opacity = 1;
+                            rotateX = 0;
+                            rotateY = rotateAngle;
+                          } else if (diff > 1) {
+                            x = diff * xOffset;
+                            y = 0;
+                            scale = Math.max(0.68, scaleFactor - (diff - 1) * 0.08);
+                            zIndex = Math.max(1, 5 - diff);
+                            opacity = 0;
+                            rotateX = 0;
+                            rotateY = -rotateAngle * 1.4;
+                          } else {
+                            x = diff * xOffset;
+                            y = 0;
+                            scale = Math.max(0.68, scaleFactor - (Math.abs(diff) - 1) * 0.08);
+                            zIndex = Math.max(1, 5 - Math.abs(diff));
+                            opacity = 0;
+                            rotateX = 0;
+                            rotateY = rotateAngle * 1.4;
+                          }
+                        }
+
+                        return (
+                          <motion.div
+                            key={item.id || `blueprint-deck-card-${index}`}
+                            drag={isActive && !isCardFlipped ? (isMobile ? "y" : "x") : false}
+                            dragConstraints={isMobile ? { top: -40, bottom: 260 } : { left: 0, right: 0 }}
+                            dragElastic={0.45}
+                            onDragEnd={(_, { offset, velocity }) => {
+                              if (!isActive || isCardFlipped) return;
+                              if (isMobile) {
+                                if (offset.y > 40 || velocity.y > 220) {
+                                  handleNextCard();
+                                } else if (offset.y < -40 || velocity.y < -220) {
+                                  handlePrevCard();
+                                }
+                              } else {
+                                const swipe = offset.x;
+                                const swipeVelocity = velocity.x;
+                                if (swipe < -50 || swipeVelocity < -400) handleNextCard();
+                                else if (swipe > 50 || swipeVelocity > 400) handlePrevCard();
+                              }
+                            }}
+                            animate={{ 
+                              x, 
+                              y, 
+                              scale, 
+                              zIndex, 
+                              opacity, 
+                              rotateX, 
+                              rotateY 
+                            }}
+                            transition={{ 
+                              type: "spring", 
+                              stiffness: 240, 
+                              damping: 24, 
+                              mass: 0.8 
+                            }}
+                            style={{
+                              position: 'absolute',
+                              width: isMobile ? '92%' : '100%',
+                              maxWidth: isMobile ? 420 : 760,
+                              minHeight: isMobile ? 420 : 480,
+                              transformStyle: 'preserve-3d',
+                              WebkitTransformStyle: 'preserve-3d',
+                              cursor: isActive ? (isCardFlipped ? 'default' : 'grab') : (Math.abs(diff) === 1 ? 'pointer' : 'default'),
+                              borderRadius: '28px',
+                              touchAction: isMobile ? 'pan-x' : 'pan-y',
+                              pointerEvents: (isMobile ? (diff > 2 || diff < 0) : Math.abs(diff) > 1) ? 'none' : 'auto',
+                            }}
+                            onClick={() => {
+                              if (!isActive && Math.abs(diff) === 1) {
+                                setIsCardFlipped(false);
+                                setDeckActiveIndex(index);
+                              }
+                            }}
+                          >
+                            {/* ── CARD FRONT (3D FACE) ── */}
+                            <Box
+                              onClick={() => {
+                                if (isActive && !isCardFlipped) setIsCardFlipped(true);
+                              }}
+                              sx={{
+                                position: 'absolute',
+                                inset: 0,
+                                backfaceVisibility: 'hidden',
+                                WebkitBackfaceVisibility: 'hidden',
+                                transform: 'rotateY(0deg) translateZ(1px)',
+                                pointerEvents: (isActive && isCardFlipped) ? 'none' : 'auto',
+                                borderRadius: '28px',
+                                bgcolor: '#ffffff',
+                                border: `1.5px solid ${alpha(item.eraColor || '#10b981', isActive ? 0.35 : 0.2)}`,
+                                boxShadow: isActive 
+                                  ? `0 24px 60px -12px rgba(15, 23, 42, 0.16), 0 0 0 1px #ffffff inset, 0 12px 36px -8px ${alpha(item.eraColor || '#10b981', 0.22)}` 
+                                  : '0 16px 38px -8px rgba(15, 23, 42, 0.12), 0 0 0 1px #ffffff inset',
+                                p: { xs: 2.5, sm: 4.5 },
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                textAlign: 'center',
+                                background: '#ffffff',
+                                overflow: 'hidden',
+                                userSelect: 'none',
+                                '&::before': {
+                                  content: '""',
+                                  position: 'absolute',
+                                  top: 0,
+                                  left: 0,
+                                  right: 0,
+                                  height: '35%',
+                                  background: `linear-gradient(180deg, ${alpha(item.eraColor || '#10b981', 0.06)} 0%, rgba(255,255,255,0) 100%)`,
+                                  pointerEvents: 'none',
+                                  zIndex: 1,
+                                }
+                              }}
+                            >
+                              {isActive ? (
+                                <>
+                                  {/* Middle Section: Option Pill On Top of Title, Big Title, and Flow Sentence */}
+                                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: { xs: 1.5, sm: 2 }, my: 'auto', width: '100%', maxWidth: 660, position: 'relative', zIndex: 2 }}>
+                                    {/* Contrasting Pill Container on Top of Title */}
+                                    <Box
+                                      sx={{
+                                        bgcolor: item.eraColor || '#10b981',
+                                        color: '#ffffff',
+                                        px: { xs: 2.2, sm: 3 },
+                                        py: { xs: 0.65, sm: 0.85 },
+                                        borderRadius: '999px',
+                                        boxShadow: `0 6px 18px ${alpha(item.eraColor || '#10b981', 0.38)}`,
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 1,
+                                        mb: 0.5
+                                      }}
+                                    >
+                                      <Typography
+                                        sx={{
+                                          textTransform: 'uppercase',
+                                          fontSize: { xs: '0.74rem', sm: '0.82rem' },
+                                          fontWeight: 900,
+                                          letterSpacing: '0.06em',
+                                          color: '#ffffff',
+                                        }}
+                                      >
+                                        {item.typeIcon ? `${item.typeIcon} ` : ''}OPTION {index + 1}: {item.typeTitle || 'BROADCAST BLUEPRINT'}
+                                      </Typography>
+                                    </Box>
+
+                                    {/* Big Title */}
+                                    <Typography
+                                      variant="h3"
+                                      sx={{
+                                        color: '#0f172a',
+                                        fontWeight: 900,
+                                        fontSize: { xs: '1.35rem', sm: '2rem', md: '2.35rem' },
+                                        lineHeight: 1.25,
+                                        letterSpacing: '-0.03em',
+                                        px: { xs: 0.5, sm: 2 },
+                                      }}
+                                    >
+                                      {item.title}
+                                    </Typography>
+
+                                    {/* Contextual Flow Sentence with Capital Blocks */}
+                                    <Typography
+                                      sx={{
+                                        color: '#475569',
+                                        fontSize: { xs: '0.86rem', sm: '0.98rem' },
+                                        lineHeight: 1.65,
+                                        fontWeight: 500,
+                                        maxWidth: 620,
+                                        textAlign: 'center',
+                                        mt: 0.5
+                                      }}
+                                    >
+                                      This broadcast tackles{' '}
+                                      <Box
+                                        component="span"
+                                        sx={{
+                                          display: 'inline-block',
+                                          bgcolor: alpha(item.eraColor || '#10b981', 0.12),
+                                          color: item.eraColor || '#059669',
+                                          border: `1.5px solid ${alpha(item.eraColor || '#10b981', 0.3)}`,
+                                          px: 1.25,
+                                          py: 0.25,
+                                          borderRadius: '8px',
+                                          fontWeight: 900,
+                                          fontSize: '0.84em',
+                                          letterSpacing: '0.04em',
+                                          textTransform: 'uppercase',
+                                          verticalAlign: 'baseline',
+                                          mx: 0.35,
+                                          boxShadow: `0 2px 6px ${alpha(item.eraColor || '#10b981', 0.1)}`
+                                        }}
+                                      >
+                                        {(item.category || category).toUpperCase()}
+                                      </Box>
+                                      {' in the '}
+                                      <Box
+                                        component="span"
+                                        sx={{
+                                          display: 'inline-block',
+                                          bgcolor: alpha(item.eraColor || '#10b981', 0.12),
+                                          color: item.eraColor || '#059669',
+                                          border: `1.5px solid ${alpha(item.eraColor || '#10b981', 0.3)}`,
+                                          px: 1.25,
+                                          py: 0.25,
+                                          borderRadius: '8px',
+                                          fontWeight: 900,
+                                          fontSize: '0.84em',
+                                          letterSpacing: '0.04em',
+                                          textTransform: 'uppercase',
+                                          verticalAlign: 'baseline',
+                                          mx: 0.35,
+                                          boxShadow: `0 2px 6px ${alpha(item.eraColor || '#10b981', 0.1)}`
+                                        }}
+                                      >
+                                        {(item.timeframe || 'PRESENT').toUpperCase()} ERA
+                                      </Box>
+                                      {item.hook ? ` — "${item.hook.slice(0, 95)}${item.hook.length > 95 ? '...' : ''}"` : '.'}
+                                    </Typography>
+                                  </Box>
+
+                                  {/* Bottom Row: Broadcast Count & View More Details */}
+                                  <Box
+                                    sx={{
+                                      width: '100%',
+                                      pt: { xs: 1.5, sm: 2 },
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'space-between',
+                                      position: 'relative',
+                                      zIndex: 2
+                                    }}
+                                  >
+                                    <Typography
+                                      sx={{
+                                        color: '#64748b',
+                                        fontSize: { xs: '0.78rem', sm: '0.88rem' },
+                                        fontWeight: 800,
+                                        letterSpacing: '0.02em',
+                                        textTransform: 'uppercase',
+                                      }}
+                                    >
+                                      Broadcast {index + 1} of {ingestedBlueprints.length}
+                                    </Typography>
+
+                                    <Button
+                                      variant="contained"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setIsCardFlipped(true);
+                                      }}
+                                      sx={{
+                                        width: 'auto',
+                                        color: '#ffffff',
+                                        bgcolor: '#0f172a',
+                                        fontWeight: 800,
+                                        fontSize: { xs: '0.82rem', sm: '0.9rem' },
+                                        px: { xs: 2.5, sm: 4.5 },
+                                        py: { xs: 1, sm: 1.25 },
+                                        borderRadius: '999px',
+                                        textTransform: 'none',
+                                        boxShadow: '0 8px 24px rgba(15, 23, 42, 0.22)',
+                                        transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                                        '&:hover': {
+                                          bgcolor: '#1e293b',
+                                          transform: 'translateY(-2px) scale(1.02)',
+                                          boxShadow: '0 12px 28px rgba(15, 23, 42, 0.32)',
+                                        }
+                                      }}
+                                    >
+                                      View More Details
+                                    </Button>
+                                  </Box>
+                                </>
+                              ) : (
+                                /* ── NEIGHBOR REGULAR CARD: SIMPLIFIED CLEAN OVERVIEW ── */
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    height: '100%',
+                                    width: '100%',
+                                    gap: 2.5,
+                                    position: 'relative',
+                                    zIndex: 2,
+                                  }}
+                                >
+                                  {/* Broadcast Count Badge */}
+                                  <Chip
+                                    label={`Broadcast ${index + 1} of ${ingestedBlueprints.length}`}
+                                    sx={{
+                                      bgcolor: alpha(item.eraColor || '#10b981', 0.1),
+                                      color: item.eraColor || '#10b981',
+                                      fontWeight: 900,
+                                      fontSize: '0.85rem',
+                                      height: 32,
+                                      px: 1.5,
+                                      borderRadius: '999px',
+                                      border: `1.5px solid ${alpha(item.eraColor || '#10b981', 0.28)}`,
+                                    }}
+                                  />
+
+                                  {/* Tap to inspect prompt */}
+                                  <Typography
+                                    sx={{
+                                      color: '#94a3b8',
+                                      fontSize: '0.88rem',
+                                      fontWeight: 700,
+                                      letterSpacing: '0.04em',
+                                      textTransform: 'uppercase',
+                                    }}
+                                  >
+                                    Tap to View Broadcast
+                                  </Typography>
+
+                                  {/* Flow Tag */}
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#64748b' }}>
+                                    <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: item.eraColor || '#10b981' }} />
+                                    <Typography sx={{ fontSize: '0.85rem', fontWeight: 700 }}>
+                                      {item.typeTitle || 'Broadcast Blueprint'}
+                                    </Typography>
+                                  </Box>
+                                </Box>
+                              )}
+                            </Box>
+
+                            {/* ── CARD BACK (3D FACE ROTATED 180 DEG) ── */}
+                            <Box
+                              onClick={(e) => e.stopPropagation()}
+                              sx={{
+                                position: 'absolute',
+                                inset: 0,
+                                backfaceVisibility: 'hidden',
+                                WebkitBackfaceVisibility: 'hidden',
+                                transform: 'rotateY(180deg) translateZ(1px)',
+                                pointerEvents: (isActive && isCardFlipped) ? 'auto' : 'none',
+                                borderRadius: '28px',
+                                bgcolor: '#ffffff',
+                                border: `2px solid ${alpha(item.eraColor || '#10b981', 0.55)}`,
+                                boxShadow: `0 24px 60px -12px rgba(15, 23, 42, 0.14), 0 0 0 1px #ffffff inset, 0 16px 40px -8px ${alpha(item.eraColor || '#10b981', 0.25)}`,
+                                p: { xs: 2.5, sm: 3.75 },
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'space-between',
+                                textAlign: 'left',
+                                background: '#ffffff',
+                                overflow: 'hidden',
+                                '&::before': {
+                                  content: '""',
+                                  position: 'absolute',
+                                  top: 0,
+                                  left: 0,
+                                  right: 0,
+                                  height: '35%',
+                                  background: `linear-gradient(180deg, ${alpha(item.eraColor || '#10b981', 0.05)} 0%, rgba(255,255,255,0) 100%)`,
+                                  pointerEvents: 'none',
+                                  zIndex: 1,
+                                }
+                              }}
+                            >
+                              <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between' }}>
+                                <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                                  {/* Top Bar: Back Button on Top Left, Era & Option Chips on Top Right */}
+                                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5, pb: 1, borderBottom: '1px solid rgba(226, 232, 240, 0.7)' }}>
+                                    <Button
+                                      size="small"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setIsCardFlipped(false);
+                                      }}
+                                      startIcon={<ArrowBackIcon sx={{ fontSize: 14 }} />}
+                                      sx={{
+                                        color: '#334155',
+                                        bgcolor: 'rgba(0,0,0,0.05)',
+                                        fontSize: '0.78rem',
+                                        fontWeight: 800,
+                                        textTransform: 'none',
+                                        borderRadius: '999px',
+                                        px: 2,
+                                        py: 0.5,
+                                        transition: 'all 0.2s ease',
+                                        '&:hover': {
+                                          bgcolor: 'rgba(0,0,0,0.09)',
+                                          color: '#0f172a',
+                                          transform: 'translateX(-2px)',
+                                        }
+                                      }}
+                                    >
+                                      Back
+                                    </Button>
+
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                      <Chip
+                                        label={item.eraBadge || `${item.timeframe?.toUpperCase()} ERA`}
+                                        size="small"
+                                        sx={{
+                                          bgcolor: alpha(item.eraColor || '#10b981', 0.12),
+                                          color: item.eraColor || '#059669',
+                                          fontWeight: 900,
+                                          fontSize: '0.74rem',
+                                          height: 26,
+                                          borderRadius: '999px',
+                                          border: `1px solid ${alpha(item.eraColor || '#10b981', 0.25)}`
+                                        }}
+                                      />
+                                      <Chip
+                                        label={item.typeTitle || `Option ${index + 1}`}
+                                        size="small"
+                                        sx={{
+                                          bgcolor: 'rgba(0, 0, 0, 0.04)',
+                                          color: '#475569',
+                                          fontWeight: 700,
+                                          fontSize: '0.7rem',
+                                          height: 26,
+                                          borderRadius: '999px'
+                                        }}
+                                      />
+                                    </Box>
+                                  </Box>
+
+                                  {/* Smaller Title on Top */}
+                                  <Typography
+                                    sx={{
+                                      color: '#0f172a',
+                                      fontWeight: 900,
+                                      fontSize: { xs: '1.05rem', sm: '1.28rem' },
+                                      lineHeight: 1.3,
+                                      letterSpacing: '-0.02em',
+                                      mb: 1,
+                                    }}
+                                  >
+                                    {item.title}
+                                  </Typography>
+
+                                  {/* Scrollable Content: 3-Act Rundown & Ecosystem CTA */}
+                                  <Box
+                                    sx={{
+                                      flex: 1,
+                                      minHeight: 0,
+                                      overflowY: 'auto',
+                                      pr: 1,
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      gap: 1.5,
+                                      '::-webkit-scrollbar': { width: '4px' },
+                                      '::-webkit-scrollbar-thumb': { bgcolor: '#cbd5e1', borderRadius: '4px' },
+                                    }}
+                                  >
+                                    {/* 3-Act Presentation Rundown */}
+                                    {item.timelinePillars && item.timelinePillars.length > 0 ? (
+                                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+                                        {item.timelinePillars.map((act: any, aIdx: number) => {
+                                          const actColors = ['#ef4444', '#f59e0b', '#10b981'];
+                                          const actColor = actColors[aIdx % actColors.length];
+                                          return (
+                                            <Box key={aIdx} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.25 }}>
+                                              <Box
+                                                sx={{
+                                                  width: 8,
+                                                  height: 8,
+                                                  borderRadius: '50%',
+                                                  bgcolor: actColor,
+                                                  mt: '8px',
+                                                  flexShrink: 0,
+                                                  boxShadow: `0 0 6px ${alpha(actColor, 0.6)}`
+                                                }}
+                                              />
+                                              <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                                                <Typography sx={{ color: '#0f172a', fontSize: '0.88rem', fontWeight: 800 }}>
+                                                  <span style={{ color: actColor }}>Act {aIdx + 1}: {act.role}</span>
+                                                  {act.time ? ` (${act.time})` : ''}
+                                                </Typography>
+                                                <Typography sx={{ color: '#475569', fontSize: '0.82rem', lineHeight: 1.5, fontWeight: 500 }}>
+                                                  {act.desc}
+                                                </Typography>
+                                              </Box>
+                                            </Box>
+                                          );
+                                        })}
+                                      </Box>
+                                    ) : (
+                                      <Typography sx={{ color: '#475569', fontSize: '0.88rem', lineHeight: 1.6, fontStyle: 'italic' }}>
+                                        "{item.description || item.hook}"
+                                      </Typography>
+                                    )}
+
+                                    {/* Climax CTA Spotlight if present */}
+                                    {item.suggestedJobsFocus && (
+                                      <Box sx={{ mt: 1, p: 1.5, borderRadius: '14px', bgcolor: alpha(item.eraColor || '#10b981', 0.05), border: `1px solid ${alpha(item.eraColor || '#10b981', 0.18)}` }}>
+                                        <Typography sx={{ color: item.eraColor || '#059669', fontSize: '0.74rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.04em', mb: 0.35 }}>
+                                          💼 Climax Ecosystem CTA Spotlight
+                                        </Typography>
+                                        <Typography sx={{ color: '#334155', fontSize: '0.84rem', lineHeight: 1.5, fontWeight: 500 }}>
+                                          {item.suggestedJobsFocus}
+                                        </Typography>
+                                      </Box>
+                                    )}
+                                  </Box>
+                                </Box>
+
+                                {/* Category Scheduled Slot Indicator */}
+                                <Box sx={{ width: '100%', mt: 1, p: 1.25, borderRadius: '12px', bgcolor: alpha(item.eraColor || '#10b981', 0.08), border: `1px solid ${alpha(item.eraColor || '#10b981', 0.25)}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap' }}>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <Typography sx={{ fontSize: '1.1rem' }}>📅</Typography>
+                                    <Box>
+                                      <Typography sx={{ color: '#0f172a', fontSize: '0.8rem', fontWeight: 800 }}>
+                                        Scheduled Slot: {DAY_NAMES[CATEGORY_TO_DAY_MAP[item.category || category] || 1]} at 10:00 AM WAT
+                                      </Typography>
+                                      <Typography sx={{ color: '#64748b', fontSize: '0.74rem', fontWeight: 500 }}>
+                                        Next cycle: {(() => {
+                                          const slot = getNextSlotForCategory(item.category || category, 10, 0);
+                                          return slot.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+                                        })()}
+                                      </Typography>
+                                    </Box>
+                                  </Box>
+                                  <Chip
+                                    label={`${(item.category || category).toUpperCase()} FOCUS`}
+                                    size="small"
+                                    sx={{ bgcolor: alpha(item.eraColor || '#10b981', 0.18), color: item.eraColor || '#059669', fontWeight: 900, fontSize: '0.68rem', height: 22, borderRadius: '6px' }}
+                                  />
+                                </Box>
+
+                                {/* Bottom Right: Select Broadcast Action Button */}
+                                <Box sx={{ width: '100%', display: 'flex', justifyContent: 'flex-end', pt: 1.5, borderTop: '1px solid rgba(226, 232, 240, 0.8)', mt: 1 }}>
+                                  <Button
+                                    variant="contained"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleSelectBlueprint(item);
+                                    }}
+                                    endIcon={<BoltIcon sx={{ fontSize: '18px !important' }} />}
+                                    sx={{
+                                      background: `linear-gradient(135deg, ${item.eraColor || '#10b981'} 0%, ${alpha(item.eraColor || '#10b981', 0.9)} 100%)`,
+                                      color: '#ffffff',
+                                      fontWeight: 900,
+                                      fontSize: '0.94rem',
+                                      px: 4.5,
+                                      py: 1.2,
+                                      borderRadius: '999px',
+                                      textTransform: 'none',
+                                      boxShadow: `0 8px 24px ${alpha(item.eraColor || '#10b981', 0.4)}`,
+                                      transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                                      '&:hover': {
+                                        background: `linear-gradient(135deg, ${item.eraColor || '#10b981'} 0%, ${item.eraColor || '#10b981'} 100%)`,
+                                        transform: 'translateY(-2px) scale(1.02)',
+                                        boxShadow: `0 12px 30px ${alpha(item.eraColor || '#10b981', 0.55)}`,
+                                      }
+                                    }}
+                                  >
+                                    Select This Broadcast & Schedule ↓
+                                  </Button>
+                                </Box>
+                              </Box>
+                            </Box>
+                          </motion.div>
+                        );
+                      })}
+                    </AnimatePresence>
+                  </Box>
+                </Box>
+              </Box>
+            )}
           </Box>
         )}
 
@@ -900,31 +1926,53 @@ export default function CreateLivestreamForm({
           </Button>
           
           {step < 3 ? (
-            <Button 
-              variant="contained" 
-              onClick={() => setStep(step + 1)}
-              endIcon={<ArrowForwardIcon sx={{ fontSize: 18 }} />}
-              sx={{ 
-                borderRadius: '14px', 
-                fontWeight: 900, 
-                px: 4, 
-                py: 1.25,
-                background: `linear-gradient(135deg, ${hubColor} 0%, ${alpha(hubColor, 0.88)} 100%)`,
-                color: '#ffffff',
-                boxShadow: `0 8px 24px ${alpha(hubColor, 0.4)}`,
-                textTransform: 'none',
-                fontSize: '0.95rem',
-                letterSpacing: '-0.01em',
-                transition: 'all 0.2s ease',
-                '&:hover': { 
-                  background: `linear-gradient(135deg, ${hubColor} 0%, ${hubColor} 100%)`,
-                  transform: 'translateY(-1px)',
-                  boxShadow: `0 10px 28px ${alpha(hubColor, 0.5)}`
-                }
-              }}
-            >
-              Next Step
-            </Button>
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5 }}>
+              <Button 
+                variant="contained" 
+                onClick={() => {
+                  if (step === 1 && !canAdvanceStep1) return;
+                  setStep(step + 1);
+                }}
+                disabled={step === 1 && !canAdvanceStep1}
+                endIcon={<ArrowForwardIcon sx={{ fontSize: 18 }} />}
+                sx={{ 
+                  borderRadius: '14px', 
+                  fontWeight: 900, 
+                  px: 4, 
+                  py: 1.25,
+                  background: (step === 1 && !canAdvanceStep1)
+                    ? 'rgba(15,23,42,0.12)'
+                    : `linear-gradient(135deg, ${hubColor} 0%, ${alpha(hubColor, 0.88)} 100%)`,
+                  color: (step === 1 && !canAdvanceStep1)
+                    ? 'rgba(15,23,42,0.38)'
+                    : '#ffffff',
+                  boxShadow: (step === 1 && !canAdvanceStep1)
+                    ? 'none'
+                    : `0 8px 24px ${alpha(hubColor, 0.4)}`,
+                  textTransform: 'none',
+                  fontSize: '0.95rem',
+                  letterSpacing: '-0.01em',
+                  transition: 'all 0.2s ease',
+                  '&:hover': { 
+                    background: `linear-gradient(135deg, ${hubColor} 0%, ${hubColor} 100%)`,
+                    transform: 'translateY(-1px)',
+                    boxShadow: `0 10px 28px ${alpha(hubColor, 0.5)}`
+                  },
+                  '&.Mui-disabled': {
+                    background: 'rgba(15,23,42,0.12)',
+                    color: 'rgba(15,23,42,0.38)',
+                    boxShadow: 'none'
+                  }
+                }}
+              >
+                Next Step
+              </Button>
+              {step === 1 && !canAdvanceStep1 && (
+                <Typography sx={{ fontSize: '0.74rem', color: '#ef4444', fontWeight: 700, mr: 0.5 }}>
+                  {!title.trim() ? 'Livestream title required' : 'Event date & time required'}
+                </Typography>
+              )}
+            </Box>
           ) : (
             <Button 
               variant="contained" 
@@ -972,32 +2020,13 @@ export default function CreateLivestreamForm({
         guidingListings={guidingListings}
         guidingCampaigns={guidingCampaigns}
         onApplyIdea={(idea) => {
-          setTitle(idea.title);
-          setDescription(idea.description);
-          if (idea.timeframe) {
-            setTimeframe(idea.timeframe);
-          }
-          if (idea.blocks && idea.blocks.length > 0) {
-            setRundownBlocks(idea.blocks);
-            setFrameworkLoaded(true);
-          } else if (idea.timeframe) {
-            const framework = LIVESTREAM_FRAMEWORKS[idea.timeframe] || LIVESTREAM_FRAMEWORKS.present;
-            const initialPlaceholders = framework.map((f: any) => ({
-              id: Math.random().toString(),
-              sourceType: 'transition',
-              originalBlockType: 'transition',
-              originalContent: { 
-                role: f.role, 
-                description: f.desc,
-                focusSummary: idea.title 
-              },
-              speakerNotes: '',
-              durationStr: '~15m'
-            }));
-            setRundownBlocks(initialPlaceholders);
-            setFrameworkLoaded(true);
-          }
-          if (idea.category) setCategory(idea.category);
+          handleSelectBlueprint(idea.blueprint || idea);
+        }}
+        onIngestBlueprints={(blueprints) => {
+          setIngestedBlueprints(blueprints);
+          setDeckActiveIndex(0);
+          setIsCardFlipped(false);
+          setIsIdeasCardFlipped(false);
         }}
       />
     </Box>

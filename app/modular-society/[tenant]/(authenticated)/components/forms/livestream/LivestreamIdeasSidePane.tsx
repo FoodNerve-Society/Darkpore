@@ -21,10 +21,11 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import BoltIcon from '@mui/icons-material/Bolt';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import ContentPasteIcon from '@mui/icons-material/ContentPaste';
-import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
-import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import PremiumTextField from '@/components/PremiumTextField';
 import PremiumMarkdownEditor from '@/components/PremiumMarkdownEditor';
+import { PromptTerminalBox } from '@/components/prompts/PromptTerminalBox';
+import { PromptFastIngestBox } from '@/components/prompts/PromptFastIngestBox';
+import { PromptChecklistItem } from '@/components/prompts/PromptChecklistItem';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export interface LivestreamRundownSegment {
@@ -60,13 +61,15 @@ interface LivestreamIdeasSidePaneProps {
   guidingJobs?: Array<{ id: string; title: string; compensationOrTarget?: string; organizationChallenges?: string; [key: string]: any }>;
   guidingListings?: Array<{ id: string; title: string; [key: string]: any }>;
   guidingCampaigns?: Array<{ id: string; title: string; [key: string]: any }>;
-  onApplyIdea: (idea: {
+  onApplyIdea?: (idea: {
     title: string;
     description: string;
     timeframe: 'past' | 'present' | 'future';
     category?: string;
     blocks?: any[];
+    blueprint?: any;
   }) => void;
+  onIngestBlueprints?: (blueprints: LivestreamIdeaOption[]) => void;
 }
 
 /**
@@ -76,8 +79,11 @@ interface LivestreamIdeasSidePaneProps {
 function parseLivestreamPayload(rawText: string, fallbackHub: string, fallbackCategory: string): LivestreamIdeaOption[] {
   if (!rawText || !rawText.trim()) return [];
 
+  let text = rawText.replace(/\r\n/g, '\n').trim();
+  // Strip wrapping markdown / json code fences
+  text = text.replace(/^```(?:markdown|json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+
   const results: LivestreamIdeaOption[] = [];
-  const normalized = rawText.replace(/\r\n/g, '\n');
 
   const eraConfigMap: Record<string, { badge: string; color: string; icon: string }> = {
     present: { badge: '⚡ Present Era', color: '#10b981', icon: '⚡' },
@@ -85,114 +91,194 @@ function parseLivestreamPayload(rawText: string, fallbackHub: string, fallbackCa
     past: { badge: '📜 Past Era', color: '#6366f1', icon: '📜' },
   };
 
-  // ── DETECTION 1: LS-Doc 1c [LIVESTREAM_MENU_PAYLOAD] ──
-  if (normalized.includes('OPTION') || normalized.includes('LIVESTREAM_MENU_PAYLOAD') || normalized.includes('Act 1') || normalized.includes('THE OPEN')) {
-    const optionSections = normalized.split(/(?:###\s*(?:[🔴🟡🟢🔵🟣⚡]?\s*OPTION|\bOPTION\b|\d+\.))/i).map(s => s.trim()).filter(Boolean);
-
-    optionSections.forEach((sec, idx) => {
-      // Skip top metadata header if it contains no broadcast content
-      if (sec.includes('[LIVESTREAM_MENU_PAYLOAD]') && !sec.includes('Broadcast Title') && !sec.includes('Act 1')) {
-        return;
+  // ── DETECTION 0: JSON PAYLOAD ──
+  if (text.startsWith('[') || text.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(text);
+      const items = Array.isArray(parsed) ? parsed : (parsed.options || parsed.blueprints || parsed.payload || []);
+      if (Array.isArray(items) && items.length > 0) {
+        items.forEach((item: any, idx: number) => {
+          results.push({
+            id: item.id || `ls-json-${idx}-${Date.now()}`,
+            typeTitle: item.typeTitle || item.title || `Option ${idx + 1}`,
+            typeIcon: item.typeIcon || '🎙️',
+            timeframe: (item.timeframe === 'past' || item.timeframe === 'future') ? item.timeframe : 'present',
+            eraBadge: item.eraBadge || '⚡ Present Era',
+            eraColor: item.eraColor || '#10b981',
+            category: item.category || fallbackCategory,
+            title: item.title || `${fallbackHub} Livestream ${idx + 1}`,
+            description: item.description || '',
+            hook: item.hook || item.title || '',
+            timelinePillars: Array.isArray(item.timelinePillars) ? item.timelinePillars : [
+              { time: '00-15m', role: 'Act 1: The Open', desc: item.act1 || 'Anchor Tension & Reframe' },
+              { time: '15-35m', role: 'Act 2: The Meat', desc: item.act2 || 'Map System & Skeptic Defense' },
+              { time: '35-50m', role: 'Act 3: The Close', desc: item.act3 || 'Forked Close & Job/Deal Spotlight' }
+            ],
+            keyQuestions: item.keyQuestions || [],
+            suggestedJobsFocus: item.suggestedJobsFocus || item.cta || undefined
+          });
+        });
+        if (results.length > 0) return results;
       }
-
-      const firstLine = sec.split('\n')[0].replace(/^[:\s\d.-]+/, '').replace(/[*_`#]/g, '').trim();
-
-      // 4 DEF Angles of Attack config
-      const angleDefaults = [
-        { title: 'The Head-On Assault', icon: '🔴', color: '#ef4444', badge: '🔴 Head-On Assault' },
-        { title: 'The Flank / Sideways Attack', icon: '🟡', color: '#f59e0b', badge: '🟡 Flank Attack' },
-        { title: 'The Trojan Horse', icon: '🟢', color: '#10b981', badge: '🟢 Trojan Horse' },
-        { title: 'The Contrarian Crossfire', icon: '🟣', color: '#a855f7', badge: '🟣 Contrarian Crossfire' },
-      ];
-      const angleConfig = angleDefaults[idx % angleDefaults.length];
-      const typeIcon = angleConfig.icon;
-      const eraColor = angleConfig.color;
-      const eraBadge = angleConfig.badge;
-      const personaTitle = firstLine && firstLine.length > 2 ? firstLine : angleConfig.title;
-
-      // Extract Broadcast Title
-      const titleMatch = sec.match(/[*•-]?\s*\*?\*?Broadcast Title\*?\*?:\s*([^\n\r*]+)/i) ||
-                         sec.match(/[*•-]?\s*\*?\*?Title\*?\*?:\s*([^\n\r*]+)/i);
-      const title = titleMatch ? titleMatch[1].replace(/[*_`]/g, '').trim() : (firstLine || `${fallbackHub} Broadcast Option ${idx + 1}`);
-
-      // Extract Acts & CTA
-      const act1Match = sec.match(/[*•-]?\s*\*?\*?Act 1[^\n\r*]*\*?\*?:\s*([\s\S]*?)(?=(?:[*•-]?\s*\*?\*?Act 2|$))/i);
-      const act2Match = sec.match(/[*•-]?\s*\*?\*?Act 2[^\n\r*]*\*?\*?:\s*([\s\S]*?)(?=(?:[*•-]?\s*\*?\*?Act 3|$))/i);
-      const act3Match = sec.match(/[*•-]?\s*\*?\*?Act 3[^\n\r*]*\*?\*?:\s*([\s\S]*?)(?=(?:[*•-]?\s*\*?\*?The Ecosystem Push|[*•-]?\s*\*?\*?CTA|###|$))/i);
-      const ctaMatch = sec.match(/[*•-]?\s*\*?\*?(?:The Ecosystem Push|CTA)[^\n\r*]*\*?\*?:\s*([\s\S]*?)(?=(?:###|---|$))/i);
-
-      const act1Text = act1Match ? act1Match[1].replace(/[*_`]/g, '').trim() : '';
-      const act2Text = act2Match ? act2Match[1].replace(/[*_`]/g, '').trim() : '';
-      const act3Text = act3Match ? act3Match[1].replace(/[*_`]/g, '').trim() : '';
-      const ctaText = ctaMatch ? ctaMatch[1].replace(/[*_`]/g, '').trim() : '';
-
-      // Build 3 DEF Timeline Segments
-      const segments: LivestreamRundownSegment[] = [];
-      if (act1Text || act2Text || act3Text) {
-        segments.push({
-          time: '00-15m',
-          role: 'Act 1: The Open (Tension & Reframe)',
-          desc: act1Text || 'State the anchor tension and reframe conventional assumptions with hard field evidence.',
-          speakerNotes: act1Text,
-        });
-        segments.push({
-          time: '15-35m',
-          role: 'Act 2: The Meat (Map System & Defend)',
-          desc: act2Text || 'Expose the systemic villain, present unit economics, and dismantle skeptic counter-arguments live.',
-          speakerNotes: act2Text,
-        });
-        segments.push({
-          time: '35-50m',
-          role: 'Act 3: The Close (Fork & Ecosystem CTA)',
-          desc: `${act3Text}${ctaText ? ` | Conversion: ${ctaText}` : ''}`,
-          speakerNotes: `${act3Text}\n\nEcosystem CTA:\n${ctaText}`,
-        });
-      }
-
-      // Determine era
-      const timeframe: 'past' | 'present' | 'future' = 
-        /future|horizon|203\d/i.test(sec) ? 'future' :
-        /past|historical|origin/i.test(sec) ? 'past' : 'present';
-
-      // Extract hook & questions
-      const hook = act1Text ? act1Text.slice(0, 140) + '...' : `Strategic livestream teardown for ${personaTitle}.`;
-      const questions: string[] = [];
-      const questionMatches = sec.match(/"([^"]+\?)"/g) || sec.match(/[*•-]\s*([^?\n\r]+?\?)/g);
-      if (questionMatches) {
-        questionMatches.forEach(q => {
-          const cleanQ = q.replace(/^["*•\s-]+|["\s]+$/g, '').trim();
-          if (cleanQ.length > 10) questions.push(cleanQ);
-        });
-      }
-
-      if (title || segments.length > 0) {
-        results.push({
-          id: `ls-def-${idx}-${Date.now()}`,
-          typeTitle: personaTitle,
-          typeIcon,
-          timeframe,
-          eraBadge,
-          eraColor,
-          category: fallbackCategory,
-          title,
-          description: act1Text ? `${act1Text.slice(0, 220)}...` : `Broadcast blueprint engineered for ${personaTitle}.`,
-          hook,
-          timelinePillars: segments.length > 0 ? segments : [
-            { time: '00-15m', role: 'Act 1: The Open', desc: 'Anchor Tension & Reframe Question' },
-            { time: '15-35m', role: 'Act 2: The Meat', desc: 'Map System & Skeptic Defense' },
-            { time: '35-50m', role: 'Act 3: The Close', desc: 'Forked Close & Job/Deal Spotlight' }
-          ],
-          keyQuestions: questions.length > 0 ? questions : undefined,
-          suggestedJobsFocus: ctaText || undefined,
-        });
-      }
-    });
-
-    if (results.length > 0) return results;
+    } catch {
+      // Continue to markdown parsing
+    }
   }
 
+  // ── DETECTION 1: LS-Doc 1c [LIVESTREAM_MENU_PAYLOAD] / Markdown Formats ──
+  const angleDefaults = [
+    { title: 'The Head-On Assault', icon: '🔴', color: '#ef4444', badge: '🔴 Head-On Assault' },
+    { title: 'The Flank / Sideways Attack', icon: '🟡', color: '#f59e0b', badge: '🟡 Flank Attack' },
+    { title: 'The Trojan Horse', icon: '🟢', color: '#10b981', badge: '🟢 Trojan Horse' },
+    { title: 'The Contrarian Crossfire', icon: '🟣', color: '#a855f7', badge: '🟣 Contrarian Crossfire' },
+  ];
+
+  // Split on Option headers while retaining the header line
+  // Matches: ### OPTION 1, ## 🔴 OPTION 1, ### Option 1, **OPTION 1**, 1. OPTION 1, etc.
+  const rawSections = text.split(/(?=(?:\n|^)(?:#{1,4}\s*.*?\b(?:OPTION|PITCH|BLUEPRINT)\s*\d+|\*\*\s*.*?\b(?:OPTION|PITCH|BLUEPRINT)\s*\d+))/i)
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  rawSections.forEach((sec, idx) => {
+    // If preamble section without option header or acts, skip it
+    if ((sec.includes('[LIVESTREAM_MENU_PAYLOAD]') || sec.includes('Broadcast Hub:')) && !sec.match(/(?:Act\s*1|Broadcast\s+Title|OPTION)/i)) {
+      return;
+    }
+
+    const firstLine = sec.split('\n')[0].trim();
+    const cleanFirstLine = firstLine.replace(/^#{1,4}\s*/, '').replace(/^\*\*|\*\*$/g, '').trim();
+
+    // Check for emoji in header line
+    const emojiMatch = cleanFirstLine.match(/([🔴🟡🟢🔵🟣⚡💡🎙️])/);
+    const angleIndex = results.length % angleDefaults.length;
+    const fallbackAngle = angleDefaults[angleIndex];
+
+    const typeIcon = emojiMatch ? emojiMatch[1] : fallbackAngle.icon;
+    let eraColor = fallbackAngle.color;
+    if (typeIcon === '🔴') eraColor = '#ef4444';
+    else if (typeIcon === '🟡') eraColor = '#f59e0b';
+    else if (typeIcon === '🟢') eraColor = '#10b981';
+    else if (typeIcon === '🟣') eraColor = '#a855f7';
+
+    // Persona title from header (e.g. "The Head-On Assault (Targeting: Smallholders)")
+    let personaTitle = fallbackAngle.title;
+    if (cleanFirstLine.includes(':')) {
+      const afterColon = cleanFirstLine.substring(cleanFirstLine.indexOf(':') + 1).replace(/[*_`]/g, '').trim();
+      if (afterColon.length > 2) personaTitle = afterColon;
+    } else if (cleanFirstLine.length > 3 && !cleanFirstLine.toLowerCase().startsWith('option')) {
+      personaTitle = cleanFirstLine;
+    }
+
+    const eraBadge = `${typeIcon} ${personaTitle.split('(')[0].trim()}`;
+
+    // 1. Extract Broadcast Title
+    let title = '';
+    const titleMatch = sec.match(/(?:^|\n)[*•-]?\s*\*?\*?(?:Broadcast\s+Title|Title)\*?\*?:\s*(.+)/i);
+    if (titleMatch) {
+      title = titleMatch[1].replace(/[*_`"']/g, '').trim();
+    }
+    if (!title) {
+      const titleMultilineMatch = sec.match(/(?:^|\n)[*•-]?\s*\*?\*?(?:Broadcast\s+Title|Title)\*?\*?:\s*\n\s*(.+)/i);
+      if (titleMultilineMatch) {
+        title = titleMultilineMatch[1].replace(/[*_`"']/g, '').trim();
+      }
+    }
+    if (!title) {
+      title = personaTitle && personaTitle.length > 5 ? personaTitle : `${fallbackHub} Broadcast Option ${results.length + 1}`;
+    }
+
+    // 2. Extract Acts & CTA
+    const act1Match = sec.match(/(?:^|\n)[*•-]?\s*\*?\*?(?:Act\s*1\b|THE\s*OPEN\b)[^\n:]*[:\-]\s*([\s\S]*?)(?=(?:\n[*•-]?\s*\*?\*?(?:Act\s*2\b|THE\s*MEAT\b)|$))/i);
+    const act2Match = sec.match(/(?:^|\n)[*•-]?\s*\*?\*?(?:Act\s*2\b|THE\s*MEAT\b)[^\n:]*[:\-]\s*([\s\S]*?)(?=(?:\n[*•-]?\s*\*?\*?(?:Act\s*3\b|THE\s*CLOSE\b)|$))/i);
+    const act3Match = sec.match(/(?:^|\n)[*•-]?\s*\*?\*?(?:Act\s*3\b|THE\s*CLOSE\b)[^\n:]*[:\-]\s*([\s\S]*?)(?=(?:\n[*•-]?\s*\*?\*?(?:The\s+Ecosystem\s+Push|Ecosystem\s+CTA|CTA\b|The\s+Push)|$))/i);
+    const ctaMatch = sec.match(/(?:^|\n)[*•-]?\s*\*?\*?(?:The\s+Ecosystem\s+Push|Ecosystem\s+CTA|CTA\b|The\s+Push)[^\n:]*[:\-]\s*([\s\S]*?)(?=(?:\n#{1,4}|\n---|---|$))/i);
+
+    const act1Text = act1Match ? act1Match[1].replace(/^[*_`\s]+|[*_`\s]+$/g, '').trim() : '';
+    const act2Text = act2Match ? act2Match[1].replace(/^[*_`\s]+|[*_`\s]+$/g, '').trim() : '';
+    const act3Text = act3Match ? act3Match[1].replace(/^[*_`\s]+|[*_`\s]+$/g, '').trim() : '';
+    const ctaText = ctaMatch ? ctaMatch[1].replace(/^[*_`\s]+|[*_`\s]+$/g, '').trim() : '';
+
+    // Build 3 DEF Timeline Segments
+    const segments: LivestreamRundownSegment[] = [];
+    if (act1Text || act2Text || act3Text) {
+      segments.push({
+        time: '00-15m',
+        role: 'Act 1: The Open (Tension & Reframe)',
+        desc: act1Text || 'State the anchor tension and reframe conventional assumptions with hard field evidence.',
+        speakerNotes: act1Text,
+      });
+      segments.push({
+        time: '15-35m',
+        role: 'Act 2: The Meat (Map System & Defend)',
+        desc: act2Text || 'Expose the systemic villain, present unit economics, and dismantle skeptic counter-arguments live.',
+        speakerNotes: act2Text,
+      });
+      segments.push({
+        time: '35-50m',
+        role: 'Act 3: The Close (Fork & Ecosystem CTA)',
+        desc: `${act3Text}${ctaText ? ` | Conversion: ${ctaText}` : ''}`,
+        speakerNotes: `${act3Text}\n\nEcosystem CTA:\n${ctaText}`,
+      });
+    }
+
+    // Determine era
+    const timeframe: 'past' | 'present' | 'future' = 
+      /future|horizon|203\d/i.test(sec) ? 'future' :
+      /past|historical|origin/i.test(sec) ? 'past' : 'present';
+
+    // Hook: extract quote or first punchy sentence
+    let hook = '';
+    const quoteMatch = act1Text.match(/"([^"]+)"/) || act1Text.match(/“([^”]+)”/);
+    if (quoteMatch) {
+      hook = `"${quoteMatch[1]}"`;
+    } else if (act1Text) {
+      hook = act1Text.length > 140 ? act1Text.slice(0, 140) + '...' : act1Text;
+    } else {
+      hook = `Strategic livestream teardown for ${personaTitle}.`;
+    }
+
+    // Extract questions
+    const questions: string[] = [];
+    const questionMatches = sec.match(/"([^"]+\?)"/g) || sec.match(/[*•-]\s*([^?\n\r]+?\?)/g);
+    if (questionMatches) {
+      questionMatches.forEach(q => {
+        const cleanQ = q.replace(/^["*•\s-]+|["\s]+$/g, '').trim();
+        if (cleanQ.length > 10 && !questions.includes(cleanQ)) questions.push(cleanQ);
+      });
+    }
+
+    // Description
+    const description = act1Text 
+      ? (act1Text.length > 220 ? `${act1Text.slice(0, 220)}...` : act1Text)
+      : `Broadcast blueprint engineered for ${personaTitle}.`;
+
+    if (title || segments.length > 0) {
+      results.push({
+        id: `ls-def-${results.length}-${Date.now()}`,
+        typeTitle: personaTitle,
+        typeIcon,
+        timeframe,
+        eraBadge,
+        eraColor,
+        category: fallbackCategory,
+        title,
+        description,
+        hook,
+        timelinePillars: segments.length > 0 ? segments : [
+          { time: '00-15m', role: 'Act 1: The Open', desc: 'Anchor Tension & Reframe Question' },
+          { time: '15-35m', role: 'Act 2: The Meat', desc: 'Map System & Skeptic Defense' },
+          { time: '35-50m', role: 'Act 3: The Close', desc: 'Forked Close & Job/Deal Spotlight' }
+        ],
+        keyQuestions: questions.length > 0 ? questions : undefined,
+        suggestedJobsFocus: ctaText || undefined,
+      });
+    }
+  });
+
+  if (results.length > 0) return results;
+
   // ── DETECTION 2: DELIMITER / HEADLINE PARSER (FALLBACK) ──
-  const sections = normalized.split(/(?:---|\n(?=###?\s*(?:Blueprint|Livestream|Format|\d+\.)))/i).map(s => s.trim()).filter(Boolean);
+  const sections = text.split(/(?:---|\n(?=###?\s*(?:Blueprint|Livestream|Format|\d+\.)))/i).map(s => s.trim()).filter(Boolean);
 
   sections.forEach((sec, idx) => {
     const titleMatch = sec.match(/###?\s*(?:Blueprint\s*\d*[:.-]?\s*)?([^\n\r]+)/i) ||
@@ -279,6 +365,7 @@ export default function LivestreamIdeasSidePane({
   guidingListings = [],
   guidingCampaigns = [],
   onApplyIdea,
+  onIngestBlueprints,
 }: LivestreamIdeasSidePaneProps) {
   const defaultTopic = useMemo(() => {
     if (guidingArticles.length > 0) {
@@ -309,7 +396,6 @@ export default function LivestreamIdeasSidePane({
   const [lsAssetMapInput, setLsAssetMapInput] = useState('');
   const [lsConflictMatrixInput, setLsConflictMatrixInput] = useState('');
   const [customIngestMarkdown, setCustomIngestMarkdown] = useState('');
-  const [deckActiveIndex, setDeckActiveIndex] = useState(0);
 
   const toggleChecklistItem = (id: string) => {
     setChecklist(prev => ({ ...prev, [id]: !prev[id] }));
@@ -790,24 +876,38 @@ Output your entire response inside this single, clean Markdown block:
   }, [hubTitle, currentCategory, lsAssetMapInput, lsConflictMatrixInput, currentMonthYear, futureHorizonYear]);
 
   const handleApplyBlueprint = (blueprint: LivestreamIdeaOption) => {
-    onApplyIdea({
-      title: blueprint.title,
-      description: blueprint.description,
-      timeframe: blueprint.timeframe,
-      category: blueprint.category || currentCategory,
-      blocks: blueprint.timelinePillars.map(p => ({
-        id: Math.random().toString(),
-        sourceType: 'transition',
-        originalBlockType: 'transition',
-        originalContent: {
-          role: p.role,
-          description: p.desc,
-          focusSummary: blueprint.title,
-        },
-        speakerNotes: p.speakerNotes || '',
-        durationStr: p.time,
-      })),
-    });
+    if (onApplyIdea) {
+      onApplyIdea({
+        title: blueprint.title,
+        description: blueprint.description,
+        timeframe: blueprint.timeframe,
+        category: blueprint.category || currentCategory,
+        blueprint: blueprint,
+        blocks: blueprint.timelinePillars.map(p => ({
+          id: Math.random().toString(),
+          sourceType: 'transition',
+          originalBlockType: 'transition',
+          originalContent: {
+            role: p.role,
+            description: p.desc,
+            focusSummary: blueprint.title,
+          },
+          speakerNotes: p.speakerNotes || '',
+          durationStr: p.time,
+        })),
+      });
+    }
+    if (onIngestBlueprints) {
+      onIngestBlueprints([blueprint]);
+    }
+    onClose();
+  };
+
+  const handleIngestToStudio = () => {
+    const blueprintsToIngest = liveParsedBriefs.length > 0 ? liveParsedBriefs : defaultIdeas;
+    if (onIngestBlueprints) {
+      onIngestBlueprints(blueprintsToIngest);
+    }
     onClose();
   };
 
@@ -822,8 +922,6 @@ Output your entire response inside this single, clean Markdown block:
       // Fallback
     }
   };
-
-  const currentDeckItem = displayBlueprints[deckActiveIndex] || displayBlueprints[0];
 
   return (
     <Drawer
@@ -1217,61 +1315,20 @@ Output your entire response inside this single, clean Markdown block:
           </Box>
 
           {/* Terminal Box for Step 1 Prompt */}
-          {copiedPromptTab === 'doc1a' ? (
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2.25, bgcolor: 'rgba(59, 130, 246, 0.06)', borderRadius: '16px', border: '1px solid rgba(59, 130, 246, 0.25)' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
-                <CheckCircleIcon sx={{ color: '#3b82f6' }} />
-                <Typography sx={{ color: '#1e40af', fontWeight: 700, fontSize: '0.9rem' }}>
-                  LS-Doc 1a Master Prompt Copied to Clipboard!
-                </Typography>
-              </Box>
-              <Button size="small" onClick={() => setCopiedPromptTab(null)} sx={{ textTransform: 'none', fontWeight: 700, borderRadius: '8px', color: '#2563eb' }}>
-                View Prompt Code
-              </Button>
-            </Box>
-          ) : (
-            <Box sx={{ position: 'relative', bgcolor: '#0f172a', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 10px 28px rgba(0,0,0,0.15)' }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2.5, py: 1.75, bgcolor: '#1e293b', borderBottom: '1px solid #334155' }}>
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: '#ef4444' }} />
-                  <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: '#f59e0b' }} />
-                  <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: '#10b981' }} />
-                </Box>
-                <Typography sx={{ color: '#94a3b8', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                  STEP 1 PROMPT · THE DEEP DOSSIER ENGINE (LS-DOC 1a)
-                </Typography>
-                <Box sx={{ width: 33 }} />
-              </Box>
-
-              <Box sx={{ p: 2.5, maxHeight: 180, overflowY: 'auto' }}>
-                <Typography component="pre" sx={{ color: '#e2e8f0', fontFamily: '"JetBrains Mono", monospace', fontSize: '0.78rem', m: 0, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
-                  {compiledPrompt1}
-                </Typography>
-              </Box>
-
-              <Box sx={{ display: 'flex', justifyContent: 'center', p: 2, pt: 1.25, bgcolor: '#1e293b', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                <Button
-                  onClick={() => handleCopyPromptText(compiledPrompt1, 'doc1a')}
-                  sx={{
-                    bgcolor: '#3b82f6',
-                    color: '#fff',
-                    borderRadius: '16px',
-                    py: 1,
-                    px: 3.5,
-                    fontWeight: 800,
-                    textTransform: 'none',
-                    fontSize: '0.85rem',
-                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.35)',
-                    transition: 'all 0.2s',
-                    '&:hover': { bgcolor: '#2563eb', transform: 'translateY(-1px)' }
-                  }}
-                >
-                  <ContentCopyIcon sx={{ mr: 1, fontSize: 16 }} />
-                  Copy Step 1 Prompt (LS-Doc 1a: Deep Dossier Engine)
-                </Button>
-              </Box>
-            </Box>
-          )}
+          <PromptTerminalBox
+            title="Step 1 Prompt · The Deep Dossier Engine (LS-Doc 1a)"
+            codeLabel="LS-DOC 1a"
+            subtitle="Extracts asset inventory and baseline signals across the hub."
+            prompt={compiledPrompt1}
+            colorTheme="#3b82f6"
+            copiedBannerText="LS-Doc 1a Master Prompt Copied to Clipboard!"
+            copyButtonLabel="Copy Step 1 Prompt (LS-Doc 1a: Deep Dossier Engine)"
+            maxHeight={200}
+            isCopiedExternal={checklist['chk1_copy']}
+            onCopy={() => {
+              setChecklist(prev => ({ ...prev, chk1_copy: true }));
+            }}
+          />
         </Box>
 
         <Box sx={{ borderBottom: '1px solid rgba(0,0,0,0.08)', my: 0.5 }} />
@@ -1312,61 +1369,20 @@ Output your entire response inside this single, clean Markdown block:
           </Box>
 
           {/* Terminal Box for Step 2 Prompt */}
-          {copiedPromptTab === 'doc1b' ? (
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2.25, bgcolor: 'rgba(245, 158, 11, 0.08)', borderRadius: '16px', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
-                <CheckCircleIcon sx={{ color: '#f59e0b' }} />
-                <Typography sx={{ color: '#b45309', fontWeight: 700, fontSize: '0.9rem' }}>
-                  LS-Doc 1b Master Prompt Copied to Clipboard!
-                </Typography>
-              </Box>
-              <Button size="small" onClick={() => setCopiedPromptTab(null)} sx={{ textTransform: 'none', fontWeight: 700, borderRadius: '8px', color: '#b45309' }}>
-                View Prompt Code
-              </Button>
-            </Box>
-          ) : (
-            <Box sx={{ position: 'relative', bgcolor: '#0f172a', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 10px 28px rgba(0,0,0,0.15)' }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2.5, py: 1.75, bgcolor: '#1e293b', borderBottom: '1px solid #334155' }}>
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: '#ef4444' }} />
-                  <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: '#f59e0b' }} />
-                  <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: '#10b981' }} />
-                </Box>
-                <Typography sx={{ color: '#fbbf24', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                  STEP 2 PROMPT · PATTERN & INTERSECTION MAPPING (LS-DOC 1b)
-                </Typography>
-                <Box sx={{ width: 33 }} />
-              </Box>
-
-              <Box sx={{ p: 2.5, maxHeight: 180, overflowY: 'auto' }}>
-                <Typography component="pre" sx={{ color: '#fbbf24', fontFamily: '"JetBrains Mono", monospace', fontSize: '0.78rem', m: 0, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
-                  {compiledPrompt2}
-                </Typography>
-              </Box>
-
-              <Box sx={{ display: 'flex', justifyContent: 'center', p: 2, pt: 1.25, bgcolor: '#1e293b', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                <Button
-                  onClick={() => handleCopyPromptText(compiledPrompt2, 'doc1b')}
-                  sx={{
-                    bgcolor: '#f59e0b',
-                    color: '#000',
-                    borderRadius: '16px',
-                    py: 1,
-                    px: 3.5,
-                    fontWeight: 900,
-                    textTransform: 'none',
-                    fontSize: '0.85rem',
-                    boxShadow: '0 4px 12px rgba(245, 158, 11, 0.35)',
-                    transition: 'all 0.2s',
-                    '&:hover': { bgcolor: '#d97706', transform: 'translateY(-1px)' }
-                  }}
-                >
-                  <ContentCopyIcon sx={{ mr: 1, fontSize: 16 }} />
-                  Copy Step 2 Prompt (LS-Doc 1b: The Smear Matrix)
-                </Button>
-              </Box>
-            </Box>
-          )}
+          <PromptTerminalBox
+            title="Step 2 Prompt · Pattern & Intersection Mapping (LS-Doc 1b)"
+            codeLabel="LS-DOC 1b"
+            subtitle="Extracts conflict matrix, tensions, and stakeholder friction points."
+            prompt={compiledPrompt2}
+            colorTheme="#f59e0b"
+            copiedBannerText="LS-Doc 1b Master Prompt Copied to Clipboard!"
+            copyButtonLabel="Copy Step 2 Prompt (LS-Doc 1b: The Smear Matrix)"
+            maxHeight={200}
+            isCopiedExternal={checklist['chk2_copy']}
+            onCopy={() => {
+              setChecklist(prev => ({ ...prev, chk2_copy: true }));
+            }}
+          />
         </Box>
 
         <Box sx={{ borderBottom: '1px solid rgba(0,0,0,0.08)', my: 0.5 }} />
@@ -1419,382 +1435,110 @@ Output your entire response inside this single, clean Markdown block:
           </Box>
 
           {/* Terminal Box for Step 3 Prompt */}
-          {copiedPromptTab === 'doc1c' ? (
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2.25, bgcolor: 'rgba(168, 85, 247, 0.08)', borderRadius: '16px', border: '1px solid rgba(168, 85, 247, 0.3)' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
-                <CheckCircleIcon sx={{ color: '#a855f7' }} />
-                <Typography sx={{ color: '#6b21a8', fontWeight: 700, fontSize: '0.9rem' }}>
-                  LS-Doc 1c Master Prompt Copied to Clipboard!
-                </Typography>
-              </Box>
-              <Button size="small" onClick={() => setCopiedPromptTab(null)} sx={{ textTransform: 'none', fontWeight: 700, borderRadius: '8px', color: '#6b21a8' }}>
-                View Prompt Code
-              </Button>
-            </Box>
-          ) : (
-            <Box sx={{ position: 'relative', bgcolor: '#0f172a', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 10px 28px rgba(0,0,0,0.15)' }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2.5, py: 1.75, bgcolor: '#1e293b', borderBottom: '1px solid #334155' }}>
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: '#ef4444' }} />
-                  <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: '#f59e0b' }} />
-                  <Box sx={{ width: 11, height: 11, borderRadius: '50%', bgcolor: '#10b981' }} />
-                </Box>
-                <Typography sx={{ color: '#c084fc', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                  STEP 3 PROMPT · ANGLES OF ATTACK & BROADCAST SYNTHESIZER (LS-DOC 1c)
-                </Typography>
-                <Box sx={{ width: 33 }} />
-              </Box>
-
-              <Box sx={{ p: 2.5, maxHeight: 180, overflowY: 'auto' }}>
-                <Typography component="pre" sx={{ color: '#c084fc', fontFamily: '"JetBrains Mono", monospace', fontSize: '0.78rem', m: 0, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
-                  {compiledPrompt3}
-                </Typography>
-              </Box>
-
-              <Box sx={{ display: 'flex', justifyContent: 'center', p: 2, pt: 1.25, bgcolor: '#1e293b', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                <Button
-                  onClick={() => handleCopyPromptText(compiledPrompt3, 'doc1c')}
-                  sx={{
-                    bgcolor: '#a855f7',
-                    color: '#fff',
-                    borderRadius: '16px',
-                    py: 1,
-                    px: 3.5,
-                    fontWeight: 900,
-                    textTransform: 'none',
-                    fontSize: '0.85rem',
-                    boxShadow: '0 4px 12px rgba(168, 85, 247, 0.35)',
-                    transition: 'all 0.2s',
-                    '&:hover': { bgcolor: '#9333ea', transform: 'translateY(-1px)' }
-                  }}
-                >
-                  <ContentCopyIcon sx={{ mr: 1, fontSize: 16 }} />
-                  Copy Step 3 Prompt (LS-Doc 1c: Broadcast Synthesizer)
-                </Button>
-              </Box>
-            </Box>
-          )}
+          <PromptTerminalBox
+            title="Step 3 Prompt · Angles of Attack & Broadcast Synthesizer (LS-Doc 1c)"
+            codeLabel="LS-DOC 1c"
+            subtitle="Synthesizes 4 distinct livestream angles with full 3-Act rundowns and CTAs."
+            prompt={compiledPrompt3}
+            colorTheme="#a855f7"
+            copiedBannerText="LS-Doc 1c Master Prompt Copied to Clipboard!"
+            copyButtonLabel="Copy Step 3 Prompt (LS-Doc 1c: Broadcast Synthesizer)"
+            maxHeight={200}
+            isCopiedExternal={checklist['chk3_copy']}
+            onCopy={() => {
+              setChecklist(prev => ({ ...prev, chk3_copy: true }));
+            }}
+          />
         </Box>
 
         <Box sx={{ borderBottom: '1px solid rgba(0,0,0,0.08)', my: 0.5 }} />
 
         {/* ──────────────────────────────────────────────────────────── */}
-        {/* STEP 4: IMPORT BLUEPRINTS & INTERACTIVE SLIDESHOW DECK       */}
+        {/* STEP 4: FAST INGEST RELAY TERMINAL & APPLY TO STUDIO         */}
         {/* ──────────────────────────────────────────────────────────── */}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Box sx={{ width: 30, height: 30, borderRadius: '50%', bgcolor: '#10b981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.88rem' }}>
+            <Box sx={{ width: 32, height: 32, borderRadius: '50%', bgcolor: '#059669', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.88rem' }}>
               4
             </Box>
-            <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>
-              Step 4: Import Broadcast Blueprints into Studio
-            </Typography>
-          </Box>
-
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {/* Tap to Paste Button */}
-            <Button
-              onClick={handlePasteFromClipboard}
-              startIcon={<ContentPasteIcon />}
-              sx={{
-                bgcolor: 'rgba(16, 185, 129, 0.08)',
-                color: '#047857',
-                border: '1.5px dashed #10b981',
-                borderRadius: '14px',
-                py: 1.25,
-                fontWeight: 800,
-                fontSize: '0.85rem',
-                textTransform: 'none',
-                transition: 'all 0.2s',
-                '&:hover': { bgcolor: 'rgba(16, 185, 129, 0.14)', borderColor: '#047857', transform: 'translateY(-1px)' }
-              }}
-            >
-              Tap to Paste Your Blueprints from Clipboard
-            </Button>
-
-            <PremiumMarkdownEditor
-              colorTheme="#10b981"
-              minRows={6}
-              fullWidth
-              placeholder={`# [LIVESTREAM_MENU_PAYLOAD]\n**Hub:** ${hubTitle} | **Category:** ${currentCategory}\n\n### 🔴 OPTION 1: The Logistics Operator Approach\n* **Broadcast Title:** Bypassing the Highway: Kaduna Farm-Gate Processing\n* **Act 1 (THE OPEN - Tension):** We open with ₦2.4M freight loss. We reframe: "What if the solution isn't safer trucks, but zero trucks?"\n* **Act 2 (THE MEAT - Map & Defend):** We expose checkpoint extortion syndicates. We preempt skepticism with micro-mill unit economics.\n* **Act 3 (THE CLOSE - The Fork):** Binary Choice.\n  * Path A: Keep bleeding transit rot.\n  * Path B: Deploy capital into local processing.\n* **The Ecosystem Push (CTA):** Flash [Deal ID: Sabou Capital $2M Facility] on screen.\n\n### 🟡 OPTION 2: The Deal Room Pitch (VC & Capital Focus)\n...`}
-              value={customIngestMarkdown}
-              onChange={(e: any) => setCustomIngestMarkdown(e.target.value)}
-            />
-          </Box>
-
-          {/* Live Detection Banner */}
-          {liveParsedBriefs.length > 0 && (
-            <Paper sx={{ p: 2, bgcolor: '#ecfdf5', borderRadius: '14px', border: '1.5px solid #10b981', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
-                <CheckCircleIcon sx={{ color: '#059669', fontSize: 22 }} />
-                <Typography sx={{ color: '#065f46', fontWeight: 900, fontSize: '0.9rem' }}>
-                  ✓ Live Detection: {liveParsedBriefs.length} Valid Broadcast Blueprints Ready!
-                </Typography>
-              </Box>
-              <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                {Array.from(new Set(liveParsedBriefs.map(b => b.timeframe))).map(era => (
-                  <Chip key={era} label={era.toUpperCase()} size="small" sx={{ bgcolor: '#059669', color: '#fff', fontSize: '0.65rem', fontWeight: 800 }} />
-                ))}
-              </Box>
-            </Paper>
-          )}
-
-          {/* ── INTERACTIVE EDITORIAL BLUEPRINT DECK (SLIDESHOW) ── */}
-          <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {/* Progress & Quick Jump Strip */}
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 0.5 }}>
-              <Typography sx={{ color: '#64748b', fontSize: '0.84rem', fontWeight: 800 }}>
-                Blueprint <strong style={{ color: '#0f172a' }}>{deckActiveIndex + 1}</strong> of {displayBlueprints.length}
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
+                Step 4: Fast Ingest Relay (Apply to Studio)
               </Typography>
-              
-              {/* Dot indicators for blueprints */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
-                {displayBlueprints.map((dotItem, dotIdx) => {
-                  const isCurrentDot = dotIdx === deckActiveIndex;
-                  return (
-                    <Box
-                      key={`deck-dot-${dotIdx}`}
-                      onClick={() => setDeckActiveIndex(dotIdx)}
-                      sx={{
-                        width: isCurrentDot ? 22 : 7,
-                        height: 7,
-                        borderRadius: '999px',
-                        bgcolor: isCurrentDot ? dotItem.eraColor : alpha(dotItem.eraColor, 0.35),
-                        cursor: 'pointer',
-                        transition: 'all 0.25s ease',
-                        '&:hover': { bgcolor: dotItem.eraColor }
-                      }}
-                    />
-                  );
-                })}
-              </Box>
-
-              <Typography sx={{ color: '#94a3b8', fontSize: '0.78rem', fontWeight: 700 }}>
-                {currentDeckItem.eraBadge}
+              <Typography sx={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 600 }}>
+                Paste the generated markdown output from Step 3 to dispatch all 4 broadcast blueprints into Studio.
               </Typography>
             </Box>
-
-            {/* ── CARD CONTAINER WITH FLOATING CONTROLS & DROP STACK ── */}
-            <Box sx={{ position: 'relative', width: '100%' }}>
-              {/* Floating Previous Button */}
-              <IconButton
-                onClick={() => setDeckActiveIndex(prev => Math.max(0, prev - 1))}
-                disabled={deckActiveIndex === 0}
-                aria-label="Previous Blueprint"
-                sx={{
-                  position: 'absolute',
-                  left: { xs: -12, sm: -18 },
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  zIndex: 25,
-                  width: { xs: 38, sm: 44 },
-                  height: { xs: 38, sm: 44 },
-                  bgcolor: '#ffffff',
-                  border: '1.5px solid rgba(226, 232, 240, 0.95)',
-                  boxShadow: '0 8px 24px rgba(15, 23, 42, 0.14)',
-                  color: '#0f172a',
-                  transition: 'all 0.2s ease',
-                  opacity: deckActiveIndex === 0 ? 0.35 : 1,
-                  pointerEvents: deckActiveIndex === 0 ? 'none' : 'auto',
-                  '&:hover': {
-                    bgcolor: '#0f172a',
-                    color: '#ffffff',
-                    borderColor: '#0f172a',
-                    transform: 'translateY(-50%) scale(1.08)',
-                  }
-                }}
-              >
-                <ArrowBackIosNewIcon sx={{ fontSize: 16, ml: '3px' }} />
-              </IconButton>
-
-              {/* Floating Next Button */}
-              <IconButton
-                onClick={() => setDeckActiveIndex(prev => Math.min(displayBlueprints.length - 1, prev + 1))}
-                disabled={deckActiveIndex === displayBlueprints.length - 1}
-                aria-label="Next Blueprint"
-                sx={{
-                  position: 'absolute',
-                  right: { xs: -12, sm: -18 },
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  zIndex: 25,
-                  width: { xs: 38, sm: 44 },
-                  height: { xs: 38, sm: 44 },
-                  bgcolor: '#0f172a',
-                  border: '1.5px solid #0f172a',
-                  boxShadow: '0 8px 24px rgba(15, 23, 42, 0.25)',
-                  color: '#ffffff',
-                  transition: 'all 0.2s ease',
-                  opacity: deckActiveIndex === displayBlueprints.length - 1 ? 0.35 : 1,
-                  pointerEvents: deckActiveIndex === displayBlueprints.length - 1 ? 'none' : 'auto',
-                  '&:hover': {
-                    bgcolor: '#1e293b',
-                    borderColor: '#1e293b',
-                    transform: 'translateY(-50%) scale(1.08)',
-                  }
-                }}
-              >
-                <ArrowForwardIosIcon sx={{ fontSize: 16 }} />
-              </IconButton>
-
-              {/* Main Blueprint Card */}
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={currentDeckItem.id || deckActiveIndex}
-                  initial={{ opacity: 0, scale: 0.96 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.96 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      p: { xs: 2.75, sm: 3.5 },
-                      borderRadius: '24px',
-                      bgcolor: '#ffffff',
-                      border: '1.5px solid',
-                      borderColor: alpha(currentDeckItem.eraColor, 0.35),
-                      boxShadow: `0 12px 32px ${alpha(currentDeckItem.eraColor, 0.12)}, 0 2px 8px rgba(0,0,0,0.04)`,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 2.2,
-                    }}
-                  >
-                    {/* Top Row: Era Chip & Pillar Info */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Chip
-                          label={currentDeckItem.eraBadge}
-                          size="small"
-                          sx={{
-                            bgcolor: alpha(currentDeckItem.eraColor, 0.14),
-                            color: currentDeckItem.eraColor,
-                            border: `1.5px solid ${alpha(currentDeckItem.eraColor, 0.35)}`,
-                            fontWeight: 900,
-                            fontSize: '0.74rem',
-                            borderRadius: '999px',
-                            px: 0.5,
-                          }}
-                        />
-                        <Chip
-                          label={`📍 ${(currentDeckItem.category || currentCategory).toUpperCase()}`}
-                          size="small"
-                          sx={{
-                            bgcolor: '#f1f5f9',
-                            color: '#475569',
-                            fontWeight: 800,
-                            fontSize: '0.72rem',
-                            borderRadius: '999px',
-                          }}
-                        />
-                      </Box>
-                      <Typography sx={{ color: '#64748b', fontSize: '0.74rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                        {currentDeckItem.typeIcon} {currentDeckItem.typeTitle}
-                      </Typography>
-                    </Box>
-
-                    {/* Blueprint Title */}
-                    <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.35, fontSize: { xs: '1.15rem', sm: '1.28rem' }, letterSpacing: '-0.02em' }}>
-                      {currentDeckItem.title}
-                    </Typography>
-
-                    {/* Description */}
-                    <Typography sx={{ color: '#334155', fontSize: '0.9rem', lineHeight: 1.6, fontWeight: 500 }}>
-                      {currentDeckItem.description}
-                    </Typography>
-
-                    {/* Core Hook Box */}
-                    <Box sx={{ p: 1.75, borderRadius: '14px', bgcolor: alpha(currentDeckItem.eraColor, 0.06), border: `1px dashed ${alpha(currentDeckItem.eraColor, 0.3)}` }}>
-                      <Typography sx={{ color: currentDeckItem.eraColor, fontSize: '0.74rem', fontWeight: 800, textTransform: 'uppercase', mb: 0.4 }}>
-                        🎙️ Opening Monologue Hook
-                      </Typography>
-                      <Typography sx={{ color: '#0f172a', fontSize: '0.86rem', fontWeight: 600, fontStyle: 'italic', lineHeight: 1.45 }}>
-                        "{currentDeckItem.hook}"
-                      </Typography>
-                    </Box>
-
-                    {/* 50-Min Presentation Rundown */}
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 1.75, bgcolor: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-                      <Typography sx={{ fontSize: '0.74rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                        ⏱️ 50-Min Presentation Rundown:
-                      </Typography>
-                      {currentDeckItem.timelinePillars.map((pillar, pIdx) => (
-                        <Box key={pIdx} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.25 }}>
-                          <Chip
-                            label={pillar.time}
-                            size="small"
-                            sx={{
-                              height: 22,
-                              fontSize: '0.68rem',
-                              fontWeight: 900,
-                              bgcolor: '#e2e8f0',
-                              color: '#0f172a',
-                              borderRadius: '6px',
-                              flexShrink: 0,
-                              mt: 0.2
-                            }}
-                          />
-                          <Box sx={{ minWidth: 0 }}>
-                            <Typography sx={{ fontSize: '0.82rem', fontWeight: 800, color: '#1e293b', lineHeight: 1.3 }}>
-                              {pillar.role}
-                            </Typography>
-                            <Typography sx={{ fontSize: '0.76rem', color: '#64748b', lineHeight: 1.4 }}>
-                              {pillar.desc}
-                            </Typography>
-                          </Box>
-                        </Box>
-                      ))}
-                    </Box>
-
-                    {/* Key Questions (if present) */}
-                    {currentDeckItem.keyQuestions && currentDeckItem.keyQuestions.length > 0 && (
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.6 }}>
-                        <Typography sx={{ fontSize: '0.74rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                          💬 Live Debate Questions:
-                        </Typography>
-                        {currentDeckItem.keyQuestions.map((q, qIdx) => (
-                          <Typography key={qIdx} sx={{ fontSize: '0.8rem', color: '#334155', fontWeight: 500, display: 'flex', gap: 0.8 }}>
-                            <span style={{ color: currentDeckItem.eraColor }}>•</span> {q}
-                          </Typography>
-                        ))}
-                      </Box>
-                    )}
-
-                    {/* Bottom Action Footer */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pt: 1.5, borderTop: '1px solid #f1f5f9', mt: 0.5 }}>
-                      <Typography sx={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>
-                        Select this blueprint to populate Title, Era & Rundown Canvas
-                      </Typography>
-
-                      <Button
-                        variant="contained"
-                        onClick={() => handleApplyBlueprint(currentDeckItem)}
-                        sx={{
-                          background: `linear-gradient(135deg, ${currentDeckItem.eraColor} 0%, ${alpha(currentDeckItem.eraColor, 0.88)} 100%)`,
-                          color: '#ffffff',
-                          fontWeight: 900,
-                          fontSize: '0.92rem',
-                          textTransform: 'none',
-                          py: 1.3,
-                          px: 3.5,
-                          borderRadius: '14px',
-                          boxShadow: `0 6px 18px ${alpha(currentDeckItem.eraColor, 0.38)}`,
-                          transition: 'all 0.2s ease',
-                          '&:hover': {
-                            background: `linear-gradient(135deg, ${currentDeckItem.eraColor} 0%, ${currentDeckItem.eraColor} 100%)`,
-                            transform: 'translateY(-1px)',
-                            boxShadow: `0 8px 24px ${alpha(currentDeckItem.eraColor, 0.5)}`,
-                          }
-                        }}
-                      >
-                        🚀 Use This Blueprint
-                      </Button>
-                    </Box>
-                  </Paper>
-                </motion.div>
-              </AnimatePresence>
-            </Box>
           </Box>
+
+          <PromptFastIngestBox
+            value={customIngestMarkdown}
+            onChange={(val: string) => setCustomIngestMarkdown(val)}
+            onIngest={handleIngestToStudio}
+            title="Fast Ingest: 4 Broadcast Blueprints Relay"
+            subtitle="Paste the generated markdown output from LS-Doc 1c below to apply to the Studio."
+            codeLabel="FAST INGEST"
+            fileName="blueprints.md"
+            unitLabel="blueprints"
+            colorTheme="#059669"
+            placeholder={`Paste the markdown output from LS-Doc 1c here...\n\nExample:\n# [LIVESTREAM_MENU_PAYLOAD]\n**Hub:** ${hubTitle} | **Category:** ${currentCategory}\n\n### 🔴 OPTION 1: The Logistics Operator Approach\n* **Broadcast Title:** Bypassing the Highway: Kaduna Farm-Gate Processing\n* **Act 1 (THE OPEN - Tension):** We open with ₦2.4M freight loss. We reframe: "What if the solution isn't safer trucks, but zero trucks?"\n* **Act 2 (THE MEAT - Map & Defend):** We expose checkpoint extortion syndicates. We preempt skepticism with micro-mill unit economics.\n* **Act 3 (THE CLOSE - The Fork):** Binary Choice.\n  * Path A: Keep bleeding transit rot.\n  * Path B: Deploy capital into local processing.\n* **The Ecosystem Push (CTA):** Flash [Deal ID: Sabou Capital $2M Facility] on screen.\n\n### 🟡 OPTION 2: The Deal Room Pitch (VC & Capital Focus)\n...`}
+            liveBlockCount={liveParsedBriefs.length}
+            expectedBlockCount={4}
+            buttonLabel={`⚡ Ingest & Apply ${liveParsedBriefs.length > 0 ? liveParsedBriefs.length : 4} Broadcast Blueprints to Studio`}
+          />
+
+          {/* Ingest Readiness 2-Item Checklist */}
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2,
+              borderRadius: '16px',
+              bgcolor: 'rgba(16, 185, 129, 0.04)',
+              border: '1px solid rgba(16, 185, 129, 0.2)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 1.25,
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography sx={{ color: '#047857', fontWeight: 900, fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                <span>⚡</span> Fast Ingest Ingestion Status
+              </Typography>
+              <Chip
+                label={
+                  liveParsedBriefs.length === 4
+                    ? "4/4 READY TO APPLY"
+                    : liveParsedBriefs.length > 0
+                    ? `${liveParsedBriefs.length}/4 DETECTED`
+                    : "AWAITING PASTE"
+                }
+                size="small"
+                sx={{
+                  bgcolor: liveParsedBriefs.length === 4 ? '#d1fae5' : '#fef3c7',
+                  color: liveParsedBriefs.length === 4 ? '#065f46' : '#b45309',
+                  fontWeight: 900,
+                  fontSize: '0.62rem',
+                  height: 18,
+                }}
+              />
+            </Box>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+              <PromptChecklistItem
+                id="ingest-syntax"
+                text={`Syntax Verification: Live parser detects ${liveParsedBriefs.length} of 4 structured broadcast blueprints with valid 3-Act rundowns and metadata`}
+                checked={liveParsedBriefs.length > 0}
+                onToggle={() => {}}
+                colorTheme="#10b981"
+              />
+              <PromptChecklistItem
+                id="ingest-apply"
+                text="Batch Dispatch: Pushes all 4 blueprints directly into the Studio Slideshow"
+                checked={liveParsedBriefs.length >= 4}
+                onToggle={() => {}}
+                colorTheme="#10b981"
+              />
+            </Box>
+          </Paper>
         </Box>
 
       </Box>
