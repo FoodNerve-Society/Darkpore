@@ -65,8 +65,9 @@ export default function middleware(request: NextRequest) {
     });
   }
 
-  // Prevent infinite rewrite loops
+  // Prevent infinite rewrite loops & allow standalone stage window
   if (
+    url.pathname.startsWith('/stage') ||
     url.pathname.startsWith('/modular-society') ||
     url.pathname.startsWith('/darkpore') ||
     url.pathname.startsWith('/innovation-center') ||

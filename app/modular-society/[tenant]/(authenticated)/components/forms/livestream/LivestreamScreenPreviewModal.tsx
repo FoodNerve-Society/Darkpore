@@ -8,11 +8,9 @@ import {
   Typography,
   IconButton,
   Button,
-  Avatar,
   Chip,
   Tooltip,
   TextField,
-  InputAdornment,
 } from '@mui/material';
 import { alpha } from '@mui/system';
 import {
@@ -21,18 +19,13 @@ import {
   Pause as PauseIcon,
   ArrowBackIosNew as PrevIcon,
   ArrowForwardIos as NextIcon,
-  ChatBubbleOutlineOutlined as ChatIcon,
-  Videocam as VideocamIcon,
-  Mic as MicIcon,
-  Visibility as VisibilityIcon,
-  FiberManualRecord as DotIcon,
-  Send as SendIcon,
   OpenInNew as OpenInNewIcon,
-  AutoAwesome as SparkleIcon,
-  Work as WorkIcon,
+  Sensors as LiveIcon,
+  AccessTime as AccessTimeIcon,
+  QuestionAnswer as QuestionIcon,
+  Notes as NotesIcon,
   Layers as LayersIcon,
-  Fullscreen as FullscreenIcon,
-  FullscreenExit as FullscreenExitIcon,
+  RestartAlt as ResetIcon,
 } from '@mui/icons-material';
 import {
   SlideSpikyTitle,
@@ -60,14 +53,8 @@ export interface LivestreamScreenPreviewModalProps {
   eventDate?: string;
 }
 
-// Simulated audience messages to show realistic chat flow
-const SAMPLE_CHAT_MESSAGES = [
-  { id: '1', user: 'Adaeze K.', avatar: '', text: 'Sound and video are crystal clear! 🙌', time: '10:02 AM' },
-  { id: '2', user: 'Marcus Vance', avatar: '', text: 'The capital allocation stat is mind-blowing.', time: '10:04 AM' },
-  { id: '3', user: 'Dr. Chinedu', avatar: '', text: 'Can you speak on the registry decentralization aspect?', time: '10:06 AM' },
-  { id: '4', user: 'Elena Rostova', avatar: '', text: 'Just bookmarked this slide for our working group.', time: '10:08 AM' },
-  { id: '5', user: 'Tunde B.', avatar: '', text: 'Is that ecosystem role remote-friendly?', time: '10:11 AM' },
-];
+const SYNC_CHANNEL_NAME = 'livestream_presentation_sync';
+const STAGE_CACHE_KEY = 'livestream_stage_cache';
 
 export default function LivestreamScreenPreviewModal({
   open,
@@ -83,138 +70,186 @@ export default function LivestreamScreenPreviewModal({
   eventDate = '',
 }: LivestreamScreenPreviewModalProps) {
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [showChat, setShowChat] = useState(true);
-  const [showPip, setShowPip] = useState(true);
-  const [chatMessages, setChatMessages] = useState(SAMPLE_CHAT_MESSAGES);
-  const [chatInput, setChatInput] = useState('');
-  const [simulatedReactions, setSimulatedReactions] = useState<{ id: number; emoji: string; left: number }[]>([]);
-  const reactionIdRef = useRef(0);
+  const [timerSeconds, setTimerSeconds] = useState(0);
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const channelRef = useRef<BroadcastChannel | null>(null);
 
-  // Reset to first slide when opened
-  useEffect(() => {
-    if (open) {
-      setActiveSlideIndex(0);
-      setIsPlaying(false);
-    }
-  }, [open]);
-
-  // Slides count
   const totalSlides = rundownBlocks.length;
   const currentItem = rundownBlocks[activeSlideIndex] || null;
+  const nextItem = activeSlideIndex < totalSlides - 1 ? rundownBlocks[activeSlideIndex + 1] : null;
 
-  // Auto-play slideshow timer
-  useEffect(() => {
-    if (!isPlaying || totalSlides <= 1) return;
-    const interval = setInterval(() => {
-      setActiveSlideIndex((prev) => (prev + 1) % totalSlides);
-    }, 6000);
-    return () => clearInterval(interval);
-  }, [isPlaying, totalSlides]);
+  // Broadcast and Cache Helper
+  const broadcastSync = (index: number) => {
+    try {
+      const statePayload = {
+        type: 'SYNC_STATE',
+        activeSlideIndex: index,
+        rundownBlocks,
+        title,
+        hubColor,
+      };
 
-  // Periodic floating reaction simulation
+      // Write to localStorage for immediate cross-tab fallback
+      localStorage.setItem(STAGE_CACHE_KEY, JSON.stringify(statePayload));
+
+      // Post to active BroadcastChannel
+      if (channelRef.current) {
+        channelRef.current.postMessage(statePayload);
+      }
+    } catch (e) {
+      console.error('Error broadcasting state:', e);
+    }
+  };
+
+  // Initialize BroadcastChannel
   useEffect(() => {
     if (!open) return;
-    const emojis = ['🔥', '💡', '👏', '❤️', '🚀', '🎯'];
-    const interval = setInterval(() => {
-      const emoji = emojis[Math.floor(Math.random() * emojis.length)];
-      const id = ++reactionIdRef.current;
-      const left = Math.floor(Math.random() * 80) + 10; // 10% to 90%
-      setSimulatedReactions((prev) => [...prev.slice(-8), { id, emoji, left }]);
-    }, 3200);
 
-    return () => clearInterval(interval);
-  }, [open]);
+    try {
+      const ch = new BroadcastChannel(SYNC_CHANNEL_NAME);
+      channelRef.current = ch;
 
-  const handlePrev = () => {
-    setIsPlaying(false);
-    setActiveSlideIndex((prev) => (prev > 0 ? prev - 1 : totalSlides - 1));
-  };
+      ch.onmessage = (event) => {
+        const data = event.data;
+        if (!data) return;
+
+        if (data.type === 'REQUEST_STATE') {
+          // A stage window just opened and requested state
+          broadcastSync(activeSlideIndex);
+        } else if (data.type === 'NAVIGATE') {
+          if (data.direction === 'next') {
+            setActiveSlideIndex((prev) => {
+              const next = prev < totalSlides - 1 ? prev + 1 : 0;
+              broadcastSync(next);
+              return next;
+            });
+          } else if (data.direction === 'prev') {
+            setActiveSlideIndex((prev) => {
+              const next = prev > 0 ? prev - 1 : totalSlides - 1;
+              broadcastSync(next);
+              return next;
+            });
+          }
+        }
+      };
+
+      // Broadcast on initial open
+      broadcastSync(activeSlideIndex);
+    } catch (e) {
+      console.warn('BroadcastChannel error:', e);
+    }
+
+    return () => {
+      channelRef.current?.close();
+      channelRef.current = null;
+    };
+  }, [open, activeSlideIndex, rundownBlocks, title, hubColor]);
+
+  // Elapsed Timer Effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    if (isTimerRunning) {
+      interval = setInterval(() => {
+        setTimerSeconds((prev) => prev + 1);
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isTimerRunning]);
+
+  // Keyboard navigation inside Control Deck
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight' || e.key === 'PageDown') {
+        e.preventDefault();
+        handleNext();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        handlePrev();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, activeSlideIndex, totalSlides]);
 
   const handleNext = () => {
-    setIsPlaying(false);
-    setActiveSlideIndex((prev) => (prev < totalSlides - 1 ? prev + 1 : 0));
+    if (totalSlides <= 1) return;
+    const nextIdx = activeSlideIndex < totalSlides - 1 ? activeSlideIndex + 1 : 0;
+    setActiveSlideIndex(nextIdx);
+    broadcastSync(nextIdx);
   };
 
-  const handleSendChat = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!chatInput.trim()) return;
-    const newMsg = {
-      id: String(Date.now()),
-      user: 'You (Host)',
-      avatar: hostAvatar,
-      text: chatInput.trim(),
-      time: 'Just now',
-    };
-    setChatMessages((prev) => [...prev, newMsg]);
-    setChatInput('');
+  const handlePrev = () => {
+    if (totalSlides <= 1) return;
+    const prevIdx = activeSlideIndex > 0 ? activeSlideIndex - 1 : totalSlides - 1;
+    setActiveSlideIndex(prevIdx);
+    broadcastSync(prevIdx);
   };
 
-  // Render the current slide from SlideComponents
-  const renderCurrentSlide = () => {
-    if (!currentItem) {
+  const handleSelectSlide = (idx: number) => {
+    setActiveSlideIndex(idx);
+    broadcastSync(idx);
+  };
+
+  const handleLaunchStageWindow = () => {
+    broadcastSync(activeSlideIndex);
+    const stageUrl = '/stage';
+    const features = 'width=1280,height=720,menubar=no,toolbar=no,location=no,status=no,resizable=yes';
+    window.open(stageUrl, 'LivestreamStage', features);
+  };
+
+  const formatTimer = (totalSec: number) => {
+    const mins = Math.floor(totalSec / 60);
+    const secs = totalSec % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
+
+  // Render a Slide Component cleanly
+  const renderSlideItem = (item: any) => {
+    if (!item) {
       return (
         <Box
           sx={{
             width: '100%',
-            aspectRatio: '16/9',
-            borderRadius: '24px',
-            bgcolor: '#090d16',
-            border: '1.5px solid rgba(255, 255, 255, 0.1)',
+            height: '100%',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            p: 4,
+            p: 3,
             textAlign: 'center',
-            position: 'relative',
-            overflow: 'hidden',
+            bgcolor: '#f8fafc',
+            border: '1.5px dashed #cbd5e1',
+            borderRadius: '16px',
           }}
         >
-          <Box
-            sx={{
-              position: 'absolute',
-              inset: 0,
-              background: 'radial-gradient(circle at center, rgba(16, 185, 129, 0.12) 0%, transparent 70%)',
-              pointerEvents: 'none',
-            }}
-          />
-          <Typography sx={{ fontSize: '3rem', mb: 2 }}>🎙️</Typography>
-          <Typography variant="h5" sx={{ fontWeight: 900, color: '#ffffff', mb: 1 }}>
-            Broadcast Standby Screen
-          </Typography>
-          <Typography sx={{ color: 'rgba(255, 255, 255, 0.65)', maxWidth: 440, fontSize: '0.95rem' }}>
-            No presentation slides in rundown yet. Add Broadcast Acts and article blocks in Step 2 to preview your presentation flow.
-          </Typography>
+          <Typography sx={{ color: '#94a3b8', fontSize: '0.85rem' }}>No slide available</Typography>
         </Box>
       );
     }
 
-    const isAct = currentItem.sourceType === 'act' || currentItem.originalBlockType === 'rundown_act' || Boolean(currentItem.originalContent?.role);
-    const isJob = currentItem.sourceType === 'job' || Boolean(currentItem.originalContent?.jobTitle);
-    const isTransition = currentItem.sourceType === 'transition' && !isAct;
+    const isAct =
+      item.sourceType === 'act' || item.originalBlockType === 'rundown_act' || Boolean(item.originalContent?.role);
+    const isJob = item.sourceType === 'job' || Boolean(item.originalContent?.jobTitle);
+    const isTransition = item.sourceType === 'transition' && !isAct;
 
     if (isAct) {
       return (
         <SlideRundownAct
-          content={currentItem.originalContent || {}}
-          durationStr={currentItem.durationStr}
+          content={item.originalContent || {}}
+          durationStr={item.durationStr}
           color={hubColor}
         />
       );
     }
+    if (isJob) return <SlideJob content={item.originalContent || {}} />;
+    if (isTransition) return <SlideTransition content={item.originalContent || {}} />;
 
-    if (isJob) {
-      return <SlideJob content={currentItem.originalContent || {}} />;
-    }
-
-    if (isTransition) {
-      return <SlideTransition content={currentItem.originalContent || {}} />;
-    }
-
-    // Article Blocks
-    const c = currentItem.originalContent || {};
-    switch (currentItem.originalBlockType) {
+    const c = item.originalContent || {};
+    switch (item.originalBlockType) {
       case 'subheading':
         return <SlideSpikyTitle content={c} />;
       case 'myth_fact':
@@ -229,7 +264,7 @@ export default function LivestreamScreenPreviewModal({
       case 'media':
         return <SlideMedia content={c} />;
       default:
-        return <SlideFallback content={c} type={currentItem.originalBlockType || 'slide'} />;
+        return <SlideFallback content={c} type={item.originalBlockType || 'slide'} />;
     }
   };
 
@@ -243,11 +278,10 @@ export default function LivestreamScreenPreviewModal({
         paper: {
           sx: {
             borderRadius: '28px',
-            bgcolor: '#090d16',
-            backgroundImage: 'radial-gradient(ellipse at top, rgba(30, 41, 59, 0.7) 0%, #090d16 100%)',
-            border: '1.5px solid rgba(255, 255, 255, 0.15)',
-            boxShadow: '0 32px 96px rgba(0, 0, 0, 0.8)',
-            maxHeight: '94vh',
+            bgcolor: '#ffffff',
+            border: '1.5px solid rgba(226, 232, 240, 0.95)',
+            boxShadow: '0 24px 64px rgba(15, 23, 42, 0.12)',
+            maxHeight: '92vh',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
@@ -255,14 +289,13 @@ export default function LivestreamScreenPreviewModal({
         },
       }}
     >
-      {/* ── BROADCAST SIMULATOR TOP BAR ── */}
+      {/* ── TOP CONTROL DECK HEADER ── */}
       <Box
         sx={{
-          px: { xs: 2, md: 3 },
+          px: { xs: 2.5, md: 3.5 },
           py: 2,
-          borderBottom: '1.5px solid rgba(255, 255, 255, 0.08)',
-          bgcolor: 'rgba(15, 23, 42, 0.6)',
-          backdropFilter: 'blur(16px)',
+          borderBottom: '1.5px solid rgba(226, 232, 240, 0.9)',
+          bgcolor: '#ffffff',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -271,120 +304,120 @@ export default function LivestreamScreenPreviewModal({
           zIndex: 10,
         }}
       >
-        {/* Left: Live indicator + Stream metadata */}
+        {/* Left: Deck Branding & Live Sync Status */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          {/* Live pulsing badge */}
+          <Box
+            sx={{
+              width: 36,
+              height: 36,
+              borderRadius: '12px',
+              bgcolor: alpha(hubColor, 0.12),
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <LiveIcon sx={{ color: hubColor, fontSize: '1.25rem' }} />
+          </Box>
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', letterSpacing: '-0.01em', lineHeight: 1.2 }}>
+              Director&apos;s Control Deck
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#64748b', fontSize: '0.8rem' }}>
+              Control your live presentation screen-share from this cockpit
+            </Typography>
+          </Box>
+
+          <Chip
+            icon={<LiveIcon sx={{ fontSize: '0.85rem !important', color: '#059669 !important' }} />}
+            label="Stage Sync Active"
+            size="small"
+            sx={{
+              bgcolor: '#d1fae5',
+              color: '#065f46',
+              fontWeight: 900,
+              fontSize: '0.68rem',
+              height: 22,
+              border: '1px solid rgba(16, 185, 129, 0.3)',
+            }}
+          />
+        </Box>
+
+        {/* Center: Slide Position & Elapsed Timer */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Chip
+            label={totalSlides > 0 ? `Slide ${activeSlideIndex + 1} of ${totalSlides}` : '0 Slides'}
+            size="small"
+            sx={{
+              bgcolor: '#0f172a',
+              color: '#ffffff',
+              fontWeight: 800,
+              fontSize: '0.78rem',
+              height: 28,
+              borderRadius: '8px',
+            }}
+          />
+
           <Box
             sx={{
               display: 'flex',
               alignItems: 'center',
-              gap: 0.75,
+              gap: 1,
               px: 1.5,
-              py: 0.5,
+              py: 0.4,
               borderRadius: '10px',
-              bgcolor: 'rgba(239, 68, 68, 0.18)',
-              border: '1.5px solid rgba(239, 68, 68, 0.4)',
+              bgcolor: '#f1f5f9',
+              border: '1px solid #e2e8f0',
             }}
           >
-            <DotIcon sx={{ color: '#ef4444', fontSize: '0.85rem', animation: 'pulse 1.5s infinite' }} />
-            <Typography sx={{ color: '#ef4444', fontWeight: 900, fontSize: '0.74rem', letterSpacing: '0.08em' }}>
-              LIVE BROADCAST
+            <AccessTimeIcon sx={{ fontSize: '0.95rem', color: '#64748b' }} />
+            <Typography sx={{ fontWeight: 800, fontSize: '0.82rem', color: '#0f172a', fontFamily: 'monospace' }}>
+              {formatTimer(timerSeconds)}
             </Typography>
-          </Box>
-
-          <Chip
-            label="1080p 60fps"
-            size="small"
-            sx={{
-              bgcolor: 'rgba(255, 255, 255, 0.08)',
-              color: '#94a3b8',
-              fontWeight: 800,
-              fontSize: '0.68rem',
-              height: 22,
-            }}
-          />
-
-          <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 0.75, color: '#10b981' }}>
-            <MicIcon sx={{ fontSize: '0.95rem' }} />
-            <Typography sx={{ fontSize: '0.72rem', fontWeight: 800, color: '#10b981', letterSpacing: '0.03em' }}>
-              HOST AUDIO LIVE
-            </Typography>
+            <IconButton
+              size="small"
+              onClick={() => setIsTimerRunning(!isTimerRunning)}
+              sx={{ p: 0.3, color: isTimerRunning ? '#ef4444' : '#10b981' }}
+            >
+              {isTimerRunning ? <PauseIcon sx={{ fontSize: 16 }} /> : <PlayIcon sx={{ fontSize: 16 }} />}
+            </IconButton>
           </Box>
         </Box>
 
-        {/* Center: Stream Title & Hub */}
-        <Box sx={{ textAlign: 'center', maxWidth: { xs: '100%', md: 480 }, minWidth: 0 }}>
-          <Typography
-            sx={{
-              fontWeight: 900,
-              color: '#ffffff',
-              fontSize: '0.95rem',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {title || 'Untitled Livestream Broadcast'}
-          </Typography>
-          <Typography sx={{ color: '#64748b', fontSize: '0.74rem', fontWeight: 600 }}>
-            {hubTitle} • {category.toUpperCase()}
-          </Typography>
-        </Box>
-
-        {/* Right: Viewers Count & Action Controls */}
+        {/* Right: Launch Stage Window & Close */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-          <Chip
-            icon={<VisibilityIcon sx={{ fontSize: '0.9rem !important', color: '#10b981 !important' }} />}
-            label="248 Watching"
-            size="small"
+          <Button
+            variant="contained"
+            onClick={handleLaunchStageWindow}
+            endIcon={<OpenInNewIcon sx={{ fontSize: '0.95rem !important' }} />}
             sx={{
-              bgcolor: 'rgba(16, 185, 129, 0.12)',
-              border: '1px solid rgba(16, 185, 129, 0.25)',
-              color: '#10b981',
+              borderRadius: '12px',
               fontWeight: 800,
-              fontSize: '0.74rem',
-              height: 24,
+              px: 2.2,
+              py: 0.75,
+              background: `linear-gradient(135deg, ${hubColor} 0%, #059669 100%)`,
+              color: '#ffffff',
+              fontSize: '0.82rem',
+              textTransform: 'none',
+              boxShadow: `0 4px 14px ${alpha(hubColor, 0.35)}`,
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                transform: 'translateY(-1px)',
+                boxShadow: `0 6px 18px ${alpha(hubColor, 0.45)}`,
+              },
             }}
-          />
-
-          <Tooltip title={showPip ? 'Hide Host Webcam PiP' : 'Show Host Webcam PiP'}>
-            <IconButton
-              size="small"
-              onClick={() => setShowPip(!showPip)}
-              sx={{
-                bgcolor: showPip ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255, 255, 255, 0.05)',
-                color: showPip ? '#60a5fa' : '#94a3b8',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                '&:hover': { bgcolor: 'rgba(59, 130, 246, 0.3)' },
-              }}
-            >
-              <VideocamIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-
-          <Tooltip title={showChat ? 'Hide Live Chat' : 'Show Live Chat'}>
-            <IconButton
-              size="small"
-              onClick={() => setShowChat(!showChat)}
-              sx={{
-                bgcolor: showChat ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.05)',
-                color: showChat ? '#34d399' : '#94a3b8',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                '&:hover': { bgcolor: 'rgba(16, 185, 129, 0.3)' },
-              }}
-            >
-              <ChatIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
+          >
+            Launch Stage Window (Screen Share)
+          </Button>
 
           <IconButton
             size="small"
             onClick={onClose}
             sx={{
-              bgcolor: 'rgba(255, 255, 255, 0.08)',
-              color: '#cbd5e1',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.2)', color: '#ef4444' },
+              color: '#64748b',
+              bgcolor: 'rgba(0, 0, 0, 0.04)',
+              border: '1px solid rgba(0, 0, 0, 0.08)',
+              '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.08)', color: '#0f172a' },
             }}
           >
             <CloseIcon fontSize="small" />
@@ -392,526 +425,358 @@ export default function LivestreamScreenPreviewModal({
         </Box>
       </Box>
 
-      {/* ── MAIN STUDIO BODY: BROADCAST SCREEN + CHAT SIDEBAR ── */}
-      <DialogContent sx={{ p: { xs: 2, md: 3 }, flex: 1, display: 'flex', gap: 2.5, minHeight: 0, overflow: 'hidden' }}>
-        
-        {/* Left / Center: 16:9 Cinema Stage + Bottom Scrubber */}
-        <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {/* ── MAIN COCKPIT: 2-COLUMN SPLIT ── */}
+      <DialogContent sx={{ p: { xs: 2.5, md: 3 }, flex: 1, display: 'flex', flexDirection: 'column', gap: 2.5, minHeight: 0, overflowY: 'auto' }}>
+        <Box sx={{ display: 'flex', gap: 3, flexDirection: { xs: 'column', lg: 'row' }, flex: 1 }}>
           
-          {/* 16:9 Broadcast Stage Canvas */}
-          <Box
-            sx={{
-              position: 'relative',
-              width: '100%',
-              aspectRatio: '16/9',
-              borderRadius: '24px',
-              overflow: 'hidden',
-              bgcolor: '#0f172a',
-              border: '1.5px solid rgba(255, 255, 255, 0.12)',
-              boxShadow: '0 24px 64px rgba(0, 0, 0, 0.6)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            {/* The Active Slide Component */}
-            <Box sx={{ width: '100%', height: '100%', position: 'relative', zIndex: 1 }}>
-              {renderCurrentSlide()}
-            </Box>
-
-            {/* Host Webcam Picture-in-Picture (PiP) Overlay */}
-            {showPip && (
-              <Box
-                sx={{
-                  position: 'absolute',
-                  bottom: { xs: 12, md: 20 },
-                  right: { xs: 12, md: 20 },
-                  zIndex: 20,
-                  width: { xs: 130, md: 170 },
-                  height: { xs: 80, md: 104 },
-                  borderRadius: '16px',
-                  bgcolor: '#0a0e17',
-                  border: '1.5px solid rgba(255, 255, 255, 0.25)',
-                  boxShadow: '0 12px 32px rgba(0,0,0,0.6)',
-                  overflow: 'hidden',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  p: 1,
-                  background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%)',
-                }}
-              >
-                {/* Host PiP Header */}
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Chip
-                    label="CAM 1 • LIVE"
-                    size="small"
-                    sx={{
-                      bgcolor: 'rgba(239, 68, 68, 0.25)',
-                      color: '#ef4444',
-                      fontWeight: 900,
-                      fontSize: '0.58rem',
-                      height: 16,
-                      px: 0.2,
-                    }}
-                  />
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4 }}>
-                    <Box sx={{ width: 4, height: 10, bgcolor: '#10b981', borderRadius: 1 }} />
-                    <Box sx={{ width: 4, height: 14, bgcolor: '#10b981', borderRadius: 1 }} />
-                    <Box sx={{ width: 4, height: 8, bgcolor: '#10b981', borderRadius: 1 }} />
-                  </Box>
-                </Box>
-
-                {/* Host Avatar & Name */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Avatar
-                    src={hostAvatar}
-                    sx={{
-                      width: 28,
-                      height: 28,
-                      border: '1.5px solid #10b981',
-                      bgcolor: hubColor,
-                      fontSize: '0.75rem',
-                      fontWeight: 800,
-                    }}
-                  >
-                    {hostName.charAt(0)}
-                  </Avatar>
-                  <Box sx={{ minWidth: 0 }}>
-                    <Typography
-                      sx={{
-                        fontWeight: 800,
-                        fontSize: '0.72rem',
-                        color: '#ffffff',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {hostName}
-                    </Typography>
-                    <Typography sx={{ fontSize: '0.6rem', color: '#94a3b8' }}>Host</Typography>
-                  </Box>
-                </Box>
-              </Box>
-            )}
-
-            {/* Lower-Third Glass Banner Overlay */}
+          {/* ── LEFT COLUMN: LIVE MONITOR & NEXT UP ── */}
+          <Box sx={{ flex: 1.3, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+            
+            {/* Live Monitor Card */}
             <Box
               sx={{
-                position: 'absolute',
-                bottom: { xs: 12, md: 20 },
-                left: { xs: 12, md: 20 },
-                zIndex: 15,
-                p: { xs: 1.25, md: 1.75 },
-                borderRadius: '16px',
-                bgcolor: 'rgba(15, 23, 42, 0.85)',
-                backdropFilter: 'blur(12px)',
-                border: '1.5px solid rgba(255, 255, 255, 0.15)',
-                boxShadow: '0 12px 32px rgba(0, 0, 0, 0.5)',
-                maxWidth: { xs: '60%', md: '50%' },
+                p: 2,
+                borderRadius: '20px',
+                bgcolor: '#ffffff',
+                border: '1.5px solid rgba(226, 232, 240, 0.9)',
+                boxShadow: '0 4px 16px rgba(15, 23, 42, 0.03)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 1.5,
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#ef4444', animation: 'pulse 1.5s infinite' }} />
+                  <Typography sx={{ fontWeight: 800, fontSize: '0.78rem', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Live Stage Monitor (Audience View)
+                  </Typography>
+                </Box>
+
                 <Chip
-                  label={hubTitle.toUpperCase()}
+                  label="16:9 Stage Surface"
+                  size="small"
+                  sx={{ bgcolor: '#f8fafc', color: '#64748b', fontWeight: 700, fontSize: '0.68rem', height: 20 }}
+                />
+              </Box>
+
+              {/* 16:9 Active Slide Frame */}
+              <Box
+                sx={{
+                  width: '100%',
+                  aspectRatio: '16/9',
+                  borderRadius: '16px',
+                  overflow: 'hidden',
+                  bgcolor: '#0f172a',
+                  border: '1.5px solid rgba(226, 232, 240, 0.8)',
+                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.06)',
+                  position: 'relative',
+                }}
+              >
+                {renderSlideItem(currentItem)}
+              </Box>
+            </Box>
+
+            {/* Next Up Peek Preview Card */}
+            <Box
+              sx={{
+                p: 1.75,
+                borderRadius: '16px',
+                bgcolor: '#f8fafc',
+                border: '1.5px solid #e2e8f0',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2,
+              }}
+            >
+              <Box sx={{ width: 140, aspectRatio: '16/9', borderRadius: '10px', overflow: 'hidden', bgcolor: '#0f172a', flexShrink: 0, position: 'relative' }}>
+                {nextItem ? (
+                  <Box sx={{ transform: 'scale(0.35)', transformOrigin: 'top left', width: '285%', height: '285%' }}>
+                    {renderSlideItem(nextItem)}
+                  </Box>
+                ) : (
+                  <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Typography sx={{ fontSize: '0.65rem', color: '#94a3b8' }}>End of Deck</Typography>
+                  </Box>
+                )}
+              </Box>
+
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Typography sx={{ fontSize: '0.7rem', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', mb: 0.25 }}>
+                  Next Up On Stage
+                </Typography>
+                <Typography sx={{ fontWeight: 800, fontSize: '0.88rem', color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {nextItem
+                    ? nextItem.originalContent?.role || nextItem.originalContent?.title || nextItem.originalBlockType?.replace('_', ' ').toUpperCase() || 'Upcoming Segment'
+                    : 'Broadcast Conclusion'}
+                </Typography>
+                <Typography sx={{ fontSize: '0.74rem', color: '#64748b' }}>
+                  {nextItem ? `Pacing: ${nextItem.durationStr || '5m'}` : 'All slides completed'}
+                </Typography>
+              </Box>
+
+              {nextItem && (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={handleNext}
+                  sx={{
+                    borderRadius: '10px',
+                    borderColor: '#cbd5e1',
+                    color: '#0f172a',
+                    fontWeight: 800,
+                    fontSize: '0.74rem',
+                    textTransform: 'none',
+                    py: 0.5,
+                    px: 1.5,
+                    '&:hover': { borderColor: '#0f172a', bgcolor: '#ffffff' },
+                  }}
+                >
+                  Skip To Next
+                </Button>
+              )}
+            </Box>
+          </Box>
+
+          {/* ── RIGHT COLUMN: PRESENTER TELEPROMPTER & CUES ── */}
+          <Box
+            sx={{
+              flex: 1,
+              minWidth: 0,
+              p: 2.5,
+              borderRadius: '20px',
+              bgcolor: '#ffffff',
+              border: '1.5px solid rgba(226, 232, 240, 0.9)',
+              boxShadow: '0 4px 16px rgba(15, 23, 42, 0.03)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 2,
+            }}
+          >
+            {/* Header: Segment Title & Pacing */}
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <NotesIcon sx={{ color: hubColor, fontSize: '1.2rem' }} />
+                <Typography sx={{ fontWeight: 900, fontSize: '0.88rem', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  Presenter Teleprompter & Notes
+                </Typography>
+              </Box>
+
+              {currentItem?.durationStr && (
+                <Chip
+                  label={`⏱️ Target: ${currentItem.durationStr}`}
                   size="small"
                   sx={{
-                    bgcolor: alpha(hubColor, 0.2),
+                    bgcolor: alpha(hubColor, 0.1),
                     color: hubColor,
                     fontWeight: 900,
-                    fontSize: '0.62rem',
-                    height: 18,
+                    fontSize: '0.72rem',
+                    borderRadius: '8px',
                   }}
                 />
-                {currentItem && (
-                  <Typography sx={{ color: '#cbd5e1', fontSize: '0.7rem', fontWeight: 700 }}>
-                    {currentItem.sourceType === 'act'
-                      ? 'Act Introduction'
-                      : currentItem.sourceType === 'job'
-                      ? 'Ecosystem Spotlight'
-                      : 'Key Analysis Block'}
+              )}
+            </Box>
+
+            {/* Current Slide Context Banner */}
+            <Box sx={{ p: 2, borderRadius: '14px', bgcolor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+              <Typography sx={{ fontSize: '0.72rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', mb: 0.5 }}>
+                Current Segment Header
+              </Typography>
+              <Typography sx={{ fontWeight: 900, fontSize: '1.1rem', color: '#0f172a', lineHeight: 1.3 }}>
+                {currentItem?.originalContent?.role || currentItem?.originalContent?.title || currentItem?.originalBlockType?.replace('_', ' ').toUpperCase() || 'Presentation Segment'}
+              </Typography>
+              {currentItem?.parentArticleTitle && (
+                <Typography sx={{ fontSize: '0.75rem', color: '#3b82f6', fontWeight: 700, mt: 0.5 }}>
+                  📖 Derived from: {currentItem.parentArticleTitle}
+                </Typography>
+              )}
+            </Box>
+
+            {/* Speaker Notes */}
+            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 140 }}>
+              <Typography sx={{ fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', mb: 1 }}>
+                Private Speaker Notes & Talking Points
+              </Typography>
+              <Box
+                sx={{
+                  flex: 1,
+                  p: 2,
+                  borderRadius: '14px',
+                  bgcolor: '#ffffff',
+                  border: '1.5px solid rgba(226, 232, 240, 0.9)',
+                  overflowY: 'auto',
+                }}
+              >
+                {currentItem?.speakerNotes ? (
+                  <Typography sx={{ fontSize: '0.92rem', color: '#1e293b', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                    {currentItem.speakerNotes}
+                  </Typography>
+                ) : (
+                  <Typography sx={{ fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic' }}>
+                    No specific speaker notes written for this card. Focus on delivering the core graphic insight on screen.
                   </Typography>
                 )}
               </Box>
-              <Typography
-                sx={{
-                  color: '#ffffff',
-                  fontWeight: 800,
-                  fontSize: { xs: '0.78rem', md: '0.92rem' },
-                  lineHeight: 1.25,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {title || 'Scheduled Broadcast'}
-              </Typography>
             </Box>
 
-            {/* Climax CTA Banner Overlay (if active slide is a job) */}
-            {currentItem && (currentItem.sourceType === 'job' || Boolean(currentItem.originalContent?.jobTitle)) && (
+            {/* Discussion Questions / Audience Cues */}
+            {currentItem?.originalContent?.description && (
               <Box
                 sx={{
-                  position: 'absolute',
-                  top: 20,
-                  left: 20,
-                  zIndex: 25,
-                  p: 1.5,
-                  borderRadius: '16px',
-                  bgcolor: 'rgba(245, 158, 11, 0.95)',
-                  color: '#0f172a',
-                  border: '1.5px solid rgba(255, 255, 255, 0.4)',
-                  boxShadow: '0 8px 32px rgba(245, 158, 11, 0.4)',
+                  p: 2,
+                  borderRadius: '14px',
+                  bgcolor: 'rgba(59, 130, 246, 0.05)',
+                  border: '1.5px solid rgba(59, 130, 246, 0.2)',
                   display: 'flex',
-                  alignItems: 'center',
+                  alignItems: 'flex-start',
                   gap: 1.5,
                 }}
               >
-                <WorkIcon sx={{ fontSize: '1.2rem', color: '#0f172a' }} />
+                <QuestionIcon sx={{ fontSize: '1.15rem', color: '#2563eb', mt: 0.2 }} />
                 <Box>
-                  <Typography sx={{ fontWeight: 900, fontSize: '0.8rem', lineHeight: 1.1 }}>
-                    CLIMAX OPPORTUNITY SPOTLIGHT
+                  <Typography sx={{ fontWeight: 800, fontSize: '0.76rem', color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: '0.03em', mb: 0.25 }}>
+                    Discussion Prompt / Audience Question
                   </Typography>
-                  <Typography sx={{ fontSize: '0.72rem', fontWeight: 600 }}>
-                    Audience link active: {currentItem.originalContent?.jobTitle || 'Ecosystem Role'}
+                  <Typography sx={{ fontSize: '0.85rem', color: '#1e3a8a', lineHeight: 1.45, fontWeight: 500 }}>
+                    {currentItem.originalContent.description}
                   </Typography>
                 </Box>
-                <Button
-                  size="small"
-                  variant="contained"
-                  endIcon={<OpenInNewIcon sx={{ fontSize: '0.75rem !important' }} />}
-                  sx={{
-                    bgcolor: '#0f172a',
-                    color: '#ffffff',
-                    fontWeight: 800,
-                    fontSize: '0.7rem',
-                    borderRadius: '8px',
-                    textTransform: 'none',
-                    py: 0.3,
-                    px: 1.2,
-                    '&:hover': { bgcolor: '#1e293b' },
-                  }}
-                >
-                  Apply Live
-                </Button>
-              </Box>
-            )}
-
-            {/* Floating Live Reaction Emojis */}
-            {simulatedReactions.map((r) => (
-              <Box
-                key={r.id}
-                sx={{
-                  position: 'absolute',
-                  bottom: 30,
-                  left: `${r.left}%`,
-                  fontSize: '1.75rem',
-                  zIndex: 30,
-                  pointerEvents: 'none',
-                  animation: 'floatUpReaction 2.8s ease-out forwards',
-                  '@keyframes floatUpReaction': {
-                    '0%': { transform: 'translateY(0) scale(0.6)', opacity: 0 },
-                    '20%': { transform: 'translateY(-30px) scale(1.1)', opacity: 1 },
-                    '80%': { transform: 'translateY(-160px) scale(1)', opacity: 0.85 },
-                    '100%': { transform: 'translateY(-220px) scale(0.8)', opacity: 0 },
-                  },
-                }}
-              >
-                {r.emoji}
-              </Box>
-            ))}
-          </Box>
-
-          {/* Director Deck: Playback Controls & Scrubber */}
-          <Box
-            sx={{
-              p: 1.5,
-              borderRadius: '20px',
-              bgcolor: 'rgba(15, 23, 42, 0.7)',
-              border: '1.5px solid rgba(255, 255, 255, 0.08)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 1.5,
-            }}
-          >
-            {/* Control Buttons & Progress */}
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <IconButton
-                  size="small"
-                  onClick={handlePrev}
-                  disabled={totalSlides <= 1}
-                  sx={{
-                    bgcolor: 'rgba(255, 255, 255, 0.08)',
-                    color: '#ffffff',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.15)' },
-                  }}
-                >
-                  <PrevIcon sx={{ fontSize: '0.85rem' }} />
-                </IconButton>
-
-                <Button
-                  size="small"
-                  variant="contained"
-                  startIcon={isPlaying ? <PauseIcon /> : <PlayIcon />}
-                  onClick={() => setIsPlaying(!isPlaying)}
-                  disabled={totalSlides <= 1}
-                  sx={{
-                    bgcolor: isPlaying ? '#ef4444' : '#10b981',
-                    color: '#ffffff',
-                    fontWeight: 800,
-                    fontSize: '0.78rem',
-                    borderRadius: '10px',
-                    textTransform: 'none',
-                    px: 2,
-                    py: 0.5,
-                    boxShadow: 'none',
-                    '&:hover': { bgcolor: isPlaying ? '#dc2626' : '#059669' },
-                  }}
-                >
-                  {isPlaying ? 'Pause Slideshow' : 'Auto Play'}
-                </Button>
-
-                <IconButton
-                  size="small"
-                  onClick={handleNext}
-                  disabled={totalSlides <= 1}
-                  sx={{
-                    bgcolor: 'rgba(255, 255, 255, 0.08)',
-                    color: '#ffffff',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.15)' },
-                  }}
-                >
-                  <NextIcon sx={{ fontSize: '0.85rem' }} />
-                </IconButton>
-              </Box>
-
-              {/* Slide Counter & Runtime */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Chip
-                  label={totalSlides > 0 ? `Slide ${activeSlideIndex + 1} of ${totalSlides}` : '0 Slides'}
-                  size="small"
-                  sx={{
-                    bgcolor: 'rgba(255, 255, 255, 0.1)',
-                    color: '#ffffff',
-                    fontWeight: 800,
-                    fontSize: '0.72rem',
-                  }}
-                />
-
-                {currentItem && (
-                  <Chip
-                    label={`Pacing: ${currentItem.durationStr || '5m'}`}
-                    size="small"
-                    sx={{
-                      bgcolor: 'rgba(59, 130, 246, 0.15)',
-                      color: '#60a5fa',
-                      fontWeight: 800,
-                      fontSize: '0.72rem',
-                    }}
-                  />
-                )}
-              </Box>
-            </Box>
-
-            {/* Slide Scrubber Pills */}
-            {totalSlides > 0 && (
-              <Box
-                sx={{
-                  display: 'flex',
-                  gap: 1,
-                  overflowX: 'auto',
-                  pb: 0.5,
-                  '::-webkit-scrollbar': { height: 4 },
-                  '::-webkit-scrollbar-thumb': { bgcolor: 'rgba(255,255,255,0.2)', borderRadius: 2 },
-                }}
-              >
-                {rundownBlocks.map((b, idx) => {
-                  const isActive = idx === activeSlideIndex;
-                  const isActBlock = b.sourceType === 'act' || b.originalBlockType === 'rundown_act';
-                  const isJobBlock = b.sourceType === 'job';
-
-                  return (
-                    <Box
-                      key={b.id || idx}
-                      onClick={() => {
-                        setIsPlaying(false);
-                        setActiveSlideIndex(idx);
-                      }}
-                      sx={{
-                        flexShrink: 0,
-                        px: 1.5,
-                        py: 0.6,
-                        borderRadius: '10px',
-                        cursor: 'pointer',
-                        bgcolor: isActive ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.04)',
-                        border: isActive
-                          ? '1.5px solid #10b981'
-                          : '1px solid rgba(255, 255, 255, 0.08)',
-                        color: isActive ? '#34d399' : '#94a3b8',
-                        transition: 'all 0.15s ease',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 0.75,
-                        '&:hover': {
-                          bgcolor: 'rgba(255, 255, 255, 0.08)',
-                          color: '#ffffff',
-                        },
-                      }}
-                    >
-                      <Typography sx={{ fontSize: '0.7rem', fontWeight: 900 }}>
-                        {idx + 1}.
-                      </Typography>
-                      <Typography
-                        sx={{
-                          fontSize: '0.74rem',
-                          fontWeight: 700,
-                          maxWidth: 140,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {isActBlock
-                          ? b.originalContent?.role || b.originalContent?.title || 'Act'
-                          : isJobBlock
-                          ? b.originalContent?.jobTitle || 'Job Spotlight'
-                          : b.originalBlockType?.replace('_', ' ') || 'Slide'}
-                      </Typography>
-                    </Box>
-                  );
-                })}
               </Box>
             )}
           </Box>
         </Box>
 
-        {/* Right: Live Audience Chat Simulator */}
-        {showChat && (
-          <Box
-            sx={{
-              width: { xs: 240, md: 320 },
-              borderRadius: '24px',
-              bgcolor: 'rgba(15, 23, 42, 0.75)',
-              backdropFilter: 'blur(16px)',
-              border: '1.5px solid rgba(255, 255, 255, 0.12)',
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden',
-            }}
-          >
-            {/* Chat Header */}
-            <Box
-              sx={{
-                p: 2,
-                borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <ChatIcon sx={{ color: '#34d399', fontSize: '1.1rem' }} />
-                <Typography sx={{ fontWeight: 800, color: '#ffffff', fontSize: '0.85rem' }}>
-                  Live Stream Chat
-                </Typography>
-              </Box>
-              <Chip
-                label="Simulated"
-                size="small"
+        {/* ── BOTTOM DIRECTOR CONTROLS & SLIDE SCRUBBER ── */}
+        <Box
+          sx={{
+            p: 2,
+            borderRadius: '20px',
+            bgcolor: '#ffffff',
+            border: '1.5px solid rgba(226, 232, 240, 0.9)',
+            boxShadow: '0 4px 16px rgba(15, 23, 42, 0.03)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 1.5,
+          }}
+        >
+          {/* Action Row: Prev / Next Buttons */}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Button
+                variant="outlined"
+                startIcon={<PrevIcon sx={{ fontSize: '0.85rem !important' }} />}
+                onClick={handlePrev}
+                disabled={totalSlides <= 1}
                 sx={{
-                  bgcolor: 'rgba(255, 255, 255, 0.08)',
-                  color: '#94a3b8',
-                  fontSize: '0.62rem',
+                  borderRadius: '12px',
+                  borderColor: '#cbd5e1',
+                  color: '#0f172a',
                   fontWeight: 800,
-                  height: 18,
+                  fontSize: '0.82rem',
+                  textTransform: 'none',
+                  px: 2.5,
+                  py: 0.8,
+                  '&:hover': { borderColor: '#0f172a', bgcolor: '#f8fafc' },
                 }}
-              />
+              >
+                Previous Slide
+              </Button>
+
+              <Button
+                variant="contained"
+                endIcon={<NextIcon sx={{ fontSize: '0.85rem !important' }} />}
+                onClick={handleNext}
+                disabled={totalSlides <= 1}
+                sx={{
+                  borderRadius: '12px',
+                  bgcolor: '#0f172a',
+                  color: '#ffffff',
+                  fontWeight: 800,
+                  fontSize: '0.82rem',
+                  textTransform: 'none',
+                  px: 3,
+                  py: 0.8,
+                  boxShadow: 'none',
+                  '&:hover': { bgcolor: '#1e293b' },
+                }}
+              >
+                Next Slide
+              </Button>
             </Box>
 
-            {/* Chat Messages Stream */}
+            <Typography sx={{ color: '#64748b', fontSize: '0.78rem', fontWeight: 600 }}>
+              Keyboard shortcut: Use <strong>Left / Right Arrow</strong> keys or <strong>Spacebar</strong> to navigate slides
+            </Typography>
+          </Box>
+
+          {/* Clickable Scrubber Pills */}
+          {totalSlides > 0 && (
             <Box
               sx={{
-                flex: 1,
-                p: 2,
-                overflowY: 'auto',
                 display: 'flex',
-                flexDirection: 'column',
-                gap: 1.5,
-                '::-webkit-scrollbar': { width: 4 },
-                '::-webkit-scrollbar-thumb': { bgcolor: 'rgba(255,255,255,0.15)', borderRadius: 2 },
+                gap: 1,
+                overflowX: 'auto',
+                pb: 0.5,
+                pt: 0.5,
+                '::-webkit-scrollbar': { height: 5 },
+                '::-webkit-scrollbar-thumb': { bgcolor: 'rgba(0,0,0,0.12)', borderRadius: 2.5 },
               }}
             >
-              {chatMessages.map((msg) => (
-                <Box
-                  key={msg.id}
-                  sx={{
-                    p: 1.25,
-                    borderRadius: '12px',
-                    bgcolor: 'rgba(255, 255, 255, 0.03)',
-                    border: '1px solid rgba(255, 255, 255, 0.05)',
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
-                    <Typography sx={{ fontWeight: 800, fontSize: '0.74rem', color: '#60a5fa' }}>
-                      {msg.user}
+              {rundownBlocks.map((b, idx) => {
+                const isActive = idx === activeSlideIndex;
+                const isActBlock = b.sourceType === 'act' || b.originalBlockType === 'rundown_act';
+                const isJobBlock = b.sourceType === 'job';
+
+                return (
+                  <Box
+                    key={b.id || idx}
+                    onClick={() => handleSelectSlide(idx)}
+                    sx={{
+                      flexShrink: 0,
+                      px: 1.75,
+                      py: 0.75,
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      bgcolor: isActive ? alpha(hubColor, 0.12) : '#f8fafc',
+                      border: isActive
+                        ? `1.5px solid ${hubColor}`
+                        : '1px solid #e2e8f0',
+                      color: isActive ? hubColor : '#475569',
+                      transition: 'all 0.15s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0.75,
+                      '&:hover': {
+                        bgcolor: isActive ? alpha(hubColor, 0.16) : '#f1f5f9',
+                        borderColor: isActive ? hubColor : '#cbd5e1',
+                      },
+                    }}
+                  >
+                    <Typography sx={{ fontSize: '0.72rem', fontWeight: 900 }}>
+                      {idx + 1}.
                     </Typography>
-                    <Typography sx={{ fontSize: '0.62rem', color: '#64748b' }}>
-                      {msg.time}
+                    <Typography
+                      sx={{
+                        fontSize: '0.76rem',
+                        fontWeight: isActive ? 800 : 600,
+                        maxWidth: 160,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {isActBlock
+                        ? b.originalContent?.role || b.originalContent?.title || 'Act'
+                        : isJobBlock
+                        ? b.originalContent?.jobTitle || 'Job Spotlight'
+                        : b.originalBlockType?.replace('_', ' ').toUpperCase() || 'Slide'}
                     </Typography>
                   </Box>
-                  <Typography sx={{ fontSize: '0.78rem', color: '#e2e8f0', lineHeight: 1.4 }}>
-                    {msg.text}
-                  </Typography>
-                </Box>
-              ))}
+                );
+              })}
             </Box>
-
-            {/* Chat Input Form */}
-            <Box
-              component="form"
-              onSubmit={handleSendChat}
-              sx={{
-                p: 1.5,
-                borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-                bgcolor: 'rgba(10, 14, 23, 0.6)',
-              }}
-            >
-              <TextField
-                fullWidth
-                size="small"
-                placeholder="Say something to the stream..."
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                slotProps={{
-                  input: {
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton type="submit" size="small" sx={{ color: '#10b981' }}>
-                          <SendIcon sx={{ fontSize: 16 }} />
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  },
-                }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '12px',
-                    bgcolor: 'rgba(255, 255, 255, 0.06)',
-                    color: '#ffffff',
-                    fontSize: '0.8rem',
-                    '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.12)' },
-                    '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.25)' },
-                    '&.Mui-focused fieldset': { borderColor: '#10b981' },
-                  },
-                }}
-              />
-            </Box>
-          </Box>
-        )}
+          )}
+        </Box>
       </DialogContent>
     </Dialog>
   );
