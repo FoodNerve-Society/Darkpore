@@ -173,16 +173,96 @@ export function SlideJob({ content }: { content: any }) {
   );
 }
 
+export function SlideRundownAct({ content, durationStr, color = '#10b981' }: { content: any; durationStr?: string; color?: string }) {
+  const title = content.title || content.role || 'Act';
+  const desc = content.description || content.desc || content.message || '';
+  const focus = content.focusSummary || '';
+  
+  return (
+    <SlideWrapper color={color}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2.5, flexWrap: 'wrap' }}>
+          <Chip
+            icon={<SparkleIcon sx={{ fontSize: '0.95rem !important' }} />}
+            label="BROADCAST ACT"
+            size="small"
+            sx={{
+              bgcolor: alpha(color, 0.12),
+              color: color,
+              fontWeight: 900,
+              letterSpacing: '0.06em',
+              borderRadius: '8px',
+              px: 0.5,
+            }}
+          />
+          {durationStr && (
+            <Chip
+              label={durationStr}
+              size="small"
+              sx={{
+                bgcolor: '#0f172a',
+                color: '#ffffff',
+                fontWeight: 800,
+                fontSize: '0.72rem',
+                borderRadius: '8px',
+              }}
+            />
+          )}
+        </Box>
+
+        <Typography sx={{ fontWeight: 900, fontSize: { xs: '2rem', md: '3rem' }, lineHeight: 1.15, color: '#0f172a', letterSpacing: '-0.03em', mb: 2 }}>
+          {title}
+        </Typography>
+
+        {desc && (
+          <Typography sx={{ fontSize: { xs: '1.05rem', md: '1.35rem' }, fontWeight: 500, color: '#475569', lineHeight: 1.55, maxWidth: '90%' }}>
+            {desc}
+          </Typography>
+        )}
+
+        {focus && (
+          <Box sx={{ mt: 3, pt: 2, borderTop: '1px solid rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography sx={{ fontSize: '0.76rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Broadcast Focus:
+            </Typography>
+            <Typography sx={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155' }}>
+              {focus}
+            </Typography>
+          </Box>
+        )}
+      </Box>
+    </SlideWrapper>
+  );
+}
+
 export function SlideTransition({ content }: { content: any }) {
+  const displayTitle = content.title || (content.role && content.role !== 'transition' ? content.role : '');
+  const displayText = content.message || content.text || content.description || 'Intermission / Transition';
+
   return (
     <Box sx={{
       width: '100%', aspectRatio: '16/9', borderRadius: '20px', overflow: 'hidden',
       background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', p: 8,
-      boxShadow: `0 24px 64px rgba(0,0,0,0.2)`
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', p: { xs: 4, md: 8 },
+      boxShadow: `0 24px 64px rgba(0,0,0,0.2)`,
+      position: 'relative'
     }}>
-      <Typography sx={{ fontWeight: 800, fontSize: '3.5rem', color: '#fff', textAlign: 'center', lineHeight: 1.2 }}>
-        {content.text || 'Moving on...'}
+      {displayTitle && (
+        <Chip
+          label={displayTitle}
+          size="small"
+          sx={{
+            mb: 2,
+            bgcolor: 'rgba(255,255,255,0.12)',
+            color: '#ffffff',
+            fontWeight: 800,
+            letterSpacing: '0.06em',
+            borderRadius: '8px'
+          }}
+        />
+      )}
+      <Typography sx={{ fontWeight: 800, fontSize: { xs: '2rem', md: '3.2rem' }, color: '#fff', textAlign: 'center', lineHeight: 1.25, maxWidth: '85%' }}>
+        {displayText}
       </Typography>
     </Box>
   );

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Box, Typography, Button, TextField, MenuItem, Select, FormControl, InputLabel, CircularProgress, Chip, IconButton, Alert, Paper, useTheme, useMediaQuery } from '@mui/material';
-import { ArrowBack as ArrowBackIcon, CheckCircle as CheckCircleIcon, Article as ArticleIcon, AutoAwesome as SparkleIcon, Check as CheckIcon, Info as InfoIcon, ArrowForward as ArrowForwardIcon, Close as CloseIcon, Bolt as BoltIcon } from '@mui/icons-material';
+import { ArrowBack as ArrowBackIcon, CheckCircle as CheckCircleIcon, Article as ArticleIcon, AutoAwesome as SparkleIcon, Check as CheckIcon, Info as InfoIcon, ArrowForward as ArrowForwardIcon, Close as CloseIcon, Bolt as BoltIcon, CalendarMonth as CalendarMonthIcon } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import { useSociety } from '@/context/SocietyContext';
 import { fetchLivestreamContentPool, createLearnContent } from '@/lib/actions/learn';
@@ -115,7 +115,7 @@ export default function CreateLivestreamForm({
   const [ingestedBlueprints, setIngestedBlueprints] = useState<LivestreamIdeaOption[]>([]);
   const [deckActiveIndex, setDeckActiveIndex] = useState(0);
   const [isCardFlipped, setIsCardFlipped] = useState(false);
-  const [isIdeasCardFlipped, setIsIdeasCardFlipped] = useState(() => Boolean(initialDraftData?.title || initialDraftData?.description));
+  const [isIdeasCardFlipped, setIsIdeasCardFlipped] = useState(false);
   const [appliedBlueprint, setAppliedBlueprint] = useState<any>(initialDraftData?.livestream?.blueprint || null);
   const manualFieldsRef = useRef<HTMLDivElement>(null);
 
@@ -152,26 +152,25 @@ export default function CreateLivestreamForm({
 
     if (blueprint.timelinePillars && blueprint.timelinePillars.length > 0) {
       setRundownBlocks(
-        blueprint.timelinePillars.map((p: any) => ({
-          id: Math.random().toString(),
-          sourceType: 'transition',
-          originalBlockType: 'transition',
+        blueprint.timelinePillars.map((p: any, idx: number) => ({
+          id: `act-${idx + 1}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+          sourceType: 'act',
+          originalBlockType: 'rundown_act',
           originalContent: {
+            title: p.role,
             role: p.role,
             description: p.desc,
+            desc: p.desc,
             focusSummary: blueprint.title,
           },
           speakerNotes: p.speakerNotes || '',
-          durationStr: p.time,
+          durationStr: p.time || '15m',
         }))
       );
       setFrameworkLoaded(true);
     }
-    setIsIdeasCardFlipped(true);
+    setIsIdeasCardFlipped(false);
     setIsCardFlipped(false);
-    setTimeout(() => {
-      manualFieldsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
   };
 
   // Hub & Context from Studio Handoff
@@ -261,15 +260,21 @@ export default function CreateLivestreamForm({
 
   // Rundown Blocks
   const [rundownBlocks, setRundownBlocks] = useState<any[]>(
-    initialDraftData?.livestream?.blocks?.map((b: any) => ({
-      id: b.id || Math.random().toString(),
-      sourceType: b.blockType === 'transition' ? 'transition' : (b.content?.includes('jobTitle') ? 'job' : 'article_block'),
-      sourceId: b.sourceId,
-      originalBlockType: b.blockType,
-      originalContent: typeof b.content === 'string' ? JSON.parse(b.content) : b.content,
-      speakerNotes: b.speakerNotes || '',
-      durationStr: b.durationStr || ''
-    })) || []
+    initialDraftData?.livestream?.blocks?.map((b: any) => {
+      const parsedContent = typeof b.content === 'string' ? JSON.parse(b.content) : (b.content || {});
+      const isAct = b.blockType === 'rundown_act' || parsedContent.role || parsedContent.title?.toLowerCase().includes('act');
+      return {
+        id: b.id || Math.random().toString(),
+        sourceType: isAct ? 'act' : (b.blockType === 'transition' ? 'transition' : (parsedContent.jobTitle ? 'job' : 'article_block')),
+        sourceId: b.sourceId,
+        parentArticleId: b.parentArticleId || parsedContent.parentArticleId,
+        parentArticleTitle: b.parentArticleTitle || parsedContent.parentArticleTitle,
+        originalBlockType: b.blockType,
+        originalContent: parsedContent,
+        speakerNotes: b.speakerNotes || parsedContent.speakerNotes || '',
+        durationStr: b.durationStr || parsedContent.durationStr || ''
+      };
+    }) || []
   );
 
   const [frameworkLoaded, setFrameworkLoaded] = useState(rundownBlocks.length > 0);
@@ -283,15 +288,16 @@ export default function CreateLivestreamForm({
   }, [profile?.uid, postingAs, selectedOrgId]);
 
   // Handle distinct article calculation
-  const getDistinctArticleCount = () => {
-    const articleIds = new Set();
+  const distinctArticles = useMemo(() => {
+    const articleIds = new Set<string>();
     rundownBlocks.forEach(b => {
       if (b.sourceType === 'article_block' && b.parentArticleId) {
         articleIds.add(b.parentArticleId);
       }
     });
     return articleIds.size;
-  };
+  }, [rundownBlocks]);
+
   const canPublish = distinctArticles >= 5 && title.trim() && description.trim() && category && eventDatePart && eventTimePart && streamUrl;
   const canAdvanceStep1 = Boolean(title.trim() && eventDatePart && eventTimePart);
 
@@ -327,9 +333,15 @@ export default function CreateLivestreamForm({
 
       // Format blocks for the backend
       const formattedBlocks = rundownBlocks.map((b, index) => ({
-        blockType: b.sourceType === 'transition' ? 'transition' : b.originalBlockType || b.sourceType,
+        blockType: b.sourceType === 'act' ? 'rundown_act' : (b.sourceType === 'transition' ? 'transition' : b.originalBlockType || b.sourceType),
         orderIndex: index,
-        content: JSON.stringify(b.originalContent || {}),
+        content: JSON.stringify({
+          ...(b.originalContent || {}),
+          speakerNotes: b.speakerNotes,
+          durationStr: b.durationStr,
+          parentArticleId: b.parentArticleId,
+          parentArticleTitle: b.parentArticleTitle,
+        }),
         speakerNotes: b.speakerNotes,
         durationStr: b.durationStr,
         sourceId: b.sourceId, // Keep reference to original source
@@ -378,16 +390,20 @@ export default function CreateLivestreamForm({
 
   const applyFramework = () => {
     const framework = LIVESTREAM_FRAMEWORKS[timeframe] || LIVESTREAM_FRAMEWORKS.present;
-    const initialPlaceholders = framework.map((f: any) => ({
-      id: Math.random().toString(),
-      sourceType: 'transition',
-      originalBlockType: 'transition',
+    const initialPlaceholders = framework.map((f: any, idx: number) => ({
+      id: `act-${idx + 1}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      sourceType: 'act',
+      originalBlockType: 'rundown_act',
       originalContent: { 
         title: f.role, 
-        message: f.desc 
+        role: f.role,
+        description: f.desc,
+        desc: f.desc,
+        message: f.desc,
+        focusSummary: `${timeframe.toUpperCase()} ERA LIVESTREAM`
       },
       speakerNotes: '',
-      durationStr: '5 min'
+      durationStr: f.time || '15m'
     }));
     
     setRundownBlocks(initialPlaceholders);
@@ -488,6 +504,152 @@ export default function CreateLivestreamForm({
                 Define the core metadata for your livestream before building the rundown.
               </Typography>
             </Box>
+
+            {/* ── MINI SUMMARY CARD: What the user has selected so far ── */}
+            {Boolean(appliedBlueprint || title.trim() || eventDatePart) && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25 }}
+              >
+                <Paper
+                  elevation={0}
+                  sx={{
+                    mb: 3,
+                    p: { xs: 2, sm: 2.25 },
+                    borderRadius: '20px',
+                    bgcolor: '#ffffff',
+                    border: `1.5px solid ${alpha(appliedBlueprint?.eraColor || hubColor || '#10b981', 0.35)}`,
+                    borderLeft: `5px solid ${appliedBlueprint?.eraColor || hubColor || '#10b981'}`,
+                    boxShadow: '0 8px 24px -6px rgba(15, 23, 42, 0.06), 0 2px 6px rgba(0,0,0,0.02)',
+                    display: 'flex',
+                    flexDirection: { xs: 'column', md: 'row' },
+                    alignItems: { xs: 'flex-start', md: 'center' },
+                    justifyContent: 'space-between',
+                    gap: 2,
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75, minWidth: 0 }}>
+                    <Box
+                      sx={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: '12px',
+                        bgcolor: alpha(appliedBlueprint?.eraColor || hubColor || '#10b981', 0.12),
+                        color: appliedBlueprint?.eraColor || hubColor || '#10b981',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '1.4rem',
+                        flexShrink: 0,
+                        border: `1px solid ${alpha(appliedBlueprint?.eraColor || hubColor || '#10b981', 0.25)}`,
+                      }}
+                    >
+                      {appliedBlueprint?.typeIcon || '🎙️'}
+                    </Box>
+
+                    <Box sx={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0.4 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                        <Chip
+                          size="small"
+                          label={appliedBlueprint ? `SELECTED: ${appliedBlueprint.typeTitle || 'BLUEPRINT'}` : 'YOUR SELECTION SO FAR'}
+                          sx={{
+                            bgcolor: alpha(appliedBlueprint?.eraColor || hubColor || '#10b981', 0.12),
+                            color: appliedBlueprint?.eraColor || hubColor || '#059669',
+                            fontWeight: 900,
+                            fontSize: '0.68rem',
+                            letterSpacing: '0.04em',
+                            height: 22,
+                            borderRadius: '6px',
+                          }}
+                        />
+                        {eventDatePart && (
+                          <Chip
+                            size="small"
+                            icon={<CalendarMonthIcon sx={{ fontSize: '0.82rem !important' }} />}
+                            label={`${eventDatePart} at ${eventTimePart || '10:00 AM'}`}
+                            sx={{
+                              bgcolor: '#f1f5f9',
+                              color: '#475569',
+                              fontWeight: 800,
+                              fontSize: '0.7rem',
+                              height: 22,
+                              borderRadius: '6px',
+                            }}
+                          />
+                        )}
+                        <Chip
+                          size="small"
+                          label={(category || 'Capital').toUpperCase()}
+                          sx={{
+                            bgcolor: '#f8fafc',
+                            color: '#64748b',
+                            fontWeight: 800,
+                            fontSize: '0.68rem',
+                            height: 22,
+                            borderRadius: '6px',
+                            border: '1px solid #e2e8f0',
+                          }}
+                        />
+                        <Chip
+                          size="small"
+                          label={`${(timeframe || 'present').toUpperCase()} ERA`}
+                          sx={{
+                            bgcolor: alpha(appliedBlueprint?.eraColor || hubColor || '#10b981', 0.08),
+                            color: appliedBlueprint?.eraColor || hubColor || '#059669',
+                            fontWeight: 800,
+                            fontSize: '0.68rem',
+                            height: 22,
+                            borderRadius: '6px',
+                          }}
+                        />
+                      </Box>
+
+                      <Typography
+                        sx={{
+                          fontWeight: 900,
+                          fontSize: { xs: '0.98rem', sm: '1.08rem' },
+                          color: '#0f172a',
+                          letterSpacing: '-0.015em',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          maxWidth: { xs: '100%', sm: 500, md: 580 },
+                        }}
+                      >
+                        {title || 'Untitled Broadcast'}
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  {/* Right Actions: Flip to manual details / Edit */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0, alignSelf: { xs: 'flex-end', md: 'center' } }}>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() => setIsIdeasCardFlipped(!isIdeasCardFlipped)}
+                      sx={{
+                        borderRadius: '10px',
+                        textTransform: 'none',
+                        fontWeight: 800,
+                        fontSize: '0.78rem',
+                        borderColor: isIdeasCardFlipped ? '#0f172a' : '#cbd5e1',
+                        color: '#0f172a',
+                        bgcolor: isIdeasCardFlipped ? '#f1f5f9' : '#ffffff',
+                        px: 2,
+                        py: 0.6,
+                        '&:hover': {
+                          borderColor: '#94a3b8',
+                          bgcolor: '#f8fafc',
+                        },
+                      }}
+                    >
+                      {isIdeasCardFlipped ? 'Show Ideas Card ↺' : 'Fine-Tune Details ✍️'}
+                    </Button>
+                  </Box>
+                </Paper>
+              </motion.div>
+            )}
 
             {/* ── 3D FLIPPABLE "GET LIVESTREAM IDEAS HERE" CARD (Front: AI Ideation, Back: Manual Form Textfields) ── */}
             <Box
