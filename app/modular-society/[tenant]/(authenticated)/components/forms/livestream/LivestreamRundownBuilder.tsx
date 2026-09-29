@@ -182,14 +182,14 @@ function SortableRundownCard({
             top: 0,
             borderRadius: '20px',
             p: { xs: 2, sm: 2.5 },
-            bgcolor: '#ffffff',
-            border: `1.5px solid ${alpha(themeColor, 0.25)}`,
-            borderLeft: `5px solid ${themeColor}`,
-            boxShadow: '0 6px 20px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(0,0,0,0.02)',
+            bgcolor: 'rgba(255, 255, 255, 0.96)',
+            backdropFilter: 'blur(16px)',
+            border: `1.5px solid ${alpha(themeColor, 0.35)}`,
+            boxShadow: `0 8px 24px -4px rgba(15, 23, 42, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 0 1px ${alpha(themeColor, 0.08)}`,
             transition: 'border-color 0.2s, box-shadow 0.2s',
             '&:hover': {
-              borderColor: alpha(themeColor, 0.5),
-              boxShadow: `0 8px 24px rgba(15, 23, 42, 0.08), 0 0 0 1px ${alpha(themeColor, 0.1)}`,
+              borderColor: alpha(themeColor, 0.6),
+              boxShadow: `0 12px 30px rgba(15, 23, 42, 0.08), 0 0 0 1px ${alpha(themeColor, 0.2)}`,
             },
           }}
         >

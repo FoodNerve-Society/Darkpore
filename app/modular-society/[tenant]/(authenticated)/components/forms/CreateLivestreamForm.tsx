@@ -176,14 +176,21 @@ export default function CreateLivestreamForm({
   // Hub & Context from Studio Handoff
   const hubTitle = initialTaxonomy?.hubTitle || initialDraftData?.livestream?.hub?.title || 'Production & Capital';
   const hubColor = initialTaxonomy?.hubColor || initialDraftData?.livestream?.hub?.color || '#10b981';
-  const guidingArticles = initialDraftData?.anchorArticles || initialDraftData?.livestream?.anchorArticles || [];
+  const guidingArticles = useMemo(() => {
+    const list = [...(initialDraftData?.anchorArticles || initialDraftData?.livestream?.anchorArticles || [])];
+    if (initialDraftData?.type === 'article' && initialDraftData.id && !list.some((a: any) => a.id === initialDraftData.id)) {
+      list.unshift(initialDraftData);
+    }
+    return list;
+  }, [initialDraftData]);
   const guidingJobs = initialDraftData?.livestream?.ctaJobs || [];
   const guidingListings = initialDraftData?.livestream?.ctaListings || [];
   const guidingCampaigns = initialDraftData?.livestream?.ctaCampaigns || [];
 
-  // Form State
-  const [title, setTitle] = useState(initialDraftData?.title || '');
-  const [description, setDescription] = useState(initialDraftData?.description || '');
+  // Form State: Do NOT auto-select title or description from an article handoff!
+  const isActualLivestreamDraft = initialDraftData?.type === 'livestream';
+  const [title, setTitle] = useState(isActualLivestreamDraft ? (initialDraftData?.title || '') : '');
+  const [description, setDescription] = useState(isActualLivestreamDraft ? (initialDraftData?.description || '') : '');
   const [coverImage, setCoverImage] = useState<File | string | null>(initialDraftData?.coverImageUrl || null);
   const [streamUrl, setStreamUrl] = useState(initialDraftData?.livestream?.streamUrl || '');
   const [eventDate, setEventDate] = useState(initialDraftData?.livestream?.eventDate ? new Date(initialDraftData.livestream.eventDate).toISOString().slice(0,16) : '');
@@ -505,150 +512,366 @@ export default function CreateLivestreamForm({
               </Typography>
             </Box>
 
-            {/* ── MINI SUMMARY CARD: What the user has selected so far ── */}
-            {Boolean(appliedBlueprint || title.trim() || eventDatePart) && (
-              <motion.div
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25 }}
-              >
-                <Paper
-                  elevation={0}
-                  sx={{
-                    mb: 3,
-                    p: { xs: 2, sm: 2.25 },
-                    borderRadius: '20px',
-                    bgcolor: '#ffffff',
-                    border: `1.5px solid ${alpha(appliedBlueprint?.eraColor || hubColor || '#10b981', 0.35)}`,
-                    borderLeft: `5px solid ${appliedBlueprint?.eraColor || hubColor || '#10b981'}`,
-                    boxShadow: '0 8px 24px -6px rgba(15, 23, 42, 0.06), 0 2px 6px rgba(0,0,0,0.02)',
-                    display: 'flex',
-                    flexDirection: { xs: 'column', md: 'row' },
-                    alignItems: { xs: 'flex-start', md: 'center' },
-                    justifyContent: 'space-between',
-                    gap: 2,
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75, minWidth: 0 }}>
-                    <Box
-                      sx={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: '12px',
-                        bgcolor: alpha(appliedBlueprint?.eraColor || hubColor || '#10b981', 0.12),
-                        color: appliedBlueprint?.eraColor || hubColor || '#10b981',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '1.4rem',
-                        flexShrink: 0,
-                        border: `1px solid ${alpha(appliedBlueprint?.eraColor || hubColor || '#10b981', 0.25)}`,
-                      }}
-                    >
-                      {appliedBlueprint?.typeIcon || '🎙️'}
-                    </Box>
-
-                    <Box sx={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0.4 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                        <Chip
-                          size="small"
-                          label={appliedBlueprint ? `SELECTED: ${appliedBlueprint.typeTitle || 'BLUEPRINT'}` : 'YOUR SELECTION SO FAR'}
-                          sx={{
-                            bgcolor: alpha(appliedBlueprint?.eraColor || hubColor || '#10b981', 0.12),
-                            color: appliedBlueprint?.eraColor || hubColor || '#059669',
-                            fontWeight: 900,
-                            fontSize: '0.68rem',
-                            letterSpacing: '0.04em',
-                            height: 22,
-                            borderRadius: '6px',
-                          }}
-                        />
-                        {eventDatePart && (
-                          <Chip
-                            size="small"
-                            icon={<CalendarMonthIcon sx={{ fontSize: '0.82rem !important' }} />}
-                            label={`${eventDatePart} at ${eventTimePart || '10:00 AM'}`}
-                            sx={{
-                              bgcolor: '#f1f5f9',
-                              color: '#475569',
-                              fontWeight: 800,
-                              fontSize: '0.7rem',
-                              height: 22,
-                              borderRadius: '6px',
-                            }}
-                          />
-                        )}
-                        <Chip
-                          size="small"
-                          label={(category || 'Capital').toUpperCase()}
-                          sx={{
-                            bgcolor: '#f8fafc',
-                            color: '#64748b',
-                            fontWeight: 800,
-                            fontSize: '0.68rem',
-                            height: 22,
-                            borderRadius: '6px',
-                            border: '1px solid #e2e8f0',
-                          }}
-                        />
-                        <Chip
-                          size="small"
-                          label={`${(timeframe || 'present').toUpperCase()} ERA`}
-                          sx={{
-                            bgcolor: alpha(appliedBlueprint?.eraColor || hubColor || '#10b981', 0.08),
-                            color: appliedBlueprint?.eraColor || hubColor || '#059669',
-                            fontWeight: 800,
-                            fontSize: '0.68rem',
-                            height: 22,
-                            borderRadius: '6px',
-                          }}
-                        />
-                      </Box>
-
-                      <Typography
-                        sx={{
-                          fontWeight: 900,
-                          fontSize: { xs: '0.98rem', sm: '1.08rem' },
-                          color: '#0f172a',
-                          letterSpacing: '-0.015em',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          maxWidth: { xs: '100%', sm: 500, md: 580 },
-                        }}
-                      >
-                        {title || 'Untitled Broadcast'}
+            {/* ── SELECTED ANCHOR ARTICLES & CTAS CONTEXT BOARD ── */}
+            {(guidingArticles.length > 0 || guidingJobs.length > 0 || guidingListings.length > 0 || guidingCampaigns.length > 0) && (
+              <Box sx={{ mb: 3.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                
+                {/* 1. Selected Anchor Articles */}
+                {guidingArticles.length > 0 && (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 0.5 }}>
+                      <Typography sx={{ fontSize: '0.84rem', fontWeight: 800, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                        <span>📚</span> Selected Anchor Articles ({guidingArticles.length})
                       </Typography>
+                      <Chip
+                        label="Broadcast Inspiration"
+                        size="small"
+                        sx={{ bgcolor: 'rgba(15, 23, 42, 0.05)', color: '#475569', fontWeight: 700, fontSize: '0.68rem', height: 20 }}
+                      />
+                    </Box>
+
+                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: guidingArticles.length > 1 ? 'repeat(auto-fit, minmax(320px, 1fr))' : '1fr' }, gap: 1.5 }}>
+                      {guidingArticles.map((art: any, artIdx: number) => {
+                        const artTitle = art.title || 'Untitled Article';
+                        const artDesc = art.description || art.summary || '';
+                        const artImg = art.coverImageUrl || art.imageUrl || art.article?.coverImageUrl || '';
+                        const artCat = art.category || art.taxonomy?.category || category;
+
+                        return (
+                          <Paper
+                            key={art.id || `anchor-art-${artIdx}`}
+                            elevation={0}
+                            sx={{
+                              p: 1.75,
+                              borderRadius: '20px',
+                              bgcolor: 'rgba(255, 255, 255, 0.88)',
+                              backdropFilter: 'blur(16px)',
+                              border: '1.5px solid rgba(226, 232, 240, 0.95)',
+                              boxShadow: '0 6px 20px rgba(15, 23, 42, 0.03), inset 0 1px 0 rgba(255, 255, 255, 1)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 2,
+                              transition: 'all 0.2s ease',
+                              '&:hover': {
+                                borderColor: 'rgba(15, 23, 42, 0.25)',
+                                boxShadow: '0 8px 24px rgba(15, 23, 42, 0.06)',
+                              }
+                            }}
+                          >
+                            {/* Image Thumbnail */}
+                            <Box
+                              sx={{
+                                width: { xs: 60, sm: 72 },
+                                height: { xs: 60, sm: 72 },
+                                borderRadius: '14px',
+                                overflow: 'hidden',
+                                flexShrink: 0,
+                                bgcolor: '#f1f5f9',
+                                border: '1px solid rgba(0, 0, 0, 0.06)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              {artImg ? (
+                                <img
+                                  src={artImg}
+                                  alt={artTitle}
+                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                />
+                              ) : (
+                                <Typography sx={{ fontSize: '1.75rem' }}>📄</Typography>
+                              )}
+                            </Box>
+
+                            {/* Content */}
+                            <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0.35 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                <Chip
+                                  label={(artCat || 'ARTICLE').toUpperCase()}
+                                  size="small"
+                                  sx={{
+                                    bgcolor: 'rgba(59, 130, 246, 0.1)',
+                                    color: '#2563eb',
+                                    fontWeight: 900,
+                                    fontSize: '0.64rem',
+                                    letterSpacing: '0.04em',
+                                    height: 18,
+                                    borderRadius: '5px',
+                                  }}
+                                />
+                              </Box>
+                              <Typography
+                                sx={{
+                                  fontWeight: 800,
+                                  fontSize: '0.9rem',
+                                  color: '#0f172a',
+                                  lineHeight: 1.3,
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  display: '-webkit-box',
+                                  WebkitLineClamp: 2,
+                                  WebkitBoxOrient: 'vertical',
+                                }}
+                              >
+                                {artTitle}
+                              </Typography>
+                              {artDesc && (
+                                <Typography
+                                  sx={{
+                                    fontSize: '0.78rem',
+                                    color: '#64748b',
+                                    lineHeight: 1.4,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    display: '-webkit-box',
+                                    WebkitLineClamp: 1,
+                                    WebkitBoxOrient: 'vertical',
+                                  }}
+                                >
+                                  {artDesc}
+                                </Typography>
+                              )}
+                            </Box>
+                          </Paper>
+                        );
+                      })}
                     </Box>
                   </Box>
+                )}
 
-                  {/* Right Actions: Flip to manual details / Edit */}
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0, alignSelf: { xs: 'flex-end', md: 'center' } }}>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={() => setIsIdeasCardFlipped(!isIdeasCardFlipped)}
-                      sx={{
-                        borderRadius: '10px',
-                        textTransform: 'none',
-                        fontWeight: 800,
-                        fontSize: '0.78rem',
-                        borderColor: isIdeasCardFlipped ? '#0f172a' : '#cbd5e1',
-                        color: '#0f172a',
-                        bgcolor: isIdeasCardFlipped ? '#f1f5f9' : '#ffffff',
-                        px: 2,
-                        py: 0.6,
-                        '&:hover': {
-                          borderColor: '#94a3b8',
-                          bgcolor: '#f8fafc',
-                        },
-                      }}
-                    >
-                      {isIdeasCardFlipped ? 'Show Ideas Card ↺' : 'Fine-Tune Details ✍️'}
-                    </Button>
+                {/* 2. Selected CTAs (Jobs / Deals / Listings) */}
+                {(guidingJobs.length > 0 || guidingListings.length > 0 || guidingCampaigns.length > 0) && (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 0.5 }}>
+                      <Typography sx={{ fontSize: '0.84rem', fontWeight: 800, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                        <span>⚡</span> Spotlight CTAs & Deals ({guidingJobs.length + guidingListings.length + guidingCampaigns.length})
+                      </Typography>
+                      <Chip
+                        label="Ecosystem Push"
+                        size="small"
+                        sx={{ bgcolor: 'rgba(245, 158, 11, 0.1)', color: '#b45309', fontWeight: 700, fontSize: '0.68rem', height: 20 }}
+                      />
+                    </Box>
+
+                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: (guidingJobs.length + guidingListings.length) > 1 ? 'repeat(auto-fit, minmax(320px, 1fr))' : '1fr' }, gap: 1.5 }}>
+                      {/* Jobs */}
+                      {guidingJobs.map((job: any, jobIdx: number) => {
+                        const jobTitle = job.title || 'Job Opportunity';
+                        const orgName = job.organization?.name || job.orgName || '';
+                        const jobDesc = job.compensationOrTarget || job.organizationChallenges || job.description || job.location || '';
+                        const jobLogo = job.organization?.logoUrl || job.orgLogo || job.coverImageUrl || '';
+
+                        return (
+                          <Paper
+                            key={job.id || `anchor-job-${jobIdx}`}
+                            elevation={0}
+                            sx={{
+                              p: 1.75,
+                              borderRadius: '20px',
+                              bgcolor: 'rgba(255, 255, 255, 0.88)',
+                              backdropFilter: 'blur(16px)',
+                              border: '1.5px solid rgba(226, 232, 240, 0.95)',
+                              boxShadow: '0 6px 20px rgba(15, 23, 42, 0.03), inset 0 1px 0 rgba(255, 255, 255, 1)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 2,
+                              transition: 'all 0.2s ease',
+                              '&:hover': {
+                                borderColor: 'rgba(245, 158, 11, 0.45)',
+                                boxShadow: '0 8px 24px rgba(245, 158, 11, 0.08)',
+                              }
+                            }}
+                          >
+                            <Box
+                              sx={{
+                                width: { xs: 60, sm: 72 },
+                                height: { xs: 60, sm: 72 },
+                                borderRadius: '14px',
+                                overflow: 'hidden',
+                                flexShrink: 0,
+                                bgcolor: '#fef3c7',
+                                border: '1px solid rgba(245, 158, 11, 0.2)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              {jobLogo ? (
+                                <img
+                                  src={jobLogo}
+                                  alt={jobTitle}
+                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                />
+                              ) : (
+                                <Typography sx={{ fontSize: '1.75rem' }}>💼</Typography>
+                              )}
+                            </Box>
+
+                            <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0.35 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                <Chip
+                                  label="HIRING SPOTLIGHT"
+                                  size="small"
+                                  sx={{
+                                    bgcolor: 'rgba(245, 158, 11, 0.15)',
+                                    color: '#b45309',
+                                    fontWeight: 900,
+                                    fontSize: '0.64rem',
+                                    letterSpacing: '0.04em',
+                                    height: 18,
+                                    borderRadius: '5px',
+                                  }}
+                                />
+                                {orgName && (
+                                  <Typography sx={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {orgName}
+                                  </Typography>
+                                )}
+                              </Box>
+                              <Typography
+                                sx={{
+                                  fontWeight: 800,
+                                  fontSize: '0.9rem',
+                                  color: '#0f172a',
+                                  lineHeight: 1.3,
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  display: '-webkit-box',
+                                  WebkitLineClamp: 2,
+                                  WebkitBoxOrient: 'vertical',
+                                }}
+                              >
+                                {jobTitle}
+                              </Typography>
+                              {jobDesc && (
+                                <Typography
+                                  sx={{
+                                    fontSize: '0.78rem',
+                                    color: '#64748b',
+                                    lineHeight: 1.4,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    display: '-webkit-box',
+                                    WebkitLineClamp: 1,
+                                    WebkitBoxOrient: 'vertical',
+                                  }}
+                                >
+                                  {jobDesc}
+                                </Typography>
+                              )}
+                            </Box>
+                          </Paper>
+                        );
+                      })}
+
+                      {/* Listings / Deals */}
+                      {guidingListings.map((listing: any, listIdx: number) => {
+                        const lTitle = listing.title || 'Ecosystem Deal';
+                        const lDesc = listing.description || listing.price || listing.location || '';
+                        const lImg = listing.imageUrl || listing.coverImageUrl || '';
+
+                        return (
+                          <Paper
+                            key={listing.id || `anchor-listing-${listIdx}`}
+                            elevation={0}
+                            sx={{
+                              p: 1.75,
+                              borderRadius: '20px',
+                              bgcolor: 'rgba(255, 255, 255, 0.88)',
+                              backdropFilter: 'blur(16px)',
+                              border: '1.5px solid rgba(226, 232, 240, 0.95)',
+                              boxShadow: '0 6px 20px rgba(15, 23, 42, 0.03), inset 0 1px 0 rgba(255, 255, 255, 1)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 2,
+                              transition: 'all 0.2s ease',
+                              '&:hover': {
+                                borderColor: 'rgba(16, 185, 129, 0.45)',
+                                boxShadow: '0 8px 24px rgba(16, 185, 129, 0.08)',
+                              }
+                            }}
+                          >
+                            <Box
+                              sx={{
+                                width: { xs: 60, sm: 72 },
+                                height: { xs: 60, sm: 72 },
+                                borderRadius: '14px',
+                                overflow: 'hidden',
+                                flexShrink: 0,
+                                bgcolor: '#ecfdf5',
+                                border: '1px solid rgba(16, 185, 129, 0.2)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              {lImg ? (
+                                <img
+                                  src={lImg}
+                                  alt={lTitle}
+                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                />
+                              ) : (
+                                <Typography sx={{ fontSize: '1.75rem' }}>🤝</Typography>
+                              )}
+                            </Box>
+
+                            <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0.35 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                <Chip
+                                  label="DEAL ROOM"
+                                  size="small"
+                                  sx={{
+                                    bgcolor: 'rgba(16, 185, 129, 0.15)',
+                                    color: '#065f46',
+                                    fontWeight: 900,
+                                    fontSize: '0.64rem',
+                                    letterSpacing: '0.04em',
+                                    height: 18,
+                                    borderRadius: '5px',
+                                  }}
+                                />
+                              </Box>
+                              <Typography
+                                sx={{
+                                  fontWeight: 800,
+                                  fontSize: '0.9rem',
+                                  color: '#0f172a',
+                                  lineHeight: 1.3,
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  display: '-webkit-box',
+                                  WebkitLineClamp: 2,
+                                  WebkitBoxOrient: 'vertical',
+                                }}
+                              >
+                                {lTitle}
+                              </Typography>
+                              {lDesc && (
+                                <Typography
+                                  sx={{
+                                    fontSize: '0.78rem',
+                                    color: '#64748b',
+                                    lineHeight: 1.4,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    display: '-webkit-box',
+                                    WebkitLineClamp: 1,
+                                    WebkitBoxOrient: 'vertical',
+                                  }}
+                                >
+                                  {lDesc}
+                                </Typography>
+                              )}
+                            </Box>
+                          </Paper>
+                        );
+                      })}
+                    </Box>
                   </Box>
-                </Paper>
-              </motion.div>
+                )}
+              </Box>
             )}
 
             {/* ── 3D FLIPPABLE "GET LIVESTREAM IDEAS HERE" CARD (Front: AI Ideation, Back: Manual Form Textfields) ── */}

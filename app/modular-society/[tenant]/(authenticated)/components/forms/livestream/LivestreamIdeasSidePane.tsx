@@ -374,11 +374,12 @@ export default function LivestreamIdeasSidePane({
     return `${hubTitle} Value Chain & Field Solutions`;
   }, [guidingArticles, hubTitle]);
 
-  const [topicInput, setTopicInput] = useState(defaultTopic);
-  const [targetAudience, setTargetAudience] = useState('Farmgate Producers, Commercial Offtakers & Allocators');
-  const [targetLocation, setTargetLocation] = useState('Dawanau Hub, Kano & Bodija Cluster, Ibadan');
+  const topicInput = defaultTopic;
+  const targetAudience = 'Value-Chain Operators, Commercial Offtakers, Agronomists & Capital Allocators';
+  const targetLocation = 'Nigeria & West African Agricultural Clusters';
   const [checklist, setChecklist] = useState<Record<string, boolean>>({});
   const [copiedPromptTab, setCopiedPromptTab] = useState<string | null>(null);
+  const [ingestError, setIngestError] = useState<string | null>(null);
 
   // Dynamic Date Hooks (Zero Hardcoding)
   const currentDate = useMemo(() => new Date(), []);
@@ -392,9 +393,7 @@ export default function LivestreamIdeasSidePane({
     return (currentDate.getFullYear() + 4).toString();
   }, [currentDate]);
 
-  // Ingestion & Step Bridge States (LS-Doc 1a & 1b outputs)
-  const [lsAssetMapInput, setLsAssetMapInput] = useState('');
-  const [lsConflictMatrixInput, setLsConflictMatrixInput] = useState('');
+  // Fast Ingestion Relay State (LS-Doc 1c output)
   const [customIngestMarkdown, setCustomIngestMarkdown] = useState('');
 
   const toggleChecklistItem = (id: string) => {
@@ -728,8 +727,9 @@ You are a Senior Intelligence Analyst and Debate Architect for Food Nerve Societ
 **[INPUT PAYLOAD DEFINITION]**
 
 \`\`\`
+Broadcast Hub & Category: ${hubTitle} | ${currentCategory}
 [LS_ASSET_INVENTORY]: 
-${lsAssetMapInput.trim() ? lsAssetMapInput.trim() : '[Paste the complete Markdown output block from LS-Document 1a]'}
+Please analyze the complete structured [LS_ASSET_INVENTORY] generated in Step 1 above within this conversation session.
 \`\`\`
 
 ---
@@ -790,7 +790,7 @@ Output your entire response inside this single, clean Markdown block:
 *   **[Profiteer/Cartel Identification]:** [2-3 sentences explicitly naming the actors who benefit from the combined problems persisting across these assets, and how they extract their margin].
 *   **[Profiteer/Cartel Identification]:** [2-3 sentences detailing...].
 \`\`\``;
-  }, [lsAssetMapInput, currentMonthYear, currentYear, futureHorizonYear]);
+  }, [hubTitle, currentCategory, currentMonthYear, currentYear, futureHorizonYear]);
 
   const compiledPrompt3 = useMemo(() => {
     return `### 📄 LS-DOCUMENT 1c: THE ANGLES OF ATTACK & BROADCAST SYNTHESIZER (MASTER PROMPT)
@@ -805,11 +805,7 @@ You are the Executive Producer and Showrunner for Food Nerve Society operating i
 
 \`\`\`
 Hub Title & Category: ${hubTitle} | ${currentCategory}
-[LS_ASSET_INVENTORY]: 
-${lsAssetMapInput.trim() ? lsAssetMapInput.trim() : '[Paste the output from LS-Doc 1a]'}
-
-[LS_THE_SMEAR_MATRIX]: 
-${lsConflictMatrixInput.trim() ? lsConflictMatrixInput.trim() : '[Paste the output from LS-Doc 1b]'}
+Context: Synthesize the structured [LS_ASSET_INVENTORY] and [LS_THE_SMEAR_MATRIX] generated in Step 1 and Step 2 above within this conversation session.
 \`\`\`
 
 ---
@@ -873,7 +869,7 @@ Output your entire response inside this single, clean Markdown block:
 *   **Act 3 (THE CLOSE - The Fork):** [Content mapped to the DEF]
 *   **The Ecosystem Push (CTA):** [Content mapped to the DEF]
 \`\`\``;
-  }, [hubTitle, currentCategory, lsAssetMapInput, lsConflictMatrixInput, currentMonthYear, futureHorizonYear]);
+  }, [hubTitle, currentCategory, currentMonthYear, futureHorizonYear]);
 
   const handleApplyBlueprint = (blueprint: LivestreamIdeaOption) => {
     if (onApplyIdea) {
@@ -904,9 +900,13 @@ Output your entire response inside this single, clean Markdown block:
   };
 
   const handleIngestToStudio = () => {
-    const blueprintsToIngest = liveParsedBriefs.length > 0 ? liveParsedBriefs : defaultIdeas;
+    if (liveParsedBriefs.length < 2) {
+      setIngestError("Invalid blueprint payload. Please paste the markdown output from Step 3 containing at least 2 structured broadcast blueprints with 3-Act rundowns.");
+      return;
+    }
+    setIngestError(null);
     if (onIngestBlueprints) {
-      onIngestBlueprints(blueprintsToIngest);
+      onIngestBlueprints(liveParsedBriefs);
     }
     onClose();
   };
@@ -1264,55 +1264,52 @@ Output your entire response inside this single, clean Markdown block:
             </Typography>
           </Box>
 
-          {/* Quick Inputs & Injected Payloads */}
-          <Box sx={{ p: 2.25, borderRadius: '16px', bgcolor: '#ffffff', border: '1px solid rgba(59, 130, 246, 0.25)', boxShadow: '0 4px 16px rgba(59, 130, 246, 0.05)', display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Box>
-              <Typography sx={{ fontSize: '0.84rem', fontWeight: 800, color: '#1e40af', display: 'flex', alignItems: 'center', gap: 0.8 }}>
-                <span>🎯</span> Who & Where are we broadcasting for?
+          {/* Auto-Embedded Context Assurance Banner */}
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2.25,
+              borderRadius: '20px',
+              bgcolor: 'rgba(59, 130, 246, 0.04)',
+              border: '1.5px solid rgba(59, 130, 246, 0.22)',
+              backdropFilter: 'blur(16px)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 1.5,
+              boxShadow: '0 4px 16px rgba(59, 130, 246, 0.04)'
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+              <Typography sx={{ fontSize: '0.84rem', fontWeight: 900, color: '#1e40af', display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                <span>⚡</span> Auto-Embedded Studio Intelligence
               </Typography>
-              <Typography sx={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500, mt: 0.25 }}>
-                Context for the AI to extract deep, structured intelligence dossiers for your selected articles and CTA listings.
-              </Typography>
+              <Chip
+                size="small"
+                label="Prompts Pre-Configured ✓"
+                sx={{ bgcolor: 'rgba(59, 130, 246, 0.12)', color: '#1d4ed8', fontWeight: 800, fontSize: '0.68rem', height: 20 }}
+              />
             </Box>
-
-            {/* Auto-Injected Data Status Badges */}
+            <Typography sx={{ fontSize: '0.78rem', color: '#475569', fontWeight: 500, lineHeight: 1.5 }}>
+              Your selected anchor articles, spotlight ecosystem deals/CTAs, and the <strong>{hubTitle}</strong> tri-pillar taxonomy are automatically packed into the Master Prompts below. No manual input or re-typing needed.
+            </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
               <Chip
                 size="small"
-                label={`✓ ${guidingArticles.length} Anchor Articles Auto-Injected`}
-                sx={{ bgcolor: 'rgba(59, 130, 246, 0.09)', color: '#1d4ed8', fontWeight: 800, fontSize: '0.72rem', border: '1px solid rgba(59, 130, 246, 0.22)' }}
+                label={`📚 ${guidingArticles.length} Anchor Articles Auto-Injected`}
+                sx={{ bgcolor: '#ffffff', color: '#1e3a8a', fontWeight: 800, fontSize: '0.72rem', border: '1.5px solid rgba(59, 130, 246, 0.25)' }}
               />
               <Chip
                 size="small"
-                label={`✓ ${guidingJobs.length + guidingListings.length} Ecosystem CTA Listings Injected`}
-                sx={{ bgcolor: 'rgba(59, 130, 246, 0.09)', color: '#1d4ed8', fontWeight: 800, fontSize: '0.72rem', border: '1px solid rgba(59, 130, 246, 0.22)' }}
+                label={`💼 ${guidingJobs.length + guidingListings.length} Ecosystem CTAs Auto-Injected`}
+                sx={{ bgcolor: '#ffffff', color: '#1e3a8a', fontWeight: 800, fontSize: '0.72rem', border: '1.5px solid rgba(59, 130, 246, 0.25)' }}
+              />
+              <Chip
+                size="small"
+                label={`🌐 Hub: ${hubTitle}`}
+                sx={{ bgcolor: '#ffffff', color: '#1e3a8a', fontWeight: 800, fontSize: '0.72rem', border: '1.5px solid rgba(59, 130, 246, 0.25)' }}
               />
             </Box>
-
-            <PremiumTextField
-              colorTheme="#3b82f6"
-              label="Broadcast Topic / Commodity Pair"
-              value={topicInput}
-              onChange={(e) => setTopicInput(e.target.value)}
-              fullWidth
-            />
-
-            <PremiumTextField
-              colorTheme="#3b82f6"
-              label="Target Audience Personas"
-              value={targetAudience}
-              onChange={(e) => setTargetAudience(e.target.value)}
-              fullWidth
-            />
-
-            <PremiumTextField
-              colorTheme="#3b82f6"
-              label="Location / Hotspot Clusters"
-              value={targetLocation}
-              onChange={(e) => setTargetLocation(e.target.value)}
-              fullWidth
-            />
-          </Box>
+          </Paper>
 
           {/* Terminal Box for Step 1 Prompt */}
           <PromptTerminalBox
@@ -1329,6 +1326,38 @@ Output your entire response inside this single, clean Markdown block:
               setChecklist(prev => ({ ...prev, chk1_copy: true }));
             }}
           />
+
+          {/* Step 1 Verification Checklist */}
+          <Paper
+            elevation={0}
+            sx={{
+              p: 1.75,
+              borderRadius: '16px',
+              bgcolor: 'rgba(59, 130, 246, 0.03)',
+              border: '1.5px solid rgba(59, 130, 246, 0.15)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 1,
+            }}
+          >
+            <Typography sx={{ color: '#1e40af', fontWeight: 800, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Step 1 Prompt Verification
+            </Typography>
+            <PromptChecklistItem
+              id="chk1_auto"
+              text="Anchor article intelligence & CTA dossiers auto-injected into prompt"
+              checked={true}
+              onToggle={() => {}}
+              colorTheme="#3b82f6"
+            />
+            <PromptChecklistItem
+              id="chk1_copy"
+              text="Step 1 Prompt copied to clipboard (run in ChatGPT, Claude, or Gemini)"
+              checked={!!checklist['chk1_copy']}
+              onToggle={() => toggleChecklistItem('chk1_copy')}
+              colorTheme="#3b82f6"
+            />
+          </Paper>
         </Box>
 
         <Box sx={{ borderBottom: '1px solid rgba(0,0,0,0.08)', my: 0.5 }} />
@@ -1346,33 +1375,11 @@ Output your entire response inside this single, clean Markdown block:
             </Typography>
           </Box>
 
-          {/* Optional Paste Area for Step 1 Output */}
-          <Box sx={{ p: 2.25, borderRadius: '16px', bgcolor: '#ffffff', border: '1px solid rgba(245, 158, 11, 0.25)', boxShadow: '0 4px 16px rgba(245, 158, 11, 0.05)', display: 'flex', flexDirection: 'column', gap: 1.25 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography sx={{ fontSize: '0.82rem', fontWeight: 800, color: '#92400e', display: 'flex', alignItems: 'center', gap: 0.8 }}>
-                <span>📥</span> Optional: Paste [LS_ASSET_INVENTORY] Output from Step 1
-              </Typography>
-              {lsAssetMapInput.trim() && (
-                <Chip label="Auto-Embedded Below ✓" size="small" sx={{ bgcolor: '#ecfdf5', color: '#047857', fontWeight: 800, fontSize: '0.68rem' }} />
-              )}
-            </Box>
-            <Typography sx={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 500 }}>
-              Paste the Markdown response from Step 1 here to auto-embed it into the Step 2 and Step 3 prompts.
-            </Typography>
-            <PremiumMarkdownEditor
-              colorTheme="#f59e0b"
-              minRows={3}
-              placeholder="# [LS_ASSET_INVENTORY] ... (Paste Step 1 output here)"
-              value={lsAssetMapInput}
-              onChange={(e: any) => setLsAssetMapInput(e.target.value)}
-            />
-          </Box>
-
           {/* Terminal Box for Step 2 Prompt */}
           <PromptTerminalBox
             title="Step 2 Prompt · Pattern & Intersection Mapping (LS-Doc 1b)"
             codeLabel="LS-DOC 1b"
-            subtitle="Extracts conflict matrix, tensions, and stakeholder friction points."
+            subtitle="Extracts conflict matrix, tensions, and stakeholder friction points in the same chat."
             prompt={compiledPrompt2}
             colorTheme="#f59e0b"
             copiedBannerText="LS-Doc 1b Master Prompt Copied to Clipboard!"
@@ -1383,6 +1390,38 @@ Output your entire response inside this single, clean Markdown block:
               setChecklist(prev => ({ ...prev, chk2_copy: true }));
             }}
           />
+
+          {/* Step 2 Verification Checklist */}
+          <Paper
+            elevation={0}
+            sx={{
+              p: 1.75,
+              borderRadius: '16px',
+              bgcolor: 'rgba(245, 158, 11, 0.03)',
+              border: '1.5px solid rgba(245, 158, 11, 0.18)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 1,
+            }}
+          >
+            <Typography sx={{ color: '#92400e', fontWeight: 800, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Step 2 Prompt Verification
+            </Typography>
+            <PromptChecklistItem
+              id="chk2_instructions"
+              text="Smear Matrix & Tension extraction instructions loaded"
+              checked={true}
+              onToggle={() => {}}
+              colorTheme="#f59e0b"
+            />
+            <PromptChecklistItem
+              id="chk2_copy"
+              text="Step 2 Prompt copied (paste into the SAME LLM chat conversation)"
+              checked={!!checklist['chk2_copy']}
+              onToggle={() => toggleChecklistItem('chk2_copy')}
+              colorTheme="#f59e0b"
+            />
+          </Paper>
         </Box>
 
         <Box sx={{ borderBottom: '1px solid rgba(0,0,0,0.08)', my: 0.5 }} />
@@ -1412,28 +1451,6 @@ Output your entire response inside this single, clean Markdown block:
             </Typography>
           </Box>
 
-          {/* Optional Paste Area for Step 2 Output */}
-          <Box sx={{ p: 2.25, borderRadius: '16px', bgcolor: '#ffffff', border: '1px solid rgba(168, 85, 247, 0.25)', boxShadow: '0 4px 16px rgba(168, 85, 247, 0.05)', display: 'flex', flexDirection: 'column', gap: 1.25 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography sx={{ fontSize: '0.82rem', fontWeight: 800, color: '#6b21a8', display: 'flex', alignItems: 'center', gap: 0.8 }}>
-                <span>📥</span> Optional: Paste [LS_THE_SMEAR_MATRIX] Output from Step 2
-              </Typography>
-              {lsConflictMatrixInput.trim() && (
-                <Chip label="Auto-Embedded Below ✓" size="small" sx={{ bgcolor: '#ecfdf5', color: '#047857', fontWeight: 800, fontSize: '0.68rem' }} />
-              )}
-            </Box>
-            <Typography sx={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 500 }}>
-              Paste the Markdown response from Step 2 here to auto-embed it into the final blueprint synthesis prompt.
-            </Typography>
-            <PremiumMarkdownEditor
-              colorTheme="#a855f7"
-              minRows={3}
-              placeholder="# [LS_THE_SMEAR_MATRIX] ... (Paste Step 2 output here)"
-              value={lsConflictMatrixInput}
-              onChange={(e: any) => setLsConflictMatrixInput(e.target.value)}
-            />
-          </Box>
-
           {/* Terminal Box for Step 3 Prompt */}
           <PromptTerminalBox
             title="Step 3 Prompt · Angles of Attack & Broadcast Synthesizer (LS-Doc 1c)"
@@ -1449,6 +1466,38 @@ Output your entire response inside this single, clean Markdown block:
               setChecklist(prev => ({ ...prev, chk3_copy: true }));
             }}
           />
+
+          {/* Step 3 Verification Checklist */}
+          <Paper
+            elevation={0}
+            sx={{
+              p: 1.75,
+              borderRadius: '16px',
+              bgcolor: 'rgba(168, 85, 247, 0.03)',
+              border: '1.5px solid rgba(168, 85, 247, 0.18)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 1,
+            }}
+          >
+            <Typography sx={{ color: '#6b21a8', fontWeight: 800, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Step 3 Prompt Verification
+            </Typography>
+            <PromptChecklistItem
+              id="chk3_synthesizer"
+              text="4 Angles of Attack & 3-Act DEF structure synthesis active"
+              checked={true}
+              onToggle={() => {}}
+              colorTheme="#a855f7"
+            />
+            <PromptChecklistItem
+              id="chk3_copy"
+              text="Step 3 Prompt copied (paste into the SAME LLM chat to generate [LIVESTREAM_MENU_PAYLOAD])"
+              checked={!!checklist['chk3_copy']}
+              onToggle={() => toggleChecklistItem('chk3_copy')}
+              colorTheme="#a855f7"
+            />
+          </Paper>
         </Box>
 
         <Box sx={{ borderBottom: '1px solid rgba(0,0,0,0.08)', my: 0.5 }} />
@@ -1471,9 +1520,29 @@ Output your entire response inside this single, clean Markdown block:
             </Box>
           </Box>
 
+          {ingestError && (
+            <Alert
+              severity="error"
+              onClose={() => setIngestError(null)}
+              sx={{
+                borderRadius: '16px',
+                bgcolor: 'rgba(239, 68, 68, 0.08)',
+                border: '1.5px solid rgba(239, 68, 68, 0.25)',
+                color: '#991b1b',
+                fontWeight: 600,
+                fontSize: '0.84rem'
+              }}
+            >
+              {ingestError}
+            </Alert>
+          )}
+
           <PromptFastIngestBox
             value={customIngestMarkdown}
-            onChange={(val: string) => setCustomIngestMarkdown(val)}
+            onChange={(val: string) => {
+              setCustomIngestMarkdown(val);
+              if (ingestError) setIngestError(null);
+            }}
             onIngest={handleIngestToStudio}
             title="Fast Ingest: 4 Broadcast Blueprints Relay"
             subtitle="Paste the generated markdown output from LS-Doc 1c below to apply to the Studio."
@@ -1494,7 +1563,7 @@ Output your entire response inside this single, clean Markdown block:
               p: 2,
               borderRadius: '16px',
               bgcolor: 'rgba(16, 185, 129, 0.04)',
-              border: '1px solid rgba(16, 185, 129, 0.2)',
+              border: '1.5px solid rgba(16, 185, 129, 0.2)',
               display: 'flex',
               flexDirection: 'column',
               gap: 1.25,
@@ -1506,7 +1575,7 @@ Output your entire response inside this single, clean Markdown block:
               </Typography>
               <Chip
                 label={
-                  liveParsedBriefs.length === 4
+                  liveParsedBriefs.length >= 4
                     ? "4/4 READY TO APPLY"
                     : liveParsedBriefs.length > 0
                     ? `${liveParsedBriefs.length}/4 DETECTED`
@@ -1514,8 +1583,8 @@ Output your entire response inside this single, clean Markdown block:
                 }
                 size="small"
                 sx={{
-                  bgcolor: liveParsedBriefs.length === 4 ? '#d1fae5' : '#fef3c7',
-                  color: liveParsedBriefs.length === 4 ? '#065f46' : '#b45309',
+                  bgcolor: liveParsedBriefs.length >= 4 ? '#d1fae5' : '#fef3c7',
+                  color: liveParsedBriefs.length >= 4 ? '#065f46' : '#b45309',
                   fontWeight: 900,
                   fontSize: '0.62rem',
                   height: 18,
@@ -1532,8 +1601,8 @@ Output your entire response inside this single, clean Markdown block:
               />
               <PromptChecklistItem
                 id="ingest-apply"
-                text="Batch Dispatch: Pushes all 4 blueprints directly into the Studio Slideshow"
-                checked={liveParsedBriefs.length >= 4}
+                text="Batch Dispatch: Pushes all blueprints directly into the Studio Carousel Deck"
+                checked={liveParsedBriefs.length >= 2}
                 onToggle={() => {}}
                 colorTheme="#10b981"
               />
