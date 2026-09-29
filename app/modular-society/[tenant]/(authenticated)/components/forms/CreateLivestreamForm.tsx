@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Box, Typography, Button, TextField, MenuItem, Select, FormControl, InputLabel, CircularProgress, Chip, IconButton, Alert, Paper, useTheme, useMediaQuery } from '@mui/material';
-import { ArrowBack as ArrowBackIcon, CheckCircle as CheckCircleIcon, Article as ArticleIcon, AutoAwesome as SparkleIcon, Image as ImageIcon, Check as CheckIcon, Info as InfoIcon, ArrowForward as ArrowForwardIcon, Close as CloseIcon, Bolt as BoltIcon, CalendarMonth as CalendarMonthIcon } from '@mui/icons-material';
+import { ArrowBack as ArrowBackIcon, LiveTv as LiveTvIcon, CheckCircle as CheckCircleIcon, Article as ArticleIcon, AutoAwesome as SparkleIcon, Image as ImageIcon, Check as CheckIcon, Info as InfoIcon, ArrowForward as ArrowForwardIcon, Close as CloseIcon, Bolt as BoltIcon, CalendarMonth as CalendarMonthIcon } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import { useSociety } from '@/context/SocietyContext';
 import { fetchLivestreamContentPool, createLearnContent } from '@/lib/actions/learn';
 import LivestreamRundownBuilder from './livestream/LivestreamRundownBuilder';
 import LivestreamIdeasSidePane, { LivestreamIdeaOption } from './livestream/LivestreamIdeasSidePane';
+import LivestreamScreenPreviewModal from './livestream/LivestreamScreenPreviewModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import PremiumTextField from '@/components/PremiumTextField';
 import PremiumDatePicker from '@/components/PremiumDatePicker';
@@ -112,6 +113,7 @@ export default function CreateLivestreamForm({
 
   // Ideation Assistant & Studio Slideshow State
   const [isIdeasDrawerOpen, setIsIdeasDrawerOpen] = useState(false);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [ingestedBlueprints, setIngestedBlueprints] = useState<LivestreamIdeaOption[]>([]);
   const [deckActiveIndex, setDeckActiveIndex] = useState(0);
   const [isCardFlipped, setIsCardFlipped] = useState(false);
@@ -2270,6 +2272,11 @@ export default function CreateLivestreamForm({
                   postingAs={postingAs}
                   selectedOrgId={selectedOrgId}
                   contentPool={contentPool}
+                  guidingArticles={guidingArticles}
+                  guidingJobs={guidingJobs}
+                  guidingListings={guidingListings}
+                  guidingCampaigns={guidingCampaigns}
+                  hubColor={hubColor}
                   initialBlocks={rundownBlocks}
                   onBlocksChange={setRundownBlocks}
                 />
@@ -2501,6 +2508,31 @@ export default function CreateLivestreamForm({
           >
             Save Draft
           </Button>
+
+          <Button
+            variant="outlined"
+            onClick={() => setIsPreviewModalOpen(true)}
+            startIcon={<LiveTvIcon sx={{ fontSize: '1.15rem !important', color: '#ef4444' }} />}
+            sx={{
+              borderRadius: '14px',
+              fontWeight: 800,
+              px: 3,
+              py: 1,
+              borderColor: 'rgba(239, 68, 68, 0.4)',
+              color: '#0f172a',
+              bgcolor: 'rgba(239, 68, 68, 0.04)',
+              textTransform: 'none',
+              fontSize: '0.9rem',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                borderColor: '#ef4444',
+                bgcolor: 'rgba(239, 68, 68, 0.09)',
+                transform: 'translateY(-1px)',
+              }
+            }}
+          >
+            Livestream Preview
+          </Button>
           
           {step < 3 ? (
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5 }}>
@@ -2584,6 +2616,22 @@ export default function CreateLivestreamForm({
           )}
         </Box>
       </Box>
+
+      
+      {/* ── BROADCAST SCREEN SIMULATOR MODAL ── */}
+      <LivestreamScreenPreviewModal
+        open={isPreviewModalOpen}
+        onClose={() => setIsPreviewModalOpen(false)}
+        title={title}
+        category={category}
+        hubTitle={hubTitle}
+        hubColor={hubColor}
+        hostName={profile?.displayName || (profile as any)?.handle || 'Broadcast Host'}
+        hostAvatar={profile?.avatarUrl || ''}
+        rundownBlocks={rundownBlocks}
+        streamUrl={streamUrl}
+        eventDate={eventDate}
+      />
 
       {/* ── LIVESTREAM AI IDEAS SLIDE-OVER DRAWER ── */}
       <LivestreamIdeasSidePane
