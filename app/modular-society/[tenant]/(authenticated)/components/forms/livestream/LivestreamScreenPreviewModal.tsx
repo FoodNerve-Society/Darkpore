@@ -27,17 +27,7 @@ import {
   Layers as LayersIcon,
   RestartAlt as ResetIcon,
 } from '@mui/icons-material';
-import {
-  SlideSpikyTitle,
-  SlideMythFact,
-  SlideStatCard,
-  SlideJob,
-  SlideTransition,
-  SlideQuote,
-  SlideMedia,
-  SlideFallback,
-  SlideRundownAct,
-} from './SlideComponents';
+import { renderSlidePreviewContent } from './SlideComponents';
 
 export interface LivestreamScreenPreviewModalProps {
   open: boolean;
@@ -207,65 +197,9 @@ export default function LivestreamScreenPreviewModal({
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
-  // Render a Slide Component cleanly
+  // Render a Slide Component cleanly via centralized engine
   const renderSlideItem = (item: any) => {
-    if (!item) {
-      return (
-        <Box
-          sx={{
-            width: '100%',
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            p: 3,
-            textAlign: 'center',
-            bgcolor: '#f8fafc',
-            border: '1.5px dashed #cbd5e1',
-            borderRadius: '16px',
-          }}
-        >
-          <Typography sx={{ color: '#94a3b8', fontSize: '0.85rem' }}>No slide available</Typography>
-        </Box>
-      );
-    }
-
-    const isAct =
-      item.sourceType === 'act' || item.originalBlockType === 'rundown_act' || Boolean(item.originalContent?.role);
-    const isJob = item.sourceType === 'job' || Boolean(item.originalContent?.jobTitle);
-    const isTransition = item.sourceType === 'transition' && !isAct;
-
-    if (isAct) {
-      return (
-        <SlideRundownAct
-          content={item.originalContent || {}}
-          durationStr={item.durationStr}
-          color={hubColor}
-        />
-      );
-    }
-    if (isJob) return <SlideJob content={item.originalContent || {}} />;
-    if (isTransition) return <SlideTransition content={item.originalContent || {}} />;
-
-    const c = item.originalContent || {};
-    switch (item.originalBlockType) {
-      case 'subheading':
-        return <SlideSpikyTitle content={c} />;
-      case 'myth_fact':
-      case 'myth_reality':
-        return <SlideMythFact content={c} />;
-      case 'highlight_card':
-      case 'stat_card':
-        return <SlideStatCard content={c} />;
-      case 'pull_quote':
-      case 'strong_quote':
-        return <SlideQuote content={c} />;
-      case 'media':
-        return <SlideMedia content={c} />;
-      default:
-        return <SlideFallback content={c} type={item.originalBlockType || 'slide'} />;
-    }
+    return renderSlidePreviewContent(item, hubColor);
   };
 
   return (
@@ -278,7 +212,8 @@ export default function LivestreamScreenPreviewModal({
         paper: {
           sx: {
             borderRadius: '28px',
-            bgcolor: '#ffffff',
+            bgcolor: 'rgba(255, 255, 255, 0.96)',
+            backdropFilter: 'blur(24px)',
             border: '1.5px solid rgba(226, 232, 240, 0.95)',
             boxShadow: '0 24px 64px rgba(15, 23, 42, 0.12)',
             maxHeight: '92vh',
@@ -467,9 +402,9 @@ export default function LivestreamScreenPreviewModal({
                   aspectRatio: '16/9',
                   borderRadius: '16px',
                   overflow: 'hidden',
-                  bgcolor: '#0f172a',
-                  border: '1.5px solid rgba(226, 232, 240, 0.8)',
-                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.06)',
+                  bgcolor: '#f8fafc',
+                  border: '1.5px solid rgba(226, 232, 240, 0.95)',
+                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.04)',
                   position: 'relative',
                 }}
               >
@@ -489,7 +424,7 @@ export default function LivestreamScreenPreviewModal({
                 gap: 2,
               }}
             >
-              <Box sx={{ width: 140, aspectRatio: '16/9', borderRadius: '10px', overflow: 'hidden', bgcolor: '#0f172a', flexShrink: 0, position: 'relative' }}>
+              <Box sx={{ width: 140, aspectRatio: '16/9', borderRadius: '10px', overflow: 'hidden', bgcolor: '#f8fafc', border: '1px solid #e2e8f0', flexShrink: 0, position: 'relative' }}>
                 {nextItem ? (
                   <Box sx={{ transform: 'scale(0.35)', transformOrigin: 'top left', width: '285%', height: '285%' }}>
                     {renderSlideItem(nextItem)}

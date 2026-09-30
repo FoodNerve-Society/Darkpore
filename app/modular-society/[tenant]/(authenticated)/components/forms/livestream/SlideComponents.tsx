@@ -8,6 +8,7 @@ import {
   PlayArrow as PlayIcon,
   FormatQuote as QuoteIcon
 } from '@mui/icons-material';
+import { DEF_BLOCK_DEFINITIONS } from './defBlocksConfig';
 
 // Common Slide Wrapper to ensure consistent aspect ratio (16:9) and basic layout
 export function SlideWrapper({ children, color = '#3b82f6', bgUrl }: { children: React.ReactNode, color?: string, bgUrl?: string }) {
@@ -739,3 +740,127 @@ export function SlideForkedClose({ content }: { content: any }) {
     </SlideWrapper>
   );
 }
+
+/**
+ * Centralized slide rendering engine for the entire Livestream Studio.
+ * Synchronously consumed across:
+ * 1. LivestreamRundownBuilder (Single Slide 16:9 Modal Preview)
+ * 2. LivestreamScreenPreviewModal (Director's Control Deck: Live Stage Monitor & Next Up)
+ * 3. /stage window (External Screen-Share Broadcast Window)
+ */
+export function renderSlidePreviewContent(item: any, fallbackHubColor?: string) {
+  if (!item) {
+    return (
+      <Box
+        sx={{
+          width: '100%',
+          height: '100%',
+          aspectRatio: '16/9',
+          borderRadius: '16px',
+          bgcolor: '#f8fafc',
+          border: '1.5px dashed #cbd5e1',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          p: 3,
+          textAlign: 'center',
+        }}
+      >
+        <Typography sx={{ color: '#94a3b8', fontSize: '0.88rem', fontWeight: 600 }}>
+          No slide selected or available
+        </Typography>
+      </Box>
+    );
+  }
+
+  const isAct =
+    item.sourceType === 'act' ||
+    item.originalBlockType === 'rundown_act' ||
+    Boolean(item.originalContent?.role);
+  const isJob =
+    item.sourceType === 'job' ||
+    item.defBlockId === 'talent_spotlight' ||
+    Boolean(item.originalContent?.jobTitle);
+  const isTransition = item.sourceType === 'transition' && !isAct;
+
+  const defBlock = item.defBlockId ? DEF_BLOCK_DEFINITIONS[item.defBlockId] : null;
+  const themeColor =
+    defBlock?.themeColor ||
+    fallbackHubColor ||
+    (isAct ? '#10b981' : isJob ? '#f59e0b' : isTransition ? '#64748b' : '#3b82f6');
+  const c = item.originalContent || {};
+
+  // 1. First check DEF Broadcast Block ID (All 12 Containers)
+  if (item.defBlockId) {
+    switch (item.defBlockId) {
+      case 'anchor_tension':
+        return <SlideAnchorTension content={c} />;
+      case 'reframe_question':
+        return <SlideReframeQuestion content={c} />;
+      case 'funnel_system':
+        return <SlideFunnelSystem content={c} />;
+      case 'ideal_vs_feasible':
+        return <SlideIdealVsFeasible content={c} />;
+      case 'scaled_burden':
+        return <SlideScaledBurden content={c} />;
+      case 'power_map':
+        return <SlidePowerMap content={c} />;
+      case 'response_audit':
+        return <SlideResponseAudit content={c} />;
+      case 'boundary_test':
+        return <SlideBoundaryTest content={c} />;
+      case 'preempt_objections':
+        return <SlidePreemptObjections content={c} />;
+      case 'return_to_case':
+        return <SlideReturnToCase content={c} />;
+      case 'forked_close':
+        return <SlideForkedClose content={c} />;
+      case 'talent_spotlight':
+        return <SlideJob content={c} />;
+      default:
+        break;
+    }
+  }
+
+  // 2. Act Segment Cards
+  if (isAct) {
+    return (
+      <SlideRundownAct
+        content={c}
+        durationStr={item.durationStr}
+        color={themeColor}
+      />
+    );
+  }
+
+  // 3. Job / Ecosystem Cards
+  if (isJob) return <SlideJob content={c} />;
+
+  // 4. Transitions
+  if (isTransition) return <SlideTransition content={c} />;
+
+  // 5. Article Block Types
+  const blockType = item.originalBlockType || (defBlock ? 'subheading' : '');
+
+  switch (blockType) {
+    case 'subheading':
+      return <SlideSpikyTitle content={c} />;
+    case 'myth_fact':
+    case 'myth_reality':
+      return <SlideMythFact content={c} />;
+    case 'highlight_card':
+    case 'stat_card':
+      return <SlideStatCard content={c} />;
+    case 'pull_quote':
+    case 'strong_quote':
+      return <SlideQuote content={c} />;
+    case 'media':
+      return <SlideMedia content={c} />;
+    case 'job':
+      return <SlideJob content={c} />;
+    default:
+      return <SlideFallback content={c} type={blockType || 'slide'} />;
+  }
+}
+

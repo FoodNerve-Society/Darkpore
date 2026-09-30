@@ -66,6 +66,7 @@ import {
   SlideReturnToCase,
   SlideForkedClose,
   AdaptiveSlideImage,
+  renderSlidePreviewContent,
 } from './SlideComponents';
 
 // --- Types ---
@@ -88,80 +89,6 @@ export type RundownItem = {
 
 // Preset duration options for fast tagging
 const DURATION_PRESETS = ['15s', '30s', '45s', '1m', '2m', '5m'];
-
-// Render full 16:9 slide for preview modal or presentation
-export function renderSlidePreviewContent(item: RundownItem) {
-  const isAct = item.sourceType === 'act' || item.originalBlockType === 'rundown_act' || Boolean(item.originalContent?.role);
-  const isJob = item.sourceType === 'job' || item.defBlockId === 'talent_spotlight' || Boolean(item.originalContent?.jobTitle);
-  const isTransition = item.sourceType === 'transition' && !isAct;
-
-  const defBlock = item.defBlockId ? DEF_BLOCK_DEFINITIONS[item.defBlockId] : null;
-  const themeColor = defBlock ? defBlock.themeColor : (isAct ? '#10b981' : isJob ? '#f59e0b' : isTransition ? '#64748b' : '#3b82f6');
-  const c = item.originalContent || {};
-
-  // First check DEF Block ID
-  if (item.defBlockId) {
-    switch (item.defBlockId) {
-      case 'anchor_tension':
-        return <SlideAnchorTension content={c} />;
-      case 'reframe_question':
-        return <SlideReframeQuestion content={c} />;
-      case 'funnel_system':
-        return <SlideFunnelSystem content={c} />;
-      case 'ideal_vs_feasible':
-        return <SlideIdealVsFeasible content={c} />;
-      case 'scaled_burden':
-        return <SlideScaledBurden content={c} />;
-      case 'power_map':
-        return <SlidePowerMap content={c} />;
-      case 'response_audit':
-        return <SlideResponseAudit content={c} />;
-      case 'boundary_test':
-        return <SlideBoundaryTest content={c} />;
-      case 'preempt_objections':
-        return <SlidePreemptObjections content={c} />;
-      case 'return_to_case':
-        return <SlideReturnToCase content={c} />;
-      case 'forked_close':
-        return <SlideForkedClose content={c} />;
-      case 'talent_spotlight':
-        return <SlideJob content={c} />;
-      default:
-        break;
-    }
-  }
-
-  if (isAct) {
-    return (
-      <SlideRundownAct
-        content={c}
-        durationStr={item.durationStr}
-        color={themeColor}
-      />
-    );
-  }
-  if (isJob) return <SlideJob content={c} />;
-  if (isTransition) return <SlideTransition content={c} />;
-
-  const blockType = item.originalBlockType || (defBlock ? 'subheading' : '');
-
-  switch (blockType) {
-    case 'subheading':
-      return <SlideSpikyTitle content={c} />;
-    case 'myth_fact':
-      return <SlideMythFact content={c} />;
-    case 'highlight_card':
-      return <SlideStatCard content={c} />;
-    case 'pull_quote':
-      return <SlideQuote content={c} />;
-    case 'media':
-      return <SlideMedia content={c} />;
-    case 'job':
-      return <SlideJob content={c} />;
-    default:
-      return <SlideFallback content={c} type={blockType || ''} />;
-  }
-}
 
 // Aspect ratio choices for media
 const ASPECT_RATIO_OPTIONS = [
@@ -2235,8 +2162,9 @@ export default function LivestreamRundownBuilder({
           paper: {
             sx: {
               borderRadius: '24px',
-              bgcolor: '#ffffff',
-              border: '1.5px solid rgba(226, 232, 240, 0.9)',
+              bgcolor: 'rgba(255, 255, 255, 0.96)',
+              backdropFilter: 'blur(24px)',
+              border: '1.5px solid rgba(226, 232, 240, 0.95)',
               boxShadow: '0 24px 64px rgba(15, 23, 42, 0.15)',
               maxHeight: '90vh',
               display: 'flex',
@@ -2405,10 +2333,11 @@ export default function LivestreamRundownBuilder({
               height: { xs: '94vh', md: '85vh' },
               maxHeight: '85vh',
               borderRadius: '28px',
-              bgcolor: '#0f172a',
-              color: '#ffffff',
-              border: '1.5px solid rgba(255, 255, 255, 0.15)',
-              boxShadow: '0 32px 80px rgba(0, 0, 0, 0.6)',
+              bgcolor: 'rgba(255, 255, 255, 0.96)',
+              backdropFilter: 'blur(28px)',
+              color: '#0f172a',
+              border: '1.5px solid rgba(226, 232, 240, 0.95)',
+              boxShadow: '0 32px 80px rgba(15, 23, 42, 0.16)',
               display: 'flex',
               flexDirection: 'column',
               overflow: 'hidden',
@@ -2423,13 +2352,13 @@ export default function LivestreamRundownBuilder({
               sx={{
                 px: { xs: 2.5, sm: 3.5 },
                 py: 2,
-                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                borderBottom: '1.5px solid rgba(226, 232, 240, 0.9)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 flexWrap: 'wrap',
                 gap: 2,
-                bgcolor: 'rgba(15, 23, 42, 0.95)',
+                bgcolor: 'rgba(255, 255, 255, 0.95)',
                 backdropFilter: 'blur(20px)',
               }}
             >
@@ -2439,23 +2368,23 @@ export default function LivestreamRundownBuilder({
                     width: 42,
                     height: 42,
                     borderRadius: '12px',
-                    bgcolor: 'rgba(59, 130, 246, 0.15)',
+                    bgcolor: 'rgba(59, 130, 246, 0.1)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     flexShrink: 0,
                   }}
                 >
-                  <LayersIcon sx={{ color: '#60a5fa', fontSize: 24 }} />
+                  <LayersIcon sx={{ color: '#2563eb', fontSize: 24 }} />
                 </Box>
                 <Box sx={{ minWidth: 0 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.25 }}>
                     <Chip
                       label={selectedArticleForBlocks.category || 'Article'}
                       size="small"
-                      sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: '#fff', fontWeight: 800, fontSize: '0.68rem', height: 20 }}
+                      sx={{ bgcolor: 'rgba(59, 130, 246, 0.1)', color: '#2563eb', fontWeight: 800, fontSize: '0.68rem', height: 20 }}
                     />
-                    <Typography sx={{ color: '#94a3b8', fontSize: '0.78rem' }}>
+                    <Typography sx={{ color: '#64748b', fontSize: '0.78rem' }}>
                       Pick Slides into Broadcast Rundown
                     </Typography>
                   </Box>
@@ -2463,7 +2392,7 @@ export default function LivestreamRundownBuilder({
                     sx={{
                       fontWeight: 800,
                       fontSize: { xs: '1rem', md: '1.2rem' },
-                      color: '#ffffff',
+                      color: '#0f172a',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
@@ -2519,7 +2448,7 @@ export default function LivestreamRundownBuilder({
                 <IconButton
                   size="small"
                   onClick={() => setSelectedArticleForBlocks(null)}
-                  sx={{ color: '#94a3b8', '&:hover': { color: '#ffffff' } }}
+                  sx={{ color: '#64748b', '&:hover': { color: '#0f172a', bgcolor: 'rgba(0, 0, 0, 0.05)' } }}
                 >
                   <CloseIcon sx={{ fontSize: 22 }} />
                 </IconButton>
@@ -2536,8 +2465,8 @@ export default function LivestreamRundownBuilder({
                   flexDirection: 'column',
                   gap: 2.5,
                   p: 3,
-                  borderRight: '1px solid rgba(255, 255, 255, 0.1)',
-                  bgcolor: 'rgba(15, 23, 42, 0.6)',
+                  borderRight: '1.5px solid rgba(226, 232, 240, 0.9)',
+                  bgcolor: '#f8fafc',
                   overflowY: 'auto',
                 }}
               >
@@ -2548,8 +2477,8 @@ export default function LivestreamRundownBuilder({
                     height: 180,
                     borderRadius: '16px',
                     overflow: 'hidden',
-                    border: '1.5px solid rgba(255, 255, 255, 0.15)',
-                    bgcolor: '#020617',
+                    border: '1.5px solid rgba(226, 232, 240, 0.9)',
+                    bgcolor: '#e2e8f0',
                   }}
                 >
                   {selectedArticleForBlocks.coverImageUrl || selectedArticleForBlocks.coverImage || selectedArticleForBlocks.imageUrl ? (
@@ -2560,30 +2489,30 @@ export default function LivestreamRundownBuilder({
                     />
                   ) : (
                     <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <BookIcon sx={{ color: 'rgba(255,255,255,0.2)', fontSize: 50 }} />
+                      <BookIcon sx={{ color: '#94a3b8', fontSize: 50 }} />
                     </Box>
                   )}
                 </Box>
 
                 <Box>
-                  <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: '#60a5fa', textTransform: 'uppercase', letterSpacing: '0.04em', mb: 0.5 }}>
+                  <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.04em', mb: 0.5 }}>
                     Article Dossier
                   </Typography>
-                  <Typography sx={{ fontWeight: 800, fontSize: '1.05rem', color: '#ffffff', lineHeight: 1.35, mb: 1.5 }}>
+                  <Typography sx={{ fontWeight: 800, fontSize: '1.05rem', color: '#0f172a', lineHeight: 1.35, mb: 1.5 }}>
                     {selectedArticleForBlocks.title}
                   </Typography>
                   {selectedArticleForBlocks.description && (
-                    <Typography sx={{ fontSize: '0.86rem', color: '#94a3b8', lineHeight: 1.6 }}>
+                    <Typography sx={{ fontSize: '0.86rem', color: '#475569', lineHeight: 1.6 }}>
                       {selectedArticleForBlocks.description}
                     </Typography>
                   )}
                 </Box>
 
-                <Box sx={{ mt: 'auto', p: 2, borderRadius: '14px', bgcolor: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                  <Typography sx={{ fontSize: '0.74rem', color: '#94a3b8', mb: 0.5 }}>
+                <Box sx={{ mt: 'auto', p: 2, borderRadius: '14px', bgcolor: '#ffffff', border: '1.5px solid rgba(226, 232, 240, 0.9)' }}>
+                  <Typography sx={{ fontSize: '0.74rem', color: '#64748b', mb: 0.5 }}>
                     Modular Blocks Available:
                   </Typography>
-                  <Typography sx={{ fontSize: '1.1rem', fontWeight: 900, color: '#ffffff' }}>
+                  <Typography sx={{ fontSize: '1.1rem', fontWeight: 900, color: '#0f172a' }}>
                     {(selectedArticleForBlocks.article?.blocks || selectedArticleForBlocks.blocks || []).length} Slides Ready
                   </Typography>
                   <Typography sx={{ fontSize: '0.72rem', color: '#64748b', mt: 0.5 }}>
@@ -2601,7 +2530,7 @@ export default function LivestreamRundownBuilder({
                   display: 'flex',
                   flexDirection: 'column',
                   gap: 2,
-                  bgcolor: '#020617',
+                  bgcolor: '#f1f5f9',
                 }}
               >
                 {(() => {
@@ -2645,19 +2574,20 @@ export default function LivestreamRundownBuilder({
                             sx={{
                               p: 2.25,
                               borderRadius: '18px',
-                              bgcolor: 'rgba(15, 23, 42, 0.85)',
+                              bgcolor: '#ffffff',
                               border: isAlreadyInRundown
-                                ? '1.5px solid rgba(16, 185, 129, 0.5)'
-                                : '1.5px solid rgba(255, 255, 255, 0.12)',
-                              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
+                                ? '1.5px solid rgba(16, 185, 129, 0.6)'
+                                : '1.5px solid rgba(226, 232, 240, 0.95)',
+                              boxShadow: '0 2px 10px rgba(15, 23, 42, 0.04)',
                               display: 'flex',
                               flexDirection: 'column',
                               justifyContent: 'space-between',
                               gap: 1.5,
                               transition: 'all 0.2s ease',
                               '&:hover': {
-                                borderColor: 'rgba(96, 165, 250, 0.5)',
+                                borderColor: isAlreadyInRundown ? '#10b981' : '#3b82f6',
                                 transform: 'translateY(-2px)',
+                                boxShadow: '0 8px 24px rgba(15, 23, 42, 0.08)',
                               },
                             }}
                           >
@@ -2667,8 +2597,8 @@ export default function LivestreamRundownBuilder({
                                   size="small"
                                   label={b.blockType?.replace('_', ' ').toUpperCase() || 'BLOCK'}
                                   sx={{
-                                    bgcolor: 'rgba(59, 130, 246, 0.15)',
-                                    color: '#60a5fa',
+                                    bgcolor: 'rgba(59, 130, 246, 0.1)',
+                                    color: '#2563eb',
                                     fontWeight: 900,
                                     fontSize: '0.68rem',
                                     height: 20,
@@ -2678,13 +2608,13 @@ export default function LivestreamRundownBuilder({
                                   <Chip
                                     size="small"
                                     label="✓ In Rundown"
-                                    sx={{ bgcolor: 'rgba(16, 185, 129, 0.2)', color: '#34d399', fontWeight: 800, fontSize: '0.65rem', height: 20 }}
+                                    sx={{ bgcolor: '#dcfce7', color: '#166534', fontWeight: 800, fontSize: '0.65rem', height: 20 }}
                                   />
                                 ) : (
                                   <Chip
                                     size="small"
                                     label="~45s"
-                                    sx={{ bgcolor: 'rgba(255, 255, 255, 0.08)', color: '#94a3b8', fontSize: '0.65rem', height: 20 }}
+                                    sx={{ bgcolor: '#f1f5f9', color: '#64748b', fontSize: '0.65rem', height: 20 }}
                                   />
                                 )}
                               </Box>
@@ -2693,7 +2623,7 @@ export default function LivestreamRundownBuilder({
                                 sx={{
                                   fontWeight: 700,
                                   fontSize: '0.92rem',
-                                  color: '#ffffff',
+                                  color: '#0f172a',
                                   lineHeight: 1.4,
                                   display: '-webkit-box',
                                   WebkitLineClamp: 3,
@@ -2722,15 +2652,16 @@ export default function LivestreamRundownBuilder({
                               }}
                               sx={{
                                 borderRadius: '10px',
-                                bgcolor: isAlreadyInRundown ? '#1e293b' : '#2563eb',
-                                color: '#ffffff',
+                                bgcolor: isAlreadyInRundown ? '#f8fafc' : '#2563eb',
+                                color: isAlreadyInRundown ? '#334155' : '#ffffff',
+                                border: isAlreadyInRundown ? '1.5px solid #cbd5e1' : 'none',
                                 fontWeight: 800,
                                 fontSize: '0.76rem',
                                 textTransform: 'none',
                                 py: 0.6,
                                 boxShadow: 'none',
                                 '&:hover': {
-                                  bgcolor: isAlreadyInRundown ? '#334155' : '#1d4ed8',
+                                  bgcolor: isAlreadyInRundown ? '#f1f5f9' : '#1d4ed8',
                                 },
                               }}
                             >
@@ -2757,10 +2688,11 @@ export default function LivestreamRundownBuilder({
         slotProps={{
           paper: {
             sx: {
-              borderRadius: '24px',
-              bgcolor: '#0f172a',
-              border: '1.5px solid rgba(255, 255, 255, 0.15)',
-              boxShadow: '0 24px 64px rgba(0, 0, 0, 0.5)',
+              borderRadius: '28px',
+              bgcolor: 'rgba(255, 255, 255, 0.96)',
+              backdropFilter: 'blur(24px)',
+              border: '1.5px solid rgba(226, 232, 240, 0.95)',
+              boxShadow: '0 24px 64px rgba(15, 23, 42, 0.14)',
               overflow: 'hidden',
             },
           },
@@ -2771,42 +2703,44 @@ export default function LivestreamRundownBuilder({
             {/* Header */}
             <Box
               sx={{
-                p: 2,
+                px: 3,
+                py: 2,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                borderBottom: '1.5px solid rgba(226, 232, 240, 0.9)',
+                bgcolor: '#ffffff',
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
                 <Chip
                   size="small"
                   label={previewSlideItem.defBlockLabel || previewSlideItem.sourceType.toUpperCase()}
-                  sx={{ bgcolor: 'rgba(255, 255, 255, 0.15)', color: '#fff', fontWeight: 800, fontSize: '0.72rem' }}
+                  sx={{ bgcolor: 'rgba(59, 130, 246, 0.1)', color: '#2563eb', fontWeight: 800, fontSize: '0.72rem' }}
                 />
-                <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '0.9rem' }}>
+                <Typography sx={{ color: '#0f172a', fontWeight: 800, fontSize: '0.92rem' }}>
                   16:9 Broadcast Slide Preview
                 </Typography>
               </Box>
-              <IconButton size="small" onClick={() => setPreviewSlideItem(null)} sx={{ color: '#94a3b8', '&:hover': { color: '#fff' } }}>
+              <IconButton size="small" onClick={() => setPreviewSlideItem(null)} sx={{ color: '#64748b', '&:hover': { color: '#0f172a', bgcolor: 'rgba(0, 0, 0, 0.05)' } }}>
                 <CloseIcon sx={{ fontSize: 20 }} />
               </IconButton>
             </Box>
 
-            {/* 16:9 Visual Slide */}
-            <Box sx={{ p: { xs: 2, md: 3 }, bgcolor: '#020617' }}>
+            {/* 16:9 Visual Slide Canvas */}
+            <Box sx={{ p: { xs: 2, md: 3 }, bgcolor: '#f8fafc', borderBottom: '1.5px solid rgba(226, 232, 240, 0.9)' }}>
               {renderSlidePreviewContent(previewSlideItem)}
             </Box>
 
             {/* Presenter Teleprompter Bar */}
             {previewSlideItem.speakerNotes && (
-              <Box sx={{ p: 2, bgcolor: '#1e293b', borderTop: '1px solid rgba(255, 255, 255, 0.1)', display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
-                <MicIcon sx={{ color: '#f59e0b', fontSize: 20, mt: 0.2 }} />
+              <Box sx={{ p: 2.25, bgcolor: 'rgba(254, 249, 195, 0.55)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                <MicIcon sx={{ color: '#b45309', fontSize: 22, mt: 0.2 }} />
                 <Box>
-                  <Typography sx={{ fontSize: '0.72rem', fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  <Typography sx={{ fontSize: '0.72rem', fontWeight: 900, color: '#854d0e', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                     Presenter Teleprompter Cue ({previewSlideItem.durationStr || '30s'})
                   </Typography>
-                  <Typography sx={{ color: '#f8fafc', fontSize: '0.92rem', lineHeight: 1.5, mt: 0.25 }}>
+                  <Typography sx={{ color: '#1e293b', fontSize: '0.94rem', lineHeight: 1.5, mt: 0.25, fontWeight: 500 }}>
                     "{previewSlideItem.speakerNotes}"
                   </Typography>
                 </Box>

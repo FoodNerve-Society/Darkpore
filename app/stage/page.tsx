@@ -7,17 +7,7 @@ import {
   FullscreenExit as FullscreenExitIcon,
   Sensors as LiveIcon,
 } from '@mui/icons-material';
-import {
-  SlideSpikyTitle,
-  SlideMythFact,
-  SlideStatCard,
-  SlideJob,
-  SlideTransition,
-  SlideQuote,
-  SlideMedia,
-  SlideFallback,
-  SlideRundownAct,
-} from '@/app/modular-society/[tenant]/(authenticated)/components/forms/livestream/SlideComponents';
+import { renderSlidePreviewContent } from '@/app/modular-society/[tenant]/(authenticated)/components/forms/livestream/SlideComponents';
 
 const SYNC_CHANNEL_NAME = 'livestream_presentation_sync';
 const STAGE_CACHE_KEY = 'livestream_stage_cache';
@@ -145,50 +135,7 @@ export default function LivestreamStagePage() {
       );
     }
 
-    const isAct =
-      currentItem.sourceType === 'act' ||
-      currentItem.originalBlockType === 'rundown_act' ||
-      Boolean(currentItem.originalContent?.role);
-    const isJob = currentItem.sourceType === 'job' || Boolean(currentItem.originalContent?.jobTitle);
-    const isTransition = currentItem.sourceType === 'transition' && !isAct;
-
-    if (isAct) {
-      return (
-        <SlideRundownAct
-          content={currentItem.originalContent || {}}
-          durationStr={currentItem.durationStr}
-          color={hubColor}
-        />
-      );
-    }
-
-    if (isJob) {
-      return <SlideJob content={currentItem.originalContent || {}} />;
-    }
-
-    if (isTransition) {
-      return <SlideTransition content={currentItem.originalContent || {}} />;
-    }
-
-    // Article Blocks
-    const c = currentItem.originalContent || {};
-    switch (currentItem.originalBlockType) {
-      case 'subheading':
-        return <SlideSpikyTitle content={c} />;
-      case 'myth_fact':
-      case 'myth_reality':
-        return <SlideMythFact content={c} />;
-      case 'highlight_card':
-      case 'stat_card':
-        return <SlideStatCard content={c} />;
-      case 'pull_quote':
-      case 'strong_quote':
-        return <SlideQuote content={c} />;
-      case 'media':
-        return <SlideMedia content={c} />;
-      default:
-        return <SlideFallback content={c} type={currentItem.originalBlockType || 'slide'} />;
-    }
+    return renderSlidePreviewContent(currentItem, hubColor);
   };
 
   return (
