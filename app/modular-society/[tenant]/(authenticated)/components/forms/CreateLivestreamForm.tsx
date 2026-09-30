@@ -157,23 +157,9 @@ export default function CreateLivestreamForm({
     setEventDate(`${year}-${month}-${day}T${hours}:${mins}:00`);
 
     if (blueprint.timelinePillars && blueprint.timelinePillars.length > 0) {
-      setRundownBlocks(
-        blueprint.timelinePillars.map((p: any, idx: number) => ({
-          id: `act-${idx + 1}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-          sourceType: 'act',
-          originalBlockType: 'rundown_act',
-          originalContent: {
-            title: p.role,
-            role: p.role,
-            description: p.desc,
-            desc: p.desc,
-            focusSummary: blueprint.title,
-          },
-          speakerNotes: p.speakerNotes || '',
-          durationStr: p.time || '15m',
-        }))
-      );
-      setFrameworkLoaded(true);
+      setAppliedBlueprint(blueprint);
+      setRundownBlocks([]);
+      setFrameworkLoaded(false);
     }
     setIsIdeasCardFlipped(false);
     setIsCardFlipped(false);
@@ -454,24 +440,52 @@ export default function CreateLivestreamForm({
   };
 
   const applyFramework = () => {
-    const framework = LIVESTREAM_FRAMEWORKS[timeframe] || LIVESTREAM_FRAMEWORKS.present;
-    const initialPlaceholders = framework.map((f: any, idx: number) => ({
-      id: `act-${idx + 1}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      sourceType: 'act',
-      originalBlockType: 'rundown_act',
-      originalContent: { 
-        title: f.role, 
-        role: f.role,
-        description: f.desc,
-        desc: f.desc,
-        message: f.desc,
-        focusSummary: `${timeframe.toUpperCase()} ERA LIVESTREAM`
-      },
-      speakerNotes: '',
-      durationStr: f.time || '15m'
-    }));
-    
-    setRundownBlocks(initialPlaceholders);
+    const bpTitle = (appliedBlueprint?.typeTitle || appliedBlueprint?.title || '').toLowerCase();
+    let flowKey = 'default';
+    if (bpTitle.includes('teardown') || bpTitle.includes('audit')) {
+      flowKey = 'industry_teardown';
+    } else if (bpTitle.includes('debate') || bpTitle.includes('panel')) {
+      flowKey = 'panel_debate';
+    } else if (bpTitle.includes('talent') || bpTitle.includes('spotlight') || bpTitle.includes('job')) {
+      flowKey = 'talent_spotlight';
+    }
+
+    const suggestedBlockIds = LIVESTREAM_TYPE_FLOWS[flowKey] || LIVESTREAM_TYPE_FLOWS.default;
+    const realSlides: any[] = [];
+
+    suggestedBlockIds.forEach((blockId) => {
+      const def = DEF_BLOCK_DEFINITIONS[blockId];
+      if (!def) return;
+      def.subSlideTemplates.forEach((template: any, idx: number) => {
+        realSlides.push({
+          id: `def-${def.id}-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 6)}`,
+          sourceType: 'def_block',
+          defBlockId: def.id,
+          defBlockLabel: `Block ${def.blockNumber}: ${def.name}`,
+          slideIndex: idx + 1,
+          slideCount: def.subSlideTemplates.length,
+          act: def.act,
+          originalBlockType: template.slideType,
+          originalContent: {
+            title: template.title,
+            text: template.title,
+            subheadline: template.subheadline,
+            stat: template.dataValue,
+            label: template.subheadline,
+            myth: template.subheadline,
+            fact: template.title,
+            jobTitle: template.title,
+            role: `Block ${def.blockNumber}: ${def.name}`,
+            description: template.subheadline,
+            focusSummary: `${def.actLabel} • ${def.name}`,
+          },
+          speakerNotes: template.speakerNotes || '',
+          durationStr: template.durationStr || '2m',
+        });
+      });
+    });
+
+    setRundownBlocks(realSlides);
     setFrameworkLoaded(true);
   };
 
@@ -2162,102 +2176,254 @@ export default function CreateLivestreamForm({
                                          background: `linear-gradient(135deg, ${item.eraColor || '#10b981'} 0%, ${item.eraColor || '#10b981'} 100%)`,
                                          transform: 'translateY(-2px) scale(1.02)',
                                          boxShadow: `0 12px 30px ${alpha(item.eraColor || '#10b981', 0.55)}`,
-                                       }
-                                     }}
-                                   >
-                                     Pick This
-                                   </Button>
-                                 </Box>
-                              </Box>
-                            </Box>
-                          </motion.div>
-                        );
-                      })}
-                    </AnimatePresence>
-                  </Box>
-                </Box>
-              </Box>
-            )}
-          </Box>
-        )}
+                                        },
+                                      }}
+                                    >
+                                      Use This Livestream Blueprint
+                                    </Button>
+                                  </Box>
+                               </Box>
+                             </Box>
+                           </motion.div>
+                         );
+                       })}
+                     </AnimatePresence>
+                   </Box>
+                 </Box>
+               </Box>
+             )}
+           </Box>
+         )}
 
-        {step === 2 && (
-          <Box sx={{ animation: 'fadeIn 0.3s', display: 'flex', flexDirection: 'column', gap: 0, height: '100%' }}>
+         {step === 2 && (
+           <Box sx={{ animation: 'fadeIn 0.3s', display: 'flex', flexDirection: 'column', gap: 0, height: '100%' }}>
             
-            {/* FRAMEWORK EMPTY STATE */}
+            {/* FRAMEWORK EMPTY STATE: RECOMMENDED BLUEPRINT & SLIDE ARRAY */}
             {!frameworkLoaded && (
-              <Box sx={{ mb: 4, mt: 8 }}>
+              <Box sx={{ mb: 4, mt: 4, maxWidth: 960, mx: 'auto', width: '100%' }}>
                 {(() => {
                   const era = ERA_CONFIG[timeframe] || ERA_CONFIG.present;
-                  const framework = LIVESTREAM_FRAMEWORKS[timeframe] || LIVESTREAM_FRAMEWORKS.present;
+                  const bpTitle = (appliedBlueprint?.typeTitle || appliedBlueprint?.title || '').toLowerCase();
+                  let flowKey = 'default';
+                  if (bpTitle.includes('teardown') || bpTitle.includes('audit')) {
+                    flowKey = 'industry_teardown';
+                  } else if (bpTitle.includes('debate') || bpTitle.includes('panel')) {
+                    flowKey = 'panel_debate';
+                  } else if (bpTitle.includes('talent') || bpTitle.includes('spotlight') || bpTitle.includes('job')) {
+                    flowKey = 'talent_spotlight';
+                  }
+
+                  const suggestedBlockIds = LIVESTREAM_TYPE_FLOWS[flowKey] || LIVESTREAM_TYPE_FLOWS.default;
+                  const totalSlides = suggestedBlockIds.reduce((acc: number, bId: string) => {
+                    const def = DEF_BLOCK_DEFINITIONS[bId];
+                    return acc + (def?.subSlideTemplates?.length || 1);
+                  }, 0);
+
+                  const pillars = (appliedBlueprint?.timelinePillars && appliedBlueprint.timelinePillars.length > 0)
+                    ? appliedBlueprint.timelinePillars
+                    : (LIVESTREAM_FRAMEWORKS[timeframe] || LIVESTREAM_FRAMEWORKS.present);
+
                   return (
-                    <Box>
-                      <Box sx={{ textAlign: 'center', mb: 5 }}>
-                        <Typography sx={{ fontSize: 48, mb: 1.5, filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.1))' }}>{era.emoji}</Typography>
-                        <Typography sx={{ fontWeight: 900, fontSize: '2rem', color: '#0f172a', mb: 1.5, letterSpacing: '-0.02em' }}>
-                          {era.label} Livestream Framework
-                        </Typography>
-                        <Typography sx={{ color: '#475569', fontSize: '1.05rem', maxWidth: 540, mx: 'auto', lineHeight: 1.7, fontWeight: 500 }}>
-                          This framework defines the optimal presentation flow for a <strong style={{ color: era.color }}>{timeframe}</strong> focused broadcast. Load it to pre-fill your rundown canvas.
-                        </Typography>
-                      </Box>
-
-                      <Box sx={{ position: 'relative', pl: { xs: 3, md: 5 }, maxWidth: 800, mx: 'auto' }}>
-                        <Box sx={{
-                          position: 'absolute', left: { xs: 12, md: 20 }, top: 12, bottom: 12,
-                          width: 3, background: `linear-gradient(180deg, ${era.color} 0%, ${alpha(era.color, 0.1)} 100%)`,
-                          borderRadius: 2,
-                        }} />
-
-                        {framework.map((f, idx) => (
-                          <Box key={idx} sx={{ display: 'flex', alignItems: 'flex-start', mb: 2.5, position: 'relative' }}>
-                            <Box sx={{
-                              position: 'absolute', left: { xs: -21.5, md: -33.5 },
-                              width: 24, height: 24, borderRadius: '50%',
-                              bgcolor: '#fff', border: `3px solid ${era.color}`,
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              mt: 1.5, zIndex: 2, boxShadow: `0 2px 8px ${alpha(era.color, 0.3)}`
-                            }}>
-                              <Typography sx={{ fontSize: '0.7rem', fontWeight: 900, color: '#0f172a' }}>{idx + 1}</Typography>
-                            </Box>
-                            <Box sx={{
-                              flex: 1, p: 2.5, borderRadius: '16px',
-                              border: `1px solid rgba(0,0,0,0.08)`,
-                              background: `linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.8) 100%)`,
-                              backdropFilter: 'blur(8px)', boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
-                              opacity: 0.9,
-                              transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                              '&:hover': { opacity: 1, transform: 'translateX(4px)', borderColor: alpha(era.color, 0.3), boxShadow: `0 8px 24px rgba(0,0,0,0.06)` },
-                            }}>
-                              <Typography sx={{ fontWeight: 800, color: '#0f172a', fontSize: '1.05rem', letterSpacing: '-0.01em', mb: 0.5 }}>{f.role}</Typography>
-                              <Typography sx={{ color: '#475569', fontSize: '0.9rem', lineHeight: 1.5, fontWeight: 500 }}>{f.desc}</Typography>
-                            </Box>
+                    <Box
+                      sx={{
+                        p: { xs: 3, md: 4.5 },
+                        borderRadius: '28px',
+                        bgcolor: 'rgba(255, 255, 255, 0.95)',
+                        backdropFilter: 'blur(24px)',
+                        border: '1.5px solid rgba(226, 232, 240, 0.95)',
+                        boxShadow: '0 20px 60px rgba(15, 23, 42, 0.06)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 3.5,
+                      }}
+                    >
+                      {/* Hero Header */}
+                      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <Box
+                            sx={{
+                              width: 52,
+                              height: 52,
+                              borderRadius: '16px',
+                              bgcolor: alpha(hubColor, 0.12),
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '1.75rem',
+                              boxShadow: `0 4px 14px ${alpha(hubColor, 0.2)}`,
+                            }}
+                          >
+                            🎙️
                           </Box>
-                        ))}
+                          <Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 0.5, flexWrap: 'wrap' }}>
+                              <Typography variant="h5" sx={{ fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em' }}>
+                                {appliedBlueprint?.typeTitle || `${era.label} Broadcast Blueprint`}
+                              </Typography>
+                              <Chip
+                                label={`${suggestedBlockIds.length} Core Blocks • ${totalSlides} Slides`}
+                                size="small"
+                                sx={{ bgcolor: alpha(hubColor, 0.1), color: hubColor, fontWeight: 800, fontSize: '0.74rem' }}
+                              />
+                            </Box>
+                            <Typography sx={{ color: '#64748b', fontSize: '0.92rem', maxWidth: 650, lineHeight: 1.5 }}>
+                              {appliedBlueprint?.title
+                                ? `Curated slide flow for "${appliedBlueprint.title}". Acts 1, 2, and 3 structure the narrative flow, guiding the generation of your broadcast slide array below.`
+                                : `Optimal presentation framework for a ${timeframe} focused broadcast. Acts define the narrative trajectory, guiding the DEF slide array below.`}
+                            </Typography>
+                          </Box>
+                        </Box>
+
+                        <Chip
+                          label={era.label}
+                          sx={{
+                            bgcolor: alpha(era.color, 0.12),
+                            color: era.color,
+                            fontWeight: 900,
+                            borderRadius: '10px',
+                            border: `1.5px solid ${alpha(era.color, 0.3)}`,
+                          }}
+                        />
                       </Box>
 
-                      <Box sx={{ textAlign: 'center', mt: 6 }}>
+                      {/* Section 1: Narrative Acts Guidance (Informational Blueprint) */}
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                        <Typography sx={{ fontSize: '0.74rem', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          Strategic Narrative Phases (Structuring Blueprint)
+                        </Typography>
+                        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 2 }}>
+                          {pillars.slice(0, 3).map((p: any, idx: number) => (
+                            <Box
+                              key={idx}
+                              sx={{
+                                p: 2,
+                                borderRadius: '16px',
+                                bgcolor: '#f8fafc',
+                                border: '1.5px solid #e2e8f0',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 0.75,
+                              }}
+                            >
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Chip
+                                  label={`Act ${idx + 1}`}
+                                  size="small"
+                                  sx={{ bgcolor: '#0f172a', color: '#ffffff', fontWeight: 800, fontSize: '0.68rem', height: 20 }}
+                                />
+                                <Typography sx={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 700 }}>
+                                  {p.time || '15m'}
+                                </Typography>
+                              </Box>
+                              <Typography sx={{ fontWeight: 800, fontSize: '0.92rem', color: '#0f172a' }}>
+                                {p.role || p.title || `Phase ${idx + 1}`}
+                              </Typography>
+                              <Typography sx={{ fontSize: '0.78rem', color: '#64748b', lineHeight: 1.45 }}>
+                                {p.desc || p.description || ''}
+                              </Typography>
+                            </Box>
+                          ))}
+                        </Box>
+                      </Box>
+
+                      {/* Section 2: Suggested Broadcast Slides (DEF Slide Array to be Loaded) */}
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <Typography sx={{ fontSize: '0.74rem', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                            Suggested Broadcast Slides (${suggestedBlockIds.length} DEF Blocks • ${totalSlides} Total Slides)
+                          </Typography>
+                          <Typography sx={{ fontSize: '0.74rem', color: '#94a3b8', fontWeight: 600 }}>
+                            Ready to load into rundown
+                          </Typography>
+                        </Box>
+
+                        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, gap: 1.5 }}>
+                          {suggestedBlockIds.map((bId: string, idx: number) => {
+                            const def = DEF_BLOCK_DEFINITIONS[bId];
+                            if (!def) return null;
+                            const slideCount = def.subSlideTemplates?.length || 1;
+                            return (
+                              <Box
+                                key={bId}
+                                sx={{
+                                  p: 1.75,
+                                  borderRadius: '14px',
+                                  bgcolor: '#ffffff',
+                                  border: '1.5px solid #e2e8f0',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 1.25,
+                                  boxShadow: '0 2px 6px rgba(15, 23, 42, 0.02)',
+                                }}
+                              >
+                                <Box
+                                  sx={{
+                                    width: 28,
+                                    height: 28,
+                                    borderRadius: '8px',
+                                    bgcolor: alpha(def.themeColor || hubColor, 0.12),
+                                    color: def.themeColor || hubColor,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontWeight: 900,
+                                    fontSize: '0.74rem',
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  {idx + 1}
+                                </Box>
+                                <Box sx={{ minWidth: 0, flex: 1 }}>
+                                  <Typography sx={{ fontWeight: 800, fontSize: '0.82rem', color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {def.name}
+                                  </Typography>
+                                  <Typography sx={{ fontSize: '0.7rem', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {slideCount} {slideCount === 1 ? 'slide' : 'slides'} • {def.defaultDuration || '2m'}
+                                  </Typography>
+                                </Box>
+                              </Box>
+                            );
+                          })}
+                        </Box>
+                      </Box>
+
+                      {/* Primary Action Button */}
+                      <Box sx={{ pt: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
                         <Button
                           variant="contained"
                           onClick={applyFramework}
-                          startIcon={<SparkleIcon />}
+                          startIcon={<SparkleIcon sx={{ fontSize: '1.1rem !important' }} />}
                           sx={{
-                            bgcolor: era.color, color: '#fff', fontWeight: 800, px: 6, py: 2, borderRadius: '20px',
-                            fontSize: '1.1rem', letterSpacing: '0.02em',
-                            boxShadow: `0 8px 24px ${alpha(era.color, 0.4)}`,
-                            '&:hover': { bgcolor: alpha(era.color, 0.9), transform: 'translateY(-3px)', boxShadow: `0 12px 32px ${alpha(era.color, 0.5)}` },
-                            transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                            bgcolor: '#0f172a',
+                            color: '#ffffff',
+                            fontWeight: 900,
+                            px: 4.5,
+                            py: 1.5,
+                            borderRadius: '16px',
+                            fontSize: '0.98rem',
+                            letterSpacing: '0.01em',
+                            textTransform: 'none',
+                            boxShadow: '0 8px 24px rgba(15, 23, 42, 0.2)',
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                              bgcolor: '#1e293b',
+                              transform: 'translateY(-2px)',
+                              boxShadow: '0 12px 32px rgba(15, 23, 42, 0.28)',
+                            },
                           }}
                         >
-                          Load Recommended Framework
+                          Load Recommended Framework ({totalSlides} Broadcast Slides)
                         </Button>
+                        <Typography sx={{ fontSize: '0.76rem', color: '#94a3b8', fontWeight: 600 }}>
+                          Populates your rundown with verified broadcast DEF slides. Fully customizable afterwards.
+                        </Typography>
                       </Box>
                     </Box>
                   );
                 })()}
               </Box>
             )}
-
+            
             {/* EDITABLE BUILDER STATE */}
             {frameworkLoaded && (
               <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>

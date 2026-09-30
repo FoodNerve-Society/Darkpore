@@ -38,6 +38,8 @@ import {
   Layers as LayersIcon,
   Image as ImageIcon,
   AspectRatio as AspectRatioIcon,
+  Laptop as DesktopIcon,
+  PhoneIphone as MobileIcon,
 } from '@mui/icons-material';
 import { alpha } from '@mui/system';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
@@ -72,7 +74,7 @@ import {
 // --- Types ---
 export type RundownItem = {
   id: string; // unique instance id for the rundown
-  sourceType: 'act' | 'article_block' | 'job' | 'transition' | 'def_block';
+  sourceType: 'act' | 'article_block' | 'job' | 'transition' | 'def_block' | 'slide';
   defBlockId?: string; // e.g. 'anchor_tension', 'ideal_vs_feasible'
   defBlockLabel?: string; // e.g. 'Block 4: Ideal vs Feasible'
   slideIndex?: number; // e.g. 1
@@ -1206,6 +1208,7 @@ export default function LivestreamRundownBuilder({
   const [previewJob, setPreviewJob] = useState<any | null>(null);
   const [selectedArticleForBlocks, setSelectedArticleForBlocks] = useState<any | null>(null);
   const [previewSlideItem, setPreviewSlideItem] = useState<RundownItem | null>(null);
+  const [singlePreviewAspect, setSinglePreviewAspect] = useState<'16:9' | '9:16'>('16:9');
 
   const addDEFBlockToRundown = (blockId: string) => {
     const def = DEF_BLOCK_DEFINITIONS[blockId];
@@ -1235,6 +1238,46 @@ export default function LivestreamRundownBuilder({
       speakerNotes: template.speakerNotes,
       durationStr: template.durationStr,
     }));
+
+    const updatedRundown = [...rundown, ...newSlides];
+    setRundown(updatedRundown);
+    onBlocksChange(updatedRundown);
+  };
+  const loadDefaultFrameworkSlides = () => {
+    const suggestedBlockIds = LIVESTREAM_TYPE_FLOWS.default;
+    const newSlides: RundownItem[] = [];
+
+    suggestedBlockIds.forEach((blockId) => {
+      const def = DEF_BLOCK_DEFINITIONS[blockId];
+      if (!def) return;
+
+      def.subSlideTemplates.forEach((template, idx) => {
+        newSlides.push({
+          id: `def-${def.id}-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 6)}`,
+          sourceType: 'def_block',
+          defBlockId: def.id,
+          defBlockLabel: `Block ${def.blockNumber}: ${def.name}`,
+          slideIndex: idx + 1,
+          slideCount: def.subSlideTemplates.length,
+          act: def.act,
+          originalBlockType: template.slideType,
+          originalContent: {
+            title: template.title,
+            text: template.title,
+            subheadline: template.subheadline,
+            stat: template.dataValue,
+            label: template.subheadline,
+            myth: template.subheadline,
+            fact: template.title,
+            jobTitle: template.title,
+            role: `Block ${def.blockNumber}: ${def.name}`,
+            description: template.subheadline,
+          },
+          speakerNotes: template.speakerNotes,
+          durationStr: template.durationStr,
+        });
+      });
+    });
 
     const updatedRundown = [...rundown, ...newSlides];
     setRundown(updatedRundown);
@@ -1856,16 +1899,16 @@ export default function LivestreamRundownBuilder({
               variant="contained"
               startIcon={<AddIcon />}
               onClick={() => {
-                const nextActNum = Object.keys(itemActNumbers).length + 1;
                 addBlockToRundown({
-                  sourceType: 'act',
-                  originalBlockType: 'rundown_act',
+                  sourceType: 'slide',
+                  originalBlockType: 'subheading',
                   originalContent: {
-                    title: `Act ${nextActNum}: Strategic Theme`,
-                    role: `Act ${nextActNum}`,
-                    description: 'Discussion points and tension reframe...',
+                    title: 'Strategic Insight / Discussion Point',
+                    role: 'Slide',
+                    subheadline: 'Key tension or operational reframe...',
+                    description: 'Discussion points and audience takeaway...',
                   },
-                  durationStr: '15m',
+                  durationStr: '5m',
                 });
               }}
               sx={{
@@ -1881,7 +1924,7 @@ export default function LivestreamRundownBuilder({
                 '&:hover': { bgcolor: '#059669' },
               }}
             >
-              + Add Broadcast Act
+              + Add Slide
             </Button>
 
             <Button
@@ -1917,50 +1960,56 @@ export default function LivestreamRundownBuilder({
           {rundown.length === 0 ? (
             <Box
               sx={{
-                p: 6,
+                p: { xs: 4, md: 5 },
                 textAlign: 'center',
                 borderRadius: '24px',
-                border: '2px dashed #e2e8f0',
-                bgcolor: '#f8fafc',
+                border: '1.5px solid rgba(226, 232, 240, 0.95)',
+                bgcolor: 'rgba(255, 255, 255, 0.95)',
+                backdropFilter: 'blur(20px)',
+                boxShadow: '0 8px 32px rgba(15, 23, 42, 0.04)',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 gap: 2,
               }}
             >
-              <Typography sx={{ fontSize: '2.5rem' }}>🎙️</Typography>
-              <Typography sx={{ fontWeight: 800, fontSize: '1.25rem', color: '#0f172a' }}>
-                Your Rundown is Empty
+              <Box
+                sx={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: '16px',
+                  bgcolor: alpha(hubColor, 0.12),
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.75rem',
+                }}
+              >
+                🎙️
+              </Box>
+              <Typography sx={{ fontWeight: 900, fontSize: '1.25rem', color: '#0f172a' }}>
+                Your Presentation Rundown is Empty
               </Typography>
-              <Typography sx={{ color: '#64748b', fontSize: '0.92rem', maxWidth: 480 }}>
-                Click &ldquo;+ Add Broadcast Act&rdquo; above or click &ldquo;+ Blocks&rdquo; on any article in your content pool above to build your broadcast narrative.
+              <Typography sx={{ color: '#64748b', fontSize: '0.9rem', maxWidth: 480, lineHeight: 1.5 }}>
+                Load the recommended broadcast framework slide sequence, or pull modular blocks from your anchor articles and the 12 broadcast blocks tray below.
               </Typography>
               <Button
                 variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() =>
-                  addBlockToRundown({
-                    sourceType: 'act',
-                    originalBlockType: 'rundown_act',
-                    originalContent: {
-                      title: 'Act 1: The Open',
-                      role: 'Act 1: The Open',
-                      description: 'Anchor the core tension and reframe the problem.',
-                    },
-                    durationStr: '15m',
-                  })
-                }
+                startIcon={<SparkleIcon />}
+                onClick={() => loadDefaultFrameworkSlides()}
                 sx={{
                   bgcolor: '#0f172a',
                   color: '#ffffff',
-                  fontWeight: 800,
+                  fontWeight: 900,
                   borderRadius: '14px',
                   textTransform: 'none',
-                  px: 3,
+                  px: 3.5,
                   py: 1.1,
+                  boxShadow: '0 4px 16px rgba(15, 23, 42, 0.18)',
+                  '&:hover': { bgcolor: '#1e293b' },
                 }}
               >
-                Create Act 1: The Open
+                Load Recommended Framework Slides
               </Button>
             </Box>
           ) : (
@@ -2679,11 +2728,11 @@ export default function LivestreamRundownBuilder({
         )}
       </Dialog>
 
-      {/* ── Single Slide 16:9 Preview Modal ── */}
+      {/* ── Single Slide Preview Modal (Dual 16:9 Desktop & 9:16 Mobile) ── */}
       <Dialog
         open={Boolean(previewSlideItem)}
         onClose={() => setPreviewSlideItem(null)}
-        maxWidth="md"
+        maxWidth={singlePreviewAspect === '9:16' ? 'xs' : 'md'}
         fullWidth
         slotProps={{
           paper: {
@@ -2694,6 +2743,7 @@ export default function LivestreamRundownBuilder({
               border: '1.5px solid rgba(226, 232, 240, 0.95)',
               boxShadow: '0 24px 64px rgba(15, 23, 42, 0.14)',
               overflow: 'hidden',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             },
           },
         }}
@@ -2710,6 +2760,8 @@ export default function LivestreamRundownBuilder({
                 justifyContent: 'space-between',
                 borderBottom: '1.5px solid rgba(226, 232, 240, 0.9)',
                 bgcolor: '#ffffff',
+                flexWrap: 'wrap',
+                gap: 1.5,
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
@@ -2719,17 +2771,72 @@ export default function LivestreamRundownBuilder({
                   sx={{ bgcolor: 'rgba(59, 130, 246, 0.1)', color: '#2563eb', fontWeight: 800, fontSize: '0.72rem' }}
                 />
                 <Typography sx={{ color: '#0f172a', fontWeight: 800, fontSize: '0.92rem' }}>
-                  16:9 Broadcast Slide Preview
+                  {singlePreviewAspect === '9:16' ? '9:16 Mobile' : '16:9 Broadcast'} Slide Preview
                 </Typography>
               </Box>
-              <IconButton size="small" onClick={() => setPreviewSlideItem(null)} sx={{ color: '#64748b', '&:hover': { color: '#0f172a', bgcolor: 'rgba(0, 0, 0, 0.05)' } }}>
-                <CloseIcon sx={{ fontSize: 20 }} />
-              </IconButton>
+
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {/* 16:9 vs 9:16 Toggle */}
+                <Box
+                  onClick={() => setSinglePreviewAspect((prev) => (prev === '16:9' ? '9:16' : '16:9'))}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.75,
+                    cursor: 'pointer',
+                    px: 1.5,
+                    py: 0.5,
+                    borderRadius: '10px',
+                    bgcolor: singlePreviewAspect === '9:16' ? 'rgba(236, 72, 153, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                    border: `1.5px solid ${singlePreviewAspect === '9:16' ? 'rgba(236, 72, 153, 0.3)' : 'rgba(59, 130, 246, 0.3)'}`,
+                    transition: 'all 0.2s ease',
+                    '&:hover': { bgcolor: singlePreviewAspect === '9:16' ? 'rgba(236, 72, 153, 0.18)' : 'rgba(59, 130, 246, 0.18)' },
+                  }}
+                >
+                  {singlePreviewAspect === '9:16' ? (
+                    <>
+                      <MobileIcon sx={{ fontSize: 16, color: '#db2777' }} />
+                      <Typography sx={{ fontSize: '0.72rem', fontWeight: 800, color: '#db2777' }}>9:16 Mobile</Typography>
+                    </>
+                  ) : (
+                    <>
+                      <DesktopIcon sx={{ fontSize: 16, color: '#2563eb' }} />
+                      <Typography sx={{ fontSize: '0.72rem', fontWeight: 800, color: '#2563eb' }}>16:9 Desktop</Typography>
+                    </>
+                  )}
+                </Box>
+
+                <IconButton size="small" onClick={() => setPreviewSlideItem(null)} sx={{ color: '#64748b', '&:hover': { color: '#0f172a', bgcolor: 'rgba(0, 0, 0, 0.05)' } }}>
+                  <CloseIcon sx={{ fontSize: 20 }} />
+                </IconButton>
+              </Box>
             </Box>
 
-            {/* 16:9 Visual Slide Canvas */}
-            <Box sx={{ p: { xs: 2, md: 3 }, bgcolor: '#f8fafc', borderBottom: '1.5px solid rgba(226, 232, 240, 0.9)' }}>
-              {renderSlidePreviewContent(previewSlideItem)}
+            {/* Visual Slide Canvas */}
+            <Box
+              sx={{
+                p: { xs: 2, md: 3 },
+                bgcolor: '#f8fafc',
+                borderBottom: '1.5px solid rgba(226, 232, 240, 0.9)',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
+              <Box
+                sx={{
+                  width: singlePreviewAspect === '9:16' ? 'auto' : '100%',
+                  height: singlePreviewAspect === '9:16' ? { xs: 380, md: 480 } : 'auto',
+                  aspectRatio: singlePreviewAspect === '9:16' ? '9/16' : '16/9',
+                  borderRadius: '16px',
+                  overflow: 'hidden',
+                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.04)',
+                }}
+              >
+                {renderSlidePreviewContent(previewSlideItem, hubColor, {
+                  aspectRatio: singlePreviewAspect,
+                })}
+              </Box>
             </Box>
 
             {/* Presenter Teleprompter Bar */}

@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, IconButton, Chip, Tooltip } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import {
-  Fullscreen as FullscreenIcon,
-  FullscreenExit as FullscreenExitIcon,
   Sensors as LiveIcon,
 } from '@mui/icons-material';
-import { renderSlidePreviewContent } from '@/app/modular-society/[tenant]/(authenticated)/components/forms/livestream/SlideComponents';
+import {
+  renderSlidePreviewContent,
+  SlideAspectRatio,
+} from '@/app/modular-society/[tenant]/(authenticated)/components/forms/livestream/SlideComponents';
 
 const SYNC_CHANNEL_NAME = 'livestream_presentation_sync';
 const STAGE_CACHE_KEY = 'livestream_stage_cache';
@@ -19,6 +20,22 @@ export default function LivestreamStagePage() {
   const [hubColor, setHubColor] = useState('#10b981');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const [aspectRatio, setAspectRatio] = useState<SlideAspectRatio>('16:9');
+  const [isTransparent, setIsTransparent] = useState(false);
+
+  // Initialize aspect ratio and transparency from URL query params (e.g. ?aspect=9:16&transparent=true)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const aspectParam = params.get('aspect');
+      if (aspectParam === '9:16' || aspectParam === 'portrait' || aspectParam === 'mobile') {
+        setAspectRatio('9:16');
+      }
+      if (params.get('transparent') === 'true' || params.get('obs') === 'true') {
+        setIsTransparent(true);
+      }
+    }
+  }, []);
 
   // Load initial state from cache if available
   useEffect(() => {
@@ -30,6 +47,8 @@ export default function LivestreamStagePage() {
         if (typeof parsed.activeSlideIndex === 'number') setActiveSlideIndex(parsed.activeSlideIndex);
         if (parsed.title) setTitle(parsed.title);
         if (parsed.hubColor) setHubColor(parsed.hubColor);
+        if (parsed.aspectRatio) setAspectRatio(parsed.aspectRatio);
+        if (typeof parsed.isTransparent === 'boolean') setIsTransparent(parsed.isTransparent);
         setIsConnected(true);
       }
     } catch (e) {
@@ -51,10 +70,29 @@ export default function LivestreamStagePage() {
           if (typeof data.activeSlideIndex === 'number') setActiveSlideIndex(data.activeSlideIndex);
           if (data.title) setTitle(data.title);
           if (data.hubColor) setHubColor(data.hubColor);
+          if (data.aspectRatio) setAspectRatio(data.aspectRatio);
+          if (typeof data.isTransparent === 'boolean') setIsTransparent(data.isTransparent);
           setIsConnected(true);
         } else if (data.type === 'SET_SLIDE_INDEX') {
           if (typeof data.index === 'number') setActiveSlideIndex(data.index);
           setIsConnected(true);
+        } else if (data.type === 'SET_ASPECT') {
+          if (data.aspectRatio) {
+            setAspectRatio(data.aspectRatio);
+            try {
+              if (typeof window !== 'undefined' && window.opener) {
+                if (data.aspectRatio === '9:16') {
+                  window.resizeTo(520, 920);
+                } else {
+                  window.resizeTo(1280, 750);
+                }
+              }
+            } catch (err) {
+              console.warn('Window resize constrained by browser:', err);
+            }
+          }
+        } else if (data.type === 'SET_TRANSPARENT') {
+          if (typeof data.isTransparent === 'boolean') setIsTransparent(data.isTransparent);
         }
       };
 
@@ -74,26 +112,58 @@ export default function LivestreamStagePage() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'f' || e.key === 'F') {
         toggleFullscreen();
+      } else if (e.key === 't' || e.key === 'T') {
+        handleToggleTransparent();
+      } else if (e.key === 'a' || e.key === 'A') {
+        handleToggleAspect();
       } else if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
         e.preventDefault();
-        try {
-          const ch = new BroadcastChannel(SYNC_CHANNEL_NAME);
-          ch.postMessage({ type: 'NAVIGATE', direction: 'next' });
-          ch.close();
-        } catch {}
+        navigateStage('next');
       } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
         e.preventDefault();
-        try {
-          const ch = new BroadcastChannel(SYNC_CHANNEL_NAME);
-          ch.postMessage({ type: 'NAVIGATE', direction: 'prev' });
-          ch.close();
-        } catch {}
+        navigateStage('prev');
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [rundownBlocks.length]);
+  }, [rundownBlocks.length, activeSlideIndex, aspectRatio, isTransparent]);
+
+  const navigateStage = (direction: 'next' | 'prev') => {
+    try {
+      const ch = new BroadcastChannel(SYNC_CHANNEL_NAME);
+      ch.postMessage({ type: 'NAVIGATE', direction });
+      ch.close();
+    } catch {}
+
+    setActiveSlideIndex((prev) => {
+      if (direction === 'next') {
+        return prev < rundownBlocks.length - 1 ? prev + 1 : 0;
+      } else {
+        return prev > 0 ? prev - 1 : rundownBlocks.length - 1;
+      }
+    });
+  };
+
+  const handleToggleAspect = () => {
+    const nextAspect: SlideAspectRatio = aspectRatio === '16:9' ? '9:16' : '16:9';
+    setAspectRatio(nextAspect);
+    try {
+      const ch = new BroadcastChannel(SYNC_CHANNEL_NAME);
+      ch.postMessage({ type: 'SET_ASPECT', aspectRatio: nextAspect });
+      ch.close();
+    } catch {}
+  };
+
+  const handleToggleTransparent = () => {
+    const nextTransparent = !isTransparent;
+    setIsTransparent(nextTransparent);
+    try {
+      const ch = new BroadcastChannel(SYNC_CHANNEL_NAME);
+      ch.postMessage({ type: 'SET_TRANSPARENT', isTransparent: nextTransparent });
+      ch.close();
+    } catch {}
+  };
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -120,8 +190,10 @@ export default function LivestreamStagePage() {
             justifyContent: 'center',
             p: 4,
             textAlign: 'center',
-            background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+            background: isTransparent ? 'transparent' : 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
             color: '#ffffff',
+            borderRadius: '24px',
+            border: isTransparent ? '1.5px dashed rgba(255,255,255,0.3)' : 'none',
           }}
         >
           <LiveIcon sx={{ fontSize: '4rem', color: hubColor, mb: 2, animation: 'pulse 2s infinite' }} />
@@ -135,7 +207,10 @@ export default function LivestreamStagePage() {
       );
     }
 
-    return renderSlidePreviewContent(currentItem, hubColor);
+    return renderSlidePreviewContent(currentItem, hubColor, {
+      aspectRatio,
+      isTransparent,
+    });
   };
 
   return (
@@ -144,7 +219,7 @@ export default function LivestreamStagePage() {
       sx={{
         width: '100vw',
         height: '100vh',
-        bgcolor: '#000000',
+        bgcolor: isTransparent ? 'transparent' : '#000000',
         overflow: 'hidden',
         display: 'flex',
         alignItems: 'center',
@@ -153,52 +228,21 @@ export default function LivestreamStagePage() {
         userSelect: 'none',
       }}
     >
-      {/* 16:9 Presentation Stage Surface */}
+      {/* Presentation Stage Surface: Container adjusts to 16:9 Landscape or 9:16 Portrait cleanly */}
       <Box
         sx={{
-          width: '100%',
           height: '100%',
-          maxWidth: '100vw',
           maxHeight: '100vh',
-          aspectRatio: '16/9',
+          aspectRatio: aspectRatio === '9:16' ? '9/16' : '16/9',
+          maxWidth: '100vw',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           position: 'relative',
+          transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
         {renderCurrentSlide()}
-      </Box>
-
-      {/* Discrete Hover Toolbar (Top Right) */}
-      <Box
-        sx={{
-          position: 'absolute',
-          top: 16,
-          right: 16,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1,
-          opacity: 0,
-          transition: 'opacity 0.2s ease',
-          '&:hover': { opacity: 1 },
-          zIndex: 50,
-        }}
-      >
-        <Tooltip title="Toggle Fullscreen (F)">
-          <IconButton
-            onClick={toggleFullscreen}
-            size="small"
-            sx={{
-              bgcolor: 'rgba(0, 0, 0, 0.65)',
-              color: '#ffffff',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.85)' },
-            }}
-          >
-            {isFullscreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
-          </IconButton>
-        </Tooltip>
       </Box>
     </Box>
   );
