@@ -44,6 +44,41 @@ import {
   MobileJobExecutionSlide,
 } from './slides/JobSlides';
 
+export function safeStringArray(val: any, fallback: string[] = []): string[] {
+  if (!val) return fallback;
+  if (Array.isArray(val)) {
+    if (val.length === 0) return fallback;
+    return val
+      .map((item: any) => {
+        if (typeof item === 'string') return item;
+        if (item && typeof item === 'object') {
+          return item.text || item.label || item.title || item.name || item.value || JSON.stringify(item);
+        }
+        return String(item ?? '');
+      })
+      .filter(Boolean);
+  }
+  if (typeof val === 'string') {
+    const trimmed = val.trim();
+    if (!trimmed) return fallback;
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return safeStringArray(parsed, fallback);
+      }
+    } catch {}
+    const split = trimmed.split(/[\n\r,;|]+/).map((s) => s.trim()).filter(Boolean);
+    return split.length > 0 ? split : fallback;
+  }
+  if (typeof val === 'object') {
+    const vals = Object.values(val)
+      .map((v) => (typeof v === 'string' ? v : (v as any)?.text || (v as any)?.label || String(v)))
+      .filter(Boolean);
+    return vals.length > 0 ? vals : fallback;
+  }
+  return fallback;
+}
+
 export * from './slides/ArticleDesktopSlides';
 export * from './slides/ArticleMobileSlides';
 export * from './slides/JobSlides';
@@ -88,10 +123,11 @@ export function SlideWrapper({
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
+        fontFamily: 'inherit',
         bgcolor: isTransparent ? 'transparent' : '#ffffff',
         border: isTransparent
-          ? '1px solid rgba(255, 255, 255, 0.25)'
-          : '1px solid rgba(255, 255, 255, 0.85)',
+          ? '1.5px solid rgba(255, 255, 255, 0.25)'
+          : '1.5px solid rgba(255, 255, 255, 0.85)',
         boxShadow: isTransparent ? 'none' : '0 20px 50px rgba(0,0,0,0.06)',
         ...(isTransparent
           ? {}
@@ -328,10 +364,12 @@ export function SlideJob({ content }: { content: any }) {
         <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '1.35rem' : '2.5rem', md: isVertical ? '1.65rem' : '3.5rem' }, color: '#0f172a', lineHeight: 1.15, mb: 1 }}>
           {content.jobTitle || 'Role Title'}
         </Typography>
-        <Typography sx={{ fontWeight: 600, fontSize: isVertical ? '0.9rem' : '1.35rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: 1 }}>
-          {content.orgName} 
-          <Box component="span" sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: '#cbd5e1' }} />
-          {content.location}
+        <Typography sx={{ fontWeight: 600, fontSize: isVertical ? '0.88rem' : '1.35rem', color: '#64748b', display: 'flex', flexDirection: isVertical ? 'column' : 'row', alignItems: 'center', gap: isVertical ? 0.35 : 1 }}>
+          <span>{content.orgName}</span>
+          {!isVertical && (
+            <Box component="span" sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: '#cbd5e1' }} />
+          )}
+          <span>{content.location}</span>
         </Typography>
       </Box>
     </SlideWrapper>
@@ -349,7 +387,7 @@ export function SlideRundownAct({ content, durationStr, color = '#10b981' }: { c
   return (
     <SlideWrapper color={color}>
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5, flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'flex', flexDirection: isVertical ? 'column' : 'row', alignItems: 'flex-start', gap: isVertical ? 0.75 : 1, mb: 1.5, flexWrap: 'wrap' }}>
           <Chip
             icon={<SparkleIcon sx={{ fontSize: '0.85rem !important' }} />}
             label="BROADCAST ACT"

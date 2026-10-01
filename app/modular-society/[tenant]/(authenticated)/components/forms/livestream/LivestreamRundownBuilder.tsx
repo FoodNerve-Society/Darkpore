@@ -329,7 +329,7 @@ export function decomposeArticleBlockIntoSlides(b: any, parentArticle: any): Par
   if (blockType === 'persona' || blockType === 'persona_dossier') targetBlockType = 'persona_dossier';
   if (blockType === 'directive' || blockType === 'strategic_directive' || blockType === 'action_checklist') targetBlockType = 'strategic_directive';
   if (blockType === 'cta' || blockType === 'call_to_action') targetBlockType = 'call_to_action';
-  if (blockType === 'poll' || blockType === 'live_poll') targetBlockType = 'live_poll';
+  if (blockType === 'poll' || blockType === 'live_poll' || blockType === 'quick_poll' || blockType === 'survey') targetBlockType = 'live_poll';
 
   return [
     {
@@ -3388,7 +3388,16 @@ export default function LivestreamRundownBuilder({
                                 },
                               }}
                             >
-                              <Box sx={{ width: '100%', height: '100%', pointerEvents: 'none' }}>
+                              <Box
+                                sx={{
+                                  width: '200%',
+                                  height: '200%',
+                                  transform: 'scale(0.5)',
+                                  transformOrigin: 'top left',
+                                  pointerEvents: 'none',
+                                  userSelect: 'none',
+                                }}
+                              >
                                 {renderSlidePreviewContent(slideItem, hubColor, {
                                   aspectRatio: articleModalAspect,
                                 })}

@@ -1,5 +1,13 @@
-/* Hide scrollbars globally */
+/* Hide scrollbars globally & strict viewport zero-margin reset */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 html, body {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100%;
+  height: 100%;
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
 }

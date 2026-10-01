@@ -13,7 +13,7 @@ import {
   AssignmentTurnedIn as DirectiveIcon,
   Timeline as TimelineIcon,
 } from '@mui/icons-material';
-import { SlideWrapper, AdaptiveSlideImage } from '../SlideComponents';
+import { SlideWrapper, AdaptiveSlideImage, safeStringArray } from '../SlideComponents';
 
 // ----------------------------------------------------------------------
 // 1. Protocol Steps Slide (1 Slide per Step)
@@ -279,11 +279,11 @@ export function DesktopTimelineMilestoneSlide({ content }: { content: any }) {
 // ----------------------------------------------------------------------
 export function DesktopExecSummarySlide({ content }: { content: any }) {
   const title = content.title || 'Executive Summary: Strategic Takeaways';
-  const bullets = content.bullets || content.points || [
+  const bullets = safeStringArray(content.bullets || content.points, [
     'The physical infrastructure deficit cannot be bridged with software subsidies alone.',
     'Informal transit syndicates capture up to 42% of farm-gate value realization.',
     'Bonded aggregation depots offer the only verified path to institutional off-take.'
-  ];
+  ]);
   const thesis = content.thesis || content.summary || 'Summary conclusion anchoring the presentation narrative.';
 
   return (
@@ -446,7 +446,12 @@ export function DesktopCallToActionSlide({ content }: { content: any }) {
 // ----------------------------------------------------------------------
 export function DesktopLivePollSlide({ content }: { content: any }) {
   const question = content.question || content.title || 'Audience Poll: Where is your highest capital bleed point?';
-  const options = content.options || ['Highway extortion tolls', 'Cold room spoilage', 'Unbanked supplier default', 'FX & seed inflation'];
+  const options = safeStringArray(content.options, [
+    'Highway extortion tolls',
+    'Cold room spoilage',
+    'Unbanked supplier default',
+    'FX & seed inflation',
+  ]);
 
   return (
     <SlideWrapper color="#2563eb">

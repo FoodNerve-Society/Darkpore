@@ -11,7 +11,7 @@ import {
   ArrowForward as ArrowForwardIcon,
   Business as BusinessIcon,
 } from '@mui/icons-material';
-import { SlideWrapper } from '../SlideComponents';
+import { SlideWrapper, safeStringArray } from '../SlideComponents';
 
 // ----------------------------------------------------------------------
 // FORMAT B: JOB SLIDE 1 — The Opportunity & Compensation
@@ -121,11 +121,11 @@ export function MobileJobOpportunitySlide({ content }: { content: any }) {
             sx={{ alignSelf: 'flex-start', bgcolor: alpha('#10b981', 0.15), color: '#059669', fontWeight: 900, fontSize: '0.7rem' }}
           />
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-            <Avatar src={orgLogo} sx={{ width: 42, height: 42, bgcolor: '#0f172a' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 0.75 }}>
+            <Avatar src={orgLogo} sx={{ width: 44, height: 44, bgcolor: '#0f172a' }}>
               <BusinessIcon sx={{ fontSize: 22 }} />
             </Avatar>
-            <Box>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.2 }}>
               <Typography sx={{ fontWeight: 800, fontSize: '0.92rem', color: '#0f172a' }}>{orgName}</Typography>
               <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#10b981', textTransform: 'uppercase' }}>Verified Partner</Typography>
             </Box>
@@ -168,11 +168,11 @@ export function MobileJobOpportunitySlide({ content }: { content: any }) {
 export function DesktopJobExecutionSlide({ content }: { content: any }) {
   const jobTitle = content.jobTitle || content.title || 'Role Execution';
   const applyUrl = content.applyUrl || 'foodnerve.org/careers';
-  const responsibilities = content.responsibilities || [
+  const responsibilities = safeStringArray(content.responsibilities, [
     'Deploy 3 bonded rail aggregation depots along Kano-Lagos corridor within 180 days.',
     'Negotiate off-take contracts with institutional grain and tomato processors.',
     'Lead digital tracking compliance across informal transit cartels.'
-  ];
+  ]);
   const requirements = content.requirements || '7+ years physical corridor logistics or commodity trading infrastructure experience.';
 
   return (
@@ -238,11 +238,11 @@ export function DesktopJobExecutionSlide({ content }: { content: any }) {
 }
 
 export function MobileJobExecutionSlide({ content }: { content: any }) {
-  const responsibilities = content.responsibilities || [
+  const responsibilities = safeStringArray(content.responsibilities, [
     'Deploy 3 bonded rail aggregation depots.',
     'Negotiate off-take contracts with food processors.',
     'Lead digital tracking compliance across transit cartels.'
-  ];
+  ]);
   const applyUrl = content.applyUrl || 'foodnerve.org/careers';
 
   return (

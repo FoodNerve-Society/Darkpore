@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, GlobalStyles } from '@mui/material';
 import {
   Sensors as LiveIcon,
 } from '@mui/icons-material';
+import ThemeRegistry from '@/theme/ThemeRegistry';
 import {
   renderSlidePreviewContent,
   SlideAspectRatio,
@@ -229,36 +230,66 @@ export default function LivestreamStagePage() {
   };
 
   return (
-    <Box
-      onDoubleClick={toggleFullscreen}
-      sx={{
-        width: '100vw',
-        height: '100vh',
-        bgcolor: isTransparent ? 'transparent' : '#000000',
-        overflow: 'hidden',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        position: 'relative',
-        userSelect: 'none',
-      }}
-    >
-      {/* Presentation Stage Surface: Container adjusts to 16:9 Landscape or 9:16 Portrait cleanly */}
+    <ThemeRegistry initialTenant="food" initialMode="dark">
+      <GlobalStyles
+        styles={{
+          'html, body': {
+            margin: '0 !important',
+            padding: '0 !important',
+            width: '100vw !important',
+            height: '100vh !important',
+            overflow: 'hidden !important',
+            backgroundColor: isTransparent ? 'transparent !important' : '#000000 !important',
+            boxSizing: 'border-box !important',
+          },
+          '#root, #__next': {
+            width: '100%',
+            height: '100%',
+            margin: 0,
+            padding: 0,
+          },
+        }}
+      />
       <Box
+        onDoubleClick={toggleFullscreen}
         sx={{
-          height: '100%',
-          maxHeight: '100vh',
-          aspectRatio: aspectRatio === '9:16' ? '9/16' : '16/9',
-          maxWidth: '100vw',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: '100vw',
+          height: '100vh',
+          bgcolor: isTransparent ? 'transparent' : '#000000',
+          overflow: 'hidden',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          position: 'relative',
-          transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+          m: 0,
+          p: 0,
+          boxSizing: 'border-box',
+          userSelect: 'none',
         }}
       >
-        {renderCurrentSlide()}
+        {/* Presentation Stage Surface: Container adjusts to 16:9 Landscape or 9:16 Portrait cleanly */}
+        <Box
+          sx={{
+            height: '100%',
+            maxHeight: '100vh',
+            aspectRatio: aspectRatio === '9:16' ? '9/16' : '16/9',
+            maxWidth: '100vw',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            position: 'relative',
+            transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+            m: 'auto',
+            p: 0,
+          }}
+        >
+          {renderCurrentSlide()}
+        </Box>
       </Box>
-    </Box>
+    </ThemeRegistry>
   );
 }

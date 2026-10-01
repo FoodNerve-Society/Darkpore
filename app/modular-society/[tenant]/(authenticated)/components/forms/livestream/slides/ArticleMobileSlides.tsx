@@ -11,7 +11,7 @@ import {
   AssignmentTurnedIn as DirectiveIcon,
   Timeline as TimelineIcon,
 } from '@mui/icons-material';
-import { SlideWrapper } from '../SlideComponents';
+import { SlideWrapper, safeStringArray } from '../SlideComponents';
 
 // ----------------------------------------------------------------------
 // 1. Mobile Protocol Step Slide (Fills full 9:16 portrait window)
@@ -288,11 +288,11 @@ export function MobileTimelineMilestoneSlide({ content }: { content: any }) {
 // ----------------------------------------------------------------------
 export function MobileExecSummarySlide({ content }: { content: any }) {
   const title = content.title || 'Executive Takeaways';
-  const bullets = content.bullets || content.points || [
+  const bullets = safeStringArray(content.bullets || content.points, [
     'Infrastructure deficit requires corridor aggregation hubs.',
     'Informal syndicates capture 42% of farm-gate value.',
     'Bonded depots enable immediate bankable off-take.'
-  ];
+  ]);
   const thesis = content.thesis || content.summary || 'Summary conclusion anchoring the presentation narrative.';
 
   return (
@@ -479,7 +479,12 @@ export function MobileCallToActionSlide({ content }: { content: any }) {
 // ----------------------------------------------------------------------
 export function MobileLivePollSlide({ content }: { content: any }) {
   const question = content.question || content.title || 'Where is your highest capital bleed?';
-  const options = content.options || ['Highway tolls', 'Cold room spoilage', 'Supplier default', 'FX & seed inflation'];
+  const options = safeStringArray(content.options, [
+    'Highway tolls',
+    'Cold room spoilage',
+    'Supplier default',
+    'FX & seed inflation',
+  ]);
 
   return (
     <SlideWrapper color="#2563eb">
