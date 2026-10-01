@@ -1,18 +1,4 @@
-import { Edu_NSW_ACT_Foundation, Dosis, Quicksand, Ysabeau_Infant, Playfair_Display, Inter, Outfit } from 'next/font/google';
-
-export const inter = Inter({
-    weight: ['400', '500', '600', '700', '800', '900'],
-    subsets: ['latin'],
-    display: 'swap',
-    variable: '--font-inter',
-});
-
-export const outfit = Outfit({
-    weight: ['400', '500', '600', '700', '800', '900'],
-    subsets: ['latin'],
-    display: 'swap',
-    variable: '--font-outfit',
-});
+import { Edu_NSW_ACT_Foundation, Dosis, Quicksand, Ysabeau_Infant, Playfair_Display } from 'next/font/google';
 
 export const playfairDisplay = Playfair_Display({
     weight: ['400', '500', '600', '700', '800', '900'],

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Box, Typography, GlobalStyles } from '@mui/material';
 import {
   Sensors as LiveIcon,
@@ -23,6 +23,7 @@ export default function LivestreamStagePage() {
   const [isConnected, setIsConnected] = useState(false);
   const [aspectRatio, setAspectRatio] = useState<SlideAspectRatio>('16:9');
   const [lockedAspect, setLockedAspect] = useState<SlideAspectRatio | null>(null);
+  const lockedAspectRef = useRef<SlideAspectRatio | null>(null);
   const [isTransparent, setIsTransparent] = useState(false);
 
   // Initialize aspect ratio and transparency from URL query params (e.g. ?aspect=9:16&transparent=true)
@@ -33,9 +34,11 @@ export default function LivestreamStagePage() {
       if (aspectParam === '9:16' || aspectParam === 'portrait' || aspectParam === 'mobile') {
         setAspectRatio('9:16');
         setLockedAspect('9:16');
+        lockedAspectRef.current = '9:16';
       } else if (aspectParam === '16:9' || aspectParam === 'landscape' || aspectParam === 'desktop') {
         setAspectRatio('16:9');
         setLockedAspect('16:9');
+        lockedAspectRef.current = '16:9';
       }
       if (params.get('transparent') === 'true' || params.get('obs') === 'true') {
         setIsTransparent(true);
@@ -63,14 +66,14 @@ export default function LivestreamStagePage() {
         if (typeof parsed.activeSlideIndex === 'number') setActiveSlideIndex(parsed.activeSlideIndex);
         if (parsed.title) setTitle(parsed.title);
         if (parsed.hubColor) setHubColor(parsed.hubColor);
-        if (!lockedAspect && parsed.aspectRatio) setAspectRatio(parsed.aspectRatio);
+        if (!lockedAspectRef.current && parsed.aspectRatio) setAspectRatio(parsed.aspectRatio);
         if (typeof parsed.isTransparent === 'boolean') setIsTransparent(parsed.isTransparent);
         setIsConnected(true);
       }
     } catch (e) {
       console.error('Failed to load stage cache:', e);
     }
-  }, [lockedAspect]);
+  }, []);
 
   // Connect to BroadcastChannel for real-time synchronization with Control Pane
   useEffect(() => {
@@ -86,14 +89,14 @@ export default function LivestreamStagePage() {
           if (typeof data.activeSlideIndex === 'number') setActiveSlideIndex(data.activeSlideIndex);
           if (data.title) setTitle(data.title);
           if (data.hubColor) setHubColor(data.hubColor);
-          if (!lockedAspect && data.aspectRatio) setAspectRatio(data.aspectRatio);
+          if (!lockedAspectRef.current && data.aspectRatio) setAspectRatio(data.aspectRatio);
           if (typeof data.isTransparent === 'boolean') setIsTransparent(data.isTransparent);
           setIsConnected(true);
         } else if (data.type === 'SET_SLIDE_INDEX') {
           if (typeof data.index === 'number') setActiveSlideIndex(data.index);
           setIsConnected(true);
         } else if (data.type === 'SET_ASPECT') {
-          if (!lockedAspect && data.aspectRatio) {
+          if (!lockedAspectRef.current && data.aspectRatio) {
             setAspectRatio(data.aspectRatio);
             try {
               if (typeof window !== 'undefined' && window.opener) {

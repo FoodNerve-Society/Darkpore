@@ -1,6 +1,6 @@
 'use client';
 import { createTheme, alpha, Palette as MuiPalette } from '@mui/material/styles';
-import { eduNswActFoundation, dosis, quicksand, ysabeauInfant, playfairDisplay, inter, outfit } from './fonts';
+import { eduNswActFoundation, dosis, quicksand, ysabeauInfant, playfairDisplay } from './fonts';
 import { getTenantConfig } from '@/lib/cms';
 
 const subtleDotPattern = "url('data:image/svg+xml;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/w8AAgMBgQKQnAAAAABJRU5ErkJggg==')";
@@ -88,22 +88,22 @@ export const getTheme = (mode: 'light' | 'dark', tenantId: string = 'food') => {
       },
     },
     typography: {
-      fontFamily: `${outfit.style.fontFamily}, ${inter.style.fontFamily}, ${ysabeauInfant.style.fontFamily}, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`,
-      h1: { fontFamily: `${outfit.style.fontFamily}, ${dosis.style.fontFamily}, sans-serif`, fontWeight: 800 },
-      h2: { fontFamily: `${outfit.style.fontFamily}, ${dosis.style.fontFamily}, sans-serif`, fontWeight: 800 },
-      h3: { fontFamily: `${outfit.style.fontFamily}, ${dosis.style.fontFamily}, sans-serif`, fontWeight: 800 },
-      h4: { fontFamily: `${outfit.style.fontFamily}, ${dosis.style.fontFamily}, sans-serif`, fontWeight: 700 },
-      h5: { fontFamily: `${outfit.style.fontFamily}, ${dosis.style.fontFamily}, sans-serif`, fontWeight: 700 },
-      h6: { fontFamily: `${outfit.style.fontFamily}, ${dosis.style.fontFamily}, sans-serif`, fontWeight: 600 },
+      fontFamily: ysabeauInfant.style.fontFamily,
+      h1: { fontFamily: dosis.style.fontFamily, fontWeight: 700 },
+      h2: { fontFamily: dosis.style.fontFamily, fontWeight: 700 },
+      h3: { fontFamily: dosis.style.fontFamily, fontWeight: 600 },
+      h4: { fontFamily: dosis.style.fontFamily, fontWeight: 600 },
+      h5: { fontFamily: dosis.style.fontFamily, fontWeight: 500 },
+      h6: { fontFamily: dosis.style.fontFamily, fontWeight: 500 },
       button: {
-        fontFamily: `${outfit.style.fontFamily}, ${quicksand.style.fontFamily}, sans-serif`,
-        fontWeight: 800,
+        fontFamily: quicksand.style.fontFamily,
+        fontWeight: 700,
         textTransform: 'none',
       },
-      body1: { fontFamily: `${inter.style.fontFamily}, ${ysabeauInfant.style.fontFamily}, sans-serif`, lineHeight: 1.5 },
-      body2: { fontFamily: `${inter.style.fontFamily}, ${ysabeauInfant.style.fontFamily}, sans-serif`, lineHeight: 1.4 },
-      caption: { fontFamily: `${inter.style.fontFamily}, ${ysabeauInfant.style.fontFamily}, sans-serif`, fontStyle: 'italic' },
-      overline: { fontFamily: `${outfit.style.fontFamily}, ${quicksand.style.fontFamily}, sans-serif` },
+      body1: { fontFamily: ysabeauInfant.style.fontFamily },
+      body2: { fontFamily: ysabeauInfant.style.fontFamily },
+      caption: { fontFamily: ysabeauInfant.style.fontFamily, fontStyle: 'italic' },
+      overline: { fontFamily: quicksand.style.fontFamily },
       stylishHeader: {
         fontFamily: eduNswActFoundation.style.fontFamily,
         fontWeight: 700,
@@ -127,6 +127,7 @@ export const getTheme = (mode: 'light' | 'dark', tenantId: string = 'food') => {
             paddingBottom: 8,
             whiteSpace: 'normal', // Allow wrapping
             lineHeight: 1.2, // Tighter leading for multi-line
+            borderRadius: 12, // Modern squircle
           },
         },
       },
@@ -138,6 +139,7 @@ export const getTheme = (mode: 'light' | 'dark', tenantId: string = 'food') => {
             paddingTop: 4,
             paddingBottom: 4,
             whiteSpace: 'normal',
+            borderRadius: 10, // Modern squircle
           },
           label: {
             whiteSpace: 'normal', // Wrap text inside chip

@@ -119,7 +119,7 @@ export function SlideWrapper({
         height: '100%',
         maxHeight: isVertical ? '100%' : undefined,
         position: 'relative',
-        borderRadius: isVertical ? '24px' : '20px',
+        borderRadius: 0, // Completely square to fit stage windows with zero corner ear lobes
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
@@ -322,7 +322,7 @@ export function SlideMedia({ content }: { content: any }) {
     <Box sx={{
       width: '100%',
       aspectRatio: isVertical ? '9/16' : '16/9',
-      borderRadius: '20px',
+      borderRadius: 0,
       overflow: 'hidden',
       position: 'relative',
       bgcolor: '#0f172a',

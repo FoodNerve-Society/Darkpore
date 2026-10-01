@@ -106,50 +106,43 @@ export function decomposeJobIntoSlides(job: any): Partial<RundownItem>[] {
   const orgLogo = job.organization?.logoUrl || job.orgLogo || job.logoUrl;
   const salary = job.salary || job.compensationOrTarget || job.compensation || 'Competitive / Verified Package';
   const location = job.location || 'Remote / Regional Hub';
-  const applyUrl = job.applyUrl || job.link || job.ctaLink || '';
-  const jobCover = job.coverImageUrl || job.imageUrl || orgLogo;
-  const rawScope = job.responsibilities || job.requirements || job.description || 'Lead operational deployment and corridor coordination.';
-  const roleScope = typeof rawScope === 'string' ? rawScope : Array.isArray(rawScope) ? rawScope.join('. ') : 'Lead field execution and verify project metrics.';
+  const department = job.department || job.track || (Array.isArray(job.tags) && job.tags[0]) || 'Operations';
+  const applicationMode = job.applicationMode || 'Apply Live On Stage';
+
+  // Construct full verified careers deep-link
+  let fullApplyUrl = job.applicationUrl || job.applyUrl || job.url || job.link || job.ctaLink;
+  if (!fullApplyUrl || fullApplyUrl === 'foodnerve.org/careers' || fullApplyUrl === '/careers') {
+    fullApplyUrl = job.id && !String(job.id).startsWith('manual-')
+      ? `https://foodnerve.org/careers/${job.id}`
+      : 'https://foodnerve.org/careers';
+  } else if (fullApplyUrl.startsWith('/')) {
+    fullApplyUrl = `https://foodnerve.org${fullApplyUrl}`;
+  } else if (!fullApplyUrl.startsWith('http://') && !fullApplyUrl.startsWith('https://')) {
+    fullApplyUrl = `https://${fullApplyUrl}`;
+  }
 
   return [
     {
       sourceType: 'job',
       sourceId: job.id,
       defBlockId: 'job_opportunity',
-      defBlockLabel: 'Job: Opportunity & Compensation',
+      defBlockLabel: 'Job Opportunity & Apply',
       slideIndex: 1,
-      slideCount: 2,
+      slideCount: 1,
       originalBlockType: 'job_opportunity',
       originalContent: {
+        id: job.id,
         jobTitle: job.title,
         title: job.title,
         orgName,
         orgLogo,
         salary,
         location,
-        imageUrl: jobCover,
-        tags: job.tags || [job.department || 'Operations', job.type || 'Full-time'],
+        department,
+        applicationMode,
+        applyUrl: fullApplyUrl,
       },
-      speakerNotes: `Highlighting this verified ecosystem opportunity: ${job.title} with ${orgName}. Compensation is ${salary}.`,
-      durationStr: '45s',
-    },
-    {
-      sourceType: 'job',
-      sourceId: job.id,
-      defBlockId: 'job_execution',
-      defBlockLabel: 'Job: Execution & Apply',
-      slideIndex: 2,
-      slideCount: 2,
-      originalBlockType: 'job_execution',
-      originalContent: {
-        jobTitle: job.title,
-        title: job.title,
-        orgName,
-        roleScope,
-        prerequisites: job.prerequisites || 'Verified profile on platform',
-        applyUrl,
-      },
-      speakerNotes: `Here is the execution mandate and qualification requirements. Apply directly via the broadcast link.`,
+      speakerNotes: `Highlighting this verified ecosystem opportunity: ${job.title} with ${orgName}. Compensation is ${salary}. Apply live on stage at ${fullApplyUrl}.`,
       durationStr: '45s',
     },
   ];
@@ -3022,462 +3015,455 @@ export default function LivestreamRundownBuilder({
           },
         }}
       >
-        {selectedArticleForBlocks && (
-          <>
-            {/* Studio Header */}
-            <Box
-              sx={{
-                px: { xs: 2.5, sm: 3.5 },
-                py: 2,
-                borderBottom: '1.5px solid rgba(226, 232, 240, 0.9)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: 2,
-                bgcolor: 'rgba(255, 255, 255, 0.95)',
-                backdropFilter: 'blur(20px)',
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
-                <Box
-                  sx={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: '12px',
-                    bgcolor: 'rgba(59, 130, 246, 0.1)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                  }}
-                >
-                  <LayersIcon sx={{ color: '#2563eb', fontSize: 24 }} />
-                </Box>
-                <Box sx={{ minWidth: 0 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.25 }}>
-                    <Chip
-                      label={selectedArticleForBlocks.category || 'Article'}
-                      size="small"
-                      sx={{ bgcolor: 'rgba(59, 130, 246, 0.1)', color: '#2563eb', fontWeight: 800, fontSize: '0.68rem', height: 20 }}
-                    />
-                    <Typography sx={{ color: '#64748b', fontSize: '0.78rem' }}>
-                      Pick Slides into Broadcast Rundown
-                    </Typography>
-                  </Box>
-                  <Typography
+        {selectedArticleForBlocks && (() => {
+          const blocks = selectedArticleForBlocks.article?.blocks || selectedArticleForBlocks.blocks || [];
+
+          // Decompose all blocks into slide candidates
+          const allCandidateSlides: Array<{
+            slideItem: RundownItem;
+            parentBlock: any;
+            blockIndex: number;
+            stepIndex: number;
+            totalSteps: number;
+            isCompound: boolean;
+          }> = [];
+
+          blocks.forEach((b: any, bIdx: number) => {
+            const decomposed = decomposeArticleBlockIntoSlides(b, selectedArticleForBlocks);
+            decomposed.forEach((partialItem, sIdx) => {
+              const candidateId = `cand-${b.id || bIdx}-${sIdx}`;
+              const fullItem: RundownItem = {
+                id: candidateId,
+                sourceType: partialItem.sourceType || 'article_block',
+                sourceId: partialItem.sourceId || `${b.id || bIdx}-${sIdx}`,
+                parentArticleId: selectedArticleForBlocks.id,
+                parentArticleTitle: selectedArticleForBlocks.title,
+                originalBlockType: partialItem.originalBlockType || b.blockType,
+                originalContent: partialItem.originalContent || {},
+                durationStr: partialItem.durationStr || '45s',
+                speakerNotes: partialItem.speakerNotes || '',
+                slideIndex: partialItem.slideIndex || (sIdx + 1),
+                slideCount: partialItem.slideCount || decomposed.length,
+              };
+              allCandidateSlides.push({
+                slideItem: fullItem,
+                parentBlock: b,
+                blockIndex: bIdx,
+                stepIndex: sIdx + 1,
+                totalSteps: decomposed.length,
+                isCompound: decomposed.length > 1,
+              });
+            });
+          });
+
+          return (
+            <>
+              {/* Studio Top Navigation Bar */}
+              <Box
+                sx={{
+                  px: { xs: 2.5, sm: 3.5 },
+                  py: 1.75,
+                  borderBottom: '1.5px solid rgba(226, 232, 240, 0.8)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  bgcolor: 'rgba(255, 255, 255, 0.95)',
+                  backdropFilter: 'blur(20px)',
+                  zIndex: 2,
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                  <Box
                     sx={{
-                      fontWeight: 800,
-                      fontSize: { xs: '1rem', md: '1.2rem' },
-                      color: '#0f172a',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      maxWidth: { xs: 280, sm: 500, md: 700 },
+                      width: 36,
+                      height: 36,
+                      borderRadius: '10px',
+                      bgcolor: 'rgba(59, 130, 246, 0.1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                     }}
                   >
-                    {selectedArticleForBlocks.title}
+                    <LayersIcon sx={{ color: '#2563eb', fontSize: 20 }} />
+                  </Box>
+                  <Typography sx={{ fontWeight: 800, fontSize: '0.95rem', color: '#0f172a' }}>
+                    Article Slide Deck Generator
                   </Typography>
                 </Box>
-              </Box>
-
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-                {/* 16:9 vs 9:16 Gallery Aspect Ratio Toggle */}
-                <Box
-                  onClick={() => setArticleModalAspect((prev) => (prev === '16:9' ? '9:16' : '16:9'))}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 0.75,
-                    cursor: 'pointer',
-                    px: 1.5,
-                    py: 0.65,
-                    borderRadius: '12px',
-                    bgcolor: articleModalAspect === '9:16' ? 'rgba(236, 72, 153, 0.1)' : 'rgba(59, 130, 246, 0.1)',
-                    border: `1.5px solid ${articleModalAspect === '9:16' ? 'rgba(236, 72, 153, 0.35)' : 'rgba(59, 130, 246, 0.35)'}`,
-                    transition: 'all 0.2s ease',
-                    '&:hover': { bgcolor: articleModalAspect === '9:16' ? 'rgba(236, 72, 153, 0.18)' : 'rgba(59, 130, 246, 0.18)' },
-                  }}
-                >
-                  {articleModalAspect === '9:16' ? (
-                    <>
-                      <MobileIcon sx={{ fontSize: 16, color: '#db2777' }} />
-                      <Typography sx={{ fontSize: '0.74rem', fontWeight: 800, color: '#db2777' }}>9:16 Mobile View</Typography>
-                    </>
-                  ) : (
-                    <>
-                      <DesktopIcon sx={{ fontSize: 16, color: '#2563eb' }} />
-                      <Typography sx={{ fontSize: '0.74rem', fontWeight: 800, color: '#2563eb' }}>16:9 Broadcast View</Typography>
-                    </>
-                  )}
-                </Box>
-
-                <Button
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  onClick={() => {
-                    const blocks = selectedArticleForBlocks.article?.blocks || selectedArticleForBlocks.blocks || [];
-                    const allSlides: Partial<RundownItem>[] = [];
-                    blocks.forEach((b: any) => {
-                      const decomposed = decomposeArticleBlockIntoSlides(b, selectedArticleForBlocks);
-                      allSlides.push(...decomposed);
-                    });
-                    addMultipleBlocksToRundown(allSlides);
-                    setSelectedArticleForBlocks(null);
-                  }}
-                  sx={{
-                    borderRadius: '12px',
-                    bgcolor: '#2563eb',
-                    color: '#ffffff',
-                    fontWeight: 800,
-                    fontSize: '0.8rem',
-                    textTransform: 'none',
-                    px: 2,
-                    py: 0.75,
-                    boxShadow: 'none',
-                    '&:hover': { bgcolor: '#1d4ed8' },
-                  }}
-                >
-                  + Add All Slides
-                </Button>
 
                 <IconButton
                   size="small"
                   onClick={() => setSelectedArticleForBlocks(null)}
-                  sx={{ color: '#64748b', '&:hover': { color: '#0f172a', bgcolor: 'rgba(0, 0, 0, 0.05)' } }}
-                >
-                  <CloseIcon sx={{ fontSize: 22 }} />
-                </IconButton>
-              </Box>
-            </Box>
-
-            {/* Studio Body: Two Column Layout */}
-            <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-              {/* Left Column: Article Dossier / Overview (30%) */}
-              <Box
-                sx={{
-                  width: { xs: '100%', md: '30%' },
-                  display: { xs: 'none', md: 'flex' },
-                  flexDirection: 'column',
-                  gap: 2.5,
-                  p: 3,
-                  borderRight: '1.5px solid rgba(226, 232, 240, 0.9)',
-                  bgcolor: '#f8fafc',
-                  overflowY: 'auto',
-                }}
-              >
-                {/* Cover Image */}
-                <Box
                   sx={{
-                    width: '100%',
-                    height: 180,
-                    borderRadius: '16px',
-                    overflow: 'hidden',
-                    border: '1.5px solid rgba(226, 232, 240, 0.9)',
-                    bgcolor: '#e2e8f0',
+                    color: '#64748b',
+                    bgcolor: 'rgba(0, 0, 0, 0.04)',
+                    '&:hover': { color: '#0f172a', bgcolor: 'rgba(0, 0, 0, 0.08)' },
                   }}
                 >
-                  {selectedArticleForBlocks.coverImageUrl || selectedArticleForBlocks.coverImage || selectedArticleForBlocks.imageUrl ? (
-                    <img
-                      src={selectedArticleForBlocks.coverImageUrl || selectedArticleForBlocks.coverImage || selectedArticleForBlocks.imageUrl}
-                      alt="Cover"
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                  ) : (
-                    <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <BookIcon sx={{ color: '#94a3b8', fontSize: 50 }} />
-                    </Box>
-                  )}
-                </Box>
-
-                <Box>
-                  <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.04em', mb: 0.5 }}>
-                    Article Dossier
-                  </Typography>
-                  <Typography sx={{ fontWeight: 800, fontSize: '1.05rem', color: '#0f172a', lineHeight: 1.35, mb: 1.5 }}>
-                    {selectedArticleForBlocks.title}
-                  </Typography>
-                  {selectedArticleForBlocks.description && (
-                    <Typography sx={{ fontSize: '0.86rem', color: '#475569', lineHeight: 1.6 }}>
-                      {selectedArticleForBlocks.description}
-                    </Typography>
-                  )}
-                </Box>
-
-                <Box sx={{ mt: 'auto', p: 2, borderRadius: '14px', bgcolor: '#ffffff', border: '1.5px solid rgba(226, 232, 240, 0.9)' }}>
-                  <Typography sx={{ fontSize: '0.74rem', color: '#64748b', mb: 0.5 }}>
-                    Visual Slide Candidates:
-                  </Typography>
-                  <Typography sx={{ fontSize: '1.1rem', fontWeight: 900, color: '#0f172a' }}>
-                    Preview Each Step & Add
-                  </Typography>
-                  <Typography sx={{ fontSize: '0.72rem', color: '#64748b', mt: 0.5 }}>
-                    Every multi-step protocol, myth/fact pair, and analytical block is decomposed with its own real visual broadcast preview.
-                  </Typography>
-                </Box>
+                  <CloseIcon sx={{ fontSize: 20 }} />
+                </IconButton>
               </Box>
 
-              {/* Right Column: Visual Slide Candidate Gallery (70%) */}
+              {/* Scrollable Body: Centered Hero + Centered Switcher + Slide Candidates Grid */}
               <Box
                 sx={{
                   flex: 1,
-                  p: { xs: 2, md: 3 },
                   overflowY: 'auto',
+                  p: { xs: 2.5, sm: 3.5, md: 4 },
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: 2,
-                  bgcolor: '#f1f5f9',
+                  gap: 3.5,
+                  bgcolor: '#f8fafc',
                 }}
               >
-                {(() => {
-                  const blocks = selectedArticleForBlocks.article?.blocks || selectedArticleForBlocks.blocks || [];
-                  if (blocks.length === 0) {
-                    return (
-                      <Box sx={{ p: 6, textAlign: 'center' }}>
-                        <Typography sx={{ color: '#64748b', fontSize: '0.95rem' }}>
-                          No modular blocks found in this article.
-                        </Typography>
-                      </Box>
-                    );
-                  }
+                {/* ── Centered Hero Section ── */}
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    textAlign: 'center',
+                    maxWidth: 880,
+                    mx: 'auto',
+                    gap: 1.25,
+                    pt: 1,
+                  }}
+                >
+                  <Typography
+                    sx={{
+                      fontWeight: 900,
+                      fontSize: { xs: '1.4rem', sm: '1.75rem', md: '2.1rem' },
+                      color: '#0f172a',
+                      lineHeight: 1.25,
+                      letterSpacing: '-0.02em',
+                    }}
+                  >
+                    Add an Article Block in Your Presentation
+                  </Typography>
 
-                  // Decompose all blocks into slide candidates
-                  const allCandidateSlides: Array<{
-                    slideItem: RundownItem;
-                    parentBlock: any;
-                    blockIndex: number;
-                    stepIndex: number;
-                    totalSteps: number;
-                    isCompound: boolean;
-                  }> = [];
+                  <Typography
+                    sx={{
+                      fontSize: { xs: '0.88rem', md: '0.98rem' },
+                      color: '#475569',
+                      lineHeight: 1.6,
+                      maxWidth: 720,
+                    }}
+                  >
+                    Select specific visual slides decomposed from this article to enrich your live broadcast rundown. Switch between 16:9 Broadcast and 9:16 Mobile views, preview step-by-step breakdowns, and pick the slides you want to present on stage.
+                  </Typography>
 
-                  blocks.forEach((b: any, bIdx: number) => {
-                    const decomposed = decomposeArticleBlockIntoSlides(b, selectedArticleForBlocks);
-                    decomposed.forEach((partialItem, sIdx) => {
-                      const candidateId = `cand-${b.id || bIdx}-${sIdx}`;
-                      const fullItem: RundownItem = {
-                        id: candidateId,
-                        sourceType: partialItem.sourceType || 'article_block',
-                        sourceId: partialItem.sourceId || `${b.id || bIdx}-${sIdx}`,
-                        parentArticleId: selectedArticleForBlocks.id,
-                        parentArticleTitle: selectedArticleForBlocks.title,
-                        originalBlockType: partialItem.originalBlockType || b.blockType,
-                        originalContent: partialItem.originalContent || {},
-                        durationStr: partialItem.durationStr || '45s',
-                        speakerNotes: partialItem.speakerNotes || '',
-                        slideIndex: partialItem.slideIndex || (sIdx + 1),
-                        slideCount: partialItem.slideCount || decomposed.length,
-                      };
-                      allCandidateSlides.push({
-                        slideItem: fullItem,
-                        parentBlock: b,
-                        blockIndex: bIdx,
-                        stepIndex: sIdx + 1,
-                        totalSteps: decomposed.length,
-                        isCompound: decomposed.length > 1,
-                      });
-                    });
-                  });
+                  <Chip
+                    label={`Article: ${selectedArticleForBlocks.title}`}
+                    size="small"
+                    sx={{
+                      mt: 0.5,
+                      bgcolor: 'rgba(37, 99, 235, 0.08)',
+                      color: '#2563eb',
+                      fontWeight: 800,
+                      fontSize: '0.74rem',
+                      borderRadius: '10px',
+                      maxWidth: '90%',
+                    }}
+                  />
+                </Box>
 
-                  return (
-                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: articleModalAspect === '9:16' ? 'repeat(auto-fill, minmax(260px, 1fr))' : '1fr 1fr' }, gap: 2 }}>
-                      {allCandidateSlides.map((candidate, idx) => {
-                        const { slideItem, parentBlock, isCompound, stepIndex, totalSteps } = candidate;
-                        const c = slideItem.originalContent || {};
-                        const title =
-                          c.title ||
-                          c.stepTitle ||
-                          c.myth ||
-                          c.fact ||
-                          c.name ||
-                          c.headline ||
-                          c.question ||
-                          c.mandate ||
-                          c.text ||
-                          parentBlock.blockType?.replace('_', ' ').toUpperCase() ||
-                          `Slide ${idx + 1}`;
+                {/* ── Centered Controls: Portrait vs Wide Aspect Switcher ── */}
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    py: 1,
+                    borderTop: '1.5px solid rgba(226, 232, 240, 0.7)',
+                    borderBottom: '1.5px solid rgba(226, 232, 240, 0.7)',
+                  }}
+                >
+                  {/* Aspect Ratio Switcher */}
+                  <Box
+                    sx={{
+                      display: 'inline-flex',
+                      bgcolor: '#f1f5f9',
+                      p: 0.5,
+                      borderRadius: '12px',
+                      border: '1.5px solid rgba(226, 232, 240, 0.9)',
+                      gap: 0.5,
+                    }}
+                  >
+                    <Button
+                      size="small"
+                      onClick={() => setArticleModalAspect('16:9')}
+                      startIcon={<DesktopIcon sx={{ fontSize: 16 }} />}
+                      sx={{
+                        borderRadius: '10px',
+                        px: 2.25,
+                        py: 0.75,
+                        textTransform: 'none',
+                        fontWeight: 800,
+                        fontSize: '0.8rem',
+                        bgcolor: articleModalAspect === '16:9' ? '#ffffff' : 'transparent',
+                        color: articleModalAspect === '16:9' ? '#2563eb' : '#64748b',
+                        boxShadow: articleModalAspect === '16:9' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
+                        border: articleModalAspect === '16:9' ? '1px solid rgba(37, 99, 235, 0.2)' : '1px solid transparent',
+                        '&:hover': {
+                          bgcolor: articleModalAspect === '16:9' ? '#ffffff' : 'rgba(0,0,0,0.04)',
+                        },
+                      }}
+                    >
+                      16:9 Broadcast (Wide)
+                    </Button>
+                    <Button
+                      size="small"
+                      onClick={() => setArticleModalAspect('9:16')}
+                      startIcon={<MobileIcon sx={{ fontSize: 16 }} />}
+                      sx={{
+                        borderRadius: '10px',
+                        px: 2.25,
+                        py: 0.75,
+                        textTransform: 'none',
+                        fontWeight: 800,
+                        fontSize: '0.8rem',
+                        bgcolor: articleModalAspect === '9:16' ? '#ffffff' : 'transparent',
+                        color: articleModalAspect === '9:16' ? '#db2777' : '#64748b',
+                        boxShadow: articleModalAspect === '9:16' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
+                        border: articleModalAspect === '9:16' ? '1px solid rgba(219, 39, 119, 0.2)' : '1px solid transparent',
+                        '&:hover': {
+                          bgcolor: articleModalAspect === '9:16' ? '#ffffff' : 'rgba(0,0,0,0.04)',
+                        },
+                      }}
+                    >
+                      9:16 Mobile (Portrait)
+                    </Button>
+                  </Box>
+                </Box>
 
-                        const isAlreadyInRundown = rundown.some(
-                          (r) =>
-                            r.sourceType === 'article_block' &&
-                            (r.sourceId === slideItem.sourceId ||
-                              (r.originalContent?.stepTitle && r.originalContent?.stepTitle === c.stepTitle) ||
-                              (r.originalContent?.myth && r.originalContent?.myth === c.myth) ||
-                              (r.originalContent?.fact && r.originalContent?.fact === c.fact) ||
-                              (r.originalContent?.title && r.originalContent?.title === c.title))
-                        );
+                {/* ── Slide Candidates Grid ── */}
+                {allCandidateSlides.length === 0 ? (
+                  <Box sx={{ p: 6, textAlign: 'center' }}>
+                    <Typography sx={{ color: '#64748b', fontSize: '0.95rem' }}>
+                      No modular blocks found in this article.
+                    </Typography>
+                  </Box>
+                ) : (
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns:
+                        articleModalAspect === '9:16'
+                          ? {
+                              xs: '1fr',
+                              sm: 'repeat(auto-fill, minmax(240px, 1fr))',
+                              md: 'repeat(auto-fill, minmax(260px, 1fr))',
+                            }
+                          : {
+                              xs: '1fr',
+                              sm: 'repeat(auto-fill, minmax(320px, 1fr))',
+                              md: 'repeat(auto-fill, minmax(380px, 1fr))',
+                            },
+                      gap: 2.5,
+                      pb: 4,
+                    }}
+                  >
+                    {allCandidateSlides.map((candidate, idx) => {
+                      const { slideItem, parentBlock, isCompound, stepIndex, totalSteps } = candidate;
+                      const c = slideItem.originalContent || {};
+                      const title =
+                        c.title ||
+                        c.stepTitle ||
+                        c.myth ||
+                        c.fact ||
+                        c.name ||
+                        c.headline ||
+                        c.question ||
+                        c.mandate ||
+                        c.text ||
+                        parentBlock.blockType?.replace('_', ' ').toUpperCase() ||
+                        `Slide ${idx + 1}`;
 
-                        return (
+                      const isAlreadyInRundown = rundown.some(
+                        (r) =>
+                          r.sourceType === 'article_block' &&
+                          (r.sourceId === slideItem.sourceId ||
+                            (r.originalContent?.stepTitle && r.originalContent?.stepTitle === c.stepTitle) ||
+                            (r.originalContent?.myth && r.originalContent?.myth === c.myth) ||
+                            (r.originalContent?.fact && r.originalContent?.fact === c.fact) ||
+                            (r.originalContent?.title && r.originalContent?.title === c.title))
+                      );
+
+                      return (
+                        <Box
+                          key={slideItem.id || idx}
+                          sx={{
+                            p: 2,
+                            borderRadius: '20px',
+                            bgcolor: '#ffffff',
+                            border: isAlreadyInRundown
+                              ? '1.5px solid rgba(16, 185, 129, 0.6)'
+                              : '1.5px solid rgba(226, 232, 240, 0.95)',
+                            boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                            gap: 1.5,
+                            transition: 'all 0.25s ease',
+                            '&:hover': {
+                              borderColor: isAlreadyInRundown ? '#10b981' : '#2563eb',
+                              transform: 'translateY(-2px)',
+                              boxShadow: '0 10px 28px rgba(15, 23, 42, 0.08)',
+                            },
+                          }}
+                        >
+                          {/* Slide Header: Block Tag & In Rundown status */}
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                              <Chip
+                                size="small"
+                                label={
+                                  isCompound
+                                    ? `${slideItem.originalBlockType?.replace('_', ' ').toUpperCase()} · ${stepIndex}/${totalSteps}`
+                                    : (slideItem.originalBlockType || parentBlock.blockType)?.replace('_', ' ').toUpperCase() || 'SLIDE'
+                                }
+                                sx={{
+                                  bgcolor: 'rgba(59, 130, 246, 0.1)',
+                                  color: '#2563eb',
+                                  fontWeight: 900,
+                                  fontSize: '0.65rem',
+                                  height: 20,
+                                  borderRadius: '10px',
+                                }}
+                              />
+                              <Chip
+                                size="small"
+                                label={slideItem.durationStr || '45s'}
+                                sx={{ bgcolor: '#f1f5f9', color: '#64748b', fontSize: '0.62rem', height: 20, fontWeight: 700, borderRadius: '10px' }}
+                              />
+                            </Box>
+                            {isAlreadyInRundown && (
+                              <Chip
+                                size="small"
+                                label="✓ In Rundown"
+                                sx={{ bgcolor: '#dcfce7', color: '#166534', fontWeight: 800, fontSize: '0.62rem', height: 20, borderRadius: '10px' }}
+                              />
+                            )}
+                          </Box>
+
+                          {/* Real Scaled Visual Slide Preview Frame */}
                           <Box
-                            key={slideItem.id || idx}
+                            onClick={() => {
+                              setPreviewSlideItem(slideItem);
+                              setSinglePreviewAspect(articleModalAspect);
+                            }}
                             sx={{
-                              p: 2,
-                              borderRadius: '20px',
-                              bgcolor: '#ffffff',
-                              border: isAlreadyInRundown
-                                ? '1.5px solid rgba(16, 185, 129, 0.6)'
-                                : '1.5px solid rgba(226, 232, 240, 0.95)',
-                              boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              justifyContent: 'space-between',
-                              gap: 1.5,
-                              transition: 'all 0.25s ease',
+                              width: '100%',
+                              maxWidth: articleModalAspect === '9:16' ? 220 : '100%',
+                              aspectRatio: articleModalAspect === '9:16' ? '9/16' : '16/9',
+                              borderRadius: '12px',
+                              overflow: 'hidden',
+                              border: '1.5px solid rgba(226, 232, 240, 0.95)',
+                              bgcolor: '#f8fafc',
+                              position: 'relative',
+                              cursor: 'pointer',
+                              boxShadow: '0 4px 14px rgba(15, 23, 42, 0.04)',
+                              mx: 'auto',
+                              transition: 'all 0.2s ease',
                               '&:hover': {
-                                borderColor: isAlreadyInRundown ? '#10b981' : '#2563eb',
-                                transform: 'translateY(-2px)',
-                                boxShadow: '0 10px 28px rgba(15, 23, 42, 0.08)',
+                                borderColor: '#2563eb',
+                                boxShadow: '0 6px 20px rgba(59, 130, 246, 0.15)',
                               },
                             }}
                           >
-                            {/* Slide Header: Block Tag & In Rundown status */}
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                                <Chip
-                                  size="small"
-                                  label={
-                                    isCompound
-                                      ? `${slideItem.originalBlockType?.replace('_', ' ').toUpperCase()} · ${stepIndex}/${totalSteps}`
-                                      : (slideItem.originalBlockType || parentBlock.blockType)?.replace('_', ' ').toUpperCase() || 'SLIDE'
-                                  }
-                                  sx={{
-                                    bgcolor: 'rgba(59, 130, 246, 0.1)',
-                                    color: '#2563eb',
-                                    fontWeight: 900,
-                                    fontSize: '0.65rem',
-                                    height: 20,
-                                  }}
-                                />
-                                <Chip
-                                  size="small"
-                                  label={slideItem.durationStr || '45s'}
-                                  sx={{ bgcolor: '#f1f5f9', color: '#64748b', fontSize: '0.62rem', height: 20, fontWeight: 700 }}
-                                />
-                              </Box>
-                              {isAlreadyInRundown && (
-                                <Chip
-                                  size="small"
-                                  label="✓ In Rundown"
-                                  sx={{ bgcolor: '#dcfce7', color: '#166534', fontWeight: 800, fontSize: '0.62rem', height: 20 }}
-                                />
-                              )}
-                            </Box>
-
-                            {/* Real Scaled Visual Slide Preview Frame */}
                             <Box
+                              sx={{
+                                width: '200%',
+                                height: '200%',
+                                transform: 'scale(0.5)',
+                                transformOrigin: 'top left',
+                                pointerEvents: 'none',
+                                userSelect: 'none',
+                              }}
+                            >
+                              {renderSlidePreviewContent(slideItem, hubColor, {
+                                aspectRatio: articleModalAspect,
+                              })}
+                            </Box>
+                            <Box
+                              sx={{
+                                position: 'absolute',
+                                bottom: 6,
+                                right: 6,
+                                bgcolor: 'rgba(15, 23, 42, 0.75)',
+                                color: '#ffffff',
+                                px: 0.85,
+                                py: 0.35,
+                                borderRadius: '8px',
+                                fontSize: '0.62rem',
+                                fontWeight: 800,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 0.5,
+                                backdropFilter: 'blur(4px)',
+                              }}
+                            >
+                              <VisibilityIcon sx={{ fontSize: 11 }} /> Expand
+                            </Box>
+                          </Box>
+
+                          {/* Slide Summary */}
+                          <Typography
+                            sx={{
+                              fontWeight: 800,
+                              fontSize: '0.88rem',
+                              color: '#0f172a',
+                              lineHeight: 1.35,
+                              display: '-webkit-box',
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                            }}
+                          >
+                            {String(title)}
+                          </Typography>
+
+                          {/* Action Buttons */}
+                          <Box sx={{ display: 'flex', gap: 1 }}>
+                            <Button
+                              fullWidth
+                              size="small"
+                              variant="contained"
+                              startIcon={<AddIcon sx={{ fontSize: '0.9rem !important' }} />}
                               onClick={() => {
-                                setPreviewSlideItem(slideItem);
-                                setSinglePreviewAspect(articleModalAspect);
+                                addMultipleBlocksToRundown([slideItem]);
                               }}
                               sx={{
-                                width: '100%',
-                                aspectRatio: articleModalAspect === '9:16' ? '9/16' : '16/9',
-                                maxHeight: articleModalAspect === '9:16' ? 340 : 190,
-                                borderRadius: '14px',
-                                overflow: 'hidden',
-                                border: '1.5px solid rgba(226, 232, 240, 0.95)',
-                                bgcolor: '#f8fafc',
-                                position: 'relative',
-                                cursor: 'pointer',
-                                boxShadow: '0 4px 14px rgba(15, 23, 42, 0.04)',
-                                mx: 'auto',
-                                transition: 'all 0.2s ease',
+                                borderRadius: '12px',
+                                bgcolor: isAlreadyInRundown ? '#f8fafc' : '#2563eb',
+                                color: isAlreadyInRundown ? '#334155' : '#ffffff',
+                                border: isAlreadyInRundown ? '1.5px solid #cbd5e1' : 'none',
+                                fontWeight: 800,
+                                fontSize: '0.78rem',
+                                textTransform: 'none',
+                                py: 0.7,
+                                boxShadow: 'none',
                                 '&:hover': {
-                                  borderColor: '#2563eb',
-                                  boxShadow: '0 6px 20px rgba(59, 130, 246, 0.15)',
+                                  bgcolor: isAlreadyInRundown ? '#f1f5f9' : '#1d4ed8',
                                 },
                               }}
                             >
-                              <Box
-                                sx={{
-                                  width: '200%',
-                                  height: '200%',
-                                  transform: 'scale(0.5)',
-                                  transformOrigin: 'top left',
-                                  pointerEvents: 'none',
-                                  userSelect: 'none',
-                                }}
-                              >
-                                {renderSlidePreviewContent(slideItem, hubColor, {
-                                  aspectRatio: articleModalAspect,
-                                })}
-                              </Box>
-                              <Box
-                                sx={{
-                                  position: 'absolute',
-                                  bottom: 6,
-                                  right: 6,
-                                  bgcolor: 'rgba(15, 23, 42, 0.75)',
-                                  color: '#ffffff',
-                                  px: 0.85,
-                                  py: 0.35,
-                                  borderRadius: '6px',
-                                  fontSize: '0.62rem',
-                                  fontWeight: 800,
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: 0.5,
-                                  backdropFilter: 'blur(4px)',
-                                }}
-                              >
-                                <VisibilityIcon sx={{ fontSize: 11 }} /> Expand
-                              </Box>
-                            </Box>
-
-                            {/* Slide Summary */}
-                            <Typography
-                              sx={{
-                                fontWeight: 800,
-                                fontSize: '0.88rem',
-                                color: '#0f172a',
-                                lineHeight: 1.35,
-                                display: '-webkit-box',
-                                WebkitLineClamp: 2,
-                                WebkitBoxOrient: 'vertical',
-                                overflow: 'hidden',
-                              }}
-                            >
-                              {String(title)}
-                            </Typography>
-
-                            {/* Action Buttons */}
-                            <Box sx={{ display: 'flex', gap: 1 }}>
-                              <Button
-                                fullWidth
-                                size="small"
-                                variant="contained"
-                                startIcon={<AddIcon sx={{ fontSize: '0.9rem !important' }} />}
-                                onClick={() => {
-                                  addMultipleBlocksToRundown([slideItem]);
-                                }}
-                                sx={{
-                                  borderRadius: '10px',
-                                  bgcolor: isAlreadyInRundown ? '#f8fafc' : '#2563eb',
-                                  color: isAlreadyInRundown ? '#334155' : '#ffffff',
-                                  border: isAlreadyInRundown ? '1.5px solid #cbd5e1' : 'none',
-                                  fontWeight: 800,
-                                  fontSize: '0.78rem',
-                                  textTransform: 'none',
-                                  py: 0.7,
-                                  boxShadow: 'none',
-                                  '&:hover': {
-                                    bgcolor: isAlreadyInRundown ? '#f1f5f9' : '#1d4ed8',
-                                  },
-                                }}
-                              >
-                                {isAlreadyInRundown ? 'Add Duplicate Slide' : '+ Pick This Slide'}
-                              </Button>
-                            </Box>
+                              {isAlreadyInRundown ? 'Add Duplicate Slide' : 'Pick This Slide'}
+                            </Button>
                           </Box>
-                        );
-                      })}
-                    </Box>
-                  );
-                })()}
+                        </Box>
+                      );
+                    })}
+                          </Box>
+                        </Box>
+                      );
+                    })}
+                  </Box>
+                )}
               </Box>
-            </Box>
-          </>
-        )}
+            </>
+          );
+        })()}
       </Dialog>
 
       {/* ── Single Slide Preview Modal (Dual 16:9 Desktop & 9:16 Mobile) ── */}
