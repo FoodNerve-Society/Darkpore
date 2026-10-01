@@ -29,14 +29,14 @@ export function MobileProtocolStepSlide({ content }: { content: any }) {
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%', py: 1 }}>
         {/* Top Header */}
         <Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.25 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 0.75, mb: 1.25 }}>
             <Chip
               label={`STEP ${String(stepNum).padStart(2, '0')} OF ${String(totalSteps).padStart(2, '0')}`}
               size="small"
               sx={{ bgcolor: alpha('#3b82f6', 0.12), color: '#2563eb', fontWeight: 900, fontSize: '0.7rem' }}
             />
             <Chip
-              label="SOP"
+              label="SOP MANDATE"
               size="small"
               sx={{ bgcolor: '#0f172a', color: '#ffffff', fontWeight: 800, fontSize: '0.65rem' }}
             />
@@ -47,8 +47,8 @@ export function MobileProtocolStepSlide({ content }: { content: any }) {
         </Box>
 
         {/* Center: Action Mandate Card */}
-        <Box sx={{ p: 2, borderRadius: '16px', bgcolor: 'rgba(59, 130, 246, 0.06)', border: '1px solid rgba(59, 130, 246, 0.25)', my: 'auto' }}>
-          <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>
+        <Box sx={{ p: 2, borderRadius: '16px', bgcolor: 'rgba(59, 130, 246, 0.06)', border: '1.5px solid rgba(59, 130, 246, 0.25)', my: 'auto', display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Execution Directive
           </Typography>
           <Typography sx={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a', lineHeight: 1.4 }}>
@@ -56,22 +56,22 @@ export function MobileProtocolStepSlide({ content }: { content: any }) {
           </Typography>
         </Box>
 
-        {/* Bottom Stack: Vertically Stacked Meta Cards */}
+        {/* Bottom Stack: Vertically Stacked Meta Cards with Stacked Inner Contents */}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-          <Box sx={{ p: 1.5, borderRadius: '12px', bgcolor: '#ffffff', border: '1px solid rgba(226, 232, 240, 0.95)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box sx={{ p: 1.5, borderRadius: '12px', bgcolor: '#ffffff', border: '1.5px solid rgba(226, 232, 240, 0.95)', display: 'flex', flexDirection: 'column', gap: 0.35 }}>
             <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>
               Responsible
             </Typography>
-            <Typography sx={{ fontSize: '0.82rem', fontWeight: 800, color: '#0f172a' }}>
+            <Typography sx={{ fontSize: '0.92rem', fontWeight: 800, color: '#0f172a' }}>
               {owner}
             </Typography>
           </Box>
 
-          <Box sx={{ p: 1.5, borderRadius: '12px', bgcolor: '#ffffff', border: '1px solid rgba(226, 232, 240, 0.95)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box sx={{ p: 1.5, borderRadius: '12px', bgcolor: '#ffffff', border: '1.5px solid rgba(226, 232, 240, 0.95)', display: 'flex', flexDirection: 'column', gap: 0.35 }}>
             <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, color: '#10b981', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 0.5 }}>
               <CheckIcon sx={{ fontSize: 14 }} /> Output
             </Typography>
-            <Typography sx={{ fontSize: '0.82rem', fontWeight: 800, color: '#0f172a' }}>
+            <Typography sx={{ fontSize: '0.92rem', fontWeight: 800, color: '#0f172a' }}>
               {output}
             </Typography>
           </Box>
@@ -251,7 +251,7 @@ export function MobileTimelineMilestoneSlide({ content }: { content: any }) {
   return (
     <SlideWrapper color="#0ea5e9">
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%', py: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 0.75 }}>
           <Chip
             icon={<TimelineIcon sx={{ fontSize: '0.85rem !important' }} />}
             label="TIMELINE"
@@ -270,7 +270,7 @@ export function MobileTimelineMilestoneSlide({ content }: { content: any }) {
           </Typography>
         </Box>
 
-        <Box sx={{ p: 1.5, borderRadius: '12px', bgcolor: 'rgba(14, 165, 233, 0.08)', border: '1px solid rgba(14, 165, 233, 0.25)' }}>
+        <Box sx={{ p: 1.5, borderRadius: '12px', bgcolor: 'rgba(14, 165, 233, 0.08)', border: '1.5px solid rgba(14, 165, 233, 0.25)', display: 'flex', flexDirection: 'column', gap: 0.35 }}>
           <Typography sx={{ fontSize: '0.62rem', fontWeight: 800, color: '#0284c7', textTransform: 'uppercase' }}>
             Corridor Consequence
           </Typography>
@@ -305,17 +305,17 @@ export function MobileExecSummarySlide({ content }: { content: any }) {
           </Typography>
         </Box>
 
-        {/* Vertically Stacked Bullets */}
+        {/* Vertically Stacked Bullets with Stacked Internal Content */}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, my: 1 }}>
           {bullets.slice(0, 3).map((bullet: string, idx: number) => (
-            <Box key={idx} sx={{ p: 1.25, borderRadius: '12px', bgcolor: '#ffffff', border: '1px solid rgba(226, 232, 240, 0.95)', display: 'flex', alignItems: 'center', gap: 1.25 }}>
-              <Typography sx={{ fontWeight: 900, fontSize: '0.95rem', color: '#4f46e5' }}>0{idx + 1}</Typography>
-              <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: '#0f172a', lineHeight: 1.3 }}>{bullet}</Typography>
+            <Box key={idx} sx={{ p: 1.25, borderRadius: '12px', bgcolor: '#ffffff', border: '1.5px solid rgba(226, 232, 240, 0.95)', display: 'flex', flexDirection: 'column', gap: 0.35 }}>
+              <Typography sx={{ fontWeight: 900, fontSize: '0.9rem', color: '#4f46e5' }}>0{idx + 1}</Typography>
+              <Typography sx={{ fontSize: '0.82rem', fontWeight: 700, color: '#0f172a', lineHeight: 1.35 }}>{bullet}</Typography>
             </Box>
           ))}
         </Box>
 
-        <Box sx={{ p: 1.25, borderRadius: '10px', bgcolor: 'rgba(99, 102, 241, 0.08)', border: '1px solid rgba(99, 102, 241, 0.25)' }}>
+        <Box sx={{ p: 1.25, borderRadius: '10px', bgcolor: 'rgba(99, 102, 241, 0.08)', border: '1.5px solid rgba(99, 102, 241, 0.25)' }}>
           <Typography sx={{ fontSize: '0.78rem', color: '#312e81', fontWeight: 600 }}>{thesis}</Typography>
         </Box>
       </Box>
@@ -343,15 +343,15 @@ export function MobileUnitEconomicsSlide({ content }: { content: any }) {
         </Box>
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, my: 1 }}>
-          <Box sx={{ p: 1.25, borderRadius: '12px', bgcolor: '#ffffff', border: '1px solid rgba(226, 232, 240, 0.95)' }}>
+          <Box sx={{ p: 1.25, borderRadius: '12px', bgcolor: '#ffffff', border: '1.5px solid rgba(226, 232, 240, 0.95)', display: 'flex', flexDirection: 'column', gap: 0.35 }}>
             <Typography sx={{ fontSize: '0.62rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>01 · Farm Gate Cost</Typography>
             <Typography sx={{ fontSize: '1.05rem', fontWeight: 900, color: '#0f172a' }}>{c1}</Typography>
           </Box>
-          <Box sx={{ p: 1.25, borderRadius: '12px', bgcolor: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.25)' }}>
+          <Box sx={{ p: 1.25, borderRadius: '12px', bgcolor: 'rgba(239, 68, 68, 0.05)', border: '1.5px solid rgba(239, 68, 68, 0.25)', display: 'flex', flexDirection: 'column', gap: 0.35 }}>
             <Typography sx={{ fontSize: '0.62rem', fontWeight: 800, color: '#dc2626', textTransform: 'uppercase' }}>02 · Transit Friction</Typography>
             <Typography sx={{ fontSize: '1.05rem', fontWeight: 900, color: '#b91c1c' }}>{c2}</Typography>
           </Box>
-          <Box sx={{ p: 1.25, borderRadius: '12px', bgcolor: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+          <Box sx={{ p: 1.25, borderRadius: '12px', bgcolor: 'rgba(16, 185, 129, 0.08)', border: '1.5px solid rgba(16, 185, 129, 0.3)', display: 'flex', flexDirection: 'column', gap: 0.35 }}>
             <Typography sx={{ fontSize: '0.62rem', fontWeight: 800, color: '#059669', textTransform: 'uppercase' }}>03 · Realized Return</Typography>
             <Typography sx={{ fontSize: '1.05rem', fontWeight: 900, color: '#047857' }}>{c3}</Typography>
           </Box>
@@ -377,18 +377,19 @@ export function MobilePersonaDossierSlide({ content }: { content: any }) {
   return (
     <SlideWrapper color="#d97706">
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%', py: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 1 }}>
+          <Chip label="OPERATOR DOSSIER" size="small" sx={{ bgcolor: alpha('#d97706', 0.15), color: '#b45309', fontWeight: 900, fontSize: '0.65rem' }} />
           <Avatar src={content.avatarUrl} sx={{ width: 56, height: 56, boxShadow: '0 4px 16px rgba(0,0,0,0.1)' }}>
             <PersonIcon sx={{ fontSize: 32 }} />
           </Avatar>
           <Box>
-            <Chip label="OPERATOR DOSSIER" size="small" sx={{ mb: 0.5, bgcolor: alpha('#d97706', 0.15), color: '#b45309', fontWeight: 900, fontSize: '0.65rem' }} />
             <Typography sx={{ fontWeight: 900, fontSize: '1.25rem', color: '#0f172a', lineHeight: 1.15 }}>{name}</Typography>
-            <Typography sx={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 700 }}>{role} · {location}</Typography>
+            <Typography sx={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 700 }}>{role}</Typography>
+            <Typography sx={{ fontSize: '0.75rem', color: '#b45309', fontWeight: 700 }}>{location}</Typography>
           </Box>
         </Box>
 
-        <Box sx={{ p: 2, borderRadius: '14px', bgcolor: 'rgba(217, 119, 6, 0.06)', border: '1px solid rgba(217, 119, 6, 0.25)', my: 'auto' }}>
+        <Box sx={{ p: 2, borderRadius: '14px', bgcolor: 'rgba(217, 119, 6, 0.06)', border: '1.5px solid rgba(217, 119, 6, 0.25)', my: 'auto' }}>
           <Typography sx={{ fontSize: '0.95rem', fontStyle: 'italic', fontWeight: 700, color: '#78350f', lineHeight: 1.4 }}>
             "{quote}"
           </Typography>
@@ -414,7 +415,7 @@ export function MobileStrategicDirectiveSlide({ content }: { content: any }) {
     <SlideWrapper color="#e11d48">
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%', py: 1 }}>
         <Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 0.75, mb: 1 }}>
             <Chip icon={<DirectiveIcon sx={{ fontSize: '0.8rem !important' }} />} label="ACTION MANDATE" size="small" sx={{ bgcolor: alpha('#e11d48', 0.15), color: '#be123c', fontWeight: 900, fontSize: '0.68rem' }} />
             <Chip label={deadline} size="small" sx={{ bgcolor: '#0f172a', color: '#ffffff', fontWeight: 900, fontSize: '0.68rem' }} />
           </Box>
@@ -423,7 +424,7 @@ export function MobileStrategicDirectiveSlide({ content }: { content: any }) {
           </Typography>
         </Box>
 
-        <Box sx={{ p: 2, borderRadius: '14px', bgcolor: 'rgba(225, 29, 72, 0.06)', border: '1px solid rgba(225, 29, 72, 0.25)', my: 'auto' }}>
+        <Box sx={{ p: 2, borderRadius: '14px', bgcolor: 'rgba(225, 29, 72, 0.06)', border: '1.5px solid rgba(225, 29, 72, 0.25)', my: 'auto' }}>
           <Typography sx={{ fontSize: '0.92rem', fontWeight: 700, color: '#881337', lineHeight: 1.4 }}>
             {action}
           </Typography>
@@ -492,8 +493,8 @@ export function MobileLivePollSlide({ content }: { content: any }) {
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, my: 'auto' }}>
           {options.slice(0, 4).map((opt: string, i: number) => (
-            <Box key={i} sx={{ p: 1.25, borderRadius: '12px', bgcolor: '#ffffff', border: '1px solid rgba(226, 232, 240, 0.95)', display: 'flex', alignItems: 'center', gap: 1.25, boxShadow: '0 2px 8px rgba(15, 23, 42, 0.03)' }}>
-              <Box sx={{ width: 26, height: 26, borderRadius: '50%', bgcolor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, color: '#2563eb', fontSize: '0.78rem' }}>
+            <Box key={i} sx={{ p: 1.25, borderRadius: '12px', bgcolor: '#ffffff', border: '1.5px solid rgba(226, 232, 240, 0.95)', display: 'flex', flexDirection: 'column', gap: 0.35, boxShadow: '0 2px 8px rgba(15, 23, 42, 0.03)' }}>
+              <Box sx={{ width: 22, height: 22, borderRadius: '50%', bgcolor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, color: '#2563eb', fontSize: '0.72rem' }}>
                 {String.fromCharCode(65 + i)}
               </Box>
               <Typography sx={{ fontSize: '0.85rem', fontWeight: 800, color: '#0f172a' }}>{opt}</Typography>

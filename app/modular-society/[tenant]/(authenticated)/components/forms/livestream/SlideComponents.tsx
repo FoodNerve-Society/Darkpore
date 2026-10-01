@@ -774,8 +774,8 @@ export function SlideResponseAudit({ content }: { content: any }) {
             <Typography sx={{ fontSize: isVertical ? '0.85rem' : '1.1rem', fontWeight: 600, color: '#7f1d1d', lineHeight: 1.4 }}>{sq}</Typography>
           </Box>
 
-          <Box sx={{ p: isVertical ? 1.5 : 3.5, borderRadius: '20px', bgcolor: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+          <Box sx={{ p: isVertical ? 1.5 : 3.5, borderRadius: '20px', bgcolor: 'rgba(16, 185, 129, 0.08)', border: '1.5px solid rgba(16, 185, 129, 0.3)' }}>
+            <Box sx={{ display: 'flex', flexDirection: isVertical ? 'column' : 'row', alignItems: isVertical ? 'flex-start' : 'center', gap: 0.75, mb: 1 }}>
               <Chip label="WHAT ACTUALLY MOVES THE NEEDLE" size="small" sx={{ bgcolor: '#10b981', color: '#fff', fontWeight: 800, fontSize: '0.65rem', height: 20 }} />
               <Chip label={gain} size="small" sx={{ bgcolor: '#047857', color: '#fff', fontWeight: 900, fontSize: '0.65rem', height: 20 }} />
             </Box>
@@ -805,20 +805,20 @@ export function SlideBoundaryTest({ content }: { content: any }) {
           {content.title || 'Boundary Test: 4 Non-Negotiable Gateways'}
         </Typography>
 
-        <Box sx={{ display: 'grid', gridTemplateColumns: isVertical ? '1fr 1fr' : 'repeat(4, 1fr)', gap: isVertical ? 1 : 2 }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: isVertical ? '1fr' : 'repeat(4, 1fr)', gap: isVertical ? 1 : 2 }}>
           {[
             { num: 'G1', label: 'PATHWAY', text: g1 },
             { num: 'G2', label: 'SCALE', text: g2 },
             { num: 'G3', label: 'POINT', text: g3 },
             { num: 'G4', label: '90D KPI', text: g4 },
           ].map((gate, i) => (
-            <Box key={i} sx={{ p: isVertical ? 1.25 : 2.5, borderRadius: '16px', bgcolor: '#ffffff', border: '1px solid rgba(99, 102, 241, 0.25)', boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+            <Box key={i} sx={{ p: isVertical ? 1.25 : 2.5, borderRadius: '16px', bgcolor: '#ffffff', border: '1.5px solid rgba(99, 102, 241, 0.25)', boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)', display: 'flex', flexDirection: 'column', gap: 0.35 }}>
+              <Box sx={{ display: 'flex', flexDirection: isVertical ? 'column' : 'row', alignItems: isVertical ? 'flex-start' : 'center', justifyContent: 'space-between', gap: 0.5, mb: 0.5 }}>
                 <Typography sx={{ fontWeight: 900, fontSize: '0.85rem', color: '#4f46e5' }}>{gate.num}</Typography>
                 <Chip label="VERIFIED" size="small" sx={{ height: 16, fontSize: '0.55rem', fontWeight: 900, bgcolor: '#dcfce7', color: '#166534' }} />
               </Box>
               <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, color: '#64748b', mb: 0.25 }}>{gate.label}</Typography>
-              <Typography sx={{ fontSize: isVertical ? '0.72rem' : '0.88rem', fontWeight: 700, color: '#0f172a', lineHeight: 1.3 }}>{gate.text}</Typography>
+              <Typography sx={{ fontSize: isVertical ? '0.75rem' : '0.88rem', fontWeight: 700, color: '#0f172a', lineHeight: 1.3 }}>{gate.text}</Typography>
             </Box>
           ))}
         </Box>
@@ -981,8 +981,7 @@ export function renderSlidePreviewContent(
       item.defBlockId === 'job_execution' ||
       item.originalBlockType === 'job_opportunity' ||
       item.originalBlockType === 'job_execution' ||
-      item.originalBlockType === 'job' ||
-      Boolean(item.originalContent?.jobTitle);
+      item.originalBlockType === 'job';
     const isTransition = item.sourceType === 'transition' && !isAct;
 
     const defBlock = item.defBlockId ? DEF_BLOCK_DEFINITIONS[item.defBlockId] : null;
@@ -992,30 +991,8 @@ export function renderSlidePreviewContent(
       (isAct ? '#10b981' : isJob ? '#f59e0b' : isTransition ? '#64748b' : '#3b82f6');
     const c = item.originalContent || {};
 
-    // 1. Ecosystem Job / Talent Spotlight (Format B: Opportunity & Execution Slides)
-    if (isJob) {
-      const isExecution =
-        item.originalBlockType === 'job_execution' ||
-        item.defBlockId === 'job_execution' ||
-        item.slideIndex === 2 ||
-        Boolean(c.roleScope);
-      if (isVertical) {
-        return isExecution ? (
-          <MobileJobExecutionSlide content={c} />
-        ) : (
-          <MobileJobOpportunitySlide content={c} />
-        );
-      } else {
-        return isExecution ? (
-          <DesktopJobExecutionSlide content={c} />
-        ) : (
-          <DesktopJobOpportunitySlide content={c} />
-        );
-      }
-    }
-
-    // 2. DEF Broadcast Block ID (11 Analytical Containers)
-    if (item.defBlockId) {
+    // 1. DEF Broadcast Block ID (11 Distinct Analytical Containers)
+    if (item.defBlockId && item.defBlockId !== 'talent_spotlight') {
       switch (item.defBlockId) {
         case 'anchor_tension':
           return <SlideAnchorTension content={c} />;
@@ -1041,6 +1018,28 @@ export function renderSlidePreviewContent(
           return <SlideForkedClose content={c} />;
         default:
           break;
+      }
+    }
+
+    // 2. Ecosystem Job / Talent Spotlight (Format B: Opportunity & Execution Slides)
+    if (isJob) {
+      const isExecution =
+        item.originalBlockType === 'job_execution' ||
+        item.defBlockId === 'job_execution' ||
+        item.slideIndex === 2 ||
+        Boolean(c.roleScope);
+      if (isVertical) {
+        return isExecution ? (
+          <MobileJobExecutionSlide content={c} />
+        ) : (
+          <MobileJobOpportunitySlide content={c} />
+        );
+      } else {
+        return isExecution ? (
+          <DesktopJobExecutionSlide content={c} />
+        ) : (
+          <DesktopJobOpportunitySlide content={c} />
+        );
       }
     }
 
