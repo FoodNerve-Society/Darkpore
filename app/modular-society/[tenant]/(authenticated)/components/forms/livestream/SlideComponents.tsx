@@ -52,9 +52,9 @@ export function SlideWrapper({
         flexDirection: 'column',
         bgcolor: isTransparent ? 'transparent' : '#ffffff',
         border: isTransparent
-          ? '1.5px solid rgba(255, 255, 255, 0.25)'
-          : `1.5px solid ${alpha(color, 0.22)}`,
-        boxShadow: isTransparent ? 'none' : '0 24px 64px rgba(0,0,0,0.08)',
+          ? '1px solid rgba(255, 255, 255, 0.25)'
+          : '1px solid rgba(255, 255, 255, 0.85)',
+        boxShadow: isTransparent ? 'none' : '0 20px 50px rgba(0,0,0,0.06)',
         ...(isTransparent
           ? {}
           : bgUrl
@@ -68,15 +68,56 @@ export function SlideWrapper({
             }),
       }}
     >
-      {/* Top Accent Line (hidden if transparent for clean OBS overlays) */}
+      {/* Background Ambient Blurred Orbs & Side Pattern (where there are no texts, hidden in transparent OBS overlay) */}
       {!isTransparent && (
-        <Box
-          sx={{
-            height: isVertical ? 8 : 6,
-            width: '100%',
-            background: `linear-gradient(90deg, ${color} 0%, ${alpha(color, 0.5)} 100%)`,
-          }}
-        />
+        <>
+          {/* Top-Right Ambient Blurred Orb */}
+          <Box
+            sx={{
+              position: 'absolute',
+              top: isVertical ? -30 : -60,
+              right: isVertical ? -30 : -60,
+              width: isVertical ? 180 : 280,
+              height: isVertical ? 180 : 280,
+              borderRadius: '50%',
+              background: `radial-gradient(circle, ${alpha(color || '#6366f1', 0.16)} 0%, transparent 70%)`,
+              filter: 'blur(50px)',
+              pointerEvents: 'none',
+              zIndex: 1,
+            }}
+          />
+          {/* Bottom-Left Ambient Blurred Orb */}
+          <Box
+            sx={{
+              position: 'absolute',
+              bottom: isVertical ? -40 : -80,
+              left: isVertical ? -40 : -80,
+              width: isVertical ? 200 : 320,
+              height: isVertical ? 200 : 320,
+              borderRadius: '50%',
+              background: `radial-gradient(circle, ${alpha(color || '#3b82f6', 0.1)} 0%, transparent 75%)`,
+              filter: 'blur(60px)',
+              pointerEvents: 'none',
+              zIndex: 1,
+            }}
+          />
+          {/* Subtle Side Ambient Pattern Accent in negative space */}
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              bottom: 0,
+              width: isVertical ? '65%' : '45%',
+              backgroundImage: 'radial-gradient(rgba(148, 163, 184, 0.14) 1.5px, transparent 1.5px)',
+              backgroundSize: '20px 20px',
+              pointerEvents: 'none',
+              zIndex: 1,
+              maskImage: 'radial-gradient(circle at top right, black 30%, transparent 80%)',
+              WebkitMaskImage: 'radial-gradient(circle at top right, black 30%, transparent 80%)',
+            }}
+          />
+        </>
       )}
 
       <Box
@@ -84,11 +125,11 @@ export function SlideWrapper({
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          p: isVertical ? { xs: 2.5, md: 3.5 } : { xs: 3.5, md: 5.5 },
+          p: isVertical ? { xs: 2, md: 2.5 } : { xs: 3.5, md: 5.5 },
           position: 'relative',
           zIndex: 2,
           overflow: 'hidden',
-          justifyContent: isVertical ? 'space-between' : 'flex-start',
+          justifyContent: isVertical ? 'center' : 'flex-start',
         }}
       >
         {children}
@@ -109,16 +150,16 @@ export function SlideSpikyTitle({ content }: { content: any }) {
     <SlideWrapper color="#64748b">
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', maxWidth: isVertical ? '100%' : '80%' }}>
         <Chip 
-          icon={<SparkleIcon sx={{ fontSize: '1rem !important' }} />} 
+          icon={<SparkleIcon sx={{ fontSize: '0.9rem !important' }} />} 
           label="KEY TOPIC" 
           size="small" 
-          sx={{ alignSelf: 'flex-start', mb: isVertical ? 2 : 3, bgcolor: alpha('#64748b', 0.1), color: '#64748b', fontWeight: 800 }} 
+          sx={{ alignSelf: 'flex-start', mb: isVertical ? 1.5 : 3, bgcolor: alpha('#64748b', 0.1), color: '#64748b', fontWeight: 800, fontSize: '0.72rem' }} 
         />
-        <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '1.8rem' : '2.5rem', md: isVertical ? '2.4rem' : '3.5rem' }, lineHeight: 1.15, color: '#0f172a', letterSpacing: '-0.02em', mb: 2 }}>
+        <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '1.35rem' : '2.5rem', md: isVertical ? '1.65rem' : '3.5rem' }, lineHeight: 1.18, color: '#0f172a', letterSpacing: '-0.02em', mb: 1.5 }}>
           {content.text || content.title || "Spiky Title"}
         </Typography>
         {content.subheadline && (
-          <Typography sx={{ fontSize: isVertical ? '1rem' : '1.25rem', color: '#64748b', fontWeight: 500, lineHeight: 1.4 }}>
+          <Typography sx={{ fontSize: isVertical ? '0.88rem' : '1.25rem', color: '#64748b', fontWeight: 500, lineHeight: 1.4 }}>
             {content.subheadline}
           </Typography>
         )}
@@ -133,21 +174,21 @@ export function SlideMythFact({ content }: { content: any }) {
 
   return (
     <SlideWrapper color="#ef4444">
-      <Typography sx={{ fontWeight: 800, color: '#ef4444', mb: isVertical ? 2 : 3, textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: '0.9rem' }}>
+      <Typography sx={{ fontWeight: 800, color: '#ef4444', mb: isVertical ? 1.5 : 3, textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: isVertical ? '0.75rem' : '0.9rem' }}>
         The Disconnect
       </Typography>
-      <Box sx={{ display: 'flex', flexDirection: isVertical ? 'column' : 'row', gap: isVertical ? 2 : 3.5, flex: 1 }}>
+      <Box sx={{ display: 'flex', flexDirection: isVertical ? 'column' : 'row', gap: isVertical ? 1.5 : 3.5, flex: 1 }}>
         {/* Myth Side */}
-        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', p: isVertical ? 2.5 : 3.5, bgcolor: isTransparent ? 'rgba(239,68,68,0.1)' : 'rgba(239,68,68,0.05)', borderRadius: 4, border: '1.5px solid rgba(239,68,68,0.18)', backdropFilter: isTransparent ? 'blur(12px)' : undefined }}>
-          <Chip label="THE MYTH" size="small" sx={{ alignSelf: 'flex-start', mb: 1.5, bgcolor: '#ef4444', color: '#fff', fontWeight: 800 }} />
-          <Typography sx={{ fontSize: isVertical ? '1.15rem' : '1.45rem', fontWeight: 600, color: '#0f172a', opacity: 0.85, lineHeight: 1.35 }}>
+        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', p: isVertical ? 1.75 : 3.5, bgcolor: isTransparent ? 'rgba(239,68,68,0.1)' : 'rgba(239,68,68,0.05)', borderRadius: '16px', border: '1px solid rgba(239,68,68,0.18)', backdropFilter: isTransparent ? 'blur(12px)' : undefined }}>
+          <Chip label="THE MYTH" size="small" sx={{ alignSelf: 'flex-start', mb: 1, bgcolor: '#ef4444', color: '#fff', fontWeight: 800, fontSize: '0.68rem', height: 22 }} />
+          <Typography sx={{ fontSize: isVertical ? '0.92rem' : '1.45rem', fontWeight: 600, color: '#0f172a', opacity: 0.85, lineHeight: 1.35 }}>
             "{content.myth || 'The widely accepted belief goes here...'}"
           </Typography>
         </Box>
         {/* Fact Side */}
-        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', p: isVertical ? 2.5 : 3.5, bgcolor: '#0f172a', borderRadius: 4, color: '#fff', boxShadow: '0 16px 40px rgba(0,0,0,0.2)' }}>
-          <Chip label="GROUND TRUTH" size="small" sx={{ alignSelf: 'flex-start', mb: 1.5, bgcolor: 'rgba(255,255,255,0.2)', color: '#fff', fontWeight: 800 }} />
-          <Typography sx={{ fontSize: isVertical ? '1.25rem' : '1.5rem', fontWeight: 800, color: '#fff', lineHeight: 1.35 }}>
+        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', p: isVertical ? 1.75 : 3.5, bgcolor: '#0f172a', borderRadius: '16px', color: '#fff', boxShadow: '0 16px 40px rgba(0,0,0,0.2)' }}>
+          <Chip label="GROUND TRUTH" size="small" sx={{ alignSelf: 'flex-start', mb: 1, bgcolor: 'rgba(255,255,255,0.2)', color: '#fff', fontWeight: 800, fontSize: '0.68rem', height: 22 }} />
+          <Typography sx={{ fontSize: isVertical ? '0.98rem' : '1.5rem', fontWeight: 800, color: '#fff', lineHeight: 1.35 }}>
             {content.fact || 'The harsh reality that operators know...'}
           </Typography>
         </Box>
@@ -163,10 +204,10 @@ export function SlideStatCard({ content }: { content: any }) {
   return (
     <SlideWrapper color="#8b5cf6" bgUrl={content.imageUrl}>
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: isVertical ? 'center' : 'flex-start', textAlign: isVertical ? 'center' : 'left' }}>
-        <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '4.5rem' : '6rem', md: isVertical ? '6.5rem' : '9.5rem' }, lineHeight: 1, color: '#8b5cf6', letterSpacing: '-0.04em', mb: 2, textShadow: '0 10px 30px rgba(139,92,246,0.2)' }}>
+        <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '3.2rem' : '6rem', md: isVertical ? '4.2rem' : '9.5rem' }, lineHeight: 1, color: '#8b5cf6', letterSpacing: '-0.04em', mb: isVertical ? 1 : 2, textShadow: '0 10px 30px rgba(139,92,246,0.2)' }}>
           {content.stat || '99%'}
         </Typography>
-        <Typography sx={{ fontSize: isVertical ? '1.35rem' : '2rem', fontWeight: 700, color: '#0f172a', maxWidth: isVertical ? '100%' : '65%', lineHeight: 1.25 }}>
+        <Typography sx={{ fontSize: isVertical ? '1.1rem' : '2rem', fontWeight: 700, color: '#0f172a', maxWidth: isVertical ? '100%' : '65%', lineHeight: 1.25 }}>
           {content.label || 'The contextual label explaining the statistic'}
         </Typography>
       </Box>
@@ -181,17 +222,17 @@ export function SlideQuote({ content }: { content: any }) {
   return (
     <SlideWrapper color="#f59e0b">
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
-        <QuoteIcon sx={{ fontSize: isVertical ? '3rem' : '4rem', color: alpha('#f59e0b', 0.3), mb: 1.5 }} />
-        <Typography sx={{ fontWeight: 800, fontSize: isVertical ? '1.45rem' : '2.4rem', color: '#0f172a', maxWidth: isVertical ? '100%' : '80%', lineHeight: 1.35, mb: 3 }}>
+        <QuoteIcon sx={{ fontSize: isVertical ? '2.2rem' : '4rem', color: alpha('#f59e0b', 0.3), mb: 1 }} />
+        <Typography sx={{ fontWeight: 800, fontSize: isVertical ? '1.15rem' : '2.4rem', color: '#0f172a', maxWidth: isVertical ? '100%' : '80%', lineHeight: 1.35, mb: isVertical ? 1.5 : 3 }}>
           "{content.quote || 'The insight goes here.'}"
         </Typography>
         {content.author && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Box sx={{ width: 32, height: 2, bgcolor: '#f59e0b' }} />
-            <Typography sx={{ fontWeight: 700, fontSize: isVertical ? '0.95rem' : '1.15rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <Box sx={{ width: 24, height: 2, bgcolor: '#f59e0b' }} />
+            <Typography sx={{ fontWeight: 700, fontSize: isVertical ? '0.85rem' : '1.15rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               {content.author}
             </Typography>
-            <Box sx={{ width: 32, height: 2, bgcolor: '#f59e0b' }} />
+            <Box sx={{ width: 24, height: 2, bgcolor: '#f59e0b' }} />
           </Box>
         )}
       </Box>
@@ -221,14 +262,14 @@ export function SlideMedia({ content }: { content: any }) {
       ) : content.videoUrl ? (
         <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
           <video src={content.videoUrl} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-          <PlayIcon sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '5rem', color: 'rgba(255,255,255,0.8)' }} />
+          <PlayIcon sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: isVertical ? '3.5rem' : '5rem', color: 'rgba(255,255,255,0.8)' }} />
         </Box>
       ) : (
         <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>Media Placeholder</Typography>
       )}
       {content.caption && (
-        <Box sx={{ position: 'absolute', bottom: 0, left: 0, width: '100%', p: 2.5, background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)' }}>
-          <Typography sx={{ color: '#fff', fontWeight: 600, fontSize: isVertical ? '0.95rem' : '1.15rem' }}>{content.caption}</Typography>
+        <Box sx={{ position: 'absolute', bottom: 0, left: 0, width: '100%', p: isVertical ? 1.5 : 2.5, background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)' }}>
+          <Typography sx={{ color: '#fff', fontWeight: 600, fontSize: isVertical ? '0.82rem' : '1.15rem' }}>{content.caption}</Typography>
         </Box>
       )}
     </Box>
@@ -242,14 +283,14 @@ export function SlideJob({ content }: { content: any }) {
   return (
     <SlideWrapper color="#10b981">
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
-        <Chip label="WE ARE HIRING" sx={{ bgcolor: '#10b981', color: '#fff', fontWeight: 800, letterSpacing: '0.1em', mb: isVertical ? 2 : 3 }} />
+        <Chip label="WE ARE HIRING" size="small" sx={{ bgcolor: '#10b981', color: '#fff', fontWeight: 800, letterSpacing: '0.08em', mb: isVertical ? 1.5 : 3, fontSize: '0.72rem' }} />
         
-        {content.orgLogo && <Avatar src={content.orgLogo} sx={{ width: isVertical ? 64 : 80, height: isVertical ? 64 : 80, mb: 2, boxShadow: '0 8px 24px rgba(0,0,0,0.1)' }} />}
+        {content.orgLogo && <Avatar src={content.orgLogo} sx={{ width: isVertical ? 52 : 80, height: isVertical ? 52 : 80, mb: 1.5, boxShadow: '0 8px 24px rgba(0,0,0,0.1)' }} />}
         
-        <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '1.8rem' : '2.5rem', md: isVertical ? '2.4rem' : '3.5rem' }, color: '#0f172a', lineHeight: 1.15, mb: 1.5 }}>
+        <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '1.35rem' : '2.5rem', md: isVertical ? '1.65rem' : '3.5rem' }, color: '#0f172a', lineHeight: 1.15, mb: 1 }}>
           {content.jobTitle || 'Role Title'}
         </Typography>
-        <Typography sx={{ fontWeight: 600, fontSize: isVertical ? '1.1rem' : '1.35rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Typography sx={{ fontWeight: 600, fontSize: isVertical ? '0.9rem' : '1.35rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: 1 }}>
           {content.orgName} 
           <Box component="span" sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: '#cbd5e1' }} />
           {content.location}
@@ -270,9 +311,9 @@ export function SlideRundownAct({ content, durationStr, color = '#10b981' }: { c
   return (
     <SlideWrapper color={color}>
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2, flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5, flexWrap: 'wrap' }}>
           <Chip
-            icon={<SparkleIcon sx={{ fontSize: '0.95rem !important' }} />}
+            icon={<SparkleIcon sx={{ fontSize: '0.85rem !important' }} />}
             label="BROADCAST ACT"
             size="small"
             sx={{
@@ -282,6 +323,7 @@ export function SlideRundownAct({ content, durationStr, color = '#10b981' }: { c
               letterSpacing: '0.06em',
               borderRadius: '8px',
               px: 0.5,
+              fontSize: '0.72rem',
             }}
           />
           {durationStr && (
@@ -292,29 +334,30 @@ export function SlideRundownAct({ content, durationStr, color = '#10b981' }: { c
                 bgcolor: '#0f172a',
                 color: '#ffffff',
                 fontWeight: 800,
-                fontSize: '0.72rem',
+                fontSize: '0.68rem',
                 borderRadius: '8px',
+                height: 22,
               }}
             />
           )}
         </Box>
 
-        <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '2.2rem' : '3rem', md: isVertical ? '3rem' : '4.5rem' }, lineHeight: 1.05, color: '#0f172a', letterSpacing: '-0.03em', mb: 2 }}>
+        <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '1.5rem' : '3rem', md: isVertical ? '1.85rem' : '4.5rem' }, lineHeight: 1.1, color: '#0f172a', letterSpacing: '-0.03em', mb: 1.5 }}>
           {title}
         </Typography>
 
         {desc && (
-          <Typography sx={{ fontSize: isVertical ? '1.1rem' : '1.5rem', color: '#475569', fontWeight: 600, maxWidth: isVertical ? '100%' : '75%', lineHeight: 1.35, mb: focus ? 2 : 0 }}>
+          <Typography sx={{ fontSize: isVertical ? '0.92rem' : '1.5rem', color: '#475569', fontWeight: 600, maxWidth: isVertical ? '100%' : '75%', lineHeight: 1.35, mb: focus ? 1.5 : 0 }}>
             {desc}
           </Typography>
         )}
 
         {focus && (
-          <Box sx={{ mt: 2, p: 2, borderRadius: '12px', bgcolor: alpha(color, 0.08), border: `1.5px solid ${alpha(color, 0.25)}`, maxWidth: isVertical ? '100%' : 500 }}>
-            <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: color, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>
+          <Box sx={{ mt: 1.5, p: isVertical ? 1.25 : 2, borderRadius: '12px', bgcolor: alpha(color, 0.08), border: `1px solid ${alpha(color, 0.25)}`, maxWidth: isVertical ? '100%' : 500 }}>
+            <Typography sx={{ fontSize: '0.7rem', fontWeight: 800, color: color, textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.25 }}>
               Act Directive
             </Typography>
-            <Typography sx={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a' }}>
+            <Typography sx={{ fontSize: isVertical ? '0.82rem' : '0.95rem', fontWeight: 700, color: '#0f172a' }}>
               {focus}
             </Typography>
           </Box>
@@ -441,25 +484,25 @@ export function SlideAnchorTension({ content }: { content: any }) {
 
   return (
     <SlideWrapper color="#ef4444" bgUrl={bg}>
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: isVertical ? 'column' : 'row', gap: isVertical ? 2 : 4, alignItems: isVertical ? 'stretch' : 'center' }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: isVertical ? 'column' : 'row', gap: isVertical ? 1.5 : 4, alignItems: isVertical ? 'stretch' : 'center' }}>
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <Chip
             label="ACT 1 · ANCHOR TENSION"
             size="small"
-            sx={{ alignSelf: 'flex-start', mb: 1.5, bgcolor: alpha('#ef4444', 0.15), color: '#dc2626', fontWeight: 800, fontSize: '0.75rem' }}
+            sx={{ alignSelf: 'flex-start', mb: 1, bgcolor: alpha('#ef4444', 0.15), color: '#dc2626', fontWeight: 800, fontSize: '0.7rem' }}
           />
-          <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '1.5rem' : '2rem', md: isVertical ? '2.1rem' : '3rem' }, lineHeight: 1.15, color: '#0f172a', letterSpacing: '-0.02em', mb: isVertical ? 1.5 : 2.5 }}>
+          <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '1.25rem' : '2rem', md: isVertical ? '1.45rem' : '3rem' }, lineHeight: 1.15, color: '#0f172a', letterSpacing: '-0.02em', mb: isVertical ? 1 : 2.5 }}>
             {content.title || content.text || 'The Operational Reality: Field Crisis Snapshot'}
           </Typography>
 
-          <Box sx={{ p: isVertical ? 2 : 2.5, borderRadius: '16px', bgcolor: 'rgba(239,68,68,0.06)', border: '1.5px solid rgba(239,68,68,0.2)', maxWidth: isVertical ? '100%' : 440 }}>
-            <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: '#dc2626', textTransform: 'uppercase', letterSpacing: '0.04em', mb: 0.5 }}>
+          <Box sx={{ p: isVertical ? 1.5 : 2.5, borderRadius: '16px', bgcolor: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', maxWidth: isVertical ? '100%' : 440 }}>
+            <Typography sx={{ fontSize: '0.7rem', fontWeight: 800, color: '#dc2626', textTransform: 'uppercase', letterSpacing: '0.04em', mb: 0.25 }}>
               The Ground Disconnect
             </Typography>
-            <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '1.6rem' : '1.8rem', md: isVertical ? '2rem' : '2.4rem' }, color: '#b91c1c', lineHeight: 1 }}>
+            <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '1.35rem' : '1.8rem', md: isVertical ? '1.6rem' : '2.4rem' }, color: '#b91c1c', lineHeight: 1 }}>
               {content.stat || '₦340B Lost'}
             </Typography>
-            <Typography sx={{ fontSize: '0.88rem', color: '#475569', mt: 0.5, fontWeight: 500 }}>
+            <Typography sx={{ fontSize: isVertical ? '0.78rem' : '0.88rem', color: '#475569', mt: 0.5, fontWeight: 500 }}>
               {content.subheadline || content.label || 'Capital evaporated between farm gate and off-taker'}
             </Typography>
           </Box>
@@ -471,6 +514,7 @@ export function SlideAnchorTension({ content }: { content: any }) {
               imageUrl={content.imageUrl}
               aspectRatio={isVertical ? '16:9' : (content.aspectRatio || '1:1')}
               caption={content.caption}
+              sx={isVertical ? { maxHeight: 125 } : undefined}
             />
           </Box>
         )}
@@ -486,22 +530,22 @@ export function SlideReframeQuestion({ content }: { content: any }) {
 
   return (
     <SlideWrapper color="#f59e0b">
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', px: isVertical ? 1 : 4 }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', px: isVertical ? 0.5 : 4 }}>
         <Chip
-          icon={<SparkleIcon sx={{ fontSize: '0.9rem !important' }} />}
+          icon={<SparkleIcon sx={{ fontSize: '0.85rem !important' }} />}
           label="THE STRATEGIC REFRAME"
           size="small"
-          sx={{ mb: isVertical ? 2 : 3, bgcolor: alpha('#f59e0b', 0.15), color: '#b45309', fontWeight: 800, fontSize: '0.75rem' }}
+          sx={{ mb: isVertical ? 1.5 : 3, bgcolor: alpha('#f59e0b', 0.15), color: '#b45309', fontWeight: 800, fontSize: '0.7rem' }}
         />
         {content.convention && (
-          <Typography sx={{ fontSize: isVertical ? '0.95rem' : '1.1rem', color: '#94a3b8', textDecoration: 'line-through', mb: 1.5, fontWeight: 600 }}>
+          <Typography sx={{ fontSize: isVertical ? '0.82rem' : '1.1rem', color: '#94a3b8', textDecoration: 'line-through', mb: 1, fontWeight: 600 }}>
             "{content.convention}"
           </Typography>
         )}
-        <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '1.6rem' : '2.4rem', md: isVertical ? '2.2rem' : '3.6rem' }, lineHeight: 1.2, color: '#0f172a', letterSpacing: '-0.02em', maxWidth: 880, mb: 2.5 }}>
+        <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '1.3rem' : '2.4rem', md: isVertical ? '1.5rem' : '3.6rem' }, lineHeight: 1.2, color: '#0f172a', letterSpacing: '-0.02em', maxWidth: 880, mb: isVertical ? 1.5 : 2.5 }}>
           "{content.title || content.text || 'What if the barrier isn’t seed access, but spatial land tenure?'}"
         </Typography>
-        <Typography sx={{ fontSize: isVertical ? '0.95rem' : '1.1rem', color: '#64748b', fontWeight: 600, maxWidth: 650 }}>
+        <Typography sx={{ fontSize: isVertical ? '0.85rem' : '1.1rem', color: '#64748b', fontWeight: 600, maxWidth: 650 }}>
           {content.subheadline || 'Pivoting from the visible symptom to the structural lock.'}
         </Typography>
       </Box>
@@ -521,15 +565,15 @@ export function SlideFunnelSystem({ content }: { content: any }) {
   return (
     <SlideWrapper color="#3b82f6">
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: isVertical ? 1.5 : 2.5 }}>
-          <Chip label="ACT 2 · SYSTEM DIAGNOSTIC" size="small" sx={{ bgcolor: alpha('#3b82f6', 0.12), color: '#2563eb', fontWeight: 800 }} />
-          <Typography sx={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>The 3-Layer Diagnostic</Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: isVertical ? 1 : 2.5 }}>
+          <Chip label="ACT 2 · SYSTEM DIAGNOSTIC" size="small" sx={{ bgcolor: alpha('#3b82f6', 0.12), color: '#2563eb', fontWeight: 800, fontSize: '0.7rem' }} />
+          <Typography sx={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>The 3-Layer Diagnostic</Typography>
         </Box>
-        <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '1.4rem' : '1.8rem', md: isVertical ? '1.8rem' : '2.5rem' }, color: '#0f172a', mb: isVertical ? 2 : 3 }}>
+        <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '1.15rem' : '1.8rem', md: isVertical ? '1.35rem' : '2.5rem' }, color: '#0f172a', mb: isVertical ? 1.25 : 3 }}>
           {content.title || 'Layered Diagnostic: Tracing the Root Friction'}
         </Typography>
 
-        <Box sx={{ display: isVertical ? 'flex' : 'grid', flexDirection: isVertical ? 'column' : undefined, gridTemplateColumns: isVertical ? undefined : 'repeat(3, 1fr)', gap: isVertical ? 1.5 : 2.5 }}>
+        <Box sx={{ display: isVertical ? 'flex' : 'grid', flexDirection: isVertical ? 'column' : undefined, gridTemplateColumns: isVertical ? undefined : 'repeat(3, 1fr)', gap: isVertical ? 1 : 2.5 }}>
           {[
             { num: '01', title: 'IMMEDIATE FIELD', text: l1, color: '#3b82f6' },
             { num: '02', title: 'CORRIDOR & TRANSIT', text: l2, color: '#6366f1' },
@@ -538,19 +582,19 @@ export function SlideFunnelSystem({ content }: { content: any }) {
             <Box
               key={i}
               sx={{
-                p: isVertical ? 2 : 3,
+                p: isVertical ? 1.25 : 3,
                 borderRadius: '16px',
                 bgcolor: '#ffffff',
-                border: '1.5px solid rgba(226, 232, 240, 0.9)',
-                boxShadow: '0 8px 24px rgba(15, 23, 42, 0.05)',
+                border: '1px solid rgba(226, 232, 240, 0.9)',
+                boxShadow: '0 8px 24px rgba(15, 23, 42, 0.04)',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 1,
+                gap: 0.5,
               }}
             >
-              <Typography sx={{ fontSize: '1.1rem', fontWeight: 900, color: card.color }}>{card.num}</Typography>
-              <Typography sx={{ fontSize: '0.72rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>{card.title}</Typography>
-              <Typography sx={{ fontSize: isVertical ? '0.88rem' : '0.95rem', fontWeight: 700, color: '#0f172a', lineHeight: 1.35 }}>{card.text}</Typography>
+              <Typography sx={{ fontSize: isVertical ? '0.95rem' : '1.1rem', fontWeight: 900, color: card.color }}>{card.num}</Typography>
+              <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>{card.title}</Typography>
+              <Typography sx={{ fontSize: isVertical ? '0.78rem' : '0.95rem', fontWeight: 700, color: '#0f172a', lineHeight: 1.3 }}>{card.text}</Typography>
             </Box>
           ))}
         </Box>
@@ -571,26 +615,26 @@ export function SlideIdealVsFeasible({ content }: { content: any }) {
   return (
     <SlideWrapper color="#8b5cf6">
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <Chip label="ACT 2 · THE DISCONNECT" size="small" sx={{ alignSelf: 'flex-start', mb: 1.5, bgcolor: alpha('#8b5cf6', 0.12), color: '#7c3aed', fontWeight: 800 }} />
-        <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '1.4rem' : '1.8rem', md: isVertical ? '1.8rem' : '2.5rem' }, color: '#0f172a', mb: isVertical ? 2 : 3 }}>
+        <Chip label="ACT 2 · THE DISCONNECT" size="small" sx={{ alignSelf: 'flex-start', mb: 1, bgcolor: alpha('#8b5cf6', 0.12), color: '#7c3aed', fontWeight: 800, fontSize: '0.7rem' }} />
+        <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '1.15rem' : '1.8rem', md: isVertical ? '1.35rem' : '2.5rem' }, color: '#0f172a', mb: isVertical ? 1.25 : 3 }}>
           {content.title || 'Ideal vs. Feasible: Why Generic Fixes Fail'}
         </Typography>
 
-        <Box sx={{ display: isVertical ? 'flex' : 'grid', flexDirection: isVertical ? 'column' : undefined, gridTemplateColumns: isVertical ? undefined : 'repeat(3, 1fr)', gap: isVertical ? 1.5 : 2.5 }}>
+        <Box sx={{ display: isVertical ? 'flex' : 'grid', flexDirection: isVertical ? 'column' : undefined, gridTemplateColumns: isVertical ? undefined : 'repeat(3, 1fr)', gap: isVertical ? 1 : 2.5 }}>
           {/* Dream */}
-          <Box sx={{ p: isVertical ? 2 : 3, borderRadius: '16px', bgcolor: 'rgba(245, 158, 11, 0.06)', border: '1.5px solid rgba(245, 158, 11, 0.25)' }}>
-            <Chip label="THE NGO DREAM" size="small" sx={{ bgcolor: '#f59e0b', color: '#fff', fontWeight: 800, mb: 1 }} />
-            <Typography sx={{ fontSize: isVertical ? '0.88rem' : '1rem', fontWeight: 600, color: '#78350f', lineHeight: 1.4 }}>{dream}</Typography>
+          <Box sx={{ p: isVertical ? 1.25 : 3, borderRadius: '16px', bgcolor: 'rgba(245, 158, 11, 0.06)', border: '1px solid rgba(245, 158, 11, 0.25)' }}>
+            <Chip label="THE NGO DREAM" size="small" sx={{ bgcolor: '#f59e0b', color: '#fff', fontWeight: 800, mb: 0.5, fontSize: '0.65rem', height: 20 }} />
+            <Typography sx={{ fontSize: isVertical ? '0.78rem' : '1rem', fontWeight: 600, color: '#78350f', lineHeight: 1.35 }}>{dream}</Typography>
           </Box>
           {/* Fracture */}
-          <Box sx={{ p: isVertical ? 2 : 3, borderRadius: '16px', bgcolor: 'rgba(239, 68, 68, 0.06)', border: '1.5px solid rgba(239, 68, 68, 0.25)' }}>
-            <Chip label="THE FRACTURE" size="small" sx={{ bgcolor: '#ef4444', color: '#fff', fontWeight: 800, mb: 1 }} />
-            <Typography sx={{ fontSize: isVertical ? '0.88rem' : '1rem', fontWeight: 600, color: '#7f1d1d', lineHeight: 1.4 }}>{fracture}</Typography>
+          <Box sx={{ p: isVertical ? 1.25 : 3, borderRadius: '16px', bgcolor: 'rgba(239, 68, 68, 0.06)', border: '1px solid rgba(239, 68, 68, 0.25)' }}>
+            <Chip label="THE FRACTURE" size="small" sx={{ bgcolor: '#ef4444', color: '#fff', fontWeight: 800, mb: 0.5, fontSize: '0.65rem', height: 20 }} />
+            <Typography sx={{ fontSize: isVertical ? '0.78rem' : '1rem', fontWeight: 600, color: '#7f1d1d', lineHeight: 1.35 }}>{fracture}</Typography>
           </Box>
           {/* Fix */}
-          <Box sx={{ p: isVertical ? 2 : 3, borderRadius: '16px', bgcolor: 'rgba(16, 185, 129, 0.06)', border: '1.5px solid rgba(16, 185, 129, 0.25)' }}>
-            <Chip label="THE FEASIBLE FIX" size="small" sx={{ bgcolor: '#10b981', color: '#fff', fontWeight: 800, mb: 1 }} />
-            <Typography sx={{ fontSize: isVertical ? '0.88rem' : '1rem', fontWeight: 700, color: '#064e3b', lineHeight: 1.4 }}>{fix}</Typography>
+          <Box sx={{ p: isVertical ? 1.25 : 3, borderRadius: '16px', bgcolor: 'rgba(16, 185, 129, 0.06)', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+            <Chip label="THE FEASIBLE FIX" size="small" sx={{ bgcolor: '#10b981', color: '#fff', fontWeight: 800, mb: 0.5, fontSize: '0.65rem', height: 20 }} />
+            <Typography sx={{ fontSize: isVertical ? '0.78rem' : '1rem', fontWeight: 700, color: '#064e3b', lineHeight: 1.35 }}>{fix}</Typography>
           </Box>
         </Box>
       </Box>
@@ -605,16 +649,16 @@ export function SlideScaledBurden({ content }: { content: any }) {
 
   return (
     <SlideWrapper color="#ec4899">
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: isVertical ? 'column' : 'row', alignItems: isVertical ? 'stretch' : 'center', gap: isVertical ? 2.5 : 5 }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: isVertical ? 'column' : 'row', alignItems: isVertical ? 'stretch' : 'center', gap: isVertical ? 1.5 : 5 }}>
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <Chip label="ACT 2 · SCALED BURDEN" size="small" sx={{ alignSelf: 'flex-start', mb: 1.5, bgcolor: alpha('#ec4899', 0.12), color: '#db2777', fontWeight: 800 }} />
-          <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '3.5rem' : '4.5rem', md: isVertical ? '5rem' : '7rem' }, lineHeight: 1, color: '#db2777', letterSpacing: '-0.04em', mb: 1.5 }}>
+          <Chip label="ACT 2 · SCALED BURDEN" size="small" sx={{ alignSelf: 'flex-start', mb: 1, bgcolor: alpha('#ec4899', 0.12), color: '#db2777', fontWeight: 800, fontSize: '0.7rem' }} />
+          <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '2.8rem' : '4.5rem', md: isVertical ? '3.4rem' : '7rem' }, lineHeight: 1, color: '#db2777', letterSpacing: '-0.04em', mb: 1 }}>
             {content.stat || '2.4M Tons'}
           </Typography>
-          <Typography sx={{ fontSize: isVertical ? '1.25rem' : '1.6rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.25, mb: 1.5 }}>
+          <Typography sx={{ fontSize: isVertical ? '1.1rem' : '1.6rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.25, mb: 1 }}>
             {content.label || content.title || 'Annual Perishable Crop Loss Across The Corridor'}
           </Typography>
-          <Typography sx={{ fontSize: isVertical ? '0.88rem' : '1rem', color: '#64748b', fontWeight: 500 }}>
+          <Typography sx={{ fontSize: isVertical ? '0.8rem' : '1rem', color: '#64748b', fontWeight: 500 }}>
             {content.absorption || content.subheadline || 'Who absorbs the bleed: Smallholder margins drop to -8% while consumers pay 3x premiums.'}
           </Typography>
         </Box>
@@ -625,6 +669,7 @@ export function SlideScaledBurden({ content }: { content: any }) {
               imageUrl={content.imageUrl}
               aspectRatio={isVertical ? '16:9' : (content.aspectRatio || '1:1')}
               caption={content.caption}
+              sx={isVertical ? { maxHeight: 125 } : undefined}
             />
           </Box>
         )}
@@ -645,21 +690,21 @@ export function SlidePowerMap({ content }: { content: any }) {
   return (
     <SlideWrapper color="#0ea5e9">
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <Chip label="ACT 2 · POLITICAL ECONOMY" size="small" sx={{ alignSelf: 'flex-start', mb: 1.5, bgcolor: alpha('#0ea5e9', 0.12), color: '#0284c7', fontWeight: 800 }} />
-        <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '1.4rem' : '1.8rem', md: isVertical ? '1.8rem' : '2.5rem' }, color: '#0f172a', mb: isVertical ? 2 : 3 }}>
+        <Chip label="ACT 2 · POLITICAL ECONOMY" size="small" sx={{ alignSelf: 'flex-start', mb: 1, bgcolor: alpha('#0ea5e9', 0.12), color: '#0284c7', fontWeight: 800, fontSize: '0.7rem' }} />
+        <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '1.15rem' : '1.8rem', md: isVertical ? '1.35rem' : '2.5rem' }, color: '#0f172a', mb: isVertical ? 1.25 : 3 }}>
           {content.title || 'Power Map: Deciders, Enforcers & Payers'}
         </Typography>
 
-        <Box sx={{ display: isVertical ? 'flex' : 'grid', flexDirection: isVertical ? 'column' : undefined, gridTemplateColumns: isVertical ? undefined : 'repeat(3, 1fr)', gap: isVertical ? 1.5 : 2.5 }}>
+        <Box sx={{ display: isVertical ? 'flex' : 'grid', flexDirection: isVertical ? 'column' : undefined, gridTemplateColumns: isVertical ? undefined : 'repeat(3, 1fr)', gap: isVertical ? 1 : 2.5 }}>
           {[
             { icon: '🏛️', tag: 'THE DECIDERS', text: d, color: '#0284c7' },
             { icon: '⚖️', tag: 'THE ENFORCERS', text: e, color: '#d97706' },
             { icon: '💸', tag: 'THE PAYERS', text: p, color: '#ef4444' },
           ].map((item, i) => (
-            <Box key={i} sx={{ p: isVertical ? 2 : 3, borderRadius: '16px', bgcolor: '#ffffff', border: '1.5px solid rgba(226, 232, 240, 0.9)', boxShadow: '0 8px 24px rgba(15, 23, 42, 0.05)' }}>
-              <Typography sx={{ fontSize: '1.5rem', mb: 0.5 }}>{item.icon}</Typography>
-              <Typography sx={{ fontSize: '0.74rem', fontWeight: 900, color: item.color, mb: 0.5 }}>{item.tag}</Typography>
-              <Typography sx={{ fontSize: isVertical ? '0.85rem' : '0.95rem', fontWeight: 700, color: '#0f172a', lineHeight: 1.35 }}>{item.text}</Typography>
+            <Box key={i} sx={{ p: isVertical ? 1.25 : 3, borderRadius: '16px', bgcolor: '#ffffff', border: '1px solid rgba(226, 232, 240, 0.9)', boxShadow: '0 8px 24px rgba(15, 23, 42, 0.04)' }}>
+              <Typography sx={{ fontSize: isVertical ? '1.2rem' : '1.5rem', mb: 0.25 }}>{item.icon}</Typography>
+              <Typography sx={{ fontSize: '0.68rem', fontWeight: 900, color: item.color, mb: 0.25 }}>{item.tag}</Typography>
+              <Typography sx={{ fontSize: isVertical ? '0.78rem' : '0.95rem', fontWeight: 700, color: '#0f172a', lineHeight: 1.3 }}>{item.text}</Typography>
             </Box>
           ))}
         </Box>
@@ -680,23 +725,23 @@ export function SlideResponseAudit({ content }: { content: any }) {
   return (
     <SlideWrapper color="#10b981">
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <Chip label="ACT 2 · RESPONSE AUDIT" size="small" sx={{ alignSelf: 'flex-start', mb: 1.5, bgcolor: alpha('#10b981', 0.12), color: '#059669', fontWeight: 800 }} />
-        <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '1.4rem' : '1.8rem', md: isVertical ? '1.8rem' : '2.5rem' }, color: '#0f172a', mb: isVertical ? 2 : 3 }}>
+        <Chip label="ACT 2 · RESPONSE AUDIT" size="small" sx={{ alignSelf: 'flex-start', mb: 1, bgcolor: alpha('#10b981', 0.12), color: '#059669', fontWeight: 800, fontSize: '0.7rem' }} />
+        <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '1.15rem' : '1.8rem', md: isVertical ? '1.35rem' : '2.5rem' }, color: '#0f172a', mb: isVertical ? 1.25 : 3 }}>
           {content.title || 'Response Audit: Status Quo vs. What Actually Works'}
         </Typography>
 
-        <Box sx={{ display: 'grid', gridTemplateColumns: isVertical ? '1fr' : '1fr 1fr', gap: isVertical ? 2 : 3 }}>
-          <Box sx={{ p: isVertical ? 2.5 : 3.5, borderRadius: '20px', bgcolor: 'rgba(239, 68, 68, 0.05)', border: '1.5px solid rgba(239, 68, 68, 0.2)' }}>
-            <Chip label="WHAT INDUSTRY KEEPS DOING" size="small" sx={{ bgcolor: '#ef4444', color: '#fff', fontWeight: 800, mb: 1.5 }} />
-            <Typography sx={{ fontSize: isVertical ? '0.95rem' : '1.1rem', fontWeight: 600, color: '#7f1d1d', lineHeight: 1.45 }}>{sq}</Typography>
+        <Box sx={{ display: 'grid', gridTemplateColumns: isVertical ? '1fr' : '1fr 1fr', gap: isVertical ? 1.25 : 3 }}>
+          <Box sx={{ p: isVertical ? 1.5 : 3.5, borderRadius: '20px', bgcolor: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+            <Chip label="WHAT INDUSTRY KEEPS DOING" size="small" sx={{ bgcolor: '#ef4444', color: '#fff', fontWeight: 800, mb: 1, fontSize: '0.65rem', height: 20 }} />
+            <Typography sx={{ fontSize: isVertical ? '0.85rem' : '1.1rem', fontWeight: 600, color: '#7f1d1d', lineHeight: 1.4 }}>{sq}</Typography>
           </Box>
 
-          <Box sx={{ p: isVertical ? 2.5 : 3.5, borderRadius: '20px', bgcolor: 'rgba(16, 185, 129, 0.08)', border: '1.5px solid rgba(16, 185, 129, 0.3)' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-              <Chip label="WHAT ACTUALLY MOVES THE NEEDLE" size="small" sx={{ bgcolor: '#10b981', color: '#fff', fontWeight: 800 }} />
-              <Chip label={gain} size="small" sx={{ bgcolor: '#047857', color: '#fff', fontWeight: 900 }} />
+          <Box sx={{ p: isVertical ? 1.5 : 3.5, borderRadius: '20px', bgcolor: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+              <Chip label="WHAT ACTUALLY MOVES THE NEEDLE" size="small" sx={{ bgcolor: '#10b981', color: '#fff', fontWeight: 800, fontSize: '0.65rem', height: 20 }} />
+              <Chip label={gain} size="small" sx={{ bgcolor: '#047857', color: '#fff', fontWeight: 900, fontSize: '0.65rem', height: 20 }} />
             </Box>
-            <Typography sx={{ fontSize: isVertical ? '1rem' : '1.15rem', fontWeight: 700, color: '#064e3b', lineHeight: 1.45 }}>{pw}</Typography>
+            <Typography sx={{ fontSize: isVertical ? '0.85rem' : '1.15rem', fontWeight: 700, color: '#064e3b', lineHeight: 1.4 }}>{pw}</Typography>
           </Box>
         </Box>
       </Box>
@@ -717,25 +762,25 @@ export function SlideBoundaryTest({ content }: { content: any }) {
   return (
     <SlideWrapper color="#6366f1">
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <Chip label="ACT 2 · THE 4-GATE PROOF" size="small" sx={{ alignSelf: 'flex-start', mb: 1.5, bgcolor: alpha('#6366f1', 0.12), color: '#4f46e5', fontWeight: 800 }} />
-        <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '1.4rem' : '1.8rem', md: isVertical ? '1.8rem' : '2.4rem' }, color: '#0f172a', mb: isVertical ? 2 : 3 }}>
+        <Chip label="ACT 2 · THE 4-GATE PROOF" size="small" sx={{ alignSelf: 'flex-start', mb: 1, bgcolor: alpha('#6366f1', 0.12), color: '#4f46e5', fontWeight: 800, fontSize: '0.7rem' }} />
+        <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '1.15rem' : '1.8rem', md: isVertical ? '1.35rem' : '2.4rem' }, color: '#0f172a', mb: isVertical ? 1.25 : 3 }}>
           {content.title || 'Boundary Test: 4 Non-Negotiable Gateways'}
         </Typography>
 
-        <Box sx={{ display: 'grid', gridTemplateColumns: isVertical ? '1fr 1fr' : 'repeat(4, 1fr)', gap: isVertical ? 1.5 : 2 }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: isVertical ? '1fr 1fr' : 'repeat(4, 1fr)', gap: isVertical ? 1 : 2 }}>
           {[
             { num: 'G1', label: 'PATHWAY', text: g1 },
             { num: 'G2', label: 'SCALE', text: g2 },
             { num: 'G3', label: 'POINT', text: g3 },
             { num: 'G4', label: '90D KPI', text: g4 },
           ].map((gate, i) => (
-            <Box key={i} sx={{ p: isVertical ? 1.75 : 2.5, borderRadius: '16px', bgcolor: '#ffffff', border: '1.5px solid rgba(99, 102, 241, 0.25)', boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.75 }}>
-                <Typography sx={{ fontWeight: 900, fontSize: '0.95rem', color: '#4f46e5' }}>{gate.num}</Typography>
-                <Chip label="VERIFIED" size="small" sx={{ height: 16, fontSize: '0.58rem', fontWeight: 900, bgcolor: '#dcfce7', color: '#166534' }} />
+            <Box key={i} sx={{ p: isVertical ? 1.25 : 2.5, borderRadius: '16px', bgcolor: '#ffffff', border: '1px solid rgba(99, 102, 241, 0.25)', boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                <Typography sx={{ fontWeight: 900, fontSize: '0.85rem', color: '#4f46e5' }}>{gate.num}</Typography>
+                <Chip label="VERIFIED" size="small" sx={{ height: 16, fontSize: '0.55rem', fontWeight: 900, bgcolor: '#dcfce7', color: '#166534' }} />
               </Box>
-              <Typography sx={{ fontSize: '0.7rem', fontWeight: 800, color: '#64748b', mb: 0.5 }}>{gate.label}</Typography>
-              <Typography sx={{ fontSize: isVertical ? '0.78rem' : '0.88rem', fontWeight: 700, color: '#0f172a', lineHeight: 1.35 }}>{gate.text}</Typography>
+              <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, color: '#64748b', mb: 0.25 }}>{gate.label}</Typography>
+              <Typography sx={{ fontSize: isVertical ? '0.72rem' : '0.88rem', fontWeight: 700, color: '#0f172a', lineHeight: 1.3 }}>{gate.text}</Typography>
             </Box>
           ))}
         </Box>
@@ -754,20 +799,20 @@ export function SlidePreemptObjections({ content }: { content: any }) {
 
   return (
     <SlideWrapper color="#d97706">
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: isVertical ? 'column' : 'row', gap: isVertical ? 2 : 4, alignItems: isVertical ? 'stretch' : 'center' }}>
-        <Box sx={{ flex: 1, p: isVertical ? 2.5 : 3.5, borderRadius: '20px', bgcolor: '#ffffff', border: '1.5px solid rgba(217, 119, 6, 0.25)', boxShadow: '0 8px 24px rgba(15, 23, 42, 0.05)' }}>
-          <Chip label="THE SKEPTIC'S VOICE" size="small" sx={{ bgcolor: '#d97706', color: '#fff', fontWeight: 800, mb: 1.5 }} />
-          <Typography sx={{ fontSize: isVertical ? '1.15rem' : '1.45rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.35 }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: isVertical ? 'column' : 'row', gap: isVertical ? 1.25 : 4, alignItems: isVertical ? 'stretch' : 'center' }}>
+        <Box sx={{ flex: 1, p: isVertical ? 1.75 : 3.5, borderRadius: '20px', bgcolor: '#ffffff', border: '1px solid rgba(217, 119, 6, 0.25)', boxShadow: '0 8px 24px rgba(15, 23, 42, 0.05)' }}>
+          <Chip label="THE SKEPTIC'S VOICE" size="small" sx={{ bgcolor: '#d97706', color: '#fff', fontWeight: 800, mb: 1, fontSize: '0.68rem', height: 22 }} />
+          <Typography sx={{ fontSize: isVertical ? '0.98rem' : '1.45rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.35 }}>
             "{quote}"
           </Typography>
         </Box>
 
-        <Box sx={{ flex: 1, p: isVertical ? 2.5 : 3.5, borderRadius: '20px', bgcolor: '#0f172a', color: '#fff', border: '1.5px solid rgba(255, 255, 255, 0.15)', boxShadow: '0 16px 48px rgba(0,0,0,0.25)' }}>
-          <Chip label="HARD DATA DISPROOF" size="small" sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: '#fff', fontWeight: 800, mb: 1.5 }} />
-          <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '2.2rem' : '2.4rem', md: isVertical ? '3rem' : '3.5rem' }, color: '#10b981', lineHeight: 1, mb: 1 }}>
+        <Box sx={{ flex: 1, p: isVertical ? 1.75 : 3.5, borderRadius: '20px', bgcolor: '#0f172a', color: '#fff', border: '1px solid rgba(255, 255, 255, 0.15)', boxShadow: '0 16px 48px rgba(0,0,0,0.25)' }}>
+          <Chip label="HARD DATA DISPROOF" size="small" sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: '#fff', fontWeight: 800, mb: 1, fontSize: '0.68rem', height: 22 }} />
+          <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '1.8rem' : '2.4rem', md: isVertical ? '2.2rem' : '3.5rem' }, color: '#10b981', lineHeight: 1, mb: 0.5 }}>
             {content.stat || '94.2%'}
           </Typography>
-          <Typography sx={{ fontSize: isVertical ? '0.95rem' : '1.1rem', fontWeight: 600, color: '#cbd5e1', lineHeight: 1.4 }}>
+          <Typography sx={{ fontSize: isVertical ? '0.82rem' : '1.1rem', fontWeight: 600, color: '#cbd5e1', lineHeight: 1.35 }}>
             {disproof}
           </Typography>
         </Box>
@@ -783,13 +828,13 @@ export function SlideReturnToCase({ content }: { content: any }) {
 
   return (
     <SlideWrapper color="#059669">
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: isVertical ? 'column' : 'row', gap: isVertical ? 2 : 4, alignItems: isVertical ? 'stretch' : 'center' }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: isVertical ? 'column' : 'row', gap: isVertical ? 1.5 : 4, alignItems: isVertical ? 'stretch' : 'center' }}>
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <Chip label="ACT 3 · RETURN TO CASE" size="small" sx={{ alignSelf: 'flex-start', mb: 1.5, bgcolor: alpha('#059669', 0.12), color: '#047857', fontWeight: 800 }} />
-          <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '1.6rem' : '2.2rem', md: isVertical ? '2.2rem' : '3.2rem' }, color: '#0f172a', lineHeight: 1.15, mb: 1.5 }}>
+          <Chip label="ACT 3 · RETURN TO CASE" size="small" sx={{ alignSelf: 'flex-start', mb: 1, bgcolor: alpha('#059669', 0.12), color: '#047857', fontWeight: 800, fontSize: '0.7rem' }} />
+          <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '1.25rem' : '2.2rem', md: isVertical ? '1.45rem' : '3.2rem' }, color: '#0f172a', lineHeight: 1.15, mb: 1 }}>
             {content.title || 'Re-evaluating the Opening Case: A Solved Equation'}
           </Typography>
-          <Typography sx={{ fontSize: isVertical ? '0.95rem' : '1.15rem', color: '#475569', fontWeight: 500, lineHeight: 1.5 }}>
+          <Typography sx={{ fontSize: isVertical ? '0.82rem' : '1.15rem', color: '#475569', fontWeight: 500, lineHeight: 1.45 }}>
             {content.subheadline || 'From unquantifiable field risk to an engineered, insured supply chain.'}
           </Typography>
         </Box>
@@ -800,6 +845,7 @@ export function SlideReturnToCase({ content }: { content: any }) {
               imageUrl={content.imageUrl}
               aspectRatio={isVertical ? '16:9' : (content.aspectRatio || '1:1')}
               caption={content.caption}
+              sx={isVertical ? { maxHeight: 125 } : undefined}
             />
           </Box>
         )}
@@ -819,20 +865,20 @@ export function SlideForkedClose({ content }: { content: any }) {
   return (
     <SlideWrapper color="#7c3aed">
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <Chip label="ACT 3 · THE AUDIENCE FORK" size="small" sx={{ alignSelf: 'flex-start', mb: 1.5, bgcolor: alpha('#7c3aed', 0.12), color: '#6d28d9', fontWeight: 800 }} />
-        <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '1.4rem' : '1.8rem', md: isVertical ? '1.8rem' : '2.5rem' }, color: '#0f172a', mb: isVertical ? 2 : 3 }}>
+        <Chip label="ACT 3 · THE AUDIENCE FORK" size="small" sx={{ alignSelf: 'flex-start', mb: 1, bgcolor: alpha('#7c3aed', 0.12), color: '#6d28d9', fontWeight: 800, fontSize: '0.7rem' }} />
+        <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '1.15rem' : '1.8rem', md: isVertical ? '1.35rem' : '2.5rem' }, color: '#0f172a', mb: isVertical ? 1.25 : 3 }}>
           {content.title || 'Two Diverging Futures: The Operational Choice'}
         </Typography>
 
-        <Box sx={{ display: 'grid', gridTemplateColumns: isVertical ? '1fr' : '1fr 1fr', gap: isVertical ? 2 : 3 }}>
-          <Box sx={{ p: isVertical ? 2.5 : 3.5, borderRadius: '20px', bgcolor: 'rgba(239, 68, 68, 0.05)', border: '1.5px solid rgba(239, 68, 68, 0.25)' }}>
-            <Chip label="PATH A · STATUS QUO" size="small" sx={{ bgcolor: '#ef4444', color: '#fff', fontWeight: 800, mb: 1.5 }} />
-            <Typography sx={{ fontSize: isVertical ? '0.98rem' : '1.15rem', fontWeight: 700, color: '#7f1d1d', lineHeight: 1.45 }}>{pA}</Typography>
+        <Box sx={{ display: 'grid', gridTemplateColumns: isVertical ? '1fr' : '1fr 1fr', gap: isVertical ? 1.25 : 3 }}>
+          <Box sx={{ p: isVertical ? 1.5 : 3.5, borderRadius: '20px', bgcolor: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.25)' }}>
+            <Chip label="PATH A · STATUS QUO" size="small" sx={{ bgcolor: '#ef4444', color: '#fff', fontWeight: 800, mb: 1, fontSize: '0.65rem', height: 20 }} />
+            <Typography sx={{ fontSize: isVertical ? '0.85rem' : '1.15rem', fontWeight: 700, color: '#7f1d1d', lineHeight: 1.4 }}>{pA}</Typography>
           </Box>
 
-          <Box sx={{ p: isVertical ? 2.5 : 3.5, borderRadius: '20px', bgcolor: 'rgba(124, 58, 237, 0.08)', border: '1.5px solid rgba(124, 58, 237, 0.3)' }}>
-            <Chip label="PATH B · CAPITAL CONVERSION" size="small" sx={{ bgcolor: '#7c3aed', color: '#fff', fontWeight: 800, mb: 1.5 }} />
-            <Typography sx={{ fontSize: isVertical ? '0.98rem' : '1.15rem', fontWeight: 700, color: '#5b21b6', lineHeight: 1.45 }}>{pB}</Typography>
+          <Box sx={{ p: isVertical ? 1.5 : 3.5, borderRadius: '20px', bgcolor: 'rgba(124, 58, 237, 0.08)', border: '1px solid rgba(124, 58, 237, 0.3)' }}>
+            <Chip label="PATH B · CAPITAL CONVERSION" size="small" sx={{ bgcolor: '#7c3aed', color: '#fff', fontWeight: 800, mb: 1, fontSize: '0.65rem', height: 20 }} />
+            <Typography sx={{ fontSize: isVertical ? '0.85rem' : '1.15rem', fontWeight: 700, color: '#5b21b6', lineHeight: 1.4 }}>{pB}</Typography>
           </Box>
         </Box>
       </Box>

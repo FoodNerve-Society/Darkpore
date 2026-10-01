@@ -28,6 +28,7 @@ import {
   RestartAlt as ResetIcon,
 } from '@mui/icons-material';
 import { renderSlidePreviewContent, SlideAspectRatio } from './SlideComponents';
+import { DEF_BLOCK_DEFINITIONS } from './defBlocksConfig';
 import {
   Laptop as DesktopIcon,
   PhoneIphone as MobileIcon,
@@ -213,13 +214,35 @@ export default function LivestreamScreenPreviewModal({
     broadcastSync(idx);
   };
 
-  const handleLaunchStageWindow = () => {
+  const handleLaunchStageWindow = (targetAspect?: SlideAspectRatio) => {
+    const finalAspect = targetAspect || aspectRatio;
     broadcastSync(activeSlideIndex);
-    const stageUrl = `/stage?aspect=${aspectRatio}&transparent=${isTransparent}`;
-    const features = aspectRatio === '9:16'
+    // Auto-start elapsed timer when stage is launched
+    setIsTimerRunning(true);
+
+    const stageUrl = `/stage?aspect=${finalAspect}&transparent=${isTransparent}`;
+    const windowName = finalAspect === '9:16' ? 'LivestreamStage_Mobile' : 'LivestreamStage_Desktop';
+    const features = finalAspect === '9:16'
       ? 'width=520,height=920,menubar=no,toolbar=no,location=no,status=no,resizable=yes'
       : 'width=1280,height=750,menubar=no,toolbar=no,location=no,status=no,resizable=yes';
-    window.open(stageUrl, 'LivestreamStage', features);
+    window.open(stageUrl, windowName, features);
+  };
+
+  const handleLaunchBothStages = () => {
+    broadcastSync(activeSlideIndex);
+    setIsTimerRunning(true);
+    // Open Desktop 16:9 stage
+    window.open(
+      `/stage?aspect=16:9&transparent=${isTransparent}`,
+      'LivestreamStage_Desktop',
+      'width=1280,height=750,menubar=no,toolbar=no,location=no,status=no,resizable=yes'
+    );
+    // Open Mobile 9:16 stage
+    window.open(
+      `/stage?aspect=9:16&transparent=${isTransparent}`,
+      'LivestreamStage_Mobile',
+      'width=520,height=920,menubar=no,toolbar=no,location=no,status=no,resizable=yes'
+    );
   };
 
   const formatTimer = (totalSec: number) => {
@@ -273,7 +296,7 @@ export default function LivestreamScreenPreviewModal({
           zIndex: 10,
         }}
       >
-        {/* Left: Deck Branding & Live Sync Status */}
+        {/* Left: Deck Branding */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Box
             sx={{
@@ -293,23 +316,9 @@ export default function LivestreamScreenPreviewModal({
               Director&apos;s Deck
             </Typography>
             <Typography variant="body2" sx={{ color: '#64748b', fontSize: '0.78rem' }}>
-              Live stage cockpit & presentation controller
+              Live stage cockpit & dual presentation controller
             </Typography>
           </Box>
-
-          <Chip
-            icon={<LiveIcon sx={{ fontSize: '0.85rem !important', color: '#059669 !important' }} />}
-            label="Stage Live Sync"
-            size="small"
-            sx={{
-              bgcolor: '#d1fae5',
-              color: '#065f46',
-              fontWeight: 900,
-              fontSize: '0.68rem',
-              height: 22,
-              border: '1px solid rgba(16, 185, 129, 0.3)',
-            }}
-          />
         </Box>
 
         {/* Center: Elapsed Timer */}
@@ -338,31 +347,73 @@ export default function LivestreamScreenPreviewModal({
           </IconButton>
         </Box>
 
-        {/* Right: Launch Stage Window & Close */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-          <Button
-            variant="contained"
-            onClick={handleLaunchStageWindow}
-            endIcon={<OpenInNewIcon sx={{ fontSize: '0.95rem !important' }} />}
-            sx={{
-              borderRadius: '12px',
-              fontWeight: 800,
-              px: 2.2,
-              py: 0.75,
-              background: `linear-gradient(135deg, ${hubColor} 0%, #059669 100%)`,
-              color: '#ffffff',
-              fontSize: '0.82rem',
-              textTransform: 'none',
-              boxShadow: `0 4px 14px ${alpha(hubColor, 0.35)}`,
-              transition: 'all 0.2s ease',
-              '&:hover': {
-                transform: 'translateY(-1px)',
-                boxShadow: `0 6px 18px ${alpha(hubColor, 0.45)}`,
-              },
-            }}
-          >
-            Launch Stage Window (Screen Share)
-          </Button>
+        {/* Right: Dual Stage Window Launchers & Close */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Tooltip title="Launch 16:9 widescreen stage for YouTube/Twitch/Desktop monitor">
+            <Button
+              variant="contained"
+              onClick={() => handleLaunchStageWindow('16:9')}
+              startIcon={<DesktopIcon sx={{ fontSize: '0.9rem !important' }} />}
+              endIcon={<OpenInNewIcon sx={{ fontSize: '0.8rem !important' }} />}
+              sx={{
+                borderRadius: '12px',
+                fontWeight: 800,
+                px: 1.8,
+                py: 0.65,
+                bgcolor: '#0f172a',
+                color: '#ffffff',
+                fontSize: '0.78rem',
+                textTransform: 'none',
+                boxShadow: 'none',
+                '&:hover': { bgcolor: '#1e293b' },
+              }}
+            >
+              Desktop Stage (16:9)
+            </Button>
+          </Tooltip>
+
+          <Tooltip title="Launch 9:16 vertical stage for TikTok/Instagram/Mobile monitor">
+            <Button
+              variant="contained"
+              onClick={() => handleLaunchStageWindow('9:16')}
+              startIcon={<MobileIcon sx={{ fontSize: '0.9rem !important' }} />}
+              endIcon={<OpenInNewIcon sx={{ fontSize: '0.8rem !important' }} />}
+              sx={{
+                borderRadius: '12px',
+                fontWeight: 800,
+                px: 1.8,
+                py: 0.65,
+                bgcolor: '#db2777',
+                color: '#ffffff',
+                fontSize: '0.78rem',
+                textTransform: 'none',
+                boxShadow: '0 4px 12px rgba(219, 39, 119, 0.25)',
+                '&:hover': { bgcolor: '#be185d' },
+              }}
+            >
+              Mobile Stage (9:16)
+            </Button>
+          </Tooltip>
+
+          <Tooltip title="Launch both Desktop and Mobile stage windows simultaneously">
+            <Button
+              variant="outlined"
+              onClick={handleLaunchBothStages}
+              sx={{
+                borderRadius: '12px',
+                fontWeight: 800,
+                px: 1.5,
+                py: 0.65,
+                borderColor: '#cbd5e1',
+                color: '#0f172a',
+                fontSize: '0.78rem',
+                textTransform: 'none',
+                '&:hover': { borderColor: '#0f172a', bgcolor: '#f8fafc' },
+              }}
+            >
+              Launch Dual
+            </Button>
+          </Tooltip>
 
           <IconButton
             size="small"
@@ -407,11 +458,23 @@ export default function LivestreamScreenPreviewModal({
                   </Typography>
                 </Box>
 
-                <Chip
-                  label={aspectRatio === '9:16' ? '9:16 Vertical Stage' : '16:9 Landscape Stage'}
-                  size="small"
-                  sx={{ bgcolor: '#f8fafc', color: '#64748b', fontWeight: 700, fontSize: '0.68rem', height: 20 }}
-                />
+                <Tooltip title="Click to toggle monitor view between 16:9 and 9:16">
+                  <Chip
+                    label={aspectRatio === '9:16' ? '9:16 Vertical Stage' : '16:9 Landscape Stage'}
+                    size="small"
+                    onClick={handleToggleAspect}
+                    sx={{
+                      bgcolor: aspectRatio === '9:16' ? 'rgba(219, 39, 119, 0.1)' : '#f8fafc',
+                      color: aspectRatio === '9:16' ? '#db2777' : '#64748b',
+                      fontWeight: 700,
+                      fontSize: '0.68rem',
+                      height: 22,
+                      cursor: 'pointer',
+                      border: '1px solid rgba(0,0,0,0.06)',
+                      '&:hover': { bgcolor: '#f1f5f9' },
+                    }}
+                  />
+                </Tooltip>
               </Box>
 
               {/* Active Slide Frame: Container adapts size to 16:9 vs 9:16 without squishing content */}
@@ -448,139 +511,231 @@ export default function LivestreamScreenPreviewModal({
               </Box>
             </Box>
 
-            {/* Consolidated Broadcaster Mini Dock (Relocated from Stage, replacing old bottom controls) */}
+            {/* Expanded Carousel Dock with 3D Cover-Flow Slide Viewer between Prev and Next */}
             <Box
               sx={{
-                p: 1.5,
-                borderRadius: '16px',
+                p: { xs: 1.5, md: 2 },
+                borderRadius: '20px',
                 bgcolor: '#ffffff',
-                border: '1.5px solid rgba(226, 232, 240, 0.9)',
-                boxShadow: '0 4px 16px rgba(15, 23, 42, 0.03)',
+                border: '1px solid rgba(226, 232, 240, 0.95)',
+                boxShadow: '0 8px 30px rgba(15, 23, 42, 0.04)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: 1.25,
+                gap: { xs: 1.5, md: 2.5 },
+                position: 'relative',
+                overflow: 'hidden',
               }}
             >
-              {/* Aspect Ratio & Transparency Toggles */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Tooltip title={aspectRatio === '16:9' ? 'Switch to 9:16 Vertical (TikTok/Mobile)' : 'Switch to 16:9 Landscape (YouTube/Desktop)'}>
-                  <Box
-                    onClick={handleToggleAspect}
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 0.75,
-                      cursor: 'pointer',
-                      px: 1.4,
-                      py: 0.6,
-                      borderRadius: '10px',
-                      bgcolor: aspectRatio === '9:16' ? 'rgba(236, 72, 153, 0.12)' : 'rgba(59, 130, 246, 0.12)',
-                      border: `1.5px solid ${aspectRatio === '9:16' ? 'rgba(236, 72, 153, 0.35)' : 'rgba(59, 130, 246, 0.35)'}`,
-                      color: aspectRatio === '9:16' ? '#db2777' : '#2563eb',
-                      transition: 'all 0.2s ease',
-                      '&:hover': { bgcolor: aspectRatio === '9:16' ? 'rgba(236, 72, 153, 0.18)' : 'rgba(59, 130, 246, 0.18)' },
-                    }}
-                  >
-                    {aspectRatio === '9:16' ? (
-                      <>
-                        <MobileIcon sx={{ fontSize: 16, color: '#db2777' }} />
-                        <Typography sx={{ fontSize: '0.74rem', fontWeight: 800, color: '#db2777' }}>9:16 Mobile</Typography>
-                      </>
-                    ) : (
-                      <>
-                        <DesktopIcon sx={{ fontSize: 16, color: '#2563eb' }} />
-                        <Typography sx={{ fontSize: '0.74rem', fontWeight: 800, color: '#2563eb' }}>16:9 Desktop</Typography>
-                      </>
-                    )}
-                  </Box>
-                </Tooltip>
-
-                <Tooltip title={isTransparent ? 'Transparent active for OBS camera overlay (Click for solid)' : 'Make backdrop transparent for OBS camera feed'}>
-                  <Box
-                    onClick={handleToggleTransparent}
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 0.75,
-                      cursor: 'pointer',
-                      px: 1.4,
-                      py: 0.6,
-                      borderRadius: '10px',
-                      bgcolor: isTransparent ? 'rgba(16, 185, 129, 0.12)' : '#f8fafc',
-                      border: `1.5px solid ${isTransparent ? 'rgba(16, 185, 129, 0.4)' : '#e2e8f0'}`,
-                      color: isTransparent ? '#059669' : '#64748b',
-                      transition: 'all 0.2s ease',
-                      '&:hover': { bgcolor: isTransparent ? 'rgba(16, 185, 129, 0.18)' : '#f1f5f9' },
-                    }}
-                  >
-                    <TransparencyIcon sx={{ fontSize: 16, color: isTransparent ? '#059669' : '#64748b' }} />
-                    <Typography sx={{ fontSize: '0.74rem', fontWeight: 800, color: isTransparent ? '#059669' : '#64748b' }}>
-                      {isTransparent ? 'OBS Alpha' : 'Solid Canvas'}
-                    </Typography>
-                  </Box>
-                </Tooltip>
-              </Box>
-
-              {/* Navigation Controls */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              {/* Prev Button with Slide Counter */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 0.75, flexShrink: 0, zIndex: 10 }}>
                 <Button
-                  size="small"
                   variant="outlined"
-                  startIcon={<PrevIcon sx={{ fontSize: '0.8rem !important' }} />}
                   onClick={handlePrev}
                   disabled={totalSlides <= 1}
+                  startIcon={<PrevIcon sx={{ fontSize: '0.85rem !important' }} />}
                   sx={{
-                    borderRadius: '10px',
+                    borderRadius: '12px',
                     borderColor: '#cbd5e1',
                     color: '#0f172a',
                     fontWeight: 800,
-                    fontSize: '0.76rem',
+                    fontSize: '0.78rem',
                     textTransform: 'none',
-                    py: 0.5,
-                    px: 1.6,
+                    py: 0.85,
+                    px: 2,
+                    bgcolor: '#ffffff',
                     '&:hover': { borderColor: '#0f172a', bgcolor: '#f8fafc' },
+                    '&:disabled': { opacity: 0.4 },
                   }}
                 >
                   Prev
                 </Button>
+                <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: '#94a3b8', pl: 0.5 }}>
+                  {totalSlides > 0 ? `${activeSlideIndex + 1} of ${totalSlides}` : '0 of 0'}
+                </Typography>
+              </Box>
 
-                <Chip
-                  label={totalSlides > 0 ? `Slide ${activeSlideIndex + 1} / ${totalSlides}` : '0 / 0'}
-                  size="small"
-                  sx={{
-                    bgcolor: '#0f172a',
-                    color: '#ffffff',
-                    fontWeight: 900,
-                    fontSize: '0.76rem',
-                    height: 28,
-                    borderRadius: '8px',
-                    px: 0.5,
-                  }}
-                />
+              {/* Center: 3D Perspective Cover-Flow Carousel */}
+              <Box
+                sx={{
+                  flex: 1,
+                  minWidth: 0,
+                  height: 105,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  perspective: '900px',
+                  position: 'relative',
+                  overflow: 'visible',
+                }}
+              >
+                {[-2, -1, 0, 1, 2].map((offset) => {
+                  const targetIdx = activeSlideIndex + offset;
+                  if (targetIdx < 0 || targetIdx >= totalSlides) return null;
+                  const slide = rundownBlocks[targetIdx];
+                  const isActive = offset === 0;
 
+                  // 3D Transform and depth values
+                  let transform = 'scale(1) rotateY(0deg)';
+                  let zIndex = 5;
+                  let opacity = 1;
+
+                  if (isActive) {
+                    transform = 'scale(1.15) rotateY(0deg) translateZ(30px)';
+                    zIndex = 10;
+                    opacity = 1;
+                  } else if (offset === -1) {
+                    transform = 'scale(0.85) rotateY(26deg) translateX(20px)';
+                    zIndex = 6;
+                    opacity = 0.65;
+                  } else if (offset === 1) {
+                    transform = 'scale(0.85) rotateY(-26deg) translateX(-20px)';
+                    zIndex = 6;
+                    opacity = 0.65;
+                  } else if (offset === -2) {
+                    transform = 'scale(0.7) rotateY(38deg) translateX(40px)';
+                    zIndex = 3;
+                    opacity = 0.35;
+                  } else if (offset === 2) {
+                    transform = 'scale(0.7) rotateY(-38deg) translateX(-40px)';
+                    zIndex = 3;
+                    opacity = 0.35;
+                  }
+
+                  const defInfo = slide.defBlockId ? DEF_BLOCK_DEFINITIONS[slide.defBlockId] : null;
+                  const slideTitle =
+                    slide.title ||
+                    slide.originalContent?.title ||
+                    slide.originalContent?.jobTitle ||
+                    slide.originalContent?.text ||
+                    defInfo?.name ||
+                    `Slide ${targetIdx + 1}`;
+                  const blockColor = defInfo?.themeColor || (slide.sourceType === 'act' ? '#10b981' : '#6366f1');
+
+                  return (
+                    <Box
+                      key={targetIdx}
+                      onClick={() => handleSelectSlide(targetIdx)}
+                      sx={{
+                        position: 'absolute',
+                        width: { xs: 110, sm: 135, md: 150 },
+                        height: { xs: 72, md: 85 },
+                        borderRadius: '14px',
+                        bgcolor: '#ffffff',
+                        border: isActive ? `2px solid ${blockColor}` : '1px solid rgba(226, 232, 240, 0.95)',
+                        boxShadow: isActive
+                          ? `0 12px 28px ${alpha(blockColor, 0.25)}, 0 4px 12px rgba(0,0,0,0.08)`
+                          : '0 4px 12px rgba(0,0,0,0.05)',
+                        cursor: isActive ? 'default' : 'pointer',
+                        p: 1.15,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        transform,
+                        zIndex,
+                        opacity,
+                        transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+                        transformStyle: 'preserve-3d',
+                        userSelect: 'none',
+                        overflow: 'hidden',
+                        '&:hover': {
+                          opacity: isActive ? 1 : 0.92,
+                          transform: isActive
+                            ? 'scale(1.18) rotateY(0deg) translateZ(35px)'
+                            : offset < 0
+                            ? 'scale(0.88) rotateY(20deg) translateX(14px)'
+                            : 'scale(0.88) rotateY(-20deg) translateX(-14px)',
+                        },
+                      }}
+                    >
+                      {/* Top Header Row inside mini card */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Typography sx={{ fontSize: '0.62rem', fontWeight: 900, color: '#64748b' }}>
+                          #{targetIdx + 1}
+                        </Typography>
+                        {isActive ? (
+                          <Chip
+                            label="ACTIVE"
+                            size="small"
+                            sx={{
+                              height: 16,
+                              fontSize: '0.52rem',
+                              fontWeight: 900,
+                              bgcolor: blockColor,
+                              color: '#ffffff',
+                              px: 0.25,
+                            }}
+                          />
+                        ) : (
+                          <Box
+                            sx={{
+                              width: 6,
+                              height: 6,
+                              borderRadius: '50%',
+                              bgcolor: blockColor,
+                              opacity: 0.6,
+                            }}
+                          />
+                        )}
+                      </Box>
+
+                      {/* Middle: Title Snippet */}
+                      <Typography
+                        noWrap
+                        sx={{
+                          fontSize: '0.68rem',
+                          fontWeight: 800,
+                          color: '#0f172a',
+                          lineHeight: 1.25,
+                        }}
+                      >
+                        {slideTitle}
+                      </Typography>
+
+                      {/* Bottom Tag */}
+                      <Typography
+                        noWrap
+                        sx={{
+                          fontSize: '0.56rem',
+                          fontWeight: 800,
+                          color: blockColor,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.04em',
+                        }}
+                      >
+                        {defInfo?.name || slide.sourceType || 'SLIDE'}
+                      </Typography>
+                    </Box>
+                  );
+                })}
+              </Box>
+
+              {/* Next Button */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.75, flexShrink: 0, zIndex: 10 }}>
                 <Button
-                  size="small"
                   variant="contained"
-                  endIcon={<NextIcon sx={{ fontSize: '0.8rem !important' }} />}
                   onClick={handleNext}
                   disabled={totalSlides <= 1}
+                  endIcon={<NextIcon sx={{ fontSize: '0.85rem !important' }} />}
                   sx={{
-                    borderRadius: '10px',
+                    borderRadius: '12px',
                     bgcolor: '#0f172a',
                     color: '#ffffff',
                     fontWeight: 800,
-                    fontSize: '0.76rem',
+                    fontSize: '0.78rem',
                     textTransform: 'none',
-                    py: 0.5,
+                    py: 0.85,
                     px: 2,
                     boxShadow: 'none',
                     '&:hover': { bgcolor: '#1e293b' },
+                    '&:disabled': { opacity: 0.4 },
                   }}
                 >
                   Next
                 </Button>
+                <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: '#94a3b8', pr: 0.5 }}>
+                  Key: &rarr; / PageDn
+                </Typography>
               </Box>
             </Box>
           </Box>
@@ -645,27 +800,6 @@ export default function LivestreamScreenPreviewModal({
                   {nextItem ? `Pacing: ${nextItem.durationStr || '5m'}` : 'All slides completed'}
                 </Typography>
               </Box>
-
-              {nextItem && (
-                <Button
-                  size="small"
-                  variant="outlined"
-                  onClick={handleNext}
-                  sx={{
-                    borderRadius: '10px',
-                    borderColor: '#cbd5e1',
-                    color: '#0f172a',
-                    fontWeight: 800,
-                    fontSize: '0.72rem',
-                    textTransform: 'none',
-                    py: 0.4,
-                    px: 1.25,
-                    '&:hover': { borderColor: '#0f172a', bgcolor: '#ffffff' },
-                  }}
-                >
-                  Skip To Next
-                </Button>
-              )}
             </Box>
 
             {/* 2. Presenter Notes & Cues (Current Segment Header card removed, notes smaller) */}

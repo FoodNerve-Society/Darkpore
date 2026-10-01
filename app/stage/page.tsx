@@ -21,6 +21,7 @@ export default function LivestreamStagePage() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [aspectRatio, setAspectRatio] = useState<SlideAspectRatio>('16:9');
+  const [lockedAspect, setLockedAspect] = useState<SlideAspectRatio | null>(null);
   const [isTransparent, setIsTransparent] = useState(false);
 
   // Initialize aspect ratio and transparency from URL query params (e.g. ?aspect=9:16&transparent=true)
@@ -30,12 +31,26 @@ export default function LivestreamStagePage() {
       const aspectParam = params.get('aspect');
       if (aspectParam === '9:16' || aspectParam === 'portrait' || aspectParam === 'mobile') {
         setAspectRatio('9:16');
+        setLockedAspect('9:16');
+      } else if (aspectParam === '16:9' || aspectParam === 'landscape' || aspectParam === 'desktop') {
+        setAspectRatio('16:9');
+        setLockedAspect('16:9');
       }
       if (params.get('transparent') === 'true' || params.get('obs') === 'true') {
         setIsTransparent(true);
       }
     }
   }, []);
+
+  // Update distinct window title for OBS window capture recognition
+  useEffect(() => {
+    const stageTitle = title || 'Livestream Stage';
+    if (aspectRatio === '9:16') {
+      document.title = `[Mobile 9:16] ${stageTitle}`;
+    } else {
+      document.title = `[Desktop 16:9] ${stageTitle}`;
+    }
+  }, [aspectRatio, title]);
 
   // Load initial state from cache if available
   useEffect(() => {
@@ -47,14 +62,14 @@ export default function LivestreamStagePage() {
         if (typeof parsed.activeSlideIndex === 'number') setActiveSlideIndex(parsed.activeSlideIndex);
         if (parsed.title) setTitle(parsed.title);
         if (parsed.hubColor) setHubColor(parsed.hubColor);
-        if (parsed.aspectRatio) setAspectRatio(parsed.aspectRatio);
+        if (!lockedAspect && parsed.aspectRatio) setAspectRatio(parsed.aspectRatio);
         if (typeof parsed.isTransparent === 'boolean') setIsTransparent(parsed.isTransparent);
         setIsConnected(true);
       }
     } catch (e) {
       console.error('Failed to load stage cache:', e);
     }
-  }, []);
+  }, [lockedAspect]);
 
   // Connect to BroadcastChannel for real-time synchronization with Control Pane
   useEffect(() => {
@@ -70,14 +85,14 @@ export default function LivestreamStagePage() {
           if (typeof data.activeSlideIndex === 'number') setActiveSlideIndex(data.activeSlideIndex);
           if (data.title) setTitle(data.title);
           if (data.hubColor) setHubColor(data.hubColor);
-          if (data.aspectRatio) setAspectRatio(data.aspectRatio);
+          if (!lockedAspect && data.aspectRatio) setAspectRatio(data.aspectRatio);
           if (typeof data.isTransparent === 'boolean') setIsTransparent(data.isTransparent);
           setIsConnected(true);
         } else if (data.type === 'SET_SLIDE_INDEX') {
           if (typeof data.index === 'number') setActiveSlideIndex(data.index);
           setIsConnected(true);
         } else if (data.type === 'SET_ASPECT') {
-          if (data.aspectRatio) {
+          if (!lockedAspect && data.aspectRatio) {
             setAspectRatio(data.aspectRatio);
             try {
               if (typeof window !== 'undefined' && window.opener) {
@@ -105,7 +120,7 @@ export default function LivestreamStagePage() {
     return () => {
       channel?.close();
     };
-  }, []);
+  }, [lockedAspect]);
 
   // Keyboard navigation & Fullscreen controls
   useEffect(() => {
