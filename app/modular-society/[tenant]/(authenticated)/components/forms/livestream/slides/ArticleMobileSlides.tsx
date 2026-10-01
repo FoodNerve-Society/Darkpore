@@ -26,7 +26,7 @@ export function MobileProtocolStepSlide({ content }: { content: any }) {
 
   return (
     <SlideWrapper color="#3b82f6">
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%', py: { xs: 1.5, md: 2.5 } }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', height: '100%', py: { xs: 1.5, md: 2.5 } }}>
         {/* Top Header */}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
@@ -90,7 +90,7 @@ export function MobileMythSlide({ content }: { content: any }) {
 
   return (
     <SlideWrapper color="#ef4444">
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%', py: { xs: 1.5, md: 2.5 } }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', height: '100%', py: { xs: 1.5, md: 2.5 } }}>
         <Chip
           label="THE CONVENTIONAL MYTH"
           size="small"
@@ -118,7 +118,7 @@ export function MobileFactSlide({ content }: { content: any }) {
 
   return (
     <SlideWrapper color="#10b981">
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%', py: { xs: 1.5, md: 2.5 } }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', height: '100%', py: { xs: 1.5, md: 2.5 } }}>
         <Chip
           label="THE GROUND TRUTH"
           size="small"
@@ -156,7 +156,7 @@ export function MobileComparisonOptionSlide({ content }: { content: any }) {
 
   return (
     <SlideWrapper color={theme}>
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%', py: { xs: 1.5, md: 2.5 } }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', height: '100%', py: { xs: 1.5, md: 2.5 } }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           <Chip
             label={isChallenger ? 'MODEL B · CHALLENGER' : 'MODEL A · INCUMBENT'}
@@ -213,7 +213,7 @@ export function MobileComparisonVerdictSlide({ content }: { content: any }) {
 
   return (
     <SlideWrapper color="#7c3aed">
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%', py: { xs: 1.5, md: 2.5 }, textAlign: 'center' }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', height: '100%', py: { xs: 1.5, md: 2.5 }, textAlign: 'center' }}>
         <Chip
           label="STRATEGIC VERDICT"
           size="small"
@@ -250,7 +250,7 @@ export function MobileTimelineMilestoneSlide({ content }: { content: any }) {
 
   return (
     <SlideWrapper color="#0ea5e9">
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%', py: { xs: 1.5, md: 2.5 } }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', height: '100%', py: { xs: 1.5, md: 2.5 } }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Chip
@@ -299,7 +299,7 @@ export function MobileExecSummarySlide({ content }: { content: any }) {
 
   return (
     <SlideWrapper color="#6366f1">
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%', py: { xs: 1.5, md: 2.5 } }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', height: '100%', py: { xs: 1.5, md: 2.5 } }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
           <Chip label="EXECUTIVE BRIEFING" size="small" sx={{ alignSelf: 'flex-start', bgcolor: alpha('#6366f1', 0.15), color: '#4f46e5', fontWeight: 900, fontSize: '0.72rem', borderRadius: '10px' }} />
           <Typography sx={{ fontWeight: 900, fontSize: { xs: '1.75rem', sm: '2.1rem' }, color: '#0f172a', letterSpacing: '-0.025em', lineHeight: 1.15, mt: 0.5 }}>
@@ -336,7 +336,7 @@ export function MobileUnitEconomicsSlide({ content }: { content: any }) {
 
   return (
     <SlideWrapper color="#0f172a">
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%', py: { xs: 1.5, md: 2.5 } }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', height: '100%', py: { xs: 1.5, md: 2.5 } }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
           <Chip label="UNIT ECONOMICS" size="small" sx={{ alignSelf: 'flex-start', bgcolor: '#0f172a', color: '#ffffff', fontWeight: 900, fontSize: '0.72rem', borderRadius: '10px' }} />
           <Typography sx={{ fontWeight: 900, fontSize: { xs: '1.75rem', sm: '2.1rem' }, color: '#0f172a', letterSpacing: '-0.025em', lineHeight: 1.15, mt: 0.5 }}>
@@ -378,7 +378,7 @@ export function MobilePersonaDossierSlide({ content }: { content: any }) {
 
   return (
     <SlideWrapper color="#d97706">
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%', py: { xs: 1.5, md: 2.5 } }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', height: '100%', py: { xs: 1.5, md: 2.5 } }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 1.5 }}>
           <Chip label="OPERATOR DOSSIER" size="small" sx={{ bgcolor: alpha('#d97706', 0.15), color: '#b45309', fontWeight: 900, fontSize: '0.72rem', borderRadius: '10px' }} />
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -417,7 +417,7 @@ export function MobileStrategicDirectiveSlide({ content }: { content: any }) {
 
   return (
     <SlideWrapper color="#e11d48">
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%', py: { xs: 1.5, md: 2.5 } }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', height: '100%', py: { xs: 1.5, md: 2.5 } }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Chip icon={<DirectiveIcon sx={{ fontSize: '0.82rem !important' }} />} label="ACTION MANDATE" size="small" sx={{ bgcolor: alpha('#e11d48', 0.15), color: '#be123c', fontWeight: 900, fontSize: '0.72rem', borderRadius: '10px' }} />
@@ -452,7 +452,7 @@ export function MobileCallToActionSlide({ content }: { content: any }) {
 
   return (
     <SlideWrapper color="#8b5cf6">
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%', py: { xs: 1.5, md: 2.5 }, textAlign: 'center' }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', height: '100%', py: { xs: 1.5, md: 2.5 }, textAlign: 'center' }}>
         <Chip label="NEXT MOVE" size="small" sx={{ alignSelf: 'center', bgcolor: alpha('#8b5cf6', 0.15), color: '#7c3aed', fontWeight: 900, fontSize: '0.75rem', borderRadius: '10px' }} />
         <Box sx={{ my: 'auto', py: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
           <Typography sx={{ fontWeight: 900, fontSize: { xs: '2rem', sm: '2.4rem' }, color: '#0f172a', lineHeight: 1.15, letterSpacing: '-0.025em' }}>
@@ -492,7 +492,7 @@ export function MobileLivePollSlide({ content }: { content: any }) {
 
   return (
     <SlideWrapper color="#2563eb">
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%', py: { xs: 1.5, md: 2.5 } }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', height: '100%', py: { xs: 1.5, md: 2.5 } }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
           <Chip label="LIVE POLL" size="small" sx={{ alignSelf: 'flex-start', bgcolor: alpha('#2563eb', 0.15), color: '#1d4ed8', fontWeight: 900, fontSize: '0.72rem', borderRadius: '10px' }} />
           <Typography sx={{ fontWeight: 900, fontSize: { xs: '1.65rem', sm: '2rem' }, color: '#0f172a', letterSpacing: '-0.025em', lineHeight: 1.2, mt: 0.5 }}>
