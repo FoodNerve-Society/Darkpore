@@ -9,6 +9,44 @@ import {
   FormatQuote as QuoteIcon
 } from '@mui/icons-material';
 import { DEF_BLOCK_DEFINITIONS } from './defBlocksConfig';
+import {
+  DesktopProtocolStepSlide,
+  DesktopMythSlide,
+  DesktopFactSlide,
+  DesktopComparisonOptionSlide,
+  DesktopComparisonVerdictSlide,
+  DesktopTimelineMilestoneSlide,
+  DesktopExecSummarySlide,
+  DesktopUnitEconomicsSlide,
+  DesktopPersonaDossierSlide,
+  DesktopStrategicDirectiveSlide,
+  DesktopCallToActionSlide,
+  DesktopLivePollSlide,
+} from './slides/ArticleDesktopSlides';
+import {
+  MobileProtocolStepSlide,
+  MobileMythSlide,
+  MobileFactSlide,
+  MobileComparisonOptionSlide,
+  MobileComparisonVerdictSlide,
+  MobileTimelineMilestoneSlide,
+  MobileExecSummarySlide,
+  MobileUnitEconomicsSlide,
+  MobilePersonaDossierSlide,
+  MobileStrategicDirectiveSlide,
+  MobileCallToActionSlide,
+  MobileLivePollSlide,
+} from './slides/ArticleMobileSlides';
+import {
+  DesktopJobOpportunitySlide,
+  DesktopJobExecutionSlide,
+  MobileJobOpportunitySlide,
+  MobileJobExecutionSlide,
+} from './slides/JobSlides';
+
+export * from './slides/ArticleDesktopSlides';
+export * from './slides/ArticleMobileSlides';
+export * from './slides/JobSlides';
 
 // ── Slide Context: Dual Aspect Ratio & Transparency Engine ──
 export type SlideAspectRatio = '16:9' | '9:16';
@@ -930,6 +968,8 @@ export function renderSlidePreviewContent(
       );
     }
 
+    const isVertical = currentAspect === '9:16';
+
     const isAct =
       item.sourceType === 'act' ||
       item.originalBlockType === 'rundown_act' ||
@@ -937,6 +977,11 @@ export function renderSlidePreviewContent(
     const isJob =
       item.sourceType === 'job' ||
       item.defBlockId === 'talent_spotlight' ||
+      item.defBlockId === 'job_opportunity' ||
+      item.defBlockId === 'job_execution' ||
+      item.originalBlockType === 'job_opportunity' ||
+      item.originalBlockType === 'job_execution' ||
+      item.originalBlockType === 'job' ||
       Boolean(item.originalContent?.jobTitle);
     const isTransition = item.sourceType === 'transition' && !isAct;
 
@@ -947,7 +992,29 @@ export function renderSlidePreviewContent(
       (isAct ? '#10b981' : isJob ? '#f59e0b' : isTransition ? '#64748b' : '#3b82f6');
     const c = item.originalContent || {};
 
-    // 1. First check DEF Broadcast Block ID (All 12 Containers)
+    // 1. Ecosystem Job / Talent Spotlight (Format B: Opportunity & Execution Slides)
+    if (isJob) {
+      const isExecution =
+        item.originalBlockType === 'job_execution' ||
+        item.defBlockId === 'job_execution' ||
+        item.slideIndex === 2 ||
+        Boolean(c.roleScope);
+      if (isVertical) {
+        return isExecution ? (
+          <MobileJobExecutionSlide content={c} />
+        ) : (
+          <MobileJobOpportunitySlide content={c} />
+        );
+      } else {
+        return isExecution ? (
+          <DesktopJobExecutionSlide content={c} />
+        ) : (
+          <DesktopJobOpportunitySlide content={c} />
+        );
+      }
+    }
+
+    // 2. DEF Broadcast Block ID (11 Analytical Containers)
     if (item.defBlockId) {
       switch (item.defBlockId) {
         case 'anchor_tension':
@@ -972,14 +1039,12 @@ export function renderSlidePreviewContent(
           return <SlideReturnToCase content={c} />;
         case 'forked_close':
           return <SlideForkedClose content={c} />;
-        case 'talent_spotlight':
-          return <SlideJob content={c} />;
         default:
           break;
       }
     }
 
-    // 2. Act Segment Cards
+    // 3. Act Segment Cards
     if (isAct) {
       return (
         <SlideRundownAct
@@ -990,33 +1055,164 @@ export function renderSlidePreviewContent(
       );
     }
 
-    // 3. Job / Ecosystem Cards
-    if (isJob) return <SlideJob content={c} />;
-
     // 4. Transitions
     if (isTransition) return <SlideTransition content={c} />;
 
-    // 5. Article Block Types
+    // 5. Modular Article Block Types & Decomposed Step Slides
     const blockType = item.originalBlockType || (defBlock ? 'subheading' : '');
 
-    switch (blockType) {
-      case 'subheading':
-        return <SlideSpikyTitle content={c} />;
-      case 'myth_fact':
-      case 'myth_reality':
-        return <SlideMythFact content={c} />;
-      case 'highlight_card':
-      case 'stat_card':
-        return <SlideStatCard content={c} />;
-      case 'pull_quote':
-      case 'strong_quote':
-        return <SlideQuote content={c} />;
-      case 'media':
-        return <SlideMedia content={c} />;
-      case 'job':
-        return <SlideJob content={c} />;
-      default:
-        return <SlideFallback content={c} type={blockType || 'slide'} />;
+    if (isVertical) {
+      switch (blockType) {
+        // Protocol / SOP steps (decomposed 1 slide per step)
+        case 'protocol_step':
+        case 'protocol_steps':
+        case 'sop_step':
+        case 'sop_steps':
+        case 'workflow_step':
+          return <MobileProtocolStepSlide content={c} />;
+
+        // Myth vs Fact (decomposed 1 slide per side)
+        case 'myth_slide':
+        case 'myth':
+          return <MobileMythSlide content={c} />;
+        case 'fact_slide':
+        case 'fact':
+          return <MobileFactSlide content={c} />;
+
+        // Comparison Matrix (decomposed per option and verdict)
+        case 'comparison_option':
+          return <MobileComparisonOptionSlide content={c} />;
+        case 'comparison_verdict':
+          return <MobileComparisonVerdictSlide content={c} />;
+
+        // Timeline Milestones (decomposed per milestone)
+        case 'timeline_milestone':
+        case 'timeline_tracker':
+        case 'milestones':
+          return <MobileTimelineMilestoneSlide content={c} />;
+
+        // Executive Summary
+        case 'exec_summary':
+        case 'summary':
+          return <MobileExecSummarySlide content={c} />;
+
+        // Unit Economics / Pricing
+        case 'unit_economics':
+        case 'pricing_model':
+          return <MobileUnitEconomicsSlide content={c} />;
+
+        // Persona Dossier
+        case 'persona_dossier':
+        case 'persona':
+          return <MobilePersonaDossierSlide content={c} />;
+
+        // Strategic Directive / Action Checklist
+        case 'strategic_directive':
+        case 'action_checklist':
+          return <MobileStrategicDirectiveSlide content={c} />;
+
+        // Call To Action / Conversion Card
+        case 'call_to_action':
+        case 'conversion_card':
+          return <MobileCallToActionSlide content={c} />;
+
+        // Live Poll / Audience Q&A
+        case 'live_poll':
+        case 'audience_qa':
+          return <MobileLivePollSlide content={c} />;
+
+        case 'subheading':
+          return <SlideSpikyTitle content={c} />;
+        case 'myth_fact':
+        case 'myth_reality':
+          return <SlideMythFact content={c} />;
+        case 'highlight_card':
+        case 'stat_card':
+          return <SlideStatCard content={c} />;
+        case 'pull_quote':
+        case 'strong_quote':
+          return <SlideQuote content={c} />;
+        case 'media':
+          return <SlideMedia content={c} />;
+        default:
+          return <SlideFallback content={c} type={blockType || 'slide'} />;
+      }
+    } else {
+      switch (blockType) {
+        // Protocol / SOP steps (decomposed 1 slide per step)
+        case 'protocol_step':
+        case 'protocol_steps':
+        case 'sop_step':
+        case 'sop_steps':
+        case 'workflow_step':
+          return <DesktopProtocolStepSlide content={c} />;
+
+        // Myth vs Fact (decomposed 1 slide per side)
+        case 'myth_slide':
+        case 'myth':
+          return <DesktopMythSlide content={c} />;
+        case 'fact_slide':
+        case 'fact':
+          return <DesktopFactSlide content={c} />;
+
+        // Comparison Matrix (decomposed per option and verdict)
+        case 'comparison_option':
+          return <DesktopComparisonOptionSlide content={c} />;
+        case 'comparison_verdict':
+          return <DesktopComparisonVerdictSlide content={c} />;
+
+        // Timeline Milestones (decomposed per milestone)
+        case 'timeline_milestone':
+        case 'timeline_tracker':
+        case 'milestones':
+          return <DesktopTimelineMilestoneSlide content={c} />;
+
+        // Executive Summary
+        case 'exec_summary':
+        case 'summary':
+          return <DesktopExecSummarySlide content={c} />;
+
+        // Unit Economics / Pricing
+        case 'unit_economics':
+        case 'pricing_model':
+          return <DesktopUnitEconomicsSlide content={c} />;
+
+        // Persona Dossier
+        case 'persona_dossier':
+        case 'persona':
+          return <DesktopPersonaDossierSlide content={c} />;
+
+        // Strategic Directive / Action Checklist
+        case 'strategic_directive':
+        case 'action_checklist':
+          return <DesktopStrategicDirectiveSlide content={c} />;
+
+        // Call To Action / Conversion Card
+        case 'call_to_action':
+        case 'conversion_card':
+          return <DesktopCallToActionSlide content={c} />;
+
+        // Live Poll / Audience Q&A
+        case 'live_poll':
+        case 'audience_qa':
+          return <DesktopLivePollSlide content={c} />;
+
+        case 'subheading':
+          return <SlideSpikyTitle content={c} />;
+        case 'myth_fact':
+        case 'myth_reality':
+          return <SlideMythFact content={c} />;
+        case 'highlight_card':
+        case 'stat_card':
+          return <SlideStatCard content={c} />;
+        case 'pull_quote':
+        case 'strong_quote':
+          return <SlideQuote content={c} />;
+        case 'media':
+          return <SlideMedia content={c} />;
+        default:
+          return <SlideFallback content={c} type={blockType || 'slide'} />;
+      }
     }
   };
 

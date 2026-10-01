@@ -100,6 +100,251 @@ const ASPECT_RATIO_OPTIONS = [
   { id: 'auto', label: 'Auto' },
 ];
 
+// ── Format B: Job 2-Slide Progression Decomposition ──
+export function decomposeJobIntoSlides(job: any): Partial<RundownItem>[] {
+  const orgName = job.organization?.name || job.orgName || 'Ecosystem Partner';
+  const orgLogo = job.organization?.logoUrl || job.orgLogo || job.logoUrl;
+  const salary = job.salary || job.compensationOrTarget || job.compensation || 'Competitive / Verified Package';
+  const location = job.location || 'Remote / Regional Hub';
+  const applyUrl = job.applyUrl || job.link || job.ctaLink || '';
+  const jobCover = job.coverImageUrl || job.imageUrl || orgLogo;
+  const rawScope = job.responsibilities || job.requirements || job.description || 'Lead operational deployment and corridor coordination.';
+  const roleScope = typeof rawScope === 'string' ? rawScope : Array.isArray(rawScope) ? rawScope.join('. ') : 'Lead field execution and verify project metrics.';
+
+  return [
+    {
+      sourceType: 'job',
+      sourceId: job.id,
+      defBlockId: 'job_opportunity',
+      defBlockLabel: 'Job: Opportunity & Compensation',
+      slideIndex: 1,
+      slideCount: 2,
+      originalBlockType: 'job_opportunity',
+      originalContent: {
+        jobTitle: job.title,
+        title: job.title,
+        orgName,
+        orgLogo,
+        salary,
+        location,
+        imageUrl: jobCover,
+        tags: job.tags || [job.department || 'Operations', job.type || 'Full-time'],
+      },
+      speakerNotes: `Highlighting this verified ecosystem opportunity: ${job.title} with ${orgName}. Compensation is ${salary}.`,
+      durationStr: '45s',
+    },
+    {
+      sourceType: 'job',
+      sourceId: job.id,
+      defBlockId: 'job_execution',
+      defBlockLabel: 'Job: Execution & Apply',
+      slideIndex: 2,
+      slideCount: 2,
+      originalBlockType: 'job_execution',
+      originalContent: {
+        jobTitle: job.title,
+        title: job.title,
+        orgName,
+        roleScope,
+        prerequisites: job.prerequisites || 'Verified profile on platform',
+        applyUrl,
+      },
+      speakerNotes: `Here is the execution mandate and qualification requirements. Apply directly via the broadcast link.`,
+      durationStr: '45s',
+    },
+  ];
+}
+
+// ── Multi-Slide Decomposition for Modular Article Blocks ──
+export function decomposeArticleBlockIntoSlides(b: any, parentArticle: any): Partial<RundownItem>[] {
+  let parsed: any = {};
+  try {
+    parsed = typeof b.content === 'string' ? JSON.parse(b.content) : (b.content || {});
+  } catch {
+    parsed = {};
+  }
+
+  const blockType = b.blockType;
+
+  // 1. Protocol / SOP steps -> 1 slide per step
+  if (
+    blockType === 'protocol_steps' ||
+    blockType === 'sop_steps' ||
+    blockType === 'workflow_steps' ||
+    (Array.isArray(parsed.steps) && parsed.steps.length > 0)
+  ) {
+    const steps: any[] = Array.isArray(parsed.steps) ? parsed.steps : [];
+    if (steps.length > 0) {
+      return steps.map((step, idx) => ({
+        sourceType: 'article_block',
+        sourceId: `${b.id || 'step'}-${idx + 1}`,
+        parentArticleId: parentArticle?.id,
+        parentArticleTitle: parentArticle?.title,
+        originalBlockType: 'protocol_step',
+        slideIndex: idx + 1,
+        slideCount: steps.length,
+        originalContent: {
+          stepNumber: idx + 1,
+          totalSteps: steps.length,
+          stepTitle: step.title || step.stepTitle || `Step ${idx + 1}`,
+          action: step.action || step.description || step.text || '',
+          owner: step.owner || parsed.owner || 'Lead Operations Controller',
+          output: step.output || step.targetOutput || 'Verified Completion Milestone',
+        },
+        speakerNotes: `Step ${idx + 1} of ${steps.length}: ${step.title || step.stepTitle}. ${step.action || step.description || ''}`,
+        durationStr: '45s',
+      }));
+    }
+  }
+
+  // 2. Myth vs. Fact -> 2 slides (Myth Breakdown + Ground Truth & Data)
+  if (
+    blockType === 'myth_fact' ||
+    blockType === 'myth_reality' ||
+    (parsed.myth && (parsed.fact || parsed.reality))
+  ) {
+    return [
+      {
+        sourceType: 'article_block',
+        sourceId: `${b.id || 'myth'}-1`,
+        parentArticleId: parentArticle?.id,
+        parentArticleTitle: parentArticle?.title,
+        originalBlockType: 'myth_slide',
+        slideIndex: 1,
+        slideCount: 2,
+        originalContent: {
+          myth: parsed.myth || parsed.text || 'Conventional Industry Assumption',
+          context: parsed.context || parsed.subheadline || 'Why standard operating models fall into this trap.',
+        },
+        speakerNotes: `Let us address the conventional industry myth: ${parsed.myth || ''}`,
+        durationStr: '45s',
+      },
+      {
+        sourceType: 'article_block',
+        sourceId: `${b.id || 'fact'}-2`,
+        parentArticleId: parentArticle?.id,
+        parentArticleTitle: parentArticle?.title,
+        originalBlockType: 'fact_slide',
+        slideIndex: 2,
+        slideCount: 2,
+        originalContent: {
+          fact: parsed.fact || parsed.reality || 'The ground truth revealed by field data.',
+          stat: parsed.stat || 'Field Verified',
+          proof: parsed.proof || parsed.evidence || parsed.subheadline || 'Direct field measurements confirming operational advantage.',
+        },
+        speakerNotes: `Now, here is the empirical ground truth: ${parsed.fact || parsed.reality || ''}`,
+        durationStr: '45s',
+      },
+    ];
+  }
+
+  // 3. Comparison Matrix -> 1 slide per Option + 1 slide for Verdict
+  if (
+    blockType === 'comparison_matrix' ||
+    blockType === 'comparison_table' ||
+    Array.isArray(parsed.options)
+  ) {
+    const options: any[] = Array.isArray(parsed.options) ? parsed.options : [];
+    if (options.length > 0) {
+      const hasVerdict = Boolean(parsed.verdict || parsed.recommendation || parsed.winner);
+      const total = options.length + (hasVerdict ? 1 : 0);
+      const optionSlides: Partial<RundownItem>[] = options.map((opt, idx) => ({
+        sourceType: 'article_block',
+        sourceId: `${b.id || 'cmp'}-opt-${idx + 1}`,
+        parentArticleId: parentArticle?.id,
+        parentArticleTitle: parentArticle?.title,
+        originalBlockType: 'comparison_option',
+        slideIndex: idx + 1,
+        slideCount: total,
+        originalContent: {
+          title: opt.name || opt.title || `Option ${idx + 1}`,
+          subtitle: opt.subtitle || opt.category || 'Strategic Pathway',
+          pros: opt.pros || [],
+          cons: opt.cons || [],
+          verdict: opt.summary || opt.description || '',
+          isRecommended: Boolean(opt.recommended || opt.isWinner),
+        },
+        speakerNotes: `Option ${idx + 1}: ${opt.name || opt.title}. Pros and trade-offs.`,
+        durationStr: '45s',
+      }));
+
+      if (hasVerdict) {
+        optionSlides.push({
+          sourceType: 'article_block',
+          sourceId: `${b.id || 'cmp'}-verdict`,
+          parentArticleId: parentArticle?.id,
+          parentArticleTitle: parentArticle?.title,
+          originalBlockType: 'comparison_verdict',
+          slideIndex: total,
+          slideCount: total,
+          originalContent: {
+            title: parsed.verdictTitle || 'Strategic Recommendation & Verdict',
+            winnerName: parsed.recommendedOption || parsed.winner || 'Recommended Architecture',
+            justification: parsed.verdict || parsed.recommendation || 'The quantitative model demonstrates superior ROI and resilience.',
+            roiScore: parsed.roiScore || '3.4x Capital Efficiency',
+          },
+          speakerNotes: `The verdict: ${parsed.winner || 'our recommendation'}. ${parsed.verdict || ''}`,
+          durationStr: '45s',
+        });
+      }
+
+      return optionSlides;
+    }
+  }
+
+  // 4. Timeline Milestones -> 1 slide per milestone
+  if (
+    blockType === 'timeline_tracker' ||
+    blockType === 'milestones' ||
+    (Array.isArray(parsed.milestones) && parsed.milestones.length > 0)
+  ) {
+    const milestones: any[] = Array.isArray(parsed.milestones) ? parsed.milestones : [];
+    if (milestones.length > 0) {
+      return milestones.map((m, idx) => ({
+        sourceType: 'article_block',
+        sourceId: `${b.id || 'tl'}-${idx + 1}`,
+        parentArticleId: parentArticle?.id,
+        parentArticleTitle: parentArticle?.title,
+        originalBlockType: 'timeline_milestone',
+        slideIndex: idx + 1,
+        slideCount: milestones.length,
+        originalContent: {
+          milestoneNumber: idx + 1,
+          totalMilestones: milestones.length,
+          phaseOrYear: m.phase || m.year || m.date || `Phase ${idx + 1}`,
+          title: m.title || `Milestone ${idx + 1}`,
+          description: m.description || m.text || '',
+          status: m.status || 'Active Target',
+        },
+        speakerNotes: `Phase ${m.phase || idx + 1}: ${m.title}. ${m.description || ''}`,
+        durationStr: '45s',
+      }));
+    }
+  }
+
+  // 5. Single Blocks mapped directly to their specialized slide type
+  let targetBlockType = blockType || 'slide';
+  if (blockType === 'summary' || blockType === 'exec_summary') targetBlockType = 'exec_summary';
+  if (blockType === 'financials' || blockType === 'unit_economics') targetBlockType = 'unit_economics';
+  if (blockType === 'persona' || blockType === 'persona_dossier') targetBlockType = 'persona_dossier';
+  if (blockType === 'directive' || blockType === 'strategic_directive' || blockType === 'action_checklist') targetBlockType = 'strategic_directive';
+  if (blockType === 'cta' || blockType === 'call_to_action') targetBlockType = 'call_to_action';
+  if (blockType === 'poll' || blockType === 'live_poll') targetBlockType = 'live_poll';
+
+  return [
+    {
+      sourceType: 'article_block',
+      sourceId: b.id,
+      parentArticleId: parentArticle?.id,
+      parentArticleTitle: parentArticle?.title,
+      originalBlockType: targetBlockType,
+      originalContent: parsed,
+      speakerNotes: parsed.notes || parsed.speakerNotes || `Discussing: ${parsed.title || parsed.text || targetBlockType}`,
+      durationStr: '45s',
+    },
+  ];
+}
+
 // --- Sortable Item Wrapper (Compact Flippable Card with Block-Tailored Inputs) ---
 function SortableRundownCard({
   item,
@@ -150,7 +395,27 @@ function SortableRundownCard({
       return `Block ${defBlock.blockNumber}: ${defBlock.name}${slidePart}`;
     }
     if (isAct) return actNumber ? `ACT ${actNumber}: THE OPEN` : 'BROADCAST ACT';
+    if (item.originalBlockType === 'job_opportunity') return 'JOB: OPPORTUNITY & COMP';
+    if (item.originalBlockType === 'job_execution') return 'JOB: EXECUTION & APPLY';
     if (isJob) return 'HIRING SPOTLIGHT';
+    if (item.originalBlockType === 'protocol_step') {
+      return `SOP STEP ${item.slideIndex || 1}${item.slideCount ? `/${item.slideCount}` : ''}`;
+    }
+    if (item.originalBlockType === 'myth_slide') return 'MYTH BREAKDOWN';
+    if (item.originalBlockType === 'fact_slide') return 'GROUND TRUTH & DATA';
+    if (item.originalBlockType === 'comparison_option') {
+      return `OPTION ${item.slideIndex || 1}${item.slideCount ? `/${item.slideCount}` : ''}`;
+    }
+    if (item.originalBlockType === 'comparison_verdict') return 'STRATEGIC VERDICT';
+    if (item.originalBlockType === 'timeline_milestone') {
+      return `MILESTONE ${item.slideIndex || 1}${item.slideCount ? `/${item.slideCount}` : ''}`;
+    }
+    if (item.originalBlockType === 'exec_summary') return 'EXECUTIVE SUMMARY';
+    if (item.originalBlockType === 'unit_economics') return 'UNIT ECONOMICS';
+    if (item.originalBlockType === 'persona_dossier') return 'PERSONA DOSSIER';
+    if (item.originalBlockType === 'strategic_directive') return 'STRATEGIC DIRECTIVE';
+    if (item.originalBlockType === 'call_to_action') return 'CALL TO ACTION';
+    if (item.originalBlockType === 'live_poll') return 'LIVE POLL';
     if (isTransition) return 'INTERMISSION / CUE';
     if (item.parentArticleTitle) return `Article: ${item.parentArticleTitle}`;
     return item.originalBlockType?.replace('_', ' ').toUpperCase() || 'SLIDE BLOCK';
@@ -239,6 +504,78 @@ function SortableRundownCard({
           size="small"
           label="Path A vs Path B"
           sx={{ height: 22, fontSize: '0.68rem', fontWeight: 800, bgcolor: 'rgba(124, 58, 237, 0.1)', color: '#6d28d9' }}
+        />
+      );
+    }
+    if (item.originalBlockType === 'job_opportunity') {
+      return (
+        <Chip
+          size="small"
+          label={c.salary || 'Compensation'}
+          sx={{ height: 22, fontSize: '0.68rem', fontWeight: 900, bgcolor: 'rgba(245, 158, 11, 0.1)', color: '#b45309' }}
+        />
+      );
+    }
+    if (item.originalBlockType === 'job_execution') {
+      return (
+        <Chip
+          size="small"
+          label="Execution & Apply"
+          sx={{ height: 22, fontSize: '0.68rem', fontWeight: 900, bgcolor: 'rgba(16, 185, 129, 0.1)', color: '#059669' }}
+        />
+      );
+    }
+    if (item.originalBlockType === 'protocol_step') {
+      return (
+        <Chip
+          size="small"
+          label={c.owner || 'Execution Directive'}
+          sx={{ height: 22, fontSize: '0.68rem', fontWeight: 800, bgcolor: 'rgba(59, 130, 246, 0.1)', color: '#2563eb' }}
+        />
+      );
+    }
+    if (item.originalBlockType === 'myth_slide') {
+      return (
+        <Chip
+          size="small"
+          label="Conventional Myth"
+          sx={{ height: 22, fontSize: '0.68rem', fontWeight: 900, bgcolor: 'rgba(239, 68, 68, 0.1)', color: '#dc2626' }}
+        />
+      );
+    }
+    if (item.originalBlockType === 'fact_slide') {
+      return (
+        <Chip
+          size="small"
+          label={c.stat || 'Ground Truth'}
+          sx={{ height: 22, fontSize: '0.68rem', fontWeight: 900, bgcolor: 'rgba(16, 185, 129, 0.1)', color: '#059669' }}
+        />
+      );
+    }
+    if (item.originalBlockType === 'comparison_option') {
+      return (
+        <Chip
+          size="small"
+          label={c.subtitle || 'Comparison Option'}
+          sx={{ height: 22, fontSize: '0.68rem', fontWeight: 800, bgcolor: 'rgba(124, 58, 237, 0.1)', color: '#7c3aed' }}
+        />
+      );
+    }
+    if (item.originalBlockType === 'comparison_verdict') {
+      return (
+        <Chip
+          size="small"
+          label={c.roiScore || 'Final Verdict'}
+          sx={{ height: 22, fontSize: '0.68rem', fontWeight: 900, bgcolor: 'rgba(5, 150, 105, 0.1)', color: '#059669' }}
+        />
+      );
+    }
+    if (item.originalBlockType === 'timeline_milestone') {
+      return (
+        <Chip
+          size="small"
+          label={c.phaseOrYear || 'Milestone'}
+          sx={{ height: 22, fontSize: '0.68rem', fontWeight: 800, bgcolor: 'rgba(14, 165, 233, 0.1)', color: '#0284c7' }}
         />
       );
     }
@@ -983,8 +1320,47 @@ function SortableRundownCard({
             </Box>
           )}
 
-          {/* 12. Talent Spotlight / Jobs */}
-          {(item.defBlockId === 'talent_spotlight' || isJob) && (
+          {/* 12. Talent Spotlight / Jobs (Format B: Opportunity vs Execution) */}
+          {item.originalBlockType === 'job_execution' && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
+              <TextField
+                fullWidth
+                size="small"
+                label="Role Title (Execution Mandate)"
+                value={c.jobTitle || c.title || ''}
+                onChange={(e) => updateContent({ jobTitle: e.target.value, title: e.target.value })}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', fontWeight: 700 } }}
+              />
+              <TextField
+                fullWidth
+                multiline
+                rows={2}
+                size="small"
+                label="Execution Scope & Responsibilities"
+                placeholder="Key deliverables and operational scope..."
+                value={c.roleScope || ''}
+                onChange={(e) => updateContent({ roleScope: e.target.value })}
+              />
+              <TextField
+                fullWidth
+                size="small"
+                label="Prerequisites / Qualification Standard"
+                placeholder="e.g. Verified profile on FoodNerve platform"
+                value={c.prerequisites || ''}
+                onChange={(e) => updateContent({ prerequisites: e.target.value })}
+              />
+              <TextField
+                fullWidth
+                size="small"
+                label="Direct Application URL / CTA Link"
+                placeholder="https://..."
+                value={c.applyUrl || ''}
+                onChange={(e) => updateContent({ applyUrl: e.target.value })}
+              />
+            </Box>
+          )}
+
+          {(item.originalBlockType === 'job_opportunity' || item.defBlockId === 'talent_spotlight' || (isJob && item.originalBlockType !== 'job_execution')) && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
               <TextField
                 fullWidth
@@ -1013,13 +1389,237 @@ function SortableRundownCard({
                   onChange={(e) => updateContent({ salary: e.target.value, compensationOrTarget: e.target.value })}
                 />
               </Box>
+              <Box sx={{ display: 'flex', gap: 1.5 }}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Location"
+                  placeholder="e.g. Remote / Northern Corridor Hub"
+                  value={c.location || ''}
+                  onChange={(e) => updateContent({ location: e.target.value })}
+                />
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Application URL"
+                  placeholder="e.g. https://foodnerve.org/talent/apply/123"
+                  value={c.applyUrl || c.ctaLink || ''}
+                  onChange={(e) => updateContent({ applyUrl: e.target.value, ctaLink: e.target.value })}
+                />
+              </Box>
+            </Box>
+          )}
+
+          {/* 13. Protocol Step Slide */}
+          {item.originalBlockType === 'protocol_step' && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
               <TextField
                 fullWidth
                 size="small"
-                label="Application URL or QR Target Link"
-                placeholder="e.g. https://foodnerve.org/talent/apply/123"
-                value={c.applyUrl || c.ctaLink || ''}
-                onChange={(e) => updateContent({ applyUrl: e.target.value, ctaLink: e.target.value })}
+                label="Step Title"
+                placeholder="e.g. Calibrate Spatial Moisture Sensors"
+                value={c.stepTitle || c.title || ''}
+                onChange={(e) => updateContent({ stepTitle: e.target.value, title: e.target.value })}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', fontWeight: 700 } }}
+              />
+              <TextField
+                fullWidth
+                multiline
+                rows={2}
+                size="small"
+                label="Execution Action / Directive"
+                placeholder="Describe the action in detail..."
+                value={c.action || c.description || c.text || ''}
+                onChange={(e) => updateContent({ action: e.target.value, description: e.target.value, text: e.target.value })}
+              />
+              <Box sx={{ display: 'flex', gap: 1.5 }}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Assigned Operator"
+                  placeholder="e.g. Lead Logistics Controller"
+                  value={c.owner || ''}
+                  onChange={(e) => updateContent({ owner: e.target.value })}
+                />
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Target Deliverable / Output"
+                  placeholder="e.g. Verified Ingestion Ticket"
+                  value={c.output || ''}
+                  onChange={(e) => updateContent({ output: e.target.value })}
+                />
+              </Box>
+            </Box>
+          )}
+
+          {/* 14. Myth Slide */}
+          {item.originalBlockType === 'myth_slide' && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
+              <TextField
+                fullWidth
+                multiline
+                rows={2}
+                size="small"
+                label="The Conventional Myth / Misconception"
+                placeholder="The industry assumption..."
+                value={c.myth || c.text || ''}
+                onChange={(e) => updateContent({ myth: e.target.value, text: e.target.value })}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', fontWeight: 700 } }}
+              />
+              <TextField
+                fullWidth
+                size="small"
+                label="Context / Narrative Breakdown"
+                placeholder="Why standard models fall for this..."
+                value={c.context || c.subheadline || ''}
+                onChange={(e) => updateContent({ context: e.target.value, subheadline: e.target.value })}
+              />
+            </Box>
+          )}
+
+          {/* 15. Fact Slide */}
+          {item.originalBlockType === 'fact_slide' && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
+              <TextField
+                fullWidth
+                multiline
+                rows={2}
+                size="small"
+                label="Ground Truth / Operator Reality"
+                placeholder="The verified fact..."
+                value={c.fact || c.reality || ''}
+                onChange={(e) => updateContent({ fact: e.target.value, reality: e.target.value })}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', fontWeight: 700 } }}
+              />
+              <Box sx={{ display: 'flex', gap: 1.5 }}>
+                <TextField
+                  sx={{ width: '40%' }}
+                  size="small"
+                  label="Key Metric / Stat"
+                  placeholder="e.g. 98.4% Retention"
+                  value={c.stat || ''}
+                  onChange={(e) => updateContent({ stat: e.target.value })}
+                />
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Empirical Proof Data"
+                  placeholder="Field evidence summary..."
+                  value={c.proof || c.subheadline || ''}
+                  onChange={(e) => updateContent({ proof: e.target.value, subheadline: e.target.value })}
+                />
+              </Box>
+            </Box>
+          )}
+
+          {/* 16. Comparison Option */}
+          {item.originalBlockType === 'comparison_option' && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
+              <TextField
+                fullWidth
+                size="small"
+                label="Option / Model Name"
+                placeholder="e.g. Option A: Decentralized Storage Hubs"
+                value={c.title || ''}
+                onChange={(e) => updateContent({ title: e.target.value })}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', fontWeight: 700 } }}
+              />
+              <TextField
+                fullWidth
+                size="small"
+                label="Subtitle / Classification"
+                placeholder="e.g. Capital-light corridor pathway"
+                value={c.subtitle || ''}
+                onChange={(e) => updateContent({ subtitle: e.target.value })}
+              />
+              <TextField
+                fullWidth
+                multiline
+                rows={2}
+                size="small"
+                label="Verdict / Trade-off Summary"
+                placeholder="Analysis of this option..."
+                value={c.verdict || ''}
+                onChange={(e) => updateContent({ verdict: e.target.value })}
+              />
+            </Box>
+          )}
+
+          {/* 17. Comparison Verdict */}
+          {item.originalBlockType === 'comparison_verdict' && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
+              <TextField
+                fullWidth
+                size="small"
+                label="Verdict Title"
+                placeholder="e.g. Strategic Recommendation & Verdict"
+                value={c.title || ''}
+                onChange={(e) => updateContent({ title: e.target.value })}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', fontWeight: 700 } }}
+              />
+              <Box sx={{ display: 'flex', gap: 1.5 }}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Recommended Architecture / Winner"
+                  placeholder="e.g. Northern Hybrid Corridor"
+                  value={c.winnerName || ''}
+                  onChange={(e) => updateContent({ winnerName: e.target.value })}
+                />
+                <TextField
+                  sx={{ width: '40%' }}
+                  size="small"
+                  label="ROI Score / Advantage"
+                  placeholder="e.g. 3.4x Capital Efficiency"
+                  value={c.roiScore || ''}
+                  onChange={(e) => updateContent({ roiScore: e.target.value })}
+                />
+              </Box>
+              <TextField
+                fullWidth
+                multiline
+                rows={2}
+                size="small"
+                label="Justification & Final Conclusion"
+                placeholder="Why this model succeeds where others fail..."
+                value={c.justification || ''}
+                onChange={(e) => updateContent({ justification: e.target.value })}
+              />
+            </Box>
+          )}
+
+          {/* 18. Timeline Milestone */}
+          {item.originalBlockType === 'timeline_milestone' && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
+              <Box sx={{ display: 'flex', gap: 1.5 }}>
+                <TextField
+                  size="small"
+                  label="Phase / Year"
+                  placeholder="e.g. Phase 01: Q2 2026"
+                  value={c.phaseOrYear || ''}
+                  onChange={(e) => updateContent({ phaseOrYear: e.target.value })}
+                  sx={{ width: '40%', '& .MuiOutlinedInput-root': { borderRadius: '12px', fontWeight: 700 } }}
+                />
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Milestone Title"
+                  placeholder="e.g. Grid Ingestion Calibration"
+                  value={c.title || ''}
+                  onChange={(e) => updateContent({ title: e.target.value })}
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', fontWeight: 700 } }}
+                />
+              </Box>
+              <TextField
+                fullWidth
+                multiline
+                rows={2}
+                size="small"
+                label="Milestone Scope / Action"
+                placeholder="Deployment details..."
+                value={c.description || ''}
+                onChange={(e) => updateContent({ description: e.target.value })}
               />
             </Box>
           )}
@@ -1324,6 +1924,38 @@ export default function LivestreamRundownBuilder({
     const newItems = [...rundown, newItem];
     setRundown(newItems);
     onBlocksChange(newItems);
+  };
+
+  const addMultipleBlocksToRundown = (items: Partial<RundownItem>[]) => {
+    const newItems: RundownItem[] = items.map((b, idx) => ({
+      id: b.id || `item-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 6)}`,
+      sourceType: b.sourceType || 'article_block',
+      sourceId: b.sourceId,
+      defBlockId: b.defBlockId,
+      defBlockLabel: b.defBlockLabel,
+      slideIndex: b.slideIndex,
+      slideCount: b.slideCount,
+      act: b.act,
+      parentArticleId: b.parentArticleId,
+      parentArticleTitle: b.parentArticleTitle,
+      originalBlockType: b.originalBlockType,
+      originalContent: b.originalContent || {},
+      speakerNotes: b.speakerNotes || '',
+      durationStr: b.durationStr || '45s',
+    }));
+    const updated = [...rundown, ...newItems];
+    setRundown(updated);
+    onBlocksChange(updated);
+  };
+
+  const addJobToRundown = (job: any) => {
+    const slides = decomposeJobIntoSlides(job);
+    addMultipleBlocksToRundown(slides);
+  };
+
+  const addArticleBlockToRundown = (block: any, parentArticle: any) => {
+    const slides = decomposeArticleBlockIntoSlides(block, parentArticle);
+    addMultipleBlocksToRundown(slides);
   };
 
   const updateItem = (id: string, updates: Partial<RundownItem>) => {
@@ -1796,27 +2428,7 @@ export default function LivestreamRundownBuilder({
                         fullWidth
                         variant="contained"
                         startIcon={<WorkIcon sx={{ fontSize: '0.95rem !important' }} />}
-                        onClick={() => {
-                          addBlockToRundown({
-                            sourceType: 'job',
-                            defBlockId: 'talent_spotlight',
-                            defBlockLabel: 'Block 12: Talent Spotlight',
-                            sourceId: job.id,
-                            originalBlockType: 'job',
-                            originalContent: {
-                              jobTitle: job.title,
-                              title: job.title,
-                              orgName: job.organization?.name || job.orgName,
-                              orgLogo: job.organization?.logoUrl || job.orgLogo,
-                              salary: job.salary || job.compensationOrTarget,
-                              location: job.location || 'Remote / Corridor',
-                              applyUrl: job.applyUrl || job.link || job.ctaLink,
-                              imageUrl: jobCover,
-                            },
-                            speakerNotes: `We are highlighting this verified ecosystem opportunity: ${job.title} with ${job.organization?.name || job.orgName || 'our partner'}. Applications are open now.`,
-                            durationStr: '1m',
-                          });
-                        }}
+                        onClick={() => addJobToRundown(job)}
                         sx={{
                           borderRadius: '12px',
                           bgcolor: isJobReferenced ? '#0f172a' : '#d97706',
@@ -1829,7 +2441,7 @@ export default function LivestreamRundownBuilder({
                           '&:hover': { bgcolor: isJobReferenced ? '#1e293b' : '#b45309' },
                         }}
                       >
-                        {isJobReferenced ? 'Add Again as Slide' : 'Pick as Slide'}
+                        {isJobReferenced ? 'Add 2-Slide Format B Again' : 'Pick as 2-Slide Format B'}
                       </Button>
                     </Box>
                   </Box>
@@ -2325,15 +2937,7 @@ export default function LivestreamRundownBuilder({
                           variant="contained"
                           startIcon={<AddIcon sx={{ fontSize: '0.85rem !important' }} />}
                           onClick={() => {
-                            addBlockToRundown({
-                              sourceType: 'article_block',
-                              sourceId: b.id,
-                              parentArticleId: previewArticle.id,
-                              parentArticleTitle: previewArticle.title,
-                              originalBlockType: b.blockType,
-                              originalContent: parsed,
-                              durationStr: '3m',
-                            });
+                            addArticleBlockToRundown(b, previewArticle);
                           }}
                           sx={{
                             borderRadius: '10px',
@@ -2459,23 +3063,12 @@ export default function LivestreamRundownBuilder({
                   startIcon={<AddIcon />}
                   onClick={() => {
                     const blocks = selectedArticleForBlocks.article?.blocks || selectedArticleForBlocks.blocks || [];
+                    const allSlides: Partial<RundownItem>[] = [];
                     blocks.forEach((b: any) => {
-                      let parsed: any = {};
-                      try {
-                        parsed = typeof b.content === 'string' ? JSON.parse(b.content) : b.content;
-                      } catch {
-                        parsed = {};
-                      }
-                      addBlockToRundown({
-                        sourceType: 'article_block',
-                        sourceId: b.id,
-                        parentArticleId: selectedArticleForBlocks.id,
-                        parentArticleTitle: selectedArticleForBlocks.title,
-                        originalBlockType: b.blockType,
-                        originalContent: parsed,
-                        durationStr: '45s',
-                      });
+                      const decomposed = decomposeArticleBlockIntoSlides(b, selectedArticleForBlocks);
+                      allSlides.push(...decomposed);
                     });
+                    addMultipleBlocksToRundown(allSlides);
                     setSelectedArticleForBlocks(null);
                   }}
                   sx={{
@@ -2689,15 +3282,7 @@ export default function LivestreamRundownBuilder({
                               variant="contained"
                               startIcon={<AddIcon sx={{ fontSize: '0.9rem !important' }} />}
                               onClick={() => {
-                                addBlockToRundown({
-                                  sourceType: 'article_block',
-                                  sourceId: b.id,
-                                  parentArticleId: selectedArticleForBlocks.id,
-                                  parentArticleTitle: selectedArticleForBlocks.title,
-                                  originalBlockType: b.blockType,
-                                  originalContent: parsed,
-                                  durationStr: '45s',
-                                });
+                                addArticleBlockToRundown(b, selectedArticleForBlocks);
                               }}
                               sx={{
                                 borderRadius: '10px',

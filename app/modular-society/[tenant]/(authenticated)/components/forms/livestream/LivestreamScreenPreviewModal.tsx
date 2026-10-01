@@ -178,7 +178,7 @@ export default function LivestreamScreenPreviewModal({
     };
   }, [isTimerRunning]);
 
-  // Keyboard navigation inside Control Deck
+  // Keyboard navigation inside Control Deck (non-looping)
   useEffect(() => {
     if (!open) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -196,17 +196,19 @@ export default function LivestreamScreenPreviewModal({
   }, [open, activeSlideIndex, totalSlides]);
 
   const handleNext = () => {
-    if (totalSlides <= 1) return;
-    const nextIdx = activeSlideIndex < totalSlides - 1 ? activeSlideIndex + 1 : 0;
-    setActiveSlideIndex(nextIdx);
-    broadcastSync(nextIdx);
+    if (activeSlideIndex < totalSlides - 1) {
+      const nextIdx = activeSlideIndex + 1;
+      setActiveSlideIndex(nextIdx);
+      broadcastSync(nextIdx);
+    }
   };
 
   const handlePrev = () => {
-    if (totalSlides <= 1) return;
-    const prevIdx = activeSlideIndex > 0 ? activeSlideIndex - 1 : totalSlides - 1;
-    setActiveSlideIndex(prevIdx);
-    broadcastSync(prevIdx);
+    if (activeSlideIndex > 0) {
+      const prevIdx = activeSlideIndex - 1;
+      setActiveSlideIndex(prevIdx);
+      broadcastSync(prevIdx);
+    }
   };
 
   const handleSelectSlide = (idx: number) => {
@@ -527,12 +529,12 @@ export default function LivestreamScreenPreviewModal({
                 overflow: 'hidden',
               }}
             >
-              {/* Prev Button with Slide Counter */}
-              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 0.75, flexShrink: 0, zIndex: 10 }}>
+              {/* Prev Button: Starts at slide 1 without prev button */}
+              <Box sx={{ flexShrink: 0, zIndex: 10, minWidth: 90, display: 'flex', justifyContent: 'flex-start' }}>
                 <Button
                   variant="outlined"
                   onClick={handlePrev}
-                  disabled={totalSlides <= 1}
+                  disabled={activeSlideIndex <= 0}
                   startIcon={<PrevIcon sx={{ fontSize: '0.85rem !important' }} />}
                   sx={{
                     borderRadius: '12px',
@@ -544,15 +546,12 @@ export default function LivestreamScreenPreviewModal({
                     py: 0.85,
                     px: 2,
                     bgcolor: '#ffffff',
+                    visibility: activeSlideIndex === 0 ? 'hidden' : 'visible',
                     '&:hover': { borderColor: '#0f172a', bgcolor: '#f8fafc' },
-                    '&:disabled': { opacity: 0.4 },
                   }}
                 >
                   Prev
                 </Button>
-                <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: '#94a3b8', pl: 0.5 }}>
-                  {totalSlides > 0 ? `${activeSlideIndex + 1} of ${totalSlides}` : '0 of 0'}
-                </Typography>
               </Box>
 
               {/* Center: 3D Perspective Cover-Flow Carousel */}
@@ -564,7 +563,7 @@ export default function LivestreamScreenPreviewModal({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  perspective: '900px',
+                  perspective: '1000px',
                   position: 'relative',
                   overflow: 'visible',
                 }}
@@ -575,31 +574,31 @@ export default function LivestreamScreenPreviewModal({
                   const slide = rundownBlocks[targetIdx];
                   const isActive = offset === 0;
 
-                  // 3D Transform and depth values
+                  // 3D Transform and depth values with proper horizontal spread
                   let transform = 'scale(1) rotateY(0deg)';
                   let zIndex = 5;
                   let opacity = 1;
 
                   if (isActive) {
-                    transform = 'scale(1.15) rotateY(0deg) translateZ(30px)';
+                    transform = 'scale(1.15) rotateY(0deg) translateZ(35px)';
                     zIndex = 10;
                     opacity = 1;
                   } else if (offset === -1) {
-                    transform = 'scale(0.85) rotateY(26deg) translateX(20px)';
+                    transform = 'translateX(-115px) scale(0.85) rotateY(28deg)';
                     zIndex = 6;
-                    opacity = 0.65;
+                    opacity = 0.7;
                   } else if (offset === 1) {
-                    transform = 'scale(0.85) rotateY(-26deg) translateX(-20px)';
+                    transform = 'translateX(115px) scale(0.85) rotateY(-28deg)';
                     zIndex = 6;
-                    opacity = 0.65;
+                    opacity = 0.7;
                   } else if (offset === -2) {
-                    transform = 'scale(0.7) rotateY(38deg) translateX(40px)';
+                    transform = 'translateX(-200px) scale(0.72) rotateY(40deg)';
                     zIndex = 3;
-                    opacity = 0.35;
+                    opacity = 0.4;
                   } else if (offset === 2) {
-                    transform = 'scale(0.7) rotateY(-38deg) translateX(-40px)';
+                    transform = 'translateX(200px) scale(0.72) rotateY(-40deg)';
                     zIndex = 3;
-                    opacity = 0.35;
+                    opacity = 0.4;
                   }
 
                   const defInfo = slide.defBlockId ? DEF_BLOCK_DEFINITIONS[slide.defBlockId] : null;
@@ -618,14 +617,14 @@ export default function LivestreamScreenPreviewModal({
                       onClick={() => handleSelectSlide(targetIdx)}
                       sx={{
                         position: 'absolute',
-                        width: { xs: 110, sm: 135, md: 150 },
-                        height: { xs: 72, md: 85 },
+                        width: { xs: 110, sm: 135, md: 145 },
+                        height: { xs: 72, md: 84 },
                         borderRadius: '14px',
                         bgcolor: '#ffffff',
-                        border: isActive ? `2px solid ${blockColor}` : '1px solid rgba(226, 232, 240, 0.95)',
+                        border: '1px solid rgba(226, 232, 240, 0.95)',
                         boxShadow: isActive
-                          ? `0 12px 28px ${alpha(blockColor, 0.25)}, 0 4px 12px rgba(0,0,0,0.08)`
-                          : '0 4px 12px rgba(0,0,0,0.05)',
+                          ? '0 16px 36px rgba(15, 23, 42, 0.12), 0 4px 12px rgba(0,0,0,0.06)'
+                          : '0 4px 12px rgba(0,0,0,0.04)',
                         cursor: isActive ? 'default' : 'pointer',
                         p: 1.15,
                         display: 'flex',
@@ -641,42 +640,27 @@ export default function LivestreamScreenPreviewModal({
                         '&:hover': {
                           opacity: isActive ? 1 : 0.92,
                           transform: isActive
-                            ? 'scale(1.18) rotateY(0deg) translateZ(35px)'
+                            ? 'scale(1.18) rotateY(0deg) translateZ(40px)'
                             : offset < 0
-                            ? 'scale(0.88) rotateY(20deg) translateX(14px)'
-                            : 'scale(0.88) rotateY(-20deg) translateX(-14px)',
+                            ? 'translateX(-115px) scale(0.88) rotateY(22deg)'
+                            : 'translateX(115px) scale(0.88) rotateY(-22deg)',
                         },
                       }}
                     >
-                      {/* Top Header Row inside mini card */}
+                      {/* Top Header Row: Slide number & block indicator dot */}
                       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <Typography sx={{ fontSize: '0.62rem', fontWeight: 900, color: '#64748b' }}>
                           #{targetIdx + 1}
                         </Typography>
-                        {isActive ? (
-                          <Chip
-                            label="ACTIVE"
-                            size="small"
-                            sx={{
-                              height: 16,
-                              fontSize: '0.52rem',
-                              fontWeight: 900,
-                              bgcolor: blockColor,
-                              color: '#ffffff',
-                              px: 0.25,
-                            }}
-                          />
-                        ) : (
-                          <Box
-                            sx={{
-                              width: 6,
-                              height: 6,
-                              borderRadius: '50%',
-                              bgcolor: blockColor,
-                              opacity: 0.6,
-                            }}
-                          />
-                        )}
+                        <Box
+                          sx={{
+                            width: 6,
+                            height: 6,
+                            borderRadius: '50%',
+                            bgcolor: blockColor,
+                            opacity: isActive ? 1 : 0.6,
+                          }}
+                        />
                       </Box>
 
                       {/* Middle: Title Snippet */}
@@ -711,11 +695,11 @@ export default function LivestreamScreenPreviewModal({
               </Box>
 
               {/* Next Button */}
-              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.75, flexShrink: 0, zIndex: 10 }}>
+              <Box sx={{ flexShrink: 0, zIndex: 10, minWidth: 90, display: 'flex', justifyContent: 'flex-end' }}>
                 <Button
                   variant="contained"
                   onClick={handleNext}
-                  disabled={totalSlides <= 1}
+                  disabled={activeSlideIndex >= totalSlides - 1}
                   endIcon={<NextIcon sx={{ fontSize: '0.85rem !important' }} />}
                   sx={{
                     borderRadius: '12px',
@@ -728,14 +712,11 @@ export default function LivestreamScreenPreviewModal({
                     px: 2,
                     boxShadow: 'none',
                     '&:hover': { bgcolor: '#1e293b' },
-                    '&:disabled': { opacity: 0.4 },
+                    '&:disabled': { opacity: 0.35, bgcolor: '#cbd5e1' },
                   }}
                 >
                   Next
                 </Button>
-                <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: '#94a3b8', pr: 0.5 }}>
-                  Key: &rarr; / PageDn
-                </Typography>
               </Box>
             </Box>
           </Box>
