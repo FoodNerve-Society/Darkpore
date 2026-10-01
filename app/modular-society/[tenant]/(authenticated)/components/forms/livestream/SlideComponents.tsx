@@ -115,9 +115,8 @@ export function SlideWrapper({
     <Box
       sx={{
         width: '100%',
-        aspectRatio: isVertical ? '9/16' : '16/9',
         height: '100%',
-        maxHeight: isVertical ? '100%' : undefined,
+        flex: 1,
         position: 'relative',
         borderRadius: 0, // Completely square to fit stage windows with zero corner ear lobes
         overflow: 'hidden',
@@ -199,11 +198,12 @@ export function SlideWrapper({
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          p: isVertical ? { xs: 2, md: 2.5 } : { xs: 3.5, md: 5.5 },
+          p: isVertical ? { xs: 2.5, sm: 3.5, md: 4 } : { xs: 3.5, md: 5.5 },
           position: 'relative',
           zIndex: 2,
           overflow: 'hidden',
-          justifyContent: isVertical ? 'center' : 'flex-start',
+          height: '100%',
+          justifyContent: isVertical ? 'space-evenly' : 'flex-start',
         }}
       >
         {children}
@@ -606,7 +606,7 @@ export function SlideReframeQuestion({ content }: { content: any }) {
 
   return (
     <SlideWrapper color="#f59e0b">
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', px: isVertical ? 0.5 : 4 }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: isVertical ? 'space-evenly' : 'center', alignItems: 'center', textAlign: 'center', px: isVertical ? 0.5 : 4 }}>
         <Chip
           icon={<SparkleIcon sx={{ fontSize: '0.85rem !important' }} />}
           label="THE STRATEGIC REFRAME"
@@ -640,7 +640,7 @@ export function SlideFunnelSystem({ content }: { content: any }) {
 
   return (
     <SlideWrapper color="#3b82f6">
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: isVertical ? 'space-evenly' : 'center' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: isVertical ? 1 : 2.5 }}>
           <Chip label="ACT 2 · SYSTEM DIAGNOSTIC" size="small" sx={{ bgcolor: alpha('#3b82f6', 0.12), color: '#2563eb', fontWeight: 800, fontSize: '0.7rem' }} />
           <Typography sx={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>The 3-Layer Diagnostic</Typography>
@@ -690,7 +690,7 @@ export function SlideIdealVsFeasible({ content }: { content: any }) {
 
   return (
     <SlideWrapper color="#8b5cf6">
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: isVertical ? 'space-evenly' : 'center' }}>
         <Chip label="ACT 2 · THE DISCONNECT" size="small" sx={{ alignSelf: 'flex-start', mb: 1, bgcolor: alpha('#8b5cf6', 0.12), color: '#7c3aed', fontWeight: 800, fontSize: '0.7rem' }} />
         <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '1.15rem' : '1.8rem', md: isVertical ? '1.35rem' : '2.5rem' }, color: '#0f172a', mb: isVertical ? 1.25 : 3 }}>
           {content.title || 'Ideal vs. Feasible: Why Generic Fixes Fail'}
@@ -765,7 +765,7 @@ export function SlidePowerMap({ content }: { content: any }) {
 
   return (
     <SlideWrapper color="#0ea5e9">
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: isVertical ? 'space-evenly' : 'center' }}>
         <Chip label="ACT 2 · POLITICAL ECONOMY" size="small" sx={{ alignSelf: 'flex-start', mb: 1, bgcolor: alpha('#0ea5e9', 0.12), color: '#0284c7', fontWeight: 800, fontSize: '0.7rem' }} />
         <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '1.15rem' : '1.8rem', md: isVertical ? '1.35rem' : '2.5rem' }, color: '#0f172a', mb: isVertical ? 1.25 : 3 }}>
           {content.title || 'Power Map: Deciders, Enforcers & Payers'}
@@ -800,7 +800,7 @@ export function SlideResponseAudit({ content }: { content: any }) {
 
   return (
     <SlideWrapper color="#10b981">
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: isVertical ? 'space-evenly' : 'center' }}>
         <Chip label="ACT 2 · RESPONSE AUDIT" size="small" sx={{ alignSelf: 'flex-start', mb: 1, bgcolor: alpha('#10b981', 0.12), color: '#059669', fontWeight: 800, fontSize: '0.7rem' }} />
         <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '1.15rem' : '1.8rem', md: isVertical ? '1.35rem' : '2.5rem' }, color: '#0f172a', mb: isVertical ? 1.25 : 3 }}>
           {content.title || 'Response Audit: Status Quo vs. What Actually Works'}
@@ -837,7 +837,7 @@ export function SlideBoundaryTest({ content }: { content: any }) {
 
   return (
     <SlideWrapper color="#6366f1">
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: isVertical ? 'space-evenly' : 'center' }}>
         <Chip label="ACT 2 · THE 4-GATE PROOF" size="small" sx={{ alignSelf: 'flex-start', mb: 1, bgcolor: alpha('#6366f1', 0.12), color: '#4f46e5', fontWeight: 800, fontSize: '0.7rem' }} />
         <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '1.15rem' : '1.8rem', md: isVertical ? '1.35rem' : '2.4rem' }, color: '#0f172a', mb: isVertical ? 1.25 : 3 }}>
           {content.title || 'Boundary Test: 4 Non-Negotiable Gateways'}
@@ -940,7 +940,7 @@ export function SlideForkedClose({ content }: { content: any }) {
 
   return (
     <SlideWrapper color="#7c3aed">
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: isVertical ? 'space-evenly' : 'center' }}>
         <Chip label="ACT 3 · THE AUDIENCE FORK" size="small" sx={{ alignSelf: 'flex-start', mb: 1, bgcolor: alpha('#7c3aed', 0.12), color: '#6d28d9', fontWeight: 800, fontSize: '0.7rem' }} />
         <Typography sx={{ fontWeight: 900, fontSize: { xs: isVertical ? '1.15rem' : '1.8rem', md: isVertical ? '1.35rem' : '2.5rem' }, color: '#0f172a', mb: isVertical ? 1.25 : 3 }}>
           {content.title || 'Two Diverging Futures: The Operational Choice'}
@@ -1061,22 +1061,26 @@ export function renderSlidePreviewContent(
 
     // 2. Ecosystem Job / Talent Spotlight (Format B: Opportunity & Execution Slides)
     if (isJob) {
+      const jobContent = {
+        ...c,
+        id: c.id || c.jobId || item.sourceId || item.id,
+      };
       const isExecution =
         item.originalBlockType === 'job_execution' ||
         item.defBlockId === 'job_execution' ||
         item.slideIndex === 2 ||
-        Boolean(c.roleScope);
+        Boolean(jobContent.roleScope);
       if (isVertical) {
         return isExecution ? (
-          <MobileJobExecutionSlide content={c} />
+          <MobileJobExecutionSlide content={jobContent} />
         ) : (
-          <MobileJobOpportunitySlide content={c} />
+          <MobileJobOpportunitySlide content={jobContent} />
         );
       } else {
         return isExecution ? (
-          <DesktopJobExecutionSlide content={c} />
+          <DesktopJobExecutionSlide content={jobContent} />
         ) : (
-          <DesktopJobOpportunitySlide content={c} />
+          <DesktopJobOpportunitySlide content={jobContent} />
         );
       }
     }

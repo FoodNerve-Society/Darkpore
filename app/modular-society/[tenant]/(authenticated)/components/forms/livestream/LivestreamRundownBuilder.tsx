@@ -40,6 +40,7 @@ import {
   AspectRatio as AspectRatioIcon,
   Laptop as DesktopIcon,
   PhoneIphone as MobileIcon,
+  Link as LinkIcon,
 } from '@mui/icons-material';
 import { alpha } from '@mui/system';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
@@ -110,11 +111,22 @@ export function decomposeJobIntoSlides(job: any): Partial<RundownItem>[] {
   const applicationMode = job.applicationMode || 'Apply Live On Stage';
 
   // Construct full verified careers deep-link
+  const rawId = job.id || job._id || job.slug;
+  const jobId = rawId && !String(rawId).startsWith('manual-') ? String(rawId) : null;
   let fullApplyUrl = job.applicationUrl || job.applyUrl || job.url || job.link || job.ctaLink;
-  if (!fullApplyUrl || fullApplyUrl === 'foodnerve.org/careers' || fullApplyUrl === '/careers') {
-    fullApplyUrl = job.id && !String(job.id).startsWith('manual-')
-      ? `https://foodnerve.org/careers/${job.id}`
-      : 'https://foodnerve.org/careers';
+
+  const isGenericCareers =
+    !fullApplyUrl ||
+    fullApplyUrl === 'foodnerve.org/careers' ||
+    fullApplyUrl === '/careers' ||
+    fullApplyUrl === 'https://foodnerve.org/careers' ||
+    fullApplyUrl === 'http://foodnerve.org/careers' ||
+    fullApplyUrl === 'https://foodnerve.org/careers/' ||
+    fullApplyUrl.endsWith('/careers') ||
+    fullApplyUrl.endsWith('/careers/');
+
+  if (isGenericCareers) {
+    fullApplyUrl = jobId ? `https://foodnerve.org/careers/${jobId}` : 'https://foodnerve.org/careers';
   } else if (fullApplyUrl.startsWith('/')) {
     fullApplyUrl = `https://foodnerve.org${fullApplyUrl}`;
   } else if (!fullApplyUrl.startsWith('http://') && !fullApplyUrl.startsWith('https://')) {
@@ -2403,20 +2415,38 @@ export default function LivestreamRundownBuilder({
 
                     {/* Card Content & Action Button */}
                     <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between', gap: 1.5 }}>
-                      <Typography
-                        sx={{
-                          fontWeight: 800,
-                          fontSize: '0.9rem',
-                          color: '#0f172a',
-                          lineHeight: 1.35,
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden',
-                        }}
-                      >
-                        {job.title}
-                      </Typography>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                        <Typography
+                          sx={{
+                            fontWeight: 800,
+                            fontSize: '0.9rem',
+                            color: '#0f172a',
+                            lineHeight: 1.35,
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                          }}
+                        >
+                          {job.title}
+                        </Typography>
+                        <Typography
+                          sx={{
+                            fontSize: '0.72rem',
+                            color: '#059669',
+                            fontWeight: 700,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.5,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          <LinkIcon sx={{ fontSize: 13, flexShrink: 0 }} />
+                          {job.id ? `https://foodnerve.org/careers/${job.id}` : 'https://foodnerve.org/careers'}
+                        </Typography>
+                      </Box>
 
                       <Box sx={{ display: 'flex', gap: 1 }}>
                         <Button

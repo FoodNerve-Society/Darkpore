@@ -242,7 +242,7 @@ export default function LivestreamStagePage() {
             width: '100vw !important',
             height: '100vh !important',
             overflow: 'hidden !important',
-            backgroundColor: isTransparent ? 'transparent !important' : '#000000 !important',
+            backgroundColor: isTransparent ? 'transparent !important' : '#f8fafc !important',
             boxSizing: 'border-box !important',
           },
           '#root, #__next': {
@@ -263,10 +263,10 @@ export default function LivestreamStagePage() {
           bottom: 0,
           width: '100vw',
           height: '100vh',
-          bgcolor: isTransparent ? 'transparent' : '#000000',
+          bgcolor: isTransparent ? 'transparent' : '#f8fafc',
           overflow: 'hidden',
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'stretch',
           justifyContent: 'center',
           m: 0,
           p: 0,
@@ -274,20 +274,18 @@ export default function LivestreamStagePage() {
           userSelect: 'none',
         }}
       >
-        {/* Presentation Stage Surface: Container adjusts to 16:9 Landscape or 9:16 Portrait cleanly */}
+        {/* Presentation Stage Surface: Fills stage window seamlessly edge-to-edge with zero black side bars */}
         <Box
           sx={{
+            width: '100%',
             height: '100%',
-            maxHeight: '100vh',
-            aspectRatio: aspectRatio === '9:16' ? '9/16' : '16/9',
-            maxWidth: '100vw',
             display: 'flex',
-            alignItems: 'center',
+            alignItems: 'stretch',
             justifyContent: 'center',
             position: 'relative',
-            transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
-            m: 'auto',
+            m: 0,
             p: 0,
+            overflow: 'hidden',
           }}
         >
           {renderCurrentSlide()}
