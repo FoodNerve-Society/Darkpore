@@ -429,7 +429,7 @@ export function DesktopCallToActionSlide({ content }: { content: any }) {
         <Button
           variant="contained"
           endIcon={<ArrowForwardIcon />}
-          sx={{ bgcolor: '#0f172a', color: '#ffffff', fontWeight: 900, fontSize: '1.1rem', py: 1.75, px: 4, borderRadius: '16px', mb: 2.5, boxShadow: '0 10px 30px rgba(0,0,0,0.15)', '&:hover': { bgcolor: '#1e293b' } }}
+          sx={{ bgcolor: '#0f172a', color: '#ffffff', fontWeight: 900, fontSize: '1.1rem', py: 1.75, px: 4, borderRadius: '12px', mb: 2.5, boxShadow: '0 10px 30px rgba(0,0,0,0.15)', '&:hover': { bgcolor: '#1e293b' } }}
         >
           {buttonText}
         </Button>

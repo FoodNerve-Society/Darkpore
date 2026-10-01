@@ -3454,10 +3454,6 @@ export default function LivestreamRundownBuilder({
                         </Box>
                       );
                     })}
-                          </Box>
-                        </Box>
-                      );
-                    })}
                   </Box>
                 )}
               </Box>
