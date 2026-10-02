@@ -41,7 +41,10 @@ import {
   Laptop as DesktopIcon,
   PhoneIphone as MobileIcon,
   Link as LinkIcon,
+  Edit as EditIcon,
+  RestartAlt as ResetIcon,
 } from '@mui/icons-material';
+import PremiumTextField from '@/components/PremiumTextField';
 import { alpha } from '@mui/system';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
@@ -869,26 +872,28 @@ function SortableRundownCard({
 
           {/* 1. Anchor Tension */}
           {item.defBlockId === 'anchor_tension' && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <TextField
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="Crisis Reality Headline"
                 placeholder="e.g. Field Crisis Snapshot: The Ground Disconnect"
                 value={c.title || c.text || ''}
                 onChange={(e) => updateContent({ title: e.target.value, text: e.target.value })}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', fontWeight: 700 } }}
               />
-              <Box sx={{ display: 'flex', gap: 1.5 }}>
-                <TextField
-                  sx={{ width: '38%' }}
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1.8fr', gap: 1.5 }}>
+                <PremiumTextField
+                  colorTheme={themeColor}
+                  fullWidth
                   size="small"
                   label="Tension Metric / Stat"
                   placeholder="e.g. ₦340B Lost"
                   value={c.stat || ''}
                   onChange={(e) => updateContent({ stat: e.target.value })}
                 />
-                <TextField
+                <PremiumTextField
+                  colorTheme={themeColor}
                   fullWidth
                   size="small"
                   label="Stat Scope / Citation"
@@ -902,7 +907,8 @@ function SortableRundownCard({
                 <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569', display: 'flex', alignItems: 'center', gap: 0.75 }}>
                   <ImageIcon sx={{ fontSize: 16 }} /> Crisis Photo / Evidence URL & Aspect Ratio
                 </Typography>
-                <TextField
+                <PremiumTextField
+                  colorTheme={themeColor}
                   fullWidth
                   size="small"
                   placeholder="https://... photo or field report image URL"
@@ -934,17 +940,18 @@ function SortableRundownCard({
 
           {/* 2. Reframe Question */}
           {item.defBlockId === 'reframe_question' && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <TextField
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="The Spiky Pivot Question"
                 placeholder="e.g. What if the barrier isn’t seed access, but spatial land tenure?"
                 value={c.title || c.text || ''}
                 onChange={(e) => updateContent({ title: e.target.value, text: e.target.value })}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', fontWeight: 700 } }}
               />
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="The Conventional Belief Being Rejected (Strikethrough)"
@@ -952,7 +959,8 @@ function SortableRundownCard({
                 value={c.convention || ''}
                 onChange={(e) => updateContent({ convention: e.target.value })}
               />
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="Strategic Shift / Takeaway"
@@ -966,16 +974,17 @@ function SortableRundownCard({
           {/* 3. Funnel System */}
           {item.defBlockId === 'funnel_system' && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="Diagnostic Overview Title"
                 placeholder="e.g. Layered Diagnostic: Tracing the Root Friction"
                 value={c.title || ''}
                 onChange={(e) => updateContent({ title: e.target.value })}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', fontWeight: 700 } }}
               />
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="Layer 1: Immediate Field Symptom"
@@ -983,7 +992,8 @@ function SortableRundownCard({
                 value={c.layer1 || ''}
                 onChange={(e) => updateContent({ layer1: e.target.value })}
               />
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="Layer 2: Logistics & Highway Friction"
@@ -991,7 +1001,8 @@ function SortableRundownCard({
                 value={c.layer2 || ''}
                 onChange={(e) => updateContent({ layer2: e.target.value })}
               />
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="Layer 3: Structural Policy Lock"
@@ -1005,16 +1016,17 @@ function SortableRundownCard({
           {/* 4. Ideal vs Feasible */}
           {item.defBlockId === 'ideal_vs_feasible' && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="Slide Title"
                 placeholder="e.g. Ideal vs. Feasible: Why Generic Fixes Fail"
                 value={c.title || ''}
                 onChange={(e) => updateContent({ title: e.target.value })}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', fontWeight: 700 } }}
               />
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="The NGO Dream (The Superficial Proposal)"
@@ -1022,7 +1034,8 @@ function SortableRundownCard({
                 value={c.ngoDream || c.myth || ''}
                 onChange={(e) => updateContent({ ngoDream: e.target.value, myth: e.target.value })}
               />
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="The Ground Fracture (Where it Breaks)"
@@ -1030,7 +1043,8 @@ function SortableRundownCard({
                 value={c.fracturePoint || ''}
                 onChange={(e) => updateContent({ fracturePoint: e.target.value })}
               />
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="The Feasible Operator Workaround"
@@ -1044,25 +1058,27 @@ function SortableRundownCard({
           {/* 5. Scaled Burden */}
           {item.defBlockId === 'scaled_burden' && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="Macro Loss Headline"
                 placeholder="e.g. Annual Perishable Crop Loss Across The Belt"
                 value={c.title || ''}
                 onChange={(e) => updateContent({ title: e.target.value })}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', fontWeight: 700 } }}
               />
-              <Box sx={{ display: 'flex', gap: 1.5 }}>
-                <TextField
-                  sx={{ width: '40%' }}
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: 1.5 }}>
+                <PremiumTextField
+                  colorTheme={themeColor}
+                  fullWidth
                   size="small"
                   label="Big Stat Numeral"
                   placeholder="e.g. 2.4M Tons or ₦340B"
                   value={c.stat || ''}
                   onChange={(e) => updateContent({ stat: e.target.value })}
                 />
-                <TextField
+                <PremiumTextField
+                  colorTheme={themeColor}
                   fullWidth
                   size="small"
                   label="Stat Scope Label"
@@ -1071,7 +1087,8 @@ function SortableRundownCard({
                   onChange={(e) => updateContent({ label: e.target.value })}
                 />
               </Box>
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="Who Absorbs The Loss"
@@ -1081,7 +1098,8 @@ function SortableRundownCard({
               />
               {/* Optional Chart/Image */}
               <Box sx={{ p: 1.5, borderRadius: '12px', bgcolor: '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', gap: 1.5, alignItems: 'center' }}>
-                <TextField
+                <PremiumTextField
+                  colorTheme={themeColor}
                   fullWidth
                   size="small"
                   placeholder="Optional Chart / Graph URL"
@@ -1101,16 +1119,17 @@ function SortableRundownCard({
           {/* 6. Power Map */}
           {item.defBlockId === 'power_map' && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="Power Map Headline"
                 placeholder="e.g. Power Map: Deciders, Enforcers & Payers"
                 value={c.title || ''}
                 onChange={(e) => updateContent({ title: e.target.value })}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', fontWeight: 700 } }}
               />
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="🏛️ The Deciders (Regulators & Boards)"
@@ -1118,7 +1137,8 @@ function SortableRundownCard({
                 value={c.deciders || ''}
                 onChange={(e) => updateContent({ deciders: e.target.value })}
               />
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="⚖️ The Enforcers (Cartels & Middlemen)"
@@ -1126,7 +1146,8 @@ function SortableRundownCard({
                 value={c.enforcers || ''}
                 onChange={(e) => updateContent({ enforcers: e.target.value })}
               />
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="💸 The Payers (Processors & Plants)"
@@ -1140,16 +1161,17 @@ function SortableRundownCard({
           {/* 7. Response Audit */}
           {item.defBlockId === 'response_audit' && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="Response Audit Headline"
                 placeholder="e.g. Response Audit: Status Quo vs. What Actually Works"
                 value={c.title || ''}
                 onChange={(e) => updateContent({ title: e.target.value })}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', fontWeight: 700 } }}
               />
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="What The Industry Keeps Doing (Status Quo Failure)"
@@ -1157,8 +1179,9 @@ function SortableRundownCard({
                 value={c.statusQuo || ''}
                 onChange={(e) => updateContent({ statusQuo: e.target.value })}
               />
-              <Box sx={{ display: 'flex', gap: 1.5 }}>
-                <TextField
+              <Box sx={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 1.5 }}>
+                <PremiumTextField
+                  colorTheme={themeColor}
                   fullWidth
                   size="small"
                   label="What Actually Moves The Needle"
@@ -1166,8 +1189,9 @@ function SortableRundownCard({
                   value={c.provenMove || ''}
                   onChange={(e) => updateContent({ provenMove: e.target.value })}
                 />
-                <TextField
-                  sx={{ width: '35%' }}
+                <PremiumTextField
+                  colorTheme={themeColor}
+                  fullWidth
                   size="small"
                   label="Measured Gain"
                   placeholder="e.g. +34% Net Margin"
@@ -1181,38 +1205,46 @@ function SortableRundownCard({
           {/* 8. Boundary Test */}
           {item.defBlockId === 'boundary_test' && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="Boundary Test Title"
                 placeholder="e.g. Boundary Test: 4 Non-Negotiable Gateways"
                 value={c.title || ''}
                 onChange={(e) => updateContent({ title: e.target.value })}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', fontWeight: 700 } }}
               />
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
-                <TextField
+                <PremiumTextField
+                  colorTheme={themeColor}
+                  fullWidth
                   size="small"
                   label="Gate 1: Regulatory Pathway"
                   placeholder="e.g. Operates within existing state gazettes"
                   value={c.gate1 || ''}
                   onChange={(e) => updateContent({ gate1: e.target.value })}
                 />
-                <TextField
+                <PremiumTextField
+                  colorTheme={themeColor}
+                  fullWidth
                   size="small"
                   label="Gate 2: Scale Velocity"
                   placeholder="e.g. Can expand along corridor"
                   value={c.gate2 || ''}
                   onChange={(e) => updateContent({ gate2: e.target.value })}
                 />
-                <TextField
+                <PremiumTextField
+                  colorTheme={themeColor}
+                  fullWidth
                   size="small"
                   label="Gate 3: Exact Intervention Point"
                   placeholder="e.g. Bonded aggregation hub"
                   value={c.gate3 || ''}
                   onChange={(e) => updateContent({ gate3: e.target.value })}
                 />
-                <TextField
+                <PremiumTextField
+                  colorTheme={themeColor}
+                  fullWidth
                   size="small"
                   label="Gate 4: 90-Day Target KPI"
                   placeholder="e.g. 500 Tons Cleared by Q3"
@@ -1226,25 +1258,27 @@ function SortableRundownCard({
           {/* 9. Preempt Objections */}
           {item.defBlockId === 'preempt_objections' && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="The Skeptic's Objection (Voiced from Chat)"
                 placeholder="e.g. Farmers will default and side-sell as soon as open market prices spike"
                 value={c.skepticQuote || c.quote || ''}
                 onChange={(e) => updateContent({ skepticQuote: e.target.value, quote: e.target.value })}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', fontWeight: 700 } }}
               />
-              <Box sx={{ display: 'flex', gap: 1.5 }}>
-                <TextField
-                  sx={{ width: '35%' }}
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1.8fr', gap: 1.5 }}>
+                <PremiumTextField
+                  colorTheme={themeColor}
+                  fullWidth
                   size="small"
                   label="Proof Stat Numeral"
                   placeholder="e.g. 94.2% Honor Rate"
                   value={c.stat || ''}
                   onChange={(e) => updateContent({ stat: e.target.value })}
                 />
-                <TextField
+                <PremiumTextField
+                  colorTheme={themeColor}
                   fullWidth
                   size="small"
                   label="Empirical Disproof Data"
@@ -1253,7 +1287,8 @@ function SortableRundownCard({
                   onChange={(e) => updateContent({ disproofData: e.target.value })}
                 />
               </Box>
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="Citation / Historical Cohort Source"
@@ -1267,16 +1302,17 @@ function SortableRundownCard({
           {/* 10. Return to Case */}
           {item.defBlockId === 'return_to_case' && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="Case Re-evaluation Headline"
                 placeholder="e.g. Re-evaluating the Opening Case: A Solved Equation"
                 value={c.title || ''}
                 onChange={(e) => updateContent({ title: e.target.value })}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', fontWeight: 700 } }}
               />
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="Proven Operational Transformation"
@@ -1284,7 +1320,8 @@ function SortableRundownCard({
                 value={c.subheadline || ''}
                 onChange={(e) => updateContent({ subheadline: e.target.value })}
               />
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 placeholder="Image URL (optional before/after comparison)"
@@ -1297,16 +1334,17 @@ function SortableRundownCard({
           {/* 11. Forked Close */}
           {item.defBlockId === 'forked_close' && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="Fork Title"
                 placeholder="e.g. Two Diverging Futures: The Operational Choice"
                 value={c.title || ''}
                 onChange={(e) => updateContent({ title: e.target.value })}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', fontWeight: 700 } }}
               />
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="Path A: Status Quo Bleed"
@@ -1314,7 +1352,8 @@ function SortableRundownCard({
                 value={c.pathACost || ''}
                 onChange={(e) => updateContent({ pathACost: e.target.value })}
               />
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="Path B: Scaled Action ROI"
@@ -1328,15 +1367,16 @@ function SortableRundownCard({
           {/* 12. Talent Spotlight / Jobs (Format B: Opportunity vs Execution) */}
           {item.originalBlockType === 'job_execution' && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="Role Title (Execution Mandate)"
                 value={c.jobTitle || c.title || ''}
                 onChange={(e) => updateContent({ jobTitle: e.target.value, title: e.target.value })}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', fontWeight: 700 } }}
               />
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 multiline
                 rows={2}
@@ -1346,7 +1386,8 @@ function SortableRundownCard({
                 value={c.roleScope || ''}
                 onChange={(e) => updateContent({ roleScope: e.target.value })}
               />
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="Prerequisites / Qualification Standard"
@@ -1354,7 +1395,8 @@ function SortableRundownCard({
                 value={c.prerequisites || ''}
                 onChange={(e) => updateContent({ prerequisites: e.target.value })}
               />
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="Direct Application URL / CTA Link"
@@ -1367,17 +1409,18 @@ function SortableRundownCard({
 
           {(item.originalBlockType === 'job_opportunity' || item.defBlockId === 'talent_spotlight' || (isJob && item.originalBlockType !== 'job_execution')) && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="Opportunity / Role Title"
                 placeholder="e.g. Lead Logistics Operator — Northern Corridor"
                 value={c.jobTitle || c.title || ''}
                 onChange={(e) => updateContent({ jobTitle: e.target.value, title: e.target.value })}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', fontWeight: 700 } }}
               />
-              <Box sx={{ display: 'flex', gap: 1.5 }}>
-                <TextField
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 1.5 }}>
+                <PremiumTextField
+                  colorTheme={themeColor}
                   fullWidth
                   size="small"
                   label="Hiring Organization"
@@ -1385,8 +1428,9 @@ function SortableRundownCard({
                   value={c.orgName || ''}
                   onChange={(e) => updateContent({ orgName: e.target.value })}
                 />
-                <TextField
-                  sx={{ width: '45%' }}
+                <PremiumTextField
+                  colorTheme={themeColor}
+                  fullWidth
                   size="small"
                   label="Compensation / Package"
                   placeholder="e.g. $45k - $60k + Equity"
@@ -1394,8 +1438,9 @@ function SortableRundownCard({
                   onChange={(e) => updateContent({ salary: e.target.value, compensationOrTarget: e.target.value })}
                 />
               </Box>
-              <Box sx={{ display: 'flex', gap: 1.5 }}>
-                <TextField
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+                <PremiumTextField
+                  colorTheme={themeColor}
                   fullWidth
                   size="small"
                   label="Location"
@@ -1403,7 +1448,8 @@ function SortableRundownCard({
                   value={c.location || ''}
                   onChange={(e) => updateContent({ location: e.target.value })}
                 />
-                <TextField
+                <PremiumTextField
+                  colorTheme={themeColor}
                   fullWidth
                   size="small"
                   label="Application URL"
@@ -1418,16 +1464,17 @@ function SortableRundownCard({
           {/* 13. Protocol Step Slide */}
           {item.originalBlockType === 'protocol_step' && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="Step Title"
                 placeholder="e.g. Calibrate Spatial Moisture Sensors"
                 value={c.stepTitle || c.title || ''}
                 onChange={(e) => updateContent({ stepTitle: e.target.value, title: e.target.value })}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', fontWeight: 700 } }}
               />
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 multiline
                 rows={2}
@@ -1437,8 +1484,9 @@ function SortableRundownCard({
                 value={c.action || c.description || c.text || ''}
                 onChange={(e) => updateContent({ action: e.target.value, description: e.target.value, text: e.target.value })}
               />
-              <Box sx={{ display: 'flex', gap: 1.5 }}>
-                <TextField
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+                <PremiumTextField
+                  colorTheme={themeColor}
                   fullWidth
                   size="small"
                   label="Assigned Operator"
@@ -1446,7 +1494,8 @@ function SortableRundownCard({
                   value={c.owner || ''}
                   onChange={(e) => updateContent({ owner: e.target.value })}
                 />
-                <TextField
+                <PremiumTextField
+                  colorTheme={themeColor}
                   fullWidth
                   size="small"
                   label="Target Deliverable / Output"
@@ -1461,7 +1510,8 @@ function SortableRundownCard({
           {/* 14. Myth Slide */}
           {item.originalBlockType === 'myth_slide' && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 multiline
                 rows={2}
@@ -1470,9 +1520,9 @@ function SortableRundownCard({
                 placeholder="The industry assumption..."
                 value={c.myth || c.text || ''}
                 onChange={(e) => updateContent({ myth: e.target.value, text: e.target.value })}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', fontWeight: 700 } }}
               />
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="Context / Narrative Breakdown"
@@ -1486,7 +1536,8 @@ function SortableRundownCard({
           {/* 15. Fact Slide */}
           {item.originalBlockType === 'fact_slide' && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 multiline
                 rows={2}
@@ -1495,18 +1546,19 @@ function SortableRundownCard({
                 placeholder="The verified fact..."
                 value={c.fact || c.reality || ''}
                 onChange={(e) => updateContent({ fact: e.target.value, reality: e.target.value })}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', fontWeight: 700 } }}
               />
-              <Box sx={{ display: 'flex', gap: 1.5 }}>
-                <TextField
-                  sx={{ width: '40%' }}
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: 1.5 }}>
+                <PremiumTextField
+                  colorTheme={themeColor}
+                  fullWidth
                   size="small"
                   label="Key Metric / Stat"
                   placeholder="e.g. 98.4% Retention"
                   value={c.stat || ''}
                   onChange={(e) => updateContent({ stat: e.target.value })}
                 />
-                <TextField
+                <PremiumTextField
+                  colorTheme={themeColor}
                   fullWidth
                   size="small"
                   label="Empirical Proof Data"
@@ -1521,16 +1573,17 @@ function SortableRundownCard({
           {/* 16. Comparison Option */}
           {item.originalBlockType === 'comparison_option' && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="Option / Model Name"
                 placeholder="e.g. Option A: Decentralized Storage Hubs"
                 value={c.title || ''}
                 onChange={(e) => updateContent({ title: e.target.value })}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', fontWeight: 700 } }}
               />
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="Subtitle / Classification"
@@ -1538,7 +1591,8 @@ function SortableRundownCard({
                 value={c.subtitle || ''}
                 onChange={(e) => updateContent({ subtitle: e.target.value })}
               />
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 multiline
                 rows={2}
@@ -1554,17 +1608,18 @@ function SortableRundownCard({
           {/* 17. Comparison Verdict */}
           {item.originalBlockType === 'comparison_verdict' && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="Verdict Title"
                 placeholder="e.g. Strategic Recommendation & Verdict"
                 value={c.title || ''}
                 onChange={(e) => updateContent({ title: e.target.value })}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', fontWeight: 700 } }}
               />
-              <Box sx={{ display: 'flex', gap: 1.5 }}>
-                <TextField
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 1.5 }}>
+                <PremiumTextField
+                  colorTheme={themeColor}
                   fullWidth
                   size="small"
                   label="Recommended Architecture / Winner"
@@ -1572,8 +1627,9 @@ function SortableRundownCard({
                   value={c.winnerName || ''}
                   onChange={(e) => updateContent({ winnerName: e.target.value })}
                 />
-                <TextField
-                  sx={{ width: '40%' }}
+                <PremiumTextField
+                  colorTheme={themeColor}
+                  fullWidth
                   size="small"
                   label="ROI Score / Advantage"
                   placeholder="e.g. 3.4x Capital Efficiency"
@@ -1581,7 +1637,8 @@ function SortableRundownCard({
                   onChange={(e) => updateContent({ roiScore: e.target.value })}
                 />
               </Box>
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 multiline
                 rows={2}
@@ -1597,26 +1654,28 @@ function SortableRundownCard({
           {/* 18. Timeline Milestone */}
           {item.originalBlockType === 'timeline_milestone' && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
-              <Box sx={{ display: 'flex', gap: 1.5 }}>
-                <TextField
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 1.5 }}>
+                <PremiumTextField
+                  colorTheme={themeColor}
+                  fullWidth
                   size="small"
                   label="Phase / Year"
                   placeholder="e.g. Phase 01: Q2 2026"
                   value={c.phaseOrYear || ''}
                   onChange={(e) => updateContent({ phaseOrYear: e.target.value })}
-                  sx={{ width: '40%', '& .MuiOutlinedInput-root': { borderRadius: '12px', fontWeight: 700 } }}
                 />
-                <TextField
+                <PremiumTextField
+                  colorTheme={themeColor}
                   fullWidth
                   size="small"
                   label="Milestone Title"
                   placeholder="e.g. Grid Ingestion Calibration"
                   value={c.title || ''}
                   onChange={(e) => updateContent({ title: e.target.value })}
-                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', fontWeight: 700 } }}
                 />
               </Box>
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 multiline
                 rows={2}
@@ -1632,26 +1691,28 @@ function SortableRundownCard({
           {/* Fallback for regular article blocks or generic slides */}
           {!item.defBlockId && !isJob && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
-              <TextField
+              <PremiumTextField
+                colorTheme={themeColor}
                 fullWidth
                 size="small"
                 label="Slide Headline / Main Claim"
                 placeholder="Enter punchy slide claim..."
                 value={c.title || c.text || c.role || ''}
                 onChange={(e) => updateContent({ title: e.target.value, text: e.target.value })}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', fontWeight: 700 } }}
               />
               {item.originalBlockType === 'highlight_card' ? (
-                <Box sx={{ display: 'flex', gap: 1.5 }}>
-                  <TextField
-                    sx={{ width: '40%' }}
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: 1.5 }}>
+                  <PremiumTextField
+                    colorTheme={themeColor}
+                    fullWidth
                     size="small"
                     label="Callout Stat / Value"
                     placeholder="e.g. ₦340B Lost"
                     value={c.stat || ''}
                     onChange={(e) => updateContent({ stat: e.target.value })}
                   />
-                  <TextField
+                  <PremiumTextField
+                    colorTheme={themeColor}
                     fullWidth
                     size="small"
                     label="Stat Label / Context"
@@ -1662,7 +1723,8 @@ function SortableRundownCard({
                 </Box>
               ) : item.originalBlockType === 'myth_fact' ? (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                  <TextField
+                  <PremiumTextField
+                    colorTheme={themeColor}
                     fullWidth
                     size="small"
                     label="The Myth"
@@ -1670,7 +1732,8 @@ function SortableRundownCard({
                     value={c.myth || ''}
                     onChange={(e) => updateContent({ myth: e.target.value })}
                   />
-                  <TextField
+                  <PremiumTextField
+                    colorTheme={themeColor}
                     fullWidth
                     size="small"
                     label="Ground Truth"
@@ -1680,7 +1743,8 @@ function SortableRundownCard({
                   />
                 </Box>
               ) : (
-                <TextField
+                <PremiumTextField
+                  colorTheme={themeColor}
                   fullWidth
                   size="small"
                   label="Subheadline / Context Description"
@@ -1777,6 +1841,1039 @@ function SortableRundownCard({
                 },
               }}
             />
+          </Box>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
+// ----------------------------------------------------------------------
+// Flippable Candidate Slide Card for Article Deck Generator Modal
+// Features 3D preserve-3d flip animation and tailored editing with PremiumTextField
+// ----------------------------------------------------------------------
+function CandidateSlideCard({
+  candidate,
+  hubColor,
+  articleModalAspect,
+  isAlreadyInRundown,
+  onPickSlide,
+  onOpenPreview,
+}: {
+  candidate: {
+    slideItem: RundownItem;
+    parentBlock: any;
+    blockIndex: number;
+    stepIndex: number;
+    totalSteps: number;
+    isCompound: boolean;
+  };
+  hubColor: string;
+  articleModalAspect: '16:9' | '9:16';
+  isAlreadyInRundown: boolean;
+  onPickSlide: (item: RundownItem) => void;
+  onOpenPreview: (item: RundownItem) => void;
+}) {
+  const { parentBlock, isCompound, stepIndex, totalSteps } = candidate;
+  const [slideItem, setSlideItem] = useState<RundownItem>(candidate.slideItem);
+  const [initialContent] = useState<any>(() => JSON.parse(JSON.stringify(candidate.slideItem.originalContent || {})));
+  const [isFlipped, setIsFlipped] = useState(false);
+
+  useEffect(() => {
+    setSlideItem(candidate.slideItem);
+  }, [candidate.slideItem]);
+
+  const updateContent = (updates: Record<string, any>) => {
+    setSlideItem((prev) => {
+      const updated = {
+        ...prev,
+        originalContent: {
+          ...(prev.originalContent || {}),
+          ...updates,
+        },
+      };
+      candidate.slideItem.originalContent = updated.originalContent;
+      return updated;
+    });
+  };
+
+  const resetContent = () => {
+    setSlideItem((prev) => {
+      const updated = {
+        ...prev,
+        originalContent: JSON.parse(JSON.stringify(initialContent)),
+      };
+      candidate.slideItem.originalContent = updated.originalContent;
+      return updated;
+    });
+  };
+
+  const c = slideItem.originalContent || {};
+  const blockType = slideItem.originalBlockType || parentBlock.blockType || 'slide';
+
+  // Determine theme color for this block type
+  const themeColor = useMemo(() => {
+    if (blockType === 'protocol_step') return '#3b82f6';
+    if (blockType === 'myth_slide') return '#ef4444';
+    if (blockType === 'fact_slide') return '#10b981';
+    if (blockType === 'comparison_option') return '#10b981';
+    if (blockType === 'comparison_verdict') return '#7c3aed';
+    if (blockType === 'timeline_milestone') return '#0ea5e9';
+    if (blockType === 'exec_summary') return '#6366f1';
+    if (blockType === 'unit_economics') return '#0f172a';
+    if (blockType === 'persona_dossier') return '#d97706';
+    if (blockType === 'strategic_directive') return '#e11d48';
+    if (blockType === 'call_to_action') return '#8b5cf6';
+    if (blockType === 'live_poll') return '#2563eb';
+    if (blockType === 'job_opportunity' || blockType === 'job_execution') return '#10b981';
+    return '#2563eb';
+  }, [blockType]);
+
+  const title =
+    c.title ||
+    c.stepTitle ||
+    c.myth ||
+    c.fact ||
+    c.name ||
+    c.headline ||
+    c.question ||
+    c.mandate ||
+    c.text ||
+    blockType.replace('_', ' ').toUpperCase() ||
+    'Slide';
+
+  const typeLabel = isCompound
+    ? `${blockType.replace('_', ' ').toUpperCase()} · ${stepIndex}/${totalSteps}`
+    : blockType.replace('_', ' ').toUpperCase();
+
+  return (
+    <Box
+      sx={{
+        perspective: '1200px',
+        width: '100%',
+      }}
+    >
+      <Box
+        sx={{
+          position: 'relative',
+          width: '100%',
+          transformStyle: 'preserve-3d',
+          transition: 'transform 0.55s cubic-bezier(0.4, 0, 0.2, 1)',
+          transform: isFlipped ? 'rotateY(180deg)' : 'none',
+        }}
+      >
+        {/* ── FRONT FACE: Scaled Preview + Summary + Action Buttons ── */}
+        <Box
+          sx={{
+            backfaceVisibility: 'hidden',
+            p: 2,
+            borderRadius: '20px',
+            bgcolor: '#ffffff',
+            border: isAlreadyInRundown
+              ? '1.5px solid rgba(16, 185, 129, 0.6)'
+              : '1.5px solid rgba(226, 232, 240, 0.95)',
+            boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            gap: 1.5,
+            transition: 'all 0.25s ease',
+            '&:hover': {
+              borderColor: isAlreadyInRundown ? '#10b981' : themeColor,
+              transform: 'translateY(-2px)',
+              boxShadow: '0 10px 28px rgba(15, 23, 42, 0.08)',
+            },
+          }}
+        >
+          {/* Slide Header: Block Tag & In Rundown status & Quick Edit Icon */}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+              <Chip
+                size="small"
+                label={typeLabel}
+                sx={{
+                  bgcolor: alpha(themeColor, 0.1),
+                  color: themeColor,
+                  fontWeight: 900,
+                  fontSize: '0.65rem',
+                  height: 20,
+                  borderRadius: '10px',
+                }}
+              />
+              <Chip
+                size="small"
+                label={slideItem.durationStr || '45s'}
+                sx={{ bgcolor: '#f1f5f9', color: '#64748b', fontSize: '0.62rem', height: 20, fontWeight: 700, borderRadius: '10px' }}
+              />
+            </Box>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              {isAlreadyInRundown && (
+                <Chip
+                  size="small"
+                  label="✓ In Rundown"
+                  sx={{ bgcolor: '#dcfce7', color: '#166534', fontWeight: 800, fontSize: '0.62rem', height: 20, borderRadius: '10px' }}
+                />
+              )}
+              <Tooltip title="Edit Slide Fields (Flip Card)">
+                <IconButton
+                  size="small"
+                  onClick={() => setIsFlipped(true)}
+                  sx={{
+                    color: '#64748b',
+                    bgcolor: alpha(themeColor, 0.08),
+                    p: 0.6,
+                    borderRadius: '8px',
+                    '&:hover': {
+                      color: themeColor,
+                      bgcolor: alpha(themeColor, 0.16),
+                    },
+                  }}
+                >
+                  <EditIcon sx={{ fontSize: 15 }} />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          </Box>
+
+          {/* Real Scaled Visual Slide Preview Frame */}
+          <Box
+            onClick={() => onOpenPreview(slideItem)}
+            sx={{
+              width: '100%',
+              maxWidth: articleModalAspect === '9:16' ? 220 : '100%',
+              aspectRatio: articleModalAspect === '9:16' ? '9/16' : '16/9',
+              borderRadius: '12px',
+              overflow: 'hidden',
+              border: '1.5px solid rgba(226, 232, 240, 0.95)',
+              bgcolor: '#f8fafc',
+              position: 'relative',
+              cursor: 'pointer',
+              boxShadow: '0 4px 14px rgba(15, 23, 42, 0.04)',
+              mx: 'auto',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                borderColor: themeColor,
+                boxShadow: `0 6px 20px ${alpha(themeColor, 0.18)}`,
+              },
+            }}
+          >
+            <Box
+              sx={{
+                width: '200%',
+                height: '200%',
+                transform: 'scale(0.5)',
+                transformOrigin: 'top left',
+                pointerEvents: 'none',
+                userSelect: 'none',
+              }}
+            >
+              {renderSlidePreviewContent(slideItem, hubColor, {
+                aspectRatio: articleModalAspect,
+              })}
+            </Box>
+            <Box
+              sx={{
+                position: 'absolute',
+                bottom: 6,
+                right: 6,
+                bgcolor: 'rgba(15, 23, 42, 0.75)',
+                color: '#ffffff',
+                px: 0.85,
+                py: 0.35,
+                borderRadius: '8px',
+                fontSize: '0.62rem',
+                fontWeight: 800,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                backdropFilter: 'blur(4px)',
+              }}
+            >
+              <VisibilityIcon sx={{ fontSize: 11 }} /> Expand
+            </Box>
+          </Box>
+
+          {/* Slide Summary */}
+          <Typography
+            sx={{
+              fontWeight: 800,
+              fontSize: '0.88rem',
+              color: '#0f172a',
+              lineHeight: 1.35,
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+            }}
+          >
+            {String(title)}
+          </Typography>
+
+          {/* Action Buttons: Edit Fields (Flip) & Pick This Slide */}
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: 1 }}>
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<EditIcon sx={{ fontSize: '0.85rem !important' }} />}
+              onClick={() => setIsFlipped(true)}
+              sx={{
+                borderRadius: '12px',
+                borderColor: alpha(themeColor, 0.35),
+                color: themeColor,
+                fontWeight: 800,
+                fontSize: '0.74rem',
+                textTransform: 'none',
+                py: 0.7,
+                '&:hover': {
+                  borderColor: themeColor,
+                  bgcolor: alpha(themeColor, 0.06),
+                },
+              }}
+            >
+              Edit Fields
+            </Button>
+            <Button
+              size="small"
+              variant="contained"
+              startIcon={<AddIcon sx={{ fontSize: '0.9rem !important' }} />}
+              onClick={() => onPickSlide(slideItem)}
+              sx={{
+                borderRadius: '12px',
+                bgcolor: isAlreadyInRundown ? '#f8fafc' : themeColor,
+                color: isAlreadyInRundown ? '#334155' : '#ffffff',
+                border: isAlreadyInRundown ? '1.5px solid #cbd5e1' : 'none',
+                fontWeight: 800,
+                fontSize: '0.78rem',
+                textTransform: 'none',
+                py: 0.7,
+                boxShadow: 'none',
+                '&:hover': {
+                  bgcolor: isAlreadyInRundown ? '#f1f5f9' : alpha(themeColor, 0.88),
+                },
+              }}
+            >
+              {isAlreadyInRundown ? 'Add Duplicate' : 'Pick This Slide'}
+            </Button>
+          </Box>
+        </Box>
+
+        {/* ── BACK FACE: Tailored Card-Back Form with PremiumTextField ── */}
+        <Box
+          sx={{
+            backfaceVisibility: 'hidden',
+            transform: 'rotateY(180deg)',
+            position: isFlipped ? 'relative' : 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            width: '100%',
+            p: 2.25,
+            borderRadius: '20px',
+            bgcolor: '#ffffff',
+            border: `1.5px solid ${alpha(themeColor, 0.4)}`,
+            boxShadow: '0 16px 40px rgba(15, 23, 42, 0.1)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 1.75,
+          }}
+        >
+          {/* Header Bar */}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1, borderBottom: '1px solid #f1f5f9' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Chip
+                size="small"
+                label={typeLabel}
+                sx={{ bgcolor: alpha(themeColor, 0.12), color: themeColor, fontWeight: 900, fontSize: '0.72rem' }}
+              />
+              <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: '#0f172a' }}>
+                Edit Content
+              </Typography>
+            </Box>
+            <Button
+              size="small"
+              variant="contained"
+              startIcon={<CheckCircleIcon sx={{ fontSize: '0.85rem !important' }} />}
+              onClick={() => setIsFlipped(false)}
+              sx={{
+                bgcolor: '#0f172a',
+                color: '#ffffff',
+                fontWeight: 800,
+                fontSize: '0.72rem',
+                borderRadius: '8px',
+                textTransform: 'none',
+                py: 0.35,
+                px: 1.25,
+                '&:hover': { bgcolor: '#1e293b' },
+              }}
+            >
+              Done
+            </Button>
+          </Box>
+
+          {/* 1. Protocol Step */}
+          {blockType === 'protocol_step' && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <PremiumTextField
+                colorTheme={themeColor}
+                fullWidth
+                size="small"
+                label="Step Title"
+                placeholder="e.g. Protocol Step 1: Pre-Departure Clearance"
+                value={c.stepTitle || c.title || ''}
+                onChange={(e) => updateContent({ stepTitle: e.target.value, title: e.target.value })}
+              />
+              <PremiumTextField
+                colorTheme={themeColor}
+                fullWidth
+                multiline
+                minRows={2}
+                size="small"
+                label="Execution Directive"
+                placeholder="e.g. Weigh reefer trucks at bonded weighbridge before highway entry."
+                value={c.action || c.description || c.text || ''}
+                onChange={(e) => updateContent({ action: e.target.value, description: e.target.value, text: e.target.value })}
+              />
+              <Box sx={{ display: 'flex', gap: 1.5 }}>
+                <PremiumTextField
+                  colorTheme={themeColor}
+                  fullWidth
+                  size="small"
+                  label="Responsible Operator"
+                  placeholder="e.g. Lead Operations Controller"
+                  value={c.owner || ''}
+                  onChange={(e) => updateContent({ owner: e.target.value })}
+                />
+                <PremiumTextField
+                  colorTheme={themeColor}
+                  fullWidth
+                  size="small"
+                  label="Verified Output"
+                  placeholder="e.g. Handover Certificate"
+                  value={c.output || ''}
+                  onChange={(e) => updateContent({ output: e.target.value })}
+                />
+              </Box>
+            </Box>
+          )}
+
+          {/* 2. Myth */}
+          {blockType === 'myth_slide' && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <PremiumTextField
+                colorTheme={themeColor}
+                fullWidth
+                multiline
+                minRows={2}
+                size="small"
+                label="Conventional Myth"
+                placeholder='e.g. "We need more software subsidies to fix farm gate waste"'
+                value={c.myth || c.text || ''}
+                onChange={(e) => updateContent({ myth: e.target.value, text: e.target.value })}
+              />
+              <PremiumTextField
+                colorTheme={themeColor}
+                fullWidth
+                multiline
+                minRows={2}
+                size="small"
+                label="Conventional Assumption Trap Context"
+                placeholder="e.g. Software cannot cross highway checkpoints without physical rail depots."
+                value={c.context || c.subheadline || ''}
+                onChange={(e) => updateContent({ context: e.target.value, subheadline: e.target.value })}
+              />
+            </Box>
+          )}
+
+          {/* 3. Fact */}
+          {blockType === 'fact_slide' && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <PremiumTextField
+                colorTheme={themeColor}
+                fullWidth
+                multiline
+                minRows={2}
+                size="small"
+                label="Ground Truth Reality"
+                placeholder="e.g. Physical aggregation depots capture 42% margin upside."
+                value={c.fact || c.reality || c.text || ''}
+                onChange={(e) => updateContent({ fact: e.target.value, reality: e.target.value, text: e.target.value })}
+              />
+              <PremiumTextField
+                colorTheme={themeColor}
+                fullWidth
+                multiline
+                minRows={2}
+                size="small"
+                label="Verified Proof Point / Metric"
+                placeholder="e.g. ₦180B verified annual volume cleared across northern rail corridors."
+                value={c.disproof || c.metric || c.subheadline || ''}
+                onChange={(e) => updateContent({ disproof: e.target.value, metric: e.target.value, subheadline: e.target.value })}
+              />
+            </Box>
+          )}
+
+          {/* 4. Comparison Option */}
+          {blockType === 'comparison_option' && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <PremiumTextField
+                colorTheme={themeColor}
+                fullWidth
+                size="small"
+                label="Model Option Name"
+                placeholder="e.g. Model B · Challenger"
+                value={c.name || c.title || ''}
+                onChange={(e) => updateContent({ name: e.target.value, title: e.target.value })}
+              />
+              <PremiumTextField
+                colorTheme={themeColor}
+                fullWidth
+                size="small"
+                label="01 · Core Operating Architecture"
+                placeholder="e.g. Off-grid solar cooling at rail terminals."
+                value={c.mechanics || c.description || ''}
+                onChange={(e) => updateContent({ mechanics: e.target.value, description: e.target.value })}
+              />
+              <Box sx={{ display: 'flex', gap: 1.5 }}>
+                <PremiumTextField
+                  colorTheme={themeColor}
+                  fullWidth
+                  size="small"
+                  label="02 · Capex & Risk"
+                  placeholder="e.g. ₦120M initial setup, low operational risk."
+                  value={c.capex || c.cost || ''}
+                  onChange={(e) => updateContent({ capex: e.target.value, cost: e.target.value })}
+                />
+                <PremiumTextField
+                  colorTheme={themeColor}
+                  fullWidth
+                  size="small"
+                  label="03 · Realized Outcome"
+                  placeholder="e.g. 3.2x ROI in 18 months."
+                  value={c.outcome || c.result || ''}
+                  onChange={(e) => updateContent({ outcome: e.target.value, result: e.target.value })}
+                />
+              </Box>
+            </Box>
+          )}
+
+          {/* 5. Comparison Verdict */}
+          {blockType === 'comparison_verdict' && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <PremiumTextField
+                colorTheme={themeColor}
+                fullWidth
+                size="small"
+                label="Winning Operating Model"
+                placeholder="e.g. The Decentralized Pipeline"
+                value={c.winner || ''}
+                onChange={(e) => updateContent({ winner: e.target.value })}
+              />
+              <PremiumTextField
+                colorTheme={themeColor}
+                fullWidth
+                size="small"
+                label="Advantage Metric Badge"
+                placeholder="e.g. +3.4x Net Margin"
+                value={c.metric || ''}
+                onChange={(e) => updateContent({ metric: e.target.value })}
+              />
+              <PremiumTextField
+                colorTheme={themeColor}
+                fullWidth
+                multiline
+                minRows={2}
+                size="small"
+                label="Comparative Realization Verdict"
+                placeholder="e.g. Why capital must pivot to agile off-take clearing hubs."
+                value={c.verdict || c.text || ''}
+                onChange={(e) => updateContent({ verdict: e.target.value, text: e.target.value })}
+              />
+            </Box>
+          )}
+
+          {/* 6. Timeline Milestone */}
+          {blockType === 'timeline_milestone' && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <Box sx={{ display: 'flex', gap: 1.5 }}>
+                <PremiumTextField
+                  colorTheme={themeColor}
+                  sx={{ width: '38%' }}
+                  size="small"
+                  label="Era / Year"
+                  placeholder="e.g. 2023 - 2024"
+                  value={c.era || c.year || c.date || ''}
+                  onChange={(e) => updateContent({ era: e.target.value, year: e.target.value, date: e.target.value })}
+                />
+                <PremiumTextField
+                  colorTheme={themeColor}
+                  fullWidth
+                  size="small"
+                  label="Milestone Event Title"
+                  placeholder="e.g. The Catalytic Crisis Event"
+                  value={c.title || c.event || ''}
+                  onChange={(e) => updateContent({ title: e.target.value, event: e.target.value })}
+                />
+              </Box>
+              <PremiumTextField
+                colorTheme={themeColor}
+                fullWidth
+                multiline
+                minRows={2}
+                size="small"
+                label="Sequence & Shift Description"
+                placeholder="e.g. Sequence of supply chain shocks and policy shifts."
+                value={c.description || c.text || ''}
+                onChange={(e) => updateContent({ description: e.target.value, text: e.target.value })}
+              />
+              <PremiumTextField
+                colorTheme={themeColor}
+                fullWidth
+                size="small"
+                label="Corridor Consequence"
+                placeholder="e.g. ₦180B Market Liquidity Deficit"
+                value={c.consequence || c.impact || ''}
+                onChange={(e) => updateContent({ consequence: e.target.value, impact: e.target.value })}
+              />
+            </Box>
+          )}
+
+          {/* 7. Executive Summary */}
+          {blockType === 'exec_summary' && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <PremiumTextField
+                colorTheme={themeColor}
+                fullWidth
+                size="small"
+                label="Executive Briefing Title"
+                placeholder="e.g. Executive Takeaways"
+                value={c.title || ''}
+                onChange={(e) => updateContent({ title: e.target.value })}
+              />
+              {[0, 1, 2].map((idx) => {
+                const bullets = Array.isArray(c.bullets) ? [...c.bullets] : Array.isArray(c.points) ? [...c.points] : [];
+                return (
+                  <PremiumTextField
+                    key={idx}
+                    colorTheme={themeColor}
+                    fullWidth
+                    size="small"
+                    label={`Takeaway Bullet 0${idx + 1}`}
+                    placeholder={`Takeaway 0${idx + 1}...`}
+                    value={bullets[idx] || ''}
+                    onChange={(e) => {
+                      const next = [...bullets];
+                      next[idx] = e.target.value;
+                      updateContent({ bullets: next, points: next });
+                    }}
+                  />
+                );
+              })}
+              <PremiumTextField
+                colorTheme={themeColor}
+                fullWidth
+                size="small"
+                label="Anchoring Thesis"
+                placeholder="e.g. Without physical depots, software subsidies will fail."
+                value={c.thesis || c.summary || ''}
+                onChange={(e) => updateContent({ thesis: e.target.value, summary: e.target.value })}
+              />
+            </Box>
+          )}
+
+          {/* 8. Unit Economics */}
+          {blockType === 'unit_economics' && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <PremiumTextField
+                colorTheme={themeColor}
+                fullWidth
+                size="small"
+                label="Unit Economics Title"
+                placeholder="e.g. Unit Economics"
+                value={c.title || ''}
+                onChange={(e) => updateContent({ title: e.target.value })}
+              />
+              <Box sx={{ display: 'flex', gap: 1.5 }}>
+                <PremiumTextField
+                  colorTheme={themeColor}
+                  fullWidth
+                  size="small"
+                  label="01 · Farm Gate Cost"
+                  placeholder="e.g. ₦420 / KG"
+                  value={c.inputCost || ''}
+                  onChange={(e) => updateContent({ inputCost: e.target.value })}
+                />
+                <PremiumTextField
+                  colorTheme={themeColor}
+                  fullWidth
+                  size="small"
+                  label="02 · Transit Friction"
+                  placeholder="e.g. ₦380 / KG"
+                  value={c.logisticsLeakage || ''}
+                  onChange={(e) => updateContent({ logisticsLeakage: e.target.value })}
+                />
+                <PremiumTextField
+                  colorTheme={themeColor}
+                  fullWidth
+                  size="small"
+                  label="03 · Realized Return"
+                  placeholder="e.g. -8.4%"
+                  value={c.netMargin || ''}
+                  onChange={(e) => updateContent({ netMargin: e.target.value })}
+                />
+              </Box>
+              <PremiumTextField
+                colorTheme={themeColor}
+                fullWidth
+                size="small"
+                label="Downstream Summary"
+                placeholder="e.g. Logistics extortion eliminates downstream margin."
+                value={c.summary || ''}
+                onChange={(e) => updateContent({ summary: e.target.value })}
+              />
+            </Box>
+          )}
+
+          {/* 9. Persona Dossier */}
+          {blockType === 'persona_dossier' && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <Box sx={{ display: 'flex', gap: 1.5 }}>
+                <PremiumTextField
+                  colorTheme={themeColor}
+                  fullWidth
+                  size="small"
+                  label="Operator Name"
+                  placeholder="e.g. Alhaji Haruna Bello"
+                  value={c.name || ''}
+                  onChange={(e) => updateContent({ name: e.target.value })}
+                />
+                <PremiumTextField
+                  colorTheme={themeColor}
+                  fullWidth
+                  size="small"
+                  label="Role & Focus"
+                  placeholder="e.g. Commercial Off-Taker"
+                  value={c.role || ''}
+                  onChange={(e) => updateContent({ role: e.target.value })}
+                />
+              </Box>
+              <Box sx={{ display: 'flex', gap: 1.5 }}>
+                <PremiumTextField
+                  colorTheme={themeColor}
+                  fullWidth
+                  size="small"
+                  label="Market Location"
+                  placeholder="e.g. Kano - Dawanau Market"
+                  value={c.location || ''}
+                  onChange={(e) => updateContent({ location: e.target.value })}
+                />
+                <PremiumTextField
+                  colorTheme={themeColor}
+                  fullWidth
+                  size="small"
+                  label="Avatar Image URL (Optional)"
+                  placeholder="https://..."
+                  value={c.avatarUrl || ''}
+                  onChange={(e) => updateContent({ avatarUrl: e.target.value })}
+                />
+              </Box>
+              <PremiumTextField
+                colorTheme={themeColor}
+                fullWidth
+                multiline
+                minRows={2}
+                size="small"
+                label="Field Reality Quote"
+                placeholder='e.g. "We lose 4 trucks a week to diesel seizures."'
+                value={c.quote || ''}
+                onChange={(e) => updateContent({ quote: e.target.value })}
+              />
+            </Box>
+          )}
+
+          {/* 10. Strategic Directive */}
+          {blockType === 'strategic_directive' && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <Box sx={{ display: 'flex', gap: 1.5 }}>
+                <PremiumTextField
+                  colorTheme={themeColor}
+                  fullWidth
+                  size="small"
+                  label="Action Mandate Title"
+                  placeholder="e.g. Immediate Corridor Mandate"
+                  value={c.mandate || c.title || ''}
+                  onChange={(e) => updateContent({ mandate: e.target.value, title: e.target.value })}
+                />
+                <PremiumTextField
+                  colorTheme={themeColor}
+                  sx={{ width: '38%' }}
+                  size="small"
+                  label="Deadline Window"
+                  placeholder="e.g. 30-Day Window"
+                  value={c.deadline || ''}
+                  onChange={(e) => updateContent({ deadline: e.target.value })}
+                />
+              </Box>
+              <PremiumTextField
+                colorTheme={themeColor}
+                fullWidth
+                multiline
+                minRows={2}
+                size="small"
+                label="Operational Directive Action"
+                placeholder="e.g. Transition 50% of volume to bonded rail depots."
+                value={c.action || c.text || ''}
+                onChange={(e) => updateContent({ action: e.target.value, text: e.target.value })}
+              />
+            </Box>
+          )}
+
+          {/* 11. Call To Action */}
+          {blockType === 'call_to_action' && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <PremiumTextField
+                colorTheme={themeColor}
+                fullWidth
+                size="small"
+                label="Next Move Headline"
+                placeholder="e.g. Join Working Group"
+                value={c.headline || c.title || ''}
+                onChange={(e) => updateContent({ headline: e.target.value, title: e.target.value })}
+              />
+              <Box sx={{ display: 'flex', gap: 1.5 }}>
+                <PremiumTextField
+                  colorTheme={themeColor}
+                  fullWidth
+                  size="small"
+                  label="Button CTA Text"
+                  placeholder="e.g. Access Dossier"
+                  value={c.buttonText || c.ctaText || ''}
+                  onChange={(e) => updateContent({ buttonText: e.target.value, ctaText: e.target.value })}
+                />
+                <PremiumTextField
+                  colorTheme={themeColor}
+                  fullWidth
+                  size="small"
+                  label="Subtext / Stage URL"
+                  placeholder="e.g. Visit foodnerve.org/stage"
+                  value={c.subtext || c.subtitle || ''}
+                  onChange={(e) => updateContent({ subtext: e.target.value, subtitle: e.target.value })}
+                />
+              </Box>
+            </Box>
+          )}
+
+          {/* 12. Live Poll */}
+          {blockType === 'live_poll' && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <PremiumTextField
+                colorTheme={themeColor}
+                fullWidth
+                size="small"
+                label="Live Poll Question"
+                placeholder="e.g. Where is your highest capital bleed?"
+                value={c.question || c.title || ''}
+                onChange={(e) => updateContent({ question: e.target.value, title: e.target.value })}
+              />
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.25 }}>
+                {[0, 1, 2, 3].map((optIdx) => {
+                  const options = Array.isArray(c.options) ? [...c.options] : [];
+                  return (
+                    <PremiumTextField
+                      key={optIdx}
+                      colorTheme={themeColor}
+                      size="small"
+                      label={`Option ${String.fromCharCode(65 + optIdx)}`}
+                      placeholder={`Option ${String.fromCharCode(65 + optIdx)}...`}
+                      value={options[optIdx] || ''}
+                      onChange={(e) => {
+                        const next = [...options];
+                        next[optIdx] = e.target.value;
+                        updateContent({ options: next });
+                      }}
+                    />
+                  );
+                })}
+              </Box>
+            </Box>
+          )}
+
+          {/* 13. Job Opportunity */}
+          {(blockType === 'job_opportunity' || blockType === 'job_execution') && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <Box sx={{ display: 'flex', gap: 1.5 }}>
+                <PremiumTextField
+                  colorTheme={themeColor}
+                  fullWidth
+                  size="small"
+                  label="Job Title"
+                  placeholder="e.g. Lead Operations Architect"
+                  value={c.jobTitle || c.title || ''}
+                  onChange={(e) => updateContent({ jobTitle: e.target.value, title: e.target.value })}
+                />
+                <PremiumTextField
+                  colorTheme={themeColor}
+                  fullWidth
+                  size="small"
+                  label="Partner Organization"
+                  placeholder="e.g. Corridor Infrastructure Network"
+                  value={c.orgName || ''}
+                  onChange={(e) => updateContent({ orgName: e.target.value })}
+                />
+              </Box>
+              <Box sx={{ display: 'flex', gap: 1.5 }}>
+                <PremiumTextField
+                  colorTheme={themeColor}
+                  fullWidth
+                  size="small"
+                  label="Verified Compensation"
+                  placeholder="e.g. ₦18M - ₦26M + Equity"
+                  value={c.salary || c.compensation || ''}
+                  onChange={(e) => updateContent({ salary: e.target.value, compensation: e.target.value })}
+                />
+                <PremiumTextField
+                  colorTheme={themeColor}
+                  fullWidth
+                  size="small"
+                  label="Location"
+                  placeholder="e.g. Kano / Hybrid Hub"
+                  value={c.location || ''}
+                  onChange={(e) => updateContent({ location: e.target.value })}
+                />
+              </Box>
+              <Box sx={{ display: 'flex', gap: 1.5 }}>
+                <PremiumTextField
+                  colorTheme={themeColor}
+                  fullWidth
+                  size="small"
+                  label="Department"
+                  placeholder="e.g. Operations"
+                  value={c.department || ''}
+                  onChange={(e) => updateContent({ department: e.target.value })}
+                />
+                <PremiumTextField
+                  colorTheme={themeColor}
+                  fullWidth
+                  size="small"
+                  label="Application Mode"
+                  placeholder="e.g. Apply Live On Stage"
+                  value={c.applicationMode || ''}
+                  onChange={(e) => updateContent({ applicationMode: e.target.value })}
+                />
+              </Box>
+              <PremiumTextField
+                colorTheme={themeColor}
+                fullWidth
+                size="small"
+                label="Apply Deep-Link URL"
+                placeholder="https://foodnerve.org/careers/..."
+                value={c.applyUrl || c.applicationUrl || c.url || ''}
+                onChange={(e) => updateContent({ applyUrl: e.target.value, applicationUrl: e.target.value, url: e.target.value })}
+              />
+            </Box>
+          )}
+
+          {/* 14. Fallback Generic */}
+          {![
+            'protocol_step',
+            'myth_slide',
+            'fact_slide',
+            'comparison_option',
+            'comparison_verdict',
+            'timeline_milestone',
+            'exec_summary',
+            'unit_economics',
+            'persona_dossier',
+            'strategic_directive',
+            'call_to_action',
+            'live_poll',
+            'job_opportunity',
+            'job_execution',
+          ].includes(blockType) && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <PremiumTextField
+                colorTheme={themeColor}
+                fullWidth
+                size="small"
+                label="Slide Title / Headline"
+                placeholder="Headline..."
+                value={c.title || c.text || ''}
+                onChange={(e) => updateContent({ title: e.target.value, text: e.target.value })}
+              />
+              <PremiumTextField
+                colorTheme={themeColor}
+                fullWidth
+                size="small"
+                label="Context / Description"
+                placeholder="Description..."
+                value={c.subheadline || c.subtitle || c.description || ''}
+                onChange={(e) => updateContent({ subheadline: e.target.value, subtitle: e.target.value, description: e.target.value })}
+              />
+              <PremiumTextField
+                colorTheme={themeColor}
+                fullWidth
+                size="small"
+                label="Key Metric / Value (Optional)"
+                placeholder="e.g. ₦340B"
+                value={c.stat || c.metric || ''}
+                onChange={(e) => updateContent({ stat: e.target.value, metric: e.target.value })}
+              />
+            </Box>
+          )}
+
+          {/* Bottom Card-Back Action Bar */}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pt: 1, borderTop: '1px solid #f1f5f9', mt: 0.5 }}>
+            <Button
+              size="small"
+              variant="text"
+              startIcon={<ResetIcon sx={{ fontSize: '0.85rem !important' }} />}
+              onClick={resetContent}
+              sx={{ color: '#94a3b8', fontSize: '0.72rem', textTransform: 'none', fontWeight: 700, '&:hover': { color: '#ef4444' } }}
+            >
+              Reset to AI
+            </Button>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => setIsFlipped(false)}
+                sx={{
+                  borderRadius: '10px',
+                  borderColor: '#cbd5e1',
+                  color: '#475569',
+                  fontWeight: 800,
+                  fontSize: '0.74rem',
+                  textTransform: 'none',
+                  py: 0.5,
+                  px: 1.5,
+                }}
+              >
+                Preview
+              </Button>
+              <Button
+                size="small"
+                variant="contained"
+                startIcon={<AddIcon sx={{ fontSize: '0.85rem !important' }} />}
+                onClick={() => {
+                  setIsFlipped(false);
+                  onPickSlide(slideItem);
+                }}
+                sx={{
+                  borderRadius: '10px',
+                  bgcolor: themeColor,
+                  color: '#ffffff',
+                  fontWeight: 800,
+                  fontSize: '0.74rem',
+                  textTransform: 'none',
+                  py: 0.5,
+                  px: 1.75,
+                  boxShadow: 'none',
+                  '&:hover': { bgcolor: alpha(themeColor, 0.88) },
+                }}
+              >
+                Pick Slide
+              </Button>
+            </Box>
           </Box>
         </Box>
       </Box>
@@ -3294,20 +4391,8 @@ export default function LivestreamRundownBuilder({
                     }}
                   >
                     {allCandidateSlides.map((candidate, idx) => {
-                      const { slideItem, parentBlock, isCompound, stepIndex, totalSteps } = candidate;
+                      const { slideItem } = candidate;
                       const c = slideItem.originalContent || {};
-                      const title =
-                        c.title ||
-                        c.stepTitle ||
-                        c.myth ||
-                        c.fact ||
-                        c.name ||
-                        c.headline ||
-                        c.question ||
-                        c.mandate ||
-                        c.text ||
-                        parentBlock.blockType?.replace('_', ' ').toUpperCase() ||
-                        `Slide ${idx + 1}`;
 
                       const isAlreadyInRundown = rundown.some(
                         (r) =>
@@ -3320,168 +4405,18 @@ export default function LivestreamRundownBuilder({
                       );
 
                       return (
-                        <Box
+                        <CandidateSlideCard
                           key={slideItem.id || idx}
-                          sx={{
-                            p: 2,
-                            borderRadius: '20px',
-                            bgcolor: '#ffffff',
-                            border: isAlreadyInRundown
-                              ? '1.5px solid rgba(16, 185, 129, 0.6)'
-                              : '1.5px solid rgba(226, 232, 240, 0.95)',
-                            boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            justifyContent: 'space-between',
-                            gap: 1.5,
-                            transition: 'all 0.25s ease',
-                            '&:hover': {
-                              borderColor: isAlreadyInRundown ? '#10b981' : '#2563eb',
-                              transform: 'translateY(-2px)',
-                              boxShadow: '0 10px 28px rgba(15, 23, 42, 0.08)',
-                            },
+                          candidate={candidate}
+                          hubColor={hubColor}
+                          articleModalAspect={articleModalAspect}
+                          isAlreadyInRundown={isAlreadyInRundown}
+                          onPickSlide={(item) => addMultipleBlocksToRundown([item])}
+                          onOpenPreview={(item) => {
+                            setPreviewSlideItem(item);
+                            setSinglePreviewAspect(articleModalAspect);
                           }}
-                        >
-                          {/* Slide Header: Block Tag & In Rundown status */}
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                              <Chip
-                                size="small"
-                                label={
-                                  isCompound
-                                    ? `${slideItem.originalBlockType?.replace('_', ' ').toUpperCase()} · ${stepIndex}/${totalSteps}`
-                                    : (slideItem.originalBlockType || parentBlock.blockType)?.replace('_', ' ').toUpperCase() || 'SLIDE'
-                                }
-                                sx={{
-                                  bgcolor: 'rgba(59, 130, 246, 0.1)',
-                                  color: '#2563eb',
-                                  fontWeight: 900,
-                                  fontSize: '0.65rem',
-                                  height: 20,
-                                  borderRadius: '10px',
-                                }}
-                              />
-                              <Chip
-                                size="small"
-                                label={slideItem.durationStr || '45s'}
-                                sx={{ bgcolor: '#f1f5f9', color: '#64748b', fontSize: '0.62rem', height: 20, fontWeight: 700, borderRadius: '10px' }}
-                              />
-                            </Box>
-                            {isAlreadyInRundown && (
-                              <Chip
-                                size="small"
-                                label="✓ In Rundown"
-                                sx={{ bgcolor: '#dcfce7', color: '#166534', fontWeight: 800, fontSize: '0.62rem', height: 20, borderRadius: '10px' }}
-                              />
-                            )}
-                          </Box>
-
-                          {/* Real Scaled Visual Slide Preview Frame */}
-                          <Box
-                            onClick={() => {
-                              setPreviewSlideItem(slideItem);
-                              setSinglePreviewAspect(articleModalAspect);
-                            }}
-                            sx={{
-                              width: '100%',
-                              maxWidth: articleModalAspect === '9:16' ? 220 : '100%',
-                              aspectRatio: articleModalAspect === '9:16' ? '9/16' : '16/9',
-                              borderRadius: '12px',
-                              overflow: 'hidden',
-                              border: '1.5px solid rgba(226, 232, 240, 0.95)',
-                              bgcolor: '#f8fafc',
-                              position: 'relative',
-                              cursor: 'pointer',
-                              boxShadow: '0 4px 14px rgba(15, 23, 42, 0.04)',
-                              mx: 'auto',
-                              transition: 'all 0.2s ease',
-                              '&:hover': {
-                                borderColor: '#2563eb',
-                                boxShadow: '0 6px 20px rgba(59, 130, 246, 0.15)',
-                              },
-                            }}
-                          >
-                            <Box
-                              sx={{
-                                width: '200%',
-                                height: '200%',
-                                transform: 'scale(0.5)',
-                                transformOrigin: 'top left',
-                                pointerEvents: 'none',
-                                userSelect: 'none',
-                              }}
-                            >
-                              {renderSlidePreviewContent(slideItem, hubColor, {
-                                aspectRatio: articleModalAspect,
-                              })}
-                            </Box>
-                            <Box
-                              sx={{
-                                position: 'absolute',
-                                bottom: 6,
-                                right: 6,
-                                bgcolor: 'rgba(15, 23, 42, 0.75)',
-                                color: '#ffffff',
-                                px: 0.85,
-                                py: 0.35,
-                                borderRadius: '8px',
-                                fontSize: '0.62rem',
-                                fontWeight: 800,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 0.5,
-                                backdropFilter: 'blur(4px)',
-                              }}
-                            >
-                              <VisibilityIcon sx={{ fontSize: 11 }} /> Expand
-                            </Box>
-                          </Box>
-
-                          {/* Slide Summary */}
-                          <Typography
-                            sx={{
-                              fontWeight: 800,
-                              fontSize: '0.88rem',
-                              color: '#0f172a',
-                              lineHeight: 1.35,
-                              display: '-webkit-box',
-                              WebkitLineClamp: 2,
-                              WebkitBoxOrient: 'vertical',
-                              overflow: 'hidden',
-                            }}
-                          >
-                            {String(title)}
-                          </Typography>
-
-                          {/* Action Buttons */}
-                          <Box sx={{ display: 'flex', gap: 1 }}>
-                            <Button
-                              fullWidth
-                              size="small"
-                              variant="contained"
-                              startIcon={<AddIcon sx={{ fontSize: '0.9rem !important' }} />}
-                              onClick={() => {
-                                addMultipleBlocksToRundown([slideItem]);
-                              }}
-                              sx={{
-                                borderRadius: '12px',
-                                bgcolor: isAlreadyInRundown ? '#f8fafc' : '#2563eb',
-                                color: isAlreadyInRundown ? '#334155' : '#ffffff',
-                                border: isAlreadyInRundown ? '1.5px solid #cbd5e1' : 'none',
-                                fontWeight: 800,
-                                fontSize: '0.78rem',
-                                textTransform: 'none',
-                                py: 0.7,
-                                boxShadow: 'none',
-                                '&:hover': {
-                                  bgcolor: isAlreadyInRundown ? '#f1f5f9' : '#1d4ed8',
-                                },
-                              }}
-                            >
-                              {isAlreadyInRundown ? 'Add Duplicate Slide' : 'Pick This Slide'}
-                            </Button>
-                          </Box>
-                        </Box>
+                        />
                       );
                     })}
                   </Box>

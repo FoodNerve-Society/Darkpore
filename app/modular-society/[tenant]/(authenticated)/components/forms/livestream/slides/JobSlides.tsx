@@ -11,7 +11,14 @@ import {
   Business as BusinessIcon,
   Link as LinkIcon,
 } from '@mui/icons-material';
-import { SlideWrapper, safeStringArray } from '../SlideComponents';
+import {
+  SlideWrapper,
+  slideFonts,
+  slideHeadingSx,
+  slideBodySx,
+  slideLabelSx,
+  slideChipSx,
+} from '../SlideComponents';
 
 // ----------------------------------------------------------------------
 // SINGLE CONSOLIDATED JOB SLIDE (DESKTOP 16:9)
@@ -61,15 +68,15 @@ export function DesktopJobOpportunitySlide({ content }: { content: any }) {
               icon={<WorkIcon sx={{ fontSize: '0.85rem !important' }} />}
               label="ECOSYSTEM HIRING"
               size="small"
-              sx={{ bgcolor: alpha('#10b981', 0.15), color: '#059669', fontWeight: 900, fontSize: '0.78rem', borderRadius: '10px' }}
+              sx={{ ...slideChipSx('0.78rem'), bgcolor: alpha('#10b981', 0.15), color: '#059669', borderRadius: '10px' }}
             />
-            <Chip label="ACTIVE OPPORTUNITY" size="small" sx={{ bgcolor: '#0f172a', color: '#ffffff', fontWeight: 800, fontSize: '0.72rem', borderRadius: '10px' }} />
+            <Chip label="ACTIVE OPPORTUNITY" size="small" sx={{ ...slideChipSx('0.72rem'), bgcolor: '#0f172a', color: '#ffffff', borderRadius: '10px' }} />
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
             <Avatar src={orgLogo} sx={{ width: 36, height: 36, bgcolor: '#0f172a', borderRadius: '10px' }}>
               <BusinessIcon sx={{ fontSize: 20 }} />
             </Avatar>
-            <Typography sx={{ fontWeight: 800, fontSize: '1rem', color: '#0f172a' }}>
+            <Typography sx={{ ...slideBodySx('1rem', 700), color: '#0f172a' }}>
               {orgName}
             </Typography>
           </Box>
@@ -77,7 +84,7 @@ export function DesktopJobOpportunitySlide({ content }: { content: any }) {
 
         {/* Center: Hero Job Title & Key Details */}
         <Box sx={{ my: 'auto', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2.5 }}>
-          <Typography sx={{ fontWeight: 900, fontSize: { xs: '2.4rem', md: '3.4rem' }, color: '#0f172a', lineHeight: 1.15, letterSpacing: '-0.02em', maxWidth: 900 }}>
+          <Typography sx={{ ...slideHeadingSx({ xs: '2.4rem', md: '3.4rem' }, 700), color: '#0f172a', lineHeight: 1.15, maxWidth: 900 }}>
             {jobTitle}
           </Typography>
 
@@ -85,17 +92,17 @@ export function DesktopJobOpportunitySlide({ content }: { content: any }) {
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, flexWrap: 'wrap' }}>
             <Box sx={{ px: 2.5, py: 1.25, borderRadius: '12px', bgcolor: 'rgba(16, 185, 129, 0.08)', border: '1.5px solid rgba(16, 185, 129, 0.3)', display: 'flex', alignItems: 'center', gap: 1 }}>
               <MoneyIcon sx={{ color: '#059669', fontSize: 22 }} />
-              <Typography sx={{ fontSize: '1.15rem', fontWeight: 900, color: '#064e3b' }}>{salary}</Typography>
+              <Typography sx={{ ...slideHeadingSx('1.15rem', 700), color: '#064e3b' }}>{salary}</Typography>
             </Box>
 
             <Box sx={{ px: 2.5, py: 1.25, borderRadius: '12px', bgcolor: '#ffffff', border: '1.5px solid rgba(226, 232, 240, 0.95)', display: 'flex', alignItems: 'center', gap: 1, boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)' }}>
               <LocationIcon sx={{ color: '#64748b', fontSize: 20 }} />
-              <Typography sx={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>{location}</Typography>
+              <Typography sx={{ ...slideBodySx('1rem', 700), color: '#0f172a' }}>{location}</Typography>
             </Box>
 
             <Box sx={{ px: 2.5, py: 1.25, borderRadius: '12px', bgcolor: '#ffffff', border: '1.5px solid rgba(226, 232, 240, 0.95)', display: 'flex', alignItems: 'center', gap: 1, boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)' }}>
               <WorkIcon sx={{ color: '#64748b', fontSize: 18 }} />
-              <Typography sx={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>{department}</Typography>
+              <Typography sx={{ ...slideBodySx('1rem', 700), color: '#0f172a' }}>{department}</Typography>
             </Box>
           </Box>
         </Box>
@@ -122,10 +129,10 @@ export function DesktopJobOpportunitySlide({ content }: { content: any }) {
               sx={{ width: 72, height: 72, borderRadius: '8px', display: 'block' }}
             />
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
-              <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              <Typography sx={{ ...slideLabelSx('0.68rem', 700), color: '#059669' }}>
                 Scan To Apply Live
               </Typography>
-              <Typography sx={{ fontSize: '0.85rem', fontWeight: 800, color: '#0f172a' }}>
+              <Typography sx={{ ...slideBodySx('0.85rem', 700), color: '#0f172a' }}>
                 Point Phone Camera
               </Typography>
             </Box>
@@ -140,10 +147,9 @@ export function DesktopJobOpportunitySlide({ content }: { content: any }) {
               target="_blank"
               rel="noopener noreferrer"
               sx={{
+                ...slideLabelSx('1rem', 700),
                 bgcolor: '#0f172a',
                 color: '#ffffff',
-                fontWeight: 900,
-                fontSize: '1rem',
                 py: 1.25,
                 px: 3.5,
                 borderRadius: '12px',
@@ -161,6 +167,7 @@ export function DesktopJobOpportunitySlide({ content }: { content: any }) {
               target="_blank"
               rel="noopener noreferrer"
               sx={{
+                ...slideLabelSx('0.85rem', 700),
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 0.75,
@@ -170,8 +177,6 @@ export function DesktopJobOpportunitySlide({ content }: { content: any }) {
                 bgcolor: 'rgba(16, 185, 129, 0.1)',
                 border: '1.5px solid rgba(16, 185, 129, 0.3)',
                 color: '#059669',
-                fontWeight: 800,
-                fontSize: '0.85rem',
                 textDecoration: 'none',
                 wordBreak: 'break-all',
                 maxWidth: 440,
@@ -241,12 +246,12 @@ export function MobileJobOpportunitySlide({ content }: { content: any }) {
               icon={<WorkIcon sx={{ fontSize: '0.82rem !important' }} />}
               label="ECOSYSTEM HIRING"
               size="small"
-              sx={{ bgcolor: alpha('#10b981', 0.15), color: '#059669', fontWeight: 900, fontSize: '0.72rem', borderRadius: '10px' }}
+              sx={{ ...slideChipSx('0.72rem'), bgcolor: alpha('#10b981', 0.15), color: '#059669', borderRadius: '10px' }}
             />
             <Chip
               label="ACTIVE OPPORTUNITY"
               size="small"
-              sx={{ bgcolor: '#0f172a', color: '#ffffff', fontWeight: 800, fontSize: '0.68rem', borderRadius: '10px' }}
+              sx={{ ...slideChipSx('0.68rem'), bgcolor: '#0f172a', color: '#ffffff', borderRadius: '10px' }}
             />
           </Box>
 
@@ -255,16 +260,16 @@ export function MobileJobOpportunitySlide({ content }: { content: any }) {
               <BusinessIcon sx={{ fontSize: 26 }} />
             </Avatar>
             <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-              <Typography sx={{ fontWeight: 800, fontSize: '1.1rem', color: '#0f172a', lineHeight: 1.2 }}>
+              <Typography sx={{ ...slideHeadingSx('1.1rem', 700), color: '#0f172a', lineHeight: 1.2 }}>
                 {orgName}
               </Typography>
-              <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#10b981', textTransform: 'uppercase', mt: 0.25 }}>
+              <Typography sx={{ ...slideLabelSx('0.72rem', 700), color: '#10b981', mt: 0.25 }}>
                 Verified Partner
               </Typography>
             </Box>
           </Box>
 
-          <Typography sx={{ fontWeight: 900, fontSize: { xs: '1.75rem', sm: '2.1rem' }, color: '#0f172a', lineHeight: 1.18, letterSpacing: '-0.025em', mt: 1 }}>
+          <Typography sx={{ ...slideHeadingSx({ xs: '1.75rem', sm: '2.1rem' }, 700), color: '#0f172a', lineHeight: 1.18, mt: 1 }}>
             {jobTitle}
           </Typography>
         </Box>
@@ -272,19 +277,19 @@ export function MobileJobOpportunitySlide({ content }: { content: any }) {
         {/* Center: Key Details & QR Code - Spread evenly across the tall canvas */}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, py: 0.5 }}>
           <Box sx={{ p: 1.75, borderRadius: '14px', bgcolor: 'rgba(16, 185, 129, 0.08)', border: '1.5px solid rgba(16, 185, 129, 0.3)', display: 'flex', flexDirection: 'column', gap: 0.35 }}>
-            <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <Typography sx={{ ...slideLabelSx('0.68rem', 700), color: '#059669' }}>
               Verified Compensation
             </Typography>
-            <Typography sx={{ fontSize: '1.45rem', fontWeight: 900, color: '#064e3b', lineHeight: 1.2 }}>
+            <Typography sx={{ ...slideHeadingSx('1.45rem', 700), color: '#064e3b', lineHeight: 1.2 }}>
               {salary}
             </Typography>
           </Box>
 
           <Box sx={{ p: 1.75, borderRadius: '14px', bgcolor: '#ffffff', border: '1.5px solid rgba(226, 232, 240, 0.95)', display: 'flex', flexDirection: 'column', gap: 0.35, boxShadow: '0 4px 14px rgba(15, 23, 42, 0.03)' }}>
-            <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <Typography sx={{ ...slideLabelSx('0.68rem', 700), color: '#64748b' }}>
               Location & Track
             </Typography>
-            <Typography sx={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.3 }}>
+            <Typography sx={{ ...slideBodySx('1rem', 700), color: '#0f172a', lineHeight: 1.3 }}>
               {location} · {department}
             </Typography>
           </Box>
@@ -311,7 +316,7 @@ export function MobileJobOpportunitySlide({ content }: { content: any }) {
               alt="Scan to apply"
               sx={{ width: 102, height: 102, borderRadius: '8px', display: 'block' }}
             />
-            <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            <Typography sx={{ ...slideLabelSx('0.68rem', 700), color: '#059669' }}>
               Scan on phone to apply
             </Typography>
           </Box>
@@ -328,10 +333,9 @@ export function MobileJobOpportunitySlide({ content }: { content: any }) {
             target="_blank"
             rel="noopener noreferrer"
             sx={{
+              ...slideLabelSx('1rem', 700),
               bgcolor: '#0f172a',
               color: '#ffffff',
-              fontWeight: 900,
-              fontSize: '1rem',
               py: 1.6,
               borderRadius: '12px',
               boxShadow: 'none',
@@ -348,6 +352,7 @@ export function MobileJobOpportunitySlide({ content }: { content: any }) {
             target="_blank"
             rel="noopener noreferrer"
             sx={{
+              ...slideLabelSx('0.82rem', 700),
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -358,8 +363,6 @@ export function MobileJobOpportunitySlide({ content }: { content: any }) {
               bgcolor: 'rgba(16, 185, 129, 0.1)',
               border: '1.5px solid rgba(16, 185, 129, 0.3)',
               color: '#059669',
-              fontWeight: 800,
-              fontSize: '0.82rem',
               textDecoration: 'none',
               wordBreak: 'break-all',
               transition: 'all 0.2s ease',
