@@ -233,7 +233,7 @@ export function MobileJobOpportunitySlide({ content }: { content: any }) {
 
   return (
     <SlideWrapper color="#10b981">
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', height: '100%', py: { xs: 1.5, md: 2.5 } }}>
+      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%', py: { xs: 1.5, md: 2.5 } }}>
         {/* Top Header - Vertically Stacked with Bold Breathing Space */}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
@@ -270,7 +270,7 @@ export function MobileJobOpportunitySlide({ content }: { content: any }) {
         </Box>
 
         {/* Center: Key Details & QR Code - Spread evenly across the tall canvas */}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, my: 'auto', py: 0.5 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, py: 0.5 }}>
           <Box sx={{ p: 1.75, borderRadius: '14px', bgcolor: 'rgba(16, 185, 129, 0.08)', border: '1.5px solid rgba(16, 185, 129, 0.3)', display: 'flex', flexDirection: 'column', gap: 0.35 }}>
             <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Verified Compensation
