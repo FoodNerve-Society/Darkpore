@@ -2,7 +2,6 @@ import React from 'react';
 import { SocietyProvider } from '@/context/SocietyContext';
 import ThemeRegistry from '@/theme/ThemeRegistry';
 import { headers } from 'next/headers';
-import { playfairDisplay, eduNswActFoundation, dosis, quicksand, ysabeauInfant } from '@/theme/fonts';
 import { WikiProvider } from '@/app/components/providers/WikiProvider';
 import { WikiDrawer } from '@/app/components/ui/WikiDrawer';
 import LivelyLoadingScreen from '@/components/LivelyLoadingScreen';

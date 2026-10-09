@@ -1,11 +1,9 @@
 'use client';
 
-import { dosis, ysabeauInfant, quicksand } from '@/theme/fonts';
-
 export const slideFonts = {
-  heading: `${dosis.style.fontFamily}, sans-serif`,
-  body: `${ysabeauInfant.style.fontFamily}, sans-serif`,
-  label: `${quicksand.style.fontFamily}, sans-serif`,
+  heading: 'var(--font-dosis), sans-serif',
+  body: 'var(--font-ysabeau-infant), sans-serif',
+  label: 'var(--font-quicksand), sans-serif',
 };
 
 /**

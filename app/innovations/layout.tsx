@@ -1,5 +1,4 @@
 import ThemeRegistry from '@/theme/ThemeRegistry';
-import { playfairDisplay, eduNswActFoundation, dosis, quicksand, ysabeauInfant } from '@/theme/fonts';
 import { headers } from 'next/headers';
 import { getTenantConfig } from '@/lib/cms';
 
