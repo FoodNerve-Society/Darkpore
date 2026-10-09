@@ -2178,7 +2178,7 @@ export default function CreateLearnContentForm({
                         {/* Left Content */}
                         <Box sx={{ flex: 1, textAlign: { xs: 'center', md: 'left' }, position: 'relative', zIndex: 1 }}>
                           <Typography sx={{ color: '#ffffff', fontWeight: 900, fontSize: { xs: '1.25rem', md: '1.4rem' }, letterSpacing: '-0.025em', mb: 0.75, lineHeight: 1.2 }}>
-                            Get full articles here
+                            Get The Full Article Here
                           </Typography>
                           <Typography sx={{ color: 'rgba(255, 255, 255, 0.65)', fontSize: '0.9rem', lineHeight: 1.55, maxWidth: 500, fontWeight: 450 }}>
                             Spend 1 minute to auto-draft all {currentBlueprint.length} blocks with AgroLLM, or choose Ignore to write yourself.

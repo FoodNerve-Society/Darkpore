@@ -382,6 +382,12 @@ export function EditorialPromptSidePane({
     },
   ], [promptContext]);
 
+  const allPrompts = useMemo(() => [
+    ...doc2Prompts.map(p => ({ ...p, colorTheme: '#3b82f6' })),
+    ...doc3Prompts.map(p => ({ ...p, colorTheme: '#f59e0b' })),
+    ...doc4Prompts.map(p => ({ ...p, colorTheme: '#10b981' })),
+  ], [doc2Prompts, doc3Prompts, doc4Prompts]);
+
   // Fast Ingest Parser handler with Fast Ingest Protocol Normalization
   const handleParseAndIngest = () => {
     setIngestError(null);
@@ -603,7 +609,7 @@ export function EditorialPromptSidePane({
                   gap: 0.6,
                 }}
               >
-                <span>Get Full Articles</span>
+                <span>Get The Full Article</span>
                 <span style={{ color: 'rgba(255,255,255,0.3)' }}>·</span>
                 <span style={{ color: '#fbbf24', fontWeight: 600 }}>{commodity.split(',')[0]}</span>
               </Typography>
@@ -867,7 +873,7 @@ export function EditorialPromptSidePane({
                 textAlign: 'center',
               }}
             >
-              Get Full Articles Here
+              Get The Full Article Here
             </Typography>
 
             {/* 3. Centered Smaller Description */}
@@ -882,148 +888,114 @@ export function EditorialPromptSidePane({
                 mt: 1.15,
               }}
             >
-              Sequenced master prompts across Docs 2, 3 &amp; 4 for your {currentBlueprint.length}-block SOP framework.
+              {allPrompts.length} sequenced master prompts to craft, fact-check, and ingest your {currentBlueprint.length}-block SOP framework.
             </Typography>
 
-            {/* 4. Unified Pre-Planned Editorial Dossier Card */}
+            {/* 4. Independent Floating Metadata Pills (Non-Sticky, No Enclosing Card) */}
             <Box
               sx={{
                 width: '100%',
-                maxWidth: 620,
-                mt: 3,
-                p: { xs: 2.25, sm: 2.5 },
-                borderRadius: '22px',
-                background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%)',
-                backdropFilter: 'blur(24px)',
-                border: '1.5px solid rgba(255, 255, 255, 0.95)',
-                boxShadow: '0 10px 32px -6px rgba(15, 23, 42, 0.07), 0 2px 8px rgba(0, 0, 0, 0.02)',
+                maxWidth: 720,
+                mt: 2.5,
                 display: 'flex',
-                flexDirection: 'column',
-                gap: 1.75,
-                textAlign: 'left',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: { xs: 1, sm: 1.25 },
+                flexWrap: 'wrap',
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                <Chip
-                  label={`${formatMeta.emoji} ${formatMeta.label} (${eraMeta.label} Era)`}
-                  size="small"
-                  sx={{
-                    fontWeight: 800,
-                    fontSize: '0.72rem',
-                    bgcolor: alpha(formatMeta.color, 0.12),
-                    color: formatMeta.color,
-                    border: `1px solid ${alpha(formatMeta.color, 0.25)}`,
-                  }}
-                />
-                <Chip
-                  label={`🎯 ${currentBlueprint.length} Blocks SOP`}
-                  size="small"
-                  sx={{ fontWeight: 800, fontSize: '0.72rem', bgcolor: '#f1f5f9', color: '#334155' }}
-                />
-                {cleanSubcategory && (
-                  <Chip
-                    label={`📍 ${cleanSubcategory}`}
-                    size="small"
-                    sx={{ fontWeight: 700, fontSize: '0.72rem', bgcolor: '#f1f5f9', color: '#475569' }}
-                  />
-                )}
-                {pinnedClips.length > 0 && (
-                  <Chip
-                    label={`📎 ${pinnedClips.length} Attached Ground Notes`}
-                    size="small"
-                    sx={{
-                      fontWeight: 800,
-                      fontSize: '0.72rem',
-                      bgcolor: alpha('#059669', 0.12),
-                      color: '#059669',
-                      border: `1px solid ${alpha('#059669', 0.25)}`,
-                    }}
-                  />
-                )}
-              </Box>
-
-              {/* Quick Anchor Navigation Pills */}
-              <Box
+              <Chip
+                label={`${formatMeta.emoji} ${formatMeta.label} (${eraMeta.label} Era)`}
                 sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1,
-                  flexWrap: 'wrap',
-                  pt: 0.5,
-                  borderTop: '1px solid rgba(0, 0, 0, 0.06)',
+                  height: 34,
+                  borderRadius: '9999px',
+                  px: 0.85,
+                  fontWeight: 750,
+                  fontSize: '0.78rem',
+                  letterSpacing: '-0.01em',
+                  background: `linear-gradient(135deg, ${alpha(formatMeta.color, 0.09)} 0%, rgba(255, 255, 255, 0.95) 100%)`,
+                  backdropFilter: 'blur(16px)',
+                  color: formatMeta.color,
+                  border: `1.5px solid ${alpha(formatMeta.color, 0.28)}`,
+                  boxShadow: `0 4px 14px -3px ${alpha(formatMeta.color, 0.18)}, 0 1px 3px rgba(0, 0, 0, 0.04)`,
+                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                  '&:hover': {
+                    transform: 'translateY(-1.5px)',
+                    boxShadow: `0 6px 20px -3px ${alpha(formatMeta.color, 0.28)}`,
+                    borderColor: alpha(formatMeta.color, 0.45),
+                  },
                 }}
-              >
+              />
+              <Chip
+                label={`🎯 ${currentBlueprint.length} Blocks SOP`}
+                sx={{
+                  height: 34,
+                  borderRadius: '9999px',
+                  px: 0.85,
+                  fontWeight: 750,
+                  fontSize: '0.78rem',
+                  letterSpacing: '-0.01em',
+                  background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%)',
+                  backdropFilter: 'blur(16px)',
+                  color: '#1e293b',
+                  border: '1.5px solid rgba(226, 232, 240, 0.95)',
+                  boxShadow: '0 4px 14px -3px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(0, 0, 0, 0.03)',
+                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                  '&:hover': {
+                    transform: 'translateY(-1.5px)',
+                    boxShadow: '0 6px 20px -3px rgba(15, 23, 42, 0.12)',
+                    borderColor: 'rgba(203, 213, 225, 1)',
+                  },
+                }}
+              />
+              {cleanSubcategory && (
                 <Chip
-                  label="STEP 0 · Overview"
-                  size="small"
-                  onClick={() => scrollToSection('editorial-step-0')}
+                  label={`📍 ${cleanSubcategory}`}
                   sx={{
-                    fontWeight: 800,
-                    fontSize: '0.72rem',
-                    bgcolor: '#ffffff',
+                    height: 34,
+                    borderRadius: '9999px',
+                    px: 0.85,
+                    fontWeight: 750,
+                    fontSize: '0.78rem',
+                    letterSpacing: '-0.01em',
+                    background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%)',
+                    backdropFilter: 'blur(16px)',
                     color: '#0f172a',
-                    cursor: 'pointer',
-                    border: '1px solid rgba(15, 23, 42, 0.15)',
-                    '&:hover': { bgcolor: 'rgba(15, 23, 42, 0.06)' },
+                    border: '1.5px solid rgba(226, 232, 240, 0.95)',
+                    boxShadow: '0 4px 14px -3px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(0, 0, 0, 0.03)',
+                    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                    '&:hover': {
+                      transform: 'translateY(-1.5px)',
+                      boxShadow: '0 6px 20px -3px rgba(15, 23, 42, 0.12)',
+                      borderColor: 'rgba(203, 213, 225, 1)',
+                    },
                   }}
                 />
+              )}
+              {pinnedClips.length > 0 && (
                 <Chip
-                  label="DOC 2 · Steps 1–3"
-                  size="small"
-                  onClick={() => scrollToSection('editorial-doc-2')}
+                  label={`📎 ${pinnedClips.length} Attached Ground Notes`}
                   sx={{
-                    fontWeight: 800,
-                    fontSize: '0.72rem',
-                    bgcolor: '#ffffff',
-                    color: '#3b82f6',
-                    cursor: 'pointer',
-                    border: '1px solid rgba(59, 130, 246, 0.25)',
-                    '&:hover': { bgcolor: alpha('#3b82f6', 0.1) },
+                    height: 34,
+                    borderRadius: '9999px',
+                    px: 0.85,
+                    fontWeight: 750,
+                    fontSize: '0.78rem',
+                    letterSpacing: '-0.01em',
+                    background: `linear-gradient(135deg, ${alpha('#059669', 0.09)} 0%, rgba(255, 255, 255, 0.95) 100%)`,
+                    backdropFilter: 'blur(16px)',
+                    color: '#047857',
+                    border: `1.5px solid ${alpha('#059669', 0.28)}`,
+                    boxShadow: '0 4px 14px -3px rgba(5, 150, 105, 0.14), 0 1px 3px rgba(0, 0, 0, 0.03)',
+                    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                    '&:hover': {
+                      transform: 'translateY(-1.5px)',
+                      boxShadow: `0 6px 20px -3px ${alpha('#059669', 0.24)}`,
+                      borderColor: alpha('#059669', 0.45),
+                    },
                   }}
                 />
-                <Chip
-                  label="DOC 3 · Steps 4–6"
-                  size="small"
-                  onClick={() => scrollToSection('editorial-doc-3')}
-                  sx={{
-                    fontWeight: 800,
-                    fontSize: '0.72rem',
-                    bgcolor: '#ffffff',
-                    color: '#f59e0b',
-                    cursor: 'pointer',
-                    border: '1px solid rgba(245, 158, 11, 0.25)',
-                    '&:hover': { bgcolor: alpha('#f59e0b', 0.1) },
-                  }}
-                />
-                <Chip
-                  label="DOC 4 · Steps 7–9"
-                  size="small"
-                  onClick={() => scrollToSection('editorial-doc-4')}
-                  sx={{
-                    fontWeight: 800,
-                    fontSize: '0.72rem',
-                    bgcolor: '#ffffff',
-                    color: '#10b981',
-                    cursor: 'pointer',
-                    border: '1px solid rgba(16, 185, 129, 0.25)',
-                    '&:hover': { bgcolor: alpha('#10b981', 0.1) },
-                  }}
-                />
-                <Chip
-                  label="FAST INGEST · Step 10"
-                  size="small"
-                  onClick={() => scrollToSection('editorial-doc-fast-ingest')}
-                  sx={{
-                    fontWeight: 900,
-                    fontSize: '0.72rem',
-                    bgcolor: '#0f172a',
-                    color: '#10b981',
-                    cursor: 'pointer',
-                    border: '1px solid rgba(16, 185, 129, 0.45)',
-                    '&:hover': { bgcolor: '#1e293b' },
-                  }}
-                />
-              </Box>
+              )}
             </Box>
           </Box>
 
@@ -1152,6 +1124,15 @@ export function EditorialPromptSidePane({
                     3
                   </Box>
                   <Typography sx={{ fontSize: '0.82rem', color: '#334155', fontWeight: 600, lineHeight: 1.5 }}>
+                    Continue the conversation in the same AI chat session that started the previous prompt so the model retains full context across all steps.
+                  </Typography>
+                </Box>
+
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.25 }}>
+                  <Box sx={{ width: 22, height: 22, borderRadius: '50%', bgcolor: 'rgba(15, 23, 42, 0.08)', color: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 900, flexShrink: 0, mt: 0.15 }}>
+                    4
+                  </Box>
+                  <Typography sx={{ fontSize: '0.82rem', color: '#334155', fontWeight: 600, lineHeight: 1.5 }}>
                     Paste the Step 9 (DOC 4c) JSON output directly into Step 10 (Fast Ingest) to apply all {currentBlueprint.length} blocks to your canvas.
                   </Typography>
                 </Box>
@@ -1159,337 +1140,83 @@ export function EditorialPromptSidePane({
             </Box>
 
             {/* ──────────────────────────────────────────────────────────── */}
-            {/* DOCUMENT 2: THE DRAFTING ENGINE (STEPS 1, 2, 3)              */}
+            {/* SEQUENTIAL PROMPT STEPS (STEPS 1 TO 9)                      */}
             {/* ──────────────────────────────────────────────────────────── */}
-            <Box id="editorial-doc-2" sx={{ display: 'flex', flexDirection: 'column', gap: 3, scrollMarginTop: '80px' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Box
-                  sx={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: '50%',
-                    bgcolor: '#3b82f6',
-                    color: '#fff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 900,
-                    fontSize: '0.9rem',
-                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.35)',
-                  }}
-                >
-                  2
+            {allPrompts.map((p) => (
+              <Box id={`editorial-step-${p.stepNum}`} key={p.key} sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, scrollMarginTop: '80px' }}>
+                {/* Step Header with Step Badge & Instructions */}
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                  <Box
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: '50%',
+                      bgcolor: p.colorTheme,
+                      color: '#fff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 900,
+                      fontSize: '0.88rem',
+                      flexShrink: 0,
+                      mt: 0.25,
+                      boxShadow: `0 4px 12px ${alpha(p.colorTheme, 0.4)}`,
+                    }}
+                  >
+                    {p.stepNum}
+                  </Box>
+
+                  <Box sx={{ flex: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.25, fontSize: '0.98rem' }}>
+                        Step {p.stepNum}: {p.title}
+                      </Typography>
+                      <Chip
+                        label={p.code}
+                        size="small"
+                        sx={{
+                          bgcolor: alpha(p.colorTheme, 0.12),
+                          color: p.colorTheme,
+                          fontWeight: 800,
+                          fontSize: '0.68rem',
+                          height: 20,
+                          borderRadius: '6px',
+                          border: `1px solid ${alpha(p.colorTheme, 0.3)}`,
+                        }}
+                      />
+                    </Box>
+
+                    {/* Clear Step Instruction */}
+                    <Typography sx={{ fontSize: '0.8rem', color: '#475569', fontWeight: 500, lineHeight: 1.5, mt: 0.5 }}>
+                      {p.instruction}
+                    </Typography>
+                  </Box>
                 </Box>
-                <Box>
-                  <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.2 }}>
-                    Document 2: The Drafting Engine (Steps 1, 2, 3)
-                  </Typography>
-                  <Typography sx={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 600 }}>
-                    Map your {currentBlueprint.length} blocks, write brutal OSINT intelligence, and assemble component Markdown.
-                  </Typography>
+
+                {/* Prompt Terminal Box & Checklist */}
+                <Box sx={{ ml: { xs: 0, sm: '44px' }, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <PromptTerminalBox
+                    id={p.key}
+                    codeLabel={p.code}
+                    title={`Step ${p.stepNum} · ${p.code}: ${p.title}`}
+                    subtitle={p.role}
+                    prompt={p.prompt}
+                    colorTheme={p.colorTheme}
+                    copyButtonLabel={`Copy Step ${p.stepNum} Prompt (${p.code})`}
+                    copiedBannerText={`Step ${p.stepNum} (${p.code}) Copied to Clipboard!`}
+                    isCopiedExternal={!!checklist[p.checkId]}
+                    onCopy={() => handleCopyPromptAutoCheck(p.key)}
+                  />
+                  <PromptChecklistItem
+                    id={p.checkId}
+                    text={p.checkText}
+                    checked={!!checklist[p.checkId]}
+                    onToggle={toggleChecklistItem}
+                    colorTheme={p.colorTheme}
+                  />
                 </Box>
               </Box>
-
-              {doc2Prompts.map((p) => (
-                <Box id={`editorial-step-${p.stepNum}`} key={p.key} sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, scrollMarginTop: '80px' }}>
-                  {/* Step Header with Step Badge & Instructions */}
-                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
-                    <Box
-                      sx={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: '50%',
-                        bgcolor: '#3b82f6',
-                        color: '#fff',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontWeight: 900,
-                        fontSize: '0.88rem',
-                        flexShrink: 0,
-                        mt: 0.25,
-                        boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)',
-                      }}
-                    >
-                      {p.stepNum}
-                    </Box>
-
-                    <Box sx={{ flex: 1 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.25, fontSize: '0.98rem' }}>
-                          Step {p.stepNum}: {p.title}
-                        </Typography>
-                        <Chip
-                          label={p.code}
-                          size="small"
-                          sx={{
-                            bgcolor: alpha('#3b82f6', 0.12),
-                            color: '#3b82f6',
-                            fontWeight: 800,
-                            fontSize: '0.68rem',
-                            height: 20,
-                            borderRadius: '6px',
-                            border: `1px solid ${alpha('#3b82f6', 0.3)}`,
-                          }}
-                        />
-                      </Box>
-
-                      {/* Clear Step Instruction */}
-                      <Typography sx={{ fontSize: '0.8rem', color: '#475569', fontWeight: 500, lineHeight: 1.5, mt: 0.5 }}>
-                        {p.instruction}
-                      </Typography>
-                    </Box>
-                  </Box>
-
-                  {/* Prompt Terminal Box & Checklist */}
-                  <Box sx={{ ml: { xs: 0, sm: '44px' }, display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    <PromptTerminalBox
-                      id={p.key}
-                      codeLabel={p.code}
-                      title={`Step ${p.stepNum} · ${p.code}: ${p.title}`}
-                      subtitle={p.role}
-                      prompt={p.prompt}
-                      colorTheme="#3b82f6"
-                      copyButtonLabel={`Copy Step ${p.stepNum} Prompt (${p.code})`}
-                      copiedBannerText={`Step ${p.stepNum} (${p.code}) Copied to Clipboard!`}
-                      isCopiedExternal={!!checklist[p.checkId]}
-                      onCopy={() => handleCopyPromptAutoCheck(p.key)}
-                    />
-                    <PromptChecklistItem
-                      id={p.checkId}
-                      text={p.checkText}
-                      checked={!!checklist[p.checkId]}
-                      onToggle={toggleChecklistItem}
-                      colorTheme="#3b82f6"
-                    />
-                  </Box>
-                </Box>
-              ))}
-            </Box>
-
-            <Box sx={{ borderBottom: '1px solid rgba(0,0,0,0.06)', my: 0.5 }} />
-
-            {/* ──────────────────────────────────────────────────────────── */}
-            {/* DOCUMENT 3: ENRICHMENT, VISUAL ASSETS & QA (STEPS 4, 5, 6)   */}
-            {/* ──────────────────────────────────────────────────────────── */}
-            <Box id="editorial-doc-3" sx={{ display: 'flex', flexDirection: 'column', gap: 3, scrollMarginTop: '80px' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Box
-                  sx={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: '50%',
-                    bgcolor: '#f59e0b',
-                    color: '#fff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 900,
-                    fontSize: '0.9rem',
-                    boxShadow: '0 4px 12px rgba(245, 158, 11, 0.35)',
-                  }}
-                >
-                  3
-                </Box>
-                <Box>
-                  <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.2 }}>
-                    Document 3: Enrichment, Visual Assets &amp; QA (Steps 4, 5, 6)
-                  </Typography>
-                  <Typography sx={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 600 }}>
-                    Verify live metrics, calibrate documentary photojournalism prompts, and map conversion CTAs.
-                  </Typography>
-                </Box>
-              </Box>
-
-              {doc3Prompts.map((p) => (
-                <Box id={`editorial-step-${p.stepNum}`} key={p.key} sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, scrollMarginTop: '80px' }}>
-                  {/* Step Header with Step Badge & Instructions */}
-                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
-                    <Box
-                      sx={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: '50%',
-                        bgcolor: '#f59e0b',
-                        color: '#fff',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontWeight: 900,
-                        fontSize: '0.88rem',
-                        flexShrink: 0,
-                        mt: 0.25,
-                        boxShadow: '0 4px 12px rgba(245, 158, 11, 0.4)',
-                      }}
-                    >
-                      {p.stepNum}
-                    </Box>
-
-                    <Box sx={{ flex: 1 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.25, fontSize: '0.98rem' }}>
-                          Step {p.stepNum}: {p.title}
-                        </Typography>
-                        <Chip
-                          label={p.code}
-                          size="small"
-                          sx={{
-                            bgcolor: alpha('#f59e0b', 0.12),
-                            color: '#f59e0b',
-                            fontWeight: 800,
-                            fontSize: '0.68rem',
-                            height: 20,
-                            borderRadius: '6px',
-                            border: `1px solid ${alpha('#f59e0b', 0.3)}`,
-                          }}
-                        />
-                      </Box>
-
-                      {/* Clear Step Instruction */}
-                      <Typography sx={{ fontSize: '0.8rem', color: '#475569', fontWeight: 500, lineHeight: 1.5, mt: 0.5 }}>
-                        {p.instruction}
-                      </Typography>
-                    </Box>
-                  </Box>
-
-                  {/* Prompt Terminal Box & Checklist */}
-                  <Box sx={{ ml: { xs: 0, sm: '44px' }, display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    <PromptTerminalBox
-                      id={p.key}
-                      codeLabel={p.code}
-                      title={`Step ${p.stepNum} · ${p.code}: ${p.title}`}
-                      subtitle={p.role}
-                      prompt={p.prompt}
-                      colorTheme="#f59e0b"
-                      copyButtonLabel={`Copy Step ${p.stepNum} Prompt (${p.code})`}
-                      copiedBannerText={`Step ${p.stepNum} (${p.code}) Copied to Clipboard!`}
-                      isCopiedExternal={!!checklist[p.checkId]}
-                      onCopy={() => handleCopyPromptAutoCheck(p.key)}
-                    />
-                    <PromptChecklistItem
-                      id={p.checkId}
-                      text={p.checkText}
-                      checked={!!checklist[p.checkId]}
-                      onToggle={toggleChecklistItem}
-                      colorTheme="#f59e0b"
-                    />
-                  </Box>
-                </Box>
-              ))}
-            </Box>
-
-            <Box sx={{ borderBottom: '1px solid rgba(0,0,0,0.06)', my: 0.5 }} />
-
-            {/* ──────────────────────────────────────────────────────────── */}
-            {/* DOCUMENT 4: REFINEMENT & CMS COMPILATION (STEPS 7, 8, 9)     */}
-            {/* ──────────────────────────────────────────────────────────── */}
-            <Box id="editorial-doc-4" sx={{ display: 'flex', flexDirection: 'column', gap: 3, scrollMarginTop: '80px' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Box
-                  sx={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: '50%',
-                    bgcolor: '#10b981',
-                    color: '#fff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 900,
-                    fontSize: '0.9rem',
-                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.35)',
-                  }}
-                >
-                  4
-                </Box>
-                <Box>
-                  <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.2 }}>
-                    Document 4: Refinement, Typography &amp; CMS Compilation (Steps 7, 8, 9)
-                  </Typography>
-                  <Typography sx={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 600 }}>
-                    Polish headlines, apply bionic bolding anchors, and compile into headless CMS JSON.
-                  </Typography>
-                </Box>
-              </Box>
-
-              {doc4Prompts.map((p) => (
-                <Box id={`editorial-step-${p.stepNum}`} key={p.key} sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, scrollMarginTop: '80px' }}>
-                  {/* Step Header with Step Badge & Instructions */}
-                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
-                    <Box
-                      sx={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: '50%',
-                        bgcolor: '#10b981',
-                        color: '#fff',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontWeight: 900,
-                        fontSize: '0.88rem',
-                        flexShrink: 0,
-                        mt: 0.25,
-                        boxShadow: '0 4px 12px rgba(16, 185, 129, 0.4)',
-                      }}
-                    >
-                      {p.stepNum}
-                    </Box>
-
-                    <Box sx={{ flex: 1 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.25, fontSize: '0.98rem' }}>
-                          Step {p.stepNum}: {p.title}
-                        </Typography>
-                        <Chip
-                          label={p.code}
-                          size="small"
-                          sx={{
-                            bgcolor: alpha('#10b981', 0.12),
-                            color: '#10b981',
-                            fontWeight: 800,
-                            fontSize: '0.68rem',
-                            height: 20,
-                            borderRadius: '6px',
-                            border: `1px solid ${alpha('#10b981', 0.3)}`,
-                          }}
-                        />
-                      </Box>
-
-                      {/* Clear Step Instruction */}
-                      <Typography sx={{ fontSize: '0.8rem', color: '#475569', fontWeight: 500, lineHeight: 1.5, mt: 0.5 }}>
-                        {p.instruction}
-                      </Typography>
-                    </Box>
-                  </Box>
-
-                  {/* Prompt Terminal Box & Checklist */}
-                  <Box sx={{ ml: { xs: 0, sm: '44px' }, display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    <PromptTerminalBox
-                      id={p.key}
-                      codeLabel={p.code}
-                      title={`Step ${p.stepNum} · ${p.code}: ${p.title}`}
-                      subtitle={p.role}
-                      prompt={p.prompt}
-                      colorTheme="#10b981"
-                      copyButtonLabel={`Copy Step ${p.stepNum} Prompt (${p.code})`}
-                      copiedBannerText={`Step ${p.stepNum} (${p.code}) Copied to Clipboard!`}
-                      isCopiedExternal={!!checklist[p.checkId]}
-                      onCopy={() => handleCopyPromptAutoCheck(p.key)}
-                    />
-                    <PromptChecklistItem
-                      id={p.checkId}
-                      text={p.checkText}
-                      checked={!!checklist[p.checkId]}
-                      onToggle={toggleChecklistItem}
-                      colorTheme="#10b981"
-                    />
-                  </Box>
-                </Box>
-              ))}
-            </Box>
-
-            <Box sx={{ borderBottom: '1px solid rgba(0,0,0,0.06)', my: 0.5 }} />
+            ))}
 
             {/* ──────────────────────────────────────────────────────────── */}
             {/* STEP 10: FAST INGEST — INGEST TO CANVAS                       */}
@@ -1556,7 +1283,9 @@ export function EditorialPromptSidePane({
                   expectedBlockCount={currentBlueprint.length}
                   error={ingestError}
                   success={ingestSuccess}
-                  buttonLabel={`Ingest & Apply All ${currentBlueprint.length} Blocks to Canvas`}
+                  buttonLabel="Visualise your article"
+                  hideButtonWhenEmpty={true}
+                  showButtonIcon={false}
                 />
               </Box>
             </Box>
