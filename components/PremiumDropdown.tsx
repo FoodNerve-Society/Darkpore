@@ -18,7 +18,7 @@ export interface PremiumDropdownOption<T = any> {
 
 export interface PremiumDropdownProps<T = any> {
   options: (PremiumDropdownOption<T> | T)[];
-  value: PremiumDropdownOption<T> | T | null;
+  value: PremiumDropdownOption<T> | T | (PremiumDropdownOption<T> | T)[] | null;
   onChange: (option: any) => void;
   label?: string;
   prefix?: string;
@@ -27,6 +27,7 @@ export interface PremiumDropdownProps<T = any> {
   colorTheme?: string;
   disabled?: boolean;
   fullWidth?: boolean;
+  multiple?: boolean;
   maxHeight?: number | string;
   popoverWidth?: number | string;
   getOptionLabel?: (opt: any) => string;
@@ -48,6 +49,7 @@ export function PremiumDropdown<T = any>({
   colorTheme = '#f59e0b',
   disabled = false,
   fullWidth = false,
+  multiple = false,
   maxHeight = 360,
   popoverWidth = 380,
   getOptionLabel,
@@ -67,11 +69,6 @@ export function PremiumDropdown<T = any>({
 
   const handleClose = () => {
     setAnchorEl(null);
-  };
-
-  const handleSelect = (option: any) => {
-    onChange(option);
-    handleClose();
   };
 
   // Helper extraction routines
@@ -105,9 +102,50 @@ export function PremiumDropdown<T = any>({
     return opt.emoji;
   };
 
-  const selectedId = value ? resolveId(value) : null;
-  const currentDisplayLabel = value ? resolveLabel(value) : label;
-  const currentDisplayEmoji = value ? resolveEmoji(value) : undefined;
+  const isOptionSelected = (opt: any): boolean => {
+    const optId = resolveId(opt);
+    if (multiple) {
+      if (!Array.isArray(value)) return false;
+      return value.some((v: any) => resolveId(v) === optId);
+    }
+    return value ? resolveId(value) === optId : false;
+  };
+
+  const handleSelect = (option: any) => {
+    if (multiple) {
+      const currentList: any[] = Array.isArray(value) ? [...value] : [];
+      const optId = resolveId(option);
+      const existsIndex = currentList.findIndex(item => resolveId(item) === optId);
+      let updated: any[];
+      if (existsIndex >= 0) {
+        updated = currentList.filter((_, idx) => idx !== existsIndex);
+      } else {
+        updated = [...currentList, option];
+      }
+      onChange(updated);
+    } else {
+      onChange(option);
+      handleClose();
+    }
+  };
+
+  let currentDisplayLabel = label;
+  let currentDisplayEmoji: string | undefined = undefined;
+
+  if (multiple) {
+    if (Array.isArray(value) && value.length > 0) {
+      if (value.length === 1) {
+        currentDisplayLabel = resolveLabel(value[0]);
+        currentDisplayEmoji = resolveEmoji(value[0]);
+      } else {
+        currentDisplayLabel = value.map(v => resolveLabel(v)).join(', ');
+        currentDisplayEmoji = '👥';
+      }
+    }
+  } else if (value) {
+    currentDisplayLabel = resolveLabel(value);
+    currentDisplayEmoji = resolveEmoji(value);
+  }
 
   return (
     <>
@@ -269,7 +307,7 @@ export function PremiumDropdown<T = any>({
               const optSecondary = resolveSecondary(opt);
               const optTag = resolveTag(opt);
               const optEmoji = resolveEmoji(opt);
-              const isSelected = selectedId !== null && selectedId === optId;
+              const isSelected = isOptionSelected(opt);
 
               if (renderOption) {
                 return (
@@ -393,6 +431,59 @@ export function PremiumDropdown<T = any>({
             })
           )}
         </Box>
+
+        {/* Multi-select Action Footer */}
+        {multiple && (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              pt: 1.25,
+              mt: 0.75,
+              borderTop: '1px solid rgba(0, 0, 0, 0.06)',
+              px: 0.75,
+            }}
+          >
+            <Typography sx={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 700 }}>
+              {Array.isArray(value) && value.length > 0 ? `${value.length} selected` : 'None selected'}
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              {Array.isArray(value) && value.length > 0 && (
+                <Button
+                  size="small"
+                  variant="text"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onChange([]);
+                  }}
+                  sx={{ fontSize: '0.74rem', textTransform: 'none', color: '#ef4444', p: 0.5, fontWeight: 700 }}
+                >
+                  Clear All
+                </Button>
+              )}
+              <Button
+                size="small"
+                variant="contained"
+                onClick={handleClose}
+                sx={{
+                  bgcolor: colorTheme,
+                  color: '#fff',
+                  fontSize: '0.74rem',
+                  textTransform: 'none',
+                  borderRadius: '10px',
+                  px: 1.75,
+                  py: 0.4,
+                  fontWeight: 800,
+                  boxShadow: 'none',
+                  '&:hover': { bgcolor: colorTheme, opacity: 0.9 },
+                }}
+              >
+                Done
+              </Button>
+            </Box>
+          </Box>
+        )}
       </Popover>
     </>
   );

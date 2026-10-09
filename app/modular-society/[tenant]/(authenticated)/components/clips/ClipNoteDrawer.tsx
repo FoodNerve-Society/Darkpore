@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import {
   Drawer, Box, Typography, IconButton, Button, TextField, Chip, 
-  InputAdornment, Tooltip, Divider, alpha
+  InputAdornment, Tooltip, Divider, alpha, useTheme, useMediaQuery
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import AddIcon from '@mui/icons-material/Add';
@@ -24,6 +24,9 @@ export function ClipNoteDrawer({
   currentArticleId?: string;
   onInsertIntoCanvas?: (content: string) => void;
 }) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   const { 
     notes, isOpen, closeClipDrawer, createNote, deleteNote, 
     currentFilter, setFilter 
@@ -80,18 +83,22 @@ export function ClipNoteDrawer({
 
   return (
     <Drawer
-      anchor="right"
+      anchor={isMobile ? 'bottom' : 'right'}
       open={isOpen}
       onClose={closeClipDrawer}
       slotProps={{
         paper: {
           sx: {
-            width: { xs: '100%', sm: 440 },
+            width: { xs: '100vw', sm: 440 },
+            maxWidth: '100vw',
+            height: { xs: '85vh', sm: '100%' },
+            maxHeight: { xs: '85vh', sm: '100%' },
+            borderRadius: { xs: '24px 24px 0 0', sm: 0 },
             p: 0,
             background: 'rgba(255, 255, 255, 0.98)',
             backdropFilter: 'blur(20px)',
-            borderLeft: '1.5px solid rgba(0,0,0,0.08)',
-            boxShadow: '-10px 0 40px rgba(0,0,0,0.08)',
+            borderLeft: { xs: 'none', sm: '1.5px solid rgba(0,0,0,0.08)' },
+            boxShadow: { xs: '0 -10px 40px rgba(0,0,0,0.12)', sm: '-10px 0 40px rgba(0,0,0,0.08)' },
             display: 'flex',
             flexDirection: 'column'
           }
@@ -99,17 +106,22 @@ export function ClipNoteDrawer({
       }}
     >
       {/* ─── Top Header ─── */}
-      <Box sx={{ p: 2.5, pb: 1.5, borderBottom: '1px solid rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography sx={{ fontSize: '1.25rem' }}>📎</Typography>
-          <Typography sx={{ fontWeight: 900, fontSize: '1.1rem', color: '#0f172a' }}>
-            Clip Notes
-          </Typography>
-          <Chip label={`${notes.length}`} size="small" sx={{ fontWeight: 800, height: 20, fontSize: '0.7rem' }} />
+      <Box sx={{ p: 2.5, pt: { xs: 1.25, sm: 2.5 }, pb: 1.5, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+        {isMobile && (
+          <Box sx={{ width: 42, height: 4.5, borderRadius: 3, bgcolor: 'rgba(0,0,0,0.2)', mx: 'auto', mb: 1.5 }} />
+        )}
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography sx={{ fontSize: '1.25rem' }}>📎</Typography>
+            <Typography sx={{ fontWeight: 900, fontSize: '1.1rem', color: '#0f172a' }}>
+              Clip Notes
+            </Typography>
+            <Chip label={`${notes.length}`} size="small" sx={{ fontWeight: 800, height: 20, fontSize: '0.7rem' }} />
+          </Box>
+          <IconButton size="small" onClick={closeClipDrawer}>
+            <CloseIcon sx={{ fontSize: 20 }} />
+          </IconButton>
         </Box>
-        <IconButton size="small" onClick={closeClipDrawer}>
-          <CloseIcon sx={{ fontSize: 20 }} />
-        </IconButton>
       </Box>
 
       {/* ─── Search & Scope Filter Bar ─── */}

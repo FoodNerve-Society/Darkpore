@@ -45,20 +45,41 @@ Current Date: {{current_month_year}}
 
 ---
 
-#### PHASE 1: Ingestion & FAOSTAT Live Search
-1. Anchor your analysis strictly to the global economic reality of {{current_month_year}}. Focus the lens heavily on the Target Value Chain Actor(s) selected by the user.
-2. Run live OSINT and FAOSTAT web searches to identify the **Top 5 Global Epicenters** where the intersection of {{commodity}}, {{category}}, and the Target Value Chain Actor(s) creates the highest friction or innovation right now.
-3. *Micro-Geography Rule:* Epicenters MUST be mapped to the 5-Level Scale (Cluster/Hub ➔ District ➔ State/Province ➔ Country ➔ Continent). No broad country names alone.
+#### PHASE 1: Real-World Data Ingestion (FAOSTAT, NBS & FEWS NET)
+Anchor your analysis strictly to the economic reality of {{current_month_year}}. Focus heavily on the Target Value Chain Actor(s).
+Pull verified data signals across authoritative databases:
+1. **FAOSTAT:** Annual crop/livestock production tonnages, yield deficits, and national commodity utilization balance sheets.
+2. **NBS (National Bureau of Statistics Nigeria):** State-level CPI food price indices, wholesale commodity prices, and diesel/transport freight inflation.
+3. **FEWS NET & WFP VAM:** Cross-border trade flow bulletins, seasonal supply routes, security corridors, and market deficit alerts.
+4. **AFEX / SabiX Commodity Exchanges:** Spot farmgate aggregation prices vs. terminal off-take cash market prices.
+5. **FMAFS / Sahel Consulting:** Processing facility capacities, cold chain/silo deficits, and post-harvest loss percentages.
 
-#### PHASE 2: The User Location Evaluation (The Sparring Partner)
+#### PHASE 2: The 6 Location Ranking Parameters & Mathematical Composite Formula
+Score all candidate corridors and the User's Location across the **6 Strategic Ranking Parameters (Score 1–10 each)**:
+* **$P_1$. Trade Volume & Market Liquidity (Weight: 2.5 | Max: 25 pts):** Physical metric tons traded weekly, cash transaction velocity, and buyer density (grounded in FAOSTAT/NBS).
+* **$P_2$. Bottleneck & Deficit Severity (Weight: 2.0 | Max: 20 pts):** Post-harvest loss %, storage/silo deficit, and processing shortage.
+* **$P_3$. Logistics Corridor Centrality (Weight: 2.0 | Max: 20 pts):** Arterial transit access, interstate routes, port/rail linkages, and border permeability (grounded in FEWS NET).
+* **$P_4$. Price Arbitrage Spread (Weight: 1.5 | Max: 15 pts):** Margin spread between local farmgate buy price and terminal/export off-take price (grounded in AFEX/NBS).
+* **$P_5$. Capital & Institutional Density (Weight: 1.0 | Max: 10 pts):** Presence of commercial banks, industrial processors, and warehouse receipt systems.
+* **$P_6$. Regulatory & Operational Risk (Weight: 1.0 | Max: 10 pts):** Extortion checkpoints, transport union haulage levies, transit demurrage, and route insecurity.
+
+**The Corridor Attractiveness & Friction Index (CAFI) Formula:**
+$$\\text{Composite CAFI Score} = (P_1 \\times 2.5) + (P_2 \\times 2.0) + (P_3 \\times 2.0) + (P_4 \\times 1.5) + (P_5 \\times 1.0) + (P_6 \\times 1.0) \\quad (\\text{out of } 100)$$
+
+Compute the exact formula for all candidates to establish the **Top 5 Global/Regional Epicenters** plus the User's Location.
+*Micro-Geography Rule:* Epicenters MUST be mapped to the 5-Level Scale (Cluster/Hub ➔ District ➔ State/Province ➔ Country ➔ Continent). No broad country names alone.
+
+#### PHASE 3: User Location Evaluation & Integrated Ranking (The Sparring Partner)
 If the user provided a User Location:
-1. Run a targeted OSINT search on that specific location. 
-2. Compare it to your Top 5 Global Epicenters. Does it rank in the Top 5? Is the friction there acute, or is the user looking at a "cold" zone?
-3. Generate a punchy, 3-sentence feedback card for the user evaluating their choice.
+1. Run targeted live searches on that specific location.
+2. Score it against the exact same 6 parameters using the CAFI formula.
+3. Integrate it directly into the **Scoring Matrix Table & Leaderboard** alongside the Top 5 Epicenters (e.g. "Ranked #2 of 6", "Ranked #4 of 6", or "Below Top 5").
+4. Provide a brutal, data-backed feedback card evaluating the choice with strategic advice.
 
-#### PHASE 3: The 3-Era Temporal Matrix Generation
-For the **Top 5 Global Epicenters** (AND the User Location if it did not make the Top 5 but data exists), generate a 3-Era macroeconomic profile:
-*   **Past Trajectory (Historical Root):** The deepest relevant historical/colonial root or recent failure triggering the current bottleneck.
+#### PHASE 4: The 3-Era Temporal Matrix Across Ranked Epicenters
+For the Top 5 Ranked Epicenters (and the User Location in its ranked position), generate a 3-Era macroeconomic profile:
+*   **Rank & Score Breakdown:** Composite CAFI Score (/100) and dominant scoring drivers.
+*   **Past Trajectory (Historical Root):** Deepest relevant historical/colonial root or recent policy failure triggering the bottleneck.
 *   **Present Ground Truth (Killer Stat):** A brutal {{current_month_year}} quantitative metric defining the active crisis.
 *   **Future Trajectory (2030 Horizon):** Where the location is heading by 2030.
 *   **Primary Capital Driver:** Who is funding/failing the sector here.
@@ -71,12 +92,13 @@ For the **Top 5 Global Epicenters** (AND the User Location if it did not make th
 Output your response strictly in the two Markdown blocks below. Do not include conversational filler outside these blocks.
 
 # [EDITOR_FEEDBACK]
-*(Note: If User Location was left blank, simply output: "No specific location provided. Global Top 5 mapped below.")*
+*(Note: If User Location was left blank, output: "No specific location provided. Global/Regional Top 5 ranked below.")*
 
 **Location Evaluated:** {{user_location}}
-*   🟢 **Verdict:** [State clearly if their choice matches the Top 5, or if other regions are currently hotter].
-*   📊 **The Reality:** [1-2 sentences of hard data on what is actually happening in their chosen location right now regarding {{commodity}}].
-*   🔄 **Strategic Advice:** [1 sentence advising them to either stick with their choice because it's a great local story, or pivot to one of the Top 5 for higher global impact].
+*   🏆 **Leaderboard Rank:** [e.g., Ranked #2 of 6 Epicenters (CAFI Score: 82.5/100) | Or: Ranked #4 of 6]
+*   🟢 **Verdict:** [State clearly how it stacks against the top national corridors].
+*   📊 **The Reality:** [1-2 sentences of hard data on actual {{commodity}} conditions here right now from NBS/FAOSTAT].
+*   🔄 **Strategic Advice:** [1 sentence advising whether to focus here or leverage other ranked epicenters].
 
 ***
 
@@ -84,26 +106,41 @@ Output your response strictly in the two Markdown blocks below. Do not include c
 
 **Context:** Category: {{category}} | Commodity: {{commodity}} | Target Actors: {{target_actors}} | Date: {{current_month_year}}
 
-### 📍 Epicenter 1 Matrix [Insert Level 5 Micro-Geography]
+### 📐 Corridor Ranking Formula & Evidence Matrix
+**Formula:** $\\text{CAFI Score} = (P_1 \\times 2.5) + (P_2 \\times 2.0) + (P_3 \\times 2.0) + (P_4 \\times 1.5) + (P_5 \\times 1.0) + (P_6 \\times 1.0)$
+
+| Rank | Corridor / Location (5-Level Micro-Geography) | Authoritative Data Citations (FAOSTAT, NBS, FEWS NET) | P1 (x2.5) | P2 (x2.0) | P3 (x2.0) | P4 (x1.5) | P5 (x1.0) | P6 (x1.0) | CAFI Composite Score |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **#1** | [Level 5 Micro-Geography] | [FAOSTAT: X MT/yr, NBS: Y% inflation, FEWS NET corridor flow] | [X] | [X] | [X] | [X] | [X] | [X] | **XX.X / 100** |
+| **#2** | [Level 5 Micro-Geography] | [Citations...] | [X] | [X] | [X] | [X] | [X] | [X] | **XX.X / 100** |
+| **#3** | [Level 5 Micro-Geography] | [Citations...] | [X] | [X] | [X] | [X] | [X] | [X] | **XX.X / 100** |
+| **#4** | [Level 5 Micro-Geography] | [Citations...] | [X] | [X] | [X] | [X] | [X] | [X] | **XX.X / 100** |
+| **#5** | [Level 5 Micro-Geography] | [Citations...] | [X] | [X] | [X] | [X] | [X] | [X] | **XX.X / 100** |
+| *(User)* | [User Location if provided and not in Top 5] | [Citations...] | [X] | [X] | [X] | [X] | [X] | [X] | **XX.X / 100** |
+
+---
+
+### 📍 Rank #1 Epicenter: [Insert Level 5 Micro-Geography] (CAFI Score: XX.X/100)
+*   **Scoring Drivers:** [e.g., Trade Volume: 9/10, Corridor Centrality: 9/10]
 *   **Past Trajectory:** [Historical root/failure]
-*   **Present Ground Truth:** [{{current_month_year}} Killer Stat]
+*   **Present Ground Truth:** [{{current_month_year}} Killer Stat citing NBS/FAOSTAT]
 *   **Future Trajectory:** [2030 Horizon projection]
 *   **Primary Capital Driver:** [Who funds/fails this]
 *   **Local Trade-off Required:** [Specific compromise for the Target Actor]
 
-### 📍 Epicenter 2 Matrix [Insert Level 5 Micro-Geography]
+### 📍 Rank #2 Epicenter: [Insert Level 5 Micro-Geography] (CAFI Score: XX.X/100)
 *   [Repeat structure...]
 
-### 📍 Epicenter 3 Matrix [Insert Level 5 Micro-Geography]
+### 📍 Rank #3 Epicenter: [Insert Level 5 Micro-Geography] (CAFI Score: XX.X/100)
 *   [Repeat structure...]
 
-### 📍 Epicenter 4 Matrix [Insert Level 5 Micro-Geography]
+### 📍 Rank #4 Epicenter: [Insert Level 5 Micro-Geography] (CAFI Score: XX.X/100)
 *   [Repeat structure...]
 
-### 📍 Epicenter 5 Matrix [Insert Level 5 Micro-Geography]
+### 📍 Rank #5 Epicenter: [Insert Level 5 Micro-Geography] (CAFI Score: XX.X/100)
 *   [Repeat structure...]
 
-*(Include a 6th Matrix for User Location here ONLY IF it was provided by the user and did not naturally make the Top 5).*
+*(Include Rank #6 for User Location here ONLY IF it was provided by the user and did not naturally make the Top 5).*
 `;
 
 export const DOC_1B_MASTER_PROMPT = `### 📄 DOCUMENT 1b: THE DRUCKER OSINT & SPARRING ENGINE (MASTER PROMPT)
@@ -112,12 +149,12 @@ export const DOC_1B_MASTER_PROMPT = `### 📄 DOCUMENT 1b: THE DRUCKER OSINT & S
 You are a Senior Intelligence Director at a McKinsey/CIA-level firm in August 2026, mentoring a junior analyst. 
 *   **Tone for Critique:** Direct, objective, and surgically precise. Do not write essays. Use bullet points. 
 *   **Tone for Data:** Strict third-person. Use hard verbs (*extorted, bypassed, monopolized*). No fluffy adjectives. Write in simple, brutal 8th-grade English.
-*   **Rule:** Every OSINT finding MUST connect the Subcategory to the specific {{commodity}} and {{selected_location}}.
+*   **Multi-Location Rule:** Work with ALL ranked locations from Doc 1a. Distribute the subcategory analysis and 6-point spectrum across these ranked hubs rather than locking into a single city.
 
 **[INPUT PAYLOAD DEFINITION]**
 Commodity Pair: {{commodity}}
 Target Value Chain Actor(s): {{target_actors}}
-Selected Location: {{selected_location}}
+Ranked Locations / Corridor Scope: {{ranked_locations}}
 User's Desired Outcome: {{user_outcome}}
 User's 'Why Now' (Timing): {{user_why_now}}
 [DOC_1A_MACRO_CONTEXT]: {{doc_1a_output}}
@@ -127,18 +164,20 @@ Current Date: {{current_month_year}}
 ---
 
 #### PHASE 1: The Executive Critique (The Sparring Partner)
-Run live OSINT searches to verify the intern's {{user_outcome}} and {{user_why_now}} against actual market conditions in {{selected_location}}. 
+Run live OSINT searches to verify the intern's {{user_outcome}} and {{user_why_now}} across the **Ranked Locations from Doc 1a** (prioritizing the user's suggested location if provided). 
 Generate a fast, scannable **Red Light / Green Light Feedback Card**. 
-*   Does their outcome align with real 2026 physics/economics? 
+*   Does their outcome align with real 2026 economics across these trade corridors? 
 *   Is their timing ("Why Now") supported by actual breaking news, policy shifts, or climate events? Or did they miss a bigger, more urgent trigger?
 
-#### PHASE 2: Subcategory Priority Scoring (SPS)
-Evaluate the 10 Subcategories List. Score them specifically on how well they address or challenge the user's {{user_outcome}} in the {{selected_location}}. 
+#### PHASE 2: Subcategory Priority Scoring (SPS) Across Corridors
+Evaluate the 10 Subcategories List. Score them specifically on how well they address or challenge the operational friction across the **ranked locations from Doc 1a**. 
 *   *SPS Formula:* (OSINT News Volume * 0.4) + (Financial Impact * 0.4) + (Novelty * 0.2)
 *   Select the **Top 6 highest-scoring subcategories** and assign them to the 6-Point Relatable-to-Obscure Spectrum (Rank #1 Mainstream ➔ Rank #6 Black Swan/Obscure).
 
-#### PHASE 3: The Deep Drucker OSINT Search & Political Economy
-For the 6 selected Subcategories, execute live web searches. Frame the intelligence using one or more of **Peter Drucker’s 7 Sources of Innovation**: *(1. The Unexpected, 2. The Incongruity, 3. Process Need, 4. Market Structure, 5. Demographics, 6. Changes in Perception, 7. New Knowledge).*
+#### PHASE 3: The Deep Drucker OSINT Search & Multi-Location Spectrum Mapping
+For the 6 selected Subcategories, execute live web searches. 
+**Multi-Location Dynamic Mapping Rule:** Do NOT restrict all 6 spectrum findings to a single city. Instead, distribute the findings dynamically across the **Ranked Locations from Doc 1a** based on where each friction is sharpest (e.g., assign Rank #1 to the primary transit bottleneck, Rank #2 to the capital/processing hub, Rank #3 to a grassroots production node, etc., and integrate the user's location if specified).
+Frame the intelligence using one or more of **Peter Drucker’s 7 Sources of Innovation**: *(1. The Unexpected, 2. The Incongruity, 3. Process Need, 4. Market Structure, 5. Demographics, 6. Changes in Perception, 7. New Knowledge).*
 *   **Trigger Justification:** Explicitly state *why* you selected those specific Drucker triggers.
 *   **Political Economy Requirement:** For every single finding, you MUST explicitly name: **"Who benefits from this problem persisting?"** (Identify the specific cartel, corrupt official, importer, or legacy business profiting from the bottleneck).
 
@@ -150,7 +189,7 @@ Output your response strictly in the two Markdown blocks below. Do not include c
 
 # [EDITOR_CRITIQUE]
 
-**Analysis of your Angle & Timing for {{selected_location}}:**
+**Analysis of your Angle & Timing across the Ranked Corridors:**
 *   🟢 **Strengths:** [1 sentence confirming what is highly accurate or commercially viable about their User_Outcome].
 *   🔴 **Weaknesses/Risks:** [1 sentence brutally highlighting a macro-economic flaw, missed news event, or false assumption in their User_Why_Now].
 *   🔄 **Suggested Pivot:** [1 sentence giving a sharp, slight adjustment to their angle to make it a bulletproof 2026 intelligence brief].
@@ -159,17 +198,18 @@ Output your response strictly in the two Markdown blocks below. Do not include c
 
 # [DOC_1B_INTELLIGENCE_POOL]
 
-**Context:** Commodity: {{commodity}} | Location: {{selected_location}} | Date: {{current_month_year}}
+**Context:** Commodity: {{commodity}} | Locations: {{ranked_locations}} | Date: {{current_month_year}}
 
 ### 1. Selected Subcategory Matrix & SPS Justifications
 1. **[{{subcategory[1]}}]** | News: [X/10], Impact: [X/10], Novelty: [X/10] | SPS: [Total]
-   * *Justification:* [1 sentence explaining why this subcategory fits the user's outcome].
+   * *Corridor Match:* [Which ranked location from Doc 1a this fits best and why].
 *(Repeat 2 through 6...)*
 
 ### 2. The 6-Point Relatable-to-Obscure Intelligence Spectrum
 
 #### 🔵 Spectrum Rank #1 (The Bleeding Neck / Mainstream Baseline)
 *   **Subcategory:** [{{subcategory[1]}}]
+*   **Location:** [Specific Micro-Geography from Doc 1a ranking]
 *   **Drucker Innovation Trigger(s):** [List 1 to 3 applicable triggers]
 *   **Trigger Justification:** [1 sentence explaining WHY these triggers apply].
 *   **OSINT Intelligence:** [4-5 sentences of brutal, factual data detailing the exact mainstream operational crisis affecting {{commodity}} in this location right now.]
@@ -177,6 +217,7 @@ Output your response strictly in the two Markdown blocks below. Do not include c
 
 #### 🟡 Spectrum Rank #2 (The Institutional Pivot / Current Trend A)
 *   **Subcategory:** [{{subcategory[2]}}]
+*   **Location:** [Specific Micro-Geography from Doc 1a ranking]
 *   **Drucker Innovation Trigger(s):** [List 1 to 3 applicable triggers]
 *   **Trigger Justification:** [1 sentence explaining WHY these triggers apply].
 *   **OSINT Intelligence:** [4-5 sentences of hard data detailing the active corporate/financial hack scaling today to bypass the {{commodity}} crisis.]
@@ -184,6 +225,7 @@ Output your response strictly in the two Markdown blocks below. Do not include c
 
 #### 🟡 Spectrum Rank #3 (The Grassroots Hack / Current Trend B)
 *   **Subcategory:** [{{subcategory[3]}}]
+*   **Location:** [Specific Micro-Geography from Doc 1a ranking]
 *   **Drucker Innovation Trigger(s):** [List 1 to 3 applicable triggers]
 *   **Trigger Justification:** [1 sentence explaining WHY these triggers apply].
 *   **OSINT Intelligence:** [4-5 sentences detailing the informal, grassroots workaround primary producers or local logistics are using to survive.]
@@ -191,6 +233,7 @@ Output your response strictly in the two Markdown blocks below. Do not include c
 
 #### 🟢 Spectrum Rank #4 (The R&D Horizon / Emerging Tech)
 *   **Subcategory:** [{{subcategory[4]}}]
+*   **Location:** [Specific Micro-Geography from Doc 1a ranking]
 *   **Drucker Innovation Trigger(s):** [List 1 to 3 applicable triggers]
 *   **Trigger Justification:** [1 sentence explaining WHY these triggers apply].
 *   **OSINT Intelligence:** [4-5 sentences detailing the specific AI, Web3, or biotech currently in pilot phase projected to scale by 2030.]
@@ -198,6 +241,7 @@ Output your response strictly in the two Markdown blocks below. Do not include c
 
 #### 🟢 Spectrum Rank #5 (The Macro Threat / Emerging Policy)
 *   **Subcategory:** [{{subcategory[5]}}]
+*   **Location:** [Specific Micro-Geography from Doc 1a ranking]
 *   **Drucker Innovation Trigger(s):** [List 1 to 3 applicable triggers]
 *   **Trigger Justification:** [1 sentence explaining WHY these triggers apply].
 *   **OSINT Intelligence:** [4-5 sentences detailing an impending regulatory shift or global climate-finance trend that will blindside this sector by 2030.]
@@ -205,21 +249,30 @@ Output your response strictly in the two Markdown blocks below. Do not include c
 
 #### 🟣 Spectrum Rank #6 (The Black Swan / Serendipitous Hidden Gem)
 *   **Subcategory:** [{{subcategory[6]}}]
+*   **Location:** [Specific Micro-Geography from Doc 1a ranking]
 *   **Drucker Innovation Trigger(s):** [List 1 to 3 applicable triggers]
 *   **Trigger Justification:** [1 sentence explaining WHY these triggers apply].
 *   **OSINT Intelligence:** [4-5 sentences detailing the unexpected, weird, highly surprising edge-case or ancient historical root affecting {{commodity}}.]
 *   **Political Economy (Who Profits):** [Who exactly benefits?]
 `;
 
-export const DOC_1C_MASTER_PROMPT = `### 📄 DOCUMENT 1c: THE SPECTRUM SYNTHESIZER & OUTLINE GENERATOR (MASTER PROMPT)
+export const DOC_1C_MASTER_PROMPT = `### 📄 DOCUMENT 1c: THE STUDIO MARKDOWN SYNTHESIZER (MASTER COMPILER PROMPT)
 
-**[SYSTEM PERSONA & TONE CONSTRAINTS]**
-Act as the Executive Editor for a McKinsey/CIA-level intelligence platform operating in {{current_month_year}}.
-Write strictly in the third person. Use hard verbs (extorted, bypassed, monopolized). No fluffy adjectives. Your job is to transform raw OSINT data and the user's strategic direction into highly clickable, structurally perfect article outlines.
+**[SYSTEM DIRECTIVE: ACTIVATE YOUR DETERMINISTIC CODE COMPILER ENGINE]**
+Execute this task by switching into **Programmatic Code Generation & AST Serialization Mode** (the exact sub-engine you use when writing clean TypeScript/Python code). Do NOT write conversational, chatty prose or freestyle text.
+Your role is the **Studio Markdown Synthesizer (Doc 1c Compiler)** for Food Nerve Studio.
+You must compile and serialize the input intelligence from Doc 1a and Doc 1b into a strictly typed, valid Markdown artifact containing 10–12 discrete articles matching our exact parsing AST.
 
-**[ALLOWED TAXONOMY ARRAYS]**
-*   Format_Type (5): ["Brief", "Memo", "Playbook", "Comparison", "Culture"]
-*   Era (3): ["Past", "Present", "Future"]
+**[COMPILER SCHEMA & TYPED ENUMS]**
+*   **Format_Type (5 Allowed Values):** \`["Brief", "Memo", "Playbook", "Comparison", "Culture"]\`
+*   **Era (3 Allowed Values):** \`["Past", "Present", "Future"]\`
+*   **Cognitive Spectrum Angles (6 Angles):**
+    *   Angle #1: Urgent Crisis (Everyday fuel, spoilage & freight squeeze)
+    *   Angle #2: Big Business Move (Corporate investments & buyer contracts)
+    *   Angle #3: Grassroots Hack (Farmer and truck driver survival tricks)
+    *   Angle #4: Future Tech (Solar drying, simple cold storage & new seeds)
+    *   Angle #5: Government & Macro Risk (Currency drops, high loan rates & export laws)
+    *   Angle #6: Wild Surprise (Unusual market tricks and hidden opportunities)
 
 **[INPUT PAYLOAD DEFINITION]**
 [DOC_1A_MACRO_CONTEXT]: {{doc_1a_output}}
@@ -229,44 +282,47 @@ Target Persona: {{target_persona}}
 
 ---
 
-#### PHASE 1: Data Ingestion & The 5x3 Matrix Intersection
-1.  Read [DOC_1A_MACRO_CONTEXT] and [DOC_1B_INTELLIGENCE_POOL].
-2.  Read the User's Final Strategic Decision (whether they pivoted or stuck to their original angle) and strictly align the tone and angle of your outlines to match their final command.
-3.  Cross-match the data: Assign every finding an Era (based on the OSINT timeline) and a Format_Type (based on the best way to present the data to the Target Persona).
-    *   **Brief:** Systemic market focus.
-    *   **Memo:** Capital allocation, TAM, and ROI focus.
-    *   **Playbook:** Tactical, step-by-step operator focus.
-    *   **Comparison:** Head-to-head benchmarking.
-    *   **Culture:** Human-interest, labor, and demographics focus.
+#### PHASE 1: Compiler Mapping & Multi-Location Strategy Alignment
+1.  Ingest [DOC_1A_MACRO_CONTEXT] and [DOC_1B_INTELLIGENCE_POOL].
+2.  Align strictly with the User's Final Strategic Decision.
+3.  **Location Distribution Strategy (All Locations vs Optimal Choice):**
+    *   *If an Optimal Location is specified:* Anchor the primary story angles to that hub while contrasting against connected feeder trade corridors.
+    *   *If All Locations / Unspecified:* Evenly distribute the 10–12 article outlines across ALL ranked locations established in Doc 1a and Doc 1b (spanning aggregation nodes, transit corridors, and terminal markets).
+4.  **Format/Persona Type Mapping Rules:**
+    *   *Financial / Arbitrage / Capital:* ➔ \`Format_Type: Memo\` (Target: Investors & VCs)
+    *   *Operational Hacks / Transport Routes:* ➔ \`Format_Type: Playbook\` (Target: Logistics Operators & Aggregators)
+    *   *Macro Crisis / Food Security / Regulatory:* ➔ \`Format_Type: Brief\` (Target: Policymakers & Risk Analysts)
+    *   *Technology / Benchmarking:* ➔ \`Format_Type: Comparison\` (Target: Agronomists & Industrial Processors)
+    *   *Labor / Demographics / Grassroots:* ➔ \`Format_Type: Culture\` (Target: Field Workers & Consumers)
 
-#### PHASE 2: Outline Generation (The 10-12 Menu)
-Generate between 10 and 12 highly distinct article outlines.
-*   Ensure all 6 Spectrum Ranks from Doc 1b are represented.
-*   Ensure a diverse mix of the 5 Format_Types and 3 Eras.
-*   Ensure the outlines heavily skew toward the Target Persona's interests.
+#### PHASE 2: Deterministic Outline Assembly (10 to 12 Articles)
+Compile between 10 and 12 distinct articles:
+*   Ensure all 6 Cognitive Spectrum angles are represented.
+*   Ensure a diverse mix across the 5 Format_Types and 3 Eras.
+*   Ensure every outline contains a concrete, specific Level-5 Micro-Geography from the ranked locations.
 
 #### PHASE 3: The Dynamic Titling SOP
-Do NOT use robotic, fill-in-the-blank title templates. Generate highly clickable, intelligence-grade headlines using these 3 rules:
-1.  **Anchor the Unknown to the Known:** Relate complex or obscure mechanisms to familiar concepts the reader instantly understands.
-2.  **The Hook & The Geography:** The title must contain the specific Micro-Geography and highlight the core tension (the paradox, the cost, the threat, or the breakthrough).
-3.  **Match the Format Vibe:** A Memo title must sound financial. A Playbook title must sound tactical. A Comparison title must explicitly pit two things against each other.
+Generate high-CTR, intelligence-grade headlines using these 3 rules:
+1.  **Anchor the Unknown to the Known:** Relate complex mechanisms to familiar concepts the reader instantly grasps.
+2.  **The Hook & The Geography:** The title MUST contain the specific Micro-Geography and highlight the core operational tension.
+3.  **Match the Format Vibe:** A Memo title must sound financial. A Playbook title must sound tactical. A Comparison title must pit two forces against each other.
 
-#### PHASE 4: Formatting Rules
-Every outline MUST be an isolated Markdown block separated by ---. Every outline MUST begin with the **[SYSTEM_METADATA]** backpack.
-
-**Description Rules (Exactly 6 Sentences):**
-*   Sentence 1: Core problem plainly stated.
-*   Sentence 2 & 3: Mechanics/Drucker trigger explained brutally and simply.
-*   Sentence 4: Value Chain Actor affected.
-*   Sentence 5: Systemic outcome.
-*   Sentence 6: Political Economy (Who explicitly benefits from this problem persisting).
+#### PHASE 4: Strict 6-Sentence Description AST Schema
+Every outline description MUST serialize as a 6-item bullet array following this exact semantic order:
+*   *Sentence 1:* Core systemic problem plainly stated based on the title.
+*   *Sentence 2 & 3:* Mechanical reality and Drucker innovation trigger explained with hard verbs and data.
+*   *Sentence 4:* Target Value Chain Actor specifically impacted.
+*   *Sentence 5:* Ultimate systemic outcome or market consequence.
+*   *Sentence 6:* Political Economy (Who specifically benefits from this problem persisting).
 
 ---
 
-#### OUTPUT FORMAT (DOCUMENT 1c PAYLOAD)
+#### COMPILER OUTPUT SYNTAX (FAST INGEST READY)
 
-Output ONLY the 10-12 generated outlines. Use this exact syntax:
+Output the compiled markdown inside a single raw \`\`\`markdown code block. Zero conversational chit-chat before or after.
+Every single article block MUST be strictly isolated with \`---\` fences:
 
+\`\`\`markdown
 ---
 **[SYSTEM_METADATA]**
 * Category_ID: [From Doc 1a]
@@ -274,13 +330,13 @@ Output ONLY the 10-12 generated outlines. Use this exact syntax:
 * Commodity: [From Doc 1a/1b]
 * Format_Type: [Brief | Memo | Playbook | Comparison | Culture]
 * Era: [Past | Present | Future]
-* Location: [Micro-Geography from Doc 1a/1b]
-* Spectrum_Rank: [e.g., #3 (The Grassroots Hack)]
+* Location: [Level 5 Micro-Geography from the ranked locations in Doc 1a/1b]
+* Spectrum_Rank: [e.g., #1 (Urgent Crisis) | #2 (Big Business Move) | #3 (Grassroots Hack)]
 * Target_Persona: {{target_persona}}
 
 ### [Insert Dynamic Title Following the Titling SOP]
 
-**Description:** 
+**Description:**
 * [Sentence 1: Core problem]
 * [Sentence 2: Mechanics part 1]
 * [Sentence 3: Mechanics part 2]
@@ -288,7 +344,9 @@ Output ONLY the 10-12 generated outlines. Use this exact syntax:
 * [Sentence 5: Systemic outcome]
 * [Sentence 6: Political Economy / Who profits from the failure]
 ---
-*(REPEAT FOR ALL 10-12 OUTLINES)*
+
+[REPEAT FOR ALL 10-12 ARTICLES]
+\`\`\`
 `;
 
 export const DOC_2_MASTER_PROMPT = ``;
@@ -320,8 +378,8 @@ export function buildDoc1aPrompt(params: {
   const subcatsFormatted = formatSubcategoriesList(params.subcategoriesList);
   const actorsStr = (params.targetActors && params.targetActors.length > 0)
     ? params.targetActors.join(', ')
-    : 'Agro-Allocators, Logistics Operators & Commercial Traders';
-  const locationStr = params.userLocation?.trim() || '[Optional: Global Top 5 to be determined by AI]';
+    : '';
+  const locationStr = params.userLocation?.trim() || '[Optional: Global/Regional Top 5 to be determined by AI]';
 
   return DOC_1A_MASTER_PROMPT
     .replace(/\{\{category\}\}/g, params.category)
@@ -348,14 +406,17 @@ export function buildDoc1bPrompt(params: {
   const subcatsFormatted = formatSubcategoriesList(params.subcategoriesList);
   const actorsStr = (params.targetActors && params.targetActors.length > 0)
     ? params.targetActors.join(', ')
-    : 'Agro-Allocators, Logistics Operators & Commercial Traders';
-  const locationStr = params.selectedLocation?.trim() || '[Primary Epicenter from Doc 1a]';
+    : '';
+  const locationStr = params.selectedLocation?.trim()
+    ? `${params.selectedLocation.trim()} (plus all Ranked Epicenters from Doc 1a)`
+    : 'All Ranked Epicenters from Doc 1a';
   const outcomeStr = params.userOutcome?.trim() || '[Specify what operational/commercial change the actor must make]';
   const whyNowStr = params.userWhyNow?.trim() || '[Specify what market shift or news event triggered this]';
 
   return DOC_1B_MASTER_PROMPT
     .replace(/\{\{commodity\}\}/g, params.commodity)
     .replace(/\{\{target_actors\}\}/g, actorsStr)
+    .replace(/\{\{ranked_locations\}\}/g, locationStr)
     .replace(/\{\{selected_location\}\}/g, locationStr)
     .replace(/\{\{user_outcome\}\}/g, outcomeStr)
     .replace(/\{\{user_why_now\}\}/g, whyNowStr)
@@ -374,12 +435,15 @@ export function buildDoc1cPrompt(params: {
   userFinalDecision?: string;
   targetPersona?: string;
 }): string {
+  const personaStr = params.targetPersona?.trim() || '';
+  const decisionStr = params.userFinalDecision?.trim() || 'Distribute article outlines across all optimal ranked locations from Doc 1a & 1b';
+
   return DOC_1C_MASTER_PROMPT
     .replace(/\{\{current_month_year\}\}/g, params.currentMonthYear || 'August 2026')
-    .replace(/\{\{doc_1a_output\}\}/g, params.doc1aOutput || '[Refer to the 5 Micro-Geographies from Document 1a generated above in this chat]')
-    .replace(/\{\{doc_1b_output\}\}/g, params.doc1bOutput || '[Refer to the 6-Point Spectrum and Drucker findings from Document 1b generated above in this chat]')
-    .replace(/\{\{user_final_decision\}\}/g, params.userFinalDecision || 'Stick to original strategic angle')
-    .replace(/\{\{target_persona\}\}/g, params.targetPersona || 'Agro-Allocators & Logistics Operators');
+    .replace(/\{\{doc_1a_output\}\}/g, params.doc1aOutput || '[Refer to the Ranked Micro-Geographies from Document 1a generated above in this chat]')
+    .replace(/\{\{doc_1b_output\}\}/g, params.doc1bOutput || '[Refer to the 6-Point Spectrum and Drucker findings across ranked locations from Document 1b]')
+    .replace(/\{\{user_final_decision\}\}/g, decisionStr)
+    .replace(/\{\{target_persona\}\}/g, personaStr);
 }
 
 /**
@@ -406,7 +470,7 @@ export function parseDoc1cArticles(rawText: string, fallbackCommodity = 'Soybean
     const cleanCommodity = commodityMatch ? commodityMatch[1].replace(/[*_`]/g, '').trim() : fallbackCommodity;
     const cleanLocation = locationMatch ? locationMatch[1].replace(/[*_`]/g, '').trim() : 'National Transit Hub';
     const cleanSpectrum = spectrumMatch ? spectrumMatch[1].replace(/[*_`]/g, '').trim() : `#${(idx % 6) + 1}`;
-    const cleanPersona = personaMatch ? personaMatch[1].replace(/[*_`]/g, '').trim() : 'Agro-Allocators & Operators';
+    const cleanPersona = personaMatch ? personaMatch[1].replace(/[*_`]/g, '').trim() : '';
 
     const titleMatch = block.match(/###\s*([^\n\r]+)/);
     const title = titleMatch ? titleMatch[1].replace(/[*_`]/g, '').trim() : `Article Brief #${idx + 1}`;

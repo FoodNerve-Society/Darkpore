@@ -10,6 +10,8 @@ import {
   Chip,
   Paper,
   alpha,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
@@ -97,6 +99,9 @@ export function EditorialPromptSidePane({
   onUpdateTitle,
   onUpdateDescription,
 }: EditorialPromptSidePaneProps) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   const [checklist, setChecklist] = useState<Record<string, boolean>>({});
 
   // Floating dock visibility (mimics PromptAssistantContext minimal liquid glass dock)
@@ -620,7 +625,7 @@ export function EditorialPromptSidePane({
       {/* FULL DRAWER                                                  */}
       {/* ──────────────────────────────────────────────────────────── */}
       <Drawer
-        anchor="right"
+        anchor={isMobile ? 'bottom' : 'right'}
         open={open}
         onClose={onClose}
         slotProps={{
@@ -628,8 +633,11 @@ export function EditorialPromptSidePane({
             sx: {
               width: { xs: '100vw', sm: 580, md: 680 },
               maxWidth: '100vw',
+              height: { xs: '85vh', sm: '100%' },
+              maxHeight: { xs: '85vh', sm: '100%' },
+              borderRadius: { xs: '24px 24px 0 0', sm: 0 },
               bgcolor: '#f8fafc',
-              boxShadow: '-12px 0 40px rgba(0, 0, 0, 0.18)',
+              boxShadow: { xs: '0 -12px 40px rgba(0, 0, 0, 0.18)', sm: '-12px 0 40px rgba(0, 0, 0, 0.18)' },
               display: 'flex',
               flexDirection: 'column',
               zIndex: 1300,
@@ -643,10 +651,8 @@ export function EditorialPromptSidePane({
         <Box
           sx={{
             px: { xs: 2.25, sm: 3.5 },
-            py: { xs: 2, sm: 2.25 },
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
+            pt: { xs: 1.25, sm: 2.25 },
+            pb: { xs: 2, sm: 2.25 },
             bgcolor: 'rgba(255, 255, 255, 0.88)',
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
@@ -657,6 +663,10 @@ export function EditorialPromptSidePane({
             zIndex: 10,
           }}
         >
+          {isMobile && (
+            <Box sx={{ width: 42, height: 4.5, borderRadius: 3, bgcolor: 'rgba(0,0,0,0.2)', mx: 'auto', mb: 1.5 }} />
+          )}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75 }}>
             <Box
               sx={{
@@ -756,6 +766,7 @@ export function EditorialPromptSidePane({
             </IconButton>
           </Box>
         </Box>
+      </Box>
 
         {/* ──────────────────────────────────────────────────────────── */}
         {/* SCROLLABLE SEQUENTIAL PROMPT BODY (NO TABS, SEAMLESS FLOW)    */}

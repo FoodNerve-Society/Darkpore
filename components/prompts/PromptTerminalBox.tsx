@@ -17,6 +17,7 @@ export interface PromptTerminalBoxProps {
   copyButtonLabel?: string;
   maxHeight?: number | string;
   onCopy?: (text: string) => void;
+  onExpand?: () => void;
   isCopiedExternal?: boolean;
 }
 
@@ -30,6 +31,7 @@ export function PromptTerminalBox({
   copyButtonLabel,
   maxHeight = 220,
   onCopy,
+  onExpand,
   isCopiedExternal,
 }: PromptTerminalBoxProps) {
   const [isCopied, setIsCopied] = useState(false);
@@ -64,6 +66,7 @@ export function PromptTerminalBox({
     e.stopPropagation();
     setIsMinimized(false);
     setIsCopied(false);
+    if (onExpand) onExpand();
   };
 
   // ═══════════════════════════════════════════════════════════════════════════

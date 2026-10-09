@@ -24,6 +24,8 @@ export interface PromptFastIngestBoxProps {
   expectedBlockCount?: number;
   buttonLabel?: string;
   isIngesting?: boolean;
+  hideButtonWhenEmpty?: boolean;
+  showButtonIcon?: boolean;
 }
 
 export function PromptFastIngestBox({
@@ -40,6 +42,8 @@ export function PromptFastIngestBox({
   expectedBlockCount,
   buttonLabel = 'Ingest & Apply All Blocks to Canvas',
   isIngesting = false,
+  hideButtonWhenEmpty = false,
+  showButtonIcon = true,
 }: PromptFastIngestBoxProps) {
   const hasPayload = Boolean(value.trim());
   const isComplete =
@@ -279,37 +283,39 @@ export function PromptFastIngestBox({
         )}
 
         {/* Primary Action Ingest Button */}
-        <Button
-          variant="contained"
-          onClick={onIngest}
-          disabled={!hasPayload || isIngesting}
-          startIcon={<BoltIcon sx={{ fontSize: 20 }} />}
-          sx={{
-            background: `linear-gradient(135deg, ${colorTheme} 0%, ${alpha(colorTheme, 0.82)} 100%)`,
-            color: '#ffffff',
-            fontWeight: 900,
-            py: 1.35,
-            borderRadius: '14px',
-            fontSize: '0.9rem',
-            letterSpacing: '-0.01em',
-            textTransform: 'none',
-            boxShadow: `0 6px 18px ${alpha(colorTheme, 0.32)}`,
-            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-            '&:hover': {
-              background: `linear-gradient(135deg, ${colorTheme} 0%, ${colorTheme} 100%)`,
-              filter: 'brightness(1.08)',
-              transform: 'translateY(-1px)',
-              boxShadow: `0 8px 24px ${alpha(colorTheme, 0.42)}`,
-            },
-            '&.Mui-disabled': {
-              bgcolor: 'rgba(0, 0, 0, 0.06)',
-              color: '#94a3b8',
-              boxShadow: 'none',
-            },
-          }}
-        >
-          {buttonLabel.replace(/^⚡\s*/, '')}
-        </Button>
+        {!(hideButtonWhenEmpty && liveBlockCount === 0) && (
+          <Button
+            variant="contained"
+            onClick={onIngest}
+            disabled={!hasPayload || isIngesting}
+            startIcon={showButtonIcon ? <BoltIcon sx={{ fontSize: 20 }} /> : undefined}
+            sx={{
+              background: `linear-gradient(135deg, ${colorTheme} 0%, ${alpha(colorTheme, 0.82)} 100%)`,
+              color: '#ffffff',
+              fontWeight: 900,
+              py: 1.35,
+              borderRadius: '14px',
+              fontSize: '0.9rem',
+              letterSpacing: '-0.01em',
+              textTransform: 'none',
+              boxShadow: `0 6px 18px ${alpha(colorTheme, 0.32)}`,
+              transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+              '&:hover': {
+                background: `linear-gradient(135deg, ${colorTheme} 0%, ${colorTheme} 100%)`,
+                filter: 'brightness(1.08)',
+                transform: 'translateY(-1px)',
+                boxShadow: `0 8px 24px ${alpha(colorTheme, 0.42)}`,
+              },
+              '&.Mui-disabled': {
+                bgcolor: 'rgba(0, 0, 0, 0.06)',
+                color: '#94a3b8',
+                boxShadow: 'none',
+              },
+            }}
+          >
+            {buttonLabel.replace(/^[⚡🚀\s]+/, '')}
+          </Button>
+        )}
       </Box>
     </Box>
   );

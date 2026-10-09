@@ -19,6 +19,7 @@ import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import PremiumMarkdownEditor from '@/components/PremiumMarkdownEditor';
+import PremiumDropdown, { PremiumDropdownOption } from '@/components/PremiumDropdown';
 import PremiumAutocomplete from '@/components/PremiumAutocomplete';
 import PremiumTextField from '@/components/PremiumTextField';
 import {
@@ -152,6 +153,24 @@ const getCategoryShortName = (catId?: string): string => {
   }
 };
 
+const ACTOR_METADATA: Record<string, { desc: string; emoji: string }> = {
+  producer: { desc: 'Smallholders, commercial farm estates & outgrower schemes', emoji: '🌾' },
+  processor: { desc: 'Commercial feed mills, packaging plants, processing hubs', emoji: '🏭' },
+  distributor: { desc: 'Inter-state grain haulers, cold-chain transport, fleet handlers', emoji: '🚛' },
+  retailer: { desc: 'Commodity aggregators, physical market dealers, grain merchants', emoji: '🏪' },
+  consumer: { desc: 'Urban consumers, institutional buyers & household shoppers', emoji: '🛒' },
+  regulator: { desc: 'Federal ministries, export promotion councils, standards bodies', emoji: '🏛️' },
+  innovator: { desc: 'Agri-tech startups, extension researchers, biotech labs', emoji: '💡' },
+  investor: { desc: 'PE funds, commercial lenders, deal sponsors & impact investors', emoji: '💼' },
+};
+
+export const TARGET_AUDIENCE_OPTIONS: PremiumDropdownOption<string>[] = CMS_ACTORS.map(actor => ({
+  id: actor.id,
+  label: actor.label,
+  secondaryLabel: ACTOR_METADATA[actor.id]?.desc || actor.label,
+  emoji: ACTOR_METADATA[actor.id]?.emoji || '👥',
+}));
+
 export const usePromptAssistant = () => useContext(PromptAssistantContext);
 
 export function PromptAssistantProvider({ children }: { children: ReactNode }) {
@@ -184,18 +203,36 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
   const [customIngestError, setCustomIngestError] = useState('');
   const [wikiChecklist, setWikiChecklist] = useState<Record<string, boolean>>({});
   const [copiedPromptTab, setCopiedPromptTab] = useState<string | null>(null);
+  const [copiedPromptTabs, setCopiedPromptTabs] = useState<Record<string, boolean>>({});
 
   // === SPARRING PARTNER INTERACTIVE INPUTS ===
   const [targetActors, setTargetActors] = useState<string[]>([]);
   const [targetLocation, setTargetLocation] = useState('');
   
   // Step 2 State
-  const [locationPivot, setLocationPivot] = useState(true);
   const [expectedOutcome, setExpectedOutcome] = useState('');
   const [whyNow, setWhyNow] = useState('');
 
-  // Step 3 State
-  const [strategicPivot, setStrategicPivot] = useState(true);
+  // Expandable Questions state for "Answer Now" toggles
+  const [expandedQuestions, setExpandedQuestions] = useState<Record<string, boolean>>({});
+
+  const isQOpen = useCallback((qId: string, value: string | string[]) => {
+    if (expandedQuestions[qId] !== undefined) {
+      return expandedQuestions[qId];
+    }
+    if (Array.isArray(value)) {
+      return value.length > 0;
+    }
+    return Boolean(value && value.trim());
+  }, [expandedQuestions]);
+
+  const toggleQuestion = useCallback((qId: string, value: string | string[]) => {
+    setExpandedQuestions(prev => {
+      const hasVal = Array.isArray(value) ? value.length > 0 : Boolean(value && value.trim());
+      const current = prev[qId] !== undefined ? prev[qId] : hasVal;
+      return { ...prev, [qId]: !current };
+    });
+  }, []);
 
   // Ingest subscriber callbacks (allows CreatorStudio or other active views to receive ingested briefs)
   const ingestSubscribersRef = React.useRef<Set<(briefs: any[]) => void>>(new Set());
@@ -256,6 +293,7 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
       navigator.clipboard.writeText(text);
       setCopiedPromptTab(tabKey);
+      setCopiedPromptTabs(prev => ({ ...prev, [tabKey]: true }));
 
       const actionKey = tabKey === 'doc1a' ? 'act_copy_1a' : tabKey === 'doc1b' ? 'act_copy_1b' : tabKey === 'doc1c' ? 'act_copy_1c' : null;
       if (actionKey) {
@@ -272,6 +310,10 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
       setTimeout(() => setCopiedPromptTab(null), 2000);
     }
   }, [selectedCommodity, selectedCategory]);
+
+  const handleExpandPrompt = useCallback((tabKey: string) => {
+    setCopiedPromptTabs(prev => ({ ...prev, [tabKey]: false }));
+  }, []);
 
   const handlePasteFromClipboard = useCallback(async () => {
     try {
@@ -323,38 +365,119 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
   // Compute dynamic prompt text
   const activeChallenge = useMemo(() => foodChallenges.find(c => c.id === selectedCategory) || foodChallenges[0], [selectedCategory]);
   const activeSubsList = useMemo(() => (activeChallenge?.subcategories || []).map(s => ({ title: s.title, desc: s.desc })), [activeChallenge]);
+  // Anchor temporal context strictly to the active writing date (the month and year the author is writing the piece)
   const currentMonthYearStr = useMemo(() => {
-    try {
-      return format(new Date(selectedTargetDate), 'MMMM yyyy');
-    } catch {
-      return format(new Date(), 'MMMM yyyy');
-    }
-  }, [selectedTargetDate]);
+    return format(new Date(), 'MMMM yyyy');
+  }, []);
 
   const compiledPrompt1a = useMemo(() => {
-    return rawPrompts?.doc1aPrompt || buildDoc1aPrompt({
+    const actorsVal = targetActors.join(', ').trim();
+    // If rawPrompts was passed from an external caller, inject user inputs into it
+    if (rawPrompts?.doc1aPrompt) {
+      let updated = rawPrompts.doc1aPrompt;
+      const locVal = targetLocation.trim() || '[Optional: Global Top 5 to be determined by AI]';
+
+      if (updated.includes('{{target_actors}}')) {
+        updated = updated.replace(/\{\{target_actors\}\}/g, actorsVal);
+      } else if (updated.includes('Target Value Chain Actor(s):')) {
+        updated = updated.replace(/Target Value Chain Actor\(s\):[^\n]+/g, `Target Value Chain Actor(s): ${actorsVal}`);
+      } else if (actorsVal) {
+        updated = updated.replace(/Commodity Pair:[^\n]+/g, `$& \nTarget Value Chain Actor(s): ${actorsVal}`);
+      }
+
+      if (updated.includes('{{user_location}}')) {
+        updated = updated.replace(/\{\{user_location\}\}/g, locVal);
+      } else if (updated.includes("User's Optional Location:")) {
+        updated = updated.replace(/User's Optional Location:[^\n]+/g, `User's Optional Location: ${locVal}`);
+      } else if (targetLocation.trim()) {
+        updated = updated.replace(/Commodity Pair:[^\n]+/g, `$& \nUser's Optional Location: ${locVal}`);
+      }
+
+      if (updated.includes('{{current_month_year}}')) {
+        updated = updated.replace(/\{\{current_month_year\}\}/g, currentMonthYearStr);
+      }
+
+      return updated;
+    }
+
+    return buildDoc1aPrompt({
       category: activeChallenge?.title || selectedCategory,
       commodity: selectedCommodity,
       subcategoriesList: activeSubsList,
       currentMonthYear: currentMonthYearStr,
+      targetActors: targetActors.length > 0 ? targetActors : undefined,
+      userLocation: targetLocation.trim() || undefined,
     });
-  }, [rawPrompts?.doc1aPrompt, activeChallenge, selectedCategory, selectedCommodity, activeSubsList, currentMonthYearStr]);
+  }, [rawPrompts?.doc1aPrompt, activeChallenge, selectedCategory, selectedCommodity, activeSubsList, currentMonthYearStr, targetActors, targetLocation]);
 
   const compiledPrompt1b = useMemo(() => {
+    const actorsVal = targetActors.join(', ').trim();
+    if (rawPrompts?.doc1bPrompt) {
+      let updated = rawPrompts.doc1bPrompt;
+      const locVal = targetLocation.trim()
+        ? `${targetLocation.trim()} (plus all Ranked Epicenters from Doc 1a)`
+        : 'All Ranked Epicenters from Doc 1a';
+      const outcomeVal = expectedOutcome.trim() || '[Specify what operational/commercial change the actor must make]';
+      const whyNowVal = whyNow.trim() || '[Specify what market shift or news event triggered this]';
+
+      if (updated.includes('{{target_actors}}')) {
+        updated = updated.replace(/\{\{target_actors\}\}/g, actorsVal);
+      } else if (updated.includes('Target Value Chain Actor(s):')) {
+        updated = updated.replace(/Target Value Chain Actor\(s\):[^\n]+/g, `Target Value Chain Actor(s): ${actorsVal}`);
+      }
+
+      if (updated.includes('{{ranked_locations}}')) {
+        updated = updated.replace(/\{\{ranked_locations\}\}/g, locVal);
+      } else if (updated.includes('{{selected_location}}')) {
+        updated = updated.replace(/\{\{selected_location\}\}/g, locVal);
+      } else if (updated.includes('Ranked Locations / Corridor Scope:')) {
+        updated = updated.replace(/Ranked Locations \/ Corridor Scope:[^\n]+/g, `Ranked Locations / Corridor Scope: ${locVal}`);
+      } else if (updated.includes('Selected Location:')) {
+        updated = updated.replace(/Selected Location:[^\n]+/g, `Ranked Locations / Corridor Scope: ${locVal}`);
+      }
+
+      if (updated.includes('{{user_outcome}}')) {
+        updated = updated.replace(/\{\{user_outcome\}\}/g, outcomeVal);
+      } else if (updated.includes("User's Desired Outcome:")) {
+        updated = updated.replace(/User's Desired Outcome:[^\n]+/g, `User's Desired Outcome: ${outcomeVal}`);
+      }
+
+      if (updated.includes('{{user_why_now}}')) {
+        updated = updated.replace(/\{\{user_why_now\}\}/g, whyNowVal);
+      } else if (updated.includes("User's 'Why Now' (Timing):")) {
+        updated = updated.replace(/User's 'Why Now' \(Timing\):[^\n]+/g, `User's 'Why Now' (Timing): ${whyNowVal}`);
+      }
+
+      if (updated.includes('{{current_month_year}}')) {
+        updated = updated.replace(/\{\{current_month_year\}\}/g, currentMonthYearStr);
+      }
+
+      return updated;
+    }
+
     return buildDoc1bPrompt({
       commodity: selectedCommodity,
       currentMonthYear: currentMonthYearStr,
       doc1aOutput: '[PASTE YOUR DOCUMENT 1A OUTPUT BELOW TO AUTO-INJECT]',
       subcategoriesList: activeSubsList,
+      targetActors: targetActors.length > 0 ? targetActors : undefined,
+      selectedLocation: targetLocation.trim() || undefined,
+      userOutcome: expectedOutcome.trim() || undefined,
+      userWhyNow: whyNow.trim() || undefined,
     });
-  }, [selectedCommodity, currentMonthYearStr, activeSubsList]);
+  }, [rawPrompts?.doc1bPrompt, selectedCommodity, currentMonthYearStr, activeSubsList, targetActors, targetLocation, expectedOutcome, whyNow]);
 
   const compiledPrompt1c = useMemo(() => {
     return buildDoc1cPrompt({
       doc1aOutput: '[PASTE YOUR DOCUMENT 1A OUTPUT IN TURN 1/2 TO AUTO-INJECT]',
       doc1bOutput: '[PASTE YOUR DOCUMENT 1B OUTPUT IN TURN 2 TO AUTO-INJECT]',
+      currentMonthYear: currentMonthYearStr,
+      userFinalDecision: targetLocation.trim()
+        ? `Focus primarily on optimal location (${targetLocation.trim()}) while contrasting against all ranked corridors from Doc 1a`
+        : 'Distribute article outlines across all optimal ranked locations identified in Doc 1a & 1b',
+      targetPersona: targetActors.join(', ').trim() || undefined,
     });
-  }, []);
+  }, [currentMonthYearStr, targetLocation, targetActors]);
 
   const liveParsedBriefs = useMemo(() => {
     if (!customIngestMarkdown.trim()) return [];
@@ -549,329 +672,371 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
       {/* FULL GLOBAL DRAWER (RETAINS FULL STATE ACROSS PAGES)        */}
       {/* ═══════════════════════════════════════════════════════════ */}
       <Drawer
-        anchor="right"
+        anchor={isMobile ? 'bottom' : 'right'}
         open={isOpen}
         onClose={closeAssistant}
         slotProps={{
           paper: {
             sx: {
-              width: { xs: '100vw', sm: 580, md: 680 },
-              maxWidth: '100vw',
+              width: { xs: '100vw', sm: '80vw', md: '50vw' },
+              minWidth: { sm: 540, md: 620 },
+              maxWidth: { xl: 880 },
+              height: { xs: '85vh', sm: '100%' },
+              maxHeight: { xs: '85vh', sm: '100%' },
+              borderRadius: { xs: '24px 24px 0 0', sm: 0 },
               bgcolor: '#f8fafc',
-              boxShadow: '-12px 0 40px rgba(0,0,0,0.18)',
+              boxShadow: { xs: '0 -12px 40px rgba(0,0,0,0.18)', sm: '-16px 0 48px rgba(0,0,0,0.18)' },
               display: 'flex',
               flexDirection: 'column',
               zIndex: 1300,
+              overflow: 'hidden',
             }
           }
         }}
       >
-        {/* Sticky Glassmorphism Luxury Header */}
-        <Box sx={{
-          px: { xs: 2.25, sm: 3.5 },
-          py: { xs: 2, sm: 2.25 },
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          bgcolor: 'rgba(255, 255, 255, 0.88)',
-          backdropFilter: 'blur(20px)',
-          borderBottom: '1px solid rgba(0,0,0,0.06)',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
-          position: 'sticky',
-          top: 0,
-          zIndex: 10
-        }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75 }}>
-            <Box sx={{
-              width: 44,
-              height: 44,
-              borderRadius: '14px',
-              background: 'linear-gradient(135deg, #10b981 0%, #047857 100%)',
-              color: '#ffffff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 8px 20px rgba(16, 185, 129, 0.35)',
-              border: '1.5px solid rgba(255,255,255,0.4)',
-              flexShrink: 0,
-            }}>
-              <AutoAwesomeIcon sx={{ fontSize: 22 }} />
-            </Box>
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.25, fontSize: { xs: '1.05rem', sm: '1.18rem' }, letterSpacing: '-0.025em' }}>
-                Get Article Ideas Here
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 0.35 }}>
-                <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: '#10b981', boxShadow: '0 0 8px #10b981' }} />
-                <Typography sx={{ color: '#64748b', fontWeight: 600, fontSize: '0.8rem', letterSpacing: '-0.01em' }}>
-                  Spend 1 minute to get fresh, realistic article ideas people want to read
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
+        {/* ── FLOATING TOP CONTROLS (CIRCLE MINIMIZE & CIRCLE CLOSE) ── */}
+        <Box
+          sx={{
+            position: 'absolute',
+            top: { xs: 14, sm: 20 },
+            right: { xs: 14, sm: 24 },
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.25,
+            zIndex: 50,
+          }}
+        >
+          {/* Floating Minimize Button */}
+          <IconButton
+            onClick={minimizeAssistant}
+            title="Minimize to dock"
+            sx={{
+              width: 38,
+              height: 38,
+              borderRadius: '50%',
+              bgcolor: 'rgba(255, 255, 255, 0.92)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              border: '1px solid rgba(0, 0, 0, 0.08)',
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
+              color: '#475569',
+              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:hover': {
+                bgcolor: '#ffffff',
+                color: '#0f172a',
+                transform: 'scale(1.08)',
+                boxShadow: '0 6px 20px rgba(0, 0, 0, 0.12)',
+              }
+            }}
+          >
+            <RemoveIcon sx={{ fontSize: 18 }} />
+          </IconButton>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {/* Minimize Button */}
-            <Button
-              size="small"
-              onClick={minimizeAssistant}
-              startIcon={<RemoveIcon sx={{ fontSize: '16px !important' }} />}
-              sx={{
-                bgcolor: 'rgba(0,0,0,0.04)',
-                color: '#334155',
-                border: '1px solid rgba(0,0,0,0.06)',
-                borderRadius: '12px',
-                px: 1.5,
-                py: 0.6,
-                fontWeight: 700,
-                fontSize: '0.78rem',
-                textTransform: 'none',
-                transition: 'all 0.2s ease',
-                '&:hover': { bgcolor: 'rgba(0,0,0,0.08)', transform: 'translateY(-1px)' }
-              }}
-            >
-              Minimize
-            </Button>
-
-            {/* Close Button */}
-            <IconButton
-              onClick={closeAssistant}
-              sx={{
-                color: '#64748b',
-                bgcolor: 'rgba(0,0,0,0.04)',
-                border: '1px solid rgba(0,0,0,0.06)',
-                borderRadius: '12px',
-                p: 0.85,
-                transition: 'all 0.2s ease',
-                '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', transform: 'scale(1.05)' }
-              }}
-            >
-              <CloseIcon sx={{ fontSize: 20 }} />
-            </IconButton>
-          </Box>
+          {/* Floating Close Button */}
+          <IconButton
+            onClick={closeAssistant}
+            title="Close assistant"
+            sx={{
+              width: 38,
+              height: 38,
+              borderRadius: '50%',
+              bgcolor: 'rgba(255, 255, 255, 0.92)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              border: '1px solid rgba(0, 0, 0, 0.08)',
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
+              color: '#475569',
+              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:hover': {
+                bgcolor: 'rgba(239, 68, 68, 0.1)',
+                color: '#ef4444',
+                transform: 'scale(1.08)',
+                boxShadow: '0 6px 20px rgba(239, 68, 68, 0.18)',
+              }
+            }}
+          >
+            <CloseIcon sx={{ fontSize: 18 }} />
+          </IconButton>
         </Box>
 
-        {/* Scrollable Body */}
-        <Box sx={{ flex: 1, overflowY: 'auto', p: { xs: 2.5, sm: 4 }, display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {/* ── SCROLLABLE CANVAS ── */}
+        <Box sx={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+
+          {/* Mobile Bottom-Sheet Grabber Pill */}
+          {isMobile && (
+            <Box sx={{ width: 44, height: 4.5, borderRadius: 3, bgcolor: 'rgba(0,0,0,0.22)', mx: 'auto', mt: 1.5, mb: 0.5 }} />
+          )}
 
           {/* ──────────────────────────────────────────────────────────── */}
-          {/* VISUAL ANCHOR: SIDE-BY-SIDE SQUIRCLE INTERSECTION             */}
+          {/* HERO SECTION                                                 */}
           {/* ──────────────────────────────────────────────────────────── */}
           <Box
             sx={{
+              position: 'relative',
+              pt: { xs: 6, sm: 8 },
+              pb: { xs: 2.5, sm: 3.5 },
+              px: { xs: 3, sm: 5 },
+              background: 'radial-gradient(ellipse at top, rgba(16, 185, 129, 0.08) 0%, rgba(59, 130, 246, 0.04) 55%, transparent 100%)',
               display: 'flex',
+              flexDirection: 'column',
               alignItems: 'center',
-              justifyContent: 'center',
-              py: { xs: 1.5, sm: 2 },
+              textAlign: 'center',
             }}
           >
-            {/* Left Squircle: Commodity */}
+            {/* 1. Intersecting Squircles Image Pair (Above Hero Text) */}
             <Box
               sx={{
-                width: { xs: 104, sm: 118 },
-                height: { xs: 104, sm: 118 },
-                borderRadius: '28px',
-                overflow: 'hidden',
-                position: 'relative',
-                backgroundImage: `url(${getCommodityMeta(selectedCommodity)?.imageUrl || 'https://images.unsplash.com/photo-1599940824399-b87987ceb72a?auto=format&fit=crop&w=600&q=80'}), linear-gradient(135deg, #1e3a8a, #0f172a)`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                border: '2.5px solid rgba(255,255,255,0.25)',
-                boxShadow: '0 12px 32px rgba(0,0,0,0.45)',
-                transform: 'rotate(-3deg)',
-                zIndex: 1,
-                transition: 'all 0.3s ease',
-                '&:hover': { transform: 'rotate(0deg) scale(1.05)', zIndex: 3 },
-              }}
-            >
-              <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 35%, rgba(0,0,0,0.85) 100%)' }} />
-              <Typography sx={{ position: 'absolute', bottom: 7, left: 4, right: 4, color: '#fff', fontSize: '0.7rem', fontWeight: 900, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                🌾 {selectedCommodity.split(',')[0]}
-              </Typography>
-            </Box>
-
-            {/* Center Intersection Badge */}
-            <Box
-              sx={{
-                width: 32,
-                height: 32,
-                borderRadius: '50%',
-                bgcolor: '#0f172a',
-                color: '#f59e0b',
-                border: '2px solid rgba(255,255,255,0.35)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '0.85rem',
-                fontWeight: 900,
-                zIndex: 2,
-                mx: { xs: -1.75, sm: -2 },
-                boxShadow: '0 4px 16px rgba(0,0,0,0.6)',
+                mb: 2.5,
+                mt: { xs: 1.5, sm: 1 },
+                position: 'relative',
+                overflow: 'visible',
               }}
             >
-              ×
+              {/* Left Squircle: Commodity */}
+              <Box
+                sx={{
+                  width: { xs: 104, sm: 118 },
+                  height: { xs: 104, sm: 118 },
+                  borderRadius: '28px',
+                  overflow: 'hidden',
+                  position: 'relative',
+                  backgroundImage: `url(${getCommodityMeta(selectedCommodity)?.imageUrl || 'https://images.unsplash.com/photo-1599940824399-b87987ceb72a?auto=format&fit=crop&w=600&q=80'}), linear-gradient(135deg, #1e3a8a, #0f172a)`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  border: '2.5px solid rgba(255, 255, 255, 0.25)',
+                  boxShadow: '0 12px 32px rgba(0, 0, 0, 0.45)',
+                  transform: 'rotate(-3deg)',
+                  zIndex: 1,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    transform: 'rotate(0deg) scale(1.05)',
+                    zIndex: 3,
+                    borderColor: 'rgba(255, 255, 255, 0.55)',
+                    boxShadow: '0 20px 48px rgba(0, 0, 0, 0.55)',
+                  },
+                }}
+              >
+                <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 35%, rgba(0, 0, 0, 0.85) 100%)' }} />
+                <Typography sx={{ position: 'absolute', bottom: 7, left: 4, right: 4, color: '#fff', fontSize: '0.7rem', fontWeight: 900, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  🌾 {selectedCommodity.split(',')[0]}
+                </Typography>
+              </Box>
+
+              {/* Center Intersection Badge */}
+              <Box
+                sx={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  bgcolor: '#0f172a',
+                  color: '#f59e0b',
+                  border: '2px solid rgba(255, 255, 255, 0.35)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.85rem',
+                  fontWeight: 900,
+                  zIndex: 2,
+                  mx: { xs: -1.75, sm: -2 },
+                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.6)',
+                }}
+              >
+                ×
+              </Box>
+
+              {/* Right Squircle: Strategic Challenge */}
+              <Box
+                sx={{
+                  width: { xs: 104, sm: 118 },
+                  height: { xs: 104, sm: 118 },
+                  borderRadius: '28px',
+                  overflow: 'hidden',
+                  position: 'relative',
+                  backgroundImage: `url(${foodChallenges.find(c => c.id.toLowerCase() === selectedCategory.toLowerCase())?.imageUrl || '/images/challenges/insecurity.webp'}), linear-gradient(135deg, #1e3a8a, #0f172a)`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  border: '2.5px solid rgba(255, 255, 255, 0.25)',
+                  boxShadow: '0 12px 32px rgba(0, 0, 0, 0.45)',
+                  transform: 'rotate(3deg)',
+                  zIndex: 1,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    transform: 'rotate(0deg) scale(1.05)',
+                    zIndex: 3,
+                    borderColor: 'rgba(255, 255, 255, 0.55)',
+                    boxShadow: '0 20px 48px rgba(0, 0, 0, 0.55)',
+                  },
+                }}
+              >
+                <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 35%, rgba(0, 0, 0, 0.85) 100%)' }} />
+                <Typography sx={{ position: 'absolute', bottom: 7, left: 4, right: 4, color: '#93c5fd', fontSize: '0.7rem', fontWeight: 900, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  🛡️ {getCategoryShortName(selectedCategory)}
+                </Typography>
+              </Box>
             </Box>
 
-            {/* Right Squircle: Strategic Pillar */}
-            <Box
+            {/* 2. Centered Large Hero Text */}
+            <Typography
+              variant="h4"
               sx={{
-                width: { xs: 104, sm: 118 },
-                height: { xs: 104, sm: 118 },
-                borderRadius: '28px',
-                overflow: 'hidden',
-                position: 'relative',
-                backgroundImage: `url(${foodChallenges.find(c => c.id.toLowerCase() === selectedCategory.toLowerCase())?.imageUrl || '/images/challenges/insecurity.webp'}), linear-gradient(135deg, #1e3a8a, #0f172a)`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                border: '2.5px solid rgba(255,255,255,0.25)',
-                boxShadow: '0 12px 32px rgba(0,0,0,0.45)',
-                transform: 'rotate(3deg)',
-                zIndex: 1,
-                transition: 'all 0.3s ease',
-                '&:hover': { transform: 'rotate(0deg) scale(1.05)', zIndex: 3 },
+                fontWeight: 950,
+                color: '#0f172a',
+                letterSpacing: '-0.035em',
+                fontSize: { xs: '1.6rem', sm: '2.05rem' },
+                lineHeight: 1.18,
+                textAlign: 'center',
               }}
             >
-              <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 35%, rgba(0,0,0,0.85) 100%)' }} />
-              <Typography sx={{ position: 'absolute', bottom: 7, left: 4, right: 4, color: '#93c5fd', fontSize: '0.7rem', fontWeight: 900, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                🛡️ {getCategoryShortName(selectedCategory)}
-              </Typography>
-            </Box>
+              Get Article Ideas with AI
+            </Typography>
+
+            {/* 3. Centered Smaller Description */}
+            <Typography
+              sx={{
+                color: '#64748b',
+                fontSize: { xs: '0.8rem', sm: '0.86rem' },
+                fontWeight: 500,
+                lineHeight: 1.55,
+                textAlign: 'center',
+                maxWidth: 480,
+                mt: 1.15,
+              }}
+            >
+              Run 3 quick AI prompts, then paste the response into Fast Ingest to get 12 ready article briefs.
+            </Typography>
           </Box>
+
+          {/* ──────────────────────────────────────────────────────────── */}
+          {/* STEP PROGRESSION BODY CONTENT (NO HARD SEPARATION FROM HERO) */}
+          {/* ──────────────────────────────────────────────────────────── */}
+          <Box sx={{ px: { xs: 2.5, sm: 4.5 }, pb: { xs: 4, sm: 5 }, pt: { xs: 1, sm: 2 }, display: 'flex', flexDirection: 'column', gap: 4 }}>
 
           {/* ──────────────────────────────────────────────────────────── */}
           {/* STEP 0: WORKFLOW OVERVIEW                                    */}
           {/* ──────────────────────────────────────────────────────────── */}
-          <Box id="wiki-step-0" sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, scrollMarginTop: '80px' }}>
+          <Box id="wiki-step-0" sx={{ display: 'flex', flexDirection: 'column', gap: 2, scrollMarginTop: '80px' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <Box sx={{ width: 30, height: 30, borderRadius: '50%', bgcolor: '#0f172a', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.88rem' }}>
                 0
               </Box>
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
-                  Step 0: How You Guide the AI
-                </Typography>
-                <Typography sx={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 600 }}>
-                  You are the Director steering the research; the AI is your OSINT Analyst.
-                </Typography>
-              </Box>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
+                Step 0: How You Guide the AI
+              </Typography>
             </Box>
 
-            {/* Step 0 Action Checklist */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 1.75, border: '1px solid rgba(15, 23, 42, 0.15)', borderRadius: '14px', bgcolor: 'rgba(15, 23, 42, 0.02)' }}>
-              <PromptChecklistItem
-                id="act_sop_0a"
-                text="1. Fill in 2 quick inputs per step to shape your research."
-                checked={!!wikiChecklist['act_sop_0a']}
-                onToggle={() => toggleChecklistItem('act_sop_0a')}
-                colorTheme="#0f172a"
-              />
+            {/* Step 0 Minimal Workflow Card */}
+            <Box
+              sx={{
+                ml: { xs: 0, sm: '42px' },
+                p: 2.25,
+                borderRadius: '16px',
+                bgcolor: '#ffffff',
+                border: '1px solid rgba(15, 23, 42, 0.08)',
+                boxShadow: '0 4px 16px rgba(15, 23, 42, 0.03)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 1.5,
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.25 }}>
+                <Box sx={{ width: 22, height: 22, borderRadius: '50%', bgcolor: 'rgba(15, 23, 42, 0.08)', color: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 900, flexShrink: 0, mt: 0.15 }}>
+                  1
+                </Box>
+                <Typography sx={{ fontSize: '0.82rem', color: '#334155', fontWeight: 600, lineHeight: 1.5 }}>
+                  <Box component="span" sx={{ color: '#059669', fontWeight: 800 }}>Optional:</Box> Answer any question below to customize your prompt, or skip them to use defaults.
+                </Typography>
+              </Box>
 
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                <PromptChecklistItem
-                  id="act_sop_0b"
-                  text="2. Copy and run each prompt sequentially in ChatGPT, Claude, or Gemini."
-                  checked={!!wikiChecklist['act_sop_0b']}
-                  onToggle={() => toggleChecklistItem('act_sop_0b')}
-                  colorTheme="#0f172a"
-                  isImportant={!wikiChecklist['act_sop_0b']}
-                />
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    pl: 3.75,
-                    flexWrap: 'wrap',
-                  }}
-                >
-                  <Button
-                    size="small"
-                    component="a"
-                    href="https://chatgpt.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!wikiChecklist['act_sop_0b']) toggleChecklistItem('act_sop_0b');
-                    }}
-                    endIcon={<OpenInNewIcon sx={{ fontSize: '13px !important' }} />}
-                    sx={{
-                      bgcolor: 'rgba(16, 163, 127, 0.08)',
-                      color: '#0d9488',
-                      border: '1px solid rgba(13, 148, 136, 0.3)',
-                      borderRadius: '8px',
-                      fontSize: '0.72rem',
-                      fontWeight: 800,
-                      textTransform: 'none',
-                      py: 0.35,
-                      px: 1.25,
-                      '&:hover': { bgcolor: 'rgba(16, 163, 127, 0.15)', borderColor: '#0d9488' },
-                    }}
-                  >
-                    ChatGPT
-                  </Button>
-                  <Button
-                    size="small"
-                    component="a"
-                    href="https://claude.ai"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!wikiChecklist['act_sop_0b']) toggleChecklistItem('act_sop_0b');
-                    }}
-                    endIcon={<OpenInNewIcon sx={{ fontSize: '13px !important' }} />}
-                    sx={{
-                      bgcolor: 'rgba(217, 119, 6, 0.08)',
-                      color: '#d97706',
-                      border: '1px solid rgba(217, 119, 6, 0.3)',
-                      borderRadius: '8px',
-                      fontSize: '0.72rem',
-                      fontWeight: 800,
-                      textTransform: 'none',
-                      py: 0.35,
-                      px: 1.25,
-                      '&:hover': { bgcolor: 'rgba(217, 119, 6, 0.15)', borderColor: '#d97706' },
-                    }}
-                  >
-                    Claude
-                  </Button>
-                  <Button
-                    size="small"
-                    component="a"
-                    href="https://gemini.google.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!wikiChecklist['act_sop_0b']) toggleChecklistItem('act_sop_0b');
-                    }}
-                    endIcon={<OpenInNewIcon sx={{ fontSize: '13px !important' }} />}
-                    sx={{
-                      bgcolor: 'rgba(37, 99, 235, 0.08)',
-                      color: '#2563eb',
-                      border: '1px solid rgba(37, 99, 235, 0.3)',
-                      borderRadius: '8px',
-                      fontSize: '0.72rem',
-                      fontWeight: 800,
-                      textTransform: 'none',
-                      py: 0.35,
-                      px: 1.25,
-                      '&:hover': { bgcolor: 'rgba(37, 99, 235, 0.15)', borderColor: '#2563eb' },
-                    }}
-                  >
-                    Gemini
-                  </Button>
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.25 }}>
+                <Box sx={{ width: 22, height: 22, borderRadius: '50%', bgcolor: 'rgba(15, 23, 42, 0.08)', color: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 900, flexShrink: 0, mt: 0.15 }}>
+                  2
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <Typography sx={{ fontSize: '0.82rem', color: '#334155', fontWeight: 600, lineHeight: 1.5 }}>
+                    Copy and run each prompt sequentially in your preferred AI:
+                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1, flexWrap: 'wrap' }}>
+                    <Button
+                      size="small"
+                      component="a"
+                      href="https://chatgpt.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      endIcon={<OpenInNewIcon sx={{ fontSize: '13px !important' }} />}
+                      sx={{
+                        bgcolor: 'rgba(16, 163, 127, 0.08)',
+                        color: '#0d9488',
+                        border: '1px solid rgba(13, 148, 136, 0.3)',
+                        borderRadius: '8px',
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                        textTransform: 'none',
+                        py: 0.35,
+                        px: 1.25,
+                        '&:hover': { bgcolor: 'rgba(16, 163, 127, 0.15)', borderColor: '#0d9488' },
+                      }}
+                    >
+                      ChatGPT
+                    </Button>
+                    <Button
+                      size="small"
+                      component="a"
+                      href="https://claude.ai"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      endIcon={<OpenInNewIcon sx={{ fontSize: '13px !important' }} />}
+                      sx={{
+                        bgcolor: 'rgba(217, 119, 6, 0.08)',
+                        color: '#d97706',
+                        border: '1px solid rgba(217, 119, 6, 0.3)',
+                        borderRadius: '8px',
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                        textTransform: 'none',
+                        py: 0.35,
+                        px: 1.25,
+                        '&:hover': { bgcolor: 'rgba(217, 119, 6, 0.15)', borderColor: '#d97706' },
+                      }}
+                    >
+                      Claude
+                    </Button>
+                    <Button
+                      size="small"
+                      component="a"
+                      href="https://gemini.google.com"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      endIcon={<OpenInNewIcon sx={{ fontSize: '13px !important' }} />}
+                      sx={{
+                        bgcolor: 'rgba(37, 99, 235, 0.08)',
+                        color: '#2563eb',
+                        border: '1px solid rgba(37, 99, 235, 0.3)',
+                        borderRadius: '8px',
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                        textTransform: 'none',
+                        py: 0.35,
+                        px: 1.25,
+                        '&:hover': { bgcolor: 'rgba(37, 99, 235, 0.15)', borderColor: '#2563eb' },
+                      }}
+                    >
+                      Gemini
+                    </Button>
+                  </Box>
                 </Box>
               </Box>
 
-              <PromptChecklistItem
-                id="act_sop_0c"
-                text="3. Paste the final output into Step 4 to import 12 article cards directly onto your board."
-                checked={!!wikiChecklist['act_sop_0c']}
-                onToggle={() => toggleChecklistItem('act_sop_0c')}
-                colorTheme="#0f172a"
-              />
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.25 }}>
+                <Box sx={{ width: 22, height: 22, borderRadius: '50%', bgcolor: 'rgba(15, 23, 42, 0.08)', color: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 900, flexShrink: 0, mt: 0.15 }}>
+                  3
+                </Box>
+                <Typography sx={{ fontSize: '0.82rem', color: '#334155', fontWeight: 600, lineHeight: 1.5 }}>
+                  Paste the final response into Step 4 to import 12 article briefs directly onto your board.
+                </Typography>
+              </Box>
             </Box>
           </Box>
 
@@ -880,7 +1045,7 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
           {/* ──────────────────────────────────────────────────────────── */}
           <Box id="wiki-step-1" sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, scrollMarginTop: '80px' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Box sx={{ width: 30, height: 30, borderRadius: '50%', bgcolor: '#3b82f6', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.88rem' }}>
+              <Box sx={{ width: 30, height: 30, borderRadius: '50%', bgcolor: '#3b82f6', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.88rem', flexShrink: 0 }}>
                 1
               </Box>
               <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>
@@ -888,110 +1053,233 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
               </Typography>
             </Box>
 
-            {/* Step 1 Quick Inputs */}
-            <Box sx={{
-              p: 2.25,
-              borderRadius: '16px',
-              bgcolor: '#ffffff',
-              border: '1px solid rgba(59, 130, 246, 0.25)',
-              boxShadow: '0 4px 16px rgba(59, 130, 246, 0.05)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 2
-            }}>
-              <Box>
-                <Typography sx={{ fontSize: '0.84rem', fontWeight: 800, color: '#1e40af', display: 'flex', alignItems: 'center', gap: 0.8 }}>
-                  <span>🎯</span> Who & Where are we focusing on?
-                </Typography>
-                <Typography sx={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500, mt: 0.25 }}>
-                  Tell the AI who your target reader is and if you have a specific city in mind.
-                </Typography>
-              </Box>
-              
-              <PremiumAutocomplete
-                multiple
-                freeSolo
-                colorTheme="#3b82f6"
-                label="Who are we writing for? (Target Audience)"
-                placeholder="Select or type e.g. Farmer / Producer, Processor, Investor..."
-                options={ACTOR_OPTIONS}
-                value={targetActors}
-                onChange={(_, val) => setTargetActors(val as string[])}
-              />
-
-              <PremiumTextField
-                colorTheme="#3b82f6"
-                label="Do you have a specific city or market in mind? (Optional)"
-                placeholder="e.g. Dawanau Market, Kano or Mile 12, Lagos"
-                value={targetLocation}
-                onChange={(e) => setTargetLocation(e.target.value)}
-                fullWidth
-              />
-            </Box>
-
-            
-
-            
-
-                        {/* Action Checklist: Before Prompt */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 1.75, border: '1px solid rgba(59, 130, 246, 0.25)', borderRadius: '14px', bgcolor: 'rgba(59, 130, 246, 0.03)' }}>
-              <PromptChecklistItem
-                id="act_copy_1a"
-                text="1. Copy Step 1 Prompt below and run it in ChatGPT, Claude, or Gemini."
-                checked={!!wikiChecklist['act_copy_1a']}
-                onToggle={() => toggleChecklistItem('act_copy_1a')}
-                colorTheme="#3b82f6"
-              />
-            </Box>
-
-            {/* PromptTerminalBox for Step 1 */}
-            <PromptTerminalBox
-              title="Step 1 Prompt · Find 5 Hot Markets"
-              codeLabel="DOC 1a"
-              subtitle="Grounds target audience personas and identifies 5 high-volume physical trading corridors."
-              prompt={compiledPrompt1a}
-              colorTheme="#3b82f6"
-              copiedBannerText="Step 1 Prompt Copied to Clipboard!"
-              copyButtonLabel="Copy Step 1 Prompt (Find 5 Markets)"
-              maxHeight={220}
-              isCopiedExternal={!!wikiChecklist['act_copy_1a']}
-              onCopy={() => {
-                handleCopyPromptText(compiledPrompt1a, 'doc1a');
-                if (!wikiChecklist['act_copy_1a']) toggleChecklistItem('act_copy_1a');
+            {/* Step 1 Questions (No outer white bg, tight question cards) */}
+            <Box
+              sx={{
+                ml: { xs: 0, sm: '42px' },
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 1.25,
               }}
-            />
+            >
+              {/* Question 1 Card: Target Audience (Multi-Select Premium Dropdown) */}
+              <Box
+                sx={{
+                  bgcolor: '#ffffff',
+                  border: '1px solid rgba(0, 0, 0, 0.08)',
+                  borderRadius: '12px',
+                  p: { xs: 1.25, sm: 1.5 },
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 1,
+                  transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
+                  '&:hover': {
+                    borderColor: 'rgba(59, 130, 246, 0.3)',
+                  },
+                }}
+              >
+                <Box
+                  onClick={() => toggleQuestion('step1_q1', targetActors)}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 1.5,
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                    pb: isQOpen('step1_q1', targetActors) ? 0.75 : 0,
+                    borderBottom: isQOpen('step1_q1', targetActors) ? '1px solid rgba(0,0,0,0.06)' : 'none',
+                  }}
+                >
+                  <Typography sx={{ fontSize: '0.86rem', fontWeight: 700, color: '#1e293b' }}>
+                    1. Who are we writing for? (Target Audience)
+                  </Typography>
+                  <Button
+                    variant="text"
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleQuestion('step1_q1', targetActors);
+                    }}
+                    sx={{
+                      flexShrink: 0,
+                      textTransform: 'none',
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      p: 0.5,
+                      minWidth: 'auto',
+                      color: isQOpen('step1_q1', targetActors)
+                        ? '#2563eb'
+                        : targetActors.length > 0
+                        ? '#059669'
+                        : '#64748b',
+                      '&:hover': { bgcolor: 'transparent', textDecoration: 'underline' },
+                    }}
+                  >
+                    {targetActors.length > 0
+                      ? (isQOpen('step1_q1', targetActors) ? 'Collapse' : 'Edit')
+                      : (isQOpen('step1_q1', targetActors) ? 'Collapse' : 'Answer')}
+                  </Button>
+                </Box>
 
-            {/* Verification Checklist: Under Prompt */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, p: 2, border: '1px solid rgba(59, 130, 246, 0.25)', borderRadius: '16px', bgcolor: 'rgba(59, 130, 246, 0.04)' }}>
-              <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#1e40af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                ⚡ Check the AI Output for Step 1:
-              </Typography>
-              <PromptChecklistItem
-                id="chk1_hubs"
-                text={`Did the AI identify 5 real cities/markets where ${selectedCommodity} is traded or struggling?`}
-                checked={!!wikiChecklist['chk1_hubs']}
-                onToggle={() => toggleChecklistItem('chk1_hubs')}
-                colorTheme="#3b82f6"
-              />
-              <PromptChecklistItem
-                id="chk1_eras"
-                text="Did it explain past history, today's active crisis, and what will happen by 2030?"
-                checked={!!wikiChecklist['chk1_eras']}
-                onToggle={() => toggleChecklistItem('chk1_eras')}
-                colorTheme="#3b82f6"
-              />
+                {isQOpen('step1_q1', targetActors) && (
+                  <Box sx={{ pt: 0.5, pb: 0.5, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                    <PremiumDropdown
+                      options={TARGET_AUDIENCE_OPTIONS}
+                      value={TARGET_AUDIENCE_OPTIONS.filter(opt => targetActors.includes(opt.label))}
+                      onChange={(selected: any) => {
+                        if (Array.isArray(selected)) {
+                          setTargetActors(selected.map((item: any) => item.label || item));
+                        } else if (selected?.label) {
+                          setTargetActors([selected.label]);
+                        } else {
+                          setTargetActors([]);
+                        }
+                      }}
+                      label="Select target audience (optional)..."
+                      colorTheme="#3b82f6"
+                      multiple
+                      fullWidth
+                      popoverTitle="Target Value Chain Stakeholders"
+                      popoverSubtitle="Select one or more stakeholder personas to sharpen this research cycle"
+                    />
+                    <Typography sx={{ fontSize: '0.71rem', color: '#64748b', fontWeight: 500, px: 0.5 }}>
+                      Optional · Select one or more value chain actors, or leave blank to cover the whole value chain
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+
+              {/* Question 2 Card: Specific City or Hub */}
+              <Box
+                sx={{
+                  bgcolor: '#ffffff',
+                  border: '1px solid rgba(0, 0, 0, 0.08)',
+                  borderRadius: '12px',
+                  p: { xs: 1.25, sm: 1.5 },
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 1,
+                  transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
+                  '&:hover': {
+                    borderColor: 'rgba(59, 130, 246, 0.3)',
+                  },
+                }}
+              >
+                <Box
+                  onClick={() => toggleQuestion('step1_q2', targetLocation)}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 1.5,
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                    pb: isQOpen('step1_q2', targetLocation) ? 0.75 : 0,
+                    borderBottom: isQOpen('step1_q2', targetLocation) ? '1px solid rgba(0,0,0,0.06)' : 'none',
+                  }}
+                >
+                  <Typography sx={{ fontSize: '0.86rem', fontWeight: 700, color: '#1e293b' }}>
+                    2. Do you have a specific city or market in mind?
+                  </Typography>
+                  <Button
+                    variant="text"
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleQuestion('step1_q2', targetLocation);
+                    }}
+                    sx={{
+                      flexShrink: 0,
+                      textTransform: 'none',
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      p: 0.5,
+                      minWidth: 'auto',
+                      color: isQOpen('step1_q2', targetLocation)
+                        ? '#2563eb'
+                        : targetLocation.trim()
+                        ? '#059669'
+                        : '#64748b',
+                      '&:hover': { bgcolor: 'transparent', textDecoration: 'underline' },
+                    }}
+                  >
+                    {targetLocation.trim()
+                      ? (isQOpen('step1_q2', targetLocation) ? 'Collapse' : 'Edit')
+                      : (isQOpen('step1_q2', targetLocation) ? 'Collapse' : 'Answer')}
+                  </Button>
+                </Box>
+
+                {isQOpen('step1_q2', targetLocation) && (
+                  <Box sx={{ pt: 0.5, pb: 0.5, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                    <PremiumMarkdownEditor
+                      colorTheme="#3b82f6"
+                      placeholder="e.g. Dawanau Grain Market, Kano, or Bodija Market, Ibadan..."
+                      value={targetLocation}
+                      onChange={(e) => setTargetLocation(e.target.value)}
+                      minRows={2}
+                      fullWidth
+                    />
+                    <Typography sx={{ fontSize: '0.71rem', color: '#64748b', fontWeight: 500, px: 0.5 }}>
+                      Default if blank: <Box component="span" sx={{ color: '#0f172a', fontWeight: 700 }}>Top 5 Global & Nigerian Epicenters mapped dynamically by AI</Box>
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
             </Box>
 
-            </Box>
+            {/* Prompt Customization Status Banner for Step 1 (Only shows when vars ingested) */}
+            <Box sx={{ ml: { xs: 0, sm: '42px' } }}>
+              {(targetActors.length > 0 || Boolean(targetLocation.trim())) && (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    px: 1.75,
+                    py: 1,
+                    borderRadius: '12px',
+                    bgcolor: 'rgba(16, 185, 129, 0.08)',
+                    border: '1px solid rgba(16, 185, 129, 0.25)',
+                    mb: 1.25,
+                  }}
+                >
+                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#10b981', boxShadow: '0 0 8px #10b981' }} />
+                  <Typography sx={{ fontSize: '0.78rem', fontWeight: 800, color: '#065f46' }}>
+                    Prompt updated with your answers
+                  </Typography>
+                </Box>
+              )}
 
-          <Box sx={{ borderBottom: '1px solid rgba(0,0,0,0.08)', my: 1.5 }} />
+              {/* PromptTerminalBox for Step 1 */}
+              <PromptTerminalBox
+                title="Step 1 Prompt · Find 5 Hot Markets"
+                codeLabel="DOC 1a"
+                subtitle="Grounds target audience personas and identifies 5 high-volume physical trading corridors."
+                prompt={compiledPrompt1a}
+                colorTheme="#3b82f6"
+                copiedBannerText="Step 1 Prompt Copied to Clipboard!"
+                copyButtonLabel="Copy Step 1 Prompt (Find 5 Markets)"
+                maxHeight={220}
+                isCopiedExternal={Boolean(copiedPromptTabs['doc1a'])}
+                onExpand={() => handleExpandPrompt('doc1a')}
+                onCopy={() => {
+                  handleCopyPromptText(compiledPrompt1a, 'doc1a');
+                }}
+              />
+            </Box>
+          </Box>
+
+          <Box sx={{ borderBottom: '1px solid rgba(0,0,0,0.06)', my: 1 }} />
 
           {/* ──────────────────────────────────────────────────────────── */}
           {/* STEP 2: DRUCKER INNOVATION OSINT ENGINE                      */}
           {/* ──────────────────────────────────────────────────────────── */}
           <Box id="wiki-step-2" sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, scrollMarginTop: '80px' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Box sx={{ width: 30, height: 30, borderRadius: '50%', bgcolor: '#f59e0b', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.88rem' }}>
+              <Box sx={{ width: 30, height: 30, borderRadius: '50%', bgcolor: '#f59e0b', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.88rem', flexShrink: 0 }}>
                 2
               </Box>
               <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>
@@ -999,160 +1287,211 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
               </Typography>
             </Box>
 
-            {/* Step 2 Quick Inputs */}
-            <Box sx={{
-              p: 2.25,
-              borderRadius: '16px',
-              bgcolor: '#ffffff',
-              border: '1px solid rgba(245, 158, 11, 0.3)',
-              boxShadow: '0 4px 16px rgba(245, 158, 11, 0.05)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 2
-            }}>
-              <Box>
-                <Typography sx={{ fontSize: '0.84rem', fontWeight: 800, color: '#b45309', display: 'flex', alignItems: 'center', gap: 0.8 }}>
-                  <span>🔄</span> What problem are we solving?
-                </Typography>
-                <Typography sx={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500, mt: 0.25 }}>
-                  Tell the AI what practical action you want the reader to take, and why it is urgent.
-                </Typography>
-              </Box>
-
-              {/* Crash-Proof Segmented Pill Switcher for Location */}
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-                <Typography sx={{ fontSize: '0.76rem', fontWeight: 700, color: '#475569' }}>
-                  Choose your focus location:
-                </Typography>
-                <Box sx={{
-                  display: 'flex',
-                  p: 0.5,
+            {/* Step 2 Questions (No outer white bg, tight question cards) */}
+            <Box
+              sx={{
+                ml: { xs: 0, sm: '42px' },
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 1.25,
+              }}
+            >
+              {/* Question 1 Card: Desired Outcome */}
+              <Box
+                sx={{
+                  bgcolor: '#ffffff',
+                  border: '1px solid rgba(0, 0, 0, 0.08)',
                   borderRadius: '12px',
-                  bgcolor: '#f1f5f9',
-                  border: '1px solid rgba(0,0,0,0.06)'
-                }}>
+                  p: { xs: 1.25, sm: 1.5 },
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 1,
+                  transition: 'border-color 0.15s ease',
+                  '&:hover': { borderColor: 'rgba(245, 158, 11, 0.3)' },
+                }}
+              >
+                <Box
+                  onClick={() => toggleQuestion('step2_q1', expectedOutcome)}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 1.5,
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                    pb: isQOpen('step2_q1', expectedOutcome) ? 0.75 : 0,
+                    borderBottom: isQOpen('step2_q1', expectedOutcome) ? '1px solid rgba(0,0,0,0.06)' : 'none',
+                  }}
+                >
+                  <Typography sx={{ fontSize: '0.86rem', fontWeight: 700, color: '#1e293b' }}>
+                    1. What should this audience do differently? (The Solution)
+                  </Typography>
                   <Button
-                    onClick={() => setLocationPivot(false)}
+                    variant="text"
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleQuestion('step2_q1', expectedOutcome);
+                    }}
                     sx={{
-                      flex: 1,
-                      py: 0.75,
-                      borderRadius: '9px',
+                      flexShrink: 0,
                       textTransform: 'none',
-                      fontSize: '0.8rem',
-                      fontWeight: !locationPivot ? 800 : 600,
-                      color: !locationPivot ? '#0f172a' : '#64748b',
-                      bgcolor: !locationPivot ? '#ffffff' : 'transparent',
-                      boxShadow: !locationPivot ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
-                      transition: 'all 0.15s ease',
-                      '&:hover': { bgcolor: !locationPivot ? '#ffffff' : 'rgba(0,0,0,0.04)' }
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      p: 0.5,
+                      minWidth: 'auto',
+                      color: isQOpen('step2_q1', expectedOutcome)
+                        ? '#d97706'
+                        : expectedOutcome.trim()
+                        ? '#059669'
+                        : '#64748b',
+                      '&:hover': { bgcolor: 'transparent', textDecoration: 'underline' },
                     }}
                   >
-                    📍 Stick to My City / Market
-                  </Button>
-                  <Button
-                    onClick={() => setLocationPivot(true)}
-                    sx={{
-                      flex: 1,
-                      py: 0.75,
-                      borderRadius: '9px',
-                      textTransform: 'none',
-                      fontSize: '0.8rem',
-                      fontWeight: locationPivot ? 800 : 600,
-                      color: locationPivot ? '#b45309' : '#64748b',
-                      bgcolor: locationPivot ? '#ffffff' : 'transparent',
-                      boxShadow: locationPivot ? '0 2px 8px rgba(245, 158, 11, 0.15)' : 'none',
-                      transition: 'all 0.15s ease',
-                      '&:hover': { bgcolor: locationPivot ? '#ffffff' : 'rgba(0,0,0,0.04)' }
-                    }}
-                  >
-                    ⚡ Use AI Top Market
+                    {expectedOutcome.trim()
+                      ? (isQOpen('step2_q1', expectedOutcome) ? 'Collapse' : 'Edit')
+                      : (isQOpen('step2_q1', expectedOutcome) ? 'Collapse' : 'Answer')}
                   </Button>
                 </Box>
+
+                {isQOpen('step2_q1', expectedOutcome) && (
+                  <Box sx={{ pt: 0.5, pb: 0.5, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                    <PremiumMarkdownEditor
+                      colorTheme="#f59e0b"
+                      placeholder="e.g. Start solar drying ginger before loading trucks, or bypass middlemen with cooperative buyer contracts..."
+                      value={expectedOutcome}
+                      onChange={(e: any) => setExpectedOutcome(e.target.value)}
+                      minRows={2}
+                      fullWidth
+                    />
+                    <Typography sx={{ fontSize: '0.71rem', color: '#64748b', fontWeight: 500, px: 0.5 }}>
+                      Default if blank: <Box component="span" sx={{ color: '#0f172a', fontWeight: 700 }}>AI automatically determines the best operational pivot</Box>
+                    </Typography>
+                  </Box>
+                )}
               </Box>
 
-              {/* Question 1: Desired Outcome */}
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-                <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: '#1e293b', display: 'flex', alignItems: 'center', gap: 0.6 }}>
-                  💡 What should this person do differently? (The Solution)
-                </Typography>
-                <PremiumMarkdownEditor
-                  colorTheme="#f59e0b"
-                  placeholder="e.g. Start solar drying ginger before loading trucks, or sell directly to juice factories."
-                  value={expectedOutcome}
-                  onChange={(e: any) => setExpectedOutcome(e.target.value)}
-                  minRows={3}
-                  fullWidth
-                />
-              </Box>
+              {/* Question 2 Card: Why Now */}
+              <Box
+                sx={{
+                  bgcolor: '#ffffff',
+                  border: '1px solid rgba(0, 0, 0, 0.08)',
+                  borderRadius: '12px',
+                  p: { xs: 1.25, sm: 1.5 },
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 1,
+                  transition: 'border-color 0.15s ease',
+                  '&:hover': { borderColor: 'rgba(245, 158, 11, 0.3)' },
+                }}
+              >
+                <Box
+                  onClick={() => toggleQuestion('step2_q2', whyNow)}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 1.5,
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                    pb: isQOpen('step2_q2', whyNow) ? 0.75 : 0,
+                    borderBottom: isQOpen('step2_q2', whyNow) ? '1px solid rgba(0,0,0,0.06)' : 'none',
+                  }}
+                >
+                  <Typography sx={{ fontSize: '0.86rem', fontWeight: 700, color: '#1e293b' }}>
+                    2. Why is this urgent right now? (The Trigger)
+                  </Typography>
+                  <Button
+                    variant="text"
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleQuestion('step2_q2', whyNow);
+                    }}
+                    sx={{
+                      flexShrink: 0,
+                      textTransform: 'none',
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      p: 0.5,
+                      minWidth: 'auto',
+                      color: isQOpen('step2_q2', whyNow)
+                        ? '#d97706'
+                        : whyNow.trim()
+                        ? '#059669'
+                        : '#64748b',
+                      '&:hover': { bgcolor: 'transparent', textDecoration: 'underline' },
+                    }}
+                  >
+                    {whyNow.trim()
+                      ? (isQOpen('step2_q2', whyNow) ? 'Collapse' : 'Edit')
+                      : (isQOpen('step2_q2', whyNow) ? 'Collapse' : 'Answer')}
+                  </Button>
+                </Box>
 
-              {/* Question 2: Why Now (The Trigger) */}
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-                <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: '#1e293b', display: 'flex', alignItems: 'center', gap: 0.6 }}>
-                  ⚡ Why is this urgent right now? (The Trigger)
-                </Typography>
-                <PremiumMarkdownEditor
-                  colorTheme="#f59e0b"
-                  placeholder="e.g. Diesel prices doubled, new export standards, or recent floods ruined 40% of crops."
-                  value={whyNow}
-                  onChange={(e: any) => setWhyNow(e.target.value)}
-                  minRows={3}
-                  fullWidth
-                />
+                {isQOpen('step2_q2', whyNow) && (
+                  <Box sx={{ pt: 0.5, pb: 0.5, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                    <PremiumMarkdownEditor
+                      colorTheme="#f59e0b"
+                      placeholder="e.g. Diesel prices doubled, new export quality regulations, or recent flood ruined 40% of harvest..."
+                      value={whyNow}
+                      onChange={(e: any) => setWhyNow(e.target.value)}
+                      minRows={2}
+                      fullWidth
+                    />
+                    <Typography sx={{ fontSize: '0.71rem', color: '#64748b', fontWeight: 500, px: 0.5 }}>
+                      Default if blank: <Box component="span" sx={{ color: '#0f172a', fontWeight: 700 }}>AI automatically searches current breaking news and market events</Box>
+                    </Typography>
+                  </Box>
+                )}
               </Box>
             </Box>
 
-                        {/* Action Checklist: Before Prompt */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 1.75, border: '1px solid rgba(245, 158, 11, 0.25)', borderRadius: '14px', bgcolor: 'rgba(245, 158, 11, 0.03)' }}>
-              <PromptChecklistItem
-                id="act_copy_1b"
-                text="1. Copy Step 2 Prompt below and run it in the SAME AI chat thread."
-                checked={!!wikiChecklist['act_copy_1b']}
-                onToggle={() => toggleChecklistItem('act_copy_1b')}
+            {/* Prompt Customization Status Banner for Step 2 (Only shows if Step 2 vars ingested) */}
+            <Box sx={{ ml: { xs: 0, sm: '42px' } }}>
+              {Boolean(expectedOutcome.trim() || whyNow.trim()) && (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    px: 1.75,
+                    py: 1,
+                    borderRadius: '12px',
+                    bgcolor: 'rgba(16, 185, 129, 0.08)',
+                    border: '1px solid rgba(16, 185, 129, 0.25)',
+                    mb: 1.25,
+                  }}
+                >
+                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#10b981', boxShadow: '0 0 8px #10b981' }} />
+                  <Typography sx={{ fontSize: '0.78rem', fontWeight: 800, color: '#065f46' }}>
+                    Prompt updated with your answers
+                  </Typography>
+                </Box>
+              )}
+
+              {/* PromptTerminalBox for Step 2 */}
+              <PromptTerminalBox
+                title="Step 2 Prompt · Uncover Real Market Costs"
+                codeLabel="DOC 1b"
+                subtitle="Interrogates supply chain frictions, input costs, and operator workarounds."
+                prompt={compiledPrompt1b}
                 colorTheme="#f59e0b"
-              />
-            </Box>
-
-            {/* PromptTerminalBox for Step 2 */}
-            <PromptTerminalBox
-              title="Step 2 Prompt · Uncover Real Market Costs"
-              codeLabel="DOC 1b"
-              subtitle="Interrogates supply chain frictions, input costs, and operator workarounds."
-              prompt={compiledPrompt1b}
-              colorTheme="#f59e0b"
-              copiedBannerText="Step 2 Prompt Copied to Clipboard!"
+                copiedBannerText="Step 2 Prompt Copied to Clipboard!"
               copyButtonLabel="Copy Step 2 Prompt (Market Costs)"
               maxHeight={220}
-              isCopiedExternal={!!wikiChecklist['act_copy_1b']}
+              isCopiedExternal={Boolean(copiedPromptTabs['doc1b'])}
+              onExpand={() => handleExpandPrompt('doc1b')}
               onCopy={() => {
                 handleCopyPromptText(compiledPrompt1b, 'doc1b');
-                if (!wikiChecklist['act_copy_1b']) toggleChecklistItem('act_copy_1b');
               }}
             />
-
-            {/* Verification Checklist: Under Prompt */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, p: 2, border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '16px', bgcolor: 'rgba(245, 158, 11, 0.04)' }}>
-              <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#b45309', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                ⚡ Check the AI Output for Step 2:
-              </Typography>
-              <PromptChecklistItem
-                id="chk2_vectors"
-                text="Did the AI pick the 6 best, most practical topics for this commodity?"
-                checked={!!wikiChecklist['chk2_vectors']}
-                onToggle={() => toggleChecklistItem('chk2_vectors')}
-                colorTheme="#f59e0b"
-              />
-              <PromptChecklistItem
-                id="chk2_asymmetry"
-                text="Did it clearly name who is losing money and who is profiting from the problem?"
-                checked={!!wikiChecklist['chk2_asymmetry']}
-                onToggle={() => toggleChecklistItem('chk2_asymmetry')}
-                colorTheme="#f59e0b"
-              />
             </Box>
+          </Box>
 
-            </Box>
-
-          <Box sx={{ borderBottom: '1px solid rgba(0,0,0,0.08)', my: 1.5 }} />
+          <Box sx={{ borderBottom: '1px solid rgba(0,0,0,0.06)', my: 1 }} />
 
           {/* ──────────────────────────────────────────────────────────── */}
           {/* STEP 3: SPECTRUM SYNTHESIZER & OUTLINES                      */}
@@ -1176,188 +1515,113 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
               </Box>
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
-                  Step 3: Generate 12 Article Ideas
+                  Step 3: Studio Markdown Synthesizer (Doc 1c)
                 </Typography>
                 <Typography sx={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 600 }}>
-                  Creates 10–12 clickable article headlines across 6 practical story angles
+                  Engages AI coding compiler to serialize 10–12 article briefs directly into Fast Ingest markdown
                 </Typography>
               </Box>
             </Box>
 
-            {/* 6 Cognitive Spectrum Market Angles Quick Guide */}
-            <Box sx={{
-              p: 2,
-              bgcolor: '#faf5ff',
-              border: '1px solid #e9d5ff',
-              borderRadius: '16px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 1.5
-            }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography sx={{ fontSize: '0.76rem', fontWeight: 900, color: '#7e22ce', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                  <span>🎯</span> The 6 Nigerian Market Angles in this Turn:
-                </Typography>
-                <Chip label="10–12 Outlines" size="small" sx={{ bgcolor: 'rgba(168, 85, 247, 0.2)', color: '#6b21a8', fontWeight: 800, fontSize: '0.68rem', height: 20 }} />
-              </Box>
-
-              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1 }}>
-                {[
-                  { rank: '#1', name: 'Urgent Crisis', desc: 'Everyday fuel, spoilage & freight squeeze', color: '#ef4444', bg: '#fef2f2', border: '#fecaca', emoji: '🔴' },
-                  { rank: '#2', name: 'Big Business Move', desc: 'Large company investments & buyer contracts', color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe', emoji: '🏛️' },
-                  { rank: '#3', name: 'Grassroots Hack', desc: 'Everyday farmer and truck driver survival tricks', color: '#d97706', bg: '#fffbeb', border: '#fde68a', emoji: '🚜' },
-                  { rank: '#4', name: 'Future Tech', desc: 'Solar drying, simple cold storage & new seeds', color: '#059669', bg: '#ecfdf5', border: '#a7f3d0', emoji: '🧬' },
-                  { rank: '#5', name: 'Government & Macro Risk', desc: 'Currency drops, high loan rates & export laws', color: '#ea580c', bg: '#fff7ed', border: '#fed7aa', emoji: '⚠️' },
-                  { rank: '#6', name: 'Wild Surprise', desc: 'Unusual market tricks and hidden opportunities', color: '#9333ea', bg: '#faf5ff', border: '#e9d5ff', emoji: '🔮' },
-                ].map(spectrum => (
-                  <Box
-                    key={spectrum.rank}
-                    sx={{
-                      p: 1.25,
-                      bgcolor: spectrum.bg,
-                      border: `1px solid ${spectrum.border}`,
-                      borderRadius: '12px',
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: 1.25
-                    }}
-                  >
-                    <Typography sx={{ fontSize: '1rem', lineHeight: 1 }}>{spectrum.emoji}</Typography>
-                    <Box sx={{ minWidth: 0 }}>
-                      <Typography sx={{ fontSize: '0.78rem', fontWeight: 800, color: spectrum.color, lineHeight: 1.2 }}>
-                        {spectrum.rank} {spectrum.name}
-                      </Typography>
-                      <Typography sx={{ fontSize: '0.72rem', color: '#475569', fontWeight: 500, lineHeight: 1.3, mt: 0.25 }}>
-                        {spectrum.desc}
-                      </Typography>
-                    </Box>
-                  </Box>
-                ))}
-              </Box>
-            </Box>
-
-            {/* Step 3 Quick Inputs */}
-            <Box sx={{
-              p: 2.25,
-              borderRadius: '16px',
-              bgcolor: '#ffffff',
-              border: '1px solid rgba(168, 85, 247, 0.3)',
-              boxShadow: '0 4px 16px rgba(168, 85, 247, 0.05)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 1.5
-            }}>
-              <Box>
-                <Typography sx={{ fontSize: '0.84rem', fontWeight: 800, color: '#7e22ce', display: 'flex', alignItems: 'center', gap: 0.8 }}>
-                  <span>🥊</span> Choose your story angle:
-                </Typography>
-                <Typography sx={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500, mt: 0.25 }}>
-                  Decide whether to stick to your original angle or follow the AI market suggestion.
-                </Typography>
-              </Box>
-
-              {/* Crash-Proof Segmented Pill Switcher for Strategy */}
+            {/* Step 3 Content Wrapper */}
+            <Box sx={{ ml: { xs: 0, sm: '42px' }, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {/* 6 Cognitive Spectrum Market Angles Quick Guide */}
               <Box sx={{
+                p: 2,
+                bgcolor: '#faf5ff',
+                border: '1px solid #e9d5ff',
+                borderRadius: '16px',
                 display: 'flex',
-                p: 0.5,
-                borderRadius: '12px',
-                bgcolor: '#f1f5f9',
-                border: '1px solid rgba(0,0,0,0.06)'
+                flexDirection: 'column',
+                gap: 1.5
               }}>
-                <Button
-                  onClick={() => setStrategicPivot(false)}
-                  sx={{
-                    flex: 1,
-                    py: 0.75,
-                    borderRadius: '9px',
-                    textTransform: 'none',
-                    fontSize: '0.8rem',
-                    fontWeight: !strategicPivot ? 800 : 600,
-                    color: !strategicPivot ? '#0f172a' : '#64748b',
-                    bgcolor: !strategicPivot ? '#ffffff' : 'transparent',
-                    boxShadow: !strategicPivot ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
-                    transition: 'all 0.15s ease',
-                    '&:hover': { bgcolor: !strategicPivot ? '#ffffff' : 'rgba(0,0,0,0.04)' }
-                  }}
-                >
-                  🥊 Stick to My Original Idea
-                </Button>
-                <Button
-                  onClick={() => setStrategicPivot(true)}
-                  sx={{
-                    flex: 1,
-                    py: 0.75,
-                    borderRadius: '9px',
-                    textTransform: 'none',
-                    fontSize: '0.8rem',
-                    fontWeight: strategicPivot ? 800 : 600,
-                    color: strategicPivot ? '#7e22ce' : '#64748b',
-                    bgcolor: strategicPivot ? '#ffffff' : 'transparent',
-                    boxShadow: strategicPivot ? '0 2px 8px rgba(168, 85, 247, 0.15)' : 'none',
-                    transition: 'all 0.15s ease',
-                    '&:hover': { bgcolor: strategicPivot ? '#ffffff' : 'rgba(0,0,0,0.04)' }
-                  }}
-                >
-                  🔄 Follow AI Recommendation
-                </Button>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Typography sx={{ fontSize: '0.76rem', fontWeight: 900, color: '#7e22ce', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                    <span>🎯</span> The 6 Nigerian Market Angles in this Turn:
+                  </Typography>
+                  <Chip label="10–12 Outlines" size="small" sx={{ bgcolor: 'rgba(168, 85, 247, 0.2)', color: '#6b21a8', fontWeight: 800, fontSize: '0.68rem', height: 20 }} />
+                </Box>
+
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1 }}>
+                  {[
+                    { rank: '#1', name: 'Urgent Crisis', desc: 'Everyday fuel, spoilage & freight squeeze', color: '#ef4444', bg: '#fef2f2', border: '#fecaca', emoji: '🔴' },
+                    { rank: '#2', name: 'Big Business Move', desc: 'Large company investments & buyer contracts', color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe', emoji: '🏛️' },
+                    { rank: '#3', name: 'Grassroots Hack', desc: 'Everyday farmer and truck driver survival tricks', color: '#d97706', bg: '#fffbeb', border: '#fde68a', emoji: '🚜' },
+                    { rank: '#4', name: 'Future Tech', desc: 'Solar drying, simple cold storage & new seeds', color: '#059669', bg: '#ecfdf5', border: '#a7f3d0', emoji: '🧬' },
+                    { rank: '#5', name: 'Government & Macro Risk', desc: 'Currency drops, high loan rates & export laws', color: '#ea580c', bg: '#fff7ed', border: '#fed7aa', emoji: '⚠️' },
+                    { rank: '#6', name: 'Wild Surprise', desc: 'Unusual market tricks and hidden opportunities', color: '#9333ea', bg: '#faf5ff', border: '#e9d5ff', emoji: '🔮' },
+                  ].map(spectrum => (
+                    <Box
+                      key={spectrum.rank}
+                      sx={{
+                        p: 1.25,
+                        bgcolor: spectrum.bg,
+                        border: `1px solid ${spectrum.border}`,
+                        borderRadius: '12px',
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 1.25
+                      }}
+                    >
+                      <Typography sx={{ fontSize: '1rem', lineHeight: 1 }}>{spectrum.emoji}</Typography>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography sx={{ fontSize: '0.78rem', fontWeight: 800, color: spectrum.color, lineHeight: 1.2 }}>
+                          {spectrum.rank} {spectrum.name}
+                        </Typography>
+                        <Typography sx={{ fontSize: '0.72rem', color: '#475569', fontWeight: 500, lineHeight: 1.3, mt: 0.25 }}>
+                          {spectrum.desc}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  ))}
+                </Box>
               </Box>
-            </Box>
 
-            {/* Action Checklist: Before Prompt */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 1.75, border: '1px solid rgba(168, 85, 247, 0.25)', borderRadius: '14px', bgcolor: 'rgba(168, 85, 247, 0.03)' }}>
-              <PromptChecklistItem
-                id="act_copy_1c"
-                text="1. Copy Step 3 Prompt below and run it in the SAME AI chat thread."
-                checked={!!wikiChecklist['act_copy_1c']}
-                onToggle={() => toggleChecklistItem('act_copy_1c')}
+              {/* Prompt Customization Status Banner for Step 3 (Only shows if vars ingested) */}
+              {Boolean(targetActors.length > 0 || targetLocation.trim()) && (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    px: 1.75,
+                    py: 1,
+                    borderRadius: '12px',
+                    bgcolor: 'rgba(16, 185, 129, 0.08)',
+                    border: '1px solid rgba(16, 185, 129, 0.25)',
+                    mb: 1.25,
+                  }}
+                >
+                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#10b981', boxShadow: '0 0 8px #10b981' }} />
+                  <Typography sx={{ fontSize: '0.78rem', fontWeight: 800, color: '#065f46' }}>
+                    Prompt updated with your answers
+                  </Typography>
+                </Box>
+              )}
+
+              {/* PromptBuilderBlock Terminal */}
+              <PromptTerminalBox
+                title="Step 3 Prompt · Studio Markdown Synthesizer"
+                codeLabel="DOC 1c"
                 colorTheme="#a855f7"
+                prompt={compiledPrompt1c}
+                isCopiedExternal={Boolean(copiedPromptTabs['doc1c'])}
+                onExpand={() => handleExpandPrompt('doc1c')}
+                onCopy={() => {
+                  handleCopyPromptText(compiledPrompt1c, 'doc1c');
+                }}
               />
             </Box>
+          </Box>
 
-            {/* PromptBuilderBlock Terminal */}
-            <PromptTerminalBox
-              title="Step 3 Prompt · Generate 12 Articles"
-              codeLabel="DOC 1c"
-              colorTheme="#a855f7"
-              prompt={compiledPrompt1c}
-              isCopiedExternal={!!wikiChecklist['act_copy_1c']}
-              onCopy={() => {
-                handleCopyPromptText(compiledPrompt1c, 'doc1c');
-                if (!wikiChecklist['act_copy_1c']) toggleChecklistItem('act_copy_1c');
-              }}
-            />
-
-            {/* Verification Checklist: Under Prompt */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, p: 2, border: '1px solid rgba(168, 85, 247, 0.3)', borderRadius: '16px', bgcolor: 'rgba(168, 85, 247, 0.04)' }}>
-              <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#7e22ce', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                ⚡ Check the AI Output for Step 3:
-              </Typography>
-              <PromptChecklistItem
-                id="chk3_ranks"
-                text="Did the AI produce 10 to 12 distinct, clickable article titles across all 6 angles?"
-                checked={!!wikiChecklist['chk3_ranks']}
-                onToggle={() => toggleChecklistItem('chk3_ranks')}
-                colorTheme="#a855f7"
-              />
-              <PromptChecklistItem
-                id="chk3_headers"
-                text="Does every article start with a [SYSTEM_METADATA] block and a 6-sentence summary?"
-                checked={!!wikiChecklist['chk3_headers']}
-                onToggle={() => toggleChecklistItem('chk3_headers')}
-                colorTheme="#a855f7"
-              />
-            </Box>
-
-            </Box>
-
-          <Box sx={{ borderBottom: '1px solid rgba(0,0,0,0.08)', my: 1.5 }} />
+          <Box sx={{ borderBottom: '1px solid rgba(0,0,0,0.06)', my: 1 }} />
 
           {/* ──────────────────────────────────────────────────────────── */}
           {/* STEP 4: FAST INGEST SCRATCHPAD & STUDIO PARSER              */}
           {/* ──────────────────────────────────────────────────────────── */}
           <Box id="wiki-step-4" sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, scrollMarginTop: '80px' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Box sx={{ width: 30, height: 30, borderRadius: '50%', bgcolor: '#10b981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.88rem' }}>
+              <Box sx={{ width: 30, height: 30, borderRadius: '50%', bgcolor: '#10b981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.88rem', flexShrink: 0 }}>
                 4
               </Box>
               <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>
@@ -1365,79 +1629,34 @@ export function PromptAssistantProvider({ children }: { children: ReactNode }) {
               </Typography>
             </Box>
 
-            {/* Action Checklist: Before Scratchpad */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 1.75, border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: '14px', bgcolor: 'rgba(16, 185, 129, 0.03)' }}>
-              <PromptChecklistItem
-                id="chk4_paste"
-                text="1. Paste your final Document 1c output from ChatGPT/Claude into the box below."
-                checked={!!wikiChecklist['chk4_paste'] || !!customIngestMarkdown.trim()}
-                onToggle={() => toggleChecklistItem('chk4_paste')}
-                colorTheme="#10b981"
-              />
-            </Box>
-
             {/* Step 4 Fast Ingest Component */}
-            <PromptFastIngestBox
-              value={customIngestMarkdown}
-              onChange={(val) => {
-                setCustomIngestMarkdown(val);
-                saveScratchpadToStorage({ ingest: val });
-              }}
-              onIngest={handleFastIngestCustomOutlines}
-              title="Step 4 Fast Ingest · 12 Articles Relay"
-              subtitle="Paste the generated markdown output from Step 3 to apply and render directly in Studio."
-              codeLabel="FAST INGEST"
-              fileName="articles.md"
-              unitLabel="articles"
-              colorTheme="#10b981"
-              placeholder={`---\n**[SYSTEM_METADATA]**\n* Category_ID: Land\n* Subcategory_ID: Sole Farmland Ownership\n* Commodity: ${selectedCommodity}\n* Format_Type: Brief\n* Era: Present\n* Location: Dawanau Hub, Kano\n* Spectrum_Rank: #1 (The Bleeding Neck)\n* Target_Persona: Agri-VCs & Haulers\n\n### Title...\n\n**Description:**\n* Bullet 1...\n* Bullet 2...\n---`}
-              liveBlockCount={liveParsedBriefs.length}
-              expectedBlockCount={12}
-              buttonLabel={`🚀 Ingest & Render ${liveParsedBriefs.length ? `${liveParsedBriefs.length} Briefs` : 'Outlines'} into Studio`}
-              error={customIngestError}
-            />
-
-            {/* Verification Checklist */}
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, p: 2.25, border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '16px', bgcolor: 'rgba(16, 185, 129, 0.04)' }}>
-              <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                ⚡ Check Before Importing:
-              </Typography>
-              <PromptChecklistItem
-                id="chk4_detected"
-                text={`Live Detection: ${liveParsedBriefs.length} valid article cards detected.`}
-                checked={!!wikiChecklist['chk4_detected'] || liveParsedBriefs.length > 0}
-                onToggle={() => toggleChecklistItem('chk4_detected')}
+            <Box sx={{ ml: { xs: 0, sm: '42px' } }}>
+              <PromptFastIngestBox
+                value={customIngestMarkdown}
+                onChange={(val) => {
+                  setCustomIngestMarkdown(val);
+                  saveScratchpadToStorage({ ingest: val });
+                }}
+                onIngest={handleFastIngestCustomOutlines}
+                title="Step 4 Fast Ingest · 12 Articles Relay"
+                subtitle="Paste the generated markdown output from Step 3 to apply and render directly in Studio."
+                codeLabel="FAST INGEST"
+                fileName="articles.md"
+                unitLabel="articles"
                 colorTheme="#10b981"
-              />
-              <PromptChecklistItem
-                id="chk4_ingest"
-                text='Ready to click "Import Articles into Studio" to render them directly on your canvas.'
-                checked={!!wikiChecklist['chk4_ingest']}
-                onToggle={() => toggleChecklistItem('chk4_ingest')}
-                colorTheme="#10b981"
+                placeholder={`---\n**[SYSTEM_METADATA]**\n* Category_ID: Land\n* Subcategory_ID: Sole Farmland Ownership\n* Commodity: ${selectedCommodity}\n* Format_Type: Brief\n* Era: Present\n* Location: Dawanau Hub, Kano\n* Spectrum_Rank: #1 (The Bleeding Neck)\n* Target_Persona: Agri-VCs & Haulers\n\n### Title...\n\n**Description:**\n* Bullet 1...\n* Bullet 2...\n---`}
+                liveBlockCount={liveParsedBriefs.length}
+                expectedBlockCount={12}
+                buttonLabel="Visualise articles"
+                hideButtonWhenEmpty={true}
+                showButtonIcon={false}
+                error={customIngestError}
               />
             </Box>
-
-            {/* Live Detection Rank Badges */}
-            {liveParsedBriefs.length > 0 && (
-              <Paper sx={{ p: 2, bgcolor: '#ecfdf5', borderRadius: '14px', border: '1.5px solid #10b981', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
-                  <CheckCircleIcon sx={{ color: '#059669', fontSize: 22 }} />
-                  <Typography sx={{ color: '#065f46', fontWeight: 900, fontSize: '0.9rem' }}>
-                    ✓ Live Detection: {liveParsedBriefs.length} Valid Briefs Ready to Ingest!
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                  {Array.from(new Set(liveParsedBriefs.map(b => b.spectrumRank))).map(rank => (
-                    <Chip key={rank} label={rank} size="small" sx={{ bgcolor: '#059669', color: '#fff', fontSize: '0.65rem', fontWeight: 800 }} />
-                  ))}
-                </Box>
-              </Paper>
-            )}
           </Box>
-
         </Box>
-      </Drawer>
-    </PromptAssistantContext.Provider>
+      </Box>
+    </Drawer>
+  </PromptAssistantContext.Provider>
   );
 }

@@ -15,6 +15,7 @@ import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
+import { useTheme, useMediaQuery } from '@mui/material';
 
 // Icons
 import CloseIcon from '@mui/icons-material/Close';
@@ -78,6 +79,8 @@ function PromptBuilderBlock({ block }: { block: WikiBlock }) {
 
 // --- Main Drawer Component ---
 export function WikiDrawer() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { isOpen, closeWiki, activeDocId } = useWiki();
   const { profile, activeOrg } = useSociety();
   const router = useRouter();
@@ -131,10 +134,10 @@ export function WikiDrawer() {
   const hasAccess = canSeeDoc();
 
   const glassSx = {
-    backgroundColor: 'rgba(15, 23, 42, 0.85)',
+    backgroundColor: 'rgba(15, 23, 42, 0.95)',
     backdropFilter: 'blur(16px)',
     WebkitBackdropFilter: 'blur(16px)',
-    borderLeft: '1px solid rgba(255, 255, 255, 0.1)',
+    borderLeft: { xs: 'none', sm: '1px solid rgba(255, 255, 255, 0.1)' },
     color: '#fff',
     display: 'flex',
     flexDirection: 'column' as const,
@@ -143,8 +146,28 @@ export function WikiDrawer() {
   };
 
   return (
-    <Drawer anchor="right" open={isOpen} onClose={closeWiki}>
+    <Drawer
+      anchor={isMobile ? 'bottom' : 'right'}
+      open={isOpen}
+      onClose={closeWiki}
+      slotProps={{
+        paper: {
+          sx: {
+            width: { xs: '100vw', sm: 450 },
+            maxWidth: '100vw',
+            height: { xs: '85vh', sm: '100%' },
+            maxHeight: { xs: '85vh', sm: '100%' },
+            borderRadius: { xs: '24px 24px 0 0', sm: 0 },
+            bgcolor: 'transparent',
+            boxShadow: { xs: '0 -10px 40px rgba(0,0,0,0.4)', sm: '-10px 0 40px rgba(0,0,0,0.4)' },
+          }
+        }
+      }}
+    >
       <Box sx={glassSx}>
+        {isMobile && (
+          <Box sx={{ width: 42, height: 4.5, borderRadius: 3, bgcolor: 'rgba(255,255,255,0.25)', mx: 'auto', mt: 1.5, mb: 0.5 }} />
+        )}
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <DocIcon sx={{ color: '#10b981' }} />
