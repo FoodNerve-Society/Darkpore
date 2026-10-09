@@ -461,14 +461,17 @@ export function parseDoc1cArticles(rawText: string, fallbackCommodity = 'Soybean
     const commodityMatch = block.match(/[*•-]?\s*\*?\*?Commodity\*?\*?:\s*([^\n\r*]+)/i);
     const formatMatch = block.match(/[*•-]?\s*\*?\*?Format(?:_Type)?\*?\*?:\s*([^\n\r*]+)/i);
     const eraMatch = block.match(/[*•-]?\s*\*?\*?Era\*?\*?:\s*([^\n\r*]+)/i);
-    const locationMatch = block.match(/[*•-]?\s*\*?\*?Location\*?\*?:\s*([^\n\r*]+)/i);
+    const locationMatch = block.match(/[*•-]?\s*\*?\*?(?:Location(?:\s*\(Micro-Geography\))?|Geographic(?:_|\s+)Location|Micro-Geography|Primary(?:_|\s+)Country)\*?\*?:\s*([^\n\r*]+)/i);
     const spectrumMatch = block.match(/[*•-]?\s*\*?\*?Spectrum(?:_Rank)?\*?\*?:\s*([^\n\r*]+)/i);
     const personaMatch = block.match(/[*•-]?\s*\*?\*?Target_Persona\*?\*?:\s*([^\n\r*]+)/i);
 
     const cleanCategory = categoryMatch ? categoryMatch[1].replace(/[*_`]/g, '').trim() : undefined;
     const cleanSubcategory = subcategoryMatch ? subcategoryMatch[1].replace(/[*_`]/g, '').trim() : undefined;
     const cleanCommodity = commodityMatch ? commodityMatch[1].replace(/[*_`]/g, '').trim() : fallbackCommodity;
-    const cleanLocation = locationMatch ? locationMatch[1].replace(/[*_`]/g, '').trim() : 'National Transit Hub';
+    let cleanLocation = locationMatch ? locationMatch[1].replace(/[*_`]/g, '').trim() : 'National Transit Hub';
+    if (cleanLocation.startsWith('[') && cleanLocation.endsWith(']')) {
+      cleanLocation = cleanLocation.slice(1, -1).trim();
+    }
     const cleanSpectrum = spectrumMatch ? spectrumMatch[1].replace(/[*_`]/g, '').trim() : `#${(idx % 6) + 1}`;
     const cleanPersona = personaMatch ? personaMatch[1].replace(/[*_`]/g, '').trim() : '';
 
@@ -518,4 +521,121 @@ export function parseDoc1cArticles(rawText: string, fallbackCommodity = 'Soybean
   });
 
   return outlines;
+}
+
+/**
+ * Normalizes any micro-geography or raw AI location string to "State, Country"
+ * (e.g. "Dawanau Grain Market, Kano State, Nigeria" -> "Kano, Nigeria")
+ */
+export function formatLocationStateCountry(rawLocation?: string, fallbackText?: string): string {
+  const textToScan = (rawLocation && rawLocation.trim() !== 'National Transit Hub')
+    ? rawLocation
+    : (fallbackText || rawLocation || '');
+
+  if (!textToScan || typeof textToScan !== 'string') {
+    return 'Nigeria';
+  }
+
+  const cleaned = textToScan
+    .replace(/[*_`[\]()]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!cleaned) return 'Nigeria';
+
+  const NIGERIAN_STATES = [
+    'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno',
+    'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'Gombe', 'Imo',
+    'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara', 'Lagos',
+    'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers',
+    'Sokoto', 'Taraba', 'Yobe', 'Zamfara', 'Abuja', 'FCT'
+  ];
+
+  const CITY_TO_STATE: Record<string, string> = {
+    'ibadan': 'Oyo',
+    'calabar': 'Cross River',
+    'port harcourt': 'Rivers',
+    'ph': 'Rivers',
+    'warri': 'Delta',
+    'asaba': 'Delta',
+    'aba': 'Abia',
+    'onitsha': 'Anambra',
+    'awka': 'Anambra',
+    'makurdi': 'Benue',
+    'gboko': 'Benue',
+    'jos': 'Plateau',
+    'maiduguri': 'Borno',
+    'zaria': 'Kaduna',
+    'dawanau': 'Kano',
+    'mile 12': 'Lagos',
+    'alaba': 'Lagos',
+    'ikeja': 'Lagos',
+    'badagry': 'Lagos',
+    'uyo': 'Akwa Ibom',
+    'owerri': 'Imo',
+    'abeokuta': 'Ogun',
+    'sagamu': 'Ogun',
+    'ilorin': 'Kwara',
+    'minna': 'Niger',
+    'suleja': 'Niger',
+    'lokoja': 'Kogi',
+    'lafia': 'Nasarawa',
+    'yola': 'Adamawa',
+    'jalingo': 'Taraba',
+    'damaturu': 'Yobe',
+    'gusau': 'Zamfara',
+    'birnin kebbi': 'Kebbi',
+    'dutse': 'Jigawa',
+    'abakaliki': 'Ebonyi',
+    'enugu': 'Enugu',
+    'nsukka': 'Enugu',
+    'kano': 'Kano',
+    'kaduna': 'Kaduna',
+    'sokoto': 'Sokoto',
+    'katsina': 'Katsina',
+    'bauchi': 'Bauchi',
+    'gombe': 'Gombe',
+    'abuja': 'Abuja',
+    'fct': 'Abuja',
+  };
+
+  const lower = cleaned.toLowerCase();
+
+  // 1. Direct match on Nigerian states
+  for (const st of NIGERIAN_STATES) {
+    const stRegex = new RegExp(`\\b${st.toLowerCase()}(?:\\s+state)?\\b`, 'i');
+    if (stRegex.test(cleaned)) {
+      const displayState = st === 'FCT' ? 'Abuja' : st;
+      return `${displayState}, Nigeria`;
+    }
+  }
+
+  // 2. Direct match on major agricultural hubs / cities
+  for (const [city, state] of Object.entries(CITY_TO_STATE)) {
+    const cityRegex = new RegExp(`\\b${city}\\b`, 'i');
+    if (cityRegex.test(lower)) {
+      return `${state}, Nigeria`;
+    }
+  }
+
+  // 3. Comma-separated fallback (e.g., regional / international)
+  const parts = cleaned
+    .split(',')
+    .map(p => p.trim())
+    .filter(p => p.length > 0 && !/^(africa|west africa|east africa|sub-saharan africa)$/i.test(p));
+
+  if (parts.length >= 2) {
+    const country = parts[parts.length - 1];
+    let stateOrCity = parts[parts.length - 2];
+    stateOrCity = stateOrCity.replace(/\s+(state|region|province|county|lga)$/i, '').trim();
+    return `${stateOrCity}, ${country}`;
+  }
+
+  if (parts.length === 1 && parts[0]) {
+    const single = parts[0].replace(/\s+(state|region|province|county|lga)$/i, '').trim();
+    if (/nigeria/i.test(single)) return 'Nigeria';
+    return `${single}, Nigeria`;
+  }
+
+  return 'Nigeria';
 }

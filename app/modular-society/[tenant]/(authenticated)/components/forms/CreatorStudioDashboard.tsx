@@ -82,7 +82,7 @@ import { CATEGORY_MAP } from '@/lib/config/editorialMatrix';
 import { getDailyEditorialIntel, regenerateCustomAnglesAction, ArticleInsightItem } from '@/lib/actions/editorialMatrix';
 import { FORMAT_CONFIG, ERA_CONFIG, ArticleFormat, ArticleEra } from '@/lib/config/articleBlueprints';
 import { fetchGlobalLivestreamArticles, fetchGlobalJobs, fetchGlobalCtaAssets } from '@/lib/actions/learn';
-import { parseDoc1cArticles, buildDoc1aPrompt, buildDoc1bPrompt, buildDoc1cPrompt } from '@/lib/config/editorialPrompts';
+import { parseDoc1cArticles, buildDoc1aPrompt, buildDoc1bPrompt, buildDoc1cPrompt, formatLocationStateCountry } from '@/lib/config/editorialPrompts';
 import { foodChallenges } from '@/lib/cms/food/challenges';
 const ACCENT = "#f59e0b";
 const ACCENT_DARK = "#d97706";
@@ -402,15 +402,16 @@ function getFlowSentence(
   spectrumRank?: string,
   formatName?: string,
   subcategoryTitle?: string,
-  actorName?: string
+  actorName?: string,
+  locationName?: string
 ): string {
   const articleType = (formatName || 'brief').toLowerCase();
-  const subcategory = subcategoryTitle ? `in ${subcategoryTitle}` : 'across key operational segments';
-  const cleanActor = (actorName && actorName.trim()) ? actorName.trim() : 'key value chain operators';
-  const actorStr = cleanActor.toLowerCase().startsWith('for ') ? cleanActor : `for ${cleanActor}`;
-  const flowTheme = getFlowTheme(spectrumRank);
+  const subcategory = subcategoryTitle ? `in ${subcategoryTitle.replace(/^in\s+/i, '').trim()}` : 'in key operational segments';
+  const cleanActor = (actorName && actorName.trim()) ? actorName.replace(/^for\s+/i, '').trim() : 'key value chain operators';
+  const actorStr = `for ${cleanActor}`;
+  const locStr = locationName ? ` — in ${locationName}` : '';
 
-  return `This ${articleType} explores the ${flowTheme} ${subcategory} ${actorStr}.`;
+  return `This ${articleType} ${subcategory} ${actorStr}${locStr}.`;
 }
 
 
@@ -980,6 +981,7 @@ export default function CreatorStudioDashboard({
       targetDate: selectedTargetDate,
       title: item.title,
       description: item.hook,
+      location: item.location,
     }, {
       title: item.title,
       description: item.hook,
@@ -989,6 +991,7 @@ export default function CreatorStudioDashboard({
       timeframe: item.era,
       targetDate: selectedTargetDate,
       commodity: selectedCommodity,
+      location: item.location,
     });
   };
 
@@ -4101,6 +4104,7 @@ export default function CreatorStudioDashboard({
                                               const itemSubtitle = isItemRetryCard
                                                 ? 'EDITORIAL BRIEF CYCLE COMPLETE'
                                                 : `A${/^[AEIOU]/i.test(itemArticleType) ? 'N' : ''} ${itemArticleType.toUpperCase()} FOR THE ${itemCommodityTarget}`;
+                                              const itemLocationFormatted = isItemRetryCard ? '' : formatLocationStateCountry(item.location, item.title);
 
                                               let x = 0;
                                               let y = 0;
@@ -4521,11 +4525,10 @@ export default function CreatorStudioDashboard({
                                                             {item.title}
                                                           </Typography>
 
-                                                          {/* Contextual Flow Sentence with Subcategory and Value Chain Actor in Matching Capital Blocks */}
+                                                          {/* Contextual Flow Sentence with Subcategory, Value Chain Actor, and Location in Matching Capital Blocks */}
                                                           {(() => {
                                                             const rawActor = (item.targetPersona || (item as any).valueChainActor || (item as any).actor || (item as any).jobFunction || 'Value Chain Operators') as string;
                                                             const cleanActor = rawActor.replace(/^for\s+/i, '').trim();
-                                                            const theme = getFlowTheme(item.spectrumRank);
                                                             const rawSubcat = item.subcategoryTitle || item.subcategoryId || 'Key Operational Segments';
                                                             const cleanSubcat = rawSubcat.replace(/^in\s+/i, '').trim();
 
@@ -4553,12 +4556,12 @@ export default function CreatorStudioDashboard({
                                                                   fontSize: { xs: '0.86rem', sm: '1rem' },
                                                                   lineHeight: 1.65,
                                                                   fontWeight: 500,
-                                                                  maxWidth: 620,
+                                                                  maxWidth: 640,
                                                                   textAlign: 'center',
                                                                   mt: 0.5
                                                                 }}
                                                               >
-                                                                {`This ${(itemArticleType || 'brief').toLowerCase()} explores the ${theme} in `}
+                                                                {`This ${(itemArticleType || 'brief').toLowerCase()} in `}
                                                                 <Box component="span" sx={capitalBlockSx}>
                                                                   {cleanSubcat.toUpperCase()}
                                                                 </Box>
@@ -4566,7 +4569,10 @@ export default function CreatorStudioDashboard({
                                                                 <Box component="span" sx={capitalBlockSx}>
                                                                   {cleanActor.toUpperCase()}
                                                                 </Box>
-                                                                .
+                                                                {` — in `}
+                                                                <Box component="span" sx={capitalBlockSx}>
+                                                                  {itemLocationFormatted.toUpperCase()}
+                                                                </Box>
                                                               </Typography>
                                                             );
                                                           })()}
@@ -4668,12 +4674,25 @@ export default function CreatorStudioDashboard({
                                                          Tap to View Article
                                                        </Typography>
 
-                                                       {/* Flow Tag */}
-                                                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#64748b' }}>
-                                                         <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: itemRMeta.color }} />
-                                                         <Typography sx={{ fontSize: '0.85rem', fontWeight: 700 }}>
-                                                           {itemRMeta.label}
-                                                         </Typography>
+                                                       {/* Flow Tag & Location */}
+                                                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, color: '#64748b', flexWrap: 'wrap', justifyContent: 'center' }}>
+                                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                                           <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: itemRMeta.color }} />
+                                                           <Typography sx={{ fontSize: '0.85rem', fontWeight: 700 }}>
+                                                             {itemRMeta.label}
+                                                           </Typography>
+                                                         </Box>
+                                                         {itemLocationFormatted && (
+                                                           <>
+                                                             <Typography sx={{ fontSize: '0.8rem', color: '#cbd5e1' }}>•</Typography>
+                                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                               <LocationIcon sx={{ fontSize: 13, color: itemRMeta.color }} />
+                                                               <Typography sx={{ fontSize: '0.82rem', fontWeight: 700, color: '#475569' }}>
+                                                                 {itemLocationFormatted}
+                                                               </Typography>
+                                                             </Box>
+                                                           </>
+                                                         )}
                                                        </Box>
                                                      </Box>
                                                    )}
@@ -4747,8 +4766,8 @@ export default function CreatorStudioDashboard({
                                                              Back
                                                            </Button>
 
-                                                           {/* Flow and Format Chips on the TOP RIGHT */}
-                                                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                           {/* Flow, Format, and Location Chips on the TOP RIGHT */}
+                                                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                                                              <Chip
                                                                label={`${itemRMeta.emoji} ${itemRMeta.shortLabel || itemRMeta.label}`}
                                                                size="small"
@@ -4774,6 +4793,22 @@ export default function CreatorStudioDashboard({
                                                                  borderRadius: '999px'
                                                                }}
                                                              />
+                                                             {itemLocationFormatted && (
+                                                               <Chip
+                                                                 icon={<LocationIcon sx={{ fontSize: '13px !important', color: `${itemRMeta.color} !important` }} />}
+                                                                 label={itemLocationFormatted}
+                                                                 size="small"
+                                                                 sx={{
+                                                                   bgcolor: 'rgba(0, 0, 0, 0.04)',
+                                                                   color: '#334155',
+                                                                   fontWeight: 800,
+                                                                   fontSize: '0.7rem',
+                                                                   height: 26,
+                                                                   borderRadius: '999px',
+                                                                   border: '1px solid rgba(0, 0, 0, 0.08)'
+                                                                 }}
+                                                               />
+                                                             )}
                                                            </Box>
                                                          </Box>
 
@@ -4785,11 +4820,34 @@ export default function CreatorStudioDashboard({
                                                              fontSize: { xs: '1.05rem', sm: '1.28rem' },
                                                              lineHeight: 1.3,
                                                              letterSpacing: '-0.02em',
-                                                             mb: 1,
+                                                             mb: 0.75,
                                                            }}
                                                          >
                                                            {item.title}
                                                          </Typography>
+
+                                                         {/* Context Flow Subtitle */}
+                                                         {(() => {
+                                                           const rawActor = (item.targetPersona || (item as any).valueChainActor || (item as any).actor || (item as any).jobFunction || 'Value Chain Operators') as string;
+                                                           const cleanActor = rawActor.replace(/^for\s+/i, '').trim();
+                                                           const rawSubcat = item.subcategoryTitle || item.subcategoryId || 'Key Operational Segments';
+                                                           const cleanSubcat = rawSubcat.replace(/^in\s+/i, '').trim();
+
+                                                           return (
+                                                             <Typography
+                                                               sx={{
+                                                                 color: '#64748b',
+                                                                 fontSize: { xs: '0.74rem', sm: '0.8rem' },
+                                                                 fontWeight: 700,
+                                                                 textTransform: 'uppercase',
+                                                                 letterSpacing: '0.04em',
+                                                                 mb: 1.25,
+                                                               }}
+                                                             >
+                                                               {`This ${(itemArticleType || 'brief').toLowerCase()} in ${cleanSubcat} for ${cleanActor}${itemLocationFormatted ? ` — in ${itemLocationFormatted}` : ''}`}
+                                                             </Typography>
+                                                           );
+                                                         })()}
 
                                                          {/* List of Descriptions / Points - fills available space without redundant white gap */}
                                                          <Box
