@@ -1864,7 +1864,9 @@ export default function CreateLearnContentForm({
                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
                           <Box>
                             <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.25, fontSize: { xs: '1.05rem', sm: '1.25rem' }, letterSpacing: '-0.02em' }}>
-                              Which subcategory and article type are you writing today?
+                              {isBlueprintFilled
+                                ? 'These are the subcategory and article type you are writing today'
+                                : 'Which subcategory and article type are you writing today?'}
                             </Typography>
                             <Typography sx={{ color: '#64748b', fontSize: '0.84rem', fontWeight: 500, mt: 0.35 }}>
                               {isBlueprintFilled

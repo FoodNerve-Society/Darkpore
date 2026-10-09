@@ -4530,7 +4530,7 @@ export default function CreatorStudioDashboard({
                                                             const rawActor = (item.targetPersona || (item as any).valueChainActor || (item as any).actor || (item as any).jobFunction || 'Value Chain Operators') as string;
                                                             const cleanActor = rawActor.replace(/^for\s+/i, '').trim();
                                                             const rawSubcat = item.subcategoryTitle || item.subcategoryId || 'Key Operational Segments';
-                                                            const cleanSubcat = rawSubcat.replace(/^in\s+/i, '').trim();
+                                                            const cleanSubcat = rawSubcat.replace(/^in\s+/i, '').replace(/^\d+\.\s*/, '').trim();
 
                                                             const capitalBlockSx = {
                                                               display: 'inline-block',
@@ -4569,10 +4569,14 @@ export default function CreatorStudioDashboard({
                                                                 <Box component="span" sx={capitalBlockSx}>
                                                                   {cleanActor.toUpperCase()}
                                                                 </Box>
-                                                                {` — in `}
-                                                                <Box component="span" sx={capitalBlockSx}>
-                                                                  {itemLocationFormatted.toUpperCase()}
-                                                                </Box>
+                                                                {itemLocationFormatted ? (
+                                                                  <>
+                                                                    {` — in `}
+                                                                    <Box component="span" sx={capitalBlockSx}>
+                                                                      {itemLocationFormatted.toUpperCase()}
+                                                                    </Box>
+                                                                  </>
+                                                                ) : null}
                                                               </Typography>
                                                             );
                                                           })()}
@@ -4820,34 +4824,11 @@ export default function CreatorStudioDashboard({
                                                              fontSize: { xs: '1.05rem', sm: '1.28rem' },
                                                              lineHeight: 1.3,
                                                              letterSpacing: '-0.02em',
-                                                             mb: 0.75,
+                                                             mb: 1,
                                                            }}
                                                          >
                                                            {item.title}
                                                          </Typography>
-
-                                                         {/* Context Flow Subtitle */}
-                                                         {(() => {
-                                                           const rawActor = (item.targetPersona || (item as any).valueChainActor || (item as any).actor || (item as any).jobFunction || 'Value Chain Operators') as string;
-                                                           const cleanActor = rawActor.replace(/^for\s+/i, '').trim();
-                                                           const rawSubcat = item.subcategoryTitle || item.subcategoryId || 'Key Operational Segments';
-                                                           const cleanSubcat = rawSubcat.replace(/^in\s+/i, '').trim();
-
-                                                           return (
-                                                             <Typography
-                                                               sx={{
-                                                                 color: '#64748b',
-                                                                 fontSize: { xs: '0.74rem', sm: '0.8rem' },
-                                                                 fontWeight: 700,
-                                                                 textTransform: 'uppercase',
-                                                                 letterSpacing: '0.04em',
-                                                                 mb: 1.25,
-                                                               }}
-                                                             >
-                                                               {`This ${(itemArticleType || 'brief').toLowerCase()} in ${cleanSubcat} for ${cleanActor}${itemLocationFormatted ? ` — in ${itemLocationFormatted}` : ''}`}
-                                                             </Typography>
-                                                           );
-                                                         })()}
 
                                                          {/* List of Descriptions / Points - fills available space without redundant white gap */}
                                                          <Box

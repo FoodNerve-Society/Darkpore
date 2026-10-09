@@ -17,6 +17,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import RemoveIcon from '@mui/icons-material/Remove';
 import OpenInFullIcon from '@mui/icons-material/OpenInFull';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import PlaceIcon from '@mui/icons-material/Place';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import {
@@ -222,6 +224,11 @@ export function EditorialPromptSidePane({
     );
   }, [category]);
 
+  const cleanSubcategory = useMemo(() => {
+    if (!subcategory) return '';
+    return subcategory.replace(/\s*\(.*?\)\s*$/, '').trim();
+  }, [subcategory]);
+
   // Live Block Detection
   const detectedBlockCount = useMemo(() => {
     if (!rawIngestPayload.trim()) return 0;
@@ -264,8 +271,10 @@ export function EditorialPromptSidePane({
   const doc2Prompts = useMemo(() => [
     {
       key: 'doc_2a',
+      stepNum: 1,
       code: 'DOC 2a',
       title: 'The Emotional Wireframer (The Architect)',
+      instruction: `Run Doc 2a in your AI model to map out your ${currentBlueprint.length}-block article sequence and assign emotional engagement targets (Greed, Paranoia, Outrage, Clarity) to anchor audience tension.`,
       role: `Map ${currentBlueprint.length} blocks sequence & assign emotional targets (Greed, Paranoia, Outrage, Clarity)`,
       prompt: buildDoc2aPrompt(promptContext),
       checkId: 'sop_doc2_1',
@@ -273,8 +282,10 @@ export function EditorialPromptSidePane({
     },
     {
       key: 'doc_2b',
+      stepNum: 2,
       code: 'DOC 2b',
       title: 'The Intelligence Writer (The Muscle)',
+      instruction: 'Feed the Doc 2a response into your model and run Doc 2b. This drafts raw investigative prose with live OSINT evidence in brutal 8th-grade English without fluff.',
       role: 'Brutal 8th-grade investigative analysis, live OSINT grounding & raw block drafting',
       prompt: buildDoc2bPrompt(promptContext),
       checkId: 'sop_doc2_2',
@@ -282,8 +293,10 @@ export function EditorialPromptSidePane({
     },
     {
       key: 'doc_2c',
+      stepNum: 3,
       code: 'DOC 2c',
       title: 'The Component Assembler (The Skin)',
+      instruction: 'Feed the drafted text into Doc 2c to assemble all sections into canonical React component Markdown matching our 17 platform UI blocks.',
       role: 'Strict Markdown compilation matching 17 UI blocks with zero word alterations',
       prompt: buildDoc2cPrompt(promptContext),
       checkId: 'sop_doc2_3',
@@ -292,13 +305,15 @@ export function EditorialPromptSidePane({
   ], [promptContext, currentBlueprint.length]);
 
   // ═══════════════════════════════════════════════════════════
-  // DOCUMENT 3: ENRICHMENT, VISUALS & CONVERSION QA (3a, 3b, 3c)
+  // DOCUMENT 3: ENRICHMENT, VISUAL ASSETS & CONVERSION QA (3a, 3b, 3c)
   // ═══════════════════════════════════════════════════════════
   const doc3Prompts = useMemo(() => [
     {
       key: 'doc_3a',
+      stepNum: 4,
       code: 'DOC 3a',
       title: 'The OSINT Fact-Checking & Sourcing Engine',
+      instruction: 'Run Doc 3a to perform an in-place forensic audit verifying real price quotes, production metrics, source URLs, and live market trade data.',
       role: 'In-place factual audit, real price quotes, verified links, and live listings',
       prompt: buildDoc3aPrompt(promptContext),
       checkId: 'sop_doc3_1',
@@ -306,8 +321,10 @@ export function EditorialPromptSidePane({
     },
     {
       key: 'doc_3b',
+      stepNum: 5,
       code: 'DOC 3b',
       title: 'The Art Director & Visual Asset Expansion Engine',
+      instruction: 'Run Doc 3b to expand visual placeholders into authentic photojournalism prompts (-ar 16:9 cinematic & -ar 1:1 square) ready for Midjourney or DALL-E.',
       role: 'Documentary photojournalism Midjourney/DALL-E prompts with calibrated aspect ratios',
       prompt: buildDoc3bPrompt(promptContext),
       checkId: 'sop_doc3_2',
@@ -315,8 +332,10 @@ export function EditorialPromptSidePane({
     },
     {
       key: 'doc_3c',
+      stepNum: 6,
       code: 'DOC 3c',
       title: 'The Conversion Architect & Structural QA Engine',
+      instruction: 'Run Doc 3c to map high-converting platform CTAs (Jobs, Deals, Bounties) and pass the mandatory 5-point structural pre-flight QA checklist.',
       role: 'Canonical CTA catalog mapping & 5-point pre-flight structural QA audit',
       prompt: buildDoc3cPrompt(promptContext),
       checkId: 'sop_doc3_3',
@@ -330,8 +349,10 @@ export function EditorialPromptSidePane({
   const doc4Prompts = useMemo(() => [
     {
       key: 'doc_4a',
+      stepNum: 7,
       code: 'DOC 4a',
       title: 'The Jargon Translator & Headline Polisher',
+      instruction: 'Run Doc 4a to craft category-split spiky headlines and scrub any remaining insider academic jargon into direct 8th-grade punch.',
       role: 'Spiky Title badge formatting, plain 8th-grade English scrub & persona tuning',
       prompt: buildDoc4aPrompt(promptContext),
       checkId: 'sop_doc4_1',
@@ -339,8 +360,10 @@ export function EditorialPromptSidePane({
     },
     {
       key: 'doc_4b',
+      stepNum: 8,
       code: 'DOC 4b',
       title: 'The Bionic Editor & Syntax Linter',
+      instruction: 'Run Doc 4b to inject bolded bionic reading anchors for rapid mobile reading and lint Markdown delimiters for clean JSON parsing.',
       role: 'Mobile F-pattern bionic reading anchors & syntax linter for clean JSON parsing',
       prompt: buildDoc4bPrompt(promptContext),
       checkId: 'sop_doc4_2',
@@ -348,8 +371,10 @@ export function EditorialPromptSidePane({
     },
     {
       key: 'doc_4c',
+      stepNum: 9,
       code: 'DOC 4c',
       title: 'The Payload Parser (CMS API Bridge)',
+      instruction: 'Run Doc 4c to compile the entire validated article into strict, machine-readable JSON format ready for instant import.',
       role: 'Final compilation into strictly valid, headless CMS JSON payload for direct canvas ingest',
       prompt: buildDoc4cPrompt(promptContext),
       checkId: 'sop_doc4_3',
@@ -631,609 +656,911 @@ export function EditorialPromptSidePane({
         slotProps={{
           paper: {
             sx: {
-              width: { xs: '100vw', sm: 580, md: 680 },
-              maxWidth: '100vw',
+              width: { xs: '100vw', sm: '80vw', md: '50vw' },
+              minWidth: { sm: 540, md: 620 },
+              maxWidth: { xl: 880 },
               height: { xs: '85vh', sm: '100%' },
               maxHeight: { xs: '85vh', sm: '100%' },
               borderRadius: { xs: '24px 24px 0 0', sm: 0 },
               bgcolor: '#f8fafc',
-              boxShadow: { xs: '0 -12px 40px rgba(0, 0, 0, 0.18)', sm: '-12px 0 40px rgba(0, 0, 0, 0.18)' },
+              boxShadow: { xs: '0 -12px 40px rgba(0, 0, 0, 0.18)', sm: '-16px 0 48px rgba(0, 0, 0, 0.18)' },
               display: 'flex',
               flexDirection: 'column',
               zIndex: 1300,
+              overflow: 'hidden',
             },
           },
         }}
       >
-        {/* ──────────────────────────────────────────────────────────── */}
-        {/* STICKY GLASSMORPHISM LUXURY HEADER (LEARNSTUDIO & WIKI PARITY) */}
-        {/* ──────────────────────────────────────────────────────────── */}
+        {/* ── FLOATING TOP CONTROLS (CIRCLE MINIMIZE & CIRCLE CLOSE) ── */}
         <Box
           sx={{
-            px: { xs: 2.25, sm: 3.5 },
-            pt: { xs: 1.25, sm: 2.25 },
-            pb: { xs: 2, sm: 2.25 },
-            bgcolor: 'rgba(255, 255, 255, 0.88)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            borderBottom: '1px solid rgba(0, 0, 0, 0.06)',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)',
-            position: 'sticky',
-            top: 0,
-            zIndex: 10,
-          }}
-        >
-          {isMobile && (
-            <Box sx={{ width: 42, height: 4.5, borderRadius: 3, bgcolor: 'rgba(0,0,0,0.2)', mx: 'auto', mb: 1.5 }} />
-          )}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75 }}>
-            <Box
-              sx={{
-                width: 44,
-                height: 44,
-                borderRadius: '14px',
-                background: 'linear-gradient(135deg, #10b981 0%, #047857 100%)',
-                color: '#ffffff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 8px 20px rgba(16, 185, 129, 0.35)',
-                border: '1.5px solid rgba(255, 255, 255, 0.4)',
-                flexShrink: 0,
-              }}
-            >
-              <AutoAwesomeIcon sx={{ fontSize: 22 }} />
-            </Box>
-            <Box>
-              <Typography
-                variant="h6"
-                sx={{
-                  fontWeight: 900,
-                  color: '#0f172a',
-                  lineHeight: 1.25,
-                  fontSize: { xs: '1.05rem', sm: '1.18rem' },
-                  letterSpacing: '-0.025em',
-                }}
-              >
-                Get Full Articles Here
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 0.35 }}>
-                <Box
-                  sx={{
-                    width: 7,
-                    height: 7,
-                    borderRadius: '50%',
-                    bgcolor: '#10b981',
-                    boxShadow: '0 0 8px #10b981',
-                  }}
-                />
-                <Typography
-                  sx={{
-                    color: '#64748b',
-                    fontWeight: 600,
-                    fontSize: '0.8rem',
-                    letterSpacing: '-0.01em',
-                  }}
-                >
-                  Sequenced master prompts across Docs 2, 3 &amp; 4 for your {currentBlueprint.length}-block SOP
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
-
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {/* Minimize Button (Studio parity) */}
-            <Button
-              size="small"
-              onClick={handleMinimize}
-              startIcon={<RemoveIcon sx={{ fontSize: '16px !important' }} />}
-              sx={{
-                bgcolor: 'rgba(0, 0, 0, 0.04)',
-                color: '#334155',
-                border: '1px solid rgba(0, 0, 0, 0.06)',
-                borderRadius: '12px',
-                px: 1.5,
-                py: 0.6,
-                fontWeight: 700,
-                fontSize: '0.78rem',
-                textTransform: 'none',
-                transition: 'all 0.2s ease',
-                '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.08)', transform: 'translateY(-1px)' },
-              }}
-            >
-              Minimize
-            </Button>
-
-            {/* Close Button */}
-            <IconButton
-              onClick={onClose}
-              sx={{
-                color: '#64748b',
-                bgcolor: 'rgba(0, 0, 0, 0.04)',
-                border: '1px solid rgba(0, 0, 0, 0.06)',
-                borderRadius: '12px',
-                p: 0.85,
-                transition: 'all 0.2s ease',
-                '&:hover': {
-                  bgcolor: 'rgba(239, 68, 68, 0.1)',
-                  color: '#ef4444',
-                  transform: 'scale(1.05)',
-                },
-              }}
-            >
-              <CloseIcon sx={{ fontSize: 20 }} />
-            </IconButton>
-          </Box>
-        </Box>
-      </Box>
-
-        {/* ──────────────────────────────────────────────────────────── */}
-        {/* SCROLLABLE SEQUENTIAL PROMPT BODY (NO TABS, SEAMLESS FLOW)    */}
-        {/* ──────────────────────────────────────────────────────────── */}
-        <Box
-          sx={{
-            flex: 1,
-            overflowY: 'auto',
-            p: { xs: 2.5, sm: 3.5 },
+            position: 'absolute',
+            top: { xs: 14, sm: 20 },
+            right: { xs: 14, sm: 24 },
             display: 'flex',
-            flexDirection: 'column',
-            gap: 4.5,
+            alignItems: 'center',
+            gap: 1.25,
+            zIndex: 50,
           }}
         >
+          {/* Floating Minimize Button */}
+          <IconButton
+            onClick={handleMinimize}
+            title="Minimize to dock"
+            sx={{
+              width: 38,
+              height: 38,
+              borderRadius: '50%',
+              bgcolor: 'rgba(255, 255, 255, 0.92)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              border: '1px solid rgba(0, 0, 0, 0.08)',
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
+              color: '#475569',
+              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:hover': {
+                bgcolor: '#ffffff',
+                color: '#0f172a',
+                transform: 'scale(1.08)',
+                boxShadow: '0 6px 20px rgba(0, 0, 0, 0.12)',
+              },
+            }}
+          >
+            <RemoveIcon sx={{ fontSize: 18 }} />
+          </IconButton>
+
+          {/* Floating Close Button */}
+          <IconButton
+            onClick={onClose}
+            title="Close assistant"
+            sx={{
+              width: 38,
+              height: 38,
+              borderRadius: '50%',
+              bgcolor: 'rgba(255, 255, 255, 0.92)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              border: '1px solid rgba(0, 0, 0, 0.08)',
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
+              color: '#475569',
+              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:hover': {
+                bgcolor: 'rgba(239, 68, 68, 0.1)',
+                color: '#ef4444',
+                transform: 'scale(1.08)',
+                boxShadow: '0 6px 20px rgba(239, 68, 68, 0.18)',
+              },
+            }}
+          >
+            <CloseIcon sx={{ fontSize: 18 }} />
+          </IconButton>
+        </Box>
+
+        {/* ── SCROLLABLE CANVAS ── */}
+        <Box sx={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+          {/* Mobile Bottom-Sheet Grabber Pill */}
+          {isMobile && (
+            <Box sx={{ width: 44, height: 4.5, borderRadius: 3, bgcolor: 'rgba(0,0,0,0.22)', mx: 'auto', mt: 1.5, mb: 0.5 }} />
+          )}
+
           {/* ──────────────────────────────────────────────────────────── */}
-          {/* VISUAL ANCHOR: DUAL SQUIRCLE INTERSECTION                     */}
+          {/* HERO SECTION                                                 */}
           {/* ──────────────────────────────────────────────────────────── */}
           <Box
             sx={{
+              position: 'relative',
+              pt: { xs: 6, sm: 8 },
+              pb: { xs: 2.5, sm: 3.5 },
+              px: { xs: 3, sm: 5 },
+              background: 'radial-gradient(ellipse at top, rgba(16, 185, 129, 0.09) 0%, rgba(59, 130, 246, 0.04) 55%, transparent 100%)',
               display: 'flex',
+              flexDirection: 'column',
               alignItems: 'center',
-              justifyContent: 'center',
-              py: 1,
+              textAlign: 'center',
             }}
           >
-            {/* Left Squircle: Commodity */}
+            {/* 1. Intersecting Squircles Image Pair */}
             <Box
               sx={{
-                width: { xs: 120, sm: 135 },
-                height: { xs: 120, sm: 135 },
-                borderRadius: '28px',
-                overflow: 'hidden',
-                position: 'relative',
-                backgroundImage: `url(${commodityMeta?.imageUrl || 'https://images.unsplash.com/photo-1599940824399-b87987ceb72a?auto=format&fit=crop&w=600&q=80'})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                border: '3px solid #ffffff',
-                boxShadow: '0 16px 36px -8px rgba(0, 0, 0, 0.22), 0 4px 12px rgba(0, 0, 0, 0.08)',
-                transform: 'rotate(-3deg)',
-                zIndex: 1,
-                transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                '&:hover': {
-                  transform: 'rotate(0deg) scale(1.06)',
-                  zIndex: 3,
-                  boxShadow: '0 20px 44px -8px rgba(0, 0, 0, 0.3)',
-                },
-              }}
-            >
-              <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 35%, rgba(0, 0, 0, 0.85) 100%)' }} />
-              <Box
-                sx={{
-                  position: 'absolute',
-                  bottom: 8,
-                  left: 6,
-                  right: 6,
-                  p: '3px 8px',
-                  borderRadius: '10px',
-                  bgcolor: 'rgba(0, 0, 0, 0.55)',
-                  backdropFilter: 'blur(8px)',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                }}
-              >
-                <Typography
-                  sx={{
-                    color: '#fff',
-                    fontSize: '0.72rem',
-                    fontWeight: 900,
-                    textAlign: 'center',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                >
-                  🌾 {commodity.split(',')[0]}
-                </Typography>
-              </Box>
-            </Box>
-
-            {/* Center Intersection Badge */}
-            <Box
-              sx={{
-                width: 34,
-                height: 34,
-                borderRadius: '50%',
-                bgcolor: '#0f172a',
-                color: '#f59e0b',
-                border: '3px solid #ffffff',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '0.9rem',
-                fontWeight: 900,
-                zIndex: 2,
-                mx: { xs: -2, sm: -2.5 },
-                boxShadow: '0 6px 18px rgba(0, 0, 0, 0.3)',
-              }}
-            >
-              ×
-            </Box>
-
-            {/* Right Squircle: Strategic Pillar */}
-            <Box
-              sx={{
-                width: { xs: 120, sm: 135 },
-                height: { xs: 120, sm: 135 },
-                borderRadius: '28px',
-                overflow: 'hidden',
+                mb: 2.5,
+                mt: { xs: 1.5, sm: 1 },
                 position: 'relative',
-                backgroundImage: `url(${challengeMeta?.imageUrl || '/images/challenges/insecurity.webp'}), linear-gradient(135deg, #1e3a8a, #0f172a)`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                border: '3px solid #ffffff',
-                boxShadow: '0 16px 36px -8px rgba(0, 0, 0, 0.22), 0 4px 12px rgba(0, 0, 0, 0.08)',
-                transform: 'rotate(3deg)',
-                zIndex: 1,
-                transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                '&:hover': {
-                  transform: 'rotate(0deg) scale(1.06)',
-                  zIndex: 3,
-                  boxShadow: '0 20px 44px -8px rgba(0, 0, 0, 0.3)',
-                },
+                overflow: 'visible',
               }}
             >
-              <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 35%, rgba(0, 0, 0, 0.85) 100%)' }} />
+              {/* Left Squircle: Commodity */}
               <Box
                 sx={{
-                  position: 'absolute',
-                  bottom: 8,
-                  left: 6,
-                  right: 6,
-                  p: '3px 8px',
-                  borderRadius: '10px',
-                  bgcolor: 'rgba(0, 0, 0, 0.55)',
-                  backdropFilter: 'blur(8px)',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  width: { xs: 104, sm: 118 },
+                  height: { xs: 104, sm: 118 },
+                  borderRadius: '28px',
+                  overflow: 'hidden',
+                  position: 'relative',
+                  backgroundImage: `url(${commodityMeta?.imageUrl || 'https://images.unsplash.com/photo-1599940824399-b87987ceb72a?auto=format&fit=crop&w=600&q=80'}), linear-gradient(135deg, #1e3a8a, #0f172a)`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  border: '2.5px solid rgba(255, 255, 255, 0.25)',
+                  boxShadow: '0 12px 32px rgba(0, 0, 0, 0.45)',
+                  transform: 'rotate(-3deg)',
+                  zIndex: 1,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    transform: 'rotate(0deg) scale(1.05)',
+                    zIndex: 3,
+                    borderColor: 'rgba(255, 255, 255, 0.55)',
+                    boxShadow: '0 20px 48px rgba(0, 0, 0, 0.55)',
+                  },
                 }}
               >
-                <Typography
-                  sx={{
-                    color: '#93c5fd',
-                    fontSize: '0.72rem',
-                    fontWeight: 900,
-                    textAlign: 'center',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                >
+                <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 35%, rgba(0, 0, 0, 0.85) 100%)' }} />
+                <Typography sx={{ position: 'absolute', bottom: 7, left: 4, right: 4, color: '#fff', fontSize: '0.7rem', fontWeight: 900, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  🌾 {commodity.split(',')[0]}
+                </Typography>
+              </Box>
+
+              {/* Center Intersection Badge */}
+              <Box
+                sx={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  bgcolor: '#0f172a',
+                  color: '#f59e0b',
+                  border: '2px solid rgba(255, 255, 255, 0.35)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.85rem',
+                  fontWeight: 900,
+                  zIndex: 2,
+                  mx: { xs: -1.75, sm: -2 },
+                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.6)',
+                }}
+              >
+                ×
+              </Box>
+
+              {/* Right Squircle: Strategic Challenge */}
+              <Box
+                sx={{
+                  width: { xs: 104, sm: 118 },
+                  height: { xs: 104, sm: 118 },
+                  borderRadius: '28px',
+                  overflow: 'hidden',
+                  position: 'relative',
+                  backgroundImage: `url(${challengeMeta.imageUrl}), linear-gradient(135deg, #1e3a8a, #0f172a)`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  border: '2.5px solid rgba(255, 255, 255, 0.25)',
+                  boxShadow: '0 12px 32px rgba(0, 0, 0, 0.45)',
+                  transform: 'rotate(3deg)',
+                  zIndex: 1,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    transform: 'rotate(0deg) scale(1.05)',
+                    zIndex: 3,
+                    borderColor: 'rgba(255, 255, 255, 0.55)',
+                    boxShadow: '0 20px 48px rgba(0, 0, 0, 0.55)',
+                  },
+                }}
+              >
+                <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 35%, rgba(0, 0, 0, 0.85) 100%)' }} />
+                <Typography sx={{ position: 'absolute', bottom: 7, left: 4, right: 4, color: '#93c5fd', fontSize: '0.7rem', fontWeight: 900, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   🛡️ {category.split(' ')[0]}
                 </Typography>
               </Box>
             </Box>
-          </Box>
 
-          {/* Tactical Context Chips & Quick Section Jumps */}
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 1,
-              flexWrap: 'wrap',
-              mt: -1.5,
-            }}
-          >
-            <Chip
-              label={`${formatMeta.emoji} ${formatMeta.label} (${eraMeta.label} Era)`}
-              size="small"
+            {/* 2. Centered Large Hero Text */}
+            <Typography
+              variant="h4"
               sx={{
-                fontWeight: 800,
-                fontSize: '0.72rem',
-                bgcolor: alpha(formatMeta.color, 0.12),
-                color: formatMeta.color,
-                border: `1px solid ${alpha(formatMeta.color, 0.25)}`,
+                fontWeight: 950,
+                color: '#0f172a',
+                letterSpacing: '-0.035em',
+                fontSize: { xs: '1.6rem', sm: '2.05rem' },
+                lineHeight: 1.18,
+                textAlign: 'center',
               }}
-            />
-            <Chip
-              label={`🎯 ${currentBlueprint.length} Blocks SOP`}
-              size="small"
-              sx={{ fontWeight: 800, fontSize: '0.72rem', bgcolor: '#f1f5f9', color: '#334155' }}
-            />
-            {subcategory && (
-              <Chip
-                label={`📍 ${subcategory}`}
-                size="small"
-                sx={{ fontWeight: 700, fontSize: '0.72rem', bgcolor: '#f1f5f9', color: '#475569' }}
-              />
-            )}
-            {pinnedClips.length > 0 && (
-              <Chip
-                label={`📎 ${pinnedClips.length} Attached Ground Notes`}
-                size="small"
-                sx={{
-                  fontWeight: 800,
-                  fontSize: '0.72rem',
-                  bgcolor: alpha('#059669', 0.12),
-                  color: '#059669',
-                  border: `1px solid ${alpha('#059669', 0.25)}`,
-                }}
-              />
-            )}
-          </Box>
+            >
+              Get Full Articles Here
+            </Typography>
 
-          {/* Quick Anchor Navigation Pills */}
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 1,
-              flexWrap: 'wrap',
-              bgcolor: 'rgba(0, 0, 0, 0.03)',
-              p: 1,
-              borderRadius: '16px',
-            }}
-          >
-            <Chip
-              label="DOC 2 · Drafting Engine"
-              size="small"
-              onClick={() => scrollToSection('editorial-doc-2')}
+            {/* 3. Centered Smaller Description */}
+            <Typography
               sx={{
-                fontWeight: 800,
-                fontSize: '0.72rem',
-                bgcolor: '#ffffff',
-                color: '#3b82f6',
-                cursor: 'pointer',
-                border: '1px solid rgba(59, 130, 246, 0.25)',
-                '&:hover': { bgcolor: alpha('#3b82f6', 0.1) },
+                color: '#64748b',
+                fontSize: { xs: '0.8rem', sm: '0.86rem' },
+                fontWeight: 500,
+                lineHeight: 1.55,
+                textAlign: 'center',
+                maxWidth: 520,
+                mt: 1.15,
               }}
-            />
-            <Chip
-              label="DOC 3 · Visuals & QA"
-              size="small"
-              onClick={() => scrollToSection('editorial-doc-3')}
-              sx={{
-                fontWeight: 800,
-                fontSize: '0.72rem',
-                bgcolor: '#ffffff',
-                color: '#f59e0b',
-                cursor: 'pointer',
-                border: '1px solid rgba(245, 158, 11, 0.25)',
-                '&:hover': { bgcolor: alpha('#f59e0b', 0.1) },
-              }}
-            />
-            <Chip
-              label="DOC 4 · CMS Compiler"
-              size="small"
-              onClick={() => scrollToSection('editorial-doc-4')}
-              sx={{
-                fontWeight: 800,
-                fontSize: '0.72rem',
-                bgcolor: '#ffffff',
-                color: '#10b981',
-                cursor: 'pointer',
-                border: '1px solid rgba(16, 185, 129, 0.25)',
-                '&:hover': { bgcolor: alpha('#10b981', 0.1) },
-              }}
-            />
-            <Chip
-              label="FAST INGEST · Canvas Relay"
-              size="small"
-              onClick={() => scrollToSection('editorial-doc-fast-ingest')}
-              sx={{
-                fontWeight: 900,
-                fontSize: '0.72rem',
-                bgcolor: '#0f172a',
-                color: '#10b981',
-                cursor: 'pointer',
-                border: '1px solid rgba(16, 185, 129, 0.45)',
-                '&:hover': { bgcolor: '#1e293b' },
-              }}
-            />
-          </Box>
+            >
+              Sequenced master prompts across Docs 2, 3 &amp; 4 for your {currentBlueprint.length}-block SOP framework.
+            </Typography>
 
-          {/* ──────────────────────────────────────────────────────────── */}
-          {/* SECTION 2: DOCUMENT 2 — DRAFTING ENGINE (2a, 2b, 2c)         */}
-          {/* ──────────────────────────────────────────────────────────── */}
-          <Box id="editorial-doc-2" sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, scrollMarginTop: '80px' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            {/* 4. Unified Pre-Planned Editorial Dossier Card */}
+            <Box
+              sx={{
+                width: '100%',
+                maxWidth: 620,
+                mt: 3,
+                p: { xs: 2.25, sm: 2.5 },
+                borderRadius: '22px',
+                background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%)',
+                backdropFilter: 'blur(24px)',
+                border: '1.5px solid rgba(255, 255, 255, 0.95)',
+                boxShadow: '0 10px 32px -6px rgba(15, 23, 42, 0.07), 0 2px 8px rgba(0, 0, 0, 0.02)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 1.75,
+                textAlign: 'left',
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                <Chip
+                  label={`${formatMeta.emoji} ${formatMeta.label} (${eraMeta.label} Era)`}
+                  size="small"
+                  sx={{
+                    fontWeight: 800,
+                    fontSize: '0.72rem',
+                    bgcolor: alpha(formatMeta.color, 0.12),
+                    color: formatMeta.color,
+                    border: `1px solid ${alpha(formatMeta.color, 0.25)}`,
+                  }}
+                />
+                <Chip
+                  label={`🎯 ${currentBlueprint.length} Blocks SOP`}
+                  size="small"
+                  sx={{ fontWeight: 800, fontSize: '0.72rem', bgcolor: '#f1f5f9', color: '#334155' }}
+                />
+                {cleanSubcategory && (
+                  <Chip
+                    label={`📍 ${cleanSubcategory}`}
+                    size="small"
+                    sx={{ fontWeight: 700, fontSize: '0.72rem', bgcolor: '#f1f5f9', color: '#475569' }}
+                  />
+                )}
+                {pinnedClips.length > 0 && (
+                  <Chip
+                    label={`📎 ${pinnedClips.length} Attached Ground Notes`}
+                    size="small"
+                    sx={{
+                      fontWeight: 800,
+                      fontSize: '0.72rem',
+                      bgcolor: alpha('#059669', 0.12),
+                      color: '#059669',
+                      border: `1px solid ${alpha('#059669', 0.25)}`,
+                    }}
+                  />
+                )}
+              </Box>
+
+              {/* Quick Anchor Navigation Pills */}
               <Box
                 sx={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: '50%',
-                  bgcolor: '#3b82f6',
-                  color: '#fff',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 900,
-                  fontSize: '0.9rem',
+                  gap: 1,
+                  flexWrap: 'wrap',
+                  pt: 0.5,
+                  borderTop: '1px solid rgba(0, 0, 0, 0.06)',
                 }}
               >
-                2
+                <Chip
+                  label="STEP 0 · Overview"
+                  size="small"
+                  onClick={() => scrollToSection('editorial-step-0')}
+                  sx={{
+                    fontWeight: 800,
+                    fontSize: '0.72rem',
+                    bgcolor: '#ffffff',
+                    color: '#0f172a',
+                    cursor: 'pointer',
+                    border: '1px solid rgba(15, 23, 42, 0.15)',
+                    '&:hover': { bgcolor: 'rgba(15, 23, 42, 0.06)' },
+                  }}
+                />
+                <Chip
+                  label="DOC 2 · Steps 1–3"
+                  size="small"
+                  onClick={() => scrollToSection('editorial-doc-2')}
+                  sx={{
+                    fontWeight: 800,
+                    fontSize: '0.72rem',
+                    bgcolor: '#ffffff',
+                    color: '#3b82f6',
+                    cursor: 'pointer',
+                    border: '1px solid rgba(59, 130, 246, 0.25)',
+                    '&:hover': { bgcolor: alpha('#3b82f6', 0.1) },
+                  }}
+                />
+                <Chip
+                  label="DOC 3 · Steps 4–6"
+                  size="small"
+                  onClick={() => scrollToSection('editorial-doc-3')}
+                  sx={{
+                    fontWeight: 800,
+                    fontSize: '0.72rem',
+                    bgcolor: '#ffffff',
+                    color: '#f59e0b',
+                    cursor: 'pointer',
+                    border: '1px solid rgba(245, 158, 11, 0.25)',
+                    '&:hover': { bgcolor: alpha('#f59e0b', 0.1) },
+                  }}
+                />
+                <Chip
+                  label="DOC 4 · Steps 7–9"
+                  size="small"
+                  onClick={() => scrollToSection('editorial-doc-4')}
+                  sx={{
+                    fontWeight: 800,
+                    fontSize: '0.72rem',
+                    bgcolor: '#ffffff',
+                    color: '#10b981',
+                    cursor: 'pointer',
+                    border: '1px solid rgba(16, 185, 129, 0.25)',
+                    '&:hover': { bgcolor: alpha('#10b981', 0.1) },
+                  }}
+                />
+                <Chip
+                  label="FAST INGEST · Step 10"
+                  size="small"
+                  onClick={() => scrollToSection('editorial-doc-fast-ingest')}
+                  sx={{
+                    fontWeight: 900,
+                    fontSize: '0.72rem',
+                    bgcolor: '#0f172a',
+                    color: '#10b981',
+                    cursor: 'pointer',
+                    border: '1px solid rgba(16, 185, 129, 0.45)',
+                    '&:hover': { bgcolor: '#1e293b' },
+                  }}
+                />
               </Box>
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.2 }}>
-                  Document 2: The Drafting Engine (2a, 2b, 2c)
+            </Box>
+          </Box>
+
+          {/* ──────────────────────────────────────────────────────────── */}
+          {/* STEP PROGRESSION BODY CONTENT                                */}
+          {/* ──────────────────────────────────────────────────────────── */}
+          <Box sx={{ px: { xs: 2.5, sm: 4.5 }, pb: { xs: 4, sm: 5 }, pt: { xs: 1, sm: 2 }, display: 'flex', flexDirection: 'column', gap: 4 }}>
+
+            {/* ──────────────────────────────────────────────────────────── */}
+            {/* STEP 0: WORKFLOW OVERVIEW                                    */}
+            {/* ──────────────────────────────────────────────────────────── */}
+            <Box id="editorial-step-0" sx={{ display: 'flex', flexDirection: 'column', gap: 2, scrollMarginTop: '80px' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box sx={{ width: 30, height: 30, borderRadius: '50%', bgcolor: '#0f172a', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.88rem' }}>
+                  0
+                </Box>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
+                  Step 0: How You Guide the AI
                 </Typography>
-                <Typography sx={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 600 }}>
-                  Map your {currentBlueprint.length} blocks, write brutal OSINT intelligence, and assemble component Markdown.
-                </Typography>
+              </Box>
+
+              {/* Step 0 Minimal Workflow Card */}
+              <Box
+                sx={{
+                  ml: { xs: 0, sm: '42px' },
+                  p: 2.25,
+                  borderRadius: '16px',
+                  bgcolor: '#ffffff',
+                  border: '1px solid rgba(15, 23, 42, 0.08)',
+                  boxShadow: '0 4px 16px rgba(15, 23, 42, 0.03)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 1.5,
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.25 }}>
+                  <Box sx={{ width: 22, height: 22, borderRadius: '50%', bgcolor: 'rgba(15, 23, 42, 0.08)', color: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 900, flexShrink: 0, mt: 0.15 }}>
+                    1
+                  </Box>
+                  <Typography sx={{ fontSize: '0.82rem', color: '#334155', fontWeight: 600, lineHeight: 1.5 }}>
+                    Your selected commodity, category, and {currentBlueprint.length}-block blueprint are auto-injected into each prompt below.
+                  </Typography>
+                </Box>
+
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.25 }}>
+                  <Box sx={{ width: 22, height: 22, borderRadius: '50%', bgcolor: 'rgba(15, 23, 42, 0.08)', color: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 900, flexShrink: 0, mt: 0.15 }}>
+                    2
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography sx={{ fontSize: '0.82rem', color: '#334155', fontWeight: 600, lineHeight: 1.5 }}>
+                      Copy and run each prompt sequentially (Steps 1 to 9) in your preferred AI model:
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1, flexWrap: 'wrap' }}>
+                      <Button
+                        size="small"
+                        component="a"
+                        href="https://chatgpt.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        endIcon={<OpenInNewIcon sx={{ fontSize: '13px !important' }} />}
+                        sx={{
+                          bgcolor: 'rgba(16, 163, 127, 0.08)',
+                          color: '#0d9488',
+                          border: '1px solid rgba(13, 148, 136, 0.3)',
+                          borderRadius: '8px',
+                          fontSize: '0.72rem',
+                          fontWeight: 800,
+                          textTransform: 'none',
+                          py: 0.35,
+                          px: 1.25,
+                          '&:hover': { bgcolor: 'rgba(16, 163, 127, 0.15)', borderColor: '#0d9488' },
+                        }}
+                      >
+                        ChatGPT
+                      </Button>
+                      <Button
+                        size="small"
+                        component="a"
+                        href="https://claude.ai"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        endIcon={<OpenInNewIcon sx={{ fontSize: '13px !important' }} />}
+                        sx={{
+                          bgcolor: 'rgba(217, 119, 6, 0.08)',
+                          color: '#d97706',
+                          border: '1px solid rgba(217, 119, 6, 0.3)',
+                          borderRadius: '8px',
+                          fontSize: '0.72rem',
+                          fontWeight: 800,
+                          textTransform: 'none',
+                          py: 0.35,
+                          px: 1.25,
+                          '&:hover': { bgcolor: 'rgba(217, 119, 6, 0.15)', borderColor: '#d97706' },
+                        }}
+                      >
+                        Claude
+                      </Button>
+                      <Button
+                        size="small"
+                        component="a"
+                        href="https://gemini.google.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        endIcon={<OpenInNewIcon sx={{ fontSize: '13px !important' }} />}
+                        sx={{
+                          bgcolor: 'rgba(37, 99, 235, 0.08)',
+                          color: '#2563eb',
+                          border: '1px solid rgba(37, 99, 235, 0.3)',
+                          borderRadius: '8px',
+                          fontSize: '0.72rem',
+                          fontWeight: 800,
+                          textTransform: 'none',
+                          py: 0.35,
+                          px: 1.25,
+                          '&:hover': { bgcolor: 'rgba(37, 99, 235, 0.15)', borderColor: '#2563eb' },
+                        }}
+                      >
+                        Gemini
+                      </Button>
+                    </Box>
+                  </Box>
+                </Box>
+
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.25 }}>
+                  <Box sx={{ width: 22, height: 22, borderRadius: '50%', bgcolor: 'rgba(15, 23, 42, 0.08)', color: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 900, flexShrink: 0, mt: 0.15 }}>
+                    3
+                  </Box>
+                  <Typography sx={{ fontSize: '0.82rem', color: '#334155', fontWeight: 600, lineHeight: 1.5 }}>
+                    Paste the Step 9 (DOC 4c) JSON output directly into Step 10 (Fast Ingest) to apply all {currentBlueprint.length} blocks to your canvas.
+                  </Typography>
+                </Box>
               </Box>
             </Box>
 
-            {doc2Prompts.map((p) => (
-              <Box key={p.key} sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                <PromptTerminalBox
-                  id={p.key}
-                  codeLabel={p.code}
-                  title={p.title}
-                  subtitle={p.role}
-                  prompt={p.prompt}
-                  colorTheme="#3b82f6"
-                  copyButtonLabel={`Copy ${p.code} Prompt`}
-                  copiedBannerText={`${p.code} Copied to Clipboard!`}
-                  isCopiedExternal={!!checklist[p.checkId]}
-                  onCopy={() => handleCopyPromptAutoCheck(p.key)}
-                />
-                <PromptChecklistItem
-                  id={p.checkId}
-                  text={p.checkText}
-                  checked={!!checklist[p.checkId]}
-                  onToggle={toggleChecklistItem}
-                  colorTheme="#3b82f6"
-                />
+            {/* ──────────────────────────────────────────────────────────── */}
+            {/* DOCUMENT 2: THE DRAFTING ENGINE (STEPS 1, 2, 3)              */}
+            {/* ──────────────────────────────────────────────────────────── */}
+            <Box id="editorial-doc-2" sx={{ display: 'flex', flexDirection: 'column', gap: 3, scrollMarginTop: '80px' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box
+                  sx={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: '50%',
+                    bgcolor: '#3b82f6',
+                    color: '#fff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 900,
+                    fontSize: '0.9rem',
+                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.35)',
+                  }}
+                >
+                  2
+                </Box>
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.2 }}>
+                    Document 2: The Drafting Engine (Steps 1, 2, 3)
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 600 }}>
+                    Map your {currentBlueprint.length} blocks, write brutal OSINT intelligence, and assemble component Markdown.
+                  </Typography>
+                </Box>
               </Box>
-            ))}
-          </Box>
 
-          {/* ──────────────────────────────────────────────────────────── */}
-          {/* SECTION 3: DOCUMENT 3 — ENRICHMENT, VISUALS & QA (3a, 3b, 3c)*/}
-          {/* ──────────────────────────────────────────────────────────── */}
-          <Box id="editorial-doc-3" sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, scrollMarginTop: '80px' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Box
-                sx={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: '50%',
-                  bgcolor: '#f59e0b',
-                  color: '#fff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 900,
-                  fontSize: '0.9rem',
-                }}
-              >
-                3
-              </Box>
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.2 }}>
-                  Document 3: Enrichment, Visual Assets &amp; QA (3a, 3b, 3c)
-                </Typography>
-                <Typography sx={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 600 }}>
-                  Verify live metrics, calibrate documentary photojournalism prompts, and map conversion CTAs.
-                </Typography>
-              </Box>
+              {doc2Prompts.map((p) => (
+                <Box id={`editorial-step-${p.stepNum}`} key={p.key} sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, scrollMarginTop: '80px' }}>
+                  {/* Step Header with Step Badge & Instructions */}
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                    <Box
+                      sx={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: '50%',
+                        bgcolor: '#3b82f6',
+                        color: '#fff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 900,
+                        fontSize: '0.88rem',
+                        flexShrink: 0,
+                        mt: 0.25,
+                        boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)',
+                      }}
+                    >
+                      {p.stepNum}
+                    </Box>
+
+                    <Box sx={{ flex: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.25, fontSize: '0.98rem' }}>
+                          Step {p.stepNum}: {p.title}
+                        </Typography>
+                        <Chip
+                          label={p.code}
+                          size="small"
+                          sx={{
+                            bgcolor: alpha('#3b82f6', 0.12),
+                            color: '#3b82f6',
+                            fontWeight: 800,
+                            fontSize: '0.68rem',
+                            height: 20,
+                            borderRadius: '6px',
+                            border: `1px solid ${alpha('#3b82f6', 0.3)}`,
+                          }}
+                        />
+                      </Box>
+
+                      {/* Clear Step Instruction */}
+                      <Typography sx={{ fontSize: '0.8rem', color: '#475569', fontWeight: 500, lineHeight: 1.5, mt: 0.5 }}>
+                        {p.instruction}
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  {/* Prompt Terminal Box & Checklist */}
+                  <Box sx={{ ml: { xs: 0, sm: '44px' }, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <PromptTerminalBox
+                      id={p.key}
+                      codeLabel={p.code}
+                      title={`Step ${p.stepNum} · ${p.code}: ${p.title}`}
+                      subtitle={p.role}
+                      prompt={p.prompt}
+                      colorTheme="#3b82f6"
+                      copyButtonLabel={`Copy Step ${p.stepNum} Prompt (${p.code})`}
+                      copiedBannerText={`Step ${p.stepNum} (${p.code}) Copied to Clipboard!`}
+                      isCopiedExternal={!!checklist[p.checkId]}
+                      onCopy={() => handleCopyPromptAutoCheck(p.key)}
+                    />
+                    <PromptChecklistItem
+                      id={p.checkId}
+                      text={p.checkText}
+                      checked={!!checklist[p.checkId]}
+                      onToggle={toggleChecklistItem}
+                      colorTheme="#3b82f6"
+                    />
+                  </Box>
+                </Box>
+              ))}
             </Box>
 
-            {doc3Prompts.map((p) => (
-              <Box key={p.key} sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                <PromptTerminalBox
-                  id={p.key}
-                  codeLabel={p.code}
-                  title={p.title}
-                  subtitle={p.role}
-                  prompt={p.prompt}
-                  colorTheme="#f59e0b"
-                  copyButtonLabel={`Copy ${p.code} Prompt`}
-                  copiedBannerText={`${p.code} Copied to Clipboard!`}
-                  isCopiedExternal={!!checklist[p.checkId]}
-                  onCopy={() => handleCopyPromptAutoCheck(p.key)}
-                />
-                <PromptChecklistItem
-                  id={p.checkId}
-                  text={p.checkText}
-                  checked={!!checklist[p.checkId]}
-                  onToggle={toggleChecklistItem}
-                  colorTheme="#f59e0b"
-                />
-              </Box>
-            ))}
-          </Box>
+            <Box sx={{ borderBottom: '1px solid rgba(0,0,0,0.06)', my: 0.5 }} />
 
-          {/* ──────────────────────────────────────────────────────────── */}
-          {/* SECTION 4: DOCUMENT 4 — REFINEMENT & INGESTION (4a, 4b, 4c)  */}
-          {/* ──────────────────────────────────────────────────────────── */}
-          <Box id="editorial-doc-4" sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pb: 2, scrollMarginTop: '80px' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Box
-                sx={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: '50%',
-                  bgcolor: '#10b981',
-                  color: '#fff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 900,
-                  fontSize: '0.9rem',
-                }}
-              >
-                4
+            {/* ──────────────────────────────────────────────────────────── */}
+            {/* DOCUMENT 3: ENRICHMENT, VISUAL ASSETS & QA (STEPS 4, 5, 6)   */}
+            {/* ──────────────────────────────────────────────────────────── */}
+            <Box id="editorial-doc-3" sx={{ display: 'flex', flexDirection: 'column', gap: 3, scrollMarginTop: '80px' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box
+                  sx={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: '50%',
+                    bgcolor: '#f59e0b',
+                    color: '#fff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 900,
+                    fontSize: '0.9rem',
+                    boxShadow: '0 4px 12px rgba(245, 158, 11, 0.35)',
+                  }}
+                >
+                  3
+                </Box>
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.2 }}>
+                    Document 3: Enrichment, Visual Assets &amp; QA (Steps 4, 5, 6)
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 600 }}>
+                    Verify live metrics, calibrate documentary photojournalism prompts, and map conversion CTAs.
+                  </Typography>
+                </Box>
               </Box>
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.2 }}>
-                  Document 4: Refinement, Typography &amp; CMS Compilation (4a, 4b, 4c)
-                </Typography>
-                <Typography sx={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 600 }}>
-                  Polish headlines, apply bionic bolding anchors, and compile into headless CMS JSON.
-                </Typography>
-              </Box>
+
+              {doc3Prompts.map((p) => (
+                <Box id={`editorial-step-${p.stepNum}`} key={p.key} sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, scrollMarginTop: '80px' }}>
+                  {/* Step Header with Step Badge & Instructions */}
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                    <Box
+                      sx={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: '50%',
+                        bgcolor: '#f59e0b',
+                        color: '#fff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 900,
+                        fontSize: '0.88rem',
+                        flexShrink: 0,
+                        mt: 0.25,
+                        boxShadow: '0 4px 12px rgba(245, 158, 11, 0.4)',
+                      }}
+                    >
+                      {p.stepNum}
+                    </Box>
+
+                    <Box sx={{ flex: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.25, fontSize: '0.98rem' }}>
+                          Step {p.stepNum}: {p.title}
+                        </Typography>
+                        <Chip
+                          label={p.code}
+                          size="small"
+                          sx={{
+                            bgcolor: alpha('#f59e0b', 0.12),
+                            color: '#f59e0b',
+                            fontWeight: 800,
+                            fontSize: '0.68rem',
+                            height: 20,
+                            borderRadius: '6px',
+                            border: `1px solid ${alpha('#f59e0b', 0.3)}`,
+                          }}
+                        />
+                      </Box>
+
+                      {/* Clear Step Instruction */}
+                      <Typography sx={{ fontSize: '0.8rem', color: '#475569', fontWeight: 500, lineHeight: 1.5, mt: 0.5 }}>
+                        {p.instruction}
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  {/* Prompt Terminal Box & Checklist */}
+                  <Box sx={{ ml: { xs: 0, sm: '44px' }, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <PromptTerminalBox
+                      id={p.key}
+                      codeLabel={p.code}
+                      title={`Step ${p.stepNum} · ${p.code}: ${p.title}`}
+                      subtitle={p.role}
+                      prompt={p.prompt}
+                      colorTheme="#f59e0b"
+                      copyButtonLabel={`Copy Step ${p.stepNum} Prompt (${p.code})`}
+                      copiedBannerText={`Step ${p.stepNum} (${p.code}) Copied to Clipboard!`}
+                      isCopiedExternal={!!checklist[p.checkId]}
+                      onCopy={() => handleCopyPromptAutoCheck(p.key)}
+                    />
+                    <PromptChecklistItem
+                      id={p.checkId}
+                      text={p.checkText}
+                      checked={!!checklist[p.checkId]}
+                      onToggle={toggleChecklistItem}
+                      colorTheme="#f59e0b"
+                    />
+                  </Box>
+                </Box>
+              ))}
             </Box>
 
-            {doc4Prompts.map((p) => (
-              <Box key={p.key} sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                <PromptTerminalBox
-                  id={p.key}
-                  codeLabel={p.code}
-                  title={p.title}
-                  subtitle={p.role}
-                  prompt={p.prompt}
+            <Box sx={{ borderBottom: '1px solid rgba(0,0,0,0.06)', my: 0.5 }} />
+
+            {/* ──────────────────────────────────────────────────────────── */}
+            {/* DOCUMENT 4: REFINEMENT & CMS COMPILATION (STEPS 7, 8, 9)     */}
+            {/* ──────────────────────────────────────────────────────────── */}
+            <Box id="editorial-doc-4" sx={{ display: 'flex', flexDirection: 'column', gap: 3, scrollMarginTop: '80px' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box
+                  sx={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: '50%',
+                    bgcolor: '#10b981',
+                    color: '#fff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 900,
+                    fontSize: '0.9rem',
+                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.35)',
+                  }}
+                >
+                  4
+                </Box>
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.2 }}>
+                    Document 4: Refinement, Typography &amp; CMS Compilation (Steps 7, 8, 9)
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 600 }}>
+                    Polish headlines, apply bionic bolding anchors, and compile into headless CMS JSON.
+                  </Typography>
+                </Box>
+              </Box>
+
+              {doc4Prompts.map((p) => (
+                <Box id={`editorial-step-${p.stepNum}`} key={p.key} sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, scrollMarginTop: '80px' }}>
+                  {/* Step Header with Step Badge & Instructions */}
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                    <Box
+                      sx={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: '50%',
+                        bgcolor: '#10b981',
+                        color: '#fff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 900,
+                        fontSize: '0.88rem',
+                        flexShrink: 0,
+                        mt: 0.25,
+                        boxShadow: '0 4px 12px rgba(16, 185, 129, 0.4)',
+                      }}
+                    >
+                      {p.stepNum}
+                    </Box>
+
+                    <Box sx={{ flex: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.25, fontSize: '0.98rem' }}>
+                          Step {p.stepNum}: {p.title}
+                        </Typography>
+                        <Chip
+                          label={p.code}
+                          size="small"
+                          sx={{
+                            bgcolor: alpha('#10b981', 0.12),
+                            color: '#10b981',
+                            fontWeight: 800,
+                            fontSize: '0.68rem',
+                            height: 20,
+                            borderRadius: '6px',
+                            border: `1px solid ${alpha('#10b981', 0.3)}`,
+                          }}
+                        />
+                      </Box>
+
+                      {/* Clear Step Instruction */}
+                      <Typography sx={{ fontSize: '0.8rem', color: '#475569', fontWeight: 500, lineHeight: 1.5, mt: 0.5 }}>
+                        {p.instruction}
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  {/* Prompt Terminal Box & Checklist */}
+                  <Box sx={{ ml: { xs: 0, sm: '44px' }, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <PromptTerminalBox
+                      id={p.key}
+                      codeLabel={p.code}
+                      title={`Step ${p.stepNum} · ${p.code}: ${p.title}`}
+                      subtitle={p.role}
+                      prompt={p.prompt}
+                      colorTheme="#10b981"
+                      copyButtonLabel={`Copy Step ${p.stepNum} Prompt (${p.code})`}
+                      copiedBannerText={`Step ${p.stepNum} (${p.code}) Copied to Clipboard!`}
+                      isCopiedExternal={!!checklist[p.checkId]}
+                      onCopy={() => handleCopyPromptAutoCheck(p.key)}
+                    />
+                    <PromptChecklistItem
+                      id={p.checkId}
+                      text={p.checkText}
+                      checked={!!checklist[p.checkId]}
+                      onToggle={toggleChecklistItem}
+                      colorTheme="#10b981"
+                    />
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+
+            <Box sx={{ borderBottom: '1px solid rgba(0,0,0,0.06)', my: 0.5 }} />
+
+            {/* ──────────────────────────────────────────────────────────── */}
+            {/* STEP 10: FAST INGEST — INGEST TO CANVAS                       */}
+            {/* ──────────────────────────────────────────────────────────── */}
+            <Box id="editorial-doc-fast-ingest" sx={{ display: 'flex', flexDirection: 'column', gap: 1.75, scrollMarginTop: '80px', mt: 1, pb: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                <Box
+                  sx={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: '50%',
+                    bgcolor: '#0f172a',
+                    color: '#10b981',
+                    border: '1.5px solid #10b981',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 900,
+                    fontSize: '0.82rem',
+                    flexShrink: 0,
+                    mt: 0.25,
+                    boxShadow: '0 4px 14px rgba(16, 185, 129, 0.25)',
+                  }}
+                >
+                  10
+                </Box>
+
+                <Box sx={{ flex: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.25, fontSize: '0.98rem' }}>
+                      Step 10: Ingest &amp; Apply All {currentBlueprint.length} Blocks to Canvas
+                    </Typography>
+                    <Chip
+                      label="FAST INGEST"
+                      size="small"
+                      sx={{
+                        bgcolor: '#0f172a',
+                        color: '#10b981',
+                        fontWeight: 900,
+                        fontSize: '0.68rem',
+                        height: 20,
+                        borderRadius: '6px',
+                        border: '1px solid rgba(16, 185, 129, 0.45)',
+                      }}
+                    />
+                  </Box>
+                  <Typography sx={{ fontSize: '0.8rem', color: '#475569', fontWeight: 500, lineHeight: 1.5, mt: 0.5 }}>
+                    Paste the raw JSON payload produced by Step 9 (DOC 4c) to instantly populate all {currentBlueprint.length} blocks onto your canvas in one pass.
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Box sx={{ ml: { xs: 0, sm: '44px' } }}>
+                <PromptFastIngestBox
+                  value={rawIngestPayload}
+                  onChange={(val) => {
+                    setRawIngestPayload(val);
+                    savePayloadToStorage(val);
+                    if (ingestError) setIngestError(null);
+                  }}
+                  onIngest={handleParseAndIngest}
                   colorTheme="#10b981"
-                  copyButtonLabel={`Copy ${p.code} Prompt`}
-                  copiedBannerText={`${p.code} Copied to Clipboard!`}
-                  isCopiedExternal={!!checklist[p.checkId]}
-                  onCopy={() => handleCopyPromptAutoCheck(p.key)}
-                />
-                <PromptChecklistItem
-                  id={p.checkId}
-                  text={p.checkText}
-                  checked={!!checklist[p.checkId]}
-                  onToggle={toggleChecklistItem}
-                  colorTheme="#10b981"
+                  liveBlockCount={detectedBlockCount}
+                  expectedBlockCount={currentBlueprint.length}
+                  error={ingestError}
+                  success={ingestSuccess}
+                  buttonLabel={`Ingest & Apply All ${currentBlueprint.length} Blocks to Canvas`}
                 />
               </Box>
-            ))}
-
-            <Box id="editorial-doc-fast-ingest" sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, scrollMarginTop: '80px', mt: 1.5, pb: 1 }}>
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.25, fontSize: '1.05rem' }}>
-                  Ingest to Canvas
-                </Typography>
-                <Typography sx={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 500, mt: 0.25 }}>
-                  Paste Doc 4c JSON payload to populate all {currentBlueprint.length} blocks in one pass.
-                </Typography>
-              </Box>
-
-              <PromptFastIngestBox
-                value={rawIngestPayload}
-                onChange={(val) => {
-                  setRawIngestPayload(val);
-                  savePayloadToStorage(val);
-                  if (ingestError) setIngestError(null);
-                }}
-                onIngest={handleParseAndIngest}
-                colorTheme="#10b981"
-                liveBlockCount={detectedBlockCount}
-                expectedBlockCount={currentBlueprint.length}
-                error={ingestError}
-                success={ingestSuccess}
-                buttonLabel="Ingest & Apply All Blocks to Canvas"
-              />
             </Box>
+
           </Box>
         </Box>
       </Drawer>

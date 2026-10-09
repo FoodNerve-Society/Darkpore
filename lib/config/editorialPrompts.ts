@@ -523,25 +523,54 @@ export function parseDoc1cArticles(rawText: string, fallbackCommodity = 'Soybean
   return outlines;
 }
 
+const KNOWN_COUNTRIES_LIST = [
+  'nigeria', 'costa rica', 'ghana', 'kenya', 'indonesia', 'india', 'brazil',
+  'spain', 'italy', 'netherlands', 'australia', 'united states', 'usa', 'us',
+  'united kingdom', 'uk', 'china', 'south africa', "côte d'ivoire", 'cote d\'ivoire',
+  'ivory coast', 'senegal', 'gambia', 'benin', 'togo', 'cameroon', 'chad', 'niger',
+  'mali', 'burkina faso', 'egypt', 'ethiopia', 'rwanda', 'tanzania', 'uganda',
+  'malawi', 'zambia', 'zimbabwe', 'morocco', 'algeria', 'tunisia', 'vietnam',
+  'thailand', 'malaysia', 'philippines', 'mexico', 'colombia', 'argentina', 'peru',
+  'chile', 'ecuador', 'guatemala', 'honduras', 'nicaragua', 'panama', 'dominican republic',
+  'france', 'germany', 'canada', 'turkey', 'saudi arabia', 'uae', 'oman', 'qatar',
+  'ireland', 'poland', 'norway', 'sweden', 'denmark', 'belgium', 'switzerland',
+  'austria', 'portugal', 'greece', 'new zealand', 'japan', 'south korea', 'singapore'
+];
+
+function toTitleCase(str: string): string {
+  return str
+    .split(' ')
+    .map(w => w ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : '')
+    .join(' ');
+}
+
 /**
- * Normalizes any micro-geography or raw AI location string to "State, Country"
- * (e.g. "Dawanau Grain Market, Kano State, Nigeria" -> "Kano, Nigeria")
+ * Normalizes a single geography block, stripping deep hierarchy arrows and LGAs down to "State, Country" or "Country"
  */
-export function formatLocationStateCountry(rawLocation?: string, fallbackText?: string): string {
-  const textToScan = (rawLocation && rawLocation.trim() !== 'National Transit Hub')
-    ? rawLocation
-    : (fallbackText || rawLocation || '');
+function normalizeSingleLocation(locStr: string): string {
+  if (!locStr || typeof locStr !== 'string') return '';
 
-  if (!textToScan || typeof textToScan !== 'string') {
-    return 'Nigeria';
-  }
-
-  const cleaned = textToScan
+  const cleaned = locStr
     .replace(/[*_`[\]()]/g, ' ')
+    .replace(/level\s*\d+\s*(?:micro[-_ ]geography)?/gi, '')
     .replace(/\s+/g, ' ')
     .trim();
 
-  if (!cleaned) return 'Nigeria';
+  if (!cleaned) return '';
+
+  // Split hierarchy arrows (➔, ->, -->, >) OR commas (,)
+  let segments = cleaned
+    .split(/(?:➔|-->|->|>|,)/)
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  // Filter out continent markers
+  segments = segments.filter(s => !/^(africa|west africa|east africa|sub-saharan africa|asia|europe|americas|latin america|south america|north america)$/i.test(s));
+
+  // Filter out generic boilerplate labels
+  segments = segments.filter(s => !/^(cluster|hub|district|terminal market|aggregation node|transit hub|national transit hub)$/i.test(s));
+
+  if (segments.length === 0) return '';
 
   const NIGERIAN_STATES = [
     'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno',
@@ -599,43 +628,122 @@ export function formatLocationStateCountry(rawLocation?: string, fallbackText?: 
     'fct': 'Abuja',
   };
 
-  const lower = cleaned.toLowerCase();
-
-  // 1. Direct match on Nigerian states
+  // 1. Check if the string explicitly contains a Nigerian State or Hub City
+  let matchedState = '';
   for (const st of NIGERIAN_STATES) {
     const stRegex = new RegExp(`\\b${st.toLowerCase()}(?:\\s+state)?\\b`, 'i');
     if (stRegex.test(cleaned)) {
-      const displayState = st === 'FCT' ? 'Abuja' : st;
-      return `${displayState}, Nigeria`;
+      matchedState = st === 'FCT' ? 'Abuja' : st;
+      break;
     }
   }
 
-  // 2. Direct match on major agricultural hubs / cities
-  for (const [city, state] of Object.entries(CITY_TO_STATE)) {
-    const cityRegex = new RegExp(`\\b${city}\\b`, 'i');
-    if (cityRegex.test(lower)) {
-      return `${state}, Nigeria`;
+  if (!matchedState) {
+    for (const [city, st] of Object.entries(CITY_TO_STATE)) {
+      const cRegex = new RegExp(`\\b${city}\\b`, 'i');
+      if (cRegex.test(cleaned.toLowerCase())) {
+        matchedState = st;
+        break;
+      }
     }
   }
 
-  // 3. Comma-separated fallback (e.g., regional / international)
-  const parts = cleaned
-    .split(',')
-    .map(p => p.trim())
-    .filter(p => p.length > 0 && !/^(africa|west africa|east africa|sub-saharan africa)$/i.test(p));
-
-  if (parts.length >= 2) {
-    const country = parts[parts.length - 1];
-    let stateOrCity = parts[parts.length - 2];
-    stateOrCity = stateOrCity.replace(/\s+(state|region|province|county|lga)$/i, '').trim();
-    return `${stateOrCity}, ${country}`;
+  // 2. Check for Country in the segments
+  let matchedCountry = '';
+  for (let i = segments.length - 1; i >= 0; i--) {
+    const sLower = segments[i].toLowerCase();
+    for (const c of KNOWN_COUNTRIES_LIST) {
+      if (sLower === c || sLower.includes(c)) {
+        matchedCountry = toTitleCase(c);
+        if (c === 'usa' || c === 'us') matchedCountry = 'United States';
+        if (c === 'uk') matchedCountry = 'United Kingdom';
+        if (c === 'cote d\'ivoire' || c === 'ivory coast') matchedCountry = "Côte d'Ivoire";
+        break;
+      }
+    }
+    if (matchedCountry) break;
   }
 
-  if (parts.length === 1 && parts[0]) {
-    const single = parts[0].replace(/\s+(state|region|province|county|lga)$/i, '').trim();
-    if (/nigeria/i.test(single)) return 'Nigeria';
-    return `${single}, Nigeria`;
+  // 3. Assemble clean "State, Country"
+  // Case A: A Nigerian state or city was detected
+  if (matchedState) {
+    if (!matchedCountry || matchedCountry.toLowerCase() === 'nigeria') {
+      return `${matchedState}, Nigeria`;
+    }
+    return `${matchedState}, ${matchedCountry}`;
   }
 
-  return 'Nigeria';
+  // Case B: A known country was detected
+  if (matchedCountry) {
+    const nonCountrySegs = segments.filter(s => !s.toLowerCase().includes(matchedCountry.toLowerCase()));
+    if (nonCountrySegs.length > 0) {
+      let stateSeg = nonCountrySegs[nonCountrySegs.length - 1];
+      stateSeg = stateSeg.replace(/\s+(state|region|province|county|department|district|lga)$/i, '').trim();
+      if (stateSeg && stateSeg.toLowerCase() !== matchedCountry.toLowerCase()) {
+        return `${toTitleCase(stateSeg)}, ${matchedCountry}`;
+      }
+    }
+    return matchedCountry;
+  }
+
+  // Case C: Neither known Nigerian state nor known country
+  if (segments.length >= 2) {
+    const s = segments[segments.length - 2].replace(/\s+(state|region|province|county|lga)$/i, '').trim();
+    const c = segments[segments.length - 1].trim();
+    return `${toTitleCase(s)}, ${toTitleCase(c)}`;
+  }
+
+  if (segments.length === 1) {
+    const s = segments[0].replace(/\s+(state|region|province|county|lga)$/i, '').trim();
+    return toTitleCase(s);
+  }
+
+  return '';
+}
+
+/**
+ * Normalizes any micro-geography or comparison string:
+ * - If single: returns "State, Country" (e.g. "Kano, Nigeria", "San José, Costa Rica", "Spain")
+ * - If comparison: returns "State, Country ➔ State, Country" (e.g. "Costa Rica ➔ Nigeria", "San José, Costa Rica ➔ Kano, Nigeria")
+ */
+export function formatLocationStateCountry(rawLocation?: string, fallbackText?: string): string {
+  const textToScan = (rawLocation && rawLocation.trim() !== 'National Transit Hub')
+    ? rawLocation
+    : (fallbackText || rawLocation || '');
+
+  if (!textToScan || typeof textToScan !== 'string') {
+    return '';
+  }
+
+  const cleaned = textToScan.trim();
+  if (!cleaned) return '';
+
+  // ── 1. COMPARISON DETECTION ──
+  // Check for comparison separators: ↔, <->, <-->, vs, vs., versus, or ;
+  const compRegex = /\s*(?:↔|<->|<-->|\bvs\.?\b|\bversus\b|;)\s*/i;
+
+  if (compRegex.test(cleaned)) {
+    const halves = cleaned.split(compRegex);
+    if (halves.length >= 2 && halves[0].trim() && halves[1].trim()) {
+      const locA = normalizeSingleLocation(halves[0].trim());
+      const locB = normalizeSingleLocation(halves[1].trim());
+      if (locA && locB) {
+        return `${locA} ➔ ${locB}`;
+      }
+      return locA || locB || '';
+    }
+  }
+
+  // Also check if text has comparison with arrows between two different locations/countries
+  const arrowMatch = cleaned.match(/^(.+?)\s*(?:-->|->)\s*(.+)$/);
+  if (arrowMatch) {
+    const locA = normalizeSingleLocation(arrowMatch[1]);
+    const locB = normalizeSingleLocation(arrowMatch[2]);
+    if (locA && locB && locA.toLowerCase() !== locB.toLowerCase()) {
+      return `${locA} ➔ ${locB}`;
+    }
+  }
+
+  // ── 2. SINGLE LOCATION NORMALIZATION ──
+  return normalizeSingleLocation(cleaned);
 }
