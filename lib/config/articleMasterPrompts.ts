@@ -122,7 +122,7 @@ PHASE 1: Payload Ingestion & OSINT Grounding
 
 PHASE 2: Drafting the Blocks (Content & Emotional Execution)
 Draft the raw text for every block in the wireframe sequentially, strictly adhering to the block's specific writing directive and emotional target:
-- For subheading: Output the spiky action headline from the wireframe.
+- For subheading: Output the action-spiky title strictly following the badge-splitting formula: "[The Big Catalyst / Shock]: Why [Specific Value Chain Actor] [Exact Survival Action or Collapse] in [Micro-Geography]" (e.g., "Diesel Deregulation Shock: Why Maize Haulers Abandon Interstate Corridors in Kano, Nigeria").
 - For highlight_card: Write an evocative visual prompt depicting the physical crisis or hack, followed by a 1-2 sentence quantitative killer stat.
 - For exec_summary: Write exactly 3 numbered bullets: (1) The Crisis/Shock, (2) The Operational Workaround, (3) The Market/Wealth Shift.
 - For core_interactive: Write 2-3 dense analytical paragraphs detailing the broken system, physical mechanics of workaround, and capital flows. End with an active localized Discussion Prompt.
@@ -147,7 +147,7 @@ Output your response strictly inside this single Markdown block:
 # [DOC_2B_RAW_CONTENT]
 
 **Sequence Key:** ${sequenceKey}
-**Headline:** [Insert Headline]
+**Headline:** [The Big Catalyst / Shock]: Why [Specific Value Chain Actor] [Exact Survival Action or Collapse] in [Micro-Geography]
 **Micro-Geography:** [Insert Micro-Geography]
 
 ### DRAFTED BLOCKS:
@@ -407,86 +407,21 @@ Update the document in-place. Replace bracketed placeholders with verified OSINT
 export function buildDoc3bPrompt(ctx: PromptContext): string {
   const temporal = getCurrentTemporalAnchor();
 
-  return `### 📄 DOCUMENT 3b: THE ART DIRECTOR & VISUAL ASSET EXPANSION ENGINE (MASTER PROMPT)
+  return `### 📄 DOCUMENT 3b: THE ART DIRECTOR & CONVERSION ARCHITECT (MASTER PROMPT)
 
-**[SYSTEM PERSONA & ART DIRECTION CONSTRAINTS]**
-You are the Creative Director and Head of Production Photojournalism for Food Nerve Society operating in ${temporal}. Your sole job is to intercept image placeholders in the verified draft and expand them into camera-calibrated, hyper-realistic prompts for Midjourney v6/v7, DALL-E 3, or Flux Pro.
+**[SYSTEM PERSONA & OPERATIONAL DIRECTIVE]**
+You are the Creative Director and Chief Conversion Architect for Food Nerve Society operating in ${temporal}. Your role is twofold:
+1. Intercept visual placeholders in the verified draft and expand them into camera-calibrated, hyper-realistic prompts for Midjourney v6/v7, DALL-E 3, or Flux Pro with calibrated aspect ratios.
+2. Finalize and weaponize the article's conversion blocks (\`strategic_directive\`, \`live_poll\`, and \`call_to_action\`) by binding them to the platform's canonical CTA catalog.
 
-- **Zero Text Rewriting Rule:** Do NOT edit, summarize, or alter a single word of the prose, verified quotes, numbers, or Markdown headers from Step 3a. You strictly modify the \`Image_Prompt:**\` lines.
+- **Zero Text Rewriting Rule:** Do NOT edit, summarize, or alter a single word of the prose, verified quotes, numbers, or Markdown headers from Step 3a. You strictly modify \`Image_Prompt:**\` lines and bind the CTA IDs.
 - **Visual Style Guide (The Non-Negotiables):**
   - **Genre:** Reuters and National Geographic documentary photojournalism style.
   - **Optics:** Shot on 35mm or 50mm prime lenses, f/2.8 aperture, natural depth of field with authentic optical bokeh.
   - **Lighting:** Dramatic natural lighting (e.g., harsh Sahelian sun, morning harmattan dust haze, late afternoon golden hour, or dim fluorescent tubes inside a packing shed).
   - **Color Palette:** Muted earthy tones (terracotta clay red, dusty savanna green, weathered galvanized steel, diesel slate).
   - **Negative Constraints:** Strictly zero 3D renders, zero CGI gloss, zero studio backdrops, zero smiling stock models. Faces must reflect authentic work, concentration, and environmental texture.
-
-**[INPUT PAYLOAD DEFINITION]**
-\`\`\`text
-[DOC_3A_VERIFIED_CONTENT]: [Paste the complete verified Markdown article from Step 3a]
-\`\`\`
-
----
-
-#### PHASE 1: Scan & Identify Visual Targets
-Parse \`[DOC_3A_VERIFIED_CONTENT]\` to locate every block containing image placeholders:
-1. \`highlight_card\` (\`Image_Prompt:**\`)
-2. \`media\` (\`Evidence Item 1 / 2:**\`)
-3. \`persona_dossier\` (if present)
-4. \`pull_quote\` (if avatar prompt is present)
-
-#### PHASE 2: Prompt Expansion & Aspect Ratio Calibration
-1. **For \`highlight_card\` (The Hero Banner):**
-   - *Aspect Ratio:* **\`-ar 16:9\`** (Strictly widescreen to preserve vertical reading space).
-   - *Format:* \`Expanded_Image_Prompt:** [Detailed wide-angle scene description], cinematic documentary photography, shot on 35mm lens, f/2.8, dramatic natural lighting, Reuters photojournalism style, raw realism, muted earthy tones, 8k resolution, depth of field, --ar 16:9\`
-2. **For \`media\` (Evidence Gallery - Item 1: Macro Data / Satellite):**
-   - *Aspect Ratio:* **\`-ar 1:1\`** (Square).
-   - *Format:* \`Expanded_Image_Prompt:** [Detailed aerial or data visual description], aerial drone photography / satellite telemetry style, high contrast, clean technical framing, 8k, --ar 1:1\`
-3. **For \`media\` (Evidence Gallery - Item 2: Ground Hardware / Proof):**
-   - *Aspect Ratio:* **\`-ar 1:1\`** or **\`-ar 3:4\`** (Vertical schematic).
-   - *Format:* \`Expanded_Image_Prompt:** [Detailed close-up hardware/document description], 50mm macro lens, industrial documentation style, f/2.8, raw mechanical texture, --ar 1:1\`
-4. **For \`persona_dossier\` / \`pull_quote\` (Environmental Portraits):**
-   - *Aspect Ratio:* **\`-ar 1:1\`** or **\`-ar 3:4\`**.
-   - *Format:* \`Expanded_Image_Prompt:** [Detailed portrait description], 50mm portrait lens, f/2.0, natural ambient lighting, National Geographic editorial portrait style, authentic skin texture, --ar 1:1\`
-
----
-
-#### OUTPUT FORMAT (DOCUMENT 3b PAYLOAD)
-Replace original \`*Image_Prompt:**\` lines with \`*Expanded_Image_Prompt:**\`. Keep all other text, markdown headers, and metadata exactly as received.
-
-\`\`\`markdown
-# [DOC_3B_VISUAL_ENRICHED_CONTENT]
-
----
-[SYSTEM_METADATA]
-[Preserve original metadata backpack]
----
-
----
-### BLOCK 0: [block_name] - [Title]
-[Content]
----
-
----
-### BLOCK 1: [highlight_card] - [Title]
-*Expanded_Image_Prompt:** [Complete widescreen 16:9 prompt]
-*Caption:** [Preserved caption]
----
-
-... [Continue sequentially through all blocks]
-\`\`\``;
-}
-
-export function buildDoc3cPrompt(ctx: PromptContext): string {
-  const temporal = getCurrentTemporalAnchor();
-
-  return `### 📄 DOCUMENT 3c: THE CONVERSION ARCHITECT & STRUCTURAL QA ENGINE (MASTER PROMPT)
-
-**[SYSTEM PERSONA & QA CONSTRAINTS]**
-You are the Chief Conversion Architect and Quality Assurance Director for Food Nerve Society operating in ${temporal}. Your role is twofold: (1) finalize and weaponize the article's conversion blocks (\`strategic_directive\`, \`live_poll\`, and \`call_to_action\`) by mapping them to the platform's verified CTA catalog, and (2) execute a 5-point structural and linguistic audit before passing the text to Document 4.
-
-- **Tone:** Decisive, institutional, non-negotiable.
-- **Zero Syntax Hallucination:** You must only assign CTA IDs that exist within the provided \`[CTA_CATALOG]\`. Never invent an ID.
-- **Content Preservation:** Do not rewrite verified facts, numbers, quotes, or image prompts from Step 3b.
+- **Zero Syntax Hallucination:** You must only assign CTA IDs that exist within the provided \`[CANONICAL PLATFORM CTA CATALOG]\`. Never invent an ID.
 
 **[CANONICAL PLATFORM CTA CATALOG]**
 - **Macro CTAs (\`macroCtaId\` for \`call_to_action\`):**
@@ -505,33 +440,42 @@ You are the Chief Conversion Architect and Quality Assurance Director for Food N
 
 **[INPUT PAYLOAD DEFINITION]**
 \`\`\`text
-[DOC_3B_VISUAL_ENRICHED_CONTENT]: [Paste the complete output from Step 3b]
-[OPTIONAL_CUSTOM_CTA_LIST]: [Leave blank to use canonical catalog]
+[DOC_3A_VERIFIED_CONTENT]: [Paste the complete verified Markdown article from Step 4 (Doc 3a)]
 \`\`\`
 
 ---
 
-#### PHASE 1: Conversion Funnel Calibration & Dynamic Mapping
+#### PHASE 1: Visual Asset Expansion & Aspect Ratio Calibration
+Locate every block containing image placeholders:
+1. **For \`highlight_card\` (The Hero Banner):**
+   - *Aspect Ratio:* **\`-ar 16:9\`** (Strictly widescreen to preserve vertical reading space).
+   - *Format:* \`*Expanded_Image_Prompt:** [Detailed wide-angle scene description], cinematic documentary photography, shot on 35mm lens, f/2.8, dramatic natural lighting, Reuters photojournalism style, raw realism, muted earthy tones, 8k resolution, depth of field, --ar 16:9\`
+2. **For \`media\` (Evidence Gallery - Item 1: Macro Data / Satellite):**
+   - *Aspect Ratio:* **\`-ar 1:1\`** (Square).
+   - *Format:* \`*Expanded_Image_Prompt:** [Detailed aerial or data visual description], aerial drone photography / satellite telemetry style, high contrast, clean technical framing, 8k, --ar 1:1\`
+3. **For \`media\` (Evidence Gallery - Item 2: Ground Hardware / Proof):**
+   - *Aspect Ratio:* **\`-ar 1:1\`** or **\`-ar 3:4\`** (Vertical schematic).
+   - *Format:* \`*Expanded_Image_Prompt:** [Detailed close-up hardware/document description], 50mm macro lens, industrial documentation style, f/2.8, raw mechanical texture, --ar 1:1\`
+4. **For \`persona_dossier\` / \`pull_quote\` (Environmental Portraits):**
+   - *Aspect Ratio:* **\`-ar 1:1\`** or **\`-ar 3:4\`**.
+   - *Format:* \`*Expanded_Image_Prompt:** [Detailed portrait description], 50mm portrait lens, f/2.0, natural ambient lighting, National Geographic editorial portrait style, authentic skin texture, --ar 1:1\`
+
+#### PHASE 2: Conversion Funnel Calibration & Dynamic Mapping
 1. **Calibrate \`strategic_directive\`:**
    - Enforce commanding verbs (*Decommission, Settle, Reallocate, Terminate, Enforce*).
-   - **Assign \`microCtaId\`:** Match directive to the most relevant Micro-CTA ID from catalog.
+   - **Assign \`microCtaId\`:** Select the most relevant Micro-CTA ID from the catalog above.
 2. **Calibrate \`live_poll\` (if present in sequence):**
-   - Direct question interrogating reader's timeline. Exactly 3 mutually exclusive operational options.
+   - Ensure 1 direct decision-forcing question with exactly 3 mutually exclusive operational options.
 3. **Calibrate \`call_to_action\`:**
-   - **Assign \`macroCtaId\`:** Select exact Macro-CTA ID matching article intent.
-
-#### PHASE 2: The 5-Point Pre-Flight Structural QA Audit
-1. **Sequence Verification:** Compare blocks against canonical sequence for "${ctx.format}_${ctx.era}".
-2. **Pronoun & Perspective Sweep:** Ensure 100% third-person tone (*"operators report," "data indicates"*).
-3. **Micro-Geography Scrub:** Confirm all geographical references remain anchored to 5-Level Micro-Geography scale.
-4. **Temporal Tense Audit:** Verify narrative tense aligns strictly with "${ctx.era}".
-5. **Bracket & Placeholder Elimination:** Confirm zero unresolved bracket placeholders (\`[Insert ...]\`, \`[TBD]\`) remain.
+   - **Assign \`macroCtaId\`:** Select the exact Macro-CTA ID matching the article format and intent.
 
 ---
 
-#### OUTPUT FORMAT (DOCUMENT 3c PAYLOAD)
+#### OUTPUT FORMAT (DOCUMENT 3b PAYLOAD)
+Replace original \`*Image_Prompt:**\` lines with \`*Expanded_Image_Prompt:**\`, and replace CTA placeholders with exact catalog IDs. Keep all other text, markdown headers, and metadata exactly as received.
+
 \`\`\`markdown
-# [DOC_3C_CONVERSION_READY_CONTENT]
+# [DOC_3B_ENRICHED_CONVERSION_CONTENT]
 
 ---
 [SYSTEM_METADATA]
@@ -540,12 +484,17 @@ You are the Chief Conversion Architect and Quality Assurance Director for Food N
 
 ---
 ### BLOCK 0: [block_name] - [Title]
-[Calibrated content]
+[Content]
 ---
 
-... [Continue sequentially through all blocks, with verified CTAs in place]
+... [Continue sequentially through all blocks, with expanded image prompts and bound CTA IDs]
 \`\`\``;
 }
+
+/**
+ * Backward compatibility alias for legacy pipelines
+ */
+export const buildDoc3cPrompt = buildDoc3bPrompt;
 
 /**
  * ═══════════════════════════════════════════════════════════════
@@ -556,42 +505,40 @@ You are the Chief Conversion Architect and Quality Assurance Director for Food N
 export function buildDoc4aPrompt(ctx: PromptContext): string {
   const temporal = getCurrentTemporalAnchor();
 
-  return `### 📄 DOCUMENT 4a: THE JARGON TRANSLATOR & HEADLINE POLISHER (MASTER PROMPT)
+  return `### 📄 DOCUMENT 4a: THE PLAIN ENGLISH & BIONIC READING EDITOR (MASTER PROMPT)
 
-**[SYSTEM PERSONA & TRANSLATION CONSTRAINTS]**
-You are the Senior UX Copywriter and Executive Communications Director for Food Nerve Society operating in ${temporal}. Your sole job is to translate dense, academic, and consulting-heavy text into punchy, visceral, plain 8th-grade English tailored to the target reader, and calibrate the headline for the frontend renderer.
+**[SYSTEM PERSONA & EDITORIAL CONSTRAINTS]**
+You are the Senior UX Copywriter and Lead Typography Editor for Food Nerve Society operating in ${temporal}. Your dual job is to translate dense, academic, consulting-heavy text into punchy, visceral, plain 8th-grade English tailored to the target reader, and apply "Bionic Reading" typography anchors for fast mobile reading.
 
 - **Zero Text Compression Rule:** Do NOT summarize or shorten paragraphs into bullet points. Paragraphs must remain full, rich paragraphs—just written with simpler, more energetic vocabulary.
-- **Zero Data Corruption:** Do NOT alter verified numbers, dates, currency values, real quotes, or image prompts.
+- **Zero Data Corruption:** Do NOT alter verified numbers, dates, currency values, real quotes, image prompts, or bound CTA IDs.
 - **Third-Person Purity:** Maintain 100% third-person perspective (*"Market analysts observe," "Operators report"*). No *"we," "you," "I," "our."*
-- **No Bolding Yet:** Do NOT apply bionic bolding in this step. Step 4b will handle visual bolding.
+- **Preserve Title Format:** The \`subheading\` title was already calibrated into the canonical badge-splitting format in Step 2. Keep the title structure intact.
 
 **[INPUT PAYLOAD DEFINITION]**
 \`\`\`text
-[DOC_3C_CONVERSION_READY_CONTENT]: [Paste the complete output from Step 3c]
+[DOC_3B_ENRICHED_CONVERSION_CONTENT]: [Paste the complete output from Step 5 (Doc 3b)]
 \`\`\`
 
 ---
 
-#### PHASE 1: Headline Calibration (\`subheading\` Block)
-Locate \`subheading\` block at the top. Polish the title to hit like a sledgehammer adhering to frontend splitting logic:
-- **Syntax:**
-\`\`\`markdown
-### BLOCK: [subheading] - The Action-Spiky Title
-**Title:** [The Big Catalyst / Shock]: Why [Specific Value Chain Actor] [Exact Survival Action or Collapse] in [Micro-Geography]
-\`\`\`
-
-#### PHASE 2: The 8th-Grade Plain English Vocabulary Scrub
+#### PHASE 1: The 8th-Grade Plain English Vocabulary Scrub
 Scan all paragraphs (especially \`core_interactive\`, \`exec_summary\`, \`myth_fact\`, \`persona_dossier\`) and replace consulting terms:
 - *"mitigating macroeconomic volatility"* ➔ *"protecting cash from inflation"*
 - *"asymmetrical price realization"* ➔ *"hidden price gouging"*
 - *"enzymatic degradation and microbial fermentation"* ➔ *"rotting from the inside out within 48 hours"*
 
-#### PHASE 3: Sentence De-Nesting
+#### PHASE 2: Sentence De-Nesting
 Break compound sentences with multiple commas into short, active sentences of 12 to 18 words.
 
-#### PHASE 4: Persona-Specific Linguistic Tuning
+#### PHASE 3: Persona-Specific Linguistic Tuning
 Frame language around \`Target_Persona\`'s daily operational reality (Logistics: demurrage, axle limits; Investors: margin compression, cash runway; Producers: moisture limits, input costs).
+
+#### PHASE 4: Bionic Reading Bolding (Visual Skimming Anchors)
+In the same pass, apply Bionic Reading anchors to maximize mobile readability:
+1. **The Bionic Rule:** Identify and wrap the 2 to 3 most critical phrases per paragraph in \`**bold asterisks**\` (verbs, key nouns, metrics, micro-geographies).
+2. **Where to Apply:** Strictly apply to narrative text: \`core_interactive\`, explanation in \`myth_fact\`, and bio in \`persona_dossier\`.
+3. **Where It Is BANNED:** Do NOT apply bolding to structured UI blocks (\`unit_economics_card\`, \`protocol_steps\`, \`comparison_matrix\`, \`strategic_directive\`, \`live_poll\`).
 
 #### PHASE 5: Strict Immutability Guardrails
 Keep \`pull_quote\`, \`Expanded_Image_Prompt\`, \`unit_economics_card\` metrics, CTAs, and block headers 100% untouched.
@@ -600,7 +547,7 @@ Keep \`pull_quote\`, \`Expanded_Image_Prompt\`, \`unit_economics_card\` metrics,
 
 #### OUTPUT FORMAT (DOCUMENT 4a PAYLOAD)
 \`\`\`markdown
-# [DOC_4A_TRANSLATED_CONTENT]
+# [DOC_4A_BIONIC_POLISHED_CONTENT]
 
 ---
 [SYSTEM_METADATA]
@@ -608,73 +555,26 @@ Keep \`pull_quote\`, \`Expanded_Image_Prompt\`, \`unit_economics_card\` metrics,
 ---
 
 ---
-### BLOCK 0: [subheading] - The Action-Spiky Title
-**Title:** [The Big Catalyst / Shock]: Why [Specific Value Chain Actor] [Exact Survival Action or Collapse] in [Micro-Geography]
+### BLOCK 0: [subheading] - [Title]
+[Content]
 ---
 
-... [Continue sequentially through all blocks with translated, plain-English prose]
+... [Continue sequentially through all blocks with translated, bionic-bolded prose]
 \`\`\``;
 }
 
 export function buildDoc4bPrompt(ctx: PromptContext): string {
-  return `### 📄 DOCUMENT 4b: THE BIONIC EDITOR & SYNTAX LINTER (MASTER PROMPT)
-
-**[SYSTEM PERSONA & EDITORIAL CONSTRAINTS]**
-You are the Lead Technical Editor and Markdown Linter for Food Nerve Society. You are receiving plain-English, translated text from Step 4a. Your dual purpose is to apply "Bionic Reading" typography for fast-scrolling mobile users, and to execute a strict syntax audit to ensure Markdown is 100% compliant for JSON parsing.
-
-- **Zero Prose Alteration:** Do NOT rewrite, shorten, or change words.
-- **Strict Markdown Formatting:** Ensure every block divider, table, and header follows canonical markdown rules.
-
-**[INPUT PAYLOAD DEFINITION]**
-\`\`\`text
-[DOC_4A_TRANSLATED_CONTENT]: [Paste the complete output from Step 4a]
-\`\`\`
-
----
-
-#### PHASE 1: Bionic Bolding (Visual Hierarchy)
-1. **The Bionic Rule:** Identify and wrap the 2 to 3 most critical phrases per paragraph in \`**bold asterisks**\` (verbs, key nouns, metrics, micro-geographies).
-2. **Where to Apply It:** Strictly apply to narrative text: \`core_interactive\`, explanation in \`myth_fact\`, and bio in \`persona_dossier\`.
-3. **Where It Is BANNED:** Do NOT apply additional bolding to structured UI blocks (\`unit_economics_card\`, \`protocol_steps\`, \`comparison_matrix\`, \`strategic_directive\`, \`live_poll\`).
-
-#### PHASE 2: The Syntax Linter (Pre-JSON Integrity Check)
-1. **Block Header Integrity:** Verify every block begins with: \`### BLOCK [OrderIndex]: [blockType] - [Title]\`.
-2. **Table Syntax (\`comparison_matrix\`):** Ensure markdown tables have aligned pipes (\`|\`) and complete separator rows.
-3. **Quote Encapsulation (\`pull_quote\`):** Ensure proper prefix \`>\` and valid quote termination.
-4. **Metadata Envelope:** Confirm \`[SYSTEM_METADATA]\` block at top is completely intact.
-5. **Clean Separation:** Exactly one blank line and a horizontal rule (\`---\`) between blocks.
-
----
-
-#### OUTPUT FORMAT (DOCUMENT 4b PAYLOAD)
-\`\`\`markdown
-# [DOC_4B_BIONIC_LINTED_CONTENT]
-
----
-[SYSTEM_METADATA]
-[Preserve intact metadata backpack]
----
-
----
-### BLOCK 0: [blockType] - [Title]
-[Linted content with bionic bolding if applicable]
----
-
-... [Continue sequentially through all ${ctx.currentBlueprint.length} blocks]
-\`\`\``;
-}
-
-export function buildDoc4cPrompt(ctx: PromptContext): string {
-  return `### 📄 DOCUMENT 4c: THE PAYLOAD PARSER (MASTER PROMPT)
+  return `### 📄 DOCUMENT 4b: THE PAYLOAD PARSER / CMS API BRIDGE (MASTER PROMPT)
 
 **[SYSTEM PERSONA & COMPILATION CONSTRAINTS]**
-You are a strict Database Administrator and Backend Data Engineer for Food Nerve Society. Your ONLY job is to take human-readable Markdown text and convert it into a perfectly formatted, escaped JSON payload for our Headless CMS API.
+You are a strict Database Administrator and Backend Data Engineer for Food Nerve Society. Your ONLY job is to take human-readable Markdown text from Step 6 (Doc 4a), perform a complete sanitization sweep, and convert it into a perfectly formatted, escaped JSON payload for our Headless CMS API.
 
 - **Zero Conversational Text:** You do not say "Here is your JSON." Output exactly one Markdown fenced JSON block. Do not include any text before or after the fence.
 - **Zero Hallucination:** Map the text from Markdown exactly as it is written, subject only to the Sanitization Rules below.
 
 **[INPUT PAYLOAD DEFINITION]**
-[DOC_4B_BIONIC_LINTED_CONTENT]: [Paste the complete output from Step 4b]
+\`\`\`text
+[DOC_4A_BIONIC_POLISHED_CONTENT]: [Paste the complete output from Step 6 (Doc 4a)]
 \`\`\`
 
 ---
@@ -684,10 +584,11 @@ Before mapping the text to JSON, you MUST clean the data:
 1. **Eradicate AI Self-Talk:** Strip ANY bracketed editorial notes, correction logs, or internal AI reasoning, including text such as [Correction note preserved...] or [Updated by Step 3a]. Output ONLY public-facing editorial text.
 2. **Strict URL Formatting:** Any JSON key ending in Url or Link (including ctaLink, sourceUrl, avatarUrl, and imageUrl) MUST contain ONLY a valid raw URL starting with http://, https://, or /. Never include Markdown link syntax, labels, or conversational text in these fields. If no valid URL exists, output an empty string.
 3. **Preserve Visual Prompts:** If a visual description is an image-generation prompt rather than a hosted URL, set the URL field to an empty string and preserve the description in a sibling imagePrompt field. Never put prompt prose into a URL field.
+4. **Structural Completeness:** Verify all blocks from the blueprint sequence (OrderIndex 0 to ${ctx.currentBlueprint.length - 1}) are present and properly delimited.
 
 #### PHASE 2: Metadata & Top-Level Extraction
 Extract \`[SYSTEM_METADATA]\` and map to root JSON:
-- Extract Spiky Title from Block 1 for \`"title"\`.
+- Extract Spiky Title from Block 0 for \`"title"\`.
 - Extract 1-2 sentence preview for \`"description"\`.
 - Map metadata fields into \`"metadata"\` JSON object, converting comma-separated strings into arrays.
 
@@ -700,7 +601,7 @@ Convert each Markdown block into an element inside the \`"articleBlocks"\` array
 #### THE TARGET JSON SCHEMA
 \`\`\`json
 {
-  "title": "[Insert Spiky Title from Block 1]",
+  "title": "[Insert Spiky Title from Block 0]",
   "description": "[Insert 1-2 sentence preview description]",
   "type": "article",
   "authorName": "Food Nerve Intelligence",
@@ -773,7 +674,8 @@ Convert each Markdown block into an element inside the \`"articleBlocks"\` array
       "orderIndex": 11,
       "content": "{\\"quote\\":\\"[Extract Quote Text]\\",\\"attribution\\":\\"[Extract Attribution]\\",\\"sourceUrl\\":\\"[Raw URL or empty string]\\",\\"avatarUrl\\":\\"[Raw URL or empty string]\\",\\"imagePrompt\\":\\"[Image prompt or empty string]\\"}"
     },
-
+    {
+      "blockType": "ecosystem_embed",
       "orderIndex": 12,
       "content": "{\\"embedType\\":\\"[Type]\\",\\"title\\":\\"[Title]\\",\\"organization\\":\\"[Org]\\",\\"location\\":\\"[Location]\\",\\"compensationOrTarget\\":\\"[Data]\\",\\"ctaText\\":\\"View Listing\\",\\"ctaLink\\":\\"[Route]\\",\\"jobId\\":\\"[ID]\\"}"
     },
@@ -795,6 +697,7 @@ Convert each Markdown block into an element inside the \`"articleBlocks"\` array
   ]
 }
 \`\`\`
+
 #### FINAL OUTPUT CONTRACT
 1. Construct each block content object internally.
 2. Serialize each content object with JSON.stringify().
@@ -805,3 +708,9 @@ Convert each Markdown block into an element inside the \`"articleBlocks"\` array
 7. Repair any validation failure before responding.
 8. Output exactly one fenced JSON block and no text outside it.`;
 }
+
+/**
+ * Backward compatibility alias for legacy pipelines
+ */
+export const buildDoc4cPrompt = buildDoc4bPrompt;
+

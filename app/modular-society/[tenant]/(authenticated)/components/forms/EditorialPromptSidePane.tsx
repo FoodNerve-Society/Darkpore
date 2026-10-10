@@ -198,10 +198,8 @@ export function EditorialPromptSidePane({
       doc_2c: 'sop_doc2_3',
       doc_3a: 'sop_doc3_1',
       doc_3b: 'sop_doc3_2',
-      doc_3c: 'sop_doc3_3',
       doc_4a: 'sop_doc4_1',
       doc_4b: 'sop_doc4_2',
-      doc_4c: 'sop_doc4_3',
     };
     const targetCheck = map[promptKey];
     if (targetCheck) {
@@ -268,6 +266,8 @@ export function EditorialPromptSidePane({
   // ═══════════════════════════════════════════════════════════
   // DOCUMENT 2: THE DRAFTING ENGINE (2a, 2b, 2c)
   // ═══════════════════════════════════════════════════════════
+  // DOCUMENT 2: THE DRAFTING ENGINE (2a, 2b, 2c)
+  // ═══════════════════════════════════════════════════════════
   const doc2Prompts = useMemo(() => [
     {
       key: 'doc_2a',
@@ -285,18 +285,18 @@ export function EditorialPromptSidePane({
       stepNum: 2,
       code: 'DOC 2b',
       title: 'The Intelligence Writer (The Muscle)',
-      instruction: 'Feed the Doc 2a response into your model and run Doc 2b. This drafts raw investigative prose with live OSINT evidence in brutal 8th-grade English without fluff.',
-      role: 'Brutal 8th-grade investigative analysis, live OSINT grounding & raw block drafting',
+      instruction: 'Feed the Doc 2a response into your model and run Doc 2b. This drafts raw investigative prose with live OSINT evidence and the final badge-splitting headline formula.',
+      role: 'Brutal 8th-grade investigative analysis, live OSINT grounding & baked-in badge-splitting title',
       prompt: buildDoc2bPrompt(promptContext),
       checkId: 'sop_doc2_2',
-      checkText: 'Run Doc 2b with live OSINT to draft raw text in brutal 8th-grade English.',
+      checkText: 'Run Doc 2b with live OSINT to draft raw text with badge-splitting headline.',
     },
     {
       key: 'doc_2c',
       stepNum: 3,
       code: 'DOC 2c',
       title: 'The Component Assembler (The Skin)',
-      instruction: 'Feed the drafted text into Doc 2c to assemble all sections into canonical React component Markdown matching our 17 platform UI blocks.',
+      instruction: 'Feed the drafted text into Doc 2c to assemble all sections into canonical React component Markdown matching our platform UI blocks.',
       role: 'Strict Markdown compilation matching 17 UI blocks with zero word alterations',
       prompt: buildDoc2cPrompt(promptContext),
       checkId: 'sop_doc2_3',
@@ -305,7 +305,7 @@ export function EditorialPromptSidePane({
   ], [promptContext, currentBlueprint.length]);
 
   // ═══════════════════════════════════════════════════════════
-  // DOCUMENT 3: ENRICHMENT, VISUAL ASSETS & CONVERSION QA (3a, 3b, 3c)
+  // DOCUMENT 3: ENRICHMENT, VISUAL ASSETS & CONVERSION (3a, 3b)
   // ═══════════════════════════════════════════════════════════
   const doc3Prompts = useMemo(() => [
     {
@@ -323,62 +323,40 @@ export function EditorialPromptSidePane({
       key: 'doc_3b',
       stepNum: 5,
       code: 'DOC 3b',
-      title: 'The Art Director & Visual Asset Expansion Engine',
-      instruction: 'Run Doc 3b to expand visual placeholders into authentic photojournalism prompts (-ar 16:9 cinematic & -ar 1:1 square) ready for Midjourney or DALL-E.',
-      role: 'Documentary photojournalism Midjourney/DALL-E prompts with calibrated aspect ratios',
+      title: 'The Art Director & Conversion Engine',
+      instruction: 'Run Doc 3b to expand visual placeholders into authentic photojournalism prompts (-ar 16:9, -ar 1:1) and map canonical platform CTAs in one step.',
+      role: 'Documentary photojournalism Midjourney prompts (-ar 16:9, -ar 1:1) & canonical CTA catalog binding',
       prompt: buildDoc3bPrompt(promptContext),
       checkId: 'sop_doc3_2',
-      checkText: 'Run Doc 3b to expand image placeholders into photojournalism prompts (-ar 16:9, -ar 1:1).',
-    },
-    {
-      key: 'doc_3c',
-      stepNum: 6,
-      code: 'DOC 3c',
-      title: 'The Conversion Architect & Structural QA Engine',
-      instruction: 'Run Doc 3c to map high-converting platform CTAs (Jobs, Deals, Bounties) and pass the mandatory 5-point structural pre-flight QA checklist.',
-      role: 'Canonical CTA catalog mapping & 5-point pre-flight structural QA audit',
-      prompt: buildDoc3cPrompt(promptContext),
-      checkId: 'sop_doc3_3',
-      checkText: 'Run Doc 3c to map canonical platform CTAs and complete the 5-point structural QA audit.',
+      checkText: 'Run Doc 3b to expand photojournalism prompts and bind canonical platform CTAs.',
     },
   ], [promptContext]);
 
   // ═══════════════════════════════════════════════════════════
-  // DOCUMENT 4: REFINEMENT, BIONIC & CMS COMPILATION (4a, 4b, 4c)
+  // DOCUMENT 4: REFINEMENT, BIONIC & CMS COMPILATION (4a, 4b)
   // ═══════════════════════════════════════════════════════════
   const doc4Prompts = useMemo(() => [
     {
       key: 'doc_4a',
-      stepNum: 7,
+      stepNum: 6,
       code: 'DOC 4a',
-      title: 'The Jargon Translator & Headline Polisher',
-      instruction: 'Run Doc 4a to craft category-split spiky headlines and scrub any remaining insider academic jargon into direct 8th-grade punch.',
-      role: 'Spiky Title badge formatting, plain 8th-grade English scrub & persona tuning',
+      title: 'The Plain English & Bionic Reading Editor',
+      instruction: 'Run Doc 4a to translate insider academic jargon into direct 8th-grade punch and apply mobile bionic bolding anchors in one pass.',
+      role: 'Plain 8th-grade English scrub, sentence de-nesting & mobile F-pattern bionic bolding',
       prompt: buildDoc4aPrompt(promptContext),
       checkId: 'sop_doc4_1',
-      checkText: 'Run Doc 4a to calibrate spiky headline for badge splitting and translate to plain English.',
+      checkText: 'Run Doc 4a to translate to plain English and inject bionic reading bolding anchors.',
     },
     {
       key: 'doc_4b',
-      stepNum: 8,
+      stepNum: 7,
       code: 'DOC 4b',
-      title: 'The Bionic Editor & Syntax Linter',
-      instruction: 'Run Doc 4b to inject bolded bionic reading anchors for rapid mobile reading and lint Markdown delimiters for clean JSON parsing.',
-      role: 'Mobile F-pattern bionic reading anchors & syntax linter for clean JSON parsing',
+      title: 'The Payload Parser (CMS API Bridge)',
+      instruction: 'Run Doc 4b to sanitize formatting and compile the entire validated article into strict, machine-readable JSON format ready for instant import.',
+      role: 'Full sanitization sweep & compilation into strictly valid, headless CMS JSON payload for direct canvas ingest',
       prompt: buildDoc4bPrompt(promptContext),
       checkId: 'sop_doc4_2',
-      checkText: 'Run Doc 4b to inject bionic reading bolding anchors and lint Markdown syntax.',
-    },
-    {
-      key: 'doc_4c',
-      stepNum: 9,
-      code: 'DOC 4c',
-      title: 'The Payload Parser (CMS API Bridge)',
-      instruction: 'Run Doc 4c to compile the entire validated article into strict, machine-readable JSON format ready for instant import.',
-      role: 'Final compilation into strictly valid, headless CMS JSON payload for direct canvas ingest',
-      prompt: buildDoc4cPrompt(promptContext),
-      checkId: 'sop_doc4_3',
-      checkText: 'Run Doc 4c to compile the payload into strictly valid headless CMS JSON.',
+      checkText: 'Run Doc 4b to sanitize syntax and compile the payload into strictly valid headless CMS JSON.',
     },
   ], [promptContext]);
 
@@ -395,7 +373,7 @@ export function EditorialPromptSidePane({
 
     const trimmed = rawIngestPayload.trim();
     if (!trimmed) {
-      setIngestError('Please paste your generated JSON from Doc 4c into the editor below.');
+      setIngestError('Please paste your generated JSON from Doc 4b into the editor below.');
       return;
     }
 
@@ -890,113 +868,6 @@ export function EditorialPromptSidePane({
             >
               {allPrompts.length} sequenced master prompts to craft, fact-check, and ingest your {currentBlueprint.length}-block SOP framework.
             </Typography>
-
-            {/* 4. Independent Floating Metadata Pills (Non-Sticky, No Enclosing Card) */}
-            <Box
-              sx={{
-                width: '100%',
-                maxWidth: 720,
-                mt: 2.5,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: { xs: 1, sm: 1.25 },
-                flexWrap: 'wrap',
-              }}
-            >
-              <Chip
-                label={`${formatMeta.emoji} ${formatMeta.label} (${eraMeta.label} Era)`}
-                sx={{
-                  height: 34,
-                  borderRadius: '9999px',
-                  px: 0.85,
-                  fontWeight: 750,
-                  fontSize: '0.78rem',
-                  letterSpacing: '-0.01em',
-                  background: `linear-gradient(135deg, ${alpha(formatMeta.color, 0.09)} 0%, rgba(255, 255, 255, 0.95) 100%)`,
-                  backdropFilter: 'blur(16px)',
-                  color: formatMeta.color,
-                  border: `1.5px solid ${alpha(formatMeta.color, 0.28)}`,
-                  boxShadow: `0 4px 14px -3px ${alpha(formatMeta.color, 0.18)}, 0 1px 3px rgba(0, 0, 0, 0.04)`,
-                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                  '&:hover': {
-                    transform: 'translateY(-1.5px)',
-                    boxShadow: `0 6px 20px -3px ${alpha(formatMeta.color, 0.28)}`,
-                    borderColor: alpha(formatMeta.color, 0.45),
-                  },
-                }}
-              />
-              <Chip
-                label={`🎯 ${currentBlueprint.length} Blocks SOP`}
-                sx={{
-                  height: 34,
-                  borderRadius: '9999px',
-                  px: 0.85,
-                  fontWeight: 750,
-                  fontSize: '0.78rem',
-                  letterSpacing: '-0.01em',
-                  background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%)',
-                  backdropFilter: 'blur(16px)',
-                  color: '#1e293b',
-                  border: '1.5px solid rgba(226, 232, 240, 0.95)',
-                  boxShadow: '0 4px 14px -3px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(0, 0, 0, 0.03)',
-                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                  '&:hover': {
-                    transform: 'translateY(-1.5px)',
-                    boxShadow: '0 6px 20px -3px rgba(15, 23, 42, 0.12)',
-                    borderColor: 'rgba(203, 213, 225, 1)',
-                  },
-                }}
-              />
-              {cleanSubcategory && (
-                <Chip
-                  label={`📍 ${cleanSubcategory}`}
-                  sx={{
-                    height: 34,
-                    borderRadius: '9999px',
-                    px: 0.85,
-                    fontWeight: 750,
-                    fontSize: '0.78rem',
-                    letterSpacing: '-0.01em',
-                    background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%)',
-                    backdropFilter: 'blur(16px)',
-                    color: '#0f172a',
-                    border: '1.5px solid rgba(226, 232, 240, 0.95)',
-                    boxShadow: '0 4px 14px -3px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(0, 0, 0, 0.03)',
-                    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                    '&:hover': {
-                      transform: 'translateY(-1.5px)',
-                      boxShadow: '0 6px 20px -3px rgba(15, 23, 42, 0.12)',
-                      borderColor: 'rgba(203, 213, 225, 1)',
-                    },
-                  }}
-                />
-              )}
-              {pinnedClips.length > 0 && (
-                <Chip
-                  label={`📎 ${pinnedClips.length} Attached Ground Notes`}
-                  sx={{
-                    height: 34,
-                    borderRadius: '9999px',
-                    px: 0.85,
-                    fontWeight: 750,
-                    fontSize: '0.78rem',
-                    letterSpacing: '-0.01em',
-                    background: `linear-gradient(135deg, ${alpha('#059669', 0.09)} 0%, rgba(255, 255, 255, 0.95) 100%)`,
-                    backdropFilter: 'blur(16px)',
-                    color: '#047857',
-                    border: `1.5px solid ${alpha('#059669', 0.28)}`,
-                    boxShadow: '0 4px 14px -3px rgba(5, 150, 105, 0.14), 0 1px 3px rgba(0, 0, 0, 0.03)',
-                    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                    '&:hover': {
-                      transform: 'translateY(-1.5px)',
-                      boxShadow: `0 6px 20px -3px ${alpha('#059669', 0.24)}`,
-                      borderColor: alpha('#059669', 0.45),
-                    },
-                  }}
-                />
-              )}
-            </Box>
           </Box>
 
           {/* ──────────────────────────────────────────────────────────── */}
@@ -1046,7 +917,7 @@ export function EditorialPromptSidePane({
                   </Box>
                   <Box sx={{ flex: 1 }}>
                     <Typography sx={{ fontSize: '0.82rem', color: '#334155', fontWeight: 600, lineHeight: 1.5 }}>
-                      Copy and run each prompt sequentially (Steps 1 to 9) in your preferred AI model:
+                      Copy and run each prompt sequentially (Steps 1 to 7) in your preferred AI model:
                     </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1, flexWrap: 'wrap' }}>
                       <Button
@@ -1133,7 +1004,7 @@ export function EditorialPromptSidePane({
                     4
                   </Box>
                   <Typography sx={{ fontSize: '0.82rem', color: '#334155', fontWeight: 600, lineHeight: 1.5 }}>
-                    Paste the Step 9 (DOC 4c) JSON output directly into Step 10 (Fast Ingest) to apply all {currentBlueprint.length} blocks to your canvas.
+                    Paste the Step 7 (DOC 4b) JSON output directly into Step 8 (Fast Ingest) to apply all {currentBlueprint.length} blocks to your canvas.
                   </Typography>
                 </Box>
               </Box>
@@ -1219,7 +1090,7 @@ export function EditorialPromptSidePane({
             ))}
 
             {/* ──────────────────────────────────────────────────────────── */}
-            {/* STEP 10: FAST INGEST — INGEST TO CANVAS                       */}
+            {/* STEP 8: FAST INGEST — INGEST TO CANVAS                        */}
             {/* ──────────────────────────────────────────────────────────── */}
             <Box id="editorial-doc-fast-ingest" sx={{ display: 'flex', flexDirection: 'column', gap: 1.75, scrollMarginTop: '80px', mt: 1, pb: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
@@ -1241,13 +1112,13 @@ export function EditorialPromptSidePane({
                     boxShadow: '0 4px 14px rgba(16, 185, 129, 0.25)',
                   }}
                 >
-                  10
+                  8
                 </Box>
 
                 <Box sx={{ flex: 1 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                     <Typography variant="subtitle1" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.25, fontSize: '0.98rem' }}>
-                      Step 10: Ingest &amp; Apply All {currentBlueprint.length} Blocks to Canvas
+                      Step 8: Ingest &amp; Apply All {currentBlueprint.length} Blocks to Canvas
                     </Typography>
                     <Chip
                       label="FAST INGEST"
@@ -1264,7 +1135,7 @@ export function EditorialPromptSidePane({
                     />
                   </Box>
                   <Typography sx={{ fontSize: '0.8rem', color: '#475569', fontWeight: 500, lineHeight: 1.5, mt: 0.5 }}>
-                    Paste the raw JSON payload produced by Step 9 (DOC 4c) to instantly populate all {currentBlueprint.length} blocks onto your canvas in one pass.
+                    Paste the raw JSON payload produced by Step 7 (DOC 4b) to instantly populate all {currentBlueprint.length} blocks onto your canvas in one pass.
                   </Typography>
                 </Box>
               </Box>
