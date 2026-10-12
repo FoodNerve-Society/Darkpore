@@ -96,24 +96,13 @@ import { usePromptAssistant } from '@/context/PromptAssistantContext';
 import { AddCustomBlockGrid, RICH_BLOCK_OPTIONS } from './AddCustomBlockGrid';
 import { CoAuthorModal, CollaboratorItem } from './CoAuthorModal';
 import { PublishConfigModal } from './PublishConfigModal';
+import { parsePollOptions } from '@/components/learn/blocks/QuickPollBlock';
 
 // ----------------------------------------------------------------------
 // POLL OPTIONS EDITOR
 // ----------------------------------------------------------------------
 function PollOptionsEditor({ initialOptions, onChange, color }: { initialOptions: any, onChange: (opts: string) => void, color: string }) {
-  const [options, setOptions] = useState<string[]>(() => {
-    if (!initialOptions) return [];
-    if (Array.isArray(initialOptions)) return initialOptions.map(o => String(o).trim()).filter(Boolean);
-    if (typeof initialOptions === 'string') {
-      try {
-        const parsed = JSON.parse(initialOptions);
-        if (Array.isArray(parsed)) return parsed.map(o => String(o).trim()).filter(Boolean);
-      } catch(e) {}
-      if (initialOptions.includes('||')) return initialOptions.split(/\|{2,3}/).map(o => o.trim()).filter(Boolean);
-      return initialOptions.split(',').map(o => o.trim()).filter(Boolean);
-    }
-    return [];
-  });
+  const [options, setOptions] = useState<string[]>(() => parsePollOptions(initialOptions));
   const [newOption, setNewOption] = useState('');
 
   const handleAdd = () => {
@@ -933,7 +922,7 @@ export default function CreateLearnContentForm({
         // New block scaffold needed by new blueprint
         const defaultContent: Record<string, any> = {};
         if (sop.type === 'myth_fact') Object.assign(defaultContent, { myth: '', fact: '' });
-        if (sop.type === 'live_poll') Object.assign(defaultContent, { question: '', options: 'Yes,No' });
+        if (sop.type === 'live_poll') Object.assign(defaultContent, { question: '', options: '["Yes", "No"]' });
         if (sop.type === 'pull_quote') Object.assign(defaultContent, { quote: '', attribution: '' });
         if (sop.type === 'exec_summary') Object.assign(defaultContent, { point1: '', point2: '', point3: '', points: description || '' });
         if (sop.type === 'core_interactive') Object.assign(defaultContent, { bionicText: '', anchorQuestion: '', imageUrl: '' });
@@ -1096,7 +1085,7 @@ export default function CreateLearnContentForm({
     const newBlock = { id: Math.random().toString(), type: bType, content: {} };
     // Initialize default fields based on type
     if (bType === 'myth_fact') newBlock.content = { myth: '', fact: '' };
-    if (bType === 'live_poll') newBlock.content = { question: '', options: 'Yes,No' };
+    if (bType === 'live_poll') newBlock.content = { question: '', options: '["Yes", "No"]' };
     if (bType === 'pull_quote') newBlock.content = { quote: '', attribution: '' };
     if (bType === 'exec_summary') newBlock.content = { point1: '', point2: '', point3: '', points: '' };
     if (bType === 'core_interactive') newBlock.content = { bionicText: '', anchorQuestion: '', imageUrl: '' };
@@ -1164,7 +1153,7 @@ export default function CreateLearnContentForm({
     const newBlocks = framework.map((sop) => {
       const content: Record<string, any> = {};
       if (sop.type === 'myth_fact') Object.assign(content, { myth: '', fact: '' });
-      if (sop.type === 'live_poll') Object.assign(content, { question: '', options: 'Yes,No' });
+      if (sop.type === 'live_poll') Object.assign(content, { question: '', options: '["Yes", "No"]' });
       if (sop.type === 'pull_quote') Object.assign(content, { quote: '', attribution: '' });
       if (sop.type === 'exec_summary') Object.assign(content, { point1: '', point2: '', point3: '', points: description || '' });
       if (sop.type === 'core_interactive') Object.assign(content, { bionicText: '', anchorQuestion: '', imageUrl: '' });
@@ -1230,25 +1219,10 @@ export default function CreateLearnContentForm({
         egItems.forEach((i: any) => { if (i.url || i.mediaUrl) filled++; });
         break;
       case 'live_poll': case 'quick_poll':
-        const rawOpts = c.options || [];
-        let optsArray: any[] = [];
-        if (Array.isArray(rawOpts)) {
-          optsArray = rawOpts;
-        } else if (typeof rawOpts === 'string') {
-          try {
-            const parsed = JSON.parse(rawOpts);
-            if (Array.isArray(parsed)) optsArray = parsed.map(s => ({ text: String(s).trim() }));
-          } catch(e) {}
-          if (optsArray.length === 0 && rawOpts.includes('||')) {
-            optsArray = rawOpts.split(/\|{2,3}/).filter(Boolean).map(s => ({ text: s.trim() }));
-          }
-          if (optsArray.length === 0) {
-            optsArray = rawOpts.split(',').filter(Boolean).map(s => ({ text: s.trim() }));
-          }
-        }
+        const optsArray = parsePollOptions(c.options);
         total = 1 + Math.max(2, optsArray.length);
         if (c.question) filled++;
-        optsArray.forEach((o: any) => { if (o.text || o.label) filled++; });
+        if (optsArray.length >= 2) filled += optsArray.length;
         break;
       case 'pull_quote': case 'expert_quote':
         total = 2; // Usually quote and author are required, role is optional

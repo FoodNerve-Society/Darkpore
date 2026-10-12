@@ -29,6 +29,7 @@ import {
   BlockType,
   getBlueprint,
 } from '@/lib/config/articleBlueprints';
+import { parsePollOptions } from '@/components/learn/blocks/QuickPollBlock';
 import { getCommodityMeta } from '@/lib/cms/commodities';
 import { foodChallenges } from '@/lib/cms/food/challenges';
 import {
@@ -490,8 +491,9 @@ export function EditorialPromptSidePane({
           }
 
           if (rawType === 'live_poll' && typeof blockContent === 'object') {
-            if (Array.isArray(blockContent.options)) {
-              blockContent.options = JSON.stringify(blockContent.options.map((o: any) => (typeof o === 'object' ? o.text || o.label || String(o) : String(o)).trim()).filter(Boolean));
+            const parsedOpts = parsePollOptions(blockContent.options);
+            if (parsedOpts.length > 0) {
+              blockContent.options = JSON.stringify(parsedOpts);
             }
           }
 

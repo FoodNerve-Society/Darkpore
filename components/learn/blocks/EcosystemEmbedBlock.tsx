@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { Box, Typography, alpha, Button, Chip, Avatar } from '@mui/material';
 import {
-  ArrowForward as ArrowForwardIcon,
   Work as WorkIcon,
   MonetizationOn as DealIcon,
   Groups as CoopIcon,
@@ -71,30 +70,37 @@ export const EcosystemEmbedBlock: React.FC<EcosystemEmbedBlockProps> = ({
     <>
       <Box sx={{ my: 6, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
         {attachedJobs.map((job, idx) => {
-          const type = job.embedType || 'job';
+          const rawType = String(job.embedType || '').toLowerCase();
+          const isDeal = rawType === 'deal' || rawType === 'spv' || rawType === 'syndicate' || rawType.includes('deal');
+          const isCoop = rawType === 'cooperative' || rawType === 'coop' || rawType.includes('coop');
+          const type: 'deal' | 'job' | 'cooperative' = isDeal ? 'deal' : isCoop ? 'cooperative' : 'job';
+
           const typeConfig = {
             deal: {
               label: 'Deal Room · Syndicate Allocation',
               badgeColor: '#10b981',
+              accentColor: '#f59e0b',
               accentGradient: 'linear-gradient(135deg, #10b981 0%, #f59e0b 100%)',
               icon: <DealIcon sx={{ fontSize: 16 }} />,
-              metaPrefix: 'Target Allocation / IRR',
+              metaPrefix: '📈 IRR / Target:',
               defaultCta: 'Access Deal Room'
             },
             job: {
               label: 'Talent Guild · Paid Role',
               badgeColor: '#6366f1',
+              accentColor: '#8b5cf6',
               accentGradient: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
               icon: <WorkIcon sx={{ fontSize: 16 }} />,
-              metaPrefix: 'Compensation',
+              metaPrefix: '💰 Compensation:',
               defaultCta: 'Explore Opportunity'
             },
             cooperative: {
               label: 'Verified Cooperative · Active Network',
               badgeColor: '#f59e0b',
+              accentColor: '#d97706',
               accentGradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
               icon: <CoopIcon sx={{ fontSize: 16 }} />,
-              metaPrefix: 'Capital Commitment',
+              metaPrefix: '🤝 Capital Commitment:',
               defaultCta: 'Join Cooperative'
             },
           }[type];
@@ -113,7 +119,9 @@ export const EcosystemEmbedBlock: React.FC<EcosystemEmbedBlockProps> = ({
                 backdropFilter: 'blur(20px)',
                 WebkitBackdropFilter: 'blur(20px)',
                 border: '1.5px solid',
-                borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : alpha(typeConfig.badgeColor, 0.2),
+                borderColor: isDark 
+                  ? (isDeal ? 'rgba(16, 185, 129, 0.25)' : isCoop ? 'rgba(245, 158, 11, 0.25)' : 'rgba(99, 102, 241, 0.25)')
+                  : (isDeal ? 'rgba(16, 185, 129, 0.3)' : isCoop ? 'rgba(245, 158, 11, 0.3)' : 'rgba(99, 102, 241, 0.25)'),
                 boxShadow: isDark
                   ? 'inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 20px 48px rgba(0, 0, 0, 0.45)'
                   : `inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 20px 44px ${alpha(typeConfig.badgeColor, 0.09)}, 0 2px 8px rgba(0,0,0,0.02)`,
@@ -124,7 +132,7 @@ export const EcosystemEmbedBlock: React.FC<EcosystemEmbedBlockProps> = ({
                 gap: 3,
                 transition: 'all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)',
                 '&:hover': {
-                  borderColor: typeConfig.badgeColor,
+                  borderColor: isDeal ? '#10b981' : typeConfig.badgeColor,
                   boxShadow: isDark
                     ? `inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 24px 54px rgba(0, 0, 0, 0.6)`
                     : `inset 0 1px 0 rgba(255, 255, 255, 1), 0 24px 52px ${alpha(typeConfig.badgeColor, 0.18)}`,
@@ -140,16 +148,20 @@ export const EcosystemEmbedBlock: React.FC<EcosystemEmbedBlockProps> = ({
                     label={typeConfig.label}
                     size="small"
                     sx={{
-                      bgcolor: alpha(typeConfig.badgeColor, isDark ? 0.2 : 0.1),
+                      bgcolor: isDeal 
+                        ? (isDark ? 'rgba(16, 185, 129, 0.18)' : 'rgba(16, 185, 129, 0.1)') 
+                        : alpha(typeConfig.badgeColor, isDark ? 0.2 : 0.1),
                       color: typeConfig.badgeColor,
                       fontWeight: 900,
                       fontSize: '0.74rem',
                       letterSpacing: '0.03em',
                       borderRadius: '9999px',
                       border: '1px solid',
-                      borderColor: alpha(typeConfig.badgeColor, 0.3),
+                      borderColor: isDeal 
+                        ? 'rgba(245, 158, 11, 0.45)' // Gold border for Deal Room SPV
+                        : alpha(typeConfig.badgeColor, 0.3),
                       '& .MuiChip-icon': {
-                        color: `${typeConfig.badgeColor} !important`
+                        color: `${isDeal ? '#f59e0b' : typeConfig.badgeColor} !important`
                       }
                     }}
                   />
@@ -179,16 +191,27 @@ export const EcosystemEmbedBlock: React.FC<EcosystemEmbedBlockProps> = ({
 
                 <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
                   {job.organization && (
-                    <Typography sx={{ 
-                      fontWeight: 750, 
-                      color: isDark ? '#cbd5e1' : '#475569', 
-                      fontSize: '0.9rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 0.5
-                    }}>
-                      🏢 {job.organization}
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                      {job.organizationLogo ? (
+                        <Avatar src={job.organizationLogo} alt={job.organization} sx={{ width: 22, height: 22 }} />
+                      ) : (
+                        <Avatar sx={{ 
+                          width: 22, height: 22, 
+                          fontSize: '0.68rem', fontWeight: 800, 
+                          bgcolor: alpha(typeConfig.badgeColor, isDark ? 0.25 : 0.12), 
+                          color: typeConfig.badgeColor 
+                        }}>
+                          {job.organization.charAt(0)}
+                        </Avatar>
+                      )}
+                      <Typography sx={{ 
+                        fontWeight: 750, 
+                        color: isDark ? '#cbd5e1' : '#475569', 
+                        fontSize: '0.9rem',
+                      }}>
+                        {job.organization}
+                      </Typography>
+                    </Box>
                   )}
                   {job.compensationOrTarget && (
                     <Box sx={{
@@ -198,19 +221,22 @@ export const EcosystemEmbedBlock: React.FC<EcosystemEmbedBlockProps> = ({
                       px: 1.5,
                       py: 0.4,
                       borderRadius: '10px',
-                      bgcolor: alpha(typeConfig.badgeColor, isDark ? 0.15 : 0.08),
+                      bgcolor: isDeal
+                        ? (isDark ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.08)')
+                        : alpha(typeConfig.badgeColor, isDark ? 0.15 : 0.08),
                       border: '1px solid',
-                      borderColor: alpha(typeConfig.badgeColor, isDark ? 0.35 : 0.25),
+                      borderColor: isDeal
+                        ? (isDark ? 'rgba(245, 158, 11, 0.4)' : 'rgba(245, 158, 11, 0.3)') // Gold-accented metric pill for deals
+                        : alpha(typeConfig.badgeColor, isDark ? 0.35 : 0.25),
                     }}>
                       <Typography sx={{
                         fontWeight: 900,
-                        color: typeConfig.badgeColor,
+                        color: isDeal ? '#10b981' : typeConfig.badgeColor,
                         fontSize: '0.88rem',
                         letterSpacing: '-0.01em',
                         fontFamily: 'var(--font-quicksand), Quicksand, sans-serif'
                       }}>
-                        {type === 'deal' ? '📈 IRR / Target: ' : (type === 'cooperative' ? '🤝 Cap: ' : '💰 ')}
-                        {job.compensationOrTarget}
+                        {typeConfig.metaPrefix} {job.compensationOrTarget}
                       </Typography>
                     </Box>
                   )}

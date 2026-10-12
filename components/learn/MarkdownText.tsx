@@ -22,10 +22,13 @@ export const MarkdownText: React.FC<MarkdownTextProps> = ({ children = '', sx, .
   <Typography
     {...props}
     sx={{
-      ...sx,
       '& strong': { fontWeight: 800 },
       '& em': { fontStyle: 'italic' },
       '& a': { textDecoration: 'underline' },
+      ...sx,
+      ...(typeof sx === 'object' && sx !== null && (sx as any)['& strong'] ? { '& strong': { fontWeight: 800, ...(sx as any)['& strong'] } } : {}),
+      ...(typeof sx === 'object' && sx !== null && (sx as any)['& em'] ? { '& em': { fontStyle: 'italic', ...(sx as any)['& em'] } } : {}),
+      ...(typeof sx === 'object' && sx !== null && (sx as any)['& a'] ? { '& a': { textDecoration: 'underline', ...(sx as any)['& a'] } } : {}),
     }}
     dangerouslySetInnerHTML={{ __html: toSafeHtml(children) }}
   />
