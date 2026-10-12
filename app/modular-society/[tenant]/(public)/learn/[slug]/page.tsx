@@ -4,8 +4,19 @@ import { Box, Container, Typography, Avatar, Divider } from '@mui/material';
 import { getLearnContentBySlug } from '@/lib/actions/learn';
 import { ArticleBlockRenderer } from '@/components/learn/ArticleBlockRenderer';
 
-export default async function LearnContentPage({ params }: { params: { tenant: string, slug: string } }) {
-  const content = await getLearnContentBySlug(params.slug);
+export default async function LearnContentPage({ 
+  params 
+}: { 
+  params: Promise<{ tenant: string, slug: string }> | { tenant: string, slug: string } 
+}) {
+  const resolvedParams = await params;
+  const slug = resolvedParams?.slug;
+
+  if (!slug) {
+    notFound();
+  }
+
+  const content = await getLearnContentBySlug(slug);
 
   if (!content) {
     notFound();
