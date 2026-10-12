@@ -365,7 +365,7 @@ function SortableBlockWrapper({ id, reorderUnlocked, children }: { id: string, r
     transform,
     transition,
     isDragging,
-  } = useSortable({ id, disabled: !reorderUnlocked });
+  } = useSortable({ id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -859,7 +859,6 @@ export default function CreateLearnContentForm({
   const [blocks, setBlocks] = useState<Array<{ id: string, type: BlockType, content: Record<string, any>, role?: string, sopDesc?: string, sopHint?: string }>>([]);
   const [flippedBlockId, setFlippedBlockId] = useState<string | null>(null);
   const [reorderUnlocked, setReorderUnlocked] = useState(false);
-  const [showReorderModal, setShowReorderModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [mediaUrlMode, setMediaUrlMode] = useState<Record<string, boolean>>({});
@@ -1053,6 +1052,18 @@ export default function CreateLearnContentForm({
         return arrayMove(items, oldIndex, newIndex);
       });
     }
+  }, []);
+
+  const moveBlockUp = useCallback((index: number) => {
+    if (index <= 0) return;
+    setBlocks((items) => arrayMove(items, index, index - 1));
+  }, []);
+
+  const moveBlockDown = useCallback((index: number) => {
+    setBlocks((items) => {
+      if (index >= items.length - 1) return items;
+      return arrayMove(items, index, index + 1);
+    });
   }, []);
 
   const resetFrameworkOrder = useCallback(() => {
@@ -2777,11 +2788,7 @@ export default function CreateLearnContentForm({
                         <Button
                           startIcon={reorderUnlocked ? <LockOpenIcon sx={{ fontSize: 18 }} /> : <LockIcon sx={{ fontSize: 18 }} />}
                           onClick={() => {
-                            if (!reorderUnlocked) {
-                              setShowReorderModal(true);
-                            } else {
-                              setReorderUnlocked(false);
-                            }
+                            setReorderUnlocked(prev => !prev);
                           }}
                           size="medium"
                           sx={{
@@ -2795,7 +2802,7 @@ export default function CreateLearnContentForm({
                             transition: 'all 0.2s',
                           }}
                         >
-                          {reorderUnlocked ? 'Lock Order' : 'Reorder'}
+                          {reorderUnlocked ? 'Lock Order' : 'Reorder Blocks'}
                         </Button>
                       </Box>
                     </Box>
@@ -2899,11 +2906,83 @@ export default function CreateLearnContentForm({
                                   )}
                                   {/* Reorder / Delete controls */}
                                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
-                                    {reorderUnlocked && (
-                                      <Box {...attributes} {...listeners} sx={{ cursor: 'grab', '&:active': { cursor: 'grabbing' }, display: 'flex', alignItems: 'center', justifyContent: 'center', p: 1, color: filled ? 'rgba(255,255,255,0.7)' : '#94a3b8', '&:hover': { color: filled ? '#fff' : '#0f172a' } }}>
-                                        <DragIndicatorIcon />
+                                    {/* Drag Handle - always accessible */}
+                                    <Tooltip title="Drag to reorder">
+                                      <Box
+                                        {...attributes}
+                                        {...listeners}
+                                        sx={{
+                                          cursor: 'grab',
+                                          '&:active': { cursor: 'grabbing' },
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          p: 0.75,
+                                          borderRadius: '8px',
+                                          color: filled ? 'rgba(255,255,255,0.7)' : (reorderUnlocked ? ACCENT : '#94a3b8'),
+                                          bgcolor: reorderUnlocked ? alpha(ACCENT, 0.08) : 'transparent',
+                                          border: reorderUnlocked ? `1px solid ${alpha(ACCENT, 0.25)}` : '1px solid transparent',
+                                          '&:hover': {
+                                            color: filled ? '#fff' : '#0f172a',
+                                            bgcolor: filled ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.06)',
+                                          },
+                                          transition: 'all 0.15s ease',
+                                        }}
+                                      >
+                                        <DragIndicatorIcon sx={{ fontSize: 20 }} />
                                       </Box>
-                                    )}
+                                    </Tooltip>
+
+                                    {/* Move Up */}
+                                    <Tooltip title="Move block up">
+                                      <span>
+                                        <IconButton
+                                          size="small"
+                                          disabled={i === 0}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            moveBlockUp(i);
+                                          }}
+                                          sx={{
+                                            color: filled ? 'rgba(255,255,255,0.85)' : '#64748b',
+                                            bgcolor: filled ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.03)',
+                                            border: filled ? '1px solid rgba(255,255,255,0.25)' : '1px solid rgba(0,0,0,0.07)',
+                                            p: 0.5,
+                                            borderRadius: '8px',
+                                            '&:hover': { bgcolor: filled ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.08)' },
+                                            '&.Mui-disabled': { opacity: 0.25 },
+                                          }}
+                                        >
+                                          <ArrowUpIcon sx={{ fontSize: 16 }} />
+                                        </IconButton>
+                                      </span>
+                                    </Tooltip>
+
+                                    {/* Move Down */}
+                                    <Tooltip title="Move block down">
+                                      <span>
+                                        <IconButton
+                                          size="small"
+                                          disabled={i === blocks.length - 1}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            moveBlockDown(i);
+                                          }}
+                                          sx={{
+                                            color: filled ? 'rgba(255,255,255,0.85)' : '#64748b',
+                                            bgcolor: filled ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.03)',
+                                            border: filled ? '1px solid rgba(255,255,255,0.25)' : '1px solid rgba(0,0,0,0.07)',
+                                            p: 0.5,
+                                            borderRadius: '8px',
+                                            '&:hover': { bgcolor: filled ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.08)' },
+                                            '&.Mui-disabled': { opacity: 0.25 },
+                                          }}
+                                        >
+                                          <ArrowDownIcon sx={{ fontSize: 16 }} />
+                                        </IconButton>
+                                      </span>
+                                    </Tooltip>
+
                                     <Tooltip title="Open Block Scratchpad">
                                       <IconButton
                                         size="small"
@@ -3078,7 +3157,7 @@ export default function CreateLearnContentForm({
                                     />
                                     <PremiumTextField colorTheme={color}
                                       fullWidth  label="Discussion Prompt (Optional)"
-                                      placeholder={b.sopHint || 'What is your experience with this?'} value={b.content.discussionPrompt || ''} onChange={e => updateBlock(b.id, 'discussionPrompt', e.target.value)}
+                                      placeholder={b.sopHint || 'Do you know if your organization has deployed this workaround?'} value={b.content.discussionPrompt || ''} onChange={e => updateBlock(b.id, 'discussionPrompt', e.target.value)}
                                       
                                     />
                                   </Box>
@@ -3148,7 +3227,7 @@ export default function CreateLearnContentForm({
                                       </Button>
                                     <PremiumTextField colorTheme={color}
                                       fullWidth  label="Discussion Prompt (Optional)"
-                                      placeholder="Is this myth still prevalent in your sector?" value={b.content.discussionPrompt || ''} onChange={e => updateBlock(b.id, 'discussionPrompt', e.target.value)}
+                                      placeholder="Do you know if this myth still holds in your sector or corridor?" value={b.content.discussionPrompt || ''} onChange={e => updateBlock(b.id, 'discussionPrompt', e.target.value)}
                                       
                                     />
                                   </Box>
@@ -3167,7 +3246,7 @@ export default function CreateLearnContentForm({
                                     />
                                     <PremiumTextField colorTheme={color}
                                       fullWidth  label="Discussion Prompt (Optional)"
-                                      placeholder="Why did you vote this way?" value={b.content.discussionPrompt || ''} onChange={e => updateBlock(b.id, 'discussionPrompt', e.target.value)}
+                                      placeholder="Do you know if operators in your network vote similarly?" value={b.content.discussionPrompt || ''} onChange={e => updateBlock(b.id, 'discussionPrompt', e.target.value)}
                                       
                                     />
                                   </Box>
@@ -3264,7 +3343,7 @@ export default function CreateLearnContentForm({
                                     </Box>
                                     <PremiumTextField colorTheme={color}
                                       fullWidth  label="Discussion Prompt (Optional)"
-                                      placeholder="What are your thoughts on this quote?" value={b.content.discussionPrompt || ''} onChange={e => updateBlock(b.id, 'discussionPrompt', e.target.value)}
+                                      placeholder="Do you know if this quote reflects your current corridor reality?" value={b.content.discussionPrompt || ''} onChange={e => updateBlock(b.id, 'discussionPrompt', e.target.value)}
                                       
                                     />
                                   </Box>
@@ -4087,26 +4166,7 @@ export default function CreateLearnContentForm({
       </Dialog>
 
       {/* ΓöÇΓöÇΓöÇ MODALS ΓöÇΓöÇΓöÇ */}
-      <Dialog open={showReorderModal} onClose={() => setShowReorderModal(false)} sx={{ '& .MuiDialog-paper': { borderRadius: '24px', p: 1 } }}>
-        <DialogTitle sx={{ fontWeight: 900, fontSize: '1.4rem', color: '#0f172a' }}>
-          Unlock Reordering?
-        </DialogTitle>
-        <DialogContent>
-          <DialogContentText sx={{ color: '#475569', fontWeight: 500, fontSize: '1.05rem', lineHeight: 1.6 }}>
-            The current block order is scientifically optimized for the <strong style={{ color: '#0f172a' }}>{selectedTimeframe?.toUpperCase()}</strong> framework.
-            <br /><br />
-            Reordering blocks may reduce the pedagogical impact and reader engagement of your briefing. Are you sure you want to proceed?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setShowReorderModal(false)} sx={{ color: '#64748b', fontWeight: 700 }}>
-            Keep Suggested Order
-          </Button>
-          <Button onClick={() => { setReorderUnlocked(true); setShowReorderModal(false); }} variant="contained" sx={{ bgcolor: '#0f172a', color: '#fff', borderRadius: '12px', fontWeight: 800, '&:hover': { bgcolor: '#1e293b' } }}>
-            Unlock Reorder
-          </Button>
-        </DialogActions>
-      </Dialog>
+
 
       <Dialog open={showResetModal} onClose={() => setShowResetModal(false)} sx={{ '& .MuiDialog-paper': { borderRadius: '24px', p: 1 } }}>
         <DialogTitle sx={{ fontWeight: 900, fontSize: '1.4rem', color: '#ef4444' }}>

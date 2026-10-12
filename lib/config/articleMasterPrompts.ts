@@ -131,7 +131,7 @@ Draft the raw text for every block in the wireframe sequentially, strictly adher
 - For subheading: Output the action-spiky title strictly following the badge-splitting formula: "[The Big Catalyst / Shock]: Why [Specific Value Chain Actor] [Exact Survival Action or Collapse] in [Micro-Geography]" (e.g., "Diesel Deregulation Shock: Why Maize Haulers Abandon Interstate Corridors in Kano, Nigeria").
 - For highlight_card: Write an evocative visual prompt depicting the physical crisis or hack, followed by a 1-2 sentence quantitative killer stat.
 - For exec_summary: Write exactly 3 numbered bullets: (1) The Crisis/Shock, (2) The Operational Workaround, (3) The Market/Wealth Shift.
-- For core_interactive: Write 2-3 dense analytical paragraphs detailing the broken system, physical mechanics of workaround, and capital flows. End with an active localized Discussion Prompt.
+- For core_interactive: Write 2-3 dense analytical paragraphs detailing the broken system, physical mechanics of workaround, and capital flows. End with an active localized Discussion Prompt that MUST strictly start with the phrase "Do you know if...?" (e.g., "Do you know if smallholder aggregation hubs in Kano are already testing solar cold chains?", "Do you know if off-grid processors in Niger State are passing diesel inflation to off-takers?") to provoke verified operator debate.
 - For myth_fact: Contrast 1 widely held official/NGO assumption with the brutal operational ground reality.
 - For pull_quote: Draft a 1-2 sentence raw, first-person quote attributed to an archetypal operator, executive, or trader in the Micro-Geography.
 - For media (Evidence Gallery): Specify 2 distinct verified evidence artifacts (Item 1: Data chart/index; Item 2: Field photograph, schematic, or waybill proof).
@@ -209,7 +209,7 @@ Map each block in \`[DOC_2B_RAW_CONTENT]\` into its exact Markdown component syn
 ### BLOCK: [core_interactive] - Main Analysis Narrative
 **Heading:** [Section Title]
 **Body:** [2-3 paragraphs of dense third-person analysis]
-💬 **Action Group Prompt:** "[Targeted discussion question]"
+💬 **Action Group Prompt:** "Do you know if [Specific operational question strictly framed as 'Do you know if...' to provoke verified operator replies]?"
 \`\`\`
 5. **\`media\` (Evidence Gallery):**
 \`\`\`markdown
@@ -749,7 +749,7 @@ Convert each Markdown block into an element inside the \`"articleBlocks"\` array
     {
       "blockType": "core_interactive",
       "orderIndex": 3,
-      "content": "{\\"heading\\":\\"[Section Title]\\",\\"bionicText\\":\\"[Insert Meat Paragraphs here with Markdown ** retained]\\",\\"discussionPrompt\\":\\"[Extract Anchor Question here]\\"}"
+      "content": "{\\"heading\\":\\"[Section Title]\\",\\"bionicText\\":\\"[Insert Meat Paragraphs here with Markdown ** retained]\\",\\"discussionPrompt\\":\\"Do you know if [Extract Discussion Question strictly framed as 'Do you know if...']?\\"}"
     },
     {
       "blockType": "comparison_matrix",

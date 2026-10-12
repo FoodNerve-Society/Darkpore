@@ -271,42 +271,30 @@ export const BlockInsightsDrawer: React.FC<BlockInsightsDrawerProps> = ({
                   </Avatar>
                 )}
 
-                {/* WhatsApp Chat Bubble */}
+                {/* Executive Frosted Glass Comment Card */}
                 <Box sx={{
                   position: 'relative',
-                  p: '10px 14px',
-                  borderRadius: isCurrentUser ? '16px 16px 2px 16px' : '2px 16px 16px 16px',
+                  p: '12px 16px',
+                  borderRadius: '16px',
                   bgcolor: isCurrentUser
-                    ? (isDark ? '#005c4b' : '#d9fdd3')
-                    : (isDark ? '#1e293b' : '#ffffff'),
-                  border: `1px solid ${
+                    ? (isDark ? alpha(accentColor, 0.22) : alpha(accentColor, 0.1))
+                    : (isDark ? 'rgba(30, 41, 59, 0.78)' : 'rgba(255, 255, 255, 0.95)'),
+                  backdropFilter: 'blur(16px)',
+                  WebkitBackdropFilter: 'blur(16px)',
+                  border: `1.5px solid ${
                     isCurrentUser 
-                      ? (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)')
-                      : (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)')
+                      ? alpha(accentColor, 0.35)
+                      : (isDark ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.07)')
                   }`,
                   boxShadow: isDark
-                    ? '0 1px 4px rgba(0,0,0,0.25)'
-                    : '0 1px 3px rgba(0,0,0,0.06)',
+                    ? 'inset 0 1px 0 rgba(255,255,255,0.1), 0 4px 16px rgba(0,0,0,0.25)'
+                    : 'inset 0 1px 0 rgba(255,255,255,0.95), 0 4px 14px rgba(15,23,42,0.05)',
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    borderColor: isCurrentUser ? alpha(accentColor, 0.5) : alpha(accentColor, 0.3),
+                    transform: 'translateY(-1px)',
+                  },
                 }}>
-                  {/* WhatsApp Notch Tail */}
-                  <Box
-                    component="svg"
-                    viewBox="0 0 8 13"
-                    sx={{
-                      position: 'absolute',
-                      top: 0,
-                      ...(isCurrentUser ? { right: -6.5, transform: 'scaleX(-1)' } : { left: -6.5 }),
-                      width: 7,
-                      height: 12,
-                      pointerEvents: 'none',
-                      zIndex: 2,
-                    }}
-                  >
-                    <path
-                      d="M1.533 3.568 8 12.193V0H2.812C1.042 0 .474 2.156 1.533 3.568z"
-                      fill={isCurrentUser ? (isDark ? '#005c4b' : '#d9fdd3') : (isDark ? '#1e293b' : '#ffffff')}
-                    />
-                  </Box>
 
                   {/* Sender Name (only for incoming messages) */}
                   {!isCurrentUser && (
