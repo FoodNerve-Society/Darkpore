@@ -5007,7 +5007,7 @@ export default function CreatorStudioDashboard({
       {/* WORKSPACE CONTENT MANAGER                                        */}
       {/* ================================================================ */}
       {!expandedStartType && (
-        <Box sx={{ mt: 6 }}>
+        <Box id="workspace-drafts-section" sx={{ mt: 6, scrollMarginTop: '24px' }}>
           <WorkspaceContentManager 
             tabs={workspaceTabs && workspaceTabs.length > 0 ? workspaceTabs : [
               {

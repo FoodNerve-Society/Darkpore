@@ -1742,27 +1742,73 @@ export default function LearnPage() {
 
                       {drafts.length > 0 && (
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                          {drafts.slice(0, 3).map((draft: any) => (
+                          {/* Single Draft Card */}
+                          <Box 
+                            key={drafts[0].id}
+                            onClick={() => { 
+                              setFastPayload(null);
+                              setDraftTaxonomy(null);
+                              setSelectedDraftId(drafts[0].id); 
+                              setCreateContentType(drafts[0].type || 'article');
+                              setIsFlipped(true); 
+                            }}
+                            sx={{ 
+                              display: 'flex', alignItems: 'center', gap: 1.5, p: 1.2, borderRadius: '10px', 
+                              cursor: 'pointer', bgcolor: 'rgba(0,0,0,0.03)',
+                              border: '1px solid rgba(0,0,0,0.05)',
+                              '&:hover': { bgcolor: 'rgba(0,0,0,0.05)', borderColor: 'rgba(0,0,0,0.1)', transform: 'translateX(4px)' },
+                              transition: 'all 0.2s'
+                            }}
+                          >
+                            <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#FF416C', boxShadow: '0 0 8px #FF416C', flexShrink: 0 }} />
+                            <Typography sx={{ 
+                              fontSize: '0.8rem', fontWeight: 700, color: '#334155', 
+                              noWrap: true, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' 
+                            }}>
+                              {drafts[0].title || "Untitled Draft"}
+                            </Typography>
+                          </Box>
+
+                          {/* +count more button */}
+                          {drafts.length > 1 && (
                             <Box 
-                              key={draft.id}
-                              onClick={() => { setIsFlipped(true); setSelectedDraftId(draft.id); }}
-                              sx={{ 
-                                display: 'flex', alignItems: 'center', gap: 1.5, p: 1.2, borderRadius: '10px', 
-                                cursor: 'pointer', bgcolor: 'rgba(0,0,0,0.03)',
-                                border: '1px solid rgba(0,0,0,0.05)',
-                                '&:hover': { bgcolor: 'rgba(0,0,0,0.05)', borderColor: 'rgba(0,0,0,0.1)', transform: 'translateX(4px)' },
-                                transition: 'all 0.2s'
+                              onClick={() => {
+                                setSelectedDraftId(null);
+                                setIsFlipped(true);
+                                setTimeout(() => {
+                                  const el = document.getElementById('workspace-drafts-section');
+                                  if (el) {
+                                    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                  }
+                                }, 350);
+                              }}
+                              sx={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: 0.6,
+                                py: 0.8,
+                                px: 1.2,
+                                borderRadius: '10px',
+                                cursor: 'pointer',
+                                bgcolor: 'rgba(255, 65, 108, 0.08)',
+                                border: '1px dashed rgba(255, 65, 108, 0.3)',
+                                color: '#FF416C',
+                                fontWeight: 700,
+                                fontSize: '0.75rem',
+                                transition: 'all 0.2s ease',
+                                '&:hover': {
+                                  bgcolor: 'rgba(255, 65, 108, 0.14)',
+                                  borderColor: '#FF416C',
+                                  transform: 'translateY(-1px)',
+                                  boxShadow: '0 4px 12px rgba(255, 65, 108, 0.12)'
+                                }
                               }}
                             >
-                              <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#FF416C', boxShadow: '0 0 8px #FF416C', flexShrink: 0 }} />
-                              <Typography sx={{ 
-                                fontSize: '0.8rem', fontWeight: 700, color: '#334155', 
-                                noWrap: true, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' 
-                              }}>
-                                {draft.title || "Untitled Draft"}
-                              </Typography>
+                              <span>+{drafts.length - 1} more</span>
+                              <ChevronRightIcon sx={{ fontSize: 15 }} />
                             </Box>
-                          ))}
+                          )}
                         </Box>
                       )}
                     </Box>
@@ -2185,10 +2231,14 @@ export default function LearnPage() {
             setSelectedDraftId('new');
           }}
           onEditDraft={(draftId) => {
+            setFastPayload(null);
+            setDraftTaxonomy(null);
             setSelectedDraftId(draftId);
             const foundDraft = drafts.find((d: any) => d.id === draftId);
             if (foundDraft?.type) {
               setCreateContentType(foundDraft.type);
+            } else {
+              setCreateContentType('article');
             }
           }}
           onDeleteDraft={async (draftId) => {

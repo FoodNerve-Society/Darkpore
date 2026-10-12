@@ -285,8 +285,16 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
   }, [slug, articleData]);
 
   useEffect(() => {
+    const getActiveContainer = () => {
+      return (
+        document.getElementById('article-reader-scroll-container') ||
+        document.getElementById('main-scroll-container') ||
+        null
+      );
+    };
+
     const handleScroll = () => {
-      const container = document.getElementById('main-scroll-container');
+      const container = getActiveContainer();
       if (container) {
         setIsScrolled(container.scrollTop > 20);
       } else {
@@ -294,8 +302,9 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
       }
     };
 
-    const scrollContainer = document.getElementById('main-scroll-container') || window;
-    scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
+    const containerEl = getActiveContainer();
+    const scrollTarget = containerEl || window;
+    scrollTarget.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll(); // Initial check
 
     if (!article || !article.articleBlocks) return;
@@ -307,7 +316,10 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
           setActiveBlockId(entry.target.id);
         }
       });
-    }, { rootMargin: '-20% 0px -60% 0px' }); // Trigger when block is in top half of screen
+    }, { 
+      root: containerEl,
+      rootMargin: '-20% 0px -60% 0px' 
+    }); // Trigger when block is in top half of screen
 
     article.articleBlocks.forEach((block: any, idx: number) => {
       const el = document.getElementById(`article-block-${block.id || idx}`);
@@ -315,7 +327,7 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
     });
 
     return () => {
-      scrollContainer.removeEventListener('scroll', handleScroll);
+      scrollTarget.removeEventListener('scroll', handleScroll);
       blockObserver.disconnect();
     };
   }, [article]);
@@ -516,6 +528,37 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
           borderTopRightRadius: { md: '16px' }
         }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, fontFamily: 'Quicksand, sans-serif', fontSize: '0.8rem', fontWeight: 600, color: theme.palette.mode === 'dark' ? '#cbd5e1' : '#475569' }}>
+            <Button
+              startIcon={<ArrowBackIcon sx={{ fontSize: '1rem !important' }} />}
+              onClick={() => {
+                if (onBack) {
+                  onBack();
+                } else {
+                  router.push('/learn');
+                }
+              }}
+              size="small"
+              sx={{
+                px: 1.5,
+                py: 0.4,
+                borderRadius: '100px',
+                textTransform: 'none',
+                fontWeight: 700,
+                fontSize: '0.75rem',
+                color: theme.palette.mode === 'dark' ? '#f1f5f9' : '#1e293b',
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+                border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)'}`,
+                backdropFilter: 'blur(8px)',
+                '&:hover': {
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.16)' : 'rgba(0, 0, 0, 0.12)',
+                  transform: 'translateX(-2px)',
+                },
+                transition: 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)'
+              }}
+            >
+              Back
+            </Button>
+            <Divider orientation="vertical" flexItem sx={{ height: 18, alignSelf: 'center', borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }} />
             <Box 
               component="span" 
               onClick={() => router.push('/learn?type=article')}

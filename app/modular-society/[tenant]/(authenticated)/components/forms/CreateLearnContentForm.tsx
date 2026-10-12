@@ -66,7 +66,7 @@ import {
   useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { createLearnContent, CreateLearnContentPayload, ArticleBlockPayload, findMatchingDraft } from '@/lib/actions/learn';
+import { createLearnContent, CreateLearnContentPayload, ArticleBlockPayload, findMatchingDraft, getCollaborationDraft } from '@/lib/actions/learn';
 import { useSociety } from '@/context/SocietyContext';
 import PremiumCard from '@/components/PremiumCard';
 import { useParams } from 'next/navigation';
@@ -699,6 +699,8 @@ export default function CreateLearnContentForm({
 
   useEffect(() => {
     if (!initialTaxonomy || initialTaxonomyKey === prevTaxonomyKeyRef.current) return;
+    // CRITICAL: If we are editing an existing draft or draft blocks are present, do not wipe blocks or force framework mode!
+    if ((draftId && draftId !== 'new') || (initialDraftData?.articleBlocks || initialDraftData?.article?.blocks)) return;
     prevTaxonomyKeyRef.current = initialTaxonomyKey;
 
     setType((initialType as any) || 'article');
@@ -828,18 +830,39 @@ export default function CreateLearnContentForm({
       const sourceBlocks = initialDraftData.articleBlocks || initialDraftData.article?.blocks;
       if (sourceBlocks && sourceBlocks.length > 0) {
         // Sort blocks by orderIndex just in case
-        const sorted = [...sourceBlocks].sort((a: any, b: any) => a.orderIndex - b.orderIndex);
+        const sorted = [...sourceBlocks].sort((a: any, b: any) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
         const validBlocks = sorted
-          .filter((b: any) => BLOCK_DEFINITIONS[b.blockType])
-          .map((b: any) => ({
-            id: b.id || Math.random().toString(36).substring(7),
-            type: b.blockType as BlockType,
-            content: typeof b.content === 'string' ? JSON.parse(b.content) : (b.content || {})
-          }));
-        setBlocks(validBlocks);
+          .filter((b: any) => {
+            const bType = (b.blockType || b.type) as BlockType;
+            return bType && BLOCK_DEFINITIONS[bType];
+          })
+          .map((b: any, idx: number) => {
+            const bType = (b.blockType || b.type) as BlockType;
+            let content = {};
+            if (typeof b.content === 'object' && b.content !== null) {
+              content = b.content;
+            } else if (typeof b.content === 'string') {
+              try {
+                const parsed = JSON.parse(b.content);
+                content = typeof parsed === 'object' && parsed !== null ? parsed : { text: b.content };
+              } catch {
+                content = { text: b.content };
+              }
+            }
+            return {
+              id: b.id || `block_${Date.now()}_${idx}`,
+              type: bType,
+              role: BLOCK_DEFINITIONS[bType]?.label || 'Analysis',
+              content
+            };
+          });
+
+        if (validBlocks.length > 0) {
+          setBlocks(validBlocks);
+        }
         setArticleEditorMode('canvas');
       } else {
-        setArticleEditorMode('framework');
+        setArticleEditorMode('canvas');
       }
       
       setStep(3); // Jump directly to builder
@@ -869,6 +892,84 @@ export default function CreateLearnContentForm({
   const [activeScratchpadBlock, setActiveScratchpadBlock] = useState<{ block: any, index: number } | null>(null);
   const [canvasAnchorFormat, setCanvasAnchorFormat] = useState<null | HTMLElement>(null);
   const [canvasAnchorEra, setCanvasAnchorEra] = useState<null | HTMLElement>(null);
+
+  // Fallback direct draft loader if initialDraftData is missing or lacking blocks
+  useEffect(() => {
+    if (!draftId || draftId === 'new') return;
+    if (blocks.length > 0) return;
+
+    let cancelled = false;
+    async function loadFullDraft() {
+      try {
+        const res = await getCollaborationDraft(draftId as string, profile?.uid);
+        if (cancelled || !res.success || !res.draft) return;
+        const d = res.draft;
+
+        setCurrentDraftId(d.id);
+        setType((d.type as any) || 'article');
+        if (d.title) setTitle(d.title);
+        if (d.description) setDescription(d.description);
+        if (d.commodity) setSelectedCommodity(d.commodity);
+        if (d.category) setSelectedCategory(d.category);
+        if (d.subcategory) setSelectedSubcategory(d.subcategory);
+
+        if (d.format) {
+          const rawFmt = String(d.format).toLowerCase().trim() as ArticleFormat;
+          if (['brief', 'memo', 'playbook', 'comparison', 'culture'].includes(rawFmt)) {
+            setSelectedFormat(rawFmt);
+          }
+        }
+        const rawEra = d.timeframe || (d as any).era;
+        if (rawEra) {
+          const rawEraStr = String(rawEra).toLowerCase().trim();
+          const validEra: ArticleEra = rawEraStr.includes('past') ? 'past' : rawEraStr.includes('futur') ? 'future' : 'present';
+          setSelectedTimeframe(validEra as any);
+          setSelectedEra(validEra);
+        }
+
+        const rawBlocks = d.article?.blocks || (d as any).articleBlocks;
+        if (rawBlocks && rawBlocks.length > 0) {
+          const sorted = [...rawBlocks].sort((a: any, b: any) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
+          const valid = sorted
+            .filter((b: any) => {
+              const bType = (b.blockType || b.type) as BlockType;
+              return bType && BLOCK_DEFINITIONS[bType];
+            })
+            .map((b: any, idx: number) => {
+              const bType = (b.blockType || b.type) as BlockType;
+              let content = {};
+              if (typeof b.content === 'object' && b.content !== null) {
+                content = b.content;
+              } else if (typeof b.content === 'string') {
+                try {
+                  const parsed = JSON.parse(b.content);
+                  content = typeof parsed === 'object' && parsed !== null ? parsed : { text: b.content };
+                } catch {
+                  content = { text: b.content };
+                }
+              }
+              return {
+                id: b.id || `block_${Date.now()}_${idx}`,
+                type: bType,
+                role: BLOCK_DEFINITIONS[bType]?.label || 'Analysis',
+                content
+              };
+            });
+
+          if (valid.length > 0) {
+            setBlocks(valid);
+          }
+        }
+        setArticleEditorMode('canvas');
+        setStep(3);
+      } catch (err) {
+        console.error('Error hydrating draft by id:', err);
+      }
+    }
+
+    loadFullDraft();
+    return () => { cancelled = true; };
+  }, [draftId, blocks.length, profile?.uid]);
 
   const toggleUrlMode = (id: string) => {
     setMediaUrlMode(prev => ({ ...prev, [id]: !prev[id] }));
