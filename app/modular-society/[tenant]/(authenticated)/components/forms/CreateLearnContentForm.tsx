@@ -100,15 +100,19 @@ import { PublishConfigModal } from './PublishConfigModal';
 // ----------------------------------------------------------------------
 // POLL OPTIONS EDITOR
 // ----------------------------------------------------------------------
-function PollOptionsEditor({ initialOptions, onChange, color }: { initialOptions: string, onChange: (opts: string) => void, color: string }) {
+function PollOptionsEditor({ initialOptions, onChange, color }: { initialOptions: any, onChange: (opts: string) => void, color: string }) {
   const [options, setOptions] = useState<string[]>(() => {
     if (!initialOptions) return [];
-    try {
-      const parsed = JSON.parse(initialOptions);
-      if (Array.isArray(parsed)) return parsed.map(o => String(o).trim()).filter(Boolean);
-    } catch(e) {}
-    if (initialOptions.includes('|||')) return initialOptions.split('|||').map(o => o.trim()).filter(Boolean);
-    return initialOptions.split(',').map(o => o.trim()).filter(Boolean);
+    if (Array.isArray(initialOptions)) return initialOptions.map(o => String(o).trim()).filter(Boolean);
+    if (typeof initialOptions === 'string') {
+      try {
+        const parsed = JSON.parse(initialOptions);
+        if (Array.isArray(parsed)) return parsed.map(o => String(o).trim()).filter(Boolean);
+      } catch(e) {}
+      if (initialOptions.includes('|||')) return initialOptions.split('|||').map(o => o.trim()).filter(Boolean);
+      return initialOptions.split(',').map(o => o.trim()).filter(Boolean);
+    }
+    return [];
   });
   const [newOption, setNewOption] = useState('');
 
@@ -485,7 +489,7 @@ export default function CreateLearnContentForm({
       case 'protocol_steps': return Array.isArray(b.content.steps) && b.content.steps.length > 0;
       case 'timeline_tracker': return Array.isArray(b.content.milestones) && b.content.milestones.length > 0;
       case 'persona_dossier': return !!b.content.name && !!b.content.fieldQuote;
-      case 'ecosystem_embed': return !!b.content.title && !!b.content.ctaLink;
+      case 'ecosystem_embed': return (!!b.content.title && !!b.content.ctaLink) || (Array.isArray(b.content.jobs) && b.content.jobs.length > 0 && !!b.content.jobs[0].title && !!b.content.jobs[0].ctaLink);
       default: return false;
     }
   };
@@ -931,7 +935,7 @@ export default function CreateLearnContentForm({
         if (sop.type === 'myth_fact') Object.assign(defaultContent, { myth: '', fact: '' });
         if (sop.type === 'live_poll') Object.assign(defaultContent, { question: '', options: 'Yes,No' });
         if (sop.type === 'pull_quote') Object.assign(defaultContent, { quote: '', attribution: '' });
-        if (sop.type === 'exec_summary') Object.assign(defaultContent, { points: description || '' });
+        if (sop.type === 'exec_summary') Object.assign(defaultContent, { point1: '', point2: '', point3: '', points: description || '' });
         if (sop.type === 'core_interactive') Object.assign(defaultContent, { bionicText: '', anchorQuestion: '', imageUrl: '' });
         if (sop.type === 'subheading') Object.assign(defaultContent, { text: title || '' });
         if (sop.type === 'comparison_matrix') Object.assign(defaultContent, { 
@@ -959,7 +963,7 @@ export default function CreateLearnContentForm({
           name: '', roleAndLocation: '', age: '', monthlyTurnover: '', bio: '', fieldQuote: '', avatarUrl: '' 
         });
         if (sop.type === 'ecosystem_embed') Object.assign(defaultContent, { 
-          embedType: 'job', title: '', organization: '', location: '', compensationOrTarget: '', ctaText: 'Apply Now', ctaLink: '' 
+          embedType: 'job', title: '', organization: '', location: '', compensationOrTarget: '', ctaText: 'Apply Now', ctaLink: '', jobId: '' 
         });
         return {
           id: `block_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 6)}`,
@@ -1094,7 +1098,7 @@ export default function CreateLearnContentForm({
     if (bType === 'myth_fact') newBlock.content = { myth: '', fact: '' };
     if (bType === 'live_poll') newBlock.content = { question: '', options: 'Yes,No' };
     if (bType === 'pull_quote') newBlock.content = { quote: '', attribution: '' };
-    if (bType === 'exec_summary') newBlock.content = { points: '' };
+    if (bType === 'exec_summary') newBlock.content = { point1: '', point2: '', point3: '', points: '' };
     if (bType === 'core_interactive') newBlock.content = { bionicText: '', anchorQuestion: '', imageUrl: '' };
     if (bType === 'subheading') newBlock.content = { text: '' };
     if (bType === 'comparison_matrix') newBlock.content = { 
@@ -1122,7 +1126,7 @@ export default function CreateLearnContentForm({
       name: '', roleAndLocation: '', age: '', monthlyTurnover: '', bio: '', fieldQuote: '', avatarUrl: '' 
     };
     if (bType === 'ecosystem_embed') newBlock.content = { 
-      embedType: 'job', title: '', organization: '', location: '', compensationOrTarget: '', ctaText: 'Apply Now', ctaLink: '' 
+      embedType: 'job', title: '', organization: '', location: '', compensationOrTarget: '', ctaText: 'Apply Now', ctaLink: '', jobId: '' 
     };
     
     setBlocks([...blocks, newBlock]);
@@ -1162,7 +1166,7 @@ export default function CreateLearnContentForm({
       if (sop.type === 'myth_fact') Object.assign(content, { myth: '', fact: '' });
       if (sop.type === 'live_poll') Object.assign(content, { question: '', options: 'Yes,No' });
       if (sop.type === 'pull_quote') Object.assign(content, { quote: '', attribution: '' });
-      if (sop.type === 'exec_summary') Object.assign(content, { points: description || '' });
+      if (sop.type === 'exec_summary') Object.assign(content, { point1: '', point2: '', point3: '', points: description || '' });
       if (sop.type === 'core_interactive') Object.assign(content, { bionicText: '', anchorQuestion: '', imageUrl: '' });
       if (sop.type === 'subheading') Object.assign(content, { text: title || '' });
       if (sop.type === 'highlight_card') Object.assign(content, { imageUrl: '', caption: '' });
@@ -1192,7 +1196,7 @@ export default function CreateLearnContentForm({
         name: '', roleAndLocation: '', age: '', monthlyTurnover: '', bio: '', fieldQuote: '', avatarUrl: '' 
       });
       if (sop.type === 'ecosystem_embed') Object.assign(content, { 
-        embedType: 'job', title: '', organization: '', location: '', compensationOrTarget: '', ctaText: 'Apply Now', ctaLink: '' 
+        embedType: 'job', title: '', organization: '', location: '', compensationOrTarget: '', ctaText: 'Apply Now', ctaLink: '', jobId: '' 
       });
       return { id: Math.random().toString(), type: sop.type, content, role: sop.role, sopDesc: sop.desc, sopHint: sop.hint };
     });
@@ -1281,9 +1285,10 @@ export default function CreateLearnContentForm({
         break;
       case 'ecosystem_embed':
         total = 3;
-        if (c.title) filled++;
-        if (c.organization || c.location) filled++;
-        if (c.ctaLink || c.ctaText) filled++;
+        const activeItem = (Array.isArray(c.jobs) && c.jobs.length > 0) ? c.jobs[0] : c;
+        if (activeItem.title) filled++;
+        if (activeItem.organization || activeItem.location) filled++;
+        if (activeItem.ctaLink || activeItem.ctaText) filled++;
         break;
       default: 
         total = 1; if (Object.values(c).some(v => !!v)) filled = 1; break;

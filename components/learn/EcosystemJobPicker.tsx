@@ -25,6 +25,7 @@ import {
   Search as SearchIcon,
   Work as WorkIcon,
   VolunteerActivism as VolunteerIcon,
+  AccountBalance as DealIcon,
   CheckCircle as CheckCircleIcon,
   Close as CloseIcon,
   Edit as EditIcon,
@@ -42,6 +43,26 @@ import PremiumTextField from '@/components/PremiumTextField';
 import PremiumAutocomplete from '@/components/PremiumAutocomplete';
 import PremiumDatePicker from '@/components/PremiumDatePicker';
 
+export const isExternalLink = (url?: string): boolean => {
+  if (!url) return false;
+  const trimmed = url.trim().toLowerCase();
+  return (
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://') ||
+    trimmed.startsWith('mailto:') ||
+    trimmed.startsWith('www.')
+  );
+};
+
+export const getSafeDestinationUrl = (url?: string): string => {
+  if (!url) return '';
+  const trimmed = url.trim();
+  if (trimmed.toLowerCase().startsWith('www.')) {
+    return `https://${trimmed}`;
+  }
+  return trimmed;
+};
+
 export interface AttachedJobItem {
   jobId: string;
   title: string;
@@ -57,7 +78,7 @@ export interface AttachedJobItem {
 export interface EcosystemEmbedItem {
   id: string;
   title: string;
-  category: string; // 'jobs' | 'volunteer'
+  category: string; // 'jobs' | 'volunteer' | 'deal'
   commodity?: string;
   organization: string;
   organizationLogo?: string;
@@ -110,11 +131,12 @@ export const EcosystemJobPicker: React.FC<EcosystemJobPickerProps> = ({
   onClear,
 }) => {
   const [jobs, setJobs] = useState<EcosystemEmbedItem[]>([]);
+  const [deals, setDeals] = useState<EcosystemEmbedItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Top Tabs: Paid Jobs vs Volunteering
-  const [activeCategory, setActiveCategory] = useState<'jobs' | 'volunteer'>('jobs');
+  // Top Tabs: Paid Jobs vs Volunteering vs Deal Room SPVs
+  const [activeCategory, setActiveCategory] = useState<'jobs' | 'volunteer' | 'deal'>('jobs');
 
   // The 4 Distinct Taxonomy Filter Pills: 'commodity' | 'category' | 'subcategory' | 'all'
   const [activeFilterPill, setActiveFilterPill] = useState<'commodity' | 'category' | 'subcategory' | 'all'>(
@@ -125,14 +147,15 @@ export const EcosystemJobPicker: React.FC<EcosystemJobPickerProps> = ({
   const attachedList: AttachedJobItem[] = useMemo(() => {
     if (content.jobs && content.jobs.length > 0) return content.jobs;
     if (content.title) {
+      const isDeal = content.embedType === 'deal';
       return [{
         jobId: content.jobId || '1',
         title: content.title,
         organization: content.organization || '',
         location: content.location || '',
         compensationOrTarget: content.compensationOrTarget || '',
-        ctaText: content.ctaText || 'Apply for Position',
-        ctaLink: content.ctaLink || '/careers',
+        ctaText: content.ctaText || (isDeal ? 'Access Deal Room' : 'Apply for Position'),
+        ctaLink: content.ctaLink || (isDeal ? '/support' : '/careers'),
         embedType: content.embedType || 'job'
       }];
     }
@@ -192,6 +215,7 @@ export const EcosystemJobPicker: React.FC<EcosystemJobPickerProps> = ({
         const res = await getEcosystemEmbedOptions();
         if (res.success && isMounted) {
           setJobs(res.jobs || []);
+          setDeals((res.deals as EcosystemEmbedItem[]) || []);
         }
       } catch (err) {
         console.error('Failed to load ecosystem jobs:', err);
@@ -250,7 +274,8 @@ export const EcosystemJobPicker: React.FC<EcosystemJobPickerProps> = ({
 
   // Filter listings based on category, filter pill, and search
   const filteredJobs = useMemo(() => {
-    let pool = jobs.filter((j) => j.category === activeCategory);
+    const sourcePool = activeCategory === 'deal' ? deals : jobs;
+    let pool = sourcePool.filter((j) => j.category === activeCategory);
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
@@ -293,19 +318,21 @@ export const EcosystemJobPicker: React.FC<EcosystemJobPickerProps> = ({
     }
 
     return pool;
-  }, [jobs, activeCategory, activeFilterPill, searchQuery, articleCommodity, articleCategory, articleSubcategory]);
+  }, [jobs, deals, activeCategory, activeFilterPill, searchQuery, articleCommodity, articleCategory, articleSubcategory]);
 
-  const handleAttachJob = (job: EcosystemEmbedItem) => {
+  const handleAttachJob = (job: EcosystemEmbedItem, autoEdit = false) => {
+    const isDeal = job.category === 'deal';
+    const isVol = job.category === 'volunteer';
     const newItem: AttachedJobItem = {
       jobId: job.id,
       title: job.title,
       organization: job.organization,
       organizationLogo: job.organizationLogo,
-      location: `${job.location} (${job.workModel})`,
-      compensationOrTarget: job.compensationText || 'Competitive Compensation',
-      ctaText: job.category === 'volunteer' ? 'Volunteer for Role' : 'Apply for Position',
-      ctaLink: job.url || `/careers/${job.id}`,
-      embedType: 'job',
+      location: job.location.includes('(') ? job.location : `${job.location} (${job.workModel})`,
+      compensationOrTarget: job.compensationText || (isDeal ? 'Capital Allocation' : 'Competitive Compensation'),
+      ctaText: isDeal ? 'Access Deal Room' : isVol ? 'Volunteer for Role' : 'Apply for Position',
+      ctaLink: job.url || (isDeal ? `/support/${job.id}` : `/careers/${job.id}`),
+      embedType: isDeal ? 'deal' : 'job',
     };
 
     // Append to list of attached jobs
@@ -315,6 +342,9 @@ export const EcosystemJobPicker: React.FC<EcosystemJobPickerProps> = ({
     // Also set first item for single-fallback compatibility
     onSelectJob(updated[0]);
     setIsSearching(false);
+    if (autoEdit) {
+      setEditingJobId(newItem.jobId);
+    }
   };
 
   const handleDetachJob = (jobId: string) => {
@@ -458,10 +488,10 @@ export const EcosystemJobPicker: React.FC<EcosystemJobPickerProps> = ({
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
                   <Chip
                     icon={<CheckCircleIcon sx={{ fontSize: '16px !important', color: `${colorTheme} !important` }} />}
-                    label="Attached Live Role"
+                    label={job.embedType === 'deal' ? 'Attached Deal Room (SPV)' : 'Attached Live Role'}
                     size="small"
                     sx={{
                       bgcolor: alpha(colorTheme, 0.12),
@@ -470,6 +500,20 @@ export const EcosystemJobPicker: React.FC<EcosystemJobPickerProps> = ({
                       fontSize: '0.75rem',
                     }}
                   />
+                  {isExternalLink(job.ctaLink) && (
+                    <Chip
+                      label="External Opportunity"
+                      size="small"
+                      variant="outlined"
+                      sx={{
+                        bgcolor: alpha('#0284c7', 0.08),
+                        color: '#0284c7',
+                        borderColor: alpha('#0284c7', 0.4),
+                        fontWeight: 800,
+                        fontSize: '0.72rem',
+                      }}
+                    />
+                  )}
                   {job.location && (
                     <Typography sx={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>
                       📍 {job.location}
@@ -480,7 +524,7 @@ export const EcosystemJobPicker: React.FC<EcosystemJobPickerProps> = ({
                 <Box sx={{ display: 'flex', gap: 1 }}>
                   <Button
                     size="small"
-                    variant="text"
+                    variant={editingJobId === job.jobId ? "contained" : "text"}
                     startIcon={<EditIcon />}
                     onClick={() => setEditingJobId(editingJobId === job.jobId ? null : job.jobId)}
                     sx={{
@@ -488,10 +532,14 @@ export const EcosystemJobPicker: React.FC<EcosystemJobPickerProps> = ({
                       textTransform: 'none',
                       fontWeight: 700,
                       fontSize: '0.8rem',
-                      color: '#64748b',
+                      bgcolor: editingJobId === job.jobId ? colorTheme : undefined,
+                      color: editingJobId === job.jobId ? '#fff' : '#64748b',
+                      '&:hover': {
+                        bgcolor: editingJobId === job.jobId ? alpha(colorTheme, 0.9) : undefined,
+                      }
                     }}
                   >
-                    {editingJobId === job.jobId ? 'Done' : 'Fine-Tune Button'}
+                    {editingJobId === job.jobId ? 'Done Editing' : 'Edit Details'}
                   </Button>
                   <IconButton size="small" onClick={() => handleDetachJob(job.jobId)} sx={{ color: '#ef4444' }}>
                     <DeleteIcon fontSize="small" />
@@ -499,69 +547,123 @@ export const EcosystemJobPicker: React.FC<EcosystemJobPickerProps> = ({
                 </Box>
               </Box>
 
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                <Typography sx={{ fontWeight: 900, fontSize: '1.2rem', color: '#0f172a' }}>
-                  {job.title}
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-                  {job.organization && (
-                    <Typography sx={{ fontWeight: 700, color: '#334155', fontSize: '0.9rem' }}>
-                      🏢 {job.organization}
-                    </Typography>
-                  )}
-                  {job.compensationOrTarget && (
-                    <Typography sx={{ fontWeight: 800, color: colorTheme, fontSize: '0.9rem' }}>
-                      💰 {job.compensationOrTarget}
-                    </Typography>
-                  )}
-                </Box>
-              </Box>
-
-              {/* Button Preview */}
-              <Box
-                sx={{
-                  p: 1.5,
-                  borderRadius: '12px',
-                  bgcolor: '#fff',
-                  border: '1px solid #e2e8f0',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography sx={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>Button:</Typography>
-                  <Chip label={job.ctaText || 'Apply for Position'} size="small" sx={{ fontWeight: 700, fontSize: '0.75rem' }} />
-                  <Typography sx={{ fontSize: '0.78rem', color: '#94a3b8' }}>➔ {job.ctaLink || '/careers'}</Typography>
-                </Box>
-                {job.ctaLink && (
-                  <IconButton size="small" href={job.ctaLink} target="_blank">
-                    <OpenInNewIcon sx={{ fontSize: 16 }} />
-                  </IconButton>
-                )}
-              </Box>
-
-              {/* Fine-Tune Button Override Area */}
-              {editingJobId === job.jobId && (
-                <Box sx={{ pt: 2, borderTop: '1px dashed #cbd5e1', display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#475569' }}>
-                    ✏️ Override Button Text & Link for this role:
+              {/* In-Place Canvas Editing Area when in editing mode */}
+              {editingJobId === job.jobId ? (
+                <Box sx={{ pt: 1.5, borderTop: '1px dashed #cbd5e1', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <Typography sx={{ fontSize: '0.82rem', fontWeight: 800, color: '#334155' }}>
+                    ✏️ Edit Attached Role / Deal Details & Destination:
                   </Typography>
                   <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
                     <PremiumTextField
                       colorTheme={colorTheme}
-                      label="Button CTA Text"
+                      label="Role / Deal Title"
+                      value={job.title || ''}
+                      onChange={(e) => handleUpdateJobField(job.jobId, 'title', e.target.value)}
+                    />
+                    <PremiumTextField
+                      colorTheme={colorTheme}
+                      label="Organization / Deal Syndicate"
+                      value={job.organization || ''}
+                      onChange={(e) => handleUpdateJobField(job.jobId, 'organization', e.target.value)}
+                    />
+                    <PremiumTextField
+                      colorTheme={colorTheme}
+                      label="Location / Model (e.g. Lagos, Hybrid, Pan-African)"
+                      value={job.location || ''}
+                      onChange={(e) => handleUpdateJobField(job.jobId, 'location', e.target.value)}
+                    />
+                    <PremiumTextField
+                      colorTheme={colorTheme}
+                      label="Compensation / Funding Target"
+                      value={job.compensationOrTarget || ''}
+                      onChange={(e) => handleUpdateJobField(job.jobId, 'compensationOrTarget', e.target.value)}
+                    />
+                    <PremiumTextField
+                      colorTheme={colorTheme}
+                      label="CTA Button Text"
                       value={job.ctaText || ''}
                       onChange={(e) => handleUpdateJobField(job.jobId, 'ctaText', e.target.value)}
                     />
                     <PremiumTextField
                       colorTheme={colorTheme}
-                      label="CTA Link URL"
+                      label="CTA Destination URL"
                       value={job.ctaLink || ''}
+                      helperText={isExternalLink(job.ctaLink) ? 'External destination: opens in new tab with security attributes' : 'Relative platform route (e.g. /careers/... or /support/...)'}
                       onChange={(e) => handleUpdateJobField(job.jobId, 'ctaLink', e.target.value)}
                     />
+                    <Box sx={{ gridColumn: { xs: '1', sm: 'span 2' }, display: 'flex', justifyContent: 'flex-end', pt: 0.5 }}>
+                      <Button
+                        size="small"
+                        variant="contained"
+                        onClick={() => setEditingJobId(null)}
+                        sx={{
+                          bgcolor: colorTheme,
+                          color: '#fff',
+                          fontWeight: 700,
+                          borderRadius: '8px',
+                          textTransform: 'none',
+                          fontSize: '0.8rem',
+                          '&:hover': { bgcolor: alpha(colorTheme, 0.9) },
+                        }}
+                      >
+                        Done Editing Details ✓
+                      </Button>
+                    </Box>
                   </Box>
                 </Box>
+              ) : (
+                <>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                    <Typography sx={{ fontWeight: 900, fontSize: '1.2rem', color: '#0f172a' }}>
+                      {job.title}
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+                      {job.organization && (
+                        <Typography sx={{ fontWeight: 700, color: '#334155', fontSize: '0.9rem' }}>
+                          🏢 {job.organization}
+                        </Typography>
+                      )}
+                      {job.compensationOrTarget && (
+                        <Typography sx={{ fontWeight: 800, color: colorTheme, fontSize: '0.9rem' }}>
+                          💰 {job.compensationOrTarget}
+                        </Typography>
+                      )}
+                    </Box>
+                  </Box>
+
+                  {/* Button Preview */}
+                  <Box
+                    sx={{
+                      p: 1.5,
+                      borderRadius: '12px',
+                      bgcolor: '#fff',
+                      border: '1px solid #e2e8f0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                      <Typography sx={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>Button:</Typography>
+                      <Chip label={job.ctaText || (job.embedType === 'deal' ? 'Access Deal Room' : 'Apply for Position')} size="small" sx={{ fontWeight: 700, fontSize: '0.75rem' }} />
+                      <Typography sx={{ fontSize: '0.78rem', color: '#94a3b8' }}>➔ {job.ctaLink || (job.embedType === 'deal' ? '/support' : '/careers')}</Typography>
+                      {isExternalLink(job.ctaLink) && (
+                        <Chip label="External" size="small" sx={{ height: 20, fontSize: '0.68rem', bgcolor: alpha('#0284c7', 0.1), color: '#0284c7', fontWeight: 700 }} />
+                      )}
+                    </Box>
+                    {job.ctaLink && (
+                      <IconButton
+                        size="small"
+                        component="a"
+                        href={getSafeDestinationUrl(job.ctaLink)}
+                        target={isExternalLink(job.ctaLink) ? '_blank' : undefined}
+                        rel={isExternalLink(job.ctaLink) ? 'noopener noreferrer' : undefined}
+                      >
+                        <OpenInNewIcon sx={{ fontSize: 16 }} />
+                      </IconButton>
+                    )}
+                  </Box>
+                </>
               )}
             </Paper>
           ))}
@@ -620,7 +722,7 @@ export const EcosystemJobPicker: React.FC<EcosystemJobPickerProps> = ({
             </Box>
           )}
 
-          {/* Top Tabs: Paid Jobs vs Volunteering */}
+          {/* Top Tabs: Paid Jobs vs Volunteering vs Deal Room (SPVs) */}
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
             <ToggleButtonGroup
               value={activeCategory}
@@ -657,6 +759,10 @@ export const EcosystemJobPicker: React.FC<EcosystemJobPickerProps> = ({
               <ToggleButton value="volunteer">
                 <VolunteerIcon sx={{ fontSize: 16, mr: 0.75 }} />
                 Volunteering (NP)
+              </ToggleButton>
+              <ToggleButton value="deal">
+                <DealIcon sx={{ fontSize: 16, mr: 0.75 }} />
+                Deal Room (SPVs)
               </ToggleButton>
             </ToggleButtonGroup>
 
@@ -930,20 +1036,21 @@ export const EcosystemJobPicker: React.FC<EcosystemJobPickerProps> = ({
               size="small"
               variant="text"
               onClick={() => {
+                const isDeal = activeCategory === 'deal';
                 handleAttachJob({
                   id: `manual-${Date.now()}`,
-                  title: 'New Position',
-                  category: 'jobs',
-                  organization: 'Ecosystem Organization',
-                  location: 'Pan-African',
-                  workModel: 'Hybrid',
-                  compensationText: 'Competitive',
-                  url: '/careers',
-                });
+                  title: isDeal ? 'New Deal Syndicate / SPV' : 'New Position',
+                  category: activeCategory,
+                  organization: isDeal ? 'Deal Syndicate' : 'Ecosystem Organization',
+                  location: isDeal ? 'Pan-African Deal Room' : 'Pan-African',
+                  workModel: isDeal ? 'VENTURE SPV' : 'Hybrid',
+                  compensationText: isDeal ? 'Target: ₦10,000,000' : 'Competitive',
+                  url: isDeal ? '/support' : '/careers',
+                }, true);
               }}
               sx={{ color: '#64748b', fontSize: '0.78rem', textTransform: 'none', fontWeight: 600 }}
             >
-              Or type custom role details manually ✏️
+              {activeCategory === 'deal' ? 'Or type deal details manually ✏️' : 'Or type custom role details manually ✏️'}
             </Button>
           </Box>
         </Box>

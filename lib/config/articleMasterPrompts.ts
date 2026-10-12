@@ -305,8 +305,8 @@ Node 3 ([Year/Date]): **[Milestone Title]** - [1 sentence resolution/monopoly]
 *Field Quote:** "[Raw quote]"
 *Biographical Narrative:** [2-3 sentences detailing workflow and survival]
 \`\`\`
-16. **`ecosystem_embed`:**
-```markdown
+16. **\`ecosystem_embed\`:**
+\`\`\`markdown
 ### BLOCK: [ecosystem_embed] - The Ecosystem Bridge
 *Embed Type:** [job | deal | cooperative]
 *Title:** [Role or Deal Title]
@@ -314,7 +314,7 @@ Node 3 ([Year/Date]): **[Milestone Title]** - [1 sentence resolution/monopoly]
 *Location:** [Micro-Geography]
 *Compensation / Target:** [Compensation or Deal Size]
 *Target Route:** [Valid external destination URL (https://... or mailto:...) or verified platform route (/careers/... or /support/...)]
-```
+\`\`\`
 17. **\`data_embed\`:**
 \`\`\`markdown
 ### BLOCK: [data_embed] - Interactive Telemetry
@@ -382,18 +382,18 @@ Execute live web searches using the \`Micro-Geography\` and \`Commodity\` as sea
 4. **\`timeline_tracker\`:** Verify all historical dates. Ensure forward-looking milestones align with announced infrastructure roadmaps.
 5. **\`comparison_matrix\`:** Verify criteria values (CAPEX, OPEX per tonne-km, transit delays) reflect current local market reality.
 6. **\`persona_dossier\`:** Ensure monthly turnover figures, managed fleet volumes, and operational challenges are realistic.
-7. **`ecosystem_embed`:** Execute live search to identify an **actual, currently active job vacancy, accelerator cohort, grant facility, or cooperative initiative** operating in that commodity/sub-sector in ${temporal}. Populate real organization names, realistic compensation or deal target, and valid external destination URLs (`https://...` or `mailto:...`) or verified platform routes (`/careers/...`, `/support/...`). Never invent fake entities or placeholder slugs.
-8. **`pull_quote`:** Retrieve a **real, attributed quote** from an actual operator, trade union official, corporate executive, or published report (SBM Intelligence, FAO, local gazettes). If unavailable, replace with a verified, cited hard statistic.
-9. **`media`:** Verify that Evidence Item 1 and Item 2 cite legitimate data sources (e.g. National Bureau of Statistics, FAOSTAT, UCDP) and provide valid base URLs.
-10. **`myth_fact`:** Confirm the "Ground Reality" is supported by recent field documentation.
+7. **\`ecosystem_embed\`:** Execute live search to identify an **actual, currently active job vacancy, accelerator cohort, grant facility, or cooperative initiative** operating in that commodity/sub-sector in ${temporal}. Populate real organization names, realistic compensation or deal target, and valid external destination URLs (\`https://...\` or \`mailto:...\`) or verified platform routes (\`/careers/...\`, \`/support/...\`). Never invent fake entities or placeholder slugs.
+8. **\`pull_quote\`:** Retrieve a **real, attributed quote** from an actual operator, trade union official, corporate executive, or published report (SBM Intelligence, FAO, local gazettes). If unavailable, replace with a verified, cited hard statistic.
+9. **\`media\`:** Verify that Evidence Item 1 and Item 2 cite legitimate data sources (e.g. National Bureau of Statistics, FAOSTAT, UCDP) and provide valid base URLs.
+10. **\`myth_fact\`:** Confirm the "Ground Reality" is supported by recent field documentation.
 
 #### PHASE 3: Assembly of Verified Payload
-Update the document in-place. Replace bracketed placeholders with verified OSINT data. Ensure `[SYSTEM_METADATA]` and block headers remain intact.
+Update the document in-place. Replace bracketed placeholders with verified OSINT data. Ensure \`[SYSTEM_METADATA]\` and block headers remain intact.
 
 ---
 
 #### OUTPUT FORMAT (DOCUMENT 3a PAYLOAD)
-```markdown
+\`\`\`markdown
 # [DOC_3A_VERIFIED_CONTENT]
 
 ---
@@ -407,7 +407,7 @@ Update the document in-place. Replace bracketed placeholders with verified OSINT
 ---
 
 ... [Continue sequentially for all blocks, with verified numbers, real quotes, and real sources]
-```;
+\`\`\``;
 }
 
 export function buildDoc3bPrompt(ctx: PromptContext): string {

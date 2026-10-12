@@ -46,7 +46,7 @@ function createDefaultBlockContent(bType: BlockType): Record<string, any> {
   if (bType === 'myth_fact') Object.assign(content, { myth: '', fact: '' });
   if (bType === 'live_poll') Object.assign(content, { question: '', options: 'Yes,No' });
   if (bType === 'pull_quote') Object.assign(content, { quote: '', attribution: '' });
-  if (bType === 'exec_summary') Object.assign(content, { points: '' });
+  if (bType === 'exec_summary') Object.assign(content, { point1: '', point2: '', point3: '', points: '' });
   if (bType === 'core_interactive') Object.assign(content, { bionicText: '', anchorQuestion: '', imageUrl: '' });
   if (bType === 'subheading') Object.assign(content, { text: '' });
   if (bType === 'highlight_card') Object.assign(content, { imageUrl: '', caption: '' });
@@ -76,7 +76,7 @@ function createDefaultBlockContent(bType: BlockType): Record<string, any> {
     name: '', roleAndLocation: '', age: '', monthlyTurnover: '', bio: '', fieldQuote: '', avatarUrl: '' 
   });
   if (bType === 'ecosystem_embed') Object.assign(content, { 
-    embedType: 'job', title: '', organization: '', location: '', compensationOrTarget: '', ctaText: 'Apply Now', ctaLink: '' 
+    embedType: 'job', title: '', organization: '', location: '', compensationOrTarget: '', ctaText: 'Apply Now', ctaLink: '', jobId: '' 
   });
   return content;
 }
