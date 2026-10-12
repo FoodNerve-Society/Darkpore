@@ -45,7 +45,7 @@ Do NOT write the final article prose or paragraphs. You are the structural and p
 All blueprints are anchored by our universal bookend standard:
 - Top 3 Blocks (0, 1, 2): subheading (The Hook Title) ➔ highlight_card (The Macro-Trigger / Big Stat Card) ➔ exec_summary (The Sit-Rep TL;DR / 3 Takeaways).
 - Middle Blocks (3 to ${ctx.currentBlueprint.length - 4}): Topic-specific evidence, unit economics, comparative matrices, and workflows.
-- Terminal 3 Blocks (${ctx.currentBlueprint.length - 3}, ${ctx.currentBlueprint.length - 2}, ${ctx.currentBlueprint.length - 1}): strategic_directive (The Commander's Intent) ➔ live_poll (The Pulse Check) ➔ call_to_action (The Global Banner).
+- Terminal 3 Blocks (${ctx.currentBlueprint.length - 3}, ${ctx.currentBlueprint.length - 2}, ${ctx.currentBlueprint.length - 1}): live_poll (The Pulse Check) ➔ strategic_directive (The Commander's Intent) ➔ call_to_action (The Global Banner).
 
 [THE 4 MASTER EMOTIONAL TARGETS]
 Assign exactly one of these primary emotional directives to each block:
@@ -122,7 +122,7 @@ Act as a senior investigative intelligence analyst writing for Food Nerve Societ
 ---
 
 PHASE 1: Payload Ingestion & OSINT Grounding
-1. Read the [DOC_2A_WIREFRAME] to identify the exact block sequence (OrderIndex 0 to ${ctx.currentBlueprint.length - 1}) anchored by the 3-Up / 3-Down canonical structure (Blocks 0-2: subheading, highlight_card, exec_summary; Terminal Blocks: strategic_directive, live_poll, call_to_action).
+1. Read the [DOC_2A_WIREFRAME] to identify the exact block sequence (OrderIndex 0 to ${ctx.currentBlueprint.length - 1}) anchored by the 3-Up / 3-Down canonical structure (Blocks 0-2: subheading, highlight_card, exec_summary; Terminal Blocks: live_poll, strategic_directive, call_to_action).
 2. Read the [SYSTEM_METADATA] from the outline to lock in the Commodity ("${ctx.commodity}"), Subcategory_ID ("${ctx.subcategory || ctx.category}"), Micro-Geography, and Target_Persona.
 3. Live OSINT Search Mandate: Execute targeted live web searches using the Micro-Geography, Commodity, and Subcategory_ID to retrieve verified local market prices, facility names, transit corridors, or regulatory citations. Ground every block in real facts.
 
@@ -135,8 +135,8 @@ Draft the raw text for every block in the wireframe sequentially, strictly adher
 - For myth_fact: Contrast 1 widely held official/NGO assumption with the brutal operational ground reality.
 - For pull_quote: Draft a 1-2 sentence raw, first-person quote attributed to an archetypal operator, executive, or trader in the Micro-Geography.
 - For media (Evidence Gallery): Specify 2 distinct verified evidence artifacts (Item 1: Data chart/index; Item 2: Field photograph, schematic, or waybill proof).
+- For live_poll: Formulate 1 polarizing decision-forcing question with exactly 3 operational options. Each option MUST be a single sentence of maximum 10 words starting with a decisive stance (e.g., "Yes — actively deploying this corridor hack", "No — evaluating downstream margin exposure", "Watching — awaiting regulatory clarity"), formatted as a JSON string array ["...", "...", "..."] or pipe-separated (Option 1 || Option 2 || Option 3).
 - For strategic_directive: Write high-contrast terminal command: assign Urgency (EXECUTE NOW, PREPARE, or MONITOR), state Threat, Immediate Action, Long-Term Pivot, and retain "microCtaId": "[Relevant Micro-CTA ID from Library]".
-- For live_poll: Formulate 1 polarizing decision-forcing question with 3 operational answer choices.
 - For call_to_action: Output "macroCtaId": "[Insert Macro-CTA ID from Library]".
 - For comparison_matrix: Define Option A vs Option B across at least 4 criteria rows (CAPEX, OPEX, Turnaround, Loss/Risk) and declare a decisive Winner Verdict.
 - For unit_economics_card: Output the 6 core metrics (TAM, Net IRR, Ticket Size, Gross Margin, Payback Period, Primary Risk Hedge) and a 1-2 sentence Deal Thesis.
@@ -232,9 +232,10 @@ Map each block in \`[DOC_2B_RAW_CONTENT]\` into its exact Markdown component syn
 \`\`\`markdown
 ### BLOCK: [live_poll] - The Capital & Operational Pulse Check
 📊 **Question:** [Direct decision-forcing question]?
-*Option A:** [Immediate adoption / Already deployed]
-*Option B:** [Mid-term adoption / Planning within 3-6 months]
-*Option C:** [Holding legacy position / Waiting for macro intervention]
+*Option A:** [Decisive stance - single sentence max 10 words, e.g. "Yes — actively deploying this corridor hack"]
+*Option B:** [Decisive stance - single sentence max 10 words, e.g. "No — evaluating downstream margin exposure"]
+*Option C:** [Decisive stance - single sentence max 10 words, e.g. "Watching — awaiting regulatory clarity"]
+*(Output exactly 3 options, each a single sentence of maximum 10 words starting with a decisive stance, formatted as a JSON string array ["...", "...", "..."] or pipe-separated ||)*
 \`\`\`
 9. **\`strategic_directive\`:**
 \`\`\`markdown
@@ -418,7 +419,7 @@ export function buildDoc3bPrompt(ctx: PromptContext): string {
 **[SYSTEM PERSONA & OPERATIONAL DIRECTIVE]**
 You are the Creative Director and Chief Conversion Architect for Food Nerve Society operating in ${temporal}. Your role is twofold:
 1. Intercept visual placeholders in the verified draft and expand them into camera-calibrated, hyper-realistic prompts for Midjourney v6/v7, DALL-E 3, or Flux Pro with calibrated aspect ratios.
-2. Finalize and weaponize the article's conversion blocks (\`strategic_directive\`, \`live_poll\`, and \`call_to_action\`) by binding them to the platform's canonical CTA catalog.
+2. Finalize and weaponize the article's terminal conversion blocks (\`live_poll\`, \`strategic_directive\`, and \`call_to_action\`) by binding them to the platform's canonical CTA catalog.
 
 - **Zero Text Rewriting Rule:** Do NOT edit, summarize, or alter a single word of the prose, verified quotes, numbers, or Markdown headers from Step 3a. You strictly modify \`Image_Prompt:**\` lines and bind the CTA IDs.
 - **Visual Style Guide (The Non-Negotiables):**
@@ -467,12 +468,13 @@ Locate every block containing image placeholders:
    - *Format:* \`*Expanded_Image_Prompt:** [Detailed portrait description], 50mm portrait lens, f/2.0, natural ambient lighting, National Geographic editorial portrait style, authentic skin texture, --ar 1:1\`
 
 #### PHASE 2: Conversion Funnel Calibration & Dynamic Mapping
-1. **Calibrate \`strategic_directive\`:**
+1. **Calibrate \`live_poll\` (The Pulse Check - Index ${ctx.currentBlueprint.length - 3}):**
+   - Ensure 1 direct decision-forcing question with exactly 3 mutually exclusive operational options.
+   - Each option MUST be a single sentence of maximum 10 words starting with a decisive stance (e.g., "Yes — actively deploying this corridor hack"), formatted as a JSON string array ["...", "...", "..."] or pipe-separated (\`||\`).
+2. **Calibrate \`strategic_directive\` (The Commander's Intent - Index ${ctx.currentBlueprint.length - 2}):**
    - Enforce commanding verbs (*Decommission, Settle, Reallocate, Terminate, Enforce*).
    - **Assign \`microCtaId\`:** Select the most relevant Micro-CTA ID from the catalog above.
-2. **Calibrate \`live_poll\` (The Pulse Check):**
-   - Ensure 1 direct decision-forcing question with exactly 3 mutually exclusive operational options.
-3. **Calibrate \`call_to_action\`:**
+3. **Calibrate \`call_to_action\` (The Global Banner - Index ${ctx.currentBlueprint.length - 1}):**
    - **Assign \`macroCtaId\`:** Select the exact Macro-CTA ID matching the article format and intent.
 
 ---
@@ -587,8 +589,8 @@ Your sole mission is to take the bionic-polished article from Step 6 (Doc 4a), c
    *Do not move, reorder, swap, or alter these three opening anchor blocks under any circumstances.*
 
 2. **THE TERMINAL 3 ACTION & CONVERSION ARE IMMUTABLE (PINNED TO LAST 3 POSITIONS):**
-   - **BLOCK ${ctx.currentBlueprint.length - 3}: \`strategic_directive\`** (The Commander's Intent) MUST REMAIN AT INDEX ${ctx.currentBlueprint.length - 3}.
-   - **BLOCK ${ctx.currentBlueprint.length - 2}: \`live_poll\`** (The Pulse Check) MUST REMAIN AT INDEX ${ctx.currentBlueprint.length - 2}.
+   - **BLOCK ${ctx.currentBlueprint.length - 3}: \`live_poll\`** (The Pulse Check) MUST REMAIN AT INDEX ${ctx.currentBlueprint.length - 3}.
+   - **BLOCK ${ctx.currentBlueprint.length - 2}: \`strategic_directive\`** (The Commander's Intent) MUST REMAIN AT INDEX ${ctx.currentBlueprint.length - 2}.
    - **BLOCK ${ctx.currentBlueprint.length - 1}: \`call_to_action\`** (The Global Banner) MUST REMAIN AT INDEX ${ctx.currentBlueprint.length - 1}.
    *Do not move, reorder, swap, or alter these three terminal conversion blocks under any circumstances.*
 
@@ -614,7 +616,7 @@ Your sole mission is to take the bionic-polished article from Step 6 (Doc 4a), c
 
 #### PHASE 1: Structural Audit & Middle Pacing Plan
 1. Ingest all ${ctx.currentBlueprint.length} blocks from \`[DOC_4A_BIONIC_POLISHED_CONTENT]\`.
-2. Confirm Blocks 0, 1, 2 (\`subheading\`, \`highlight_card\`, \`exec_summary\`) and terminal Blocks ${ctx.currentBlueprint.length - 3}, ${ctx.currentBlueprint.length - 2}, ${ctx.currentBlueprint.length - 1} (\`strategic_directive\`, \`live_poll\`, \`call_to_action\`) are identified and locked.
+2. Confirm Blocks 0, 1, 2 (\`subheading\`, \`highlight_card\`, \`exec_summary\`) and terminal Blocks ${ctx.currentBlueprint.length - 3}, ${ctx.currentBlueprint.length - 2}, ${ctx.currentBlueprint.length - 1} (\`live_poll\`, \`strategic_directive\`, \`call_to_action\`) are identified and locked.
 3. Review the narrative arc formed by the middle blocks. Decide their optimal order for maximum dramatic pacing.
 
 #### PHASE 2: Renumbering & Sequential Assembly
@@ -624,8 +626,8 @@ Assemble the complete article in the optimized order. Renumber each block headin
 - \`### BLOCK 2: [exec_summary] - ...\`
 - \`### BLOCK 3: [first reordered middle block] - ...\`
 ...
-- \`### BLOCK ${ctx.currentBlueprint.length - 3}: [strategic_directive] - ...\`
-- \`### BLOCK ${ctx.currentBlueprint.length - 2}: [live_poll] - ...\`
+- \`### BLOCK ${ctx.currentBlueprint.length - 3}: [live_poll] - ...\`
+- \`### BLOCK ${ctx.currentBlueprint.length - 2}: [strategic_directive] - ...\`
 - \`### BLOCK ${ctx.currentBlueprint.length - 1}: [call_to_action] - ...\`
 
 ---
@@ -659,12 +661,12 @@ Prepend the \`[SYSTEM_METADATA]\` backpack, separate each block with horizontal 
 ... [Continue through all sequentially re-ordered middle blocks] ...
 
 ---
-### BLOCK ${ctx.currentBlueprint.length - 3}: [strategic_directive] - The Commander's Intent
+### BLOCK ${ctx.currentBlueprint.length - 3}: [live_poll] - The Pulse Check
 [Block content]
 ---
 
 ---
-### BLOCK ${ctx.currentBlueprint.length - 2}: [live_poll] - The Pulse Check
+### BLOCK ${ctx.currentBlueprint.length - 2}: [strategic_directive] - The Commander's Intent
 [Block content]
 ---
 
@@ -672,7 +674,8 @@ Prepend the \`[SYSTEM_METADATA]\` backpack, separate each block with horizontal 
 ### BLOCK ${ctx.currentBlueprint.length - 1}: [call_to_action] - The Global Banner
 [Block content]
 ---
-\`\`\``;
+\`\`\`
+`;
 }
 
 export function buildDoc4cPrompt(ctx: PromptContext): string {
@@ -683,7 +686,7 @@ You are a strict Database Administrator and Backend Data Engineer for Food Nerve
 
 - **Zero Conversational Text:** You do not say "Here is your JSON." Output exactly one Markdown fenced JSON block. Do not include any text before or after the fence.
 - **Zero Hallucination:** Map the text from Markdown exactly as it is written, preserving the sequential block order (OrderIndex 0 to ${ctx.currentBlueprint.length - 1}) produced by Doc 4b.
-- **Preserve Bookend Positions:** Ensure Block 0 (subheading), Block 1 (highlight_card), Block 2 (exec_summary) are orderIndex 0, 1, 2, and the terminal blocks are orderIndex ${ctx.currentBlueprint.length - 3}, ${ctx.currentBlueprint.length - 2}, ${ctx.currentBlueprint.length - 1}.
+- **Preserve Bookend Positions:** Ensure Block 0 (subheading), Block 1 (highlight_card), Block 2 (exec_summary) are orderIndex 0, 1, 2, and the terminal blocks are orderIndex ${ctx.currentBlueprint.length - 3} (live_poll), ${ctx.currentBlueprint.length - 2} (strategic_directive), ${ctx.currentBlueprint.length - 1} (call_to_action).
 
 **[INPUT PAYLOAD DEFINITION]**
 \`\`\`text
@@ -708,6 +711,7 @@ Extract \`[SYSTEM_METADATA]\` and map to root JSON:
 #### PHASE 3: Block Mapping & Stringification (CRITICAL RULE)
 Convert each Markdown block into an element inside the \`"articleBlocks"\` array.
 **CRITICAL RULE:** The \`"content"\` field inside \`articleBlocks\` MUST be a **stringified JSON object** (using escaped quotes \`\\"\`), NOT a nested JSON object. Build each content object first, serialize it with JSON.stringify, and then place that serialized string in the outer JSON. Never manually paste an unescaped nested object. Ensure \`orderIndex\` scales sequentially starting from \`0\`.
+- **For live_poll:** Ensure \`options\` contains exactly 3 options, each a single sentence of maximum 10 words starting with a decisive stance, formatted as a JSON string array (e.g. \`"[\\\\\\"Yes — actively deploying this corridor hack\\\\\\", \\\\\\"No — evaluating downstream margin exposure\\\\\\", \\\\\\"Watching — awaiting regulatory clarity\\\\\\"]"\`) or pipe-separated (\`||\`).
 
 **NESTED CONTENT VALIDATION:** After constructing the outer object, parse the outer JSON and then independently parse every \`articleBlocks[i].content\` string. Repair any failure before output. Content strings must contain escaped quotes, escaped backslashes, and escaped control characters; paragraph breaks must be represented as \`\\\\n\\\\n\` inside the outer JSON.
 
@@ -793,14 +797,14 @@ Convert each Markdown block into an element inside the \`"articleBlocks"\` array
       "content": "{\\"embedType\\":\\"[job|deal|cooperative]\\",\\"title\\":\\"[Title]\\",\\"organization\\":\\"[Org]\\",\\"location\\":\\"[Location]\\",\\"compensationOrTarget\\":\\"[Data]\\",\\"ctaText\\":\\"[CTA Button Label]\\",\\"ctaLink\\":\\"[https://... or /careers/... or /support/...]\\",\\"jobId\\":\\"[ID or empty string]\\"}"
     },
     {
-      "blockType": "strategic_directive",
+      "blockType": "live_poll",
       "orderIndex": 13,
-      "content": "{\\"urgencyLevel\\":\\"[Extract Urgency Badge]\\",\\"targetPersona\\":\\"[Extract Persona]\\",\\"point1\\":\\"[Threat Text]\\",\\"point2\\":\\"[Immediate Action]\\",\\"point3\\":\\"[Long Term Pivot]\\",\\"microCtaId\\":\\"[Extract Micro-CTA ID]\\"}"
+      "content": "{\\"question\\":\\"[Extract Poll Question]\\",\\"options\\":\\"[\\\\\\"Yes — actively deploying this corridor hack\\\\\\", \\\\\\"No — evaluating downstream margin exposure\\\\\\", \\\\\\"Watching — awaiting regulatory clarity\\\\\\"]\\"}"
     },
     {
-      "blockType": "live_poll",
+      "blockType": "strategic_directive",
       "orderIndex": 14,
-      "content": "{\\"question\\":\\"[Extract Poll Question]\\",\\"options\\":\\"[Option 1],[Option 2],[Option 3]\\"}"
+      "content": "{\\"urgencyLevel\\":\\"[Extract Urgency Badge]\\",\\"targetPersona\\":\\"[Extract Persona]\\",\\"point1\\":\\"[Threat Text]\\",\\"point2\\":\\"[Immediate Action]\\",\\"point3\\":\\"[Long Term Pivot]\\",\\"microCtaId\\":\\"[Extract Micro-CTA ID]\\"}"
     },
     {
       "blockType": "call_to_action",

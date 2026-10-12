@@ -481,7 +481,8 @@ export function EditorialPromptSidePane({
                 key !== 'steps' &&
                 key !== 'milestones' &&
                 key !== 'pairs' &&
-                key !== 'items'
+                key !== 'items' &&
+                key !== 'options'
               ) {
                 blockContent[key] = blockContent[key][0];
               }
@@ -490,7 +491,7 @@ export function EditorialPromptSidePane({
 
           if (rawType === 'live_poll' && typeof blockContent === 'object') {
             if (Array.isArray(blockContent.options)) {
-              blockContent.options = blockContent.options.map((o: any) => String(o).trim()).filter(Boolean).join(',');
+              blockContent.options = JSON.stringify(blockContent.options.map((o: any) => (typeof o === 'object' ? o.text || o.label || String(o) : String(o)).trim()).filter(Boolean));
             }
           }
 

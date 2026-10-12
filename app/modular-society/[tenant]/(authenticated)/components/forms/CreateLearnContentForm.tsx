@@ -109,7 +109,7 @@ function PollOptionsEditor({ initialOptions, onChange, color }: { initialOptions
         const parsed = JSON.parse(initialOptions);
         if (Array.isArray(parsed)) return parsed.map(o => String(o).trim()).filter(Boolean);
       } catch(e) {}
-      if (initialOptions.includes('|||')) return initialOptions.split('|||').map(o => o.trim()).filter(Boolean);
+      if (initialOptions.includes('||')) return initialOptions.split(/\|{2,3}/).map(o => o.trim()).filter(Boolean);
       return initialOptions.split(',').map(o => o.trim()).filter(Boolean);
     }
     return [];
@@ -1231,7 +1231,21 @@ export default function CreateLearnContentForm({
         break;
       case 'live_poll': case 'quick_poll':
         const rawOpts = c.options || [];
-        const optsArray = Array.isArray(rawOpts) ? rawOpts : (typeof rawOpts === 'string' ? rawOpts.split(',').filter(Boolean).map(s => ({text: s.trim()})) : []);
+        let optsArray: any[] = [];
+        if (Array.isArray(rawOpts)) {
+          optsArray = rawOpts;
+        } else if (typeof rawOpts === 'string') {
+          try {
+            const parsed = JSON.parse(rawOpts);
+            if (Array.isArray(parsed)) optsArray = parsed.map(s => ({ text: String(s).trim() }));
+          } catch(e) {}
+          if (optsArray.length === 0 && rawOpts.includes('||')) {
+            optsArray = rawOpts.split(/\|{2,3}/).filter(Boolean).map(s => ({ text: s.trim() }));
+          }
+          if (optsArray.length === 0) {
+            optsArray = rawOpts.split(',').filter(Boolean).map(s => ({ text: s.trim() }));
+          }
+        }
         total = 1 + Math.max(2, optsArray.length);
         if (c.question) filled++;
         optsArray.forEach((o: any) => { if (o.text || o.label) filled++; });

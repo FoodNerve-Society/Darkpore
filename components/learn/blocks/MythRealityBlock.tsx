@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Typography, Avatar } from '@mui/material';
+import { Box, Typography, Avatar, alpha } from '@mui/material';
 import { Close as CloseIcon, Check as CheckIcon, Verified as VerifiedIcon } from '@mui/icons-material';
 import { MarkdownText } from '../MarkdownText';
 
@@ -9,6 +9,7 @@ type MythRealityBlockProps = {
     fact?: string;
     pairs?: Array<{ myth: string; fact: string }>;
     discussionPrompt?: string;
+    repliesCount?: number;
   };
   themeMode?: 'light' | 'dark';
   accentColor?: string;
@@ -16,7 +17,7 @@ type MythRealityBlockProps = {
   triggerInsights?: () => void;
 };
 
-export const MythRealityBlock: React.FC<MythRealityBlockProps> = ({ content, themeMode = 'light', accentColor, author, triggerInsights }) => {
+export const MythRealityBlock: React.FC<MythRealityBlockProps> = ({ content, themeMode = 'light', accentColor = '#ef4444', author, triggerInsights }) => {
   const isDark = themeMode === 'dark';
 
   const pairs = content.pairs || (content.myth || content.fact ? [{ myth: content.myth, fact: content.fact }] : []);
@@ -86,42 +87,72 @@ export const MythRealityBlock: React.FC<MythRealityBlockProps> = ({ content, the
 
       {/* Discussion Prompt */}
       {isComplete && author && (
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-start', mt: 2 }}>
           <Box 
             onClick={triggerInsights}
             sx={{ 
-              display: 'flex', alignItems: 'flex-start', gap: 1.5,
-              maxWidth: '85%',
+              display: 'flex', 
+              alignItems: 'flex-start', 
+              gap: 1.5,
+              width: '100%',
+              maxWidth: { xs: '100%', md: '85%' },
+              p: { xs: 1.5, sm: 2 },
+              borderRadius: '16px',
+              bgcolor: alpha(accentColor || '#ef4444', isDark ? 0.08 : 0.05),
+              border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`,
+              borderLeft: `3px solid ${accentColor || '#ef4444'}`,
               cursor: 'pointer',
-              '&:hover .reply-btn': { bgcolor: accentColor || '#8b5cf6', color: '#fff' }
+              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:hover': {
+                bgcolor: alpha(accentColor || '#ef4444', isDark ? 0.12 : 0.08),
+                transform: 'translateY(-1px)',
+                boxShadow: `0 8px 24px ${alpha(accentColor || '#ef4444', 0.12)}`
+              },
+              '&:hover .reply-btn': { bgcolor: accentColor || '#ef4444', color: '#fff' }
             }}
           >
-            <Box sx={{ 
-              bgcolor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-              borderRadius: '18px', borderTopRightRadius: '0px',
-              px: 2, py: 1.5,
-              position: 'relative',
-            }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 0.5, color: isDark ? '#fff' : '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-                {author.name}
-                {author.isVerified && <VerifiedIcon sx={{ fontSize: 14, color: accentColor || '#10b981', ml: 0.5 }} />}
-              </Typography>
-              <Typography sx={{ fontSize: '0.95rem', color: isDark ? '#f8fafc' : '#334155', fontStyle: 'italic', mb: 1, textAlign: 'right' }}>
-                "{content.discussionPrompt || "Have you encountered this myth in your own experience?"}"
-              </Typography>
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <Box sx={{ flexShrink: 0, position: 'relative' }}>
+              <Avatar src={author.avatarUrl} alt={author.name} sx={{ width: 30, height: 30, fontSize: '0.85rem', fontWeight: 700 }}>
+                {author.name?.charAt(0)}
+              </Avatar>
+              <Box sx={{ 
+                position: 'absolute', bottom: -1, right: -1, width: 9, height: 9, 
+                bgcolor: '#10b981', borderRadius: '50%', border: `1.5px solid ${isDark ? '#0f172a' : '#fff'}` 
+              }} />
+            </Box>
+            
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5, flexWrap: 'wrap', gap: 1 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, fontSize: '0.82rem', color: isDark ? '#fff' : '#0f172a', display: 'flex', alignItems: 'center' }}>
+                  {author.name}
+                  {author.isVerified && <VerifiedIcon sx={{ fontSize: 13, color: accentColor || '#10b981', ml: 0.5 }} />}
+                </Typography>
                 <Typography className="reply-btn" sx={{ 
-                  display: 'inline-block', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', 
-                  color: accentColor || '#8b5cf6', transition: 'all 0.2s', borderRadius: '12px', px: 1.5, py: 0.2, mr: -1
+                  px: 1.2, py: 0.3, 
+                  borderRadius: '10px',
+                  bgcolor: alpha(accentColor || '#ef4444', 0.1),
+                  color: accentColor || '#ef4444',
+                  fontSize: '0.72rem',
+                  fontWeight: 800,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em',
+                  transition: 'all 0.2s',
+                  display: 'inline-flex',
+                  alignItems: 'center'
                 }}>
-                  {/* @ts-ignore */}
                   {content.repliesCount ? `${content.repliesCount} Replies` : 'Reply'}
                 </Typography>
               </Box>
+              <Typography sx={{ 
+                fontSize: { xs: '0.88rem', sm: '0.92rem' }, 
+                color: isDark ? 'rgba(255,255,255,0.85)' : '#334155', 
+                fontStyle: 'italic', 
+                fontWeight: 500,
+                lineHeight: 1.5 
+              }}>
+                "{content.discussionPrompt || "Have you encountered this myth in your own experience?"}"
+              </Typography>
             </Box>
-            <Avatar src={author.avatarUrl} alt={author.name} sx={{ width: 28, height: 28 }}>
-              {author.name?.charAt(0)}
-            </Avatar>
           </Box>
         </Box>
       )}

@@ -143,8 +143,8 @@ export const SOP_BLUEPRINTS: Record<`${ArticleFormat}_${ArticleEra}`, SopBlock[]
     { type: 'pull_quote', role: 'The Burned Operator', desc: 'Raw emotional testimony from the victim of the failed policy.', hint: 'Quote from a smallholder aggregator whose inventory was seized' },
     { type: 'media', role: 'The Evidence Gallery', desc: 'Photographic proof of abandoned infrastructure or crashed charts.', hint: 'Photos of rusted silos and abandoned tractors' },
     { type: 'core_interactive', role: 'Meat 2: The Collateral Damage', desc: 'How the failure rippled down the entire regional supply chain.', hint: 'The cascading bank debt and off-taker bankruptcies' },
-    { type: 'strategic_directive', role: 'The Commander\'s Intent', desc: 'Terminal UI: Strict commands on policies and practices to dismantle today.', hint: 'Directives for policymakers, DFIs, and fund managers' },
     { type: 'live_poll', role: 'The Autopsy Pulse Check', desc: 'Real-time industry poll on whether the market has learned from this failure.', hint: 'Do you believe modern interventions have resolved this systemic bottleneck?' },
+    { type: 'strategic_directive', role: 'The Commander\'s Intent', desc: 'Terminal UI: Strict commands on policies and practices to dismantle today.', hint: 'Directives for policymakers, DFIs, and fund managers' },
     { type: 'call_to_action', role: 'The Global Banner', desc: 'Join the ecosystem intelligence network to avoid these fatal blind spots.', hint: 'Select Platform Growth Banner' },
   ],
   brief_present: [
@@ -157,8 +157,8 @@ export const SOP_BLUEPRINTS: Record<`${ArticleFormat}_${ArticleEra}`, SopBlock[]
     { type: 'media', role: 'The Proof of Concept', desc: 'Photos, manifests, or price charts proving the survival hack works.', hint: 'Waybill comparison and route GPS data' },
     { type: 'core_interactive', role: 'Meat 2: Winners vs. Crushed', desc: 'Who is capturing margin versus who is being wiped out.', hint: 'Direct-to-mill aggregators vs traditional middlemen' },
     { type: 'ecosystem_embed', role: 'The Active Crisis Market', desc: 'Live job listing, talent bounty, or deal room opportunity to solve the crisis.', hint: 'Embed an active Logistics Lead role or Fleet Bounty' },
-    { type: 'strategic_directive', role: 'The Commander\'s Intent', desc: 'Terminal UI: Immediate commands on where to deploy capital and hedge today.', hint: 'Directives for trade syndicates and purchasing directors' },
     { type: 'live_poll', role: 'The Pulse Check', desc: 'Real-time industry poll on whether peers are adopting the workaround.', hint: 'Are you actively deploying this nocturnal haulage hack?' },
+    { type: 'strategic_directive', role: 'The Commander\'s Intent', desc: 'Terminal UI: Immediate commands on where to deploy capital and hedge today.', hint: 'Directives for trade syndicates and purchasing directors' },
     { type: 'call_to_action', role: 'The Global Banner', desc: 'Connect into the active FoodNerve trading and liquidity engine.', hint: 'Select Platform Growth Banner' },
   ],
   brief_future: [
@@ -171,8 +171,8 @@ export const SOP_BLUEPRINTS: Record<`${ArticleFormat}_${ArticleEra}`, SopBlock[]
     { type: 'core_interactive', role: 'Meat 1: The Mechanism of Disruption', desc: 'How the technology alters unit economics and crushes incumbents.', hint: 'Levelized Cost of Energy (LCOE) comparison vs diesel' },
     { type: 'pull_quote', role: 'The Visionary', desc: 'Direct quote from the AgTech founder or pioneer building the future.', hint: '"We aren\'t selling solar panels; we are selling guaranteed milling uptime."' },
     { type: 'core_interactive', role: 'Meat 2: The Global South Roadblocks', desc: 'Ground realities (tariffs, bad roads, currency) and how pioneers bypass them.', hint: 'Navigating component import clearance and battery degradation' },
-    { type: 'strategic_directive', role: 'The Commander\'s Intent', desc: 'Terminal UI: Strict commands on which startups to acquire and seed today.', hint: 'Early-stage venture mandates and equipment financing rules' },
     { type: 'live_poll', role: 'The Pulse Check', desc: 'Engage readers on when they believe commercial parity will be reached.', hint: 'When will solar milling undercut diesel across 50% of the North?' },
+    { type: 'strategic_directive', role: 'The Commander\'s Intent', desc: 'Terminal UI: Strict commands on which startups to acquire and seed today.', hint: 'Early-stage venture mandates and equipment financing rules' },
     { type: 'call_to_action', role: 'The Global Banner', desc: 'Join the FoodNerve R&D, Deal Room & Venture Working Group.', hint: 'Select Platform Growth Banner' },
   ],
 
@@ -186,8 +186,8 @@ export const SOP_BLUEPRINTS: Record<`${ArticleFormat}_${ArticleEra}`, SopBlock[]
     { type: 'myth_fact', role: 'Pitch Deck vs. Ground Reality', desc: 'What the founders promised vs. the brutal local physics and economics.', hint: 'Promise: 80% Software Gross Margin vs Reality: 12% Logistics Drag' },
     { type: 'core_interactive', role: 'Meat 1: The Execution Failure', desc: 'How inflation, FX devaluation, or bad hardware caused unit economics to flip.', hint: 'Forensic breakdown of working capital leakage and currency mismatch' },
     { type: 'pull_quote', role: 'The Liquidated Founder / Lead VC', desc: 'Raw quote on why they couldn\'t raise the bridge round or service debt.', hint: '"We built for 25% inflation; when it hit 34% and diesel tripled, our off-takers defaulted."' },
-    { type: 'strategic_directive', role: 'The Capital Guardrail', desc: 'Terminal UI: Strict underwriting covenants that funds must mandate in due diligence.', hint: 'Never fund unhedged capex models. Require mandatory FX escrow.' },
     { type: 'live_poll', role: 'The Loss Prevention Pulse Check', desc: 'Survey investors on whether current deal underwriting still repeats this mistake.', hint: 'Does your diligence checklist explicitly test for this capital trap?' },
+    { type: 'strategic_directive', role: 'The Capital Guardrail', desc: 'Terminal UI: Strict underwriting covenants that funds must mandate in due diligence.', hint: 'Never fund unhedged capex models. Require mandatory FX escrow.' },
     { type: 'call_to_action', role: 'The Global Banner', desc: 'Join our Syndicate to co-invest in vetted, de-risked deal flow.', hint: 'Select Platform Growth Banner' },
   ],
   memo_present: [
@@ -200,8 +200,8 @@ export const SOP_BLUEPRINTS: Record<`${ArticleFormat}_${ArticleEra}`, SopBlock[]
     { type: 'pull_quote', role: 'The Scaling CEO or Lead VC', desc: 'Social proof from the executive or partner writing the lead check.', hint: '"We have locked 15,000 MT of industrial grain with Tier-1 breweries before harvest."' },
     { type: 'core_interactive', role: 'Meat 2: Execution Risks', desc: 'Honest breakdown of supply-chain constraints, debt structure, and exit waterfall.', hint: 'Downside scenario sensitivity and default recovery protocols' },
     { type: 'ecosystem_embed', role: 'The Deal Room', desc: 'Live database embed of startups and SPVs currently raising Seed/Series A rounds.', hint: 'Embed active Deal Room investment opportunity or Syndicate allocation' },
-    { type: 'strategic_directive', role: 'The Capital Call', desc: 'Terminal UI: Strict allocation directives on ticket size and debt structure.', hint: 'Deploy $500k into asset-backed grain notes with first-lien collateral today.' },
     { type: 'live_poll', role: 'The Allocation Pulse Check', desc: 'Survey accredited investors and fund managers on current deployment appetite.', hint: 'Are you actively allocating private debt to seasonal commodity storage this quarter?' },
+    { type: 'strategic_directive', role: 'The Capital Call', desc: 'Terminal UI: Strict allocation directives on ticket size and debt structure.', hint: 'Deploy $500k into asset-backed grain notes with first-lien collateral today.' },
     { type: 'call_to_action', role: 'The Global Banner', desc: 'Access the full Data Room and LP Syndicate.', hint: 'Select Platform Growth Banner' },
   ],
   memo_future: [
@@ -214,8 +214,8 @@ export const SOP_BLUEPRINTS: Record<`${ArticleFormat}_${ArticleEra}`, SopBlock[]
     { type: 'core_interactive', role: 'Meat 1: Technology & Defensibility', desc: 'How the underlying IP and biological patents create an unassailable moat.', hint: 'Germplasm patent architecture and climate-stress tolerance genetics' },
     { type: 'media', role: 'Value Value Chain Disruption Map', desc: 'Visual comparison of 2026 chemical-heavy supply chain vs 2030 biotech model.', hint: 'Flowchart showing elimination of synthetic pesticide inputs' },
     { type: 'pull_quote', role: 'The Deep-Tech Founder / IP Holder', desc: 'Visionary authority from the scientist or founder commercializing the asset.', hint: '"We aren\'t tweaking chemical formulas; we are programming crop immune systems."' },
-    { type: 'strategic_directive', role: 'The Seed/Series A Mandate', desc: 'Terminal UI: Strict venture commands on IP acquisition and seed syndication.', hint: 'Lead Seed rounds in proprietary trait platforms before multinationals enter.' },
     { type: 'live_poll', role: 'The Risk Tolerance Pulse Check', desc: 'Poll fund managers on appetite for deep-tech agro investments.', hint: 'Is biotech IP within your fund\'s current risk and timeline mandate?' },
+    { type: 'strategic_directive', role: 'The Seed/Series A Mandate', desc: 'Terminal UI: Strict venture commands on IP acquisition and seed syndication.', hint: 'Lead Seed rounds in proprietary trait platforms before multinationals enter.' },
     { type: 'call_to_action', role: 'The Global Banner', desc: 'Join the Darkpore Sovereign, LP & Deep-Tech Venture Syndicate.', hint: 'Select Platform Growth Banner' },
   ],
 
@@ -230,8 +230,8 @@ export const SOP_BLUEPRINTS: Record<`${ArticleFormat}_${ArticleEra}`, SopBlock[]
     { type: 'myth_fact', role: 'The Maintenance Illusion', desc: 'Debunking why operators think repair is cheaper than a full systems overhaul.', hint: 'Myth: Patching old tarps saves cash vs Reality: Water damage costs 10x the tarp' },
     { type: 'core_interactive', role: 'Meat 1: The Cascading Facility Failure', desc: 'How this single broken workflow/machine destroyed downstream factory margins.', hint: 'How wet grain fouled downstream hammer mills and jammed sorting conveyors' },
     { type: 'pull_quote', role: 'The Frustrated Floor Manager', desc: 'Raw quote from the engineer/supervisor who struggled to keep the broken system alive.', hint: '"We were spending ₦450,000 every weekend patching generators that should have been scrapped."' },
-    { type: 'strategic_directive', role: 'The Decommission Mandate', desc: 'Terminal UI: Strict commands to rip out legacy hardware and decommission obsolete routes immediately.', hint: 'Decommission open haulage immediately. Ban unsealed jute storage across all depots.' },
     { type: 'live_poll', role: 'The Decommissioning Pulse Check', desc: 'Survey operators on whether their facility still runs this obsolete workflow.', hint: 'Is this legacy protocol completely phased out of your operations?' },
+    { type: 'strategic_directive', role: 'The Decommission Mandate', desc: 'Terminal UI: Strict commands to rip out legacy hardware and decommission obsolete routes immediately.', hint: 'Decommission open haulage immediately. Ban unsealed jute storage across all depots.' },
     { type: 'call_to_action', role: 'The Global Banner', desc: 'Upgrade your operations with verified modern FoodNerve Operator SOPs.', hint: 'Select Platform Growth Banner' },
   ],
   playbook_present: [
@@ -243,8 +243,8 @@ export const SOP_BLUEPRINTS: Record<`${ArticleFormat}_${ArticleEra}`, SopBlock[]
     { type: 'core_interactive', role: 'Meat 1: Safety & Calibration', desc: 'How to train floor staff to execute the new hack without causing equipment downtime.', hint: 'Calibrating burner temperatures and moisture testing protocols' },
     { type: 'pull_quote', role: 'The Active Floor Manager', desc: 'Quote from a local facility lead currently running this exact hack validating throughput.', hint: '"By pre-heating the drying chamber with solar collectors, we cut diesel startup time by 65%."' },
     { type: 'ecosystem_embed', role: 'The Talent/Vendor Hub', desc: 'Live database embed linking to certified local technicians or equipment suppliers.', hint: 'Embed certified Solar Thermal Technicians or Maintenance Engineers for hire' },
-    { type: 'strategic_directive', role: 'The Implementation Command', desc: 'Terminal UI: Strict deadline and procedural mandate for facility leads.', hint: 'Deploy this pre-heater retrofit across all processing lines before September harvest.' },
     { type: 'live_poll', role: 'The Deployment Pulse Check', desc: 'Survey fellow operators on their implementation status and bottlenecks.', hint: 'Have you successfully retrofitted solar pre-heaters at your processing hub?' },
+    { type: 'strategic_directive', role: 'The Implementation Command', desc: 'Terminal UI: Strict deadline and procedural mandate for facility leads.', hint: 'Deploy this pre-heater retrofit across all processing lines before September harvest.' },
     { type: 'call_to_action', role: 'The Global Banner', desc: 'Download full technical CAD schematics and certify your facility on FoodNerve.', hint: 'Select Platform Growth Banner' },
   ],
   playbook_future: [
@@ -256,8 +256,8 @@ export const SOP_BLUEPRINTS: Record<`${ArticleFormat}_${ArticleEra}`, SopBlock[]
     { type: 'myth_fact', role: 'The Automation Fear', desc: 'Debunking labor panic vs reality of the high-value technical facility manager.', hint: 'Myth: Automation eliminates the plant manager vs Reality: Upgrades them into Systems Architect' },
     { type: 'core_interactive', role: 'Meat 1: The Skill-Gap & Retraining Protocol', desc: 'Exact technical certifications and IoT maintenance skills current employees must learn today.', hint: 'PLC programming, edge sensor diagnostics, and pneumatic calibration curriculum' },
     { type: 'pull_quote', role: 'The Hardware Engineer', desc: 'Quote from the robotics engineer building the technology on the learning curve.', hint: '"The hardest part isn\'t the AI vision; it\'s teaching rural operators how to calibrate air pressure valves."' },
-    { type: 'strategic_directive', role: 'The Retraining Mandate', desc: 'Terminal UI: Strict executive directives on IoT upgrades and technician reskilling.', hint: 'Mandate edge IoT diagnostics training for all plant technicians by Q4 2026.' },
     { type: 'live_poll', role: 'The Workforce Readiness Pulse Check', desc: 'Survey plant owners on whether their current staff can manage high-tech infrastructure.', hint: 'Is your current technical team ready to operate automated optical sorters?' },
+    { type: 'strategic_directive', role: 'The Retraining Mandate', desc: 'Terminal UI: Strict executive directives on IoT upgrades and technician reskilling.', hint: 'Mandate edge IoT diagnostics training for all plant technicians by Q4 2026.' },
     { type: 'call_to_action', role: 'The Global Banner', desc: 'Join the FoodNerve Mechanization & Hardware Guild.', hint: 'Select Platform Growth Banner' },
   ],
 
@@ -272,8 +272,8 @@ export const SOP_BLUEPRINTS: Record<`${ArticleFormat}_${ArticleEra}`, SopBlock[]
     { type: 'myth_fact', role: 'The Historical Consensus', desc: 'What the market believed vs the hidden structural fragility.', hint: 'Myth: Centralized mega-silos are safest vs Reality: Single point of failure' },
     { type: 'core_interactive', role: 'Meat 2: Resilient Winner Mechanics', desc: 'How Option B physically absorbed the macro shock at farm-gate level.', hint: 'Decentralized hermetic storage, zero energy draw, and localized farmer control' },
     { type: 'pull_quote', role: 'The Referee', desc: 'Quote from a veteran market auditor or official who watched the showdown play out.', hint: '"The government spent billions building steel silos with no power to run aerators."' },
-    { type: 'strategic_directive', role: 'The Procurement Mandate', desc: 'Terminal UI: Permanently strip Option A from supply chain; standardize on Option B.', hint: 'Dismantle centralized silo subsidies. Mandate 100% procurement of hermetic bags.' },
     { type: 'live_poll', role: 'The Retrospective Pulse Check', desc: 'Survey market participants on whether the historical victor model still holds today.', hint: 'In hindsight, was Option B the definitive operational winner for your fleet?' },
+    { type: 'strategic_directive', role: 'The Procurement Mandate', desc: 'Terminal UI: Permanently strip Option A from supply chain; standardize on Option B.', hint: 'Dismantle centralized silo subsidies. Mandate 100% procurement of hermetic bags.' },
     { type: 'call_to_action', role: 'The Global Banner', desc: 'Access the full FoodNerve Historical Technical Benchmark Library.', hint: 'Select Platform Growth Banner' },
   ],
   comparison_present: [
@@ -286,8 +286,8 @@ export const SOP_BLUEPRINTS: Record<`${ArticleFormat}_${ArticleEra}`, SopBlock[]
     { type: 'pull_quote', role: 'The Active Operator', desc: 'Raw quote from a logistics CEO who ripped out Option A and adopted Option B.', hint: '"We pulled 60 trucks off the Abuja highway and shifted entirely to night rail wagons."' },
     { type: 'core_interactive', role: 'Meat 2: Field Test Results', desc: 'Real-world performance under current August 2026 inflation and fuel stress.', hint: 'Diesel sensitivity analysis and road security checkpoint expense logs' },
     { type: 'ecosystem_embed', role: 'The Vendor / Talent Match', desc: 'Live database link connecting to verified vendors selling Option B or technicians to install.', hint: 'Embed verified Freight Brokers or Fleet Operators with active booking capacity' },
-    { type: 'strategic_directive', role: 'The Purchasing Command', desc: 'Terminal UI: Halt procurement of Option A; reallocate Q3/Q4 CAPEX entirely to Option B.', hint: 'Halt road haulage contracts. Reallocate Q3/Q4 logistics budget to rail SPVs.' },
     { type: 'live_poll', role: 'The Market Share Pulse Check', desc: 'Survey fellow operators on which solution their facility is actively deploying right now.', hint: 'Which transit corridor is your fleet prioritizing this harvest season?' },
+    { type: 'strategic_directive', role: 'The Purchasing Command', desc: 'Terminal UI: Halt procurement of Option A; reallocate Q3/Q4 CAPEX entirely to Option B.', hint: 'Halt road haulage contracts. Reallocate Q3/Q4 logistics budget to rail SPVs.' },
     { type: 'call_to_action', role: 'The Global Banner', desc: 'Connect with verified freight haulers and equipment vendors on FoodNerve.', hint: 'Select Platform Growth Banner' },
   ],
   comparison_future: [
@@ -300,8 +300,8 @@ export const SOP_BLUEPRINTS: Record<`${ArticleFormat}_${ArticleEra}`, SopBlock[]
     { type: 'myth_fact', role: 'The Legacy Bias', desc: 'Debunking why market chooses lowest friction for offline users over pure complexity.', hint: 'Myth: Farmers won\'t adopt crypto keys vs Reality: Passkey abstraction is seamless' },
     { type: 'core_interactive', role: 'Meat 2: Network Effects & Roadblocks', desc: 'Which tech is hitting a scalability wall vs which is achieving exponential viral growth.', hint: 'Telco tariff pushback vs open-source smart contract liquidity pooling' },
     { type: 'pull_quote', role: 'The Standard-Setter', desc: 'Quote from a deep-tech standards architect declaring the fatal flaw in the losing tech.', hint: '"USSD is a rent-seeking toll road; Account Abstraction turns credit into open code."' },
-    { type: 'strategic_directive', role: 'The Syndicate Mandate', desc: 'Terminal UI: Divest from startups on Protocol A; concentrate Seed capital into Protocol B.', hint: 'Divest from pure USSD agritechs. Lead Seed rounds in hybrid smart-contract protocols.' },
     { type: 'live_poll', role: 'The Betting Pulse Check', desc: 'Poll founders and venture partners on which standard will establish the 2030 monopoly.', hint: 'Which protocol will dominate rural agricultural settlements by 2030?' },
+    { type: 'strategic_directive', role: 'The Syndicate Mandate', desc: 'Terminal UI: Divest from startups on Protocol A; concentrate Seed capital into Protocol B.', hint: 'Divest from pure USSD agritechs. Lead Seed rounds in hybrid smart-contract protocols.' },
     { type: 'call_to_action', role: 'The Global Banner', desc: 'Join the FoodNerve Developer, FinTech & Standards Working Group.', hint: 'Select Platform Growth Banner' },
   ],
 
@@ -316,8 +316,8 @@ export const SOP_BLUEPRINTS: Record<`${ArticleFormat}_${ArticleEra}`, SopBlock[]
     { type: 'core_interactive', role: 'Meat 1: The Cultural Fracture', desc: 'Trigger event and how it forced a specific demographic to abandon the micro-geography.', hint: 'The breakdown of traditional apprenticeship and community labor pooling' },
     { type: 'pull_quote', role: 'The Village Elder / Community Leader', desc: 'Raw emotional testimony reflecting on lost heritage and community fracturing.', hint: '"When the rain falls now, only old men and children come out to the fields."' },
     { type: 'core_interactive', role: 'Meat 2: The Generational Debt', desc: 'Long-term fallout: daughters pulled from school to cover labor gaps, land sold to corps.', hint: 'Generational wealth destruction and rural real estate fire-sales' },
-    { type: 'strategic_directive', role: 'The Policy Mandate', desc: 'Terminal UI: Dismantle extractive labor practices; restructure rural incentive frameworks.', hint: 'Dismantle uncollateralized manual labor expectations. Subsidize youth mechanization pools.' },
     { type: 'live_poll', role: 'The Generational Pulse Check', desc: 'Survey industry leaders on whether rural labor dynamics can ever reverse.', hint: 'Can mechanization and tech fellowships restore youth labor to rural hubs?' },
+    { type: 'strategic_directive', role: 'The Policy Mandate', desc: 'Terminal UI: Dismantle extractive labor practices; restructure rural incentive frameworks.', hint: 'Dismantle uncollateralized manual labor expectations. Subsidize youth mechanization pools.' },
     { type: 'call_to_action', role: 'The Global Banner', desc: 'Sponsor a rural youth fellowship and upskilling program on FoodNerve Society.', hint: 'Select Platform Growth Banner' },
   ],
   culture_present: [
@@ -330,8 +330,8 @@ export const SOP_BLUEPRINTS: Record<`${ArticleFormat}_${ArticleEra}`, SopBlock[]
     { type: 'myth_fact', role: 'The "Cheap Labor" Illusion', desc: 'Debunking cheap manual labor myth: human energy is now the most expensive farm input.', hint: 'Myth: Rural labor is cheap and plentiful vs Reality: Daily wages inflated 300%' },
     { type: 'pull_quote', role: 'The Frustrated HR Director', desc: 'Raw quote from an agribusiness VP who cannot scale because of the specialized talent deficit.', hint: '"We have $5M in greenhouses sitting idle because we cannot find 4 qualified fertigation engineers."' },
     { type: 'core_interactive', role: 'Meat 2: The Social Ripple Effect', desc: 'Impact on families, gender dynamics, and rural lifestyle changes.', hint: 'The "Bachelor Belt" crisis and young farm managers struggling to balance rural life' },
-    { type: 'strategic_directive', role: 'The Hiring Command', desc: 'Terminal UI: Overhaul compensation; aggressively recruit electro-mechanical engineers.', hint: 'Stop recruiting general agronomists. Retrain electro-mechanical technicians immediately.' },
     { type: 'live_poll', role: 'The Recruitment Pulse Check', desc: 'Survey hiring managers on whether they are struggling to fill specialized technical roles.', hint: 'Are you currently struggling to recruit qualified technical farm operators?' },
+    { type: 'strategic_directive', role: 'The Hiring Command', desc: 'Terminal UI: Overhaul compensation; aggressively recruit electro-mechanical engineers.', hint: 'Stop recruiting general agronomists. Retrain electro-mechanical technicians immediately.' },
     { type: 'call_to_action', role: 'The Global Banner', desc: 'Browse the FoodNerve Talent Network or post a bounty for verified agronomists.', hint: 'Select Platform Growth Banner' },
   ],
   culture_future: [
@@ -344,8 +344,8 @@ export const SOP_BLUEPRINTS: Record<`${ArticleFormat}_${ArticleEra}`, SopBlock[]
     { type: 'core_interactive', role: 'Meat 1: The New Daily Workflow', desc: 'Day-to-day operations of the 2030 worker interacting with robotics and AgroLLMs.', hint: 'Approving algorithmic spray plans, managing satellite vegetation indexes, and fleet uptime' },
     { type: 'pull_quote', role: 'The Ed-Tech Founder', desc: 'Quote from vocational training pioneer preparing the next-gen agricultural workforce.', hint: '"We aren\'t teaching kids how to swing a hoe; we are teaching them Python and soil sensor networks."' },
     { type: 'core_interactive', role: 'Meat 2: Who Gets Left Behind?', desc: 'The brutal transition reality for aging, unbanked farmers and how to bridge the gap.', hint: 'Voice-first AI interfaces and intergenerational tech-cooperative structures' },
-    { type: 'strategic_directive', role: 'The Education Mandate', desc: 'Terminal UI: Partner with universities to launch IoT ag-curriculums today.', hint: 'Partner with regional polytechnics. Fund 500 annual vocational agritech scholarships.' },
     { type: 'live_poll', role: 'The Workforce Readiness Pulse Check', desc: 'Poll corporate leaders on whether their training budget is preparing staff for 2030.', hint: 'Is your current company training budget preparing staff for AI-assisted robotics?' },
+    { type: 'strategic_directive', role: 'The Education Mandate', desc: 'Terminal UI: Partner with universities to launch IoT ag-curriculums today.', hint: 'Partner with regional polytechnics. Fund 500 annual vocational agritech scholarships.' },
     { type: 'call_to_action', role: 'The Global Banner', desc: 'Apply to the FoodNerve Future Farmers & Founders Fellowship.', hint: 'Select Platform Growth Banner' },
   ],
 };
