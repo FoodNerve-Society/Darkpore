@@ -206,14 +206,23 @@ export const BlockInsightsDrawer: React.FC<BlockInsightsDrawerProps> = ({
           </IconButton>
         </Box>
 
-        {/* Prompt */}
-        <Typography sx={{ 
-          fontWeight: 700, fontSize: '1rem', 
-          color: isDark ? '#f1f5f9' : '#0f172a', 
-          lineHeight: 1.45, letterSpacing: '-0.01em',
+        {/* Pinned Discussion Prompt */}
+        <Box sx={{
+          p: 1.5,
+          borderRadius: '12px',
+          bgcolor: isDark ? 'rgba(255,255,255,0.05)' : '#ffffff',
+          border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`,
+          borderLeft: `3px solid ${accentColor}`,
+          boxShadow: isDark ? 'none' : '0 1px 3px rgba(0,0,0,0.04)',
         }}>
-          {getPrompt()}
-        </Typography>
+          <Typography sx={{ 
+            fontWeight: 700, fontSize: '0.92rem', 
+            color: isDark ? '#f1f5f9' : '#0f172a', 
+            lineHeight: 1.45, letterSpacing: '-0.01em',
+          }}>
+            {getPrompt()}
+          </Typography>
+        </Box>
       </Box>
 
       {/* ═══════════ THREAD ═══════════ */}
@@ -226,79 +235,150 @@ export const BlockInsightsDrawer: React.FC<BlockInsightsDrawerProps> = ({
 
         {!loading && comments.map((comment) => {
           const isLiked = likedComments.has(comment.id);
+          const isCurrentUser = Boolean(profile?.uid && comment.userId === profile.uid);
+
           return (
             <Box 
               key={comment.id} 
               sx={{ 
-                px: 3, py: 2,
-                borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'}`,
-                transition: 'background-color 0.15s ease',
-                '&:hover': { bgcolor: isDark ? 'rgba(255,255,255,0.015)' : 'rgba(0,0,0,0.015)' },
+                px: 2.5, 
+                py: 1,
+                display: 'flex',
+                justifyContent: isCurrentUser ? 'flex-end' : 'flex-start',
               }}
             >
-              <Box sx={{ display: 'flex', gap: 1.5 }}>
-                <Avatar 
-                  src={comment.avatarUrl} 
-                  sx={{ width: 32, height: 32, mt: 0.25, fontSize: '0.8rem' }}
-                >
-                  {comment.displayName?.charAt(0) || '?'}
-                </Avatar>
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  {/* Name Row */}
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.25 }}>
-                    <Typography sx={{ fontWeight: 700, fontSize: '0.82rem', color: isDark ? '#e2e8f0' : '#1e293b', lineHeight: 1.3 }}>
-                      {comment.displayName || 'Anonymous'}
-                    </Typography>
-                    {comment.userId && (
-                      <VerifiedIcon sx={{ fontSize: 12, color: '#94a3b8' }} />
-                    )}
-                    <Typography sx={{ fontSize: '0.72rem', color: isDark ? '#475569' : '#94a3b8' }}>
-                      · {timeAgo(new Date(comment.createdAt))}
-                    </Typography>
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'flex-start', 
+                gap: 1, 
+                maxWidth: '88%',
+                flexDirection: isCurrentUser ? 'row-reverse' : 'row'
+              }}>
+                {!isCurrentUser && (
+                  <Avatar 
+                    src={comment.avatarUrl} 
+                    sx={{ 
+                      width: 28, 
+                      height: 28, 
+                      mt: 0.25, 
+                      fontSize: '0.75rem', 
+                      bgcolor: alpha(accentColor, 0.15), 
+                      color: accentColor,
+                      flexShrink: 0
+                    }}
+                  >
+                    {comment.displayName?.charAt(0) || '?'}
+                  </Avatar>
+                )}
+
+                {/* WhatsApp Chat Bubble */}
+                <Box sx={{
+                  position: 'relative',
+                  p: '10px 14px',
+                  borderRadius: isCurrentUser ? '16px 16px 2px 16px' : '2px 16px 16px 16px',
+                  bgcolor: isCurrentUser
+                    ? (isDark ? '#005c4b' : '#d9fdd3')
+                    : (isDark ? '#1e293b' : '#ffffff'),
+                  border: `1px solid ${
+                    isCurrentUser 
+                      ? (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)')
+                      : (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)')
+                  }`,
+                  boxShadow: isDark
+                    ? '0 1px 4px rgba(0,0,0,0.25)'
+                    : '0 1px 3px rgba(0,0,0,0.06)',
+                }}>
+                  {/* WhatsApp Notch Tail */}
+                  <Box
+                    component="svg"
+                    viewBox="0 0 8 13"
+                    sx={{
+                      position: 'absolute',
+                      top: 0,
+                      ...(isCurrentUser ? { right: -6.5, transform: 'scaleX(-1)' } : { left: -6.5 }),
+                      width: 7,
+                      height: 12,
+                      pointerEvents: 'none',
+                      zIndex: 2,
+                    }}
+                  >
+                    <path
+                      d="M1.533 3.568 8 12.193V0H2.812C1.042 0 .474 2.156 1.533 3.568z"
+                      fill={isCurrentUser ? (isDark ? '#005c4b' : '#d9fdd3') : (isDark ? '#1e293b' : '#ffffff')}
+                    />
                   </Box>
 
-                  {/* Text */}
+                  {/* Sender Name (only for incoming messages) */}
+                  {!isCurrentUser && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.35 }}>
+                      <Typography sx={{ 
+                        fontWeight: 700, 
+                        fontSize: '0.78rem', 
+                        color: accentColor || (isDark ? '#34d399' : '#059669'), 
+                        lineHeight: 1.2 
+                      }}>
+                        {comment.displayName || 'Anonymous'}
+                      </Typography>
+                      {comment.userId && (
+                        <VerifiedIcon sx={{ fontSize: 11, color: '#25D366' }} />
+                      )}
+                    </Box>
+                  )}
+
+                  {/* Comment Text */}
                   <Typography sx={{ 
-                    fontSize: '0.85rem', fontWeight: 400,
-                    lineHeight: 1.55, 
-                    color: isDark ? 'rgba(255,255,255,0.78)' : '#475569',
-                    mb: 0.75, wordBreak: 'break-word',
+                    fontSize: '0.86rem', 
+                    fontWeight: 400,
+                    lineHeight: 1.45, 
+                    color: isCurrentUser 
+                      ? (isDark ? '#e9edef' : '#111b21')
+                      : (isDark ? '#f1f5f9' : '#1e293b'),
+                    mb: 0.5, 
+                    wordBreak: 'break-word',
                   }}>
                     {comment.text}
                   </Typography>
-                  
-                  {/* Actions */}
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, ml: -0.5 }}>
+
+                  {/* Footer / Meta inside bubble */}
+                  <Box sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'flex-end', 
+                    gap: 1, 
+                    mt: 0.25 
+                  }}>
+                    <Typography sx={{ 
+                      fontSize: '0.68rem', 
+                      color: isCurrentUser 
+                        ? (isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.45)') 
+                        : (isDark ? '#64748b' : '#94a3b8') 
+                    }}>
+                      {timeAgo(new Date(comment.createdAt))}
+                    </Typography>
+                    
                     <Box 
                       onClick={() => handleLike(comment.id)}
                       sx={{ 
-                        display: 'flex', alignItems: 'center', gap: 0.5, 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: 0.35, 
                         cursor: isLiked ? 'default' : 'pointer', 
-                        p: 0.5, borderRadius: '8px',
-                        color: isLiked ? '#ef4444' : (isDark ? '#475569' : '#94a3b8'), 
+                        p: 0.2, 
+                        borderRadius: '4px',
+                        color: isLiked ? '#ef4444' : (isDark ? '#64748b' : '#94a3b8'), 
                         transition: 'all 0.15s',
-                        '&:hover': isLiked ? {} : { color: '#ef4444', bgcolor: alpha('#ef4444', 0.08) } 
+                        '&:hover': isLiked ? {} : { color: '#ef4444' } 
                       }}
                     >
                       {isLiked 
-                        ? <HeartFilledIcon sx={{ fontSize: 15 }} /> 
-                        : <HeartIcon sx={{ fontSize: 15 }} />
+                        ? <HeartFilledIcon sx={{ fontSize: 13 }} /> 
+                        : <HeartIcon sx={{ fontSize: 13 }} />
                       }
                       {comment.likes > 0 && (
-                        <Typography sx={{ fontSize: '0.75rem', fontWeight: 600 }}>
+                        <Typography sx={{ fontSize: '0.7rem', fontWeight: 600 }}>
                           {comment.likes}
                         </Typography>
                       )}
-                    </Box>
-                    <Box sx={{ 
-                      display: 'flex', alignItems: 'center', gap: 0.5, 
-                      cursor: 'pointer', p: 0.5, borderRadius: '8px',
-                      color: isDark ? '#475569' : '#94a3b8', 
-                      transition: 'all 0.15s',
-                      '&:hover': { color: accentColor, bgcolor: alpha(accentColor, 0.08) } 
-                    }}>
-                      <ChatIcon sx={{ fontSize: 14 }} />
-                      <Typography sx={{ fontSize: '0.75rem', fontWeight: 600 }}>Reply</Typography>
                     </Box>
                   </Box>
                 </Box>

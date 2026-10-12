@@ -1,7 +1,8 @@
 import React from 'react';
-import { Box, Typography, Avatar, alpha } from '@mui/material';
-import { Close as CloseIcon, Check as CheckIcon, Verified as VerifiedIcon } from '@mui/icons-material';
+import { Box, Typography, alpha } from '@mui/material';
+import { Close as CloseIcon, Check as CheckIcon } from '@mui/icons-material';
 import { MarkdownText } from '../MarkdownText';
+import { WhatsAppDiscussionPrompt } from '../WhatsAppDiscussionPrompt';
 
 type MythRealityBlockProps = {
   content: {
@@ -85,86 +86,18 @@ export const MythRealityBlock: React.FC<MythRealityBlockProps> = ({ content, the
         </Box>
       ))}
 
-      {/* Discussion Prompt */}
-      {isComplete && (content.discussionPrompt || author) && (() => {
-        const authorName = typeof author === 'object' && author?.name 
-          ? author.name 
-          : (typeof author === 'string' && author ? author : 'Society Architect');
-        const authorAvatar = typeof author === 'object' ? author?.avatarUrl : undefined;
-        const isAuthorVerified = typeof author === 'object' ? (author?.isVerified ?? true) : true;
-        const replyLabel = content.repliesCount ? `${content.repliesCount} ${content.repliesCount === 1 ? 'Reply' : 'Replies'}` : 'Reply';
-
-        return (
-          <Box sx={{ display: 'flex', justifyContent: 'flex-start', mt: 2 }}>
-            <Box 
-              onClick={triggerInsights}
-              sx={{ 
-                display: 'flex', 
-                alignItems: 'flex-start', 
-                gap: 1.5,
-                width: '100%',
-                maxWidth: { xs: '100%', md: '85%' },
-                p: { xs: 1.5, sm: 2 },
-                borderRadius: '16px',
-                bgcolor: alpha(accentColor || '#ef4444', isDark ? 0.08 : 0.05),
-                border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}`,
-                borderLeft: `3px solid ${accentColor || '#ef4444'}`,
-                cursor: 'pointer',
-                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                '&:hover': {
-                  bgcolor: alpha(accentColor || '#ef4444', isDark ? 0.12 : 0.08),
-                  transform: 'translateY(-1px)',
-                  boxShadow: `0 8px 24px ${alpha(accentColor || '#ef4444', 0.12)}`
-                },
-                '&:hover .reply-btn': { bgcolor: accentColor || '#ef4444', color: '#fff' }
-              }}
-            >
-              <Box sx={{ flexShrink: 0, position: 'relative' }}>
-                <Avatar src={authorAvatar} alt={authorName} sx={{ width: 30, height: 30, fontSize: '0.85rem', fontWeight: 700 }}>
-                  {authorName?.charAt(0) || 'S'}
-                </Avatar>
-                <Box sx={{ 
-                  position: 'absolute', bottom: -1, right: -1, width: 9, height: 9, 
-                  bgcolor: '#10b981', borderRadius: '50%', border: `1.5px solid ${isDark ? '#0f172a' : '#fff'}` 
-                }} />
-              </Box>
-              
-              <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5, flexWrap: 'gap', gap: 1 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 800, fontSize: '0.82rem', color: isDark ? '#fff' : '#0f172a', display: 'flex', alignItems: 'center' }}>
-                    {authorName}
-                    {isAuthorVerified && <VerifiedIcon sx={{ fontSize: 13, color: accentColor || '#10b981', ml: 0.5 }} />}
-                  </Typography>
-                  <Typography className="reply-btn" sx={{ 
-                    px: 1.2, py: 0.3, 
-                    borderRadius: '10px',
-                    bgcolor: alpha(accentColor || '#ef4444', 0.1),
-                    color: accentColor || '#ef4444',
-                    fontSize: '0.72rem',
-                    fontWeight: 800,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.04em',
-                    transition: 'all 0.2s',
-                    display: 'inline-flex',
-                    alignItems: 'center'
-                  }}>
-                    {replyLabel}
-                  </Typography>
-                </Box>
-                <Typography sx={{ 
-                  fontSize: { xs: '0.88rem', sm: '0.92rem' }, 
-                  color: isDark ? 'rgba(255,255,255,0.85)' : '#334155', 
-                  fontStyle: 'italic', 
-                  fontWeight: 500,
-                  lineHeight: 1.5 
-                }}>
-                  {`"${content.discussionPrompt || 'Have you encountered this myth in your own experience?'}"`}
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
-        );
-      })()}
+      {/* WhatsApp Discussion Prompt */}
+      {isComplete && (content.discussionPrompt || author) && (
+        <WhatsAppDiscussionPrompt
+          prompt={content.discussionPrompt}
+          defaultPrompt="Have you encountered this myth in your own experience?"
+          author={author}
+          repliesCount={content.repliesCount}
+          accentColor={accentColor}
+          themeMode={themeMode}
+          triggerInsights={triggerInsights}
+        />
+      )}
     </Box>
   );
 };
