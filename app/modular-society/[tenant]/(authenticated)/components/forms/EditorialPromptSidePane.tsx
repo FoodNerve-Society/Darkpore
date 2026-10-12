@@ -200,6 +200,7 @@ export function EditorialPromptSidePane({
       doc_3b: 'sop_doc3_2',
       doc_4a: 'sop_doc4_1',
       doc_4b: 'sop_doc4_2',
+      doc_4c: 'sop_doc4_3',
     };
     const targetCheck = map[promptKey];
     if (targetCheck) {
@@ -333,7 +334,7 @@ export function EditorialPromptSidePane({
   ], [promptContext]);
 
   // ═══════════════════════════════════════════════════════════
-  // DOCUMENT 4: REFINEMENT, BIONIC & CMS COMPILATION (4a, 4b)
+  // DOCUMENT 4: REFINEMENT, FLOW & CMS COMPILATION (4a, 4b, 4c)
   // ═══════════════════════════════════════════════════════════
   const doc4Prompts = useMemo(() => [
     {
@@ -351,12 +352,23 @@ export function EditorialPromptSidePane({
       key: 'doc_4b',
       stepNum: 7,
       code: 'DOC 4b',
-      title: 'The Payload Parser (CMS API Bridge)',
-      instruction: 'Run Doc 4b to sanitize formatting and compile the entire validated article into strict, machine-readable JSON format ready for instant import.',
-      role: 'Full sanitization sweep & compilation into strictly valid, headless CMS JSON payload for direct canvas ingest',
+      title: 'The Narrative Flow & Sequence Optimizer',
+      instruction: 'Run Doc 4b to review the full draft, keep the 3-Up/3-Down bookends locked, and reorder the middle blocks for maximum dramatic pacing and reader retention.',
+      role: 'Macro narrative flow audit, middle block re-sequencing & dramatic pacing optimization',
       prompt: buildDoc4bPrompt(promptContext),
       checkId: 'sop_doc4_2',
-      checkText: 'Run Doc 4b to sanitize syntax and compile the payload into strictly valid headless CMS JSON.',
+      checkText: 'Run Doc 4b to audit narrative tension and optimize middle block sequencing.',
+    },
+    {
+      key: 'doc_4c',
+      stepNum: 8,
+      code: 'DOC 4c',
+      title: 'The Payload Parser (CMS API Bridge)',
+      instruction: 'Run Doc 4c to sanitize formatting and compile the entire validated article into strict, machine-readable JSON format ready for instant import.',
+      role: 'Full sanitization sweep & compilation into strictly valid, headless CMS JSON payload for direct canvas ingest',
+      prompt: buildDoc4cPrompt(promptContext),
+      checkId: 'sop_doc4_3',
+      checkText: 'Run Doc 4c to sanitize syntax and compile the payload into strictly valid headless CMS JSON.',
     },
   ], [promptContext]);
 

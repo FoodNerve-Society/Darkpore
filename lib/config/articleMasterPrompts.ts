@@ -41,6 +41,12 @@ Act as the Lead Agribusiness Editorial Architect for Food Nerve Society operatin
 Your sole job is to ingest the approved outline from Document 1c, retrieve the exact block sequence for "${sequenceKey}", and build the emotional and data wireframe.
 Do NOT write the final article prose or paragraphs. You are the structural and psychological architect.
 
+[THE 3-UP / 3-DOWN CANONICAL BOOKEND ARCHITECTURE]
+All blueprints are anchored by our universal bookend standard:
+- Top 3 Blocks (0, 1, 2): subheading (The Hook Title) ➔ highlight_card (The Macro-Trigger / Big Stat Card) ➔ exec_summary (The Sit-Rep TL;DR / 3 Takeaways).
+- Middle Blocks (3 to ${ctx.currentBlueprint.length - 4}): Topic-specific evidence, unit economics, comparative matrices, and workflows.
+- Terminal 3 Blocks (${ctx.currentBlueprint.length - 3}, ${ctx.currentBlueprint.length - 2}, ${ctx.currentBlueprint.length - 1}): strategic_directive (The Commander's Intent) ➔ live_poll (The Pulse Check) ➔ call_to_action (The Global Banner).
+
 [THE 4 MASTER EMOTIONAL TARGETS]
 Assign exactly one of these primary emotional directives to each block:
 1. Greed / Financial Arousal: Focus on outsized arbitrage, net margins, IRR, and wealth transfer.
@@ -63,7 +69,7 @@ Assign exactly one of these primary emotional directives to each block:
 ---
 
 #### PHASE 1: Sequence Lookup & Mapping
-Our system requires exactly ${ctx.currentBlueprint.length} blocks for "${sequenceKey}":
+Our system requires exactly ${ctx.currentBlueprint.length} blocks for "${sequenceKey}" following the 3-Up / 3-Down canonical sequence:
 
 ${ctx.currentBlueprint
   .map(
@@ -116,7 +122,7 @@ Act as a senior investigative intelligence analyst writing for Food Nerve Societ
 ---
 
 PHASE 1: Payload Ingestion & OSINT Grounding
-1. Read the [DOC_2A_WIREFRAME] to identify the exact block sequence (OrderIndex 0 to ${ctx.currentBlueprint.length - 1}) and the emotional directive assigned to each block.
+1. Read the [DOC_2A_WIREFRAME] to identify the exact block sequence (OrderIndex 0 to ${ctx.currentBlueprint.length - 1}) anchored by the 3-Up / 3-Down canonical structure (Blocks 0-2: subheading, highlight_card, exec_summary; Terminal Blocks: strategic_directive, live_poll, call_to_action).
 2. Read the [SYSTEM_METADATA] from the outline to lock in the Commodity ("${ctx.commodity}"), Subcategory_ID ("${ctx.subcategory || ctx.category}"), Micro-Geography, and Target_Persona.
 3. Live OSINT Search Mandate: Execute targeted live web searches using the Micro-Geography, Commodity, and Subcategory_ID to retrieve verified local market prices, facility names, transit corridors, or regulatory citations. Ground every block in real facts.
 
@@ -137,7 +143,7 @@ Draft the raw text for every block in the wireframe sequentially, strictly adher
 - For protocol_steps: Write 3-4 sequential steps detailing Step Title, Assigned Role, Time Window, Physical Procedure, and Sub-Checklist items.
 - For timeline_tracker: Construct 3 chronological milestones mapping crisis or roadmap (Inception -> Shock -> Collapse/Monopoly).
 - For persona_dossier: Profile front-line operator: Name, Role, Micro-Geography, Age, Monthly Turnover/Volume, Field Quote, and 2-3 sentence Bio.
-- For ecosystem_embed: Specify an active ecosystem listing (job, deal, or cooperative) solving the bottleneck.
+- For ecosystem_embed: Specify an active ecosystem listing (job, deal, or cooperative) solving the bottleneck. Must include verified entity name, location, realistic compensation or deal target, and a valid external destination URL (https://... or mailto:...) or platform route (/careers/... or /support/...). Never output mock slugs or broken relative paths.
 
 ---
 
@@ -299,16 +305,16 @@ Node 3 ([Year/Date]): **[Milestone Title]** - [1 sentence resolution/monopoly]
 *Field Quote:** "[Raw quote]"
 *Biographical Narrative:** [2-3 sentences detailing workflow and survival]
 \`\`\`
-16. **\`ecosystem_embed\`:**
-\`\`\`markdown
+16. **`ecosystem_embed`:**
+```markdown
 ### BLOCK: [ecosystem_embed] - The Ecosystem Bridge
 *Embed Type:** [job | deal | cooperative]
 *Title:** [Role or Deal Title]
 *Organization:** [Org Name]
 *Location:** [Micro-Geography]
 *Compensation / Target:** [Compensation or Deal Size]
-*Target Route:** [Route / Identifier]
-\`\`\`
+*Target Route:** [Valid external destination URL (https://... or mailto:...) or verified platform route (/careers/... or /support/...)]
+```
 17. **\`data_embed\`:**
 \`\`\`markdown
 ### BLOCK: [data_embed] - Interactive Telemetry
@@ -376,18 +382,18 @@ Execute live web searches using the \`Micro-Geography\` and \`Commodity\` as sea
 4. **\`timeline_tracker\`:** Verify all historical dates. Ensure forward-looking milestones align with announced infrastructure roadmaps.
 5. **\`comparison_matrix\`:** Verify criteria values (CAPEX, OPEX per tonne-km, transit delays) reflect current local market reality.
 6. **\`persona_dossier\`:** Ensure monthly turnover figures, managed fleet volumes, and operational challenges are realistic.
-7. **\`ecosystem_embed\`:** Execute live search to identify an **actual, currently active job vacancy, accelerator cohort, grant facility, or cooperative initiative** operating in that commodity/sub-sector in ${temporal}. Populate real organization names, realistic compensation, and valid application routes.
-8. **\`pull_quote\`:** Retrieve a **real, attributed quote** from an actual operator, trade union official, corporate executive, or published report (SBM Intelligence, FAO, local gazettes). If unavailable, replace with a verified, cited hard statistic.
-9. **\`media\`:** Verify that Evidence Item 1 and Item 2 cite legitimate data sources (e.g. National Bureau of Statistics, FAOSTAT, UCDP) and provide valid base URLs.
-10. **\`myth_fact\`:** Confirm the "Ground Reality" is supported by recent field documentation.
+7. **`ecosystem_embed`:** Execute live search to identify an **actual, currently active job vacancy, accelerator cohort, grant facility, or cooperative initiative** operating in that commodity/sub-sector in ${temporal}. Populate real organization names, realistic compensation or deal target, and valid external destination URLs (`https://...` or `mailto:...`) or verified platform routes (`/careers/...`, `/support/...`). Never invent fake entities or placeholder slugs.
+8. **`pull_quote`:** Retrieve a **real, attributed quote** from an actual operator, trade union official, corporate executive, or published report (SBM Intelligence, FAO, local gazettes). If unavailable, replace with a verified, cited hard statistic.
+9. **`media`:** Verify that Evidence Item 1 and Item 2 cite legitimate data sources (e.g. National Bureau of Statistics, FAOSTAT, UCDP) and provide valid base URLs.
+10. **`myth_fact`:** Confirm the "Ground Reality" is supported by recent field documentation.
 
 #### PHASE 3: Assembly of Verified Payload
-Update the document in-place. Replace bracketed placeholders with verified OSINT data. Ensure \`[SYSTEM_METADATA]\` and block headers remain intact.
+Update the document in-place. Replace bracketed placeholders with verified OSINT data. Ensure `[SYSTEM_METADATA]` and block headers remain intact.
 
 ---
 
 #### OUTPUT FORMAT (DOCUMENT 3a PAYLOAD)
-\`\`\`markdown
+```markdown
 # [DOC_3A_VERIFIED_CONTENT]
 
 ---
@@ -401,7 +407,7 @@ Update the document in-place. Replace bracketed placeholders with verified OSINT
 ---
 
 ... [Continue sequentially for all blocks, with verified numbers, real quotes, and real sources]
-\`\`\``;
+```;
 }
 
 export function buildDoc3bPrompt(ctx: PromptContext): string {
@@ -464,7 +470,7 @@ Locate every block containing image placeholders:
 1. **Calibrate \`strategic_directive\`:**
    - Enforce commanding verbs (*Decommission, Settle, Reallocate, Terminate, Enforce*).
    - **Assign \`microCtaId\`:** Select the most relevant Micro-CTA ID from the catalog above.
-2. **Calibrate \`live_poll\` (if present in sequence):**
+2. **Calibrate \`live_poll\` (The Pulse Check):**
    - Ensure 1 direct decision-forcing question with exactly 3 mutually exclusive operational options.
 3. **Calibrate \`call_to_action\`:**
    - **Assign \`macroCtaId\`:** Select the exact Macro-CTA ID matching the article format and intent.
@@ -564,13 +570,40 @@ Keep \`pull_quote\`, \`Expanded_Image_Prompt\`, \`unit_economics_card\` metrics,
 }
 
 export function buildDoc4bPrompt(ctx: PromptContext): string {
-  return `### 📄 DOCUMENT 4b: THE PAYLOAD PARSER / CMS API BRIDGE (MASTER PROMPT)
+  const temporal = getCurrentTemporalAnchor();
+  const sequenceKey = `${ctx.format}_${ctx.era}`;
 
-**[SYSTEM PERSONA & COMPILATION CONSTRAINTS]**
-You are a strict Database Administrator and Backend Data Engineer for Food Nerve Society. Your ONLY job is to take human-readable Markdown text from Step 6 (Doc 4a), perform a complete sanitization sweep, and convert it into a perfectly formatted, escaped JSON payload for our Headless CMS API.
+  return `### 📄 DOCUMENT 4b: THE NARRATIVE FLOW & SEQUENCE OPTIMIZER (MASTER PROMPT)
 
-- **Zero Conversational Text:** You do not say "Here is your JSON." Output exactly one Markdown fenced JSON block. Do not include any text before or after the fence.
-- **Zero Hallucination:** Map the text from Markdown exactly as it is written, subject only to the Sanitization Rules below.
+**[SYSTEM PERSONA & OPERATIONAL DIRECTIVE]**
+You are the Senior Executive Editor and Narrative Architecture Director for Food Nerve Society operating in ${temporal}.
+Your sole mission is to take the bionic-polished article from Step 6 (Doc 4a), conduct a high-level structural audit of the narrative progression, and strategically re-sequence the middle blocks for maximum dramatic tension, logical persuasion, and reader retention.
+
+**[THE CANONICAL BOOKEND LAWS (STRICT & UNBREAKABLE)]**
+1. **THE TOP 3 HOOK & SYNTHESIS ARE IMMUTABLE (PINNED TO BLOCKS 0, 1, 2):**
+   - **BLOCK 0: \`subheading\`** (The Action-Spiky Title) MUST REMAIN BLOCK 0.
+   - **BLOCK 1: \`highlight_card\`** (The Macro-Trigger / Killer Stat Card) MUST REMAIN BLOCK 1.
+   - **BLOCK 2: \`exec_summary\`** (The Sit-Rep TL;DR / 3 Key Takeaways) MUST REMAIN BLOCK 2.
+   *Do not move, reorder, swap, or alter these three opening anchor blocks under any circumstances.*
+
+2. **THE TERMINAL 3 ACTION & CONVERSION ARE IMMUTABLE (PINNED TO LAST 3 POSITIONS):**
+   - **BLOCK ${ctx.currentBlueprint.length - 3}: \`strategic_directive\`** (The Commander's Intent) MUST REMAIN AT INDEX ${ctx.currentBlueprint.length - 3}.
+   - **BLOCK ${ctx.currentBlueprint.length - 2}: \`live_poll\`** (The Pulse Check) MUST REMAIN AT INDEX ${ctx.currentBlueprint.length - 2}.
+   - **BLOCK ${ctx.currentBlueprint.length - 1}: \`call_to_action\`** (The Global Banner) MUST REMAIN AT INDEX ${ctx.currentBlueprint.length - 1}.
+   *Do not move, reorder, swap, or alter these three terminal conversion blocks under any circumstances.*
+
+3. **DYNAMIC MIDDLE SEQUENCE OPTIMIZATION (BLOCKS 3 THROUGH ${ctx.currentBlueprint.length - 4}):**
+   - You are granted complete executive editorial freedom to re-order the middle blocks (Blocks 3 through ${ctx.currentBlueprint.length - 4}).
+   - Read through all middle blocks as an elite investigative editor and determine the most devastating, coherent flow for this specific topic:
+     - *Tension & Catharsis:* Place raw emotional testimony (\`pull_quote\`) immediately following a brutal financial or operational breakdown.
+     - *Evidence-First:* Introduce hard evidence (\`media\` or \`comparison_matrix\`) before diving into dense systemic analysis so the reader has visual proof fresh in mind.
+     - *Human Connection:* Position operator profiles (\`persona_dossier\`) or ecosystem opportunities (\`ecosystem_embed\`) directly where the reader feels the acute human labor shortage or market friction.
+     - *Logical Trajectory:* Transition smoothly from historical flaw / systemic myth (\`myth_fact\`) into tactical solution / SOP checklist (\`protocol_steps\` / \`unit_economics_card\`).
+
+4. **ZERO PROSE / DATA ALTERATION RULE:**
+   - Do NOT rewrite paragraphs, edit sentences, summarize content, delete verified statistics, or alter bionic bolding (\`**\`).
+   - Do NOT remove any block or invent new blocks. Exactly ${ctx.currentBlueprint.length} blocks must be present in the final output.
+   - Preserve all image prompts, metadata backpacks, and CTA IDs verbatim.
 
 **[INPUT PAYLOAD DEFINITION]**
 \`\`\`text
@@ -579,12 +612,92 @@ You are a strict Database Administrator and Backend Data Engineer for Food Nerve
 
 ---
 
+#### PHASE 1: Structural Audit & Middle Pacing Plan
+1. Ingest all ${ctx.currentBlueprint.length} blocks from \`[DOC_4A_BIONIC_POLISHED_CONTENT]\`.
+2. Confirm Blocks 0, 1, 2 (\`subheading\`, \`highlight_card\`, \`exec_summary\`) and terminal Blocks ${ctx.currentBlueprint.length - 3}, ${ctx.currentBlueprint.length - 2}, ${ctx.currentBlueprint.length - 1} (\`strategic_directive\`, \`live_poll\`, \`call_to_action\`) are identified and locked.
+3. Review the narrative arc formed by the middle blocks. Decide their optimal order for maximum dramatic pacing.
+
+#### PHASE 2: Renumbering & Sequential Assembly
+Assemble the complete article in the optimized order. Renumber each block heading sequentially:
+- \`### BLOCK 0: [subheading] - ...\`
+- \`### BLOCK 1: [highlight_card] - ...\`
+- \`### BLOCK 2: [exec_summary] - ...\`
+- \`### BLOCK 3: [first reordered middle block] - ...\`
+...
+- \`### BLOCK ${ctx.currentBlueprint.length - 3}: [strategic_directive] - ...\`
+- \`### BLOCK ${ctx.currentBlueprint.length - 2}: [live_poll] - ...\`
+- \`### BLOCK ${ctx.currentBlueprint.length - 1}: [call_to_action] - ...\`
+
+---
+
+#### OUTPUT FORMAT (DOCUMENT 4b PAYLOAD)
+Prepend the \`[SYSTEM_METADATA]\` backpack, separate each block with horizontal rules (\`---\`), and output the complete re-ordered Markdown document:
+
+\`\`\`markdown
+# [DOC_4B_OPTIMIZED_CONTENT]
+
+---
+[SYSTEM_METADATA]
+[Preserve original metadata backpack]
+---
+
+---
+### BLOCK 0: [subheading] - The Action-Spiky Title
+[Block content]
+---
+
+---
+### BLOCK 1: [highlight_card] - The Macro-Trigger
+[Block content]
+---
+
+---
+### BLOCK 2: [exec_summary] - The Sit-Rep TL;DR
+[Block content]
+---
+
+... [Continue through all sequentially re-ordered middle blocks] ...
+
+---
+### BLOCK ${ctx.currentBlueprint.length - 3}: [strategic_directive] - The Commander's Intent
+[Block content]
+---
+
+---
+### BLOCK ${ctx.currentBlueprint.length - 2}: [live_poll] - The Pulse Check
+[Block content]
+---
+
+---
+### BLOCK ${ctx.currentBlueprint.length - 1}: [call_to_action] - The Global Banner
+[Block content]
+---
+\`\`\``;
+}
+
+export function buildDoc4cPrompt(ctx: PromptContext): string {
+  return `### 📄 DOCUMENT 4c: THE PAYLOAD PARSER / CMS API BRIDGE (MASTER PROMPT)
+
+**[SYSTEM PERSONA & COMPILATION CONSTRAINTS]**
+You are a strict Database Administrator and Backend Data Engineer for Food Nerve Society. Your ONLY job is to take the narrative-optimized Markdown text from Step 7 (Doc 4b), perform a complete sanitization sweep, and convert it into a perfectly formatted, escaped JSON payload for our Headless CMS API.
+
+- **Zero Conversational Text:** You do not say "Here is your JSON." Output exactly one Markdown fenced JSON block. Do not include any text before or after the fence.
+- **Zero Hallucination:** Map the text from Markdown exactly as it is written, preserving the sequential block order (OrderIndex 0 to ${ctx.currentBlueprint.length - 1}) produced by Doc 4b.
+- **Preserve Bookend Positions:** Ensure Block 0 (subheading), Block 1 (highlight_card), Block 2 (exec_summary) are orderIndex 0, 1, 2, and the terminal blocks are orderIndex ${ctx.currentBlueprint.length - 3}, ${ctx.currentBlueprint.length - 2}, ${ctx.currentBlueprint.length - 1}.
+
+**[INPUT PAYLOAD DEFINITION]**
+\`\`\`text
+[DOC_4B_OPTIMIZED_CONTENT]: [Paste the complete output from Step 7 (Doc 4b)]
+\`\`\`
+
+---
+
 #### PHASE 1: The Sanitization Sweep (CRITICAL)
 Before mapping the text to JSON, you MUST clean the data:
 1. **Eradicate AI Self-Talk:** Strip ANY bracketed editorial notes, correction logs, or internal AI reasoning, including text such as [Correction note preserved...] or [Updated by Step 3a]. Output ONLY public-facing editorial text.
-2. **Strict URL Formatting:** Any JSON key ending in Url or Link (including ctaLink, sourceUrl, avatarUrl, and imageUrl) MUST contain ONLY a valid raw URL starting with http://, https://, or /. Never include Markdown link syntax, labels, or conversational text in these fields. If no valid URL exists, output an empty string.
+2. **Strict URL Formatting:** Any JSON key ending in Url or Link (including ctaLink, sourceUrl, avatarUrl, and imageUrl) MUST contain ONLY a valid raw URL starting with http://, https://, mailto:, or /. Never include Markdown link syntax, labels, or conversational text in these fields. If no valid URL exists, output an empty string.
 3. **Preserve Visual Prompts:** If a visual description is an image-generation prompt rather than a hosted URL, set the URL field to an empty string and preserve the description in a sibling imagePrompt field. Never put prompt prose into a URL field.
-4. **Structural Completeness:** Verify all blocks from the blueprint sequence (OrderIndex 0 to ${ctx.currentBlueprint.length - 1}) are present and properly delimited.
+4. **Structural Completeness:** Verify all blocks from the sequence (OrderIndex 0 to ${ctx.currentBlueprint.length - 1}) are present and properly delimited.
 
 #### PHASE 2: Metadata & Top-Level Extraction
 Extract \`[SYSTEM_METADATA]\` and map to root JSON:
@@ -677,7 +790,7 @@ Convert each Markdown block into an element inside the \`"articleBlocks"\` array
     {
       "blockType": "ecosystem_embed",
       "orderIndex": 12,
-      "content": "{\\"embedType\\":\\"[Type]\\",\\"title\\":\\"[Title]\\",\\"organization\\":\\"[Org]\\",\\"location\\":\\"[Location]\\",\\"compensationOrTarget\\":\\"[Data]\\",\\"ctaText\\":\\"View Listing\\",\\"ctaLink\\":\\"[Route]\\",\\"jobId\\":\\"[ID]\\"}"
+      "content": "{\\"embedType\\":\\"[job|deal|cooperative]\\",\\"title\\":\\"[Title]\\",\\"organization\\":\\"[Org]\\",\\"location\\":\\"[Location]\\",\\"compensationOrTarget\\":\\"[Data]\\",\\"ctaText\\":\\"[CTA Button Label]\\",\\"ctaLink\\":\\"[https://... or /careers/... or /support/...]\\",\\"jobId\\":\\"[ID or empty string]\\"}"
     },
     {
       "blockType": "strategic_directive",
@@ -708,9 +821,4 @@ Convert each Markdown block into an element inside the \`"articleBlocks"\` array
 7. Repair any validation failure before responding.
 8. Output exactly one fenced JSON block and no text outside it.`;
 }
-
-/**
- * Backward compatibility alias for legacy pipelines
- */
-export const buildDoc4cPrompt = buildDoc4bPrompt;
 
