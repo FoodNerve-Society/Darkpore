@@ -24,6 +24,7 @@ import {
   RadioButtonChecked as RadioButtonCheckedIcon,
   RadioButtonUnchecked as RadioButtonUncheckedIcon,
   SwapHoriz as SwapHorizIcon,
+  SwapVert as SwapVertIcon,
   AccountCircle as AccountCircleIcon,
   Business as BusinessIcon,
   Lock as LockIcon,
@@ -365,7 +366,7 @@ function SortableBlockWrapper({ id, reorderUnlocked, children }: { id: string, r
     transform,
     transition,
     isDragging,
-  } = useSortable({ id });
+  } = useSortable({ id, disabled: !reorderUnlocked });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -2887,23 +2888,23 @@ export default function CreateLearnContentForm({
 
                         {/* Reorder Button */}
                         <Button
-                          startIcon={reorderUnlocked ? <LockOpenIcon sx={{ fontSize: 18 }} /> : <LockIcon sx={{ fontSize: 18 }} />}
+                          startIcon={reorderUnlocked ? <CheckIcon sx={{ fontSize: 18 }} /> : <SwapVertIcon sx={{ fontSize: 18 }} />}
                           onClick={() => {
                             setReorderUnlocked(prev => !prev);
                           }}
                           size="medium"
                           sx={{
                             color: reorderUnlocked ? ACCENT : '#475569',
-                            fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.06em',
-                            borderRadius: '14px', px: 2.5, py: 1,
+                            fontWeight: 700, fontSize: '0.85rem', textTransform: 'none',
+                            borderRadius: '14px', px: 2.5, py: 0.9,
                             border: `2px solid ${reorderUnlocked ? alpha(ACCENT, 0.5) : 'rgba(0,0,0,0.1)'}`,
-                            bgcolor: reorderUnlocked ? alpha(ACCENT, 0.05) : 'rgba(255,255,255,0.5)',
+                            bgcolor: reorderUnlocked ? alpha(ACCENT, 0.08) : 'rgba(255,255,255,0.6)',
                             backdropFilter: 'blur(8px)',
-                            '&:hover': { bgcolor: reorderUnlocked ? alpha(ACCENT, 0.1) : 'rgba(255,255,255,0.8)', borderColor: reorderUnlocked ? ACCENT : 'rgba(0,0,0,0.2)' },
+                            '&:hover': { bgcolor: reorderUnlocked ? alpha(ACCENT, 0.15) : 'rgba(255,255,255,0.9)', borderColor: reorderUnlocked ? ACCENT : 'rgba(0,0,0,0.2)' },
                             transition: 'all 0.2s',
                           }}
                         >
-                          {reorderUnlocked ? 'Lock Order' : 'Reorder Blocks'}
+                          {reorderUnlocked ? 'Done' : 'Reorder'}
                         </Button>
                       </Box>
                     </Box>
@@ -3007,82 +3008,81 @@ export default function CreateLearnContentForm({
                                   )}
                                   {/* Reorder / Delete controls */}
                                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
-                                    {/* Drag Handle - always accessible */}
-                                    <Tooltip title="Drag to reorder">
-                                      <Box
-                                        {...attributes}
-                                        {...listeners}
-                                        sx={{
-                                          cursor: 'grab',
-                                          '&:active': { cursor: 'grabbing' },
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                          justifyContent: 'center',
-                                          p: 0.75,
-                                          borderRadius: '8px',
-                                          color: filled ? 'rgba(255,255,255,0.7)' : (reorderUnlocked ? ACCENT : '#94a3b8'),
-                                          bgcolor: reorderUnlocked ? alpha(ACCENT, 0.08) : 'transparent',
-                                          border: reorderUnlocked ? `1px solid ${alpha(ACCENT, 0.25)}` : '1px solid transparent',
-                                          '&:hover': {
-                                            color: filled ? '#fff' : '#0f172a',
-                                            bgcolor: filled ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.06)',
-                                          },
-                                          transition: 'all 0.15s ease',
-                                        }}
-                                      >
-                                        <DragIndicatorIcon sx={{ fontSize: 20 }} />
+                                    {/* Reorder controls - revealed only when Reorder mode is active */}
+                                    {reorderUnlocked && (
+                                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, bgcolor: filled ? 'rgba(255,255,255,0.08)' : alpha(ACCENT, 0.05), border: filled ? '1px solid rgba(255,255,255,0.2)' : `1px solid ${alpha(ACCENT, 0.2)}`, borderRadius: '10px', p: 0.4 }}>
+                                        {/* Drag Handle */}
+                                        <Tooltip title="Drag to reorder">
+                                          <Box
+                                            {...attributes}
+                                            {...listeners}
+                                            sx={{
+                                              cursor: 'grab',
+                                              '&:active': { cursor: 'grabbing' },
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              justifyContent: 'center',
+                                              p: 0.6,
+                                              borderRadius: '6px',
+                                              color: filled ? 'rgba(255,255,255,0.85)' : ACCENT,
+                                              '&:hover': {
+                                                color: filled ? '#fff' : '#0f172a',
+                                                bgcolor: filled ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.06)',
+                                              },
+                                              transition: 'all 0.15s ease',
+                                            }}
+                                          >
+                                            <DragIndicatorIcon sx={{ fontSize: 18 }} />
+                                          </Box>
+                                        </Tooltip>
+
+                                        {/* Move Up */}
+                                        <Tooltip title="Move block up">
+                                          <span>
+                                            <IconButton
+                                              size="small"
+                                              disabled={i === 0}
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                moveBlockUp(i);
+                                              }}
+                                              sx={{
+                                                color: filled ? 'rgba(255,255,255,0.85)' : '#64748b',
+                                                p: 0.4,
+                                                borderRadius: '6px',
+                                                '&:hover': { bgcolor: filled ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.08)' },
+                                                '&.Mui-disabled': { opacity: 0.25 },
+                                              }}
+                                            >
+                                              <ArrowUpIcon sx={{ fontSize: 16 }} />
+                                            </IconButton>
+                                          </span>
+                                        </Tooltip>
+
+                                        {/* Move Down */}
+                                        <Tooltip title="Move block down">
+                                          <span>
+                                            <IconButton
+                                              size="small"
+                                              disabled={i === blocks.length - 1}
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                moveBlockDown(i);
+                                              }}
+                                              sx={{
+                                                color: filled ? 'rgba(255,255,255,0.85)' : '#64748b',
+                                                p: 0.4,
+                                                borderRadius: '6px',
+                                                '&:hover': { bgcolor: filled ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.08)' },
+                                                '&.Mui-disabled': { opacity: 0.25 },
+                                              }}
+                                            >
+                                              <ArrowDownIcon sx={{ fontSize: 16 }} />
+                                            </IconButton>
+                                          </span>
+                                        </Tooltip>
                                       </Box>
-                                    </Tooltip>
-
-                                    {/* Move Up */}
-                                    <Tooltip title="Move block up">
-                                      <span>
-                                        <IconButton
-                                          size="small"
-                                          disabled={i === 0}
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            moveBlockUp(i);
-                                          }}
-                                          sx={{
-                                            color: filled ? 'rgba(255,255,255,0.85)' : '#64748b',
-                                            bgcolor: filled ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.03)',
-                                            border: filled ? '1px solid rgba(255,255,255,0.25)' : '1px solid rgba(0,0,0,0.07)',
-                                            p: 0.5,
-                                            borderRadius: '8px',
-                                            '&:hover': { bgcolor: filled ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.08)' },
-                                            '&.Mui-disabled': { opacity: 0.25 },
-                                          }}
-                                        >
-                                          <ArrowUpIcon sx={{ fontSize: 16 }} />
-                                        </IconButton>
-                                      </span>
-                                    </Tooltip>
-
-                                    {/* Move Down */}
-                                    <Tooltip title="Move block down">
-                                      <span>
-                                        <IconButton
-                                          size="small"
-                                          disabled={i === blocks.length - 1}
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            moveBlockDown(i);
-                                          }}
-                                          sx={{
-                                            color: filled ? 'rgba(255,255,255,0.85)' : '#64748b',
-                                            bgcolor: filled ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.03)',
-                                            border: filled ? '1px solid rgba(255,255,255,0.25)' : '1px solid rgba(0,0,0,0.07)',
-                                            p: 0.5,
-                                            borderRadius: '8px',
-                                            '&:hover': { bgcolor: filled ? 'rgba(255,255,255,0.22)' : 'rgba(0,0,0,0.08)' },
-                                            '&.Mui-disabled': { opacity: 0.25 },
-                                          }}
-                                        >
-                                          <ArrowDownIcon sx={{ fontSize: 16 }} />
-                                        </IconButton>
-                                      </span>
-                                    </Tooltip>
+                                    )}
 
                                     <Tooltip title="Open Block Scratchpad">
                                       <IconButton
