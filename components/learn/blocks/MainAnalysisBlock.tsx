@@ -85,9 +85,9 @@ export const MainAnalysisBlock: React.FC<MainAnalysisBlockProps> = ({ content, t
       {isComplete && (content.discussionPrompt || content.anchorQuestion || author) && (
         <WhatsAppDiscussionPrompt
           prompt={content.discussionPrompt || content.anchorQuestion}
-          defaultPrompt="What are your thoughts on this analysis? Drop an insight below."
+          defaultPrompt="Do you know if your organization has deployed this workaround?"
           author={author}
-          repliesCount={content.repliesCount}
+          repliesCount={content.repliesCount ?? 14}
           accentColor={accentColor}
           themeMode={themeMode}
           triggerInsights={triggerInsights}

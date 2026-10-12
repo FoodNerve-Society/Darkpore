@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Typography, Avatar, Chip, Button, alpha } from '@mui/material';
 import {
   Verified as VerifiedIcon,
-  ChatBubbleOutline as ChatIcon,
+  ChatBubbleOutlined as ChatIcon,
   ArrowForward as ArrowForwardIcon,
   Forum as ForumIcon,
 } from '@mui/icons-material';

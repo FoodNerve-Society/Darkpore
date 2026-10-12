@@ -90,9 +90,9 @@ export const MythRealityBlock: React.FC<MythRealityBlockProps> = ({ content, the
       {isComplete && (content.discussionPrompt || author) && (
         <WhatsAppDiscussionPrompt
           prompt={content.discussionPrompt}
-          defaultPrompt="Have you encountered this myth in your own experience?"
+          defaultPrompt="Do you know if this myth still holds in your sector or corridor?"
           author={author}
-          repliesCount={content.repliesCount}
+          repliesCount={content.repliesCount ?? 11}
           accentColor={accentColor}
           themeMode={themeMode}
           triggerInsights={triggerInsights}

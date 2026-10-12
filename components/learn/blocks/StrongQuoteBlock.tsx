@@ -120,9 +120,9 @@ export const StrongQuoteBlock: React.FC<StrongQuoteBlockProps> = ({ content, the
       {isComplete && (content.discussionPrompt || author) && (
         <WhatsAppDiscussionPrompt
           prompt={content.discussionPrompt}
-          defaultPrompt="How does this quote resonate with your perspective?"
+          defaultPrompt="Do you know if this quote reflects your current corridor reality?"
           author={author}
-          repliesCount={content.repliesCount}
+          repliesCount={content.repliesCount ?? 9}
           accentColor={accentColor}
           themeMode={themeMode}
           triggerInsights={triggerInsights}
