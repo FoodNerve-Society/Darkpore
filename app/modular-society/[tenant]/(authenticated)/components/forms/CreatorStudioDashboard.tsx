@@ -3592,6 +3592,17 @@ export default function CreatorStudioDashboard({
                                   const isBasketFullySelected = basket.commodities.every(c => selectedCommodities.includes(c));
                                   const selectedCount = basket.commodities.filter(c => selectedCommodities.includes(c)).length;
 
+                                  // Sort commodities within basket based on closeness to current week / date
+                                  const sortedCommodities = [...basket.commodities].sort((a, b) => {
+                                    const idxA = commoditiesList.indexOf(a);
+                                    const idxB = commoditiesList.indexOf(b);
+                                    let offsetA = idxA - activeIdx;
+                                    if (offsetA < 0) offsetA += commoditiesList.length;
+                                    let offsetB = idxB - activeIdx;
+                                    if (offsetB < 0) offsetB += commoditiesList.length;
+                                    return offsetA - offsetB;
+                                  });
+
                                   return (
                                     <Box key={basket.id} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                                       {/* Section Header */}
@@ -3606,7 +3617,7 @@ export default function CreatorStudioDashboard({
                                           borderBottom: `2px solid ${alpha(basket.color, 0.2)}`,
                                         }}
                                       >
-                                        {/* Left Title & Description */}
+                                        {/* Left Title & Count Chip (subtext removed) */}
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                                           <Box
                                             sx={{
@@ -3625,27 +3636,22 @@ export default function CreatorStudioDashboard({
                                           >
                                             {basket.emoji}
                                           </Box>
-                                          <Box>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                                              <Typography sx={{ fontSize: { xs: '1.02rem', sm: '1.15rem' }, fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em' }}>
-                                                {basket.label}
-                                              </Typography>
-                                              <Chip
-                                                label={`${selectedCount}/${basket.commodities.length} selected`}
-                                                size="small"
-                                                sx={{
-                                                  fontWeight: 800,
-                                                  fontSize: '0.72rem',
-                                                  height: 22,
-                                                  bgcolor: isBasketFullySelected ? basket.color : 'rgba(0,0,0,0.06)',
-                                                  color: isBasketFullySelected ? '#fff' : '#475569',
-                                                  border: isBasketFullySelected ? 'none' : '1px solid rgba(0,0,0,0.08)',
-                                                }}
-                                              />
-                                            </Box>
-                                            <Typography sx={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600, mt: 0.25 }}>
-                                              {basket.description}
+                                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                            <Typography sx={{ fontSize: { xs: '1.02rem', sm: '1.15rem' }, fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em' }}>
+                                              {basket.label}
                                             </Typography>
+                                            <Chip
+                                              label={`${selectedCount}/${basket.commodities.length} selected`}
+                                              size="small"
+                                              sx={{
+                                                fontWeight: 800,
+                                                fontSize: '0.72rem',
+                                                height: 22,
+                                                bgcolor: isBasketFullySelected ? basket.color : 'rgba(0,0,0,0.06)',
+                                                color: isBasketFullySelected ? '#fff' : '#475569',
+                                                border: isBasketFullySelected ? 'none' : '1px solid rgba(0,0,0,0.08)',
+                                              }}
+                                            />
                                           </Box>
                                         </Box>
 
@@ -3687,7 +3693,7 @@ export default function CreatorStudioDashboard({
                                           gap: 2,
                                         }}
                                       >
-                                        {basket.commodities.map((comm) => {
+                                        {sortedCommodities.map((comm) => {
                                           const isSelected = selectedCommodities.includes(comm);
                                           const meta = getCommodityMeta(comm);
                                           const commIdx = commoditiesList.indexOf(comm);
@@ -3871,7 +3877,7 @@ export default function CreatorStudioDashboard({
                         })()}
                       </Box>
 
-                      {/* ── MINIMAL PREMIUM FLOATING DOCK (VIEWPORT FIXED CAPSULE) ── */}
+                      {/* ── WIDE GLASSY SQUIRCLE FLOATING DOCK (BLUE THEMED) ── */}
                       {selectedCommodities.length > 0 && (
                         <Box
                           component={motion.div}
@@ -3884,44 +3890,41 @@ export default function CreatorStudioDashboard({
                             bottom: { xs: 16, sm: 24 },
                             left: '50%',
                             zIndex: 1350,
-                            width: { xs: 'calc(100% - 32px)', sm: 'auto' },
-                            maxWidth: { xs: '100%', sm: 620 },
-                            bgcolor: 'rgba(15, 23, 42, 0.92)',
-                            backdropFilter: 'blur(24px)',
-                            border: '1.5px solid rgba(255, 255, 255, 0.18)',
-                            borderRadius: '999px',
-                            py: { xs: 1, sm: 1.2 },
-                            px: { xs: 1.75, sm: 2.5 },
-                            boxShadow: isAllSelected
-                              ? '0 20px 50px rgba(0, 0, 0, 0.55), 0 0 25px rgba(59, 130, 246, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25)'
-                              : '0 20px 50px rgba(0, 0, 0, 0.55), 0 0 25px rgba(16, 185, 129, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.25)',
+                            width: { xs: 'calc(100% - 24px)', sm: 'calc(100% - 48px)', md: 760, lg: 820 },
+                            maxWidth: { xs: '100%', sm: 820 },
+                            bgcolor: 'rgba(10, 24, 48, 0.86)',
+                            backdropFilter: 'blur(30px) saturate(190%)',
+                            border: '1.5px solid rgba(96, 165, 250, 0.32)',
+                            borderRadius: { xs: '20px', sm: '24px' },
+                            py: { xs: 1.25, sm: 1.4 },
+                            px: { xs: 2, sm: 2.75 },
+                            boxShadow: '0 24px 60px rgba(0, 0, 0, 0.6), 0 0 35px rgba(37, 99, 235, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.28), inset 0 0 20px rgba(59, 130, 246, 0.12)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
                             gap: { xs: 1.5, sm: 2.25 },
                           }}
                         >
-                          {/* Left: Count Avatar & Title */}
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, minWidth: 0, flex: 1 }}>
+                          {/* Left: Blue Squircle Avatar & Title Info */}
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0, flex: 1 }}>
                             <Box
                               sx={{
-                                width: 36,
-                                height: 36,
-                                borderRadius: '50%',
-                                bgcolor: isAllSelected ? '#3b82f6' : '#10b981',
+                                width: { xs: 38, sm: 42 },
+                                height: { xs: 38, sm: 42 },
+                                borderRadius: '13px',
+                                background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
                                 color: '#fff',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 fontWeight: 900,
-                                fontSize: '0.85rem',
-                                boxShadow: isAllSelected
-                                  ? '0 2px 10px rgba(59, 130, 246, 0.5)'
-                                  : '0 2px 10px rgba(16, 185, 129, 0.5)',
+                                fontSize: { xs: '0.85rem', sm: '0.95rem' },
+                                boxShadow: '0 4px 16px rgba(37, 99, 235, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.35)',
+                                border: '1px solid rgba(255, 255, 255, 0.25)',
                                 flexShrink: 0
                               }}
                             >
-                              {isAllSelected ? <LanguageIcon sx={{ fontSize: 19 }} /> : selectedCommodities.length}
+                              {isAllSelected ? <LanguageIcon sx={{ fontSize: 21 }} /> : selectedCommodities.length}
                             </Box>
 
                             <Box sx={{ minWidth: 0 }}>
@@ -3929,27 +3932,27 @@ export default function CreatorStudioDashboard({
                                 sx={{
                                   color: '#fff',
                                   fontWeight: 900,
-                                  fontSize: { xs: '0.84rem', sm: '0.94rem' },
-                                  letterSpacing: '-0.01em',
+                                  fontSize: { xs: '0.88rem', sm: '1.02rem' },
+                                  letterSpacing: '-0.015em',
                                   lineHeight: 1.2,
                                   whiteSpace: 'nowrap',
                                   overflow: 'hidden',
                                   textOverflow: 'ellipsis',
-                                  maxWidth: { xs: 150, sm: 260, md: 320 }
+                                  maxWidth: { xs: 160, sm: 300, md: 400 }
                                 }}
                               >
                                 {displayCommodityTitle}
                               </Typography>
-                              <Typography sx={{ color: '#94a3b8', fontSize: '0.72rem', fontWeight: 600, mt: 0.15 }}>
+                              <Typography sx={{ color: '#93c5fd', fontSize: { xs: '0.72rem', sm: '0.78rem' }, fontWeight: 700, mt: 0.2 }}>
                                 {isAllSelected
-                                  ? `All ${commoditiesList.length} corridors selected`
-                                  : `${selectedCommodities.length} corridor${selectedCommodities.length === 1 ? '' : 's'} active`}
+                                  ? `All ${commoditiesList.length} corridors selected (National Macro Focus)`
+                                  : `${selectedCommodities.length} corridor${selectedCommodities.length === 1 ? '' : 's'} active • Ready to configure Focus Area`}
                               </Typography>
                             </Box>
                           </Box>
 
                           {/* Right: Actions */}
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.75, sm: 1.25 }, flexShrink: 0 }}>
                             <Button
                               size="small"
                               onClick={() => {
@@ -3960,10 +3963,12 @@ export default function CreatorStudioDashboard({
                                 color: '#94a3b8',
                                 fontWeight: 700,
                                 textTransform: 'none',
-                                fontSize: '0.8rem',
-                                px: 1,
+                                fontSize: '0.82rem',
+                                px: { xs: 1, sm: 1.5 },
+                                py: 0.75,
+                                borderRadius: '12px',
                                 minWidth: 'auto',
-                                '&:hover': { color: '#fff' }
+                                '&:hover': { color: '#fff', bgcolor: 'rgba(255, 255, 255, 0.08)' }
                               }}
                             >
                               Reset
@@ -3972,27 +3977,27 @@ export default function CreatorStudioDashboard({
                             <Button
                               variant="contained"
                               onClick={handleProceedToStep2}
-                              endIcon={<ArrowForwardArrow sx={{ fontSize: 16 }} />}
+                              endIcon={<ArrowForwardArrow sx={{ fontSize: 17 }} />}
                               sx={{
-                                bgcolor: isAllSelected ? '#3b82f6' : '#10b981',
+                                background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
                                 color: '#fff',
                                 fontWeight: 900,
-                                fontSize: { xs: '0.82rem', sm: '0.88rem' },
+                                fontSize: { xs: '0.84rem', sm: '0.92rem' },
                                 textTransform: 'none',
-                                borderRadius: '999px',
-                                px: { xs: 2, sm: 2.75 },
-                                py: 0.85,
-                                boxShadow: isAllSelected
-                                  ? '0 4px 16px rgba(59, 130, 246, 0.45)'
-                                  : '0 4px 16px rgba(16, 185, 129, 0.45)',
+                                borderRadius: '14px',
+                                px: { xs: 2.25, sm: 3.25 },
+                                py: { xs: 0.9, sm: 1.05 },
+                                boxShadow: '0 8px 24px rgba(37, 99, 235, 0.55), 0 0 16px rgba(59, 130, 246, 0.4)',
+                                border: '1px solid rgba(255, 255, 255, 0.3)',
+                                transition: 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)',
                                 '&:hover': {
-                                  bgcolor: isAllSelected ? '#2563eb' : '#059669',
-                                  transform: 'translateY(-1px)'
-                                },
-                                transition: 'all 0.2s ease'
+                                  background: 'linear-gradient(135deg, #2563eb 0%, #1e40af 100%)',
+                                  boxShadow: '0 12px 30px rgba(37, 99, 235, 0.7), 0 0 22px rgba(59, 130, 246, 0.6)',
+                                  transform: 'translateY(-2px)'
+                                }
                               }}
                             >
-                              Continue →
+                              Continue to Focus Area →
                             </Button>
                           </Box>
                         </Box>
