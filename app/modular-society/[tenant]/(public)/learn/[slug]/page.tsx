@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { Box, Container, Typography, Avatar, Divider } from '@mui/material';
 import { getLearnContentBySlug } from '@/lib/actions/learn';
 import { ArticleBlockRenderer } from '@/components/learn/ArticleBlockRenderer';
+import { getCorridorResurfaceInfo } from '@/lib/cms/commodities';
 
 export default async function LearnContentPage({ 
   params 
@@ -33,12 +34,72 @@ export default async function LearnContentPage({
   }
 
   const { article } = content;
+  const corridorInfo = getCorridorResurfaceInfo({
+    bottleneckTags: content.bottleneckTags,
+    targetDate: content.targetDate,
+    createdAt: content.createdAt,
+  });
 
   return (
     <Box sx={{ bgcolor: '#fff', minHeight: '100vh', pt: 12, pb: 16 }}>
       <Container maxWidth="md">
         {/* Article Header */}
         <Box sx={{ mb: 6 }}>
+          {/* Living Corridor Memo / Resurfaced Banner */}
+          {corridorInfo.isResurfaced && (
+            <Box
+              sx={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 1.25,
+                px: 2,
+                py: 1,
+                mb: 2.5,
+                borderRadius: '16px',
+                bgcolor: 'rgba(59, 130, 246, 0.08)',
+                border: '1.5px solid rgba(59, 130, 246, 0.25)',
+                boxShadow: '0 4px 16px rgba(59, 130, 246, 0.1)',
+              }}
+            >
+              <Box sx={{ fontSize: '1.1rem', lineHeight: 1 }}>🔄</Box>
+              <Box>
+                <Typography sx={{ color: '#1d4ed8', fontWeight: 800, fontSize: '0.82rem', letterSpacing: '-0.01em', lineHeight: 1.25 }}>
+                  Living Corridor Memo • Resurfaced for Week {corridorInfo.currentWeek}: {corridorInfo.currentWeekCommodity} Focus
+                </Typography>
+                <Typography sx={{ color: '#64748b', fontSize: '0.74rem', fontWeight: 600, mt: 0.15 }}>
+                  Originally published {corridorInfo.authorWeek ? `for Week ${corridorInfo.authorWeek}` : ''} • Covers {corridorInfo.coveredCommodities.join(', ')}
+                </Typography>
+              </Box>
+            </Box>
+          )}
+
+          {corridorInfo.isEvergreen && (
+            <Box
+              sx={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 1.25,
+                px: 2,
+                py: 1,
+                mb: 2.5,
+                borderRadius: '16px',
+                bgcolor: 'rgba(16, 185, 129, 0.08)',
+                border: '1.5px solid rgba(16, 185, 129, 0.25)',
+                boxShadow: '0 4px 16px rgba(16, 185, 129, 0.1)',
+              }}
+            >
+              <Box sx={{ fontSize: '1.1rem', lineHeight: 1 }}>🌐</Box>
+              <Box>
+                <Typography sx={{ color: '#047857', fontWeight: 800, fontSize: '0.82rem', letterSpacing: '-0.01em', lineHeight: 1.25 }}>
+                  Evergreen Macro Supply-Chain Intelligence
+                </Typography>
+                <Typography sx={{ color: '#64748b', fontSize: '0.74rem', fontWeight: 600, mt: 0.15 }}>
+                  Systemic national reference active across all 52 corridor weeks
+                </Typography>
+              </Box>
+            </Box>
+          )}
+
           {/* Tags */}
           <Box sx={{ display: 'flex', gap: 1, mb: 3, flexWrap: 'wrap' }}>
             {(() => {

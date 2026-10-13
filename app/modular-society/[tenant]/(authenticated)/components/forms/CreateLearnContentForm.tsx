@@ -73,7 +73,7 @@ import PremiumCard from '@/components/PremiumCard';
 import { useParams } from 'next/navigation';
 import { getTenantConfig } from '@/lib/cms';
 import { MICRO_CTAS, MACRO_CTAS } from '@/lib/cms/ctas';
-import { commoditiesList, formatCommoditySelectionTitle } from '@/lib/cms/commodities';
+import { commoditiesList, formatCommoditySelectionTitle, findMatchingBasket } from '@/lib/cms/commodities';
 import { useStorageUpload } from '@/hooks/useStorageUpload';
 import { ArticleBlockRenderer } from '@/components/learn/ArticleBlockRenderer';
 import PremiumTextField from '@/components/PremiumTextField';
@@ -1566,6 +1566,8 @@ export default function CreateLearnContentForm({
           selectedCategory,
           selectedCommodity,
           ...selectedCommodities,
+          ...(selectedCommodities.length >= commoditiesList.length ? ['all_commodities', 'evergreen'] : []),
+          ...(findMatchingBasket(selectedCommodities) ? [findMatchingBasket(selectedCommodities)!.id] : [])
         ])).filter(Boolean) as string[],
         category: selectedCategory,
         subcategory: selectedSubcategory,
@@ -1591,7 +1593,7 @@ export default function CreateLearnContentForm({
         classDuration: type === 'class' ? duration : undefined,
         reportPdfUrl: type === 'report' ? reportPdfUrl : undefined,
         reportPages: type === 'report' ? reportPages : undefined,
-        targetDate: isPublish && effectivePublishMode === 'scheduled' ? new Date(effectiveTargetDate).toISOString() : undefined,
+        targetDate: effectiveTargetDate ? new Date(effectiveTargetDate).toISOString() : (isPublish ? new Date().toISOString() : undefined),
       };
 
       const result = await createLearnContent(payload, !isPublish);

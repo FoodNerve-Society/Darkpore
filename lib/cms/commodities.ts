@@ -170,6 +170,8 @@ export const THEMATIC_BASKETS: ThematicBasket[] = [
   }
 ];
 
+import { getISOWeek } from 'date-fns';
+
 export function findMatchingBasket(commodities: string[]): ThematicBasket | undefined {
   if (!commodities || commodities.length === 0) return undefined;
   return THEMATIC_BASKETS.find(b => 
@@ -188,5 +190,100 @@ export function formatCommoditySelectionTitle(commodities: string[]): string {
   if (commodities.length === 1) return commodities[0];
   if (commodities.length === 2) return `${commodities[0]} & ${commodities[1]}`;
   return `${commodities[0]} + ${commodities.length - 1} More`;
+}
+
+/**
+ * Returns the two 52-week calendar cycle weeks for a single commodity
+ * (Cycle 1: Weeks 1-26, Cycle 2: Weeks 27-52).
+ */
+export function getWeeksForCommodity(commodity: string): number[] {
+  const idx = commoditiesList.indexOf(commodity);
+  if (idx === -1) return [];
+  return [idx + 1, idx + 1 + commoditiesList.length];
+}
+
+/**
+ * Derives all projected calendar weeks where this article is active.
+ * For All Commodities or empty array, returns all 52 weeks (evergreen).
+ */
+export function getProjectedWeeksForCommodities(commodities: string[]): number[] {
+  if (!commodities || commodities.length === 0 || commodities.length >= commoditiesList.length) {
+    return Array.from({ length: 52 }, (_, i) => i + 1);
+  }
+  const weeks = new Set<number>();
+  for (const c of commodities) {
+    getWeeksForCommodity(c).forEach(w => {
+      if (w <= 52) weeks.add(w);
+    });
+  }
+  return Array.from(weeks).sort((a, b) => a - b);
+}
+
+export function isCommodityEvergreen(commodities: string[]): boolean {
+  return !commodities || commodities.length === 0 || commodities.length >= commoditiesList.length;
+}
+
+export interface CorridorResurfaceInfo {
+  isEvergreen: boolean;
+  isResurfaced: boolean;
+  currentWeek: number;
+  authorWeek?: number;
+  currentWeekCommodity: string;
+  matchedCommodity?: string;
+  coveredCommodities: string[];
+  projectedWeeks: number[];
+}
+
+/**
+ * Determines whether a given article is currently resurfaced for the active calendar week.
+ */
+export function getCorridorResurfaceInfo(params: {
+  bottleneckTags?: string[] | string | null;
+  targetDate?: Date | string | null;
+  createdAt?: Date | string | null;
+  currentDate?: Date;
+}): CorridorResurfaceInfo {
+  const now = params.currentDate || new Date();
+  const currentWeek = getISOWeek(now);
+  const currentCommodityIdx = (currentWeek - 1) % commoditiesList.length;
+  const currentWeekCommodity = commoditiesList[currentCommodityIdx];
+
+  let tags: string[] = [];
+  if (Array.isArray(params.bottleneckTags)) {
+    tags = params.bottleneckTags;
+  } else if (typeof params.bottleneckTags === 'string') {
+    try {
+      tags = JSON.parse(params.bottleneckTags);
+    } catch {
+      tags = [];
+    }
+  }
+
+  const isEvergreen = tags.includes('all_commodities') || tags.includes('evergreen') || tags.length >= commoditiesList.length;
+  const coveredCommodities = commoditiesList.filter(c => tags.includes(c));
+
+  let authorWeek: number | undefined;
+  const dateAnchor = params.targetDate ? new Date(params.targetDate) : (params.createdAt ? new Date(params.createdAt) : null);
+  if (dateAnchor && !isNaN(dateAnchor.getTime())) {
+    authorWeek = getISOWeek(dateAnchor);
+  }
+
+  const projectedWeeks = isEvergreen
+    ? Array.from({ length: 52 }, (_, i) => i + 1)
+    : getProjectedWeeksForCommodities(coveredCommodities);
+
+  const coversCurrentCommodity = coveredCommodities.includes(currentWeekCommodity) || isEvergreen;
+  const isResurfaced = Boolean(coversCurrentCommodity && authorWeek !== undefined && authorWeek !== currentWeek);
+
+  return {
+    isEvergreen,
+    isResurfaced,
+    currentWeek,
+    authorWeek,
+    currentWeekCommodity,
+    matchedCommodity: coveredCommodities.includes(currentWeekCommodity) ? currentWeekCommodity : undefined,
+    coveredCommodities,
+    projectedWeeks,
+  };
 }
 
