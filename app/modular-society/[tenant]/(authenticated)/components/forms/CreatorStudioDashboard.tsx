@@ -76,7 +76,14 @@ import WorkspaceContentManager from '@/app/components/studio/WorkspaceContentMan
 import { usePromptAssistant } from '@/context/PromptAssistantContext';
 import { useSociety } from '@/context/SocietyContext';
 import { AdminArticlePromptSidePane } from './AdminArticlePromptSidePane';
-import { commoditiesList, getCommodityMeta } from '@/lib/cms/commodities';
+import { 
+  commoditiesList, 
+  getCommodityMeta, 
+  THEMATIC_BASKETS, 
+  ThematicBasket, 
+  formatCommoditySelectionTitle, 
+  findMatchingBasket 
+} from '@/lib/cms/commodities';
 import { getISOWeek, startOfISOWeek, addDays, format, getYear } from 'date-fns';
 import { CATEGORY_MAP } from '@/lib/config/editorialMatrix';
 import { getDailyEditorialIntel, regenerateCustomAnglesAction, ArticleInsightItem } from '@/lib/actions/editorialMatrix';
@@ -544,13 +551,29 @@ export default function CreatorStudioDashboard({
   const currentWeek = getISOWeek(currentDate);
   const currentYear = getYear(currentDate);
 
+  const activeWeeklyCommodity = useMemo(() => {
+    const idx = (currentWeek - 1) % commoditiesList.length;
+    return commoditiesList[idx];
+  }, [currentWeek]);
+
   const [matrixStep, setMatrixStep] = useState<1 | 2 | 3>(1);
   const [selectedWeek, setSelectedWeek] = useState<number>(currentWeek);
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
-  const [selectedCommodity, setSelectedCommodity] = useState<string>(() => {
-    const idx = (currentWeek - 1) % commoditiesList.length;
-    return commoditiesList[idx];
-  });
+  const [selectedCommodities, setSelectedCommodities] = useState<string[]>([activeWeeklyCommodity]);
+  const [activeBasketId, setActiveBasketId] = useState<string | null>(null);
+
+  const isAllSelected = selectedCommodities.length >= commoditiesList.length;
+
+  const displayCommodityTitle = useMemo(() => {
+    return formatCommoditySelectionTitle(selectedCommodities);
+  }, [selectedCommodities]);
+
+  const [selectedCommodity, setSelectedCommodity] = useState<string>(activeWeeklyCommodity);
+
+  useEffect(() => {
+    setSelectedCommodity(displayCommodityTitle);
+  }, [displayCommodityTitle]);
+
   const [selectedCategory, setSelectedCategory] = useState<string>('land');
   const [selectedTargetDate, setSelectedTargetDate] = useState<string>(() => currentDate.toISOString());
   const [focusedDayIdx, setFocusedDayIdx] = useState<number>(0);
@@ -928,9 +951,53 @@ export default function CreatorStudioDashboard({
     }
   }, [expandedStartType]);
 
+  const handleToggleCommodity = (commodity: string, week?: number) => {
+    if (week !== undefined) setSelectedWeek(week);
+    setActiveBasketId(null);
+    setSelectedCommodities(prev => {
+      const exists = prev.includes(commodity);
+      if (exists) {
+        if (prev.length === 1) return prev; // keep at least 1
+        return prev.filter(c => c !== commodity);
+      } else {
+        return [...prev, commodity];
+      }
+    });
+  };
+
+  const handleSelectThematicBasket = (basket: ThematicBasket) => {
+    if (activeBasketId === basket.id) {
+      setActiveBasketId(null);
+      setSelectedCommodities([activeWeeklyCommodity]);
+    } else {
+      setActiveBasketId(basket.id);
+      setSelectedCommodities([...basket.commodities]);
+      setShowAllCommodities(true);
+    }
+  };
+
+  const handleToggleAllCommodities = () => {
+    if (isAllSelected) {
+      setActiveBasketId(null);
+      setSelectedCommodities([activeWeeklyCommodity]);
+    } else {
+      setActiveBasketId('all');
+      setSelectedCommodities([...commoditiesList]);
+      setShowAllCommodities(true);
+    }
+  };
+
+  const handleProceedToStep2 = () => {
+    setInsights([]);
+    setRawPrompts(null);
+    setFocusedDayIdx(0);
+    setMatrixStep(2);
+  };
+
   const handleSelectCommodityAndWeek = (week: number, commodity: string) => {
     setSelectedWeek(week);
-    setSelectedCommodity(commodity);
+    setSelectedCommodities([commodity]);
+    setActiveBasketId(null);
     setInsights([]);
     setRawPrompts(null);
     setFocusedDayIdx(0);
@@ -974,6 +1041,7 @@ export default function CreatorStudioDashboard({
 
     onStartFresh('article', {
       commodity: selectedCommodity,
+      commodities: selectedCommodities,
       category: selectedCategory,
       subcategory: resolvedSub,
       format: item.format,
@@ -991,6 +1059,7 @@ export default function CreatorStudioDashboard({
       timeframe: item.era,
       targetDate: selectedTargetDate,
       commodity: selectedCommodity,
+      commodities: selectedCommodities,
       location: item.location,
     });
   };
@@ -998,6 +1067,7 @@ export default function CreatorStudioDashboard({
   const handleStartCustomArticle = () => {
     onStartFresh('article', {
       commodity: selectedCommodity,
+      commodities: selectedCommodities,
       category: selectedCategory,
       subcategory: '',
       format: 'brief',
@@ -1014,6 +1084,7 @@ export default function CreatorStudioDashboard({
       timeframe: 'present',
       targetDate: selectedTargetDate,
       commodity: selectedCommodity,
+      commodities: selectedCommodities,
     });
   };
 
@@ -3027,12 +3098,12 @@ export default function CreatorStudioDashboard({
                               {matrixStep === 1
                                 ? "What commodity do you want to write about?"
                                 : matrixStep === 2
-                                ? "What do you want to focus on?"
+                                ? `What focus area for ${displayCommodityTitle}?`
                                 : `Pick one of the ${insights.length || 'articles'} to write on`}
                             </Typography>
                             {matrixStep === 1 && (
                               <Typography sx={{ color: '#64748b', fontSize: { xs: '0.95rem', sm: '1.05rem' }, fontWeight: 700, mt: 0.5 }}>
-                                Tap one to continue.
+                                Select single commodities, thematic clusters, or national macro scope.
                               </Typography>
                             )}
                           </Box>
@@ -3145,32 +3216,37 @@ export default function CreatorStudioDashboard({
 
                           return (
                             <>
-                              {/* ── BENTO HERO TILE: 80% WIDTH, CENTERED & TILTED UP ── */}
+                              {/* ── BENTO DUAL HERO TILES: COMMODITY OF THE WEEK + ALL COMMODITIES (SYSTEM-WIDE) ── */}
                               <Box
                                 component={motion.div}
                                 variants={cardProgressiveTiltVariants}
                                 sx={{
                                   gridColumn: '1 / -1',
                                   width: '100%',
-                                  display: 'flex',
-                                  justifyContent: 'center',
+                                  display: 'grid',
+                                  gridTemplateColumns: { xs: '1fr', lg: '1.18fr 0.82fr' },
+                                  gap: { xs: 2.5, sm: 3 },
                                   perspective: '1200px'
                                 }}
                               >
+                                {/* Tile 1: Active Weekly Focus */}
                                 <Paper
                                   elevation={0}
-                                  onClick={() => handleSelectCommodityAndWeek(currentWeek, activeComm)}
+                                  onClick={() => handleToggleCommodity(activeComm, currentWeek)}
                                   sx={{
-                                    width: { xs: '100%', md: '80%' },
                                     minHeight: { xs: 210, sm: 240, md: 260 },
                                     borderRadius: '28px',
                                     position: 'relative',
                                     overflow: 'hidden',
                                     cursor: 'pointer',
                                     bgcolor: '#0f172a',
-                                    border: '2.5px solid rgba(255, 255, 255, 0.25)',
-                                    boxShadow: '0 12px 32px rgba(0, 0, 0, 0.45)',
-                                    transform: { xs: 'none', md: 'rotateX(4deg)' },
+                                    border: selectedCommodities.includes(activeComm)
+                                      ? '3px solid #10b981'
+                                      : '2.5px solid rgba(255, 255, 255, 0.25)',
+                                    boxShadow: selectedCommodities.includes(activeComm)
+                                      ? '0 16px 44px rgba(16, 185, 129, 0.35)'
+                                      : '0 12px 32px rgba(0, 0, 0, 0.45)',
+                                    transform: { xs: 'none', md: 'rotateX(3deg)' },
                                     transformOrigin: 'bottom center',
                                     transition: 'all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)',
                                     display: 'flex',
@@ -3178,14 +3254,14 @@ export default function CreatorStudioDashboard({
                                     justifyContent: 'space-between',
                                     p: { xs: 2.25, sm: 3 },
                                     '&:hover': {
-                                      transform: { xs: 'translateY(-4px) scale(1.01)', md: 'rotateX(0deg) translateY(-6px) scale(1.01)' },
-                                      borderColor: 'rgba(255, 255, 255, 0.55)',
+                                      transform: { xs: 'translateY(-4px) scale(1.01)', md: 'rotateX(0deg) translateY(-5px) scale(1.01)' },
+                                      borderColor: 'rgba(255, 255, 255, 0.65)',
                                       boxShadow: '0 20px 48px rgba(0, 0, 0, 0.55)',
                                       '& .hero-bg': { transform: 'scale(1.06)' }
                                     }
                                   }}
                                 >
-                                  {/* Background Image (Clean without dark filter) */}
+                                  {/* Background Image */}
                                   <Box
                                     className="hero-bg"
                                     sx={{
@@ -3199,7 +3275,7 @@ export default function CreatorStudioDashboard({
                                     }}
                                   />
 
-                                  {/* Top Gradient for Date & Badges */}
+                                  {/* Top Gradient */}
                                   <Box
                                     sx={{
                                       position: 'absolute',
@@ -3207,54 +3283,75 @@ export default function CreatorStudioDashboard({
                                       left: 0,
                                       right: 0,
                                       height: '55%',
-                                      background: 'linear-gradient(180deg, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.2) 65%, transparent 100%)',
+                                      background: 'linear-gradient(180deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.2) 65%, transparent 100%)',
                                       zIndex: 1,
                                     }}
                                   />
 
-                                  {/* Top Badges */}
+                                  {/* Top Badges & Selection Indicator */}
                                   <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
                                       <Chip
-                                        label={`⚡ ACTIVE WEEK ${currentWeek}`}
+                                        label={`⚡ WEEK ${currentWeek}`}
                                         size="small"
                                         sx={{
                                           bgcolor: '#3b82f6',
                                           color: '#fff',
                                           fontWeight: 900,
-                                          fontSize: '0.85rem',
+                                          fontSize: '0.82rem',
                                           height: 28,
                                           px: 0.5,
                                           boxShadow: '0 4px 12px rgba(59, 130, 246, 0.5)'
                                         }}
                                       />
                                       <Chip
-                                        label="LIVE FOCUS"
+                                        label="EDITORIAL FOCUS"
                                         size="small"
                                         sx={{
                                           bgcolor: 'rgba(255, 255, 255, 0.25)',
                                           color: '#ffffff',
                                           fontWeight: 900,
-                                          fontSize: '0.8rem',
+                                          fontSize: '0.78rem',
                                           height: 28,
                                           border: '1px solid rgba(255, 255, 255, 0.4)',
                                           backdropFilter: 'blur(8px)'
                                         }}
                                       />
                                     </Box>
-                                    <Typography sx={{ color: '#ffffff', fontSize: '0.95rem', fontWeight: 800, textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}>
-                                      {activeDateStr}
-                                    </Typography>
+
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                                      <Typography sx={{ color: '#ffffff', fontSize: '0.88rem', fontWeight: 800, textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}>
+                                        {activeDateStr}
+                                      </Typography>
+                                      {/* Checkmark Circle */}
+                                      <Box
+                                        sx={{
+                                          width: 26,
+                                          height: 26,
+                                          borderRadius: '50%',
+                                          bgcolor: selectedCommodities.includes(activeComm) ? '#10b981' : 'rgba(255,255,255,0.2)',
+                                          border: selectedCommodities.includes(activeComm) ? '1px solid #059669' : '1.5px solid rgba(255,255,255,0.6)',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          color: '#fff',
+                                          boxShadow: selectedCommodities.includes(activeComm) ? '0 2px 8px rgba(16,185,129,0.5)' : 'none',
+                                          transition: 'all 0.2s'
+                                        }}
+                                      >
+                                        {selectedCommodities.includes(activeComm) && <CheckIcon sx={{ fontSize: 16 }} />}
+                                      </Box>
+                                    </Box>
                                   </Box>
 
-                                  {/* Bottom Row: Commodity White Pill & Action Pill */}
+                                  {/* Bottom Row: Commodity White Pill & Single Advance Action */}
                                   <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5, mt: 'auto' }}>
                                     <Box
                                       sx={{
                                         bgcolor: '#ffffff',
                                         color: '#0f172a',
-                                        px: { xs: 2.25, sm: 3 },
-                                        py: { xs: 0.85, sm: 1.1 },
+                                        px: { xs: 2, sm: 2.75 },
+                                        py: { xs: 0.75, sm: 1 },
                                         borderRadius: '999px',
                                         boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
                                         border: '1px solid rgba(255, 255, 255, 0.9)',
@@ -3269,7 +3366,7 @@ export default function CreatorStudioDashboard({
                                           fontWeight: 900,
                                           letterSpacing: '-0.02em',
                                           lineHeight: 1.2,
-                                          fontSize: { xs: '1.25rem', sm: '1.55rem', md: '1.75rem' }
+                                          fontSize: { xs: '1.15rem', sm: '1.35rem', md: '1.5rem' }
                                         }}
                                       >
                                         🌾 {activeComm}
@@ -3277,16 +3374,20 @@ export default function CreatorStudioDashboard({
                                     </Box>
 
                                     <Box
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleSelectCommodityAndWeek(currentWeek, activeComm);
+                                      }}
                                       sx={{
                                         display: 'flex',
                                         alignItems: 'center',
-                                        gap: 1,
+                                        gap: 0.75,
                                         bgcolor: 'rgba(255, 255, 255, 0.92)',
                                         color: '#0f172a',
                                         fontWeight: 900,
-                                        fontSize: { xs: '0.88rem', sm: '0.95rem' },
-                                        px: 2.5,
-                                        py: 1,
+                                        fontSize: '0.85rem',
+                                        px: 2,
+                                        py: 0.85,
                                         borderRadius: '999px',
                                         boxShadow: '0 6px 20px rgba(0, 0, 0, 0.25)',
                                         backdropFilter: 'blur(8px)',
@@ -3299,136 +3400,388 @@ export default function CreatorStudioDashboard({
                                         }
                                       }}
                                     >
-                                      Select Active Cycle <ArrowForwardArrow sx={{ fontSize: 18 }} />
+                                      Single Select <ArrowForwardArrow sx={{ fontSize: 16 }} />
+                                    </Box>
+                                  </Box>
+                                </Paper>
+
+                                {/* Tile 2: All Commodities (System-Wide Master Tile) */}
+                                <Paper
+                                  elevation={0}
+                                  onClick={handleToggleAllCommodities}
+                                  sx={{
+                                    minHeight: { xs: 210, sm: 240, md: 260 },
+                                    borderRadius: '28px',
+                                    position: 'relative',
+                                    overflow: 'hidden',
+                                    cursor: 'pointer',
+                                    background: isAllSelected
+                                      ? 'linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%)'
+                                      : 'linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #334155 100%)',
+                                    border: isAllSelected
+                                      ? '3px solid #10b981'
+                                      : '2.5px solid rgba(255, 255, 255, 0.2)',
+                                    boxShadow: isAllSelected
+                                      ? '0 16px 44px rgba(16, 185, 129, 0.4)'
+                                      : '0 12px 32px rgba(0, 0, 0, 0.45)',
+                                    transform: { xs: 'none', md: 'rotateX(3deg)' },
+                                    transformOrigin: 'bottom center',
+                                    transition: 'all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    justifyContent: 'space-between',
+                                    p: { xs: 2.25, sm: 3 },
+                                    '&:hover': {
+                                      transform: { xs: 'translateY(-4px) scale(1.01)', md: 'rotateX(0deg) translateY(-5px) scale(1.01)' },
+                                      borderColor: isAllSelected ? '#34d399' : 'rgba(255, 255, 255, 0.6)',
+                                      boxShadow: '0 20px 48px rgba(0, 0, 0, 0.55)',
+                                    }
+                                  }}
+                                >
+                                  {/* Decorative Glow Orb */}
+                                  <Box
+                                    sx={{
+                                      position: 'absolute',
+                                      top: -40,
+                                      right: -40,
+                                      width: 180,
+                                      height: 180,
+                                      borderRadius: '50%',
+                                      background: isAllSelected
+                                        ? 'radial-gradient(circle, rgba(16,185,129,0.4) 0%, transparent 70%)'
+                                        : 'radial-gradient(circle, rgba(59,130,246,0.25) 0%, transparent 70%)',
+                                      zIndex: 0,
+                                    }}
+                                  />
+
+                                  {/* Top Badges & Indicator */}
+                                  <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                      <Chip
+                                        icon={<LanguageIcon sx={{ fontSize: '15px !important', color: '#fff !important' }} />}
+                                        label={`ALL ${commoditiesList.length} COMMODITIES`}
+                                        size="small"
+                                        sx={{
+                                          bgcolor: isAllSelected ? '#10b981' : 'rgba(255, 255, 255, 0.18)',
+                                          color: '#fff',
+                                          fontWeight: 900,
+                                          fontSize: '0.78rem',
+                                          height: 28,
+                                          border: '1px solid rgba(255, 255, 255, 0.3)',
+                                          boxShadow: isAllSelected ? '0 4px 12px rgba(16,185,129,0.4)' : 'none'
+                                        }}
+                                      />
+                                      <Chip
+                                        label="MACRO SCOPE"
+                                        size="small"
+                                        sx={{
+                                          bgcolor: 'rgba(255, 255, 255, 0.12)',
+                                          color: '#e2e8f0',
+                                          fontWeight: 800,
+                                          fontSize: '0.75rem',
+                                          height: 28,
+                                          border: '1px solid rgba(255, 255, 255, 0.25)',
+                                          backdropFilter: 'blur(8px)'
+                                        }}
+                                      />
+                                    </Box>
+
+                                    {/* Master Checkmark Badge */}
+                                    <Box
+                                      sx={{
+                                        width: 28,
+                                        height: 28,
+                                        borderRadius: '50%',
+                                        bgcolor: isAllSelected ? '#10b981' : 'rgba(255,255,255,0.15)',
+                                        border: isAllSelected ? '1px solid #059669' : '1.5px solid rgba(255,255,255,0.5)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        color: '#fff',
+                                        boxShadow: isAllSelected ? '0 2px 10px rgba(16,185,129,0.6)' : 'none',
+                                        transition: 'all 0.2s'
+                                      }}
+                                    >
+                                      {isAllSelected && <CheckIcon sx={{ fontSize: 18 }} />}
+                                    </Box>
+                                  </Box>
+
+                                  {/* Center Descriptive Headline */}
+                                  <Box sx={{ position: 'relative', zIndex: 2, my: 'auto', py: 1.5 }}>
+                                    <Typography sx={{ color: '#fff', fontWeight: 900, fontSize: { xs: '1.2rem', sm: '1.35rem' }, letterSpacing: '-0.02em', mb: 0.5 }}>
+                                      🌐 National Food System Scope
+                                    </Typography>
+                                    <Typography sx={{ color: '#cbd5e1', fontSize: '0.85rem', fontWeight: 500, lineHeight: 1.45 }}>
+                                      Elections, currency devaluation, interstate curfews & nationwide transit bottlenecks affecting all agricultural corridors.
+                                    </Typography>
+                                  </Box>
+
+                                  {/* Bottom Row Action Pill */}
+                                  <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 'auto' }}>
+                                    <Typography sx={{ color: isAllSelected ? '#34d399' : '#94a3b8', fontSize: '0.8rem', fontWeight: 700 }}>
+                                      {isAllSelected ? `✓ All ${commoditiesList.length} Selected` : 'Tap to select all'}
+                                    </Typography>
+                                    <Box
+                                      sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 0.75,
+                                        bgcolor: isAllSelected ? '#10b981' : 'rgba(255, 255, 255, 0.92)',
+                                        color: isAllSelected ? '#fff' : '#0f172a',
+                                        fontWeight: 900,
+                                        fontSize: '0.85rem',
+                                        px: 2,
+                                        py: 0.85,
+                                        borderRadius: '999px',
+                                        boxShadow: '0 6px 20px rgba(0, 0, 0, 0.25)',
+                                        backdropFilter: 'blur(8px)',
+                                        border: '1px solid rgba(255, 255, 255, 0.8)',
+                                        transition: 'all 0.2s ease',
+                                      }}
+                                    >
+                                      {isAllSelected ? `Active (${commoditiesList.length})` : `Select All ${commoditiesList.length}`}
                                     </Box>
                                   </Box>
                                 </Paper>
                               </Box>
 
-                              {/* ── BENTO UPCOMING TILES (PROGRESSIVE TILT-IN) ── */}
-                              {visibleUpcoming.map((item) => (
-                                <Box
-                                  key={`${item.comm}-${item.targetWeek}`}
-                                  component={motion.div}
-                                  variants={cardProgressiveTiltVariants}
-                                  sx={{
-                                    width: '100%',
-                                    transformOrigin: 'bottom center'
-                                  }}
-                                >
-                                  <Paper
-                                    elevation={0}
-                                    onClick={() => handleSelectCommodityAndWeek(item.targetWeek, item.comm)}
+                              {/* ── THEMATIC BASKETS CAPSULE QUICK-BAR ── */}
+                              <Box sx={{ gridColumn: '1 / -1', mt: 1, mb: 1.5 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5, flexWrap: 'wrap', gap: 1 }}>
+                                  <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b', display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <FilterListIcon sx={{ fontSize: 16, color: ACCENT }} /> Quick Thematic Baskets
+                                  </Typography>
+                                  <Typography sx={{ fontSize: '0.78rem', fontWeight: 700, color: '#94a3b8' }}>
+                                    Tap a basket to multi-select related corridors
+                                  </Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flexWrap: 'wrap' }}>
+                                  {/* All Commodities Chip */}
+                                  <Chip
+                                    icon={<LanguageIcon sx={{ fontSize: '15px !important', color: isAllSelected ? '#fff !important' : '#3b82f6 !important' }} />}
+                                    label={`All Commodities (${commoditiesList.length})`}
+                                    clickable
+                                    onClick={handleToggleAllCommodities}
                                     sx={{
-                                      borderRadius: '26px',
-                                      minHeight: { xs: 170, sm: 190, md: 210 },
-                                      position: 'relative',
-                                      overflow: 'hidden',
-                                      cursor: 'pointer',
-                                      bgcolor: '#0f172a',
-                                      border: '2.5px solid rgba(255, 255, 255, 0.25)',
-                                      boxShadow: '0 12px 32px rgba(0, 0, 0, 0.35)',
-                                      transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                                      display: 'flex',
-                                      flexDirection: 'column',
-                                      justifyContent: 'space-between',
-                                      p: { xs: 1.75, sm: 2.25 },
+                                      fontWeight: 800,
+                                      fontSize: '0.82rem',
+                                      py: 2.2,
+                                      px: 1,
+                                      borderRadius: '12px',
+                                      bgcolor: isAllSelected ? '#3b82f6' : 'rgba(255,255,255,0.7)',
+                                      color: isAllSelected ? '#fff' : '#0f172a',
+                                      border: isAllSelected ? '2px solid #2563eb' : '1px solid rgba(0,0,0,0.08)',
+                                      boxShadow: isAllSelected ? '0 6px 18px rgba(59,130,246,0.35)' : 'none',
+                                      transition: 'all 0.2s',
                                       '&:hover': {
-                                        transform: 'translateY(-4px) scale(1.02)',
-                                        borderColor: 'rgba(255, 255, 255, 0.55)',
-                                        boxShadow: '0 18px 42px rgba(0, 0, 0, 0.45)',
-                                        '& .bento-bg': { transform: 'scale(1.08)' },
-                                        '& .bento-pill': { transform: 'scale(1.03)', boxShadow: '0 8px 24px rgba(0,0,0,0.35)' }
+                                        bgcolor: isAllSelected ? '#2563eb' : 'rgba(255,255,255,0.95)',
+                                        transform: 'translateY(-1px)'
                                       }
                                     }}
+                                  />
+
+                                  {/* 5 Thematic Baskets */}
+                                  {THEMATIC_BASKETS.map(basket => {
+                                    const isBasketActive = activeBasketId === basket.id || (
+                                      basket.commodities.every(c => selectedCommodities.includes(c)) &&
+                                      selectedCommodities.length === basket.commodities.length
+                                    );
+                                    return (
+                                      <Tooltip key={basket.id} title={basket.description} arrow>
+                                        <Chip
+                                          label={`${basket.emoji} ${basket.shortLabel} (${basket.commodities.length})`}
+                                          clickable
+                                          onClick={() => handleSelectThematicBasket(basket)}
+                                          sx={{
+                                            fontWeight: 800,
+                                            fontSize: '0.82rem',
+                                            py: 2.2,
+                                            px: 1,
+                                            borderRadius: '12px',
+                                            bgcolor: isBasketActive ? basket.color : 'rgba(255,255,255,0.7)',
+                                            color: isBasketActive ? '#fff' : '#0f172a',
+                                            border: isBasketActive ? `2px solid ${basket.color}` : '1px solid rgba(0,0,0,0.08)',
+                                            boxShadow: isBasketActive ? `0 6px 18px ${alpha(basket.color, 0.4)}` : 'none',
+                                            transition: 'all 0.2s',
+                                            '&:hover': {
+                                              bgcolor: isBasketActive ? basket.color : 'rgba(255,255,255,0.95)',
+                                              transform: 'translateY(-1px)'
+                                            }
+                                          }}
+                                        />
+                                      </Tooltip>
+                                    );
+                                  })}
+                                </Box>
+                              </Box>
+
+                              {/* ── BENTO UPCOMING TILES (PROGRESSIVE TILT-IN WITH MULTI-TAP) ── */}
+                              {visibleUpcoming.map((item) => {
+                                const isSelected = selectedCommodities.includes(item.comm);
+                                return (
+                                  <Box
+                                    key={`${item.comm}-${item.targetWeek}`}
+                                    component={motion.div}
+                                    variants={cardProgressiveTiltVariants}
+                                    sx={{
+                                      width: '100%',
+                                      transformOrigin: 'bottom center'
+                                    }}
                                   >
-                                    {/* Background Image (Clean without dark filter) */}
-                                    <Box
-                                      className="bento-bg"
+                                    <Paper
+                                      elevation={0}
+                                      onClick={() => handleToggleCommodity(item.comm, item.targetWeek)}
                                       sx={{
-                                        position: 'absolute',
-                                        inset: 0,
-                                        backgroundImage: `url(${item.meta.imageUrl})`,
-                                        backgroundSize: 'cover',
-                                        backgroundPosition: 'center',
-                                        transition: 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
-                                        zIndex: 0,
+                                        borderRadius: '26px',
+                                        minHeight: { xs: 170, sm: 190, md: 210 },
+                                        position: 'relative',
+                                        overflow: 'hidden',
+                                        cursor: 'pointer',
+                                        bgcolor: '#0f172a',
+                                        border: isSelected
+                                          ? '3px solid #10b981'
+                                          : '2.5px solid rgba(255, 255, 255, 0.25)',
+                                        boxShadow: isSelected
+                                          ? '0 16px 40px rgba(16, 185, 129, 0.35)'
+                                          : '0 12px 32px rgba(0, 0, 0, 0.35)',
+                                        transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        justifyContent: 'space-between',
+                                        p: { xs: 1.75, sm: 2.25 },
+                                        '&:hover': {
+                                          transform: 'translateY(-4px) scale(1.02)',
+                                          borderColor: isSelected ? '#34d399' : 'rgba(255, 255, 255, 0.55)',
+                                          boxShadow: '0 18px 42px rgba(0, 0, 0, 0.45)',
+                                          '& .bento-bg': { transform: 'scale(1.08)' },
+                                          '& .bento-pill': { transform: 'scale(1.03)', boxShadow: '0 8px 24px rgba(0,0,0,0.35)' }
+                                        }
                                       }}
-                                    />
-
-                                    {/* Top Gradient for Date & Week */}
-                                    <Box
-                                      sx={{
-                                        position: 'absolute',
-                                        top: 0,
-                                        left: 0,
-                                        right: 0,
-                                        height: '55%',
-                                        background: 'linear-gradient(180deg, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.2) 65%, transparent 100%)',
-                                        zIndex: 1,
-                                      }}
-                                    />
-
-                                    {/* Top Bar: Week + Date Range */}
-                                    <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
-                                      <Chip
-                                        label={`Week ${item.targetWeek}`}
-                                        size="small"
+                                    >
+                                      {/* Background Image */}
+                                      <Box
+                                        className="bento-bg"
                                         sx={{
-                                          bgcolor: 'rgba(255, 255, 255, 0.25)',
-                                          color: '#ffffff',
-                                          fontWeight: 900,
-                                          fontSize: '0.82rem',
-                                          height: 26,
-                                          px: 0.5,
-                                          border: '1px solid rgba(255, 255, 255, 0.4)',
-                                          backdropFilter: 'blur(8px)'
+                                          position: 'absolute',
+                                          inset: 0,
+                                          backgroundImage: `url(${item.meta.imageUrl})`,
+                                          backgroundSize: 'cover',
+                                          backgroundPosition: 'center',
+                                          transition: 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+                                          zIndex: 0,
                                         }}
                                       />
-                                      <Typography sx={{ color: '#ffffff', fontSize: '0.84rem', fontWeight: 800, textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
-                                        {item.dateRangeStr}
-                                      </Typography>
-                                    </Box>
 
-                                    {/* Bottom: White Pill with Commodity Title */}
-                                    <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', mt: 'auto' }}>
+                                      {/* Top Gradient for Date & Week */}
                                       <Box
-                                        className="bento-pill"
                                         sx={{
-                                          bgcolor: '#ffffff',
-                                          color: '#0f172a',
-                                          px: { xs: 1.75, sm: 2.25 },
-                                          py: { xs: 0.6, sm: 0.8 },
-                                          borderRadius: '999px',
-                                          boxShadow: '0 6px 20px rgba(0, 0, 0, 0.25)',
-                                          border: '1px solid rgba(255, 255, 255, 0.85)',
-                                          display: 'inline-flex',
-                                          alignItems: 'center',
-                                          gap: 1,
-                                          maxWidth: '100%',
-                                          transition: 'all 0.25s ease'
+                                          position: 'absolute',
+                                          top: 0,
+                                          left: 0,
+                                          right: 0,
+                                          height: '55%',
+                                          background: 'linear-gradient(180deg, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.2) 65%, transparent 100%)',
+                                          zIndex: 1,
                                         }}
-                                      >
-                                        <Typography
+                                      />
+
+                                      {/* Top Bar: Week + Date Range + Checkmark */}
+                                      <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                                        <Chip
+                                          label={`Week ${item.targetWeek}`}
+                                          size="small"
                                           sx={{
-                                            color: '#0f172a',
+                                            bgcolor: 'rgba(255, 255, 255, 0.25)',
+                                            color: '#ffffff',
                                             fontWeight: 900,
-                                            fontSize: { xs: '0.95rem', sm: '1.05rem', md: '1.15rem' },
-                                            lineHeight: 1.2,
-                                            letterSpacing: '-0.02em',
-                                            whiteSpace: 'nowrap',
-                                            overflow: 'hidden',
-                                            textOverflow: 'ellipsis'
+                                            fontSize: '0.82rem',
+                                            height: 26,
+                                            px: 0.5,
+                                            border: '1px solid rgba(255, 255, 255, 0.4)',
+                                            backdropFilter: 'blur(8px)'
+                                          }}
+                                        />
+
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                          <Typography sx={{ color: '#ffffff', fontSize: '0.84rem', fontWeight: 800, textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
+                                            {item.dateRangeStr}
+                                          </Typography>
+                                          {/* Multi-select checkmark circle */}
+                                          <Box
+                                            sx={{
+                                              width: 24,
+                                              height: 24,
+                                              borderRadius: '50%',
+                                              bgcolor: isSelected ? '#10b981' : 'rgba(255,255,255,0.2)',
+                                              border: isSelected ? '1px solid #059669' : '1.5px solid rgba(255,255,255,0.6)',
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              justifyContent: 'center',
+                                              color: '#fff',
+                                              transition: 'all 0.2s ease',
+                                              boxShadow: isSelected ? '0 2px 8px rgba(16,185,129,0.5)' : 'none'
+                                            }}
+                                          >
+                                            {isSelected && <CheckIcon sx={{ fontSize: 15 }} />}
+                                          </Box>
+                                        </Box>
+                                      </Box>
+
+                                      {/* Bottom: White Pill with Commodity Title + Instant Advance Arrow */}
+                                      <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', mt: 'auto' }}>
+                                        <Box
+                                          className="bento-pill"
+                                          sx={{
+                                            bgcolor: '#ffffff',
+                                            color: '#0f172a',
+                                            px: { xs: 1.75, sm: 2.25 },
+                                            py: { xs: 0.6, sm: 0.8 },
+                                            borderRadius: '999px',
+                                            boxShadow: '0 6px 20px rgba(0, 0, 0, 0.25)',
+                                            border: '1px solid rgba(255, 255, 255, 0.85)',
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: 1,
+                                            maxWidth: '100%',
+                                            transition: 'all 0.25s ease'
                                           }}
                                         >
-                                          🌾 {item.comm}
-                                        </Typography>
-                                        <ArrowForwardArrow sx={{ fontSize: 16, color: '#3b82f6', flexShrink: 0 }} />
+                                          <Typography
+                                            sx={{
+                                              color: '#0f172a',
+                                              fontWeight: 900,
+                                              fontSize: { xs: '0.95rem', sm: '1.05rem', md: '1.15rem' },
+                                              lineHeight: 1.2,
+                                              letterSpacing: '-0.02em',
+                                              whiteSpace: 'nowrap',
+                                              overflow: 'hidden',
+                                              textOverflow: 'ellipsis'
+                                            }}
+                                          >
+                                            🌾 {item.comm}
+                                          </Typography>
+                                          <Box
+                                            component="span"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleSelectCommodityAndWeek(item.targetWeek, item.comm);
+                                            }}
+                                            sx={{
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              p: 0.25,
+                                              borderRadius: '50%',
+                                              '&:hover': { bgcolor: 'rgba(59,130,246,0.15)' }
+                                            }}
+                                          >
+                                            <ArrowForwardArrow sx={{ fontSize: 16, color: '#3b82f6', flexShrink: 0 }} />
+                                          </Box>
+                                        </Box>
                                       </Box>
-                                    </Box>
-                                  </Paper>
-                                </Box>
-                              ))}
+                                    </Paper>
+                                  </Box>
+                                );
+                              })}
 
                               {/* Toggle for remaining commodities beyond initial preview */}
                               {upcomingList.length > 6 && (
@@ -3465,6 +3818,126 @@ export default function CreatorStudioDashboard({
                           );
                         })()}
                       </Box>
+
+                      {/* ── STICKY FLOATING SELECTION TRAY (BOTTOM DOCK) ── */}
+                      {selectedCommodities.length > 0 && (
+                        <Box
+                          component={motion.div}
+                          initial={{ opacity: 0, y: 30 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 30 }}
+                          sx={{
+                            position: 'sticky',
+                            bottom: 20,
+                            zIndex: 40,
+                            mt: 3,
+                            mx: 'auto',
+                            width: '100%',
+                            bgcolor: 'rgba(15, 23, 42, 0.94)',
+                            backdropFilter: 'blur(20px)',
+                            border: '1.5px solid rgba(255, 255, 255, 0.2)',
+                            borderRadius: '24px',
+                            p: { xs: 1.75, sm: 2 },
+                            boxShadow: '0 20px 48px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            flexWrap: 'wrap',
+                            gap: 1.5,
+                          }}
+                        >
+                          {/* Left: Summary Count & Title */}
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 200 }}>
+                            <Box
+                              sx={{
+                                width: 42,
+                                height: 42,
+                                borderRadius: '12px',
+                                bgcolor: isAllSelected ? '#3b82f6' : '#10b981',
+                                color: '#fff',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontWeight: 900,
+                                fontSize: '1rem',
+                                boxShadow: `0 4px 14px ${isAllSelected ? 'rgba(59,130,246,0.5)' : 'rgba(16,185,129,0.5)'}`,
+                                flexShrink: 0
+                              }}
+                            >
+                              {isAllSelected ? <LanguageIcon sx={{ fontSize: 22 }} /> : selectedCommodities.length}
+                            </Box>
+                            <Box>
+                              <Typography sx={{ color: '#fff', fontWeight: 900, fontSize: { xs: '0.9rem', sm: '1rem' }, letterSpacing: '-0.01em', lineHeight: 1.2 }}>
+                                {displayCommodityTitle}
+                              </Typography>
+                              <Typography sx={{ color: '#94a3b8', fontSize: '0.76rem', fontWeight: 600, mt: 0.25 }}>
+                                {isAllSelected 
+                                  ? `All ${commoditiesList.length} commodities active (National Macro Focus)` 
+                                  : `${selectedCommodities.length} of ${commoditiesList.length} corridors selected`}
+                              </Typography>
+                            </Box>
+                          </Box>
+
+                          {/* Middle: Selected Chips Tray (shown when few selected) */}
+                          {!isAllSelected && selectedCommodities.length <= 5 && (
+                            <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 0.75, flexWrap: 'wrap', maxWidth: 450 }}>
+                              {selectedCommodities.map(comm => (
+                                <Chip
+                                  key={comm}
+                                  label={comm}
+                                  size="small"
+                                  onDelete={() => handleToggleCommodity(comm)}
+                                  sx={{
+                                    bgcolor: 'rgba(255, 255, 255, 0.12)',
+                                    color: '#fff',
+                                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                                    fontWeight: 700,
+                                    fontSize: '0.75rem',
+                                    '& .MuiChip-deleteIcon': { color: 'rgba(255,255,255,0.7)', '&:hover': { color: '#ef4444' } }
+                                  }}
+                                />
+                              ))}
+                            </Box>
+                          )}
+
+                          {/* Right: Actions */}
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, ml: 'auto' }}>
+                            <Button
+                              size="small"
+                              onClick={() => {
+                                setSelectedCommodities([activeWeeklyCommodity]);
+                                setActiveBasketId(null);
+                              }}
+                              sx={{ color: '#94a3b8', fontWeight: 700, textTransform: 'none', fontSize: '0.85rem', '&:hover': { color: '#fff' } }}
+                            >
+                              Reset
+                            </Button>
+                            <Button
+                              variant="contained"
+                              onClick={handleProceedToStep2}
+                              endIcon={<ArrowForwardArrow sx={{ fontSize: 18 }} />}
+                              sx={{
+                                bgcolor: isAllSelected ? '#3b82f6' : '#10b981',
+                                color: '#fff',
+                                fontWeight: 900,
+                                fontSize: '0.92rem',
+                                textTransform: 'none',
+                                borderRadius: '16px',
+                                px: { xs: 2.5, sm: 3.5 },
+                                py: 1.1,
+                                boxShadow: `0 8px 24px ${isAllSelected ? 'rgba(59,130,246,0.45)' : 'rgba(16,185,129,0.45)'}`,
+                                '&:hover': {
+                                  bgcolor: isAllSelected ? '#2563eb' : '#059669',
+                                  transform: 'translateY(-2px)'
+                                },
+                                transition: 'all 0.2s ease'
+                              }}
+                            >
+                              Continue to Focus Area →
+                            </Button>
+                          </Box>
+                        </Box>
+                      )}
                     </Box>
                   )}
 

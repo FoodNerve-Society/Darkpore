@@ -75,3 +75,118 @@ export function getCommodityMeta(name: string | null): CommodityMeta {
   return COMMODITY_META_MAP[name];
 }
 
+export interface ThematicBasket {
+  id: string;
+  label: string;
+  shortLabel: string;
+  emoji: string;
+  color: string;
+  accentBg: string;
+  description: string;
+  commodities: string[];
+}
+
+export const THEMATIC_BASKETS: ThematicBasket[] = [
+  {
+    id: 'grains-staples',
+    label: 'Grains & Dry Staples Basket',
+    shortLabel: 'Grains & Staples',
+    emoji: '🌾',
+    color: '#f59e0b',
+    accentBg: 'rgba(245, 158, 11, 0.12)',
+    description: 'Northern cereal corridors, dry silos, and strategic buffer stocks',
+    commodities: [
+      'Rice',
+      'Maize and Maize Oil',
+      'Sorghum',
+      'Wheat and Sugar',
+      'Pulses'
+    ]
+  },
+  {
+    id: 'perishables-horticulture',
+    label: 'Perishables & Horticulture Basket',
+    shortLabel: 'Perishables',
+    emoji: '🍅',
+    color: '#ef4444',
+    accentBg: 'rgba(239, 68, 68, 0.12)',
+    description: 'Cold-chain transit, highway rot risk, and fresh terminal markets',
+    commodities: [
+      'Tomato and Pepper',
+      'Bananas and Plantains',
+      'Melons',
+      'Apples and Grapes',
+      'Citrus Fruits',
+      'Mangoes, Guavas and Mangosteens',
+      'Pineapples'
+    ]
+  },
+  {
+    id: 'livestock-protein',
+    label: 'Livestock & Protein Basket',
+    shortLabel: 'Livestock & Protein',
+    emoji: '🥩',
+    color: '#a855f7',
+    accentBg: 'rgba(168, 85, 247, 0.12)',
+    description: 'Pastoral corridors, grazing reserves, veterinary supplies, and feed conversion',
+    commodities: [
+      'Poultry and Eggs',
+      'Beef',
+      'Lamb and Ram',
+      'Pork',
+      'Milk',
+      'Fish',
+      'Cephalopods and Shellfish'
+    ]
+  },
+  {
+    id: 'oils-tree-crops',
+    label: 'Industrial Oils & Tree Crops Basket',
+    shortLabel: 'Oils & Tree Crops',
+    emoji: '🌻',
+    color: '#10b981',
+    accentBg: 'rgba(16, 185, 129, 0.12)',
+    description: 'Industrial solvent crushers, palm processing, and dollar-export parity',
+    commodities: [
+      'Oil Palm and Coconut',
+      'Soybeans, Nuts and Meals',
+      'Rapeseed and Mustard Oil',
+      'Sunflower and Cottonseed Oils',
+      'Groundnut and Sesame Oils'
+    ]
+  },
+  {
+    id: 'tubers-roots',
+    label: 'Tubers & Starch Basket',
+    shortLabel: 'Tubers & Roots',
+    emoji: '🥔',
+    color: '#d97706',
+    accentBg: 'rgba(217, 119, 6, 0.12)',
+    description: 'High-bulk domestic transit, wet starch extraction, and regional food security',
+    commodities: [
+      'Yam and Cassava',
+      'Potatoes'
+    ]
+  }
+];
+
+export function findMatchingBasket(commodities: string[]): ThematicBasket | undefined {
+  if (!commodities || commodities.length === 0) return undefined;
+  return THEMATIC_BASKETS.find(b => 
+    b.commodities.length === commodities.length &&
+    b.commodities.every(c => commodities.includes(c))
+  );
+}
+
+export function formatCommoditySelectionTitle(commodities: string[]): string {
+  if (!commodities || commodities.length === 0) return 'All Commodities (Food System Wide)';
+  if (commodities.length >= commoditiesList.length) return 'All Commodities (Food System Wide)';
+  
+  const basket = findMatchingBasket(commodities);
+  if (basket) return basket.label;
+  
+  if (commodities.length === 1) return commodities[0];
+  if (commodities.length === 2) return `${commodities[0]} & ${commodities[1]}`;
+  return `${commodities[0]} + ${commodities.length - 1} More`;
+}
+
