@@ -13,6 +13,7 @@ import {
   School as SchoolIcon,
   DeleteOutlined as DeleteOutlineIcon,
   Close as CloseIcon,
+  Add as AddIcon,
   ArrowForwardIos as ArrowForwardIcon,
   ArrowBackIosNew as ArrowBackIcon,
   ArrowForward as ArrowForwardArrow,
@@ -965,16 +966,24 @@ export default function CreatorStudioDashboard({
     });
   };
 
-  const handleSelectThematicBasket = (basket: ThematicBasket) => {
-    if (activeBasketId === basket.id) {
+  const handleToggleBasketGroup = (basket: ThematicBasket) => {
+    const isFullySelected = basket.commodities.every(c => selectedCommodities.includes(c));
+    if (isFullySelected) {
+      setSelectedCommodities(prev => {
+        const remaining = prev.filter(c => !basket.commodities.includes(c));
+        return remaining.length > 0 ? remaining : [activeWeeklyCommodity];
+      });
       setActiveBasketId(null);
-      setSelectedCommodities([activeWeeklyCommodity]);
     } else {
+      setSelectedCommodities(prev => {
+        const set = new Set([...prev, ...basket.commodities]);
+        return Array.from(set);
+      });
       setActiveBasketId(basket.id);
-      setSelectedCommodities([...basket.commodities]);
-      setShowAllCommodities(true);
     }
   };
+
+  const handleSelectThematicBasket = handleToggleBasketGroup;
 
   const handleToggleAllCommodities = () => {
     if (isAllSelected) {
@@ -983,7 +992,6 @@ export default function CreatorStudioDashboard({
     } else {
       setActiveBasketId('all');
       setSelectedCommodities([...commoditiesList]);
-      setShowAllCommodities(true);
     }
   };
 
@@ -3173,7 +3181,7 @@ export default function CreatorStudioDashboard({
                   {/* STEP 1: COMMODITY & WEEK SELECTION (2-COLUMN GRID VIEW)      */}
                   {/* ──────────────────────────────────────────────────────────── */}
                   {matrixStep === 1 && (
-                    <Box sx={{ overflow: 'visible' }}>
+                    <Box sx={{ overflow: 'visible', pb: { xs: 18, sm: 22 } }}>
                       {/* Bento Grid: 2-Column with Progressive 3D Tilt Cascade */}
                       <Box
                         component={motion.div}
@@ -3405,7 +3413,7 @@ export default function CreatorStudioDashboard({
                                   </Box>
                                 </Paper>
 
-                                {/* Tile 2: All Commodities (System-Wide Master Tile) */}
+                                {/* Tile 2: All Commodities Master Card (Glowing Orbs on Dark Theme) */}
                                 <Paper
                                   elevation={0}
                                   onClick={handleToggleAllCommodities}
@@ -3415,525 +3423,576 @@ export default function CreatorStudioDashboard({
                                     position: 'relative',
                                     overflow: 'hidden',
                                     cursor: 'pointer',
-                                    background: isAllSelected
-                                      ? 'linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%)'
-                                      : 'linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #334155 100%)',
+                                    bgcolor: '#080e1a',
                                     border: isAllSelected
                                       ? '3px solid #10b981'
-                                      : '2.5px solid rgba(255, 255, 255, 0.2)',
+                                      : '2px solid rgba(255, 255, 255, 0.2)',
                                     boxShadow: isAllSelected
-                                      ? '0 16px 44px rgba(16, 185, 129, 0.4)'
-                                      : '0 12px 32px rgba(0, 0, 0, 0.45)',
+                                      ? '0 20px 50px rgba(16, 185, 129, 0.4), 0 0 35px rgba(16, 185, 129, 0.25)'
+                                      : '0 12px 36px rgba(0, 0, 0, 0.55)',
                                     transform: { xs: 'none', md: 'rotateX(3deg)' },
                                     transformOrigin: 'bottom center',
                                     transition: 'all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)',
                                     display: 'flex',
                                     flexDirection: 'column',
                                     justifyContent: 'space-between',
-                                    p: { xs: 2.25, sm: 3 },
+                                    p: { xs: 2.5, sm: 3.25 },
                                     '&:hover': {
                                       transform: { xs: 'translateY(-4px) scale(1.01)', md: 'rotateX(0deg) translateY(-5px) scale(1.01)' },
-                                      borderColor: isAllSelected ? '#34d399' : 'rgba(255, 255, 255, 0.6)',
-                                      boxShadow: '0 20px 48px rgba(0, 0, 0, 0.55)',
+                                      borderColor: isAllSelected ? '#34d399' : 'rgba(255, 255, 255, 0.55)',
+                                      boxShadow: '0 24px 55px rgba(0, 0, 0, 0.65)',
                                     }
                                   }}
                                 >
-                                  {/* Decorative Glow Orb */}
+                                  {/* Glowing Orbs Background Layers */}
                                   <Box
                                     sx={{
                                       position: 'absolute',
-                                      top: -40,
-                                      right: -40,
-                                      width: 180,
-                                      height: 180,
+                                      top: -30,
+                                      right: -30,
+                                      width: 230,
+                                      height: 230,
                                       borderRadius: '50%',
                                       background: isAllSelected
-                                        ? 'radial-gradient(circle, rgba(16,185,129,0.4) 0%, transparent 70%)'
-                                        : 'radial-gradient(circle, rgba(59,130,246,0.25) 0%, transparent 70%)',
+                                        ? 'radial-gradient(circle, rgba(16, 185, 129, 0.6) 0%, rgba(5, 150, 105, 0.25) 50%, transparent 75%)'
+                                        : 'radial-gradient(circle, rgba(59, 130, 246, 0.6) 0%, rgba(37, 99, 235, 0.25) 50%, transparent 75%)',
+                                      filter: 'blur(35px)',
                                       zIndex: 0,
+                                      pointerEvents: 'none',
+                                      transition: 'all 0.5s ease'
+                                    }}
+                                  />
+                                  <Box
+                                    sx={{
+                                      position: 'absolute',
+                                      bottom: -40,
+                                      left: -30,
+                                      width: 210,
+                                      height: 210,
+                                      borderRadius: '50%',
+                                      background: isAllSelected
+                                        ? 'radial-gradient(circle, rgba(59, 130, 246, 0.45) 0%, rgba(30, 58, 138, 0.2) 50%, transparent 75%)'
+                                        : 'radial-gradient(circle, rgba(139, 92, 246, 0.5) 0%, rgba(91, 33, 182, 0.2) 50%, transparent 75%)',
+                                      filter: 'blur(35px)',
+                                      zIndex: 0,
+                                      pointerEvents: 'none',
+                                      transition: 'all 0.5s ease'
+                                    }}
+                                  />
+                                  <Box
+                                    sx={{
+                                      position: 'absolute',
+                                      top: '40%',
+                                      left: '40%',
+                                      width: 140,
+                                      height: 140,
+                                      borderRadius: '50%',
+                                      background: isAllSelected
+                                        ? 'radial-gradient(circle, rgba(52, 211, 153, 0.3) 0%, transparent 70%)'
+                                        : 'radial-gradient(circle, rgba(96, 165, 250, 0.35) 0%, transparent 70%)',
+                                      filter: 'blur(25px)',
+                                      zIndex: 0,
+                                      pointerEvents: 'none',
+                                    }}
+                                  />
+                                  <Box
+                                    sx={{
+                                      position: 'absolute',
+                                      inset: 0,
+                                      backgroundImage: 'radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px)',
+                                      backgroundSize: '16px 16px',
+                                      opacity: 0.5,
+                                      zIndex: 0,
+                                      pointerEvents: 'none'
                                     }}
                                   />
 
-                                  {/* Top Badges & Indicator */}
-                                  <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                      <Chip
-                                        icon={<LanguageIcon sx={{ fontSize: '15px !important', color: '#fff !important' }} />}
-                                        label={`ALL ${commoditiesList.length} COMMODITIES`}
-                                        size="small"
-                                        sx={{
-                                          bgcolor: isAllSelected ? '#10b981' : 'rgba(255, 255, 255, 0.18)',
-                                          color: '#fff',
-                                          fontWeight: 900,
-                                          fontSize: '0.78rem',
-                                          height: 28,
-                                          border: '1px solid rgba(255, 255, 255, 0.3)',
-                                          boxShadow: isAllSelected ? '0 4px 12px rgba(16,185,129,0.4)' : 'none'
-                                        }}
-                                      />
-                                      <Chip
-                                        label="MACRO SCOPE"
-                                        size="small"
-                                        sx={{
-                                          bgcolor: 'rgba(255, 255, 255, 0.12)',
-                                          color: '#e2e8f0',
-                                          fontWeight: 800,
-                                          fontSize: '0.75rem',
-                                          height: 28,
-                                          border: '1px solid rgba(255, 255, 255, 0.25)',
-                                          backdropFilter: 'blur(8px)'
-                                        }}
-                                      />
-                                    </Box>
+                                  {/* Top Row: Badge & Check Indicator */}
+                                  <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <Chip
+                                      icon={<LanguageIcon sx={{ fontSize: '15px !important', color: '#fff !important' }} />}
+                                      label="ALL COMMODITIES"
+                                      size="small"
+                                      sx={{
+                                        bgcolor: isAllSelected ? '#10b981' : 'rgba(255, 255, 255, 0.16)',
+                                        color: '#fff',
+                                        fontWeight: 900,
+                                        fontSize: '0.78rem',
+                                        height: 28,
+                                        border: '1px solid rgba(255, 255, 255, 0.3)',
+                                        boxShadow: isAllSelected ? '0 4px 14px rgba(16,185,129,0.5)' : 'none'
+                                      }}
+                                    />
 
-                                    {/* Master Checkmark Badge */}
                                     <Box
                                       sx={{
-                                        width: 28,
-                                        height: 28,
+                                        width: 32,
+                                        height: 32,
                                         borderRadius: '50%',
-                                        bgcolor: isAllSelected ? '#10b981' : 'rgba(255,255,255,0.15)',
-                                        border: isAllSelected ? '1px solid #059669' : '1.5px solid rgba(255,255,255,0.5)',
+                                        bgcolor: isAllSelected ? '#10b981' : 'rgba(255,255,255,0.12)',
+                                        border: isAllSelected ? '2px solid #059669' : '1.5px solid rgba(255,255,255,0.4)',
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                         color: '#fff',
-                                        boxShadow: isAllSelected ? '0 2px 10px rgba(16,185,129,0.6)' : 'none',
-                                        transition: 'all 0.2s'
+                                        boxShadow: isAllSelected ? '0 0 16px rgba(16,185,129,0.7)' : 'none',
+                                        transition: 'all 0.25s'
                                       }}
                                     >
                                       {isAllSelected && <CheckIcon sx={{ fontSize: 18 }} />}
                                     </Box>
                                   </Box>
 
-                                  {/* Center Descriptive Headline */}
+                                  {/* Center: "Select All (count) - nothing more" */}
                                   <Box sx={{ position: 'relative', zIndex: 2, my: 'auto', py: 1.5 }}>
-                                    <Typography sx={{ color: '#fff', fontWeight: 900, fontSize: { xs: '1.2rem', sm: '1.35rem' }, letterSpacing: '-0.02em', mb: 0.5 }}>
-                                      🌐 National Food System Scope
+                                    <Typography
+                                      sx={{
+                                        color: '#ffffff',
+                                        fontWeight: 900,
+                                        fontSize: { xs: '1.45rem', sm: '1.75rem', md: '1.9rem' },
+                                        letterSpacing: '-0.03em',
+                                        lineHeight: 1.15,
+                                        textShadow: '0 2px 10px rgba(0,0,0,0.5)'
+                                      }}
+                                    >
+                                      Select All ({commoditiesList.length})
                                     </Typography>
-                                    <Typography sx={{ color: '#cbd5e1', fontSize: '0.85rem', fontWeight: 500, lineHeight: 1.45 }}>
-                                      Elections, currency devaluation, interstate curfews & nationwide transit bottlenecks affecting all agricultural corridors.
+                                    <Typography sx={{ color: isAllSelected ? '#34d399' : '#94a3b8', fontSize: '0.85rem', fontWeight: 700, mt: 0.5 }}>
+                                      {isAllSelected ? `✓ All ${commoditiesList.length} corridors selected` : `Tap to select all ${commoditiesList.length} corridors`}
                                     </Typography>
                                   </Box>
 
-                                  {/* Bottom Row Action Pill */}
-                                  <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 'auto' }}>
-                                    <Typography sx={{ color: isAllSelected ? '#34d399' : '#94a3b8', fontSize: '0.8rem', fontWeight: 700 }}>
-                                      {isAllSelected ? `✓ All ${commoditiesList.length} Selected` : 'Tap to select all'}
-                                    </Typography>
+                                  {/* Bottom: Pill Action */}
+                                  <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', mt: 'auto' }}>
                                     <Box
                                       sx={{
                                         display: 'flex',
                                         alignItems: 'center',
                                         gap: 0.75,
-                                        bgcolor: isAllSelected ? '#10b981' : 'rgba(255, 255, 255, 0.92)',
+                                        bgcolor: isAllSelected ? '#10b981' : 'rgba(255, 255, 255, 0.94)',
                                         color: isAllSelected ? '#fff' : '#0f172a',
                                         fontWeight: 900,
                                         fontSize: '0.85rem',
-                                        px: 2,
+                                        px: 2.25,
                                         py: 0.85,
                                         borderRadius: '999px',
-                                        boxShadow: '0 6px 20px rgba(0, 0, 0, 0.25)',
-                                        backdropFilter: 'blur(8px)',
-                                        border: '1px solid rgba(255, 255, 255, 0.8)',
+                                        boxShadow: isAllSelected ? '0 4px 16px rgba(16,185,129,0.4)' : '0 6px 20px rgba(0, 0, 0, 0.3)',
                                         transition: 'all 0.2s ease',
                                       }}
                                     >
-                                      {isAllSelected ? `Active (${commoditiesList.length})` : `Select All ${commoditiesList.length}`}
+                                      {isAllSelected ? `Active (${commoditiesList.length})` : `Select All ${commoditiesList.length} →`}
                                     </Box>
                                   </Box>
                                 </Paper>
                               </Box>
 
-                              {/* ── THEMATIC BASKETS CAPSULE QUICK-BAR ── */}
-                              <Box sx={{ gridColumn: '1 / -1', mt: 1, mb: 1.5 }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5, flexWrap: 'wrap', gap: 1 }}>
-                                  <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b', display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <FilterListIcon sx={{ fontSize: 16, color: ACCENT }} /> Quick Thematic Baskets
-                                  </Typography>
-                                  <Typography sx={{ fontSize: '0.78rem', fontWeight: 700, color: '#94a3b8' }}>
-                                    Tap a basket to multi-select related corridors
-                                  </Typography>
-                                </Box>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flexWrap: 'wrap' }}>
-                                  {/* All Commodities Chip */}
-                                  <Chip
-                                    icon={<LanguageIcon sx={{ fontSize: '15px !important', color: isAllSelected ? '#fff !important' : '#3b82f6 !important' }} />}
-                                    label={`All Commodities (${commoditiesList.length})`}
-                                    clickable
-                                    onClick={handleToggleAllCommodities}
-                                    sx={{
-                                      fontWeight: 800,
-                                      fontSize: '0.82rem',
-                                      py: 2.2,
-                                      px: 1,
-                                      borderRadius: '12px',
-                                      bgcolor: isAllSelected ? '#3b82f6' : 'rgba(255,255,255,0.7)',
-                                      color: isAllSelected ? '#fff' : '#0f172a',
-                                      border: isAllSelected ? '2px solid #2563eb' : '1px solid rgba(0,0,0,0.08)',
-                                      boxShadow: isAllSelected ? '0 6px 18px rgba(59,130,246,0.35)' : 'none',
-                                      transition: 'all 0.2s',
-                                      '&:hover': {
-                                        bgcolor: isAllSelected ? '#2563eb' : 'rgba(255,255,255,0.95)',
-                                        transform: 'translateY(-1px)'
-                                      }
-                                    }}
-                                  />
+                              {/* ── 5 THEMATIC AGRIBUSINESS SECTIONS ── */}
+                              <Box sx={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: { xs: 4, sm: 5 }, mt: 2 }}>
+                                {THEMATIC_BASKETS.map((basket) => {
+                                  const isBasketFullySelected = basket.commodities.every(c => selectedCommodities.includes(c));
+                                  const selectedCount = basket.commodities.filter(c => selectedCommodities.includes(c)).length;
 
-                                  {/* 5 Thematic Baskets */}
-                                  {THEMATIC_BASKETS.map(basket => {
-                                    const isBasketActive = activeBasketId === basket.id || (
-                                      basket.commodities.every(c => selectedCommodities.includes(c)) &&
-                                      selectedCommodities.length === basket.commodities.length
-                                    );
-                                    return (
-                                      <Tooltip key={basket.id} title={basket.description} arrow>
-                                        <Chip
-                                          label={`${basket.emoji} ${basket.shortLabel} (${basket.commodities.length})`}
-                                          clickable
-                                          onClick={() => handleSelectThematicBasket(basket)}
-                                          sx={{
-                                            fontWeight: 800,
-                                            fontSize: '0.82rem',
-                                            py: 2.2,
-                                            px: 1,
-                                            borderRadius: '12px',
-                                            bgcolor: isBasketActive ? basket.color : 'rgba(255,255,255,0.7)',
-                                            color: isBasketActive ? '#fff' : '#0f172a',
-                                            border: isBasketActive ? `2px solid ${basket.color}` : '1px solid rgba(0,0,0,0.08)',
-                                            boxShadow: isBasketActive ? `0 6px 18px ${alpha(basket.color, 0.4)}` : 'none',
-                                            transition: 'all 0.2s',
-                                            '&:hover': {
-                                              bgcolor: isBasketActive ? basket.color : 'rgba(255,255,255,0.95)',
-                                              transform: 'translateY(-1px)'
-                                            }
-                                          }}
-                                        />
-                                      </Tooltip>
-                                    );
-                                  })}
-                                </Box>
-                              </Box>
-
-                              {/* ── BENTO UPCOMING TILES (PROGRESSIVE TILT-IN WITH MULTI-TAP) ── */}
-                              {visibleUpcoming.map((item) => {
-                                const isSelected = selectedCommodities.includes(item.comm);
-                                return (
-                                  <Box
-                                    key={`${item.comm}-${item.targetWeek}`}
-                                    component={motion.div}
-                                    variants={cardProgressiveTiltVariants}
-                                    sx={{
-                                      width: '100%',
-                                      transformOrigin: 'bottom center'
-                                    }}
-                                  >
-                                    <Paper
-                                      elevation={0}
-                                      onClick={() => handleToggleCommodity(item.comm, item.targetWeek)}
-                                      sx={{
-                                        borderRadius: '26px',
-                                        minHeight: { xs: 170, sm: 190, md: 210 },
-                                        position: 'relative',
-                                        overflow: 'hidden',
-                                        cursor: 'pointer',
-                                        bgcolor: '#0f172a',
-                                        border: isSelected
-                                          ? '3px solid #10b981'
-                                          : '2.5px solid rgba(255, 255, 255, 0.25)',
-                                        boxShadow: isSelected
-                                          ? '0 16px 40px rgba(16, 185, 129, 0.35)'
-                                          : '0 12px 32px rgba(0, 0, 0, 0.35)',
-                                        transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        justifyContent: 'space-between',
-                                        p: { xs: 1.75, sm: 2.25 },
-                                        '&:hover': {
-                                          transform: 'translateY(-4px) scale(1.02)',
-                                          borderColor: isSelected ? '#34d399' : 'rgba(255, 255, 255, 0.55)',
-                                          boxShadow: '0 18px 42px rgba(0, 0, 0, 0.45)',
-                                          '& .bento-bg': { transform: 'scale(1.08)' },
-                                          '& .bento-pill': { transform: 'scale(1.03)', boxShadow: '0 8px 24px rgba(0,0,0,0.35)' }
-                                        }
-                                      }}
-                                    >
-                                      {/* Background Image */}
-                                      <Box
-                                        className="bento-bg"
-                                        sx={{
-                                          position: 'absolute',
-                                          inset: 0,
-                                          backgroundImage: `url(${item.meta.imageUrl})`,
-                                          backgroundSize: 'cover',
-                                          backgroundPosition: 'center',
-                                          transition: 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
-                                          zIndex: 0,
-                                        }}
-                                      />
-
-                                      {/* Top Gradient for Date & Week */}
+                                  return (
+                                    <Box key={basket.id} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                      {/* Section Header */}
                                       <Box
                                         sx={{
-                                          position: 'absolute',
-                                          top: 0,
-                                          left: 0,
-                                          right: 0,
-                                          height: '55%',
-                                          background: 'linear-gradient(180deg, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.2) 65%, transparent 100%)',
-                                          zIndex: 1,
+                                          display: 'flex',
+                                          alignItems: { xs: 'flex-start', sm: 'center' },
+                                          justifyContent: 'space-between',
+                                          flexDirection: { xs: 'column', sm: 'row' },
+                                          gap: 1.5,
+                                          pb: 1.25,
+                                          borderBottom: `2px solid ${alpha(basket.color, 0.2)}`,
                                         }}
-                                      />
-
-                                      {/* Top Bar: Week + Date Range + Checkmark */}
-                                      <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
-                                        <Chip
-                                          label={`Week ${item.targetWeek}`}
-                                          size="small"
-                                          sx={{
-                                            bgcolor: 'rgba(255, 255, 255, 0.25)',
-                                            color: '#ffffff',
-                                            fontWeight: 900,
-                                            fontSize: '0.82rem',
-                                            height: 26,
-                                            px: 0.5,
-                                            border: '1px solid rgba(255, 255, 255, 0.4)',
-                                            backdropFilter: 'blur(8px)'
-                                          }}
-                                        />
-
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                          <Typography sx={{ color: '#ffffff', fontSize: '0.84rem', fontWeight: 800, textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
-                                            {item.dateRangeStr}
-                                          </Typography>
-                                          {/* Multi-select checkmark circle */}
+                                      >
+                                        {/* Left Title & Description */}
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                                           <Box
                                             sx={{
-                                              width: 24,
-                                              height: 24,
-                                              borderRadius: '50%',
-                                              bgcolor: isSelected ? '#10b981' : 'rgba(255,255,255,0.2)',
-                                              border: isSelected ? '1px solid #059669' : '1.5px solid rgba(255,255,255,0.6)',
+                                              width: 42,
+                                              height: 42,
+                                              borderRadius: '12px',
+                                              bgcolor: basket.accentBg,
+                                              color: basket.color,
                                               display: 'flex',
                                               alignItems: 'center',
                                               justifyContent: 'center',
-                                              color: '#fff',
-                                              transition: 'all 0.2s ease',
-                                              boxShadow: isSelected ? '0 2px 8px rgba(16,185,129,0.5)' : 'none'
+                                              fontSize: '1.4rem',
+                                              border: `1px solid ${alpha(basket.color, 0.3)}`,
+                                              flexShrink: 0
                                             }}
                                           >
-                                            {isSelected && <CheckIcon sx={{ fontSize: 15 }} />}
+                                            {basket.emoji}
+                                          </Box>
+                                          <Box>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                              <Typography sx={{ fontSize: { xs: '1.02rem', sm: '1.15rem' }, fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em' }}>
+                                                {basket.label}
+                                              </Typography>
+                                              <Chip
+                                                label={`${selectedCount}/${basket.commodities.length} selected`}
+                                                size="small"
+                                                sx={{
+                                                  fontWeight: 800,
+                                                  fontSize: '0.72rem',
+                                                  height: 22,
+                                                  bgcolor: isBasketFullySelected ? basket.color : 'rgba(0,0,0,0.06)',
+                                                  color: isBasketFullySelected ? '#fff' : '#475569',
+                                                  border: isBasketFullySelected ? 'none' : '1px solid rgba(0,0,0,0.08)',
+                                                }}
+                                              />
+                                            </Box>
+                                            <Typography sx={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600, mt: 0.25 }}>
+                                              {basket.description}
+                                            </Typography>
                                           </Box>
                                         </Box>
-                                      </Box>
 
-                                      {/* Bottom: White Pill with Commodity Title + Instant Advance Arrow */}
-                                      <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', mt: 'auto' }}>
-                                        <Box
-                                          className="bento-pill"
+                                        {/* Right: 1-Tap Toggle Button for the Section */}
+                                        <Button
+                                          onClick={() => handleToggleBasketGroup(basket)}
+                                          size="small"
+                                          variant={isBasketFullySelected ? 'contained' : 'outlined'}
+                                          startIcon={isBasketFullySelected ? <CheckIcon sx={{ fontSize: 16 }} /> : <AddIcon sx={{ fontSize: 16 }} />}
                                           sx={{
-                                            bgcolor: '#ffffff',
-                                            color: '#0f172a',
-                                            px: { xs: 1.75, sm: 2.25 },
-                                            py: { xs: 0.6, sm: 0.8 },
                                             borderRadius: '999px',
-                                            boxShadow: '0 6px 20px rgba(0, 0, 0, 0.25)',
-                                            border: '1px solid rgba(255, 255, 255, 0.85)',
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            gap: 1,
-                                            maxWidth: '100%',
-                                            transition: 'all 0.25s ease'
+                                            textTransform: 'none',
+                                            fontWeight: 800,
+                                            fontSize: '0.82rem',
+                                            px: 2.2,
+                                            py: 0.7,
+                                            bgcolor: isBasketFullySelected ? basket.color : 'transparent',
+                                            color: isBasketFullySelected ? '#ffffff' : basket.color,
+                                            borderColor: basket.color,
+                                            boxShadow: isBasketFullySelected ? `0 4px 14px ${alpha(basket.color, 0.4)}` : 'none',
+                                            '&:hover': {
+                                              bgcolor: isBasketFullySelected ? basket.color : alpha(basket.color, 0.08),
+                                              borderColor: basket.color,
+                                              transform: 'translateY(-1px)',
+                                            },
+                                            transition: 'all 0.2s ease',
+                                            alignSelf: { xs: 'flex-start', sm: 'center' }
                                           }}
                                         >
-                                          <Typography
-                                            sx={{
-                                              color: '#0f172a',
-                                              fontWeight: 900,
-                                              fontSize: { xs: '0.95rem', sm: '1.05rem', md: '1.15rem' },
-                                              lineHeight: 1.2,
-                                              letterSpacing: '-0.02em',
-                                              whiteSpace: 'nowrap',
-                                              overflow: 'hidden',
-                                              textOverflow: 'ellipsis'
-                                            }}
-                                          >
-                                            🌾 {item.comm}
-                                          </Typography>
-                                          <Box
-                                            component="span"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handleSelectCommodityAndWeek(item.targetWeek, item.comm);
-                                            }}
-                                            sx={{
-                                              display: 'flex',
-                                              alignItems: 'center',
-                                              p: 0.25,
-                                              borderRadius: '50%',
-                                              '&:hover': { bgcolor: 'rgba(59,130,246,0.15)' }
-                                            }}
-                                          >
-                                            <ArrowForwardArrow sx={{ fontSize: 16, color: '#3b82f6', flexShrink: 0 }} />
-                                          </Box>
-                                        </Box>
+                                          {isBasketFullySelected ? `Deselect Section (${basket.commodities.length})` : `Select Section (${basket.commodities.length})`}
+                                        </Button>
                                       </Box>
-                                    </Paper>
-                                  </Box>
-                                );
-                              })}
 
-                              {/* Toggle for remaining commodities beyond initial preview */}
-                              {upcomingList.length > 6 && (
-                                <Box
-                                  component={motion.div}
-                                  variants={cardProgressiveTiltVariants}
-                                  sx={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'center', mt: 1.5 }}
-                                >
-                                  <Button
-                                    onClick={() => setShowAllCommodities(!showAllCommodities)}
-                                    size="small"
-                                    sx={{
-                                      borderRadius: '20px',
-                                      textTransform: 'none',
-                                      fontWeight: 800,
-                                      fontSize: '0.9rem',
-                                      bgcolor: 'rgba(0, 0, 0, 0.05)',
-                                      color: '#334155',
-                                      border: '1px solid rgba(0, 0, 0, 0.1)',
-                                      px: 3,
-                                      py: 0.9,
-                                      '&:hover': {
-                                        bgcolor: 'rgba(0, 0, 0, 0.08)',
-                                        color: '#0f172a',
-                                        borderColor: '#3b82f6'
-                                      }
-                                    }}
-                                  >
-                                    {showAllCommodities ? 'Show less' : `Browse all ${upcomingList.length + 1} commodities (${upcomingList.length - 6} more)`}
-                                  </Button>
-                                </Box>
-                              )}
+                                      {/* Section Cards Grid */}
+                                      <Box
+                                        sx={{
+                                          display: 'grid',
+                                          gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
+                                          gap: 2,
+                                        }}
+                                      >
+                                        {basket.commodities.map((comm) => {
+                                          const isSelected = selectedCommodities.includes(comm);
+                                          const meta = getCommodityMeta(comm);
+                                          const commIdx = commoditiesList.indexOf(comm);
+                                          let offset = commIdx - activeIdx;
+                                          if (offset < 0) offset += commoditiesList.length;
+                                          const targetWeek = currentWeek + offset;
+                                          const wStart = startOfISOWeek(new Date(selectedYear, 0, 4 + (targetWeek - 1) * 7));
+                                          const wEnd = addDays(wStart, 6);
+                                          const dateRangeStr = `${format(wStart, 'MMM d')} – ${format(wEnd, 'MMM d')}`;
+                                          const isCurrentWeek = offset === 0;
+
+                                          return (
+                                            <Box
+                                              key={comm}
+                                              component={motion.div}
+                                              variants={cardProgressiveTiltVariants}
+                                              sx={{ width: '100%', transformOrigin: 'bottom center' }}
+                                            >
+                                              <Paper
+                                                elevation={0}
+                                                onClick={() => handleToggleCommodity(comm, targetWeek)}
+                                                sx={{
+                                                  borderRadius: '24px',
+                                                  minHeight: { xs: 165, sm: 180, md: 195 },
+                                                  position: 'relative',
+                                                  overflow: 'hidden',
+                                                  cursor: 'pointer',
+                                                  bgcolor: '#0f172a',
+                                                  border: isSelected
+                                                    ? '3px solid #10b981'
+                                                    : '2px solid rgba(255, 255, 255, 0.22)',
+                                                  boxShadow: isSelected
+                                                    ? '0 14px 36px rgba(16, 185, 129, 0.35)'
+                                                    : '0 10px 28px rgba(0, 0, 0, 0.35)',
+                                                  transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                                                  display: 'flex',
+                                                  flexDirection: 'column',
+                                                  justifyContent: 'space-between',
+                                                  p: { xs: 1.75, sm: 2.25 },
+                                                  '&:hover': {
+                                                    transform: 'translateY(-4px) scale(1.02)',
+                                                    borderColor: isSelected ? '#34d399' : 'rgba(255, 255, 255, 0.55)',
+                                                    boxShadow: '0 18px 40px rgba(0, 0, 0, 0.45)',
+                                                    '& .bento-bg': { transform: 'scale(1.08)' },
+                                                    '& .bento-pill': { transform: 'scale(1.03)', boxShadow: '0 8px 24px rgba(0,0,0,0.35)' }
+                                                  }
+                                                }}
+                                              >
+                                                {/* Background Image */}
+                                                <Box
+                                                  className="bento-bg"
+                                                  sx={{
+                                                    position: 'absolute',
+                                                    inset: 0,
+                                                    backgroundImage: `url(${meta.imageUrl})`,
+                                                    backgroundSize: 'cover',
+                                                    backgroundPosition: 'center',
+                                                    transition: 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+                                                    zIndex: 0,
+                                                  }}
+                                                />
+
+                                                {/* Top Vignette Gradient */}
+                                                <Box
+                                                  sx={{
+                                                    position: 'absolute',
+                                                    top: 0,
+                                                    left: 0,
+                                                    right: 0,
+                                                    height: '60%',
+                                                    background: 'linear-gradient(180deg, rgba(0, 0, 0, 0.72) 0%, rgba(0, 0, 0, 0.25) 65%, transparent 100%)',
+                                                    zIndex: 1,
+                                                  }}
+                                                />
+
+                                                {/* Top Bar: Week/Focus Chip + Date Range + Selection Circle */}
+                                                <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                                                  <Chip
+                                                    label={isCurrentWeek ? `⚡ WEEK ${targetWeek}` : `Week ${targetWeek}`}
+                                                    size="small"
+                                                    sx={{
+                                                      bgcolor: isCurrentWeek ? '#3b82f6' : 'rgba(255, 255, 255, 0.25)',
+                                                      color: '#ffffff',
+                                                      fontWeight: 900,
+                                                      fontSize: '0.8rem',
+                                                      height: 26,
+                                                      px: 0.5,
+                                                      border: isCurrentWeek ? 'none' : '1px solid rgba(255, 255, 255, 0.4)',
+                                                      backdropFilter: 'blur(8px)',
+                                                      boxShadow: isCurrentWeek ? '0 2px 10px rgba(59, 130, 246, 0.5)' : 'none'
+                                                    }}
+                                                  />
+
+                                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                    <Typography sx={{ color: '#ffffff', fontSize: '0.82rem', fontWeight: 800, textShadow: '0 1px 3px rgba(0,0,0,0.7)' }}>
+                                                      {dateRangeStr}
+                                                    </Typography>
+                                                    {/* Checkmark circle */}
+                                                    <Box
+                                                      sx={{
+                                                        width: 24,
+                                                        height: 24,
+                                                        borderRadius: '50%',
+                                                        bgcolor: isSelected ? '#10b981' : 'rgba(255,255,255,0.2)',
+                                                        border: isSelected ? '1px solid #059669' : '1.5px solid rgba(255,255,255,0.6)',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        color: '#fff',
+                                                        transition: 'all 0.2s ease',
+                                                        boxShadow: isSelected ? '0 2px 8px rgba(16,185,129,0.5)' : 'none'
+                                                      }}
+                                                    >
+                                                      {isSelected && <CheckIcon sx={{ fontSize: 15 }} />}
+                                                    </Box>
+                                                  </Box>
+                                                </Box>
+
+                                                {/* Bottom: White Pill with Commodity Title + Advance Arrow */}
+                                                <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', mt: 'auto' }}>
+                                                  <Box
+                                                    className="bento-pill"
+                                                    sx={{
+                                                      bgcolor: '#ffffff',
+                                                      color: '#0f172a',
+                                                      px: { xs: 1.6, sm: 2 },
+                                                      py: { xs: 0.55, sm: 0.75 },
+                                                      borderRadius: '999px',
+                                                      boxShadow: '0 6px 20px rgba(0, 0, 0, 0.25)',
+                                                      border: '1px solid rgba(255, 255, 255, 0.85)',
+                                                      display: 'inline-flex',
+                                                      alignItems: 'center',
+                                                      gap: 1,
+                                                      maxWidth: '100%',
+                                                      transition: 'all 0.25s ease'
+                                                    }}
+                                                  >
+                                                    <Typography
+                                                      sx={{
+                                                        color: '#0f172a',
+                                                        fontWeight: 900,
+                                                        fontSize: { xs: '0.92rem', sm: '1.02rem' },
+                                                        lineHeight: 1.2,
+                                                        letterSpacing: '-0.02em',
+                                                        whiteSpace: 'nowrap',
+                                                        overflow: 'hidden',
+                                                        textOverflow: 'ellipsis'
+                                                      }}
+                                                    >
+                                                      🌾 {comm}
+                                                    </Typography>
+                                                    <Box
+                                                      component="span"
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleSelectCommodityAndWeek(targetWeek, comm);
+                                                      }}
+                                                      sx={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        p: 0.25,
+                                                        borderRadius: '50%',
+                                                        '&:hover': { bgcolor: 'rgba(59,130,246,0.15)' }
+                                                      }}
+                                                    >
+                                                      <ArrowForwardArrow sx={{ fontSize: 16, color: '#3b82f6', flexShrink: 0 }} />
+                                                    </Box>
+                                                  </Box>
+                                                </Box>
+                                              </Paper>
+                                            </Box>
+                                          );
+                                        })}
+                                      </Box>
+                                    </Box>
+                                  );
+                                })}
+                              </Box>
                             </>
                           );
                         })()}
                       </Box>
 
-                      {/* ── STICKY FLOATING SELECTION TRAY (BOTTOM DOCK) ── */}
+                      {/* ── MINIMAL PREMIUM FLOATING DOCK (VIEWPORT FIXED CAPSULE) ── */}
                       {selectedCommodities.length > 0 && (
                         <Box
                           component={motion.div}
-                          initial={{ opacity: 0, y: 30 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: 30 }}
+                          initial={{ opacity: 0, y: 40, x: '-50%' }}
+                          animate={{ opacity: 1, y: 0, x: '-50%' }}
+                          exit={{ opacity: 0, y: 40, x: '-50%' }}
+                          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
                           sx={{
-                            position: 'sticky',
-                            bottom: 20,
-                            zIndex: 40,
-                            mt: 3,
-                            mx: 'auto',
-                            width: '100%',
-                            bgcolor: 'rgba(15, 23, 42, 0.94)',
-                            backdropFilter: 'blur(20px)',
-                            border: '1.5px solid rgba(255, 255, 255, 0.2)',
-                            borderRadius: '24px',
-                            p: { xs: 1.75, sm: 2 },
-                            boxShadow: '0 20px 48px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+                            position: 'fixed',
+                            bottom: { xs: 16, sm: 24 },
+                            left: '50%',
+                            zIndex: 1350,
+                            width: { xs: 'calc(100% - 32px)', sm: 'auto' },
+                            maxWidth: { xs: '100%', sm: 620 },
+                            bgcolor: 'rgba(15, 23, 42, 0.92)',
+                            backdropFilter: 'blur(24px)',
+                            border: '1.5px solid rgba(255, 255, 255, 0.18)',
+                            borderRadius: '999px',
+                            py: { xs: 1, sm: 1.2 },
+                            px: { xs: 1.75, sm: 2.5 },
+                            boxShadow: isAllSelected
+                              ? '0 20px 50px rgba(0, 0, 0, 0.55), 0 0 25px rgba(59, 130, 246, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25)'
+                              : '0 20px 50px rgba(0, 0, 0, 0.55), 0 0 25px rgba(16, 185, 129, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.25)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
-                            flexWrap: 'wrap',
-                            gap: 1.5,
+                            gap: { xs: 1.5, sm: 2.25 },
                           }}
                         >
-                          {/* Left: Summary Count & Title */}
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 200 }}>
+                          {/* Left: Count Avatar & Title */}
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, minWidth: 0, flex: 1 }}>
                             <Box
                               sx={{
-                                width: 42,
-                                height: 42,
-                                borderRadius: '12px',
+                                width: 36,
+                                height: 36,
+                                borderRadius: '50%',
                                 bgcolor: isAllSelected ? '#3b82f6' : '#10b981',
                                 color: '#fff',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 fontWeight: 900,
-                                fontSize: '1rem',
-                                boxShadow: `0 4px 14px ${isAllSelected ? 'rgba(59,130,246,0.5)' : 'rgba(16,185,129,0.5)'}`,
+                                fontSize: '0.85rem',
+                                boxShadow: isAllSelected
+                                  ? '0 2px 10px rgba(59, 130, 246, 0.5)'
+                                  : '0 2px 10px rgba(16, 185, 129, 0.5)',
                                 flexShrink: 0
                               }}
                             >
-                              {isAllSelected ? <LanguageIcon sx={{ fontSize: 22 }} /> : selectedCommodities.length}
+                              {isAllSelected ? <LanguageIcon sx={{ fontSize: 19 }} /> : selectedCommodities.length}
                             </Box>
-                            <Box>
-                              <Typography sx={{ color: '#fff', fontWeight: 900, fontSize: { xs: '0.9rem', sm: '1rem' }, letterSpacing: '-0.01em', lineHeight: 1.2 }}>
+
+                            <Box sx={{ minWidth: 0 }}>
+                              <Typography
+                                sx={{
+                                  color: '#fff',
+                                  fontWeight: 900,
+                                  fontSize: { xs: '0.84rem', sm: '0.94rem' },
+                                  letterSpacing: '-0.01em',
+                                  lineHeight: 1.2,
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  maxWidth: { xs: 150, sm: 260, md: 320 }
+                                }}
+                              >
                                 {displayCommodityTitle}
                               </Typography>
-                              <Typography sx={{ color: '#94a3b8', fontSize: '0.76rem', fontWeight: 600, mt: 0.25 }}>
-                                {isAllSelected 
-                                  ? `All ${commoditiesList.length} commodities active (National Macro Focus)` 
-                                  : `${selectedCommodities.length} of ${commoditiesList.length} corridors selected`}
+                              <Typography sx={{ color: '#94a3b8', fontSize: '0.72rem', fontWeight: 600, mt: 0.15 }}>
+                                {isAllSelected
+                                  ? `All ${commoditiesList.length} corridors selected`
+                                  : `${selectedCommodities.length} corridor${selectedCommodities.length === 1 ? '' : 's'} active`}
                               </Typography>
                             </Box>
                           </Box>
 
-                          {/* Middle: Selected Chips Tray (shown when few selected) */}
-                          {!isAllSelected && selectedCommodities.length <= 5 && (
-                            <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 0.75, flexWrap: 'wrap', maxWidth: 450 }}>
-                              {selectedCommodities.map(comm => (
-                                <Chip
-                                  key={comm}
-                                  label={comm}
-                                  size="small"
-                                  onDelete={() => handleToggleCommodity(comm)}
-                                  sx={{
-                                    bgcolor: 'rgba(255, 255, 255, 0.12)',
-                                    color: '#fff',
-                                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                                    fontWeight: 700,
-                                    fontSize: '0.75rem',
-                                    '& .MuiChip-deleteIcon': { color: 'rgba(255,255,255,0.7)', '&:hover': { color: '#ef4444' } }
-                                  }}
-                                />
-                              ))}
-                            </Box>
-                          )}
-
                           {/* Right: Actions */}
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, ml: 'auto' }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
                             <Button
                               size="small"
                               onClick={() => {
                                 setSelectedCommodities([activeWeeklyCommodity]);
                                 setActiveBasketId(null);
                               }}
-                              sx={{ color: '#94a3b8', fontWeight: 700, textTransform: 'none', fontSize: '0.85rem', '&:hover': { color: '#fff' } }}
+                              sx={{
+                                color: '#94a3b8',
+                                fontWeight: 700,
+                                textTransform: 'none',
+                                fontSize: '0.8rem',
+                                px: 1,
+                                minWidth: 'auto',
+                                '&:hover': { color: '#fff' }
+                              }}
                             >
                               Reset
                             </Button>
+
                             <Button
                               variant="contained"
                               onClick={handleProceedToStep2}
-                              endIcon={<ArrowForwardArrow sx={{ fontSize: 18 }} />}
+                              endIcon={<ArrowForwardArrow sx={{ fontSize: 16 }} />}
                               sx={{
                                 bgcolor: isAllSelected ? '#3b82f6' : '#10b981',
                                 color: '#fff',
                                 fontWeight: 900,
-                                fontSize: '0.92rem',
+                                fontSize: { xs: '0.82rem', sm: '0.88rem' },
                                 textTransform: 'none',
-                                borderRadius: '16px',
-                                px: { xs: 2.5, sm: 3.5 },
-                                py: 1.1,
-                                boxShadow: `0 8px 24px ${isAllSelected ? 'rgba(59,130,246,0.45)' : 'rgba(16,185,129,0.45)'}`,
+                                borderRadius: '999px',
+                                px: { xs: 2, sm: 2.75 },
+                                py: 0.85,
+                                boxShadow: isAllSelected
+                                  ? '0 4px 16px rgba(59, 130, 246, 0.45)'
+                                  : '0 4px 16px rgba(16, 185, 129, 0.45)',
                                 '&:hover': {
                                   bgcolor: isAllSelected ? '#2563eb' : '#059669',
-                                  transform: 'translateY(-2px)'
+                                  transform: 'translateY(-1px)'
                                 },
                                 transition: 'all 0.2s ease'
                               }}
                             >
-                              Continue to Focus Area →
+                              Continue →
                             </Button>
                           </Box>
                         </Box>

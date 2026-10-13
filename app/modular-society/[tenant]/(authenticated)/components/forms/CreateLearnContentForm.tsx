@@ -73,6 +73,7 @@ import PremiumCard from '@/components/PremiumCard';
 import { useParams } from 'next/navigation';
 import { getTenantConfig } from '@/lib/cms';
 import { MICRO_CTAS, MACRO_CTAS } from '@/lib/cms/ctas';
+import { commoditiesList, formatCommoditySelectionTitle } from '@/lib/cms/commodities';
 import { useStorageUpload } from '@/hooks/useStorageUpload';
 import { ArticleBlockRenderer } from '@/components/learn/ArticleBlockRenderer';
 import PremiumTextField from '@/components/PremiumTextField';
@@ -424,6 +425,7 @@ export default function CreateLearnContentForm({
     subcategory?: string;
     timeframe?: string;
     commodity?: string;
+    commodities?: string[];
     format?: ArticleFormat;
     targetDate?: string;
     title?: string;
@@ -587,6 +589,7 @@ export default function CreateLearnContentForm({
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>('');
   const [selectedCommodity, setSelectedCommodity] = useState<string>('Soybeans, Nuts and Meals');
+  const [selectedCommodities, setSelectedCommodities] = useState<string[]>([]);
   const [selectedFormat, setSelectedFormat] = useState<ArticleFormat>('brief');
   const [selectedEra, setSelectedEra] = useState<ArticleEra>('present');
   const [hasLaunchedAssistant, setHasLaunchedAssistant] = useState(false);
@@ -706,6 +709,14 @@ export default function CreateLearnContentForm({
 
     setType((initialType as any) || 'article');
     if (initialTaxonomy.commodity) setSelectedCommodity(initialTaxonomy.commodity);
+    if (initialTaxonomy.commodities && Array.isArray(initialTaxonomy.commodities) && initialTaxonomy.commodities.length > 0) {
+      setSelectedCommodities(initialTaxonomy.commodities);
+      if (!initialTaxonomy.commodity) {
+        setSelectedCommodity(formatCommoditySelectionTitle(initialTaxonomy.commodities));
+      }
+    } else if (initialTaxonomy.commodity) {
+      setSelectedCommodities([initialTaxonomy.commodity]);
+    }
 
     let targetCat = resolveChallenge(initialTaxonomy.category);
     let finalSubId = '';
@@ -769,7 +780,15 @@ export default function CreateLearnContentForm({
       setType(initialDraftData.type || (initialType as any) || 'article');
       if (initialDraftData.title) setTitle(initialDraftData.title || '');
       if (initialDraftData.description) setDescription(initialDraftData.description || '');
-      if (initialDraftData.commodity) setSelectedCommodity(initialDraftData.commodity);
+      if (initialDraftData.commodities && Array.isArray(initialDraftData.commodities)) {
+        setSelectedCommodities(initialDraftData.commodities);
+      }
+      if (initialDraftData.commodity) {
+        setSelectedCommodity(initialDraftData.commodity);
+        if (!initialDraftData.commodities || initialDraftData.commodities.length === 0) {
+          setSelectedCommodities([initialDraftData.commodity]);
+        }
+      }
       if (initialDraftData.category) setSelectedCategory(initialDraftData.category || '');
       
       const rawSub = initialDraftData.subcategory || (initialDraftData as any).subcategoryId;
@@ -819,11 +838,19 @@ export default function CreateLearnContentForm({
         }
       }
 
-      if (!initialDraftData.commodity && initialDraftData.bottleneckTags) {
+      if (initialDraftData.bottleneckTags) {
         try {
-          const tags = JSON.parse(initialDraftData.bottleneckTags);
-          if (Array.isArray(tags) && tags.length > 2) {
-            setSelectedCommodity(tags[tags.length - 1]);
+          const tags = typeof initialDraftData.bottleneckTags === 'string'
+            ? JSON.parse(initialDraftData.bottleneckTags)
+            : initialDraftData.bottleneckTags;
+          if (Array.isArray(tags)) {
+            const commTags = tags.filter((t: string) => commoditiesList.includes(t));
+            if (commTags.length > 0) {
+              setSelectedCommodities(prev => prev.length > 0 ? prev : commTags);
+            }
+            if (!initialDraftData.commodity && tags.length > 2) {
+              setSelectedCommodity(tags[tags.length - 1]);
+            }
           }
         } catch (e) {}
       }
@@ -1534,9 +1561,12 @@ export default function CreateLearnContentForm({
         slug: generateSlug(finalTitle.trim() || 'Draft Content'),
         description: finalDesc.trim() || 'No description provided.',
         type: type as "article" | "video" | "class" | "livestream" | "report",
-        bottleneckTags: selectedSubcategory 
-          ? [selectedSubcategory, selectedCategory, selectedCommodity].filter(Boolean) 
-          : [selectedCategory, selectedCommodity].filter(Boolean),
+        bottleneckTags: Array.from(new Set([
+          selectedSubcategory,
+          selectedCategory,
+          selectedCommodity,
+          ...selectedCommodities,
+        ])).filter(Boolean) as string[],
         category: selectedCategory,
         subcategory: selectedSubcategory,
         timeframe: selectedTimeframe,
@@ -1769,11 +1799,31 @@ export default function CreateLearnContentForm({
                         <Typography sx={{ color: 'rgba(15, 23, 42, 0.3)', fontWeight: 400 }}>/</Typography>
 
                         {/* Commodity Pill */}
-                        <Chip
-                          label={`🌾 ${selectedCommodity}`}
-                          size="small"
-                          sx={{ bgcolor: '#fff', color: '#0f172a', fontWeight: 800, border: '1px solid rgba(0,0,0,0.08)' }}
-                        />
+                        <Tooltip
+                          title={
+                            selectedCommodities.length > 1
+                              ? `Active Focus (${selectedCommodities.length} corridors): ${selectedCommodities.join(', ')}`
+                              : `Active Focus: ${selectedCommodity}`
+                          }
+                          arrow
+                        >
+                          <Chip
+                            label={
+                              selectedCommodities.length > 1 && !selectedCommodity.includes('Basket') && !selectedCommodity.includes('National')
+                                ? `🌾 ${selectedCommodities[0]} +${selectedCommodities.length - 1} more`
+                                : `🌾 ${selectedCommodity}`
+                            }
+                            size="small"
+                            sx={{
+                              bgcolor: '#fff',
+                              color: '#0f172a',
+                              fontWeight: 800,
+                              border: selectedCommodities.length > 1 ? '1px solid rgba(16,185,129,0.5)' : '1px solid rgba(0,0,0,0.08)',
+                              boxShadow: selectedCommodities.length > 1 ? '0 2px 8px rgba(16,185,129,0.15)' : 'none',
+                              cursor: 'pointer'
+                            }}
+                          />
+                        </Tooltip>
 
                         {/* Category */}
                         <Chip
