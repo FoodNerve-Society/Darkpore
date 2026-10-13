@@ -48,6 +48,8 @@ import {
   buildDoc4aPrompt,
   buildDoc4bPrompt,
   buildDoc4cPrompt,
+  resolveCorridorScope,
+  PromptContext,
 } from '@/lib/config/articleMasterPrompts';
 
 interface EditorialPromptSidePaneProps {
@@ -57,6 +59,7 @@ interface EditorialPromptSidePaneProps {
   format: ArticleFormat;
   era: ArticleEra;
   commodity: string;
+  commodities?: string[];
   category: string;
   subcategory: string;
   currentTitle: string;
@@ -83,6 +86,7 @@ interface EditorialPromptSidePaneProps {
   ) => void;
   onUpdateTitle?: (title: string) => void;
   onUpdateDescription?: (desc: string) => void;
+  onUpdateCommodities?: (commodities: string[]) => void;
 }
 
 export function EditorialPromptSidePane({
@@ -92,6 +96,7 @@ export function EditorialPromptSidePane({
   format,
   era,
   commodity,
+  commodities = [],
   category,
   subcategory,
   currentTitle,
@@ -101,6 +106,7 @@ export function EditorialPromptSidePane({
   onIngestAllBlocks,
   onUpdateTitle,
   onUpdateDescription,
+  onUpdateCommodities,
 }: EditorialPromptSidePaneProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -253,17 +259,20 @@ export function EditorialPromptSidePane({
     return 0;
   }, [rawIngestPayload]);
 
-  const promptContext = useMemo(() => ({
+  const promptContext: PromptContext = useMemo(() => ({
     format,
     era,
     commodity,
+    commodities: commodities && commodities.length > 0 ? commodities : (commodity ? [commodity] : []),
     category,
     subcategory,
     currentTitle,
     currentDescription,
     currentBlueprint,
     pinnedClips,
-  }), [format, era, commodity, category, subcategory, currentTitle, currentDescription, currentBlueprint, pinnedClips]);
+  }), [format, era, commodity, commodities, category, subcategory, currentTitle, currentDescription, currentBlueprint, pinnedClips]);
+
+  const corridorInfo = useMemo(() => resolveCorridorScope(promptContext), [promptContext]);
 
   // ═══════════════════════════════════════════════════════════
   // DOCUMENT 2: THE DRAFTING ENGINE (2a, 2b, 2c)
@@ -407,6 +416,17 @@ export function EditorialPromptSidePane({
             const rawDesc = Array.isArray(parsed.description) ? parsed.description[0] : parsed.description;
             onUpdateDescription(String(rawDesc));
           }
+          const targetMeta = parsed.metadata || (parsed as any)?.meta;
+          if (targetMeta && onUpdateCommodities) {
+            if (Array.isArray(targetMeta.commodities) && targetMeta.commodities.length > 0) {
+              onUpdateCommodities(targetMeta.commodities);
+            } else if (Array.isArray(targetMeta.bottleneckTags)) {
+              const valid = targetMeta.bottleneckTags.filter(
+                (t: string) => t !== 'all_commodities' && t !== 'evergreen' && !t.includes('-basket')
+              );
+              if (valid.length > 0) onUpdateCommodities(valid);
+            }
+          }
         } else if (parsed.blocks && Array.isArray(parsed.blocks)) {
           parsedBlocks = parsed.blocks;
           if (parsed.title && onUpdateTitle) {
@@ -416,6 +436,17 @@ export function EditorialPromptSidePane({
           if (parsed.description && onUpdateDescription) {
             const rawDesc = Array.isArray(parsed.description) ? parsed.description[0] : parsed.description;
             onUpdateDescription(String(rawDesc));
+          }
+          const targetMeta = parsed.metadata || (parsed as any)?.meta;
+          if (targetMeta && onUpdateCommodities) {
+            if (Array.isArray(targetMeta.commodities) && targetMeta.commodities.length > 0) {
+              onUpdateCommodities(targetMeta.commodities);
+            } else if (Array.isArray(targetMeta.bottleneckTags)) {
+              const valid = targetMeta.bottleneckTags.filter(
+                (t: string) => t !== 'all_commodities' && t !== 'evergreen' && !t.includes('-basket')
+              );
+              if (valid.length > 0) onUpdateCommodities(valid);
+            }
           }
         }
       }
@@ -436,6 +467,17 @@ export function EditorialPromptSidePane({
               const rawDesc = Array.isArray(extracted.description) ? extracted.description[0] : extracted.description;
               onUpdateDescription(String(rawDesc));
             }
+            const targetMeta = extracted.metadata || (extracted as any)?.meta;
+            if (targetMeta && onUpdateCommodities) {
+              if (Array.isArray(targetMeta.commodities) && targetMeta.commodities.length > 0) {
+                onUpdateCommodities(targetMeta.commodities);
+              } else if (Array.isArray(targetMeta.bottleneckTags)) {
+                const valid = targetMeta.bottleneckTags.filter(
+                  (t: string) => t !== 'all_commodities' && t !== 'evergreen' && !t.includes('-basket')
+                );
+                if (valid.length > 0) onUpdateCommodities(valid);
+              }
+            }
           } else if (extracted.blocks && Array.isArray(extracted.blocks)) {
             parsedBlocks = extracted.blocks;
             if (extracted.title && onUpdateTitle) {
@@ -445,6 +487,17 @@ export function EditorialPromptSidePane({
             if (extracted.description && onUpdateDescription) {
               const rawDesc = Array.isArray(extracted.description) ? extracted.description[0] : extracted.description;
               onUpdateDescription(String(rawDesc));
+            }
+            const targetMeta = extracted.metadata || (extracted as any)?.meta;
+            if (targetMeta && onUpdateCommodities) {
+              if (Array.isArray(targetMeta.commodities) && targetMeta.commodities.length > 0) {
+                onUpdateCommodities(targetMeta.commodities);
+              } else if (Array.isArray(targetMeta.bottleneckTags)) {
+                const valid = targetMeta.bottleneckTags.filter(
+                  (t: string) => t !== 'all_commodities' && t !== 'evergreen' && !t.includes('-basket')
+                );
+                if (valid.length > 0) onUpdateCommodities(valid);
+              }
             }
           }
         }
@@ -632,7 +685,13 @@ export function EditorialPromptSidePane({
               >
                 <span>Get The Full Article</span>
                 <span style={{ color: 'rgba(255,255,255,0.3)' }}>·</span>
-                <span style={{ color: '#fbbf24', fontWeight: 600 }}>{commodity.split(',')[0]}</span>
+                <span style={{ color: '#fbbf24', fontWeight: 600 }}>
+                  {corridorInfo.scope === 'all_commodities'
+                    ? '🌐 Evergreen (52 Wks)'
+                    : corridorInfo.scope === 'thematic_basket'
+                    ? `${corridorInfo.basketEmoji} ${corridorInfo.basketLabel}`
+                    : `🌾 ${commodity.split(',')[0]}`}
+                </span>
               </Typography>
 
               {/* Minimal Expand Icon */}
@@ -825,7 +884,11 @@ export function EditorialPromptSidePane({
               >
                 <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, transparent 35%, rgba(0, 0, 0, 0.85) 100%)' }} />
                 <Typography sx={{ position: 'absolute', bottom: 7, left: 4, right: 4, color: '#fff', fontSize: '0.7rem', fontWeight: 900, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  🌾 {commodity.split(',')[0]}
+                  {corridorInfo.scope === 'all_commodities'
+                    ? '🌐 All Commodities'
+                    : corridorInfo.scope === 'thematic_basket'
+                    ? `${corridorInfo.basketEmoji} ${corridorInfo.basketLabel}`
+                    : `🌾 ${commodity.split(',')[0]}`}
                 </Typography>
               </Box>
 
@@ -950,7 +1013,7 @@ export function EditorialPromptSidePane({
                     1
                   </Box>
                   <Typography sx={{ fontSize: '0.82rem', color: '#334155', fontWeight: 600, lineHeight: 1.5 }}>
-                    Your selected commodity, category, and {currentBlueprint.length}-block blueprint are auto-injected into each prompt below.
+                    Your selected corridor ({corridorInfo.scopeSummary}), category, and {currentBlueprint.length}-block blueprint are auto-injected into each prompt below.
                   </Typography>
                 </Box>
 

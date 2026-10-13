@@ -4,17 +4,91 @@
  */
 
 import { ArticleFormat, ArticleEra, FORMAT_CONFIG, ERA_CONFIG, SopBlock } from './articleBlueprints';
+import { 
+  commoditiesList, 
+  THEMATIC_BASKETS, 
+  findMatchingBasket, 
+  ThematicBasket 
+} from '@/lib/cms/commodities';
+
+export type CorridorScope = 'single' | 'thematic_basket' | 'all_commodities';
 
 export interface PromptContext {
   format: ArticleFormat;
   era: ArticleEra;
   commodity: string;
+  commodities?: string[];
+  corridorScope?: CorridorScope;
+  thematicBasketName?: string;
   category: string;
   subcategory?: string;
   currentTitle?: string;
   currentDescription?: string;
   currentBlueprint: SopBlock[];
   pinnedClips?: string[];
+}
+
+export interface ResolvedCorridorInfo {
+  scope: CorridorScope;
+  commodities: string[];
+  primaryCommodity: string;
+  basketId?: string;
+  basketLabel?: string;
+  basketEmoji?: string;
+  scopeSummary: string;
+  scopeDirective: string;
+}
+
+export function resolveCorridorScope(ctx: PromptContext): ResolvedCorridorInfo {
+  const commList = ctx.commodities && ctx.commodities.length > 0 
+    ? ctx.commodities 
+    : (ctx.commodity ? [ctx.commodity] : []);
+
+  const isAllCommodities = 
+    ctx.corridorScope === 'all_commodities' ||
+    commList.length >= commoditiesList.length || 
+    commList.includes('all_commodities') || 
+    ctx.commodity?.toLowerCase().includes('all commodities') ||
+    ctx.commodity === 'All Commodities (Food System Wide)';
+
+  if (isAllCommodities) {
+    return {
+      scope: 'all_commodities',
+      commodities: commoditiesList,
+      primaryCommodity: 'All Commodities (National Food System)',
+      basketId: 'all-commodities-national',
+      basketLabel: 'National Multi-Corridor System',
+      basketEmoji: '🌐',
+      scopeSummary: 'Evergreen National Macro Supply-Chain Corridor (All 52 Weeks)',
+      scopeDirective: 'National Multi-Corridor Evergreen Scope: Focus on systemic transit tolls, currency/fuel arbitrage, cold-chain electricity tariffs, and interstate freight logistics affecting Nigeria’s entire food distribution grid across all 52 weeks.',
+    };
+  }
+
+  const matchedBasket = findMatchingBasket(commList);
+  if (matchedBasket || ctx.corridorScope === 'thematic_basket' || commList.length > 1) {
+    const basketLabel = ctx.thematicBasketName || matchedBasket?.label || (commList.length > 1 ? `${commList[0]} + ${commList.length - 1} Corridors` : 'Thematic Corridor Basket');
+    const basketId = matchedBasket?.id || 'custom-thematic-basket';
+    const basketEmoji = matchedBasket?.emoji || '🌾';
+    return {
+      scope: 'thematic_basket',
+      commodities: commList,
+      primaryCommodity: commList[0] || ctx.commodity,
+      basketId,
+      basketLabel,
+      basketEmoji,
+      scopeSummary: `Thematic Basket Corridor: ${basketLabel} (${commList.join(', ')})`,
+      scopeDirective: `Thematic Basket Scope (${basketLabel}): Focus on comparative corridor dynamics, substitution effects, shared transport/storage infrastructure, and unit economics across constituent crops (${commList.join(', ')}).`,
+    };
+  }
+
+  const single = commList[0] || ctx.commodity || 'Agricultural Commodity';
+  return {
+    scope: 'single',
+    commodities: [single],
+    primaryCommodity: single,
+    scopeSummary: `Single Value-Chain Focus: ${single}`,
+    scopeDirective: `Single Corridor Focus: Laser-focused operational analysis on the production hubs, processing bottlenecks, and off-taker economics of ${single}.`,
+  };
 }
 
 export function getCurrentTemporalAnchor(): string {
@@ -33,6 +107,7 @@ export function buildDoc2aPrompt(ctx: PromptContext): string {
   const formatMeta = FORMAT_CONFIG[ctx.format] || FORMAT_CONFIG.brief;
   const eraMeta = ERA_CONFIG[ctx.era] || ERA_CONFIG.present;
   const sequenceKey = `${ctx.format}_${ctx.era}`;
+  const corridor = resolveCorridorScope(ctx);
 
   return `### 📄 DOCUMENT 2a: THE EMOTIONAL WIREFRAMER / THE ARCHITECT (MASTER PROMPT)
 
@@ -55,13 +130,29 @@ Assign exactly one of these primary emotional directives to each block:
 4. Epiphany / Mathematical Clarity: Deliver simple, undeniable mathematical equations and operational workarounds.
 
 [SYSTEM METADATA BACKPACK]
-- Commodity: "${ctx.commodity}"
-- Strategic Category: "${ctx.category}"
+- Corridor Scope: ${corridor.scope.toUpperCase()} (${corridor.scopeSummary})
+- Active Commodities: ${corridor.commodities.join(', ')}
+- Primary Commodity Anchor: "${corridor.primaryCommodity}"
+${corridor.basketLabel ? `- Thematic Basket: "${corridor.basketLabel}"\n` : ''}- Strategic Category: "${ctx.category}"
 - Subcategory: "${ctx.subcategory || 'General'}"
 - Format Lens: "${formatMeta.label}" (${ctx.format.toUpperCase()})
 - Temporal Era: "${eraMeta.label}" (${ctx.era.toUpperCase()} ERA)
 - Sequence Key: "${sequenceKey}" (${ctx.currentBlueprint.length} blocks)
 - Working Title: "${ctx.currentTitle || 'Agribusiness Strategic Intelligence'}"
+
+[CORRIDOR INTELLIGENCE ARCHITECTURE & MULTI-CROP SCOPE]
+${corridor.scope === 'all_commodities' ? `* **EVERGREEN NATIONAL MACRO SCOPE (ALL 52 WEEKS):**
+  - Architect a national supply-chain intelligence memo spanning Nigeria's entire food distribution grid across all 52 calendar weeks.
+  - **Block 1 (\`highlight_card\`):** Target a macro-systemic stat (e.g. nationwide post-harvest transit losses in metric tonnes, aggregate diesel toll spend, or national cold-chain electricity deficit).
+  - **Block 2 (\`exec_summary\`):** Deliver 3 universal sit-rep takeaways applicable to any agribusiness executive or logistics operator across the full calendar year.
+  - **Middle Blocks:** Architect middle blocks around cross-cutting structural mechanisms (interstate tax extortion, currency depreciation, rail vs road haulage corridors, multi-crop warehousing).
+  - **Evergreen Principle:** Focus on durable economic equations and structural friction that remain true across seasonal cycles rather than transient single-week crop spot prices.` : corridor.scope === 'thematic_basket' ? `* **THEMATIC BASKET CORRIDOR SCOPE (${corridor.basketLabel}):**
+  - Architect comparative corridor intelligence across ${corridor.commodities.length} constituent crops: ${corridor.commodities.join(', ')}.
+  - **Block 1 (\`highlight_card\`):** Target a shared basket metric (e.g. cumulative corridor tonnage delay, inter-crop margin divergence, or shared processing bottlenecks).
+  - **Block 2 (\`exec_summary\`):** Deliver 3 takeaways contrasting how the shock cascades across the basket crops (e.g. substitution effects between ${corridor.commodities.slice(0, 2).join(' and ')}).
+  - **Middle Blocks (\`comparison_matrix\` / \`unit_economics_card\`):** Wireframe direct head-to-head comparisons between constituent crops or evaluate shared processing/storage infrastructure.
+  - **Cross-Crop Dynamics:** Highlight operational trade-offs, capital reallocation, and substitution parity across the basket.` : `* **SINGLE VALUE-CHAIN FOCUS (${corridor.primaryCommodity}):**
+  - Wireframe a laser-focused operational deep-dive into the specific agronomic, processing, and off-take dynamics of ${corridor.primaryCommodity}.`}
 
 [INPUT PAYLOAD DEFINITION]
 [ORIGINAL_OUTLINE_FROM_DOC_1C]: [Paste the chosen outline including [SYSTEM_METADATA] from Doc 1c]
@@ -94,6 +185,8 @@ Output your response strictly inside this single Markdown block:
 **Sequence Key:** ${sequenceKey}
 **Total Blocks:** ${ctx.currentBlueprint.length}
 **Working Title:** ${ctx.currentTitle || '[Insert Title]'}
+**Corridor Scope:** ${corridor.scope.toUpperCase()} (${corridor.scopeSummary})
+**Active Commodities:** ${corridor.commodities.join(', ')}
 
 ### BLOCK WIREFRAMES:
 ${ctx.currentBlueprint
@@ -109,6 +202,7 @@ ${ctx.currentBlueprint
 export function buildDoc2bPrompt(ctx: PromptContext): string {
   const temporal = getCurrentTemporalAnchor();
   const sequenceKey = `${ctx.format}_${ctx.era}`;
+  const corridor = resolveCorridorScope(ctx);
 
   return `### 📄 DOCUMENT 2b: THE INTELLIGENCE WRITER / THE MUSCLE (MASTER PROMPT)
 
@@ -123,23 +217,23 @@ Act as a senior investigative intelligence analyst writing for Food Nerve Societ
 
 PHASE 1: Payload Ingestion & OSINT Grounding
 1. Read the [DOC_2A_WIREFRAME] to identify the exact block sequence (OrderIndex 0 to ${ctx.currentBlueprint.length - 1}) anchored by the 3-Up / 3-Down canonical structure (Blocks 0-2: subheading, highlight_card, exec_summary; Terminal Blocks: live_poll, strategic_directive, call_to_action).
-2. Read the [SYSTEM_METADATA] from the outline to lock in the Commodity ("${ctx.commodity}"), Subcategory_ID ("${ctx.subcategory || ctx.category}"), Micro-Geography, and Target_Persona.
-3. Live OSINT Search Mandate: Execute targeted live web searches using the Micro-Geography, Commodity, and Subcategory_ID to retrieve verified local market prices, facility names, transit corridors, or regulatory citations. Ground every block in real facts.
+2. Read the [SYSTEM_METADATA] from the outline to lock in the Corridor Scope (${corridor.scope.toUpperCase()}), Active Commodities (${corridor.commodities.join(', ')}), Subcategory_ID ("${ctx.subcategory || ctx.category}"), Micro-Geography, and Target_Persona.
+3. Live OSINT Search Mandate: Execute targeted live web searches using the Micro-Geography, active commodities, and Subcategory_ID to retrieve verified local market prices, facility names, transit corridors, or regulatory citations. ${corridor.scope === 'all_commodities' ? 'Search national haulage rates, interstate checkpoints, diesel inflation, and federal food security policy.' : corridor.scope === 'thematic_basket' ? `Search comparative market prices, substitution parity, and transit tariffs across ${corridor.commodities.join(', ')}.` : `Search specific local aggregation hubs, processors, and farmgate pricing for ${corridor.primaryCommodity}.`} Ground every block in real facts.
 
 PHASE 2: Drafting the Blocks (Content & Emotional Execution)
 Draft the raw text for every block in the wireframe sequentially, strictly adhering to the block's specific writing directive and emotional target:
-- For subheading: Output the action-spiky title strictly following the badge-splitting formula: "[The Big Catalyst / Shock]: Why [Specific Value Chain Actor] [Exact Survival Action or Collapse] in [Micro-Geography]" (e.g., "Diesel Deregulation Shock: Why Maize Haulers Abandon Interstate Corridors in Kano, Nigeria").
-- For highlight_card: Write an evocative visual prompt depicting the physical crisis or hack, followed by a 1-2 sentence quantitative killer stat.
-- For exec_summary: Write exactly 3 numbered bullets: (1) The Crisis/Shock, (2) The Operational Workaround, (3) The Market/Wealth Shift.
-- For core_interactive: Write 2-3 dense analytical paragraphs detailing the broken system, physical mechanics of workaround, and capital flows. End with an active localized Discussion Prompt that MUST strictly start with the phrase "Do you know if...?" (e.g., "Do you know if smallholder aggregation hubs in Kano are already testing solar cold chains?", "Do you know if off-grid processors in Niger State are passing diesel inflation to off-takers?") to provoke verified operator debate.
+- For subheading: Output the action-spiky title strictly following the badge-splitting formula: "[The Big Catalyst / Shock]: Why [Specific Value Chain Actor] [Exact Survival Action or Collapse] in [Micro-Geography]" ${corridor.scope === 'all_commodities' ? '(Scope Rule: Title MUST address the systemic/macro shock affecting all food corridors nationwide, e.g., "Diesel Deregulation Shock: Why Interstate Food Haulers Abandon Long-Distance Transit Corridors in Nigeria")' : corridor.scope === 'thematic_basket' ? `(Scope Rule: Title MUST capture the shared basket dynamics or inter-crop tension across ${corridor.basketLabel}, e.g., "Grains Corridor Arbitrage: Why Commercial Feed Millers in Kano Dump Sorghum for Maize")` : `(Scope Rule: Title MUST focus squarely on ${corridor.primaryCommodity} value chain dynamics)`}.
+- For highlight_card: Write an evocative visual prompt depicting the physical crisis or hack, followed by a 1-2 sentence quantitative killer stat ${corridor.scope === 'all_commodities' ? '(citing a national systemic metric or multi-corridor volume)' : corridor.scope === 'thematic_basket' ? `(citing shared corridor volume or basket loss across ${corridor.commodities.slice(0, 2).join(' and ')})` : `(citing specific ${corridor.primaryCommodity} market data)`}.
+- For exec_summary: Write exactly 3 numbered bullets: (1) The Crisis/Shock, (2) The Operational Workaround, (3) The Market/Wealth Shift ${corridor.scope === 'thematic_basket' ? '(highlighting cross-crop substitution or basket ripple effects)' : corridor.scope === 'all_commodities' ? '(highlighting national macroeconomic ripple effects)' : ''}.
+- For core_interactive: Write 2-3 dense analytical paragraphs detailing the broken system, physical mechanics of workaround, and capital flows ${corridor.scope === 'thematic_basket' ? `(analyzing price divergence, substitution parity, and shared transport constraints between ${corridor.commodities.join(', ')})` : corridor.scope === 'all_commodities' ? '(analyzing systemic national infrastructure, interstate extortion, currency hedges, and regulatory barriers)' : ''}. End with an active localized Discussion Prompt that MUST strictly start with the phrase "Do you know if...?" (e.g., "Do you know if smallholder aggregation hubs in Kano are already testing solar cold chains?", "Do you know if off-grid processors in Niger State are passing diesel inflation to off-takers?") to provoke verified operator debate.
 - For myth_fact: Contrast 1 widely held official/NGO assumption with the brutal operational ground reality.
 - For pull_quote: Draft a 1-2 sentence raw, first-person quote attributed to an archetypal operator, executive, or trader in the Micro-Geography.
 - For media (Evidence Gallery): Specify 2 distinct verified evidence artifacts (Item 1: Data chart/index; Item 2: Field photograph, schematic, or waybill proof).
-- For live_poll: Formulate 1 polarizing decision-forcing question with exactly 3 operational options. Each option MUST be a single sentence of maximum 10 words starting with a decisive stance (e.g., "Yes — actively deploying this corridor hack", "No — evaluating downstream margin exposure", "Watching — awaiting regulatory clarity"), formatted as a JSON string array ["...", "...", "..."] or pipe-separated (Option 1 || Option 2 || Option 3).
+- For live_poll: Formulate 1 polarizing decision-forcing question with exactly 3 operational options ${corridor.scope === 'thematic_basket' ? `reflecting the ${corridor.basketLabel} corridor` : corridor.scope === 'all_commodities' ? 'reflecting macro corridor survival' : `reflecting ${corridor.primaryCommodity} operations`}. Each option MUST be a single sentence of maximum 10 words starting with a decisive stance (e.g., "Yes — actively deploying this corridor hack", "No — evaluating downstream margin exposure", "Watching — awaiting regulatory clarity"), formatted as a JSON string array ["...", "...", "..."] or pipe-separated (Option 1 || Option 2 || Option 3).
 - For strategic_directive: Write high-contrast terminal command: assign Urgency (EXECUTE NOW, PREPARE, or MONITOR), state Threat, Immediate Action, Long-Term Pivot, and retain "microCtaId": "[Relevant Micro-CTA ID from Library]".
 - For call_to_action: Output "macroCtaId": "[Insert Macro-CTA ID from Library]".
-- For comparison_matrix: Define Option A vs Option B across at least 4 criteria rows (CAPEX, OPEX, Turnaround, Loss/Risk) and declare a decisive Winner Verdict.
-- For unit_economics_card: Output the 6 core metrics (TAM, Net IRR, Ticket Size, Gross Margin, Payback Period, Primary Risk Hedge) and a 1-2 sentence Deal Thesis.
+- For comparison_matrix: Define Option A vs Option B across at least 4 criteria rows (CAPEX, OPEX, Turnaround, Loss/Risk) and declare a decisive Winner Verdict ${corridor.scope === 'thematic_basket' ? `(can compare two constituent crops like ${corridor.commodities.slice(0, 2).join(' vs ')} or two competing logistics models for the basket)` : ''}.
+- For unit_economics_card: Output the 6 core metrics (TAM, Net IRR, Ticket Size, Gross Margin, Payback Period, Primary Risk Hedge) and a 1-2 sentence Deal Thesis ${corridor.scope === 'all_commodities' ? '(modeled on a multi-commodity transit or processing hub)' : corridor.scope === 'thematic_basket' ? `(modeled on dominant crop or joint aggregation for ${corridor.basketLabel})` : ''}.
 - For protocol_steps: Write 3-4 sequential steps detailing Step Title, Assigned Role, Time Window, Physical Procedure, and Sub-Checklist items.
 - For timeline_tracker: Construct 3 chronological milestones mapping crisis or roadmap (Inception -> Shock -> Collapse/Monopoly).
 - For persona_dossier: Profile front-line operator: Name, Role, Micro-Geography, Age, Monthly Turnover/Volume, Field Quote, and 2-3 sentence Bio.
@@ -155,6 +249,8 @@ Output your response strictly inside this single Markdown block:
 **Sequence Key:** ${sequenceKey}
 **Headline:** [The Big Catalyst / Shock]: Why [Specific Value Chain Actor] [Exact Survival Action or Collapse] in [Micro-Geography]
 **Micro-Geography:** [Insert Micro-Geography]
+**Corridor Scope:** ${corridor.scope.toUpperCase()} (${corridor.scopeSummary})
+**Active Commodities:** ${corridor.commodities.join(', ')}
 
 ### DRAFTED BLOCKS:
 
@@ -167,6 +263,8 @@ ${ctx.currentBlueprint
 }
 
 export function buildDoc2cPrompt(ctx: PromptContext): string {
+  const corridor = resolveCorridorScope(ctx);
+
   return `### 📄 DOCUMENT 2c: THE COMPONENT ASSEMBLER / THE SKIN (MASTER PROMPT)
 
 **[SYSTEM PERSONA & COMPILATION CONSTRAINTS]**
@@ -174,6 +272,7 @@ You are a Technical Frontend Compiler and Layout Assembler for Food Nerve Societ
 *   **Zero Rewriting Rule:** Do NOT rewrite, summarize, or alter the drafted prose, metrics, or quotes from Step 2b. You are an assembler, not an editor.
 *   **Sequential Integrity:** Output blocks in the exact sequential order (OrderIndex 0 to ${ctx.currentBlueprint.length - 1}) specified in the input.
 *   **Placeholder Protection:** You must preserve all system placeholders (\`"microCtaId": "[...]"\`, \`"macroCtaId": "[...]"\`).
+*   **Corridor Metadata Preservation:** You must ensure the \`[SYSTEM_METADATA]\` backpack records Corridor_Scope: "${corridor.scope}" and Active_Commodities: [${corridor.commodities.map(c => `"${c}"`).join(', ')}]${corridor.basketLabel ? ` and Thematic_Basket: "${corridor.basketLabel}"` : ''}.
 
 **[INPUT PAYLOAD DEFINITION]**
 \`\`\`text
@@ -355,6 +454,7 @@ Prepend the \`[SYSTEM_METADATA]\` backpack at the top, separate each block with 
 
 export function buildDoc3aPrompt(ctx: PromptContext): string {
   const temporal = getCurrentTemporalAnchor();
+  const corridor = resolveCorridorScope(ctx);
 
   return `### 📄 DOCUMENT 3a: THE OSINT FACT-CHECKING & SOURCING ENGINE (MASTER PROMPT)
 
@@ -373,10 +473,15 @@ You are the Senior Investigative Fact-Checker and OSINT Research Lead for Food N
 ---
 
 #### PHASE 1: Scan & Identify Active Verification Targets
-Parse the \`[SYSTEM_METADATA]\` to lock in the \`Commodity\` ("${ctx.commodity}"), \`Subcategory_ID\` ("${ctx.subcategory || ctx.category}"), \`Micro-Geography\`, and \`Era\` ("${ctx.era}"). Scan the document to identify which data-bearing blocks are present.
+Parse the \`[SYSTEM_METADATA]\` to lock in Corridor Scope ("${corridor.scope}"), Active Commodities (${corridor.commodities.join(', ')}), \`Subcategory_ID\` ("${ctx.subcategory || ctx.category}"), \`Micro-Geography\`, and \`Era\` ("${ctx.era}"). Scan the document to identify which data-bearing blocks are present.
 
 #### PHASE 2: Targeted Live OSINT Audits
-Execute live web searches using the \`Micro-Geography\` and \`Commodity\` as search anchors to verify and enrich each active block:
+Execute live web searches using the \`Micro-Geography\` and active commodities (${corridor.commodities.join(', ')}) as search anchors to verify and enrich each active block:
+${corridor.scope === 'all_commodities'
+  ? '*Note for All Commodities:* Verify national haulage rates, diesel prices, interstate toll policies, and country-wide post-harvest loss statistics across all 52 weeks.'
+  : corridor.scope === 'thematic_basket'
+  ? `*Note for ${corridor.basketLabel}:* Cross-verify comparative pricing, substitution dynamics, and transit corridors across ${corridor.commodities.join(', ')}.`
+  : `*Note for ${corridor.primaryCommodity}:* Verify crop-specific farmgate metrics, processing margins, and local aggregation points.`}
 1. **\`highlight_card\`:** Verify that Killer Stat reflects accurate ${temporal} metrics (FX exchange rates, local commodity inflation, haulage prices). Correct drifted numbers.
 2. **\`unit_economics_card\`:** Audit all 6 metrics (TAM, Net IRR, Ticket Size, Gross Margin, Payback Period, Primary Risk Hedge). Ensure figures align with real ${temporal} agricultural finance conditions.
 3. **\`protocol_steps\`:** Check physical steps, machinery operating parameters, and chemical inputs for compliance with current safety/trade standards.
@@ -413,6 +518,7 @@ Update the document in-place. Replace bracketed placeholders with verified OSINT
 
 export function buildDoc3bPrompt(ctx: PromptContext): string {
   const temporal = getCurrentTemporalAnchor();
+  const corridor = resolveCorridorScope(ctx);
 
   return `### 📄 DOCUMENT 3b: THE ART DIRECTOR & CONVERSION ARCHITECT (MASTER PROMPT)
 
@@ -456,7 +562,7 @@ You are the Creative Director and Chief Conversion Architect for Food Nerve Soci
 Locate every block containing image placeholders:
 1. **For \`highlight_card\` (The Hero Banner):**
    - *Aspect Ratio:* **\`-ar 16:9\`** (Strictly widescreen to preserve vertical reading space).
-   - *Format:* \`*Expanded_Image_Prompt:** [Detailed wide-angle scene description], cinematic documentary photography, shot on 35mm lens, f/2.8, dramatic natural lighting, Reuters photojournalism style, raw realism, muted earthy tones, 8k resolution, depth of field, --ar 16:9\`
+   - *Format:* \`*Expanded_Image_Prompt:** [Detailed wide-angle scene description ${corridor.scope === 'all_commodities' ? 'depicting high-volume interstate food logistics, transshipment hubs, and multi-cargo transit' : corridor.scope === 'thematic_basket' ? `depicting joint harvesting, aggregation, and transport across ${corridor.basketLabel}` : `depicting ${corridor.primaryCommodity} production and processing`}], cinematic documentary photography, shot on 35mm lens, f/2.8, dramatic natural lighting, Reuters photojournalism style, raw realism, muted earthy tones, 8k resolution, depth of field, --ar 16:9\`
 2. **For \`media\` (Evidence Gallery - Item 1: Macro Data / Satellite):**
    - *Aspect Ratio:* **\`-ar 1:1\`** (Square).
    - *Format:* \`*Expanded_Image_Prompt:** [Detailed aerial or data visual description], aerial drone photography / satellite telemetry style, high contrast, clean technical framing, 8k, --ar 1:1\`
@@ -512,6 +618,7 @@ export const buildDoc3cPrompt = buildDoc3bPrompt;
 
 export function buildDoc4aPrompt(ctx: PromptContext): string {
   const temporal = getCurrentTemporalAnchor();
+  const corridor = resolveCorridorScope(ctx);
 
   return `### 📄 DOCUMENT 4a: THE PLAIN ENGLISH & BIONIC READING EDITOR (MASTER PROMPT)
 
@@ -541,7 +648,7 @@ Break compound sentences with multiple commas into short, active sentences of 12
 
 #### PHASE 3: Persona-Specific Linguistic Tuning
 Frame language around \`Target_Persona\`'s daily operational reality (Logistics: demurrage, axle limits; Investors: margin compression, cash runway; Producers: moisture limits, input costs).
-
+${corridor.scope === 'thematic_basket' ? `*(Corridor Rule: Ensure comparative terms and trade-offs across ${corridor.commodities.join(' and ')} are punchy and unmistakable for operators trading within this basket)*\n` : corridor.scope === 'all_commodities' ? `*(Corridor Rule: Ensure macro supply-chain mechanisms—interstate waybills, demurrage penalties, fuel surcharges—are visceral and concrete)*\n` : ''}
 #### PHASE 4: Bionic Reading Bolding (Visual Skimming Anchors)
 In the same pass, apply Bionic Reading anchors to maximize mobile readability:
 1. **The Bionic Rule:** Identify and wrap the 2 to 3 most critical phrases per paragraph in \`**bold asterisks**\` (verbs, key nouns, metrics, micro-geographies).
@@ -574,6 +681,7 @@ Keep \`pull_quote\`, \`Expanded_Image_Prompt\`, \`unit_economics_card\` metrics,
 export function buildDoc4bPrompt(ctx: PromptContext): string {
   const temporal = getCurrentTemporalAnchor();
   const sequenceKey = `${ctx.format}_${ctx.era}`;
+  const corridor = resolveCorridorScope(ctx);
 
   return `### 📄 DOCUMENT 4b: THE NARRATIVE FLOW & SEQUENCE OPTIMIZER (MASTER PROMPT)
 
@@ -601,7 +709,7 @@ Your sole mission is to take the bionic-polished article from Step 6 (Doc 4a), c
      - *Evidence-First:* Introduce hard evidence (\`media\` or \`comparison_matrix\`) before diving into dense systemic analysis so the reader has visual proof fresh in mind.
      - *Human Connection:* Position operator profiles (\`persona_dossier\`) or ecosystem opportunities (\`ecosystem_embed\`) directly where the reader feels the acute human labor shortage or market friction.
      - *Logical Trajectory:* Transition smoothly from historical flaw / systemic myth (\`myth_fact\`) into tactical solution / SOP checklist (\`protocol_steps\` / \`unit_economics_card\`).
-
+${corridor.scope === 'thematic_basket' ? `     - *Thematic Basket Flow:* Ensure middle blocks build a clear comparative case: lead with shared corridor tension, follow with head-to-head comparison between crops (${corridor.commodities.slice(0, 2).join(' and ')}), and conclude with unit economics before tactical execution steps.\n` : corridor.scope === 'all_commodities' ? `     - *Evergreen Macro Supply-Chain Flow:* Sequence middle blocks to move from national macro trigger ➔ regional interstate bottlenecks ➔ cross-sector financial unit economics ➔ operational defense protocol.\n` : ''}
 4. **ZERO PROSE / DATA ALTERATION RULE:**
    - Do NOT rewrite paragraphs, edit sentences, summarize content, delete verified statistics, or alter bionic bolding (\`**\`).
    - Do NOT remove any block or invent new blocks. Exactly ${ctx.currentBlueprint.length} blocks must be present in the final output.
@@ -679,6 +787,8 @@ Prepend the \`[SYSTEM_METADATA]\` backpack, separate each block with horizontal 
 }
 
 export function buildDoc4cPrompt(ctx: PromptContext): string {
+  const corridor = resolveCorridorScope(ctx);
+
   return `### 📄 DOCUMENT 4c: THE PAYLOAD PARSER / CMS API BRIDGE (MASTER PROMPT)
 
 **[SYSTEM PERSONA & COMPILATION CONSTRAINTS]**
@@ -706,7 +816,11 @@ Before mapping the text to JSON, you MUST clean the data:
 Extract \`[SYSTEM_METADATA]\` and map to root JSON:
 - Extract Spiky Title from Block 0 for \`"title"\`.
 - Extract 1-2 sentence preview for \`"description"\`.
-- Map metadata fields into \`"metadata"\` JSON object, converting comma-separated strings into arrays.
+- Map metadata fields into \`"metadata"\` JSON object:
+  - \`"commodities"\`: Array of active commodities: ${JSON.stringify(corridor.commodities)}.
+  - \`"corridorScope"\`: "${corridor.scope}".
+  - \`"isEvergreen"\`: ${corridor.scope === 'all_commodities'}.
+  ${corridor.basketLabel ? `- \`"thematicBasket"\`: "${corridor.basketLabel}".\n  ` : ''}- \`"bottleneckTags"\`: Array containing all active commodities, along with corridor indexing tags (${corridor.scope === 'all_commodities' ? '"all_commodities", "evergreen"' : corridor.basketId ? `"${corridor.basketId}"` : 'crop tag'}).
 
 #### PHASE 3: Block Mapping & Stringification (CRITICAL RULE)
 Convert each Markdown block into an element inside the \`"articleBlocks"\` array.
@@ -728,7 +842,14 @@ Convert each Markdown block into an element inside the \`"articleBlocks"\` array
     "era": "${ctx.era}",
     "location": "[Extracted Micro-Geography]",
     "actors": ["[Actor 1]", "[Actor 2]"],
-    "commodities": ["${ctx.commodity}"]
+    "commodities": ${JSON.stringify(corridor.commodities)},
+    "corridorScope": "${corridor.scope}",
+    "isEvergreen": ${corridor.scope === 'all_commodities'},
+    ${corridor.basketLabel ? `"thematicBasket": "${corridor.basketLabel}",\n    ` : ''}"bottleneckTags": ${JSON.stringify([
+      ...corridor.commodities,
+      ...(corridor.scope === 'all_commodities' ? ['all_commodities', 'evergreen'] : []),
+      ...(corridor.basketId ? [corridor.basketId] : [])
+    ])}
   },
   "articleBlocks": [
     {

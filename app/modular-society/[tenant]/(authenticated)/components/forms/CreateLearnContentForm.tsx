@@ -4501,6 +4501,7 @@ export default function CreateLearnContentForm({
         format={selectedFormat}
         era={selectedEra}
         commodity={selectedCommodity}
+        commodities={selectedCommodities.length > 0 ? selectedCommodities : (selectedCommodity ? [selectedCommodity] : [])}
         category={selectedCategory}
         subcategory={subcategoriesInSelectedCategory.find(s => s.id === selectedSubcategory)?.title || selectedSubcategory}
         currentTitle={title}
@@ -4515,6 +4516,12 @@ export default function CreateLearnContentForm({
         }}
         onUpdateTitle={(newTitle) => setTitle(newTitle)}
         onUpdateDescription={(newDesc) => setDescription(newDesc)}
+        onUpdateCommodities={(newCommodities) => {
+          setSelectedCommodities(newCommodities);
+          if (newCommodities.length === 1) {
+            setSelectedCommodity(newCommodities[0]);
+          }
+        }}
       />
 
       {/* ─── PUBLISH CONFIGURATION MODAL ─── */}
