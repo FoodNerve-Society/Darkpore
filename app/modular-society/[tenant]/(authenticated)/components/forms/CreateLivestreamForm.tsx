@@ -2019,11 +2019,11 @@ export default function CreateLivestreamForm({
          )}
 
          {step === 2 && (
-           <Box sx={{ animation: 'fadeIn 0.3s', display: 'flex', flexDirection: 'column', gap: 0, height: '100%' }}>
+          <Box sx={{ animation: 'fadeIn 0.3s', display: 'flex', flexDirection: 'column', gap: 0, width: '100%', pb: { xs: 16, md: 22 } }}>
             
             {/* FRAMEWORK EMPTY STATE: RECOMMENDED BLUEPRINT & SLIDE ARRAY */}
             {!frameworkLoaded && (
-              <Box sx={{ mb: 4, mt: 4, maxWidth: 960, mx: 'auto', width: '100%' }}>
+              <Box sx={{ mb: 6, mt: 2, maxWidth: 880, mx: 'auto', width: '100%' }}>
                 {(() => {
                   const era = ERA_CONFIG[timeframe] || ERA_CONFIG.present;
                   const bpTitle = (appliedBlueprint?.typeTitle || appliedBlueprint?.title || '').toLowerCase();
@@ -2043,66 +2043,63 @@ export default function CreateLivestreamForm({
                   }, 0);
 
                   return (
-                    <Box
-                      sx={{
-                        p: { xs: 3, md: 4.5 },
-                        borderRadius: '28px',
-                        bgcolor: 'rgba(255, 255, 255, 0.95)',
-                        backdropFilter: 'blur(24px)',
-                        border: '1.5px solid rgba(226, 232, 240, 0.95)',
-                        boxShadow: '0 20px 60px rgba(15, 23, 42, 0.06)',
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5 }}>
+                      {/* ── HERO HEADER (MATCHING SIDEBAR: SQUIRCLE BADGE, HERO HEADLINE & DESCRIPTION, NO BUTTONS, NO IMAGES FAN) ── */}
+                      <Box sx={{
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: 3.5,
-                      }}
-                    >
-                      {/* Hero Header */}
-                      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                          <Box
-                            sx={{
-                              width: 52,
-                              height: 52,
-                              borderRadius: '16px',
-                              bgcolor: alpha(hubColor, 0.12),
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: '1.75rem',
-                              boxShadow: `0 4px 14px ${alpha(hubColor, 0.2)}`,
-                            }}
-                          >
-                            🎙️
-                          </Box>
-                          <Box>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 0.5, flexWrap: 'wrap' }}>
-                              <Typography variant="h5" sx={{ fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em' }}>
-                                {appliedBlueprint?.typeTitle || `${era.label} Broadcast Blueprint`}
-                              </Typography>
-                              <Chip
-                                label={`${suggestedBlockIds.length} Core Blocks • ${totalSlides} Slides`}
-                                size="small"
-                                sx={{ bgcolor: alpha(hubColor, 0.1), color: hubColor, fontWeight: 800, fontSize: '0.74rem' }}
-                              />
-                            </Box>
-                            <Typography sx={{ color: '#64748b', fontSize: '0.92rem', maxWidth: 650, lineHeight: 1.5 }}>
-                              {appliedBlueprint?.title
-                                ? `Curated slide flow for "${appliedBlueprint.title}". Recommended ${suggestedBlockIds.length} blocks to structure your broadcast presentation.`
-                                : `Optimal presentation framework for a ${timeframe} focused broadcast. Recommended ${suggestedBlockIds.length} blocks to structure your presentation.`}
-                            </Typography>
-                          </Box>
+                        alignItems: 'center',
+                        textAlign: 'center',
+                        pt: 1,
+                        pb: 1,
+                      }}>
+                        {/* Hub Squircle Badge */}
+                        <Box
+                          sx={{
+                            width: 52,
+                            height: 52,
+                            borderRadius: '18px',
+                            background: `linear-gradient(135deg, ${hubColor} 0%, #0f172a 100%)`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: `0 8px 24px ${alpha(hubColor, 0.35)}`,
+                            mb: 1.5,
+                          }}
+                        >
+                          <Typography sx={{ fontSize: '1.65rem' }}>🎙️</Typography>
                         </Box>
 
-                        <Chip
-                          label={era.label}
+                        {/* Hero Headline */}
+                        <Typography
+                          variant="h4"
                           sx={{
-                            bgcolor: alpha(era.color, 0.12),
-                            color: era.color,
                             fontWeight: 900,
-                            borderRadius: '10px',
-                            border: `1.5px solid ${alpha(era.color, 0.3)}`,
+                            color: '#0f172a',
+                            letterSpacing: '-0.025em',
+                            fontSize: { xs: '1.4rem', sm: '1.75rem' },
+                            maxWidth: 720,
+                            mx: 'auto',
+                            mb: 1,
+                            lineHeight: 1.3,
                           }}
-                        />
+                        >
+                          {title || appliedBlueprint?.title || 'Your Livestream Presentation'}
+                        </Typography>
+
+                        {/* Hero Description */}
+                        <Typography
+                          sx={{
+                            color: '#475569',
+                            fontSize: { xs: '0.92rem', sm: '0.98rem' },
+                            maxWidth: 580,
+                            mx: 'auto',
+                            lineHeight: 1.55,
+                            fontWeight: 500,
+                          }}
+                        >
+                          Here is how your livestream will flow. The {suggestedBlockIds.length} blocks below are the exact slide sequence you will present, from opening to close.
+                        </Typography>
                       </Box>
 
                       {/* Live Reactive Timeline Preview (List of Broadcast Blocks) */}
@@ -2213,7 +2210,7 @@ export default function CreateLivestreamForm({
                           gap: { xs: 2.5, md: 4 },
                           position: 'relative',
                           overflow: 'hidden',
-                          mt: 2,
+                          mt: 1,
                           width: '100%',
                         }}
                       >
@@ -2248,14 +2245,14 @@ export default function CreateLivestreamForm({
                           </Typography>
                           <Typography
                             sx={{
-                              color: 'rgba(255, 255, 255, 0.65)',
-                              fontSize: '0.9rem',
+                              color: 'rgba(255, 255, 255, 0.7)',
+                              fontSize: '0.88rem',
                               lineHeight: 1.55,
-                              maxWidth: 500,
+                              maxWidth: 520,
                               fontWeight: 450,
                             }}
                           >
-                            Spend 1 minute to synthesize your broadcast blueprint with AI Assistant, or choose Ignore to load the framework directly.
+                            Spend 1 minute to draft your presentation slides with AI, or choose Ignore to load the blank sequence directly into your rundown.
                           </Typography>
                         </Box>
 
