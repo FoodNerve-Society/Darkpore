@@ -138,38 +138,6 @@ export default function CreateLivestreamForm({
 
   const currentBlueprint = (ingestedBlueprints.length > 0 && ingestedBlueprints[deckActiveIndex]) ? ingestedBlueprints[deckActiveIndex] : (ingestedBlueprints[0] || null);
 
-  const handleSelectBlueprint = (blueprint: any) => {
-    if (!blueprint) return;
-    setAppliedBlueprint(blueprint);
-    if (blueprint.title) setTitle(blueprint.title);
-    if (blueprint.description) setDescription(blueprint.description);
-    if (blueprint.timeframe) setTimeframe(blueprint.timeframe);
-    
-    const chosenCategory = blueprint.category || category || 'capital';
-    if (blueprint.category) setCategory(blueprint.category);
-
-    // Auto-calculate exact scheduled livestream date & time based on Category Group in the Editorial Matrix!
-    const slotDate = getNextSlotForCategory(chosenCategory, 10, 0);
-    const year = slotDate.getFullYear();
-    const month = String(slotDate.getMonth() + 1).padStart(2, '0');
-    const day = String(slotDate.getDate()).padStart(2, '0');
-    const hours = String(slotDate.getHours()).padStart(2, '0');
-    const mins = String(slotDate.getMinutes()).padStart(2, '0');
-    setEventDate(`${year}-${month}-${day}T${hours}:${mins}:00`);
-
-    if (blueprint.timelinePillars && blueprint.timelinePillars.length > 0) {
-      setAppliedBlueprint(blueprint);
-      setRundownBlocks([]);
-      setFrameworkLoaded(false);
-    }
-    setIsIdeasCardFlipped(false);
-    setIsCardFlipped(false);
-    setStep(2);
-    setTimeout(() => {
-      scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 100);
-  };
-
   // Hub & Context from Studio Handoff
   const hubTitle = initialTaxonomy?.hubTitle || initialDraftData?.livestream?.hub?.title || 'Production & Capital';
   const hubColor = initialTaxonomy?.hubColor || initialDraftData?.livestream?.hub?.color || '#10b981';
@@ -524,9 +492,10 @@ export default function CreateLivestreamForm({
     }
   };
 
-  const applyFramework = () => {
-    const bpFmt = appliedBlueprint?.format;
-    const bpTitle = (appliedBlueprint?.typeTitle || appliedBlueprint?.title || '').toLowerCase();
+  const applyFramework = (blueprintToApply?: any) => {
+    const targetBlueprint = blueprintToApply || appliedBlueprint;
+    const bpFmt = targetBlueprint?.format;
+    const bpTitle = (targetBlueprint?.typeTitle || targetBlueprint?.title || '').toLowerCase();
     let flowKey = 'default';
     if (bpFmt && LIVESTREAM_TYPE_FLOWS[bpFmt]) {
       flowKey = bpFmt;
@@ -544,8 +513,8 @@ export default function CreateLivestreamForm({
     suggestedBlockIds.forEach((blockId) => {
       const def = DEF_BLOCK_DEFINITIONS[blockId];
       if (!def) return;
-      const customDesc = appliedBlueprint?.customBlockDescriptions?.[blockId]
-        || appliedBlueprint?.timelinePillars?.find((p: any) => p.blockId === blockId || (p.role && def.name && p.role.toLowerCase().includes(def.name.toLowerCase())))?.desc;
+      const customDesc = targetBlueprint?.customBlockDescriptions?.[blockId]
+        || targetBlueprint?.timelinePillars?.find((p: any) => p.blockId === blockId || (p.role && def.name && p.role.toLowerCase().includes(def.name.toLowerCase())))?.desc;
 
       def.subSlideTemplates.forEach((template: any, idx: number) => {
         realSlides.push({
@@ -559,25 +528,61 @@ export default function CreateLivestreamForm({
           originalBlockType: template.slideType,
           originalContent: {
             title: template.title,
-            text: template.title,
-            subheadline: template.subheadline,
+            text: customDesc || template.title,
+            subheadline: customDesc || template.subheadline,
             stat: template.dataValue,
             label: template.subheadline,
             myth: template.subheadline,
             fact: template.title,
-            jobTitle: template.title,
+            jobTitle: targetBlueprint?.suggestedJobsFocus || template.title,
             role: `Block ${def.blockNumber}: ${def.name}`,
             description: customDesc || template.subheadline,
             focusSummary: customDesc ? `${def.name} • ${customDesc}` : `${def.actLabel} • ${def.name}`,
           },
-          speakerNotes: template.speakerNotes || customDesc || '',
+          speakerNotes: customDesc || template.speakerNotes || '',
           durationStr: template.durationStr || '2m',
         });
       });
     });
 
+    if (blueprintToApply) {
+      setAppliedBlueprint(blueprintToApply);
+    }
     setRundownBlocks(realSlides);
     setFrameworkLoaded(true);
+  };
+
+  const handleSelectBlueprint = (blueprint: any, autoLoadSlides: boolean = false) => {
+    if (!blueprint) return;
+    setAppliedBlueprint(blueprint);
+    if (blueprint.title) setTitle(blueprint.title);
+    if (blueprint.description) setDescription(blueprint.description);
+    if (blueprint.timeframe) setTimeframe(blueprint.timeframe);
+    
+    const chosenCategory = blueprint.category || category || 'capital';
+    if (blueprint.category) setCategory(blueprint.category);
+
+    // Auto-calculate exact scheduled livestream date & time based on Category Group in the Editorial Matrix!
+    const slotDate = getNextSlotForCategory(chosenCategory, 10, 0);
+    const year = slotDate.getFullYear();
+    const month = String(slotDate.getMonth() + 1).padStart(2, '0');
+    const day = String(slotDate.getDate()).padStart(2, '0');
+    const hours = String(slotDate.getHours()).padStart(2, '0');
+    const mins = String(slotDate.getMinutes()).padStart(2, '0');
+    setEventDate(`${year}-${month}-${day}T${hours}:${mins}:00`);
+
+    if (autoLoadSlides) {
+      applyFramework(blueprint);
+    } else {
+      setRundownBlocks([]);
+      setFrameworkLoaded(false);
+    }
+    setIsIdeasCardFlipped(false);
+    setIsCardFlipped(false);
+    setStep(2);
+    setTimeout(() => {
+      scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 100);
   };
 
   return (
@@ -1001,15 +1006,15 @@ export default function CreateLivestreamForm({
                       </Box>
                       <Chip
                         size="small"
-                        label={countdown?.isPast ? 'Broadcast Concluded' : 'Confirmed Schedule'}
+                        label={countdown?.isPast ? 'Broadcast Concluded' : 'Awaiting Schedule'}
                         icon={
                           <Box
                             sx={{
                               width: 6,
                               height: 6,
                               borderRadius: '50%',
-                              bgcolor: countdown?.isPast ? '#f59e0b' : '#10b981',
-                              boxShadow: countdown?.isPast ? 'none' : '0 0 8px #10b981',
+                              bgcolor: countdown?.isPast ? '#94a3b8' : '#f59e0b',
+                              boxShadow: countdown?.isPast ? 'none' : '0 0 6px #f59e0b',
                               ml: '6px !important',
                             }}
                           />
@@ -1018,9 +1023,9 @@ export default function CreateLivestreamForm({
                           height: 24,
                           fontSize: '0.68rem',
                           fontWeight: 900,
-                          bgcolor: countdown?.isPast ? 'rgba(245, 158, 11, 0.1)' : 'rgba(16, 185, 129, 0.1)',
-                          color: countdown?.isPast ? '#b45309' : '#059669',
-                          border: `1px solid ${countdown?.isPast ? 'rgba(245, 158, 11, 0.25)' : 'rgba(16, 185, 129, 0.25)'}`,
+                          bgcolor: countdown?.isPast ? 'rgba(148, 163, 184, 0.12)' : 'rgba(245, 158, 11, 0.1)',
+                          color: countdown?.isPast ? '#64748b' : '#b45309',
+                          border: `1px solid ${countdown?.isPast ? 'rgba(148, 163, 184, 0.25)' : 'rgba(245, 158, 11, 0.25)'}`,
                         }}
                       />
                     </Box>
@@ -2453,7 +2458,7 @@ export default function CreateLivestreamForm({
                                            // Clean header: prevent repeating "Act X: Act X:"
                                            const rawRole = act.role || `Act ${aIdx + 1}`;
                                            const roleWithoutAct = rawRole.replace(/^Act\s*\d+\s*[:.-]?\s*/i, '').trim();
-                                           const cleanActTitle = `Act ${aIdx + 1}: ${roleWithoutAct || 'Segment'}`;
+                                           const cleanActTitle = /^Act\s*\d+/i.test(rawRole) ? rawRole : (rawRole.toLowerCase().startsWith('block') ? rawRole : `Block ${aIdx + 1}: ${rawRole}`);
 
                                            // Extract question if present
                                            const questionMatch = act.desc?.match(/"([^"]+\?)"/) || act.desc?.match(/“([^”]+\?)”/) || act.desc?.match(/\*([^*]+\?)\*/);
@@ -3270,15 +3275,18 @@ export default function CreateLivestreamForm({
         guidingListings={guidingListings}
         guidingCampaigns={guidingCampaigns}
         onApplyIdea={(idea) => {
-          handleSelectBlueprint(idea.blueprint || idea);
+          handleSelectBlueprint(idea.blueprint || idea, true);
         }}
         onIngestBlueprints={(blueprints) => {
           setIngestedBlueprints(blueprints);
           setDeckActiveIndex(0);
           setIsCardFlipped(false);
           setIsIdeasCardFlipped(false);
+          if (blueprints && blueprints.length > 0) {
+            handleSelectBlueprint(blueprints[0], true);
+          }
           setTimeout(() => {
-            carouselRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
           }, 150);
         }}
       />

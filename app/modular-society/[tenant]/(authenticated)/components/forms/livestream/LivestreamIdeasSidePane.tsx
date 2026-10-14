@@ -33,6 +33,7 @@ import { PromptFastIngestBox } from '@/components/prompts/PromptFastIngestBox';
 import { PromptChecklistItem } from '@/components/prompts/PromptChecklistItem';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePromptAssistant } from '@/context/PromptAssistantContext';
+import { DEF_BLOCK_DEFINITIONS } from './defBlocksConfig';
 
 export interface LivestreamRundownSegment {
   time: string;
@@ -1075,105 +1076,115 @@ Context: Synthesize the structured [LS_ASSET_INVENTORY] and [LS_THE_SMEAR_MATRIX
 
 Read the \`[LS_THE_SMEAR_MATRIX]\`. You must generate exactly 4 Livestream pitch options by applying these 4 specific editorial "Angles of Attack" to the data:
 
-1. **The Head-On Assault (Format: Industry Teardown):** Attack the biggest, most undeniable bottleneck found in Doc 1b. Direct problem-and-solution broadcast targeting the primary victim of the crisis.
-2. **The Flank / Sideways Attack (Format: Talent Spotlight):** Focus on the hidden secondary actor (e.g. truck mechanic, aggregator, warehouse operator). Build the broadcast around how fixing their barrier solves the macro bleed.
-3. **The Trojan Horse (Format: Industry Teardown):** Hook the audience with an everyday field pain point, but midway through the sequence execute a radical pivot to pitch a modern technology or protocol as the only durable fix.
-4. **The Contrarian Crossfire (Format: Panel Debate):** Pit the official policy/donor narrative directly against the grassroots operator hack. Built for high-conflict live chat engagement.
+1. **The Head-On Assault (Format: industry_teardown):** Attack the biggest, most undeniable bottleneck found in Doc 1b. Direct problem-and-solution broadcast targeting the primary victim of the crisis. Timeframe: present.
+2. **The Flank / Sideways Attack (Format: talent_spotlight):** Focus on the hidden secondary actor (e.g. truck mechanic, aggregator, warehouse operator). Build the broadcast around how fixing their barrier solves the macro bleed. Timeframe: present.
+3. **The Trojan Horse (Format: industry_teardown):** Hook the audience with an everyday field pain point, but midway through the sequence execute a radical pivot to pitch a modern technology or protocol as the only durable fix. Timeframe: future.
+4. **The Contrarian Crossfire (Format: panel_debate):** Pit the official policy/donor narrative directly against the grassroots operator hack. Built for high-conflict live chat engagement. Timeframe: present.
 
 #### PHASE 2: The Presentation Block Structure
 
-For every pitch option, you must output the exact slide sequence matching the DEF presentation blocks. For each block, provide:
-1. Block Name and slide count
-2. A single, punchy, concrete 1-2 sentence description of what will be presented for this topic.
+For every pitch option, you must output the exact slide sequence matching the DEF presentation blocks for its format:
+- For industry_teardown: anchor_tension, reframe_question, funnel_system, ideal_vs_feasible, scaled_burden, power_map, preempt_objections, return_to_case, forked_close, talent_spotlight.
+- For talent_spotlight: anchor_tension, reframe_question, power_map, boundary_test, forked_close, talent_spotlight.
+- For panel_debate: anchor_tension, reframe_question, ideal_vs_feasible, power_map, response_audit, boundary_test, preempt_objections, forked_close, talent_spotlight.
+
+For each block, write a concrete 1-2 sentence plain-English description of what will be presented on screen.
 
 ---
 
-#### OUTPUT FORMAT (LS-DOC 1c PAYLOAD)
+#### OUTPUT FORMAT (LS-DOC 1c STRICT JSON ARRAY)
 
-Output your entire response inside this single, clean Markdown block:
+Output your entire response inside a single, strictly valid JSON array wrapped in a markdown code block:
 
-\`\`\`markdown
-# [LIVESTREAM_MENU_PAYLOAD]
-
-**Broadcast Hub:** ${hubTitle} | **Category:** ${currentCategory}
-
-### 🔴 [LIVESTREAM_PITCH_1]: The Head-On Assault
-*   **Broadcast Title:** [Punchy, Action-Spiky Title targeting real ground reality]
-*   **Format:** Industry Teardown
-*   **Timeframe:** Present
-*   **Target Audience:** [Specific Persona]
-*   **Block 1: Anchor Tension** (2 slides • 2m)
-    ↳ Description: [Field crisis snapshot and killer stat citation]
-*   **Block 2: Reframe Question** (1 slide • 1m)
-    ↳ Description: [The strategic pivot question breaking common assumptions]
-*   **Block 3: Funnel System** (3 slides • 3m)
-    ↳ Description: [The 3 operational layers from field symptom to structural lock]
-*   **Block 4: Power Map** (3 slides • 3m)
-    ↳ Description: [The deciders, union enforcers, and factory payers]
-*   **Block 5: Preempt Objections** (2 slides • 2m)
-    ↳ Description: [Voice the commercial skeptic's doubt and provide data disproof]
-*   **Block 6: Forked Close** (2 slides • 2m)
-    ↳ Description: [Binary choice: Path A daily bleed vs. Path B intervention]
-*   **Block 7: Talent & Deal Spotlight** (1 slide • 2m)
-    ↳ Description: [Specific Job/Deal to flash on screen at the climax]
-
-### 🟡 [LIVESTREAM_PITCH_2]: The Flank / Sideways Attack
-*   **Broadcast Title:** [Punchy, Action-Spiky Title targeting the secondary actor]
-*   **Format:** Talent Spotlight
-*   **Timeframe:** Present
-*   **Target Audience:** [Specific Secondary Actor]
-*   **Block 1: Anchor Tension** (2 slides • 2m)
-    ↳ Description: [Field crisis snapshot and killer stat]
-*   **Block 2: Reframe Question** (1 slide • 1m)
-    ↳ Description: [Pivot question on why this role unlocks the corridor]
-*   **Block 3: Power Map** (3 slides • 3m)
-    ↳ Description: [Who holds power over this actor and where the money leaks]
-*   **Block 4: Boundary Test** (2 slides • 3m)
-    ↳ Description: [Regulatory gateway and 90-day verifiable milestone]
-*   **Block 5: Forked Close** (2 slides • 2m)
-    ↳ Description: [Cost of inaction vs return on joining this workflow]
-*   **Block 6: Talent Spotlight** (2 slides • 2m)
-    ↳ Description: [Flash verified role/bounty on screen to recruit immediately]
-
-### 🟢 [LIVESTREAM_PITCH_3]: The Trojan Horse
-*   **Broadcast Title:** [Punchy, Action-Spiky Title bridging today's pain to tomorrow's fix]
-*   **Format:** Industry Teardown
-*   **Timeframe:** Future
-*   **Target Audience:** [Investors & Strategic Operators]
-*   **Block 1: Anchor Tension** (2 slides • 2m)
-    ↳ Description: [Current ground breakdown metric]
-*   **Block 2: Reframe Question** (1 slide • 1m)
-    ↳ Description: [Pivot question revealing the legacy trap]
-*   **Block 3: Ideal vs Feasible** (3 slides • 3m)
-    ↳ Description: [The donor ideal vs ground failure vs working tech fix]
-*   **Block 4: Boundary Test** (2 slides • 3m)
-    ↳ Description: [Scale pathway and 90-day deployment target]
-*   **Block 5: Forked Close** (2 slides • 2m)
-    ↳ Description: [Old model obsolescence vs first-mover advantage]
-*   **Block 6: Talent & Deal Spotlight** (1 slide • 2m)
-    ↳ Description: [Spotlight the deal/equity link for this solution]
-
-### 🟣 [LIVESTREAM_PITCH_4]: The Contrarian Crossfire
-*   **Broadcast Title:** [Punchy, Action-Spiky Title highlighting the core debate]
-*   **Format:** Panel Debate
-*   **Timeframe:** Present
-*   **Target Audience:** [Operators & Policymakers]
-*   **Block 1: Anchor Tension** (2 slides • 2m)
-    ↳ Description: [The contradictory stat exposing the standoff]
-*   **Block 2: Reframe Question** (1 slide • 1m)
-    ↳ Description: [The controversial debate question for live audience polling]
-*   **Block 3: Ideal vs Feasible** (3 slides • 3m)
-    ↳ Description: [Clash between official policy and illegal survival hacks]
-*   **Block 4: Power Map** (3 slides • 3m)
-    ↳ Description: [Mapping which faction gains from maintaining the freeze]
-*   **Block 5: Preempt Objections** (2 slides • 2m)
-    ↳ Description: [Dismantling both sides' favorite excuses with hard numbers]
-*   **Block 6: Forked Close** (2 slides • 2m)
-    ↳ Description: [The binary vote forced upon the live panel and audience]
-*   **Block 7: Talent & Deal Spotlight** (1 slide • 2m)
-    ↳ Description: [Opportunity link for forward contracts]
-\`\`\``;
-  }, [hubTitle, currentCategory, currentMonthYear, futureHorizonYear]);
+\`\`\`json
+[
+  {
+    "angle": "The Head-On Assault",
+    "title": "Punchy, Action-Spiky Title targeting real ground reality",
+    "format": "industry_teardown",
+    "timeframe": "present",
+    "targetAudience": "Specific Persona or Field Operator",
+    "description": "Concrete 1-2 sentence plain-English summary grounding the core friction and operational breakdown.",
+    "hook": "Sharp field question or killer stat breaking consensus.",
+    "blocks": {
+      "anchor_tension": "Field crisis snapshot and killer stat citation (e.g. ₦450k lost per refrigerated transit).",
+      "reframe_question": "The strategic pivot question breaking common assumptions.",
+      "funnel_system": "The 3 operational layers from field symptom to structural lock.",
+      "ideal_vs_feasible": "The official protocol vs. what actually happens on the ground.",
+      "scaled_burden": "Total systemic cost across the corridor if left unfixed.",
+      "power_map": "The deciders, union enforcers, and factory off-takers extracting margin.",
+      "preempt_objections": "Voice the commercial skeptic's doubt and provide data disproof.",
+      "return_to_case": "Circle back to the primary operator case study with proven resolution.",
+      "forked_close": "Binary choice: Path A daily bleed vs. Path B intervention.",
+      "talent_spotlight": "Specific Job, Deal, or Escrow Bounty to flash on screen at the climax."
+    },
+    "suggestedJobsFocus": "Logistics Dispatch Lead / Cold-Chain Escrow Deal"
+  },
+  {
+    "angle": "The Flank / Sideways Attack",
+    "title": "Punchy Title targeting the secondary actor",
+    "format": "talent_spotlight",
+    "timeframe": "present",
+    "targetAudience": "Specific Secondary Actor or Operator",
+    "description": "Concrete 1-2 sentence summary of why this role unlocks the value chain.",
+    "hook": "Sharp field question highlighting the hidden operator bottleneck.",
+    "blocks": {
+      "anchor_tension": "Field crisis snapshot focusing on the operator's daily friction.",
+      "reframe_question": "Pivot question on why empowering this specific role solves the bleed.",
+      "power_map": "Who controls access and where revenue is siphoned away from this operator.",
+      "boundary_test": "Regulatory gateway and 90-day verifiable milestone for this role.",
+      "forked_close": "Cost of sticking to manual workarounds vs return on modern protocol adoption.",
+      "talent_spotlight": "Flash verified role/bounty on screen to recruit immediately."
+    },
+    "suggestedJobsFocus": "Cluster Aggregation Field Officer"
+  },
+  {
+    "angle": "The Trojan Horse",
+    "title": "Punchy Title bridging today's pain to tomorrow's breakthrough",
+    "format": "industry_teardown",
+    "timeframe": "future",
+    "targetAudience": "Forward-looking Agribusinesses & Capital Allocators",
+    "description": "Concrete 1-2 sentence summary bridging current crisis to 2030 tech architecture.",
+    "hook": "Sharp field question exposing why legacy equipment guarantees failure.",
+    "blocks": {
+      "anchor_tension": "Current ground breakdown metric and hardware limits.",
+      "reframe_question": "Pivot question revealing why fixing old systems is throwing good money after bad.",
+      "funnel_system": "The 3 levels of automation required to eliminate the bottleneck.",
+      "ideal_vs_feasible": "The donor ideal vs ground failure vs working decentralised tech fix.",
+      "scaled_burden": "Future revenue loss if corridor fails to automate before next cycle.",
+      "power_map": "Equipment importers, local fabricators, and maintenance syndicates.",
+      "boundary_test": "Scale pathway, power requirements, and 90-day deployment target.",
+      "return_to_case": "Early adopter cluster showing unit economics and payback timeline.",
+      "forked_close": "Old model obsolescence vs first-mover advantage with automated protocols.",
+      "talent_spotlight": "Spotlight the deal/equity syndicate funding this infrastructure."
+    },
+    "suggestedJobsFocus": "Solar Cold-Hub SPV Syndicate"
+  },
+  {
+    "angle": "The Contrarian Crossfire",
+    "title": "Punchy Title highlighting the central commercial clash",
+    "format": "panel_debate",
+    "timeframe": "present",
+    "targetAudience": "Commercial Off-Takers, Policymakers, & Trade Associations",
+    "description": "Concrete 1-2 sentence summary framing the high-stakes clash between policy and field reality.",
+    "hook": "Controversial question forcing operators and buyers to take an immediate stand.",
+    "blocks": {
+      "anchor_tension": "The contradictory stat exposing the standoff between official price and street cash.",
+      "reframe_question": "The controversial debate question for live audience polling.",
+      "ideal_vs_feasible": "Clash between official policy regulations and illegal survival hacks.",
+      "power_map": "Mapping which commercial faction profits from maintaining the status quo.",
+      "response_audit": "Audit of previous government/donor interventions that failed to solve this.",
+      "boundary_test": "The bottom-line financial threshold that makes the new contract viable.",
+      "preempt_objections": "Dismantling both sides' favorite excuses with audited trade figures.",
+      "forked_close": "The binary vote forced upon the live panel and audience.",
+      "talent_spotlight": "Opportunity link for forward purchase contracts and escrow verification."
+    },
+    "suggestedJobsFocus": "Offtake Arbitration & Contract Auditor"
+  }
+]
+\`\`\`
+CRITICAL CONSTRAINT: Do NOT include any introductory or concluding text outside the JSON code block. Output ONLY the strictly valid JSON array.`;
+  }, [hubTitle, currentCategory, currentMonthYear]);
 
   const handleApplyBlueprint = (blueprint: LivestreamIdeaOption) => {
     if (onApplyIdea) {
@@ -1183,18 +1194,6 @@ Output your entire response inside this single, clean Markdown block:
         timeframe: blueprint.timeframe,
         category: blueprint.category || currentCategory,
         blueprint: blueprint,
-        blocks: blueprint.timelinePillars.map(p => ({
-          id: Math.random().toString(),
-          sourceType: 'transition',
-          originalBlockType: 'transition',
-          originalContent: {
-            role: p.role,
-            description: p.desc,
-            focusSummary: blueprint.title,
-          },
-          speakerNotes: p.speakerNotes || '',
-          durationStr: p.time,
-        })),
       });
     }
     if (onIngestBlueprints) {
@@ -1204,8 +1203,8 @@ Output your entire response inside this single, clean Markdown block:
   };
 
   const handleIngestToStudio = () => {
-    if (liveParsedBriefs.length < 2) {
-      setIngestError("Invalid blueprint payload. Please paste the markdown output from Step 3 containing at least 2 structured broadcast blueprints with 3-Act rundowns.");
+    if (liveParsedBriefs.length === 0) {
+      setIngestError("No valid livestream blueprints found in payload. Please paste the JSON payload generated in Step 3.");
       return;
     }
     setIngestError(null);
@@ -1900,7 +1899,7 @@ Output your entire response inside this single, clean Markdown block:
           <PromptTerminalBox
             title="Step 3 Prompt · Angles of Attack & Broadcast Synthesizer (LS-Doc 1c)"
             codeLabel="LS-DOC 1c"
-            subtitle="Synthesizes 4 distinct livestream angles with full 3-Act rundowns and CTAs."
+            subtitle="Synthesizes 4 distinct livestream angles into strict JSON broadcast blueprints."
             prompt={compiledPrompt3}
             colorTheme="#a855f7"
             copiedBannerText="LS-Doc 1c Master Prompt Copied to Clipboard!"
@@ -1913,7 +1912,7 @@ Output your entire response inside this single, clean Markdown block:
           />
           <PromptChecklistItem
             id="chk3_copy"
-            text="Step 3 Prompt copied — generate [LIVESTREAM_MENU_PAYLOAD]"
+            text="Step 3 Prompt copied — generate [LIVESTREAM_MENU_PAYLOAD] JSON"
             checked={!!checklist['chk3_copy']}
             onToggle={toggleChecklistItem}
             colorTheme="#a855f7"
@@ -1935,7 +1934,7 @@ Output your entire response inside this single, clean Markdown block:
                 Step 4: Fast Ingest Relay (Apply to Studio)
               </Typography>
               <Typography sx={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 600 }}>
-                Paste the generated markdown output from Step 3 to dispatch all 4 broadcast blueprints into Studio.
+                Paste the generated JSON output from Step 3 to dispatch all 4 broadcast blueprints into Studio.
               </Typography>
             </Box>
           </Box>
@@ -1964,21 +1963,21 @@ Output your entire response inside this single, clean Markdown block:
               if (ingestError) setIngestError(null);
             }}
             onIngest={handleIngestToStudio}
-            title="Fast Ingest: 4 Broadcast Blueprints Relay"
-            subtitle="Paste the generated markdown output from LS-Doc 1c below to apply to the Studio."
+            title="Fast Ingest: Broadcast Blueprints Relay"
+            subtitle="Paste the generated JSON output from LS-Doc 1c below to apply to the Studio."
             codeLabel="FAST INGEST"
-            fileName="blueprints.md"
+            fileName="blueprints.json"
             unitLabel="blueprints"
             colorTheme="#059669"
-            placeholder={`Paste the markdown output from LS-Doc 1c here...\n\nExample:\n# [LIVESTREAM_MENU_PAYLOAD]\n**Hub:** ${hubTitle} | **Category:** ${currentCategory}\n\n### 🔴 OPTION 1: The Logistics Operator Approach\n* **Broadcast Title:** Bypassing the Highway: Kaduna Farm-Gate Processing\n* **Act 1 (THE OPEN - Tension):** We open with ₦2.4M freight loss. We reframe: "What if the solution isn't safer trucks, but zero trucks?"\n* **Act 2 (THE MEAT - Map & Defend):** We expose checkpoint extortion syndicates. We preempt skepticism with micro-mill unit economics.\n* **Act 3 (THE CLOSE - The Fork):** Binary Choice.\n  * Path A: Keep bleeding transit rot.\n  * Path B: Deploy capital into local processing.\n* **The Ecosystem Push (CTA):** Flash [Deal ID: Sabou Capital $2M Facility] on screen.\n\n### 🟡 OPTION 2: The Deal Room Pitch (VC & Capital Focus)\n...`}
+            placeholder={`Paste the JSON output from LS-Doc 1c here...\n\nExample:\n[\n  {\n    "angle": "The Head-On Assault",\n    "title": "Bypassing the Highway: Kaduna Farmgate Processing",\n    "format": "industry_teardown",\n    "timeframe": "present",\n    "targetAudience": "Producers & Logistics Operators",\n    "description": "How on-site processing eliminates transit rot across northern freight corridors.",\n    "hook": "What if the solution isn't safer trucks, but zero trucks?",\n    "blocks": {\n      "anchor_tension": "₦2.4M lost per refrigerated transit across Kaduna corridor.",\n      "reframe_question": "Why are we subsidizing fuel instead of farmgate micro-processing?",\n      "funnel_system": "From field rot to highway tolls to terminal pricing deadlock.",\n      "power_map": "Union checkpoint cartels extracting margin before off-taker arrives.",\n      "forked_close": "Path A: Bleed transit losses. Path B: Deploy containerized processing.",\n      "talent_spotlight": "Spotlight off-take contract with Sabou Processing."\n    },\n    "suggestedJobsFocus": "Cold-Chain Dispatch Lead"\n  }\n]`}
             liveBlockCount={liveParsedBriefs.length}
             expectedBlockCount={4}
             buttonLabel={`⚡ Ingest & Apply ${liveParsedBriefs.length > 0 ? liveParsedBriefs.length : 4} Broadcast Blueprints to Studio`}
           />
           <PromptChecklistItem
             id="chk4_ingest"
-            text="Markdown payload detected & applied to Studio Carousel Deck"
-            checked={liveParsedBriefs.length >= 2 || !!checklist['chk4_ingest']}
+            text="JSON blueprint payload detected & applied to Studio Carousel Deck"
+            checked={liveParsedBriefs.length >= 1 || !!checklist['chk4_ingest']}
             onToggle={toggleChecklistItem}
             colorTheme="#059669"
           />
