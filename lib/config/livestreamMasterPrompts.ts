@@ -545,23 +545,30 @@ export function normalizeLivestreamSlidePayload(
   text = text.replace(/^```(?:json|markdown)?\s*/i, '').replace(/\s*```$/i, '').trim();
 
   let jsonCandidate = '';
-  const fenceMatch = rawText.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
-  if (fenceMatch) {
-    jsonCandidate = fenceMatch[1].trim();
+  const fenceMatch = rawText.match(/```(?:json|markdown)?\s*([\s\S]*?)\s*```/i);
+  const candidateText = (fenceMatch ? fenceMatch[1] : text).trim();
+
+  if ((candidateText.startsWith('{') && candidateText.endsWith('}')) || (candidateText.startsWith('[') && candidateText.endsWith(']'))) {
+    jsonCandidate = candidateText;
   } else {
-    const arrayMatch = text.match(/\[\s*\{[\s\S]*\}\s*\]/);
-    if (arrayMatch) {
-      jsonCandidate = arrayMatch[0].trim();
-    } else {
-      const objMatch = text.match(/\{[\s\S]*\}/);
-      if (objMatch) {
-        jsonCandidate = objMatch[0].trim();
+    const firstBrace = candidateText.indexOf('{');
+    const firstBracket = candidateText.indexOf('[');
+    if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
+      const lastBrace = candidateText.lastIndexOf('}');
+      if (lastBrace > firstBrace) {
+        jsonCandidate = candidateText.substring(firstBrace, lastBrace + 1).trim();
+      }
+    }
+    if (!jsonCandidate && firstBracket !== -1) {
+      const lastBracket = candidateText.lastIndexOf(']');
+      if (lastBracket > firstBracket) {
+        jsonCandidate = candidateText.substring(firstBracket, lastBracket + 1).trim();
       }
     }
   }
 
   if (!jsonCandidate) {
-    jsonCandidate = text;
+    jsonCandidate = candidateText;
   }
 
   // Trailing commas cleanup

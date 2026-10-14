@@ -341,6 +341,25 @@ export default function LivestreamSlideDraftingSidePane({
     return prompts.filter((p) => checklist[p.checkId]).length;
   }, [prompts, checklist]);
 
+  const formatEmoji = useMemo(() => {
+    if (format === 'panel_debate') return '⚔️';
+    if (format === 'talent_spotlight') return '🌟';
+    return '🔬';
+  }, [format]);
+
+  const formatLabel = useMemo(() => {
+    if (format === 'panel_debate') return 'Panel Debate';
+    if (format === 'talent_spotlight') return 'Talent Spotlight';
+    return 'Industry Teardown';
+  }, [format]);
+
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   return (
     <>
       {/* ──────────────────────────────────────────────────────────── */}
@@ -412,9 +431,16 @@ export default function LivestreamSlideDraftingSidePane({
                   color: '#f8fafc',
                   letterSpacing: '-0.01em',
                   whiteSpace: 'nowrap',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.6,
                 }}
               >
-                Slide Drafting Assistant
+                <span>Slide Drafting Assistant</span>
+                <span style={{ color: 'rgba(255,255,255,0.3)' }}>·</span>
+                <span style={{ color: '#fbbf24', fontWeight: 600 }}>
+                  {formatEmoji} {formatLabel}
+                </span>
               </Typography>
 
               <Chip
@@ -431,6 +457,19 @@ export default function LivestreamSlideDraftingSidePane({
                 }}
               />
 
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  color: 'rgba(255, 255, 255, 0.5)',
+                  ml: 0.2,
+                  transition: 'color 0.2s',
+                  '&:hover': { color: '#fff' },
+                }}
+              >
+                <OpenInFullIcon sx={{ fontSize: 12 }} />
+              </Box>
+
               <IconButton
                 size="small"
                 onClick={(e) => {
@@ -439,9 +478,9 @@ export default function LivestreamSlideDraftingSidePane({
                 }}
                 sx={{
                   p: 0.25,
-                  ml: 0.5,
+                  ml: 0.2,
                   color: 'rgba(255, 255, 255, 0.45)',
-                  '&:hover': { color: '#fff', bgcolor: 'rgba(255, 255, 255, 0.1)' },
+                  '&:hover': { color: '#ef4444', bgcolor: 'rgba(239, 68, 68, 0.15)' },
                 }}
               >
                 <CloseIcon sx={{ fontSize: 14 }} />
@@ -455,320 +494,481 @@ export default function LivestreamSlideDraftingSidePane({
       {/* MAIN LIQUID GLASS SLIDE-OVER DRAWER                          */}
       {/* ──────────────────────────────────────────────────────────── */}
       <Drawer
-        anchor="right"
+        anchor={isMobile ? 'bottom' : 'right'}
         open={open}
         onClose={onClose}
         slotProps={{
           paper: {
             sx: {
-              width: { xs: '100%', sm: 580, md: 660, lg: 720 },
-              maxWidth: '100vw',
-              bgcolor: 'rgba(255, 255, 255, 0.94)',
-              backdropFilter: 'blur(24px)',
-              WebkitBackdropFilter: 'blur(24px)',
-              border: '1.5px solid rgba(255, 255, 255, 0.8)',
-              boxShadow: '-8px 0 36px rgba(0, 0, 0, 0.12)',
+              width: { xs: '100vw', sm: '80vw', md: '50vw' },
+              minWidth: { sm: 540, md: 620 },
+              maxWidth: { xl: 880 },
+              height: { xs: '85vh', sm: '100%' },
+              maxHeight: { xs: '85vh', sm: '100%' },
+              borderRadius: { xs: '24px 24px 0 0', sm: 0 },
+              bgcolor: '#f8fafc',
+              boxShadow: { xs: '0 -12px 40px rgba(0, 0, 0, 0.18)', sm: '-16px 0 48px rgba(0, 0, 0, 0.18)' },
               display: 'flex',
               flexDirection: 'column',
+              zIndex: 1300,
               overflow: 'hidden',
             },
           },
         }}
       >
-        {/* Sticky Glass Header */}
+        {/* ── FLOATING TOP CONTROLS (CIRCLE MINIMIZE & CIRCLE CLOSE) ── */}
         <Box
           sx={{
-            px: { xs: 2.5, sm: 3.5 },
-            py: 2.25,
-            borderBottom: '1.5px solid rgba(226, 232, 240, 0.8)',
-            background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.97) 0%, rgba(30, 41, 59, 0.95) 100%)',
-            color: '#ffffff',
-            position: 'sticky',
-            top: 0,
-            zIndex: 10,
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+            position: 'absolute',
+            top: { xs: 14, sm: 20 },
+            right: { xs: 14, sm: 24 },
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.25,
+            zIndex: 50,
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.25 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
+          {/* Floating Minimize Button */}
+          <IconButton
+            onClick={() => {
+              onClose();
+              setIsDockVisible(true);
+            }}
+            title="Minimize to dock"
+            sx={{
+              width: 38,
+              height: 38,
+              borderRadius: '50%',
+              bgcolor: 'rgba(255, 255, 255, 0.92)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              border: '1px solid rgba(0, 0, 0, 0.08)',
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
+              color: '#475569',
+              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:hover': {
+                bgcolor: '#ffffff',
+                color: '#0f172a',
+                transform: 'scale(1.08)',
+                boxShadow: '0 6px 20px rgba(0, 0, 0, 0.12)',
+              },
+            }}
+          >
+            <RemoveIcon sx={{ fontSize: 18 }} />
+          </IconButton>
+
+          {/* Floating Close Button */}
+          <IconButton
+            onClick={onClose}
+            title="Close assistant"
+            sx={{
+              width: 38,
+              height: 38,
+              borderRadius: '50%',
+              bgcolor: 'rgba(255, 255, 255, 0.92)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+              border: '1px solid rgba(0, 0, 0, 0.08)',
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
+              color: '#475569',
+              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:hover': {
+                bgcolor: 'rgba(239, 68, 68, 0.1)',
+                color: '#ef4444',
+                transform: 'scale(1.08)',
+                boxShadow: '0 6px 20px rgba(239, 68, 68, 0.18)',
+              },
+            }}
+          >
+            <CloseIcon sx={{ fontSize: 18 }} />
+          </IconButton>
+        </Box>
+
+        {/* ── SCROLLABLE CANVAS ── */}
+        <Box sx={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+          {/* Mobile Bottom-Sheet Grabber Pill */}
+          {isMobile && (
+            <Box sx={{ width: 44, height: 4.5, borderRadius: 3, bgcolor: 'rgba(0,0,0,0.22)', mx: 'auto', mt: 1.5, mb: 0.5 }} />
+          )}
+
+          {/* ──────────────────────────────────────────────────────────── */}
+          {/* HERO SECTION WITH LUXURY RADIAL GRADIENT                     */}
+          {/* ──────────────────────────────────────────────────────────── */}
+          <Box
+            sx={{
+              position: 'relative',
+              pt: { xs: 6, sm: 8 },
+              pb: { xs: 2.5, sm: 3.5 },
+              px: { xs: 3, sm: 5 },
+              background: 'radial-gradient(ellipse at top, rgba(16, 185, 129, 0.09) 0%, rgba(59, 130, 246, 0.04) 55%, transparent 100%)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              textAlign: 'center',
+            }}
+          >
+            {/* Visual Anchor Squircles */}
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mb: 2.5,
+                mt: { xs: 1.5, sm: 1 },
+                position: 'relative',
+                overflow: 'visible',
+              }}
+            >
+              {/* Left Squircle: Format & Live Studio */}
               <Box
                 sx={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: '12px',
-                  background: `linear-gradient(135deg, ${hubColor} 0%, #0f172a 100%)`,
+                  width: { xs: 104, sm: 118 },
+                  height: { xs: 104, sm: 118 },
+                  borderRadius: '28px',
+                  overflow: 'hidden',
+                  position: 'relative',
+                  background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+                  border: '2.5px solid rgba(255, 255, 255, 0.25)',
+                  boxShadow: '0 12px 32px rgba(0, 0, 0, 0.45)',
+                  transform: 'rotate(-3deg)',
+                  zIndex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  p: 1,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    transform: 'rotate(0deg) scale(1.05)',
+                    zIndex: 3,
+                    borderColor: 'rgba(255, 255, 255, 0.55)',
+                    boxShadow: '0 20px 48px rgba(0, 0, 0, 0.55)',
+                  },
+                }}
+              >
+                <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#22c55e', boxShadow: '0 0 10px #22c55e', mb: 0.75 }} />
+                <Typography sx={{ fontSize: '1.75rem', lineHeight: 1 }}>{formatEmoji}</Typography>
+                <Typography sx={{ color: '#fff', fontSize: '0.68rem', fontWeight: 900, mt: 0.6, letterSpacing: '-0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', textAlign: 'center' }}>
+                  {formatLabel}
+                </Typography>
+                <Typography sx={{ color: '#94a3b8', fontSize: '0.58rem', fontWeight: 800, mt: 0.2, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  {expectedSlideCount} Slides
+                </Typography>
+              </Box>
+
+              {/* Center Intersection Badge */}
+              <Box
+                sx={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  bgcolor: '#0f172a',
+                  color: '#f59e0b',
+                  border: '2px solid rgba(255, 255, 255, 0.35)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: `0 4px 14px ${alpha(hubColor, 0.4)}`,
-                  flexShrink: 0,
+                  fontSize: '0.85rem',
+                  fontWeight: 900,
+                  zIndex: 2,
+                  mx: { xs: -1.75, sm: -2 },
+                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4)',
                 }}
               >
-                <LiveTvIcon sx={{ fontSize: 19, color: '#fff' }} />
+                ×
               </Box>
-              <Box sx={{ minWidth: 0 }}>
-                <Typography
-                  variant="subtitle1"
-                  sx={{
-                    fontWeight: 900,
-                    letterSpacing: '-0.02em',
-                    lineHeight: 1.2,
-                    color: '#ffffff',
-                    fontSize: { xs: '0.98rem', sm: '1.1rem' },
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                >
-                  Phase 2: Slide Drafting &amp; Scripting Assistant
+
+              {/* Right Squircle: Master Category Hub */}
+              <Box
+                sx={{
+                  width: { xs: 104, sm: 118 },
+                  height: { xs: 104, sm: 118 },
+                  borderRadius: '28px',
+                  overflow: 'hidden',
+                  position: 'relative',
+                  background: `linear-gradient(135deg, ${hubColor} 0%, #0f172a 100%)`,
+                  border: '2.5px solid rgba(255, 255, 255, 0.25)',
+                  boxShadow: '0 12px 32px rgba(0, 0, 0, 0.45)',
+                  transform: 'rotate(3deg)',
+                  zIndex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  p: 1,
+                  textAlign: 'center',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    transform: 'rotate(0deg) scale(1.05)',
+                    zIndex: 3,
+                    borderColor: 'rgba(255, 255, 255, 0.55)',
+                    boxShadow: '0 20px 48px rgba(0, 0, 0, 0.55)',
+                  },
+                }}
+              >
+                <Typography sx={{ fontSize: '1.75rem', lineHeight: 1, mb: 0.5 }}>🌾</Typography>
+                <Typography sx={{ color: '#ffffff', fontSize: '0.72rem', fontWeight: 900, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
+                  {hubTitle}
                 </Typography>
-                <Typography sx={{ fontSize: '0.74rem', color: 'rgba(255, 255, 255, 0.65)', fontWeight: 500 }}>
-                  Draft presentation slides, teleprompter notes &amp; fast-ingest into studio
+                <Typography sx={{ color: 'rgba(255, 255, 255, 0.75)', fontSize: '0.58rem', fontWeight: 800, mt: 0.3, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  {timeframe.toUpperCase()} ERA
                 </Typography>
               </Box>
             </Box>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
-              <IconButton
-                size="small"
-                onClick={() => {
-                  onClose();
-                  setIsDockVisible(true);
-                }}
-                title="Minimize to floating dock"
-                sx={{
-                  color: 'rgba(255, 255, 255, 0.7)',
-                  borderRadius: '8px',
-                  border: '1px solid rgba(255, 255, 255, 0.12)',
-                  '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.1)', color: '#fff' },
-                }}
-              >
-                <RemoveIcon sx={{ fontSize: 18 }} />
-              </IconButton>
-              <IconButton
-                size="small"
-                onClick={onClose}
-                title="Close assistant"
-                sx={{
-                  color: 'rgba(255, 255, 255, 0.7)',
-                  borderRadius: '8px',
-                  border: '1px solid rgba(255, 255, 255, 0.12)',
-                  '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.1)', color: '#fff' },
-                }}
-              >
-                <CloseIcon sx={{ fontSize: 18 }} />
-              </IconButton>
-            </Box>
-          </Box>
+            {/* Title & Subtitle */}
+            <Typography
+              variant="h4"
+              sx={{
+                fontWeight: 950,
+                color: '#0f172a',
+                letterSpacing: '-0.035em',
+                fontSize: { xs: '1.6rem', sm: '2.05rem' },
+                lineHeight: 1.18,
+                textAlign: 'center',
+                mt: 0.5,
+              }}
+            >
+              Get The Full Livestream Here
+            </Typography>
 
-          {/* Broadcast Metadata Bar */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', pt: 0.5 }}>
-            <Chip
-              label={title || 'Untitled Livestream'}
-              size="small"
+            <Typography
               sx={{
-                bgcolor: 'rgba(255, 255, 255, 0.1)',
-                color: '#fff',
-                fontWeight: 700,
-                fontSize: '0.74rem',
-                maxWidth: { xs: 200, sm: 280 },
-                borderRadius: '8px',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
+                color: '#64748b',
+                fontSize: { xs: '0.82rem', sm: '0.88rem' },
+                fontWeight: 500,
+                lineHeight: 1.55,
+                textAlign: 'center',
+                maxWidth: 520,
+                mt: 1.15,
               }}
-            />
-            <Chip
-              label={category.toUpperCase()}
-              size="small"
-              sx={{
-                bgcolor: alpha(hubColor, 0.25),
-                color: '#fff',
-                fontWeight: 800,
-                fontSize: '0.7rem',
-                borderRadius: '8px',
-                border: `1px solid ${alpha(hubColor, 0.4)}`,
-              }}
-            />
-            <Chip
-              label={`${timeframe.toUpperCase()} ERA`}
-              size="small"
-              sx={{
-                bgcolor: 'rgba(255, 255, 255, 0.08)',
-                color: '#cbd5e1',
-                fontWeight: 700,
-                fontSize: '0.68rem',
-                borderRadius: '8px',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-              }}
-            />
-            <Chip
-              label={(format || 'industry_teardown').toUpperCase().replace(/_/g, ' ')}
-              size="small"
-              sx={{
-                bgcolor: 'rgba(59, 130, 246, 0.2)',
-                color: '#93c5fd',
-                fontWeight: 700,
-                fontSize: '0.68rem',
-                borderRadius: '8px',
-                border: '1px solid rgba(59, 130, 246, 0.35)',
-              }}
-            />
-            <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 0.75 }}>
-              <LayersIcon sx={{ fontSize: 14, color: '#94a3b8' }} />
-              <Typography sx={{ fontSize: '0.74rem', color: '#cbd5e1', fontWeight: 800 }}>
-                {expectedSlideCount} Target Slides
-              </Typography>
-            </Box>
-          </Box>
-        </Box>
+            >
+              {prompts.length} sequenced master prompts to structure, map diagnostic layers, and ingest your {expectedSlideCount}-slide DEF presentation framework.
+            </Typography>
 
-        {/* Scrollable Body Content */}
-        <Box
-          sx={{
-            flex: 1,
-            overflowY: 'auto',
-            px: { xs: 2.5, sm: 3.5 },
-            py: 3,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 3.5,
-          }}
-        >
-          {/* Quick-Jump Step Bar */}
-          <Paper
-            elevation={0}
-            sx={{
-              p: 1.5,
-              borderRadius: '16px',
-              bgcolor: '#ffffff',
-              border: '1.5px solid rgba(226, 232, 240, 0.9)',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.02)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              flexWrap: 'wrap',
-              justifyContent: 'space-between',
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
-              {prompts.map((p) => {
-                const isDone = !!checklist[p.checkId];
-                return (
-                  <Chip
-                    key={p.key}
-                    label={`Step ${p.stepNum}: ${p.code}`}
-                    size="small"
-                    onClick={() => {
-                      const el = document.getElementById(`ls-step-${p.stepNum}`);
-                      el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }}
-                    icon={isDone ? <CheckCircleIcon sx={{ fontSize: '13px !important', color: `${p.colorTheme} !important` }} /> : undefined}
-                    sx={{
-                      cursor: 'pointer',
-                      bgcolor: isDone ? alpha(p.colorTheme, 0.1) : 'rgba(15, 23, 42, 0.04)',
-                      color: isDone ? p.colorTheme : '#475569',
-                      fontWeight: 700,
-                      fontSize: '0.72rem',
-                      borderRadius: '8px',
-                      border: `1.5px solid ${isDone ? alpha(p.colorTheme, 0.3) : 'rgba(15, 23, 42, 0.08)'}`,
-                      '&:hover': {
-                        bgcolor: alpha(p.colorTheme, 0.15),
-                        borderColor: p.colorTheme,
-                      },
-                    }}
-                  />
-                );
-              })}
+            {/* Quick-Jump Step Anchor Pills */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, flexWrap: 'wrap', justifyContent: 'center', mt: 2.25 }}>
               <Chip
-                label="Step 6: Fast Ingest"
+                label="Step 0: Guide"
                 size="small"
-                onClick={() => {
-                  const el = document.getElementById('ls-step-fast-ingest');
-                  el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }}
+                onClick={() => scrollToSection('ls-step-0-guide')}
+                sx={{ fontSize: '0.7rem', fontWeight: 700, bgcolor: 'rgba(15, 23, 42, 0.05)', cursor: 'pointer', '&:hover': { bgcolor: 'rgba(15, 23, 42, 0.1)' } }}
+              />
+              <Chip
+                label="1. LS-Doc 2a (The Open)"
+                size="small"
+                onClick={() => scrollToSection('ls-step-1')}
+                icon={checklist['ls_check_2a'] ? <CheckCircleIcon sx={{ fontSize: '13px !important', color: '#ef4444 !important' }} /> : undefined}
                 sx={{
+                  fontSize: '0.7rem',
+                  fontWeight: 700,
+                  bgcolor: checklist['ls_check_2a'] ? 'rgba(239, 68, 68, 0.12)' : 'rgba(239, 68, 68, 0.08)',
+                  color: '#dc2626',
                   cursor: 'pointer',
-                  bgcolor: detectedSlideCount > 0 ? 'rgba(16, 185, 129, 0.12)' : 'rgba(15, 23, 42, 0.04)',
-                  color: detectedSlideCount > 0 ? '#10b981' : '#475569',
+                  '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.18)' },
+                }}
+              />
+              <Chip
+                label="2. LS-Doc 2b (The Meat)"
+                size="small"
+                onClick={() => scrollToSection('ls-step-2')}
+                icon={checklist['ls_check_2b'] ? <CheckCircleIcon sx={{ fontSize: '13px !important', color: '#3b82f6 !important' }} /> : undefined}
+                sx={{
+                  fontSize: '0.7rem',
+                  fontWeight: 700,
+                  bgcolor: checklist['ls_check_2b'] ? 'rgba(59, 130, 246, 0.12)' : 'rgba(59, 130, 246, 0.08)',
+                  color: '#1d4ed8',
+                  cursor: 'pointer',
+                  '&:hover': { bgcolor: 'rgba(59, 130, 246, 0.18)' },
+                }}
+              />
+              <Chip
+                label="3. LS-Doc 2c (The Close)"
+                size="small"
+                onClick={() => scrollToSection('ls-step-3')}
+                icon={checklist['ls_check_2c'] ? <CheckCircleIcon sx={{ fontSize: '13px !important', color: '#10b981 !important' }} /> : undefined}
+                sx={{
+                  fontSize: '0.7rem',
+                  fontWeight: 700,
+                  bgcolor: checklist['ls_check_2c'] ? 'rgba(16, 185, 129, 0.12)' : 'rgba(16, 185, 129, 0.08)',
+                  color: '#047857',
+                  cursor: 'pointer',
+                  '&:hover': { bgcolor: 'rgba(16, 185, 129, 0.18)' },
+                }}
+              />
+              <Chip
+                label="4. LS-Doc 3 (Notes)"
+                size="small"
+                onClick={() => scrollToSection('ls-step-4')}
+                icon={checklist['ls_check_3'] ? <CheckCircleIcon sx={{ fontSize: '13px !important', color: '#8b5cf6 !important' }} /> : undefined}
+                sx={{
+                  fontSize: '0.7rem',
+                  fontWeight: 700,
+                  bgcolor: checklist['ls_check_3'] ? 'rgba(139, 92, 246, 0.12)' : 'rgba(139, 92, 246, 0.08)',
+                  color: '#6d28d9',
+                  cursor: 'pointer',
+                  '&:hover': { bgcolor: 'rgba(139, 92, 246, 0.18)' },
+                }}
+              />
+              <Chip
+                label="5. LS-Doc 4 (Schema)"
+                size="small"
+                onClick={() => scrollToSection('ls-step-5')}
+                icon={checklist['ls_check_4'] ? <CheckCircleIcon sx={{ fontSize: '13px !important', color: '#06b6d4 !important' }} /> : undefined}
+                sx={{
+                  fontSize: '0.7rem',
+                  fontWeight: 700,
+                  bgcolor: checklist['ls_check_4'] ? 'rgba(6, 182, 212, 0.12)' : 'rgba(6, 182, 212, 0.08)',
+                  color: '#0e7490',
+                  cursor: 'pointer',
+                  '&:hover': { bgcolor: 'rgba(6, 182, 212, 0.18)' },
+                }}
+              />
+              <Chip
+                label="6. Fast Ingest"
+                size="small"
+                onClick={() => scrollToSection('ls-step-fast-ingest')}
+                sx={{
+                  fontSize: '0.7rem',
                   fontWeight: 800,
-                  fontSize: '0.72rem',
-                  borderRadius: '8px',
-                  border: `1.5px solid ${detectedSlideCount > 0 ? 'rgba(16, 185, 129, 0.35)' : 'rgba(15, 23, 42, 0.08)'}`,
+                  bgcolor: detectedSlideCount > 0 ? 'rgba(16, 185, 129, 0.14)' : 'rgba(16, 185, 129, 0.08)',
+                  color: '#047857',
+                  cursor: 'pointer',
+                  '&:hover': { bgcolor: 'rgba(16, 185, 129, 0.18)' },
                 }}
               />
             </Box>
+          </Box>
 
-            {/* External AI Launch Buttons */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-              <Button
-                size="small"
-                component="a"
-                href="https://chatgpt.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                endIcon={<OpenInNewIcon sx={{ fontSize: '12px !important' }} />}
+          {/* ── SCROLLABLE BODY CONTENT ── */}
+          <Box sx={{ p: { xs: 2.5, sm: 4 }, display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {/* ──────────────────────────────────────────────────────────── */}
+            {/* STEP 0: WORKFLOW OVERVIEW                                    */}
+            {/* ──────────────────────────────────────────────────────────── */}
+            <Box id="ls-step-0-guide" sx={{ display: 'flex', flexDirection: 'column', gap: 2, scrollMarginTop: '80px' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box sx={{ width: 30, height: 30, borderRadius: '50%', bgcolor: '#0f172a', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.88rem' }}>
+                  0
+                </Box>
+                <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
+                  Step 0: How You Guide the AI
+                </Typography>
+              </Box>
+
+              {/* Step 0 Clean Workflow Card */}
+              <Box
                 sx={{
-                  bgcolor: 'rgba(16, 185, 129, 0.08)',
-                  color: '#059669',
-                  border: '1.5px solid rgba(16, 185, 129, 0.25)',
-                  borderRadius: '8px',
-                  fontSize: '0.72rem',
-                  fontWeight: 800,
-                  textTransform: 'none',
-                  py: 0.3,
-                  px: 1,
-                  '&:hover': { bgcolor: 'rgba(16, 185, 129, 0.15)' },
+                  ml: { xs: 0, sm: '42px' },
+                  p: 2.25,
+                  borderRadius: '16px',
+                  bgcolor: '#ffffff',
+                  border: '1px solid rgba(15, 23, 42, 0.08)',
+                  boxShadow: '0 4px 16px rgba(15, 23, 42, 0.03)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 1.5,
                 }}
               >
-                ChatGPT
-              </Button>
-              <Button
-                size="small"
-                component="a"
-                href="https://claude.ai"
-                target="_blank"
-                rel="noopener noreferrer"
-                endIcon={<OpenInNewIcon sx={{ fontSize: '12px !important' }} />}
-                sx={{
-                  bgcolor: 'rgba(217, 119, 6, 0.08)',
-                  color: '#d97706',
-                  border: '1.5px solid rgba(217, 119, 6, 0.25)',
-                  borderRadius: '8px',
-                  fontSize: '0.72rem',
-                  fontWeight: 800,
-                  textTransform: 'none',
-                  py: 0.3,
-                  px: 1,
-                  '&:hover': { bgcolor: 'rgba(217, 119, 6, 0.15)' },
-                }}
-              >
-                Claude
-              </Button>
-              <Button
-                size="small"
-                component="a"
-                href="https://gemini.google.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                endIcon={<OpenInNewIcon sx={{ fontSize: '12px !important' }} />}
-                sx={{
-                  bgcolor: 'rgba(37, 99, 235, 0.08)',
-                  color: '#2563eb',
-                  border: '1.5px solid rgba(37, 99, 235, 0.25)',
-                  borderRadius: '8px',
-                  fontSize: '0.72rem',
-                  fontWeight: 800,
-                  textTransform: 'none',
-                  py: 0.3,
-                  px: 1,
-                  '&:hover': { bgcolor: 'rgba(37, 99, 235, 0.15)' },
-                }}
-              >
-                Gemini
-              </Button>
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.25 }}>
+                  <Box sx={{ width: 22, height: 22, borderRadius: '50%', bgcolor: 'rgba(15, 23, 42, 0.08)', color: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 900, flexShrink: 0, mt: 0.15 }}>
+                    1
+                  </Box>
+                  <Typography sx={{ fontSize: '0.82rem', color: '#334155', fontWeight: 600, lineHeight: 1.5 }}>
+                    Your broadcast title (<strong>{title || 'Untitled'}</strong>), {formatLabel} format, {timeframe.toUpperCase()} era, and {expectedSlideCount}-slide DEF framework are auto-injected into each prompt below.
+                  </Typography>
+                </Box>
+
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.25 }}>
+                  <Box sx={{ width: 22, height: 22, borderRadius: '50%', bgcolor: 'rgba(15, 23, 42, 0.08)', color: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 900, flexShrink: 0, mt: 0.15 }}>
+                    2
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography sx={{ fontSize: '0.82rem', color: '#334155', fontWeight: 600, lineHeight: 1.5 }}>
+                      Copy and run each prompt sequentially (Steps 1 to 5) in your preferred AI model:
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1, flexWrap: 'wrap' }}>
+                      <Button
+                        size="small"
+                        component="a"
+                        href="https://chatgpt.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        endIcon={<OpenInNewIcon sx={{ fontSize: '13px !important' }} />}
+                        sx={{
+                          bgcolor: 'rgba(16, 163, 127, 0.08)',
+                          color: '#0d9488',
+                          border: '1px solid rgba(13, 148, 136, 0.3)',
+                          borderRadius: '8px',
+                          fontSize: '0.72rem',
+                          fontWeight: 800,
+                          textTransform: 'none',
+                          py: 0.35,
+                          px: 1.25,
+                          '&:hover': { bgcolor: 'rgba(16, 163, 127, 0.15)', borderColor: '#0d9488' },
+                        }}
+                      >
+                        ChatGPT
+                      </Button>
+                      <Button
+                        size="small"
+                        component="a"
+                        href="https://claude.ai"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        endIcon={<OpenInNewIcon sx={{ fontSize: '13px !important' }} />}
+                        sx={{
+                          bgcolor: 'rgba(217, 119, 6, 0.08)',
+                          color: '#d97706',
+                          border: '1px solid rgba(217, 119, 6, 0.3)',
+                          borderRadius: '8px',
+                          fontSize: '0.72rem',
+                          fontWeight: 800,
+                          textTransform: 'none',
+                          py: 0.35,
+                          px: 1.25,
+                          '&:hover': { bgcolor: 'rgba(217, 119, 6, 0.15)', borderColor: '#d97706' },
+                        }}
+                      >
+                        Claude
+                      </Button>
+                      <Button
+                        size="small"
+                        component="a"
+                        href="https://gemini.google.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        endIcon={<OpenInNewIcon sx={{ fontSize: '13px !important' }} />}
+                        sx={{
+                          bgcolor: 'rgba(37, 99, 235, 0.08)',
+                          color: '#2563eb',
+                          border: '1px solid rgba(37, 99, 235, 0.3)',
+                          borderRadius: '8px',
+                          fontSize: '0.72rem',
+                          fontWeight: 800,
+                          textTransform: 'none',
+                          py: 0.35,
+                          px: 1.25,
+                          '&:hover': { bgcolor: 'rgba(37, 99, 235, 0.15)', borderColor: '#2563eb' },
+                        }}
+                      >
+                        Gemini
+                      </Button>
+                    </Box>
+                  </Box>
+                </Box>
+
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.25 }}>
+                  <Box sx={{ width: 22, height: 22, borderRadius: '50%', bgcolor: 'rgba(15, 23, 42, 0.08)', color: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 900, flexShrink: 0, mt: 0.15 }}>
+                    3
+                  </Box>
+                  <Typography sx={{ fontSize: '0.82rem', color: '#334155', fontWeight: 600, lineHeight: 1.5 }}>
+                    Paste the JSON output produced by Step 5 (LS-Doc 4) into Step 6 (Fast Ingest) to hydrate your {expectedSlideCount} slides, speaker teleprompter notes, and stage directions directly into the studio.
+                  </Typography>
+                </Box>
+              </Box>
             </Box>
-          </Paper>
 
-          {/* Sequential Step Prompts */}
+            {/* Sequential Step Prompts */}
           {prompts.map((p) => (
             <Box
               id={`ls-step-${p.stepNum}`}
@@ -925,7 +1125,8 @@ export default function LivestreamSlideDraftingSidePane({
             </Box>
           </Box>
         </Box>
-      </Drawer>
-    </>
-  );
+      </Box>
+    </Drawer>
+  </>
+);
 }
