@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Box, Typography, Button, TextField, MenuItem, Select, FormControl, InputLabel, CircularProgress, Chip, IconButton, Alert, Paper, useTheme, useMediaQuery } from '@mui/material';
-import { ArrowBack as ArrowBackIcon, LiveTv as LiveTvIcon, CheckCircle as CheckCircleIcon, Article as ArticleIcon, AutoAwesome as SparkleIcon, Image as ImageIcon, Check as CheckIcon, Info as InfoIcon, ArrowForward as ArrowForwardIcon, Close as CloseIcon, Bolt as BoltIcon, CalendarMonth as CalendarMonthIcon } from '@mui/icons-material';
+import { ArrowBack as ArrowBackIcon, LiveTv as LiveTvIcon, CheckCircle as CheckCircleIcon, Article as ArticleIcon, AutoAwesome as SparkleIcon, Image as ImageIcon, Check as CheckIcon, Info as InfoIcon, ArrowForward as ArrowForwardIcon, Close as CloseIcon, Bolt as BoltIcon, CalendarMonth as CalendarMonthIcon, Edit as EditIcon, AccessTime as AccessTimeIcon, ConfirmationNumber as TicketIcon } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import { useSociety } from '@/context/SocietyContext';
 import { fetchLivestreamContentPool, createLearnContent } from '@/lib/actions/learn';
@@ -119,6 +119,7 @@ export default function CreateLivestreamForm({
   const [deckActiveIndex, setDeckActiveIndex] = useState(0);
   const [isCardFlipped, setIsCardFlipped] = useState(false);
   const [isIdeasCardFlipped, setIsIdeasCardFlipped] = useState(false);
+  const [isScheduleFlipped, setIsScheduleFlipped] = useState(false);
   const [appliedBlueprint, setAppliedBlueprint] = useState<any>(initialDraftData?.livestream?.blueprint || null);
   const manualFieldsRef = useRef<HTMLDivElement>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -203,7 +204,18 @@ export default function CreateLivestreamForm({
   const [description, setDescription] = useState(isActualLivestreamDraft ? (initialDraftData?.description || '') : '');
   const [coverImage, setCoverImage] = useState<File | string | null>(initialDraftData?.coverImageUrl || null);
   const [streamUrl, setStreamUrl] = useState(initialDraftData?.livestream?.streamUrl || '');
-  const [eventDate, setEventDate] = useState(initialDraftData?.livestream?.eventDate ? new Date(initialDraftData.livestream.eventDate).toISOString().slice(0,16) : '');
+  const [eventDate, setEventDate] = useState<string>(() => {
+    if (initialDraftData?.livestream?.eventDate) {
+      return new Date(initialDraftData.livestream.eventDate).toISOString().slice(0, 16);
+    }
+    const slotDate = getNextSlotForCategory(initialTaxonomy?.category || 'capital', 10, 0);
+    const year = slotDate.getFullYear();
+    const month = String(slotDate.getMonth() + 1).padStart(2, '0');
+    const day = String(slotDate.getDate()).padStart(2, '0');
+    const hours = String(slotDate.getHours()).padStart(2, '0');
+    const mins = String(slotDate.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${mins}:00`;
+  });
   
   // Step 3 (Communications) State
   const [guestStudioUrl, setGuestStudioUrl] = useState(initialDraftData?.livestream?.guestStudioUrl || '');
@@ -219,6 +231,78 @@ export default function CreateLivestreamForm({
   const [category, setCategory] = useState(initialTaxonomy?.category || 'capital');
   const [subcategory, setSubcategory] = useState(initialTaxonomy?.subcategory || '');
   const [timeframe, setTimeframe] = useState(initialTaxonomy?.timeframe || 'present');
+
+  // Auto-sync schedule when category changes if user hasn't manually customized a pre-existing saved draft
+  const hasLoadedInitialDate = useRef(Boolean(initialDraftData?.livestream?.eventDate));
+  const isFirstCategoryRun = useRef(true);
+  useEffect(() => {
+    if (isFirstCategoryRun.current) {
+      isFirstCategoryRun.current = false;
+      return;
+    }
+    if (!hasLoadedInitialDate.current) {
+      const slotDate = getNextSlotForCategory(category || 'capital', 10, 0);
+      const year = slotDate.getFullYear();
+      const month = String(slotDate.getMonth() + 1).padStart(2, '0');
+      const day = String(slotDate.getDate()).padStart(2, '0');
+      const hours = String(slotDate.getHours()).padStart(2, '0');
+      const mins = String(slotDate.getMinutes()).padStart(2, '0');
+      setEventDate(`${year}-${month}-${day}T${hours}:${mins}:00`);
+    }
+  }, [category]);
+
+  // Live Clock & Ticket Helpers
+  const [currentTime, setCurrentTime] = useState<number>(Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const ticketDateObj = useMemo(() => {
+    if (!eventDate) return null;
+    const d = new Date(eventDate);
+    if (isNaN(d.getTime())) return null;
+    return d;
+  }, [eventDate]);
+
+  const ticketMonth = useMemo(() => {
+    if (!ticketDateObj) return 'OCT';
+    return ticketDateObj.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+  }, [ticketDateObj]);
+
+  const ticketDayNumber = useMemo(() => {
+    if (!ticketDateObj) return '20';
+    return String(ticketDateObj.getDate());
+  }, [ticketDateObj]);
+
+  const ticketDayName = useMemo(() => {
+    if (!ticketDateObj) return 'TUESDAY';
+    return ticketDateObj.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+  }, [ticketDateObj]);
+
+  const ticketTimeString = useMemo(() => {
+    if (!ticketDateObj) return '10:00 AM WAT';
+    try {
+      return ticketDateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) + ' WAT';
+    } catch {
+      return '10:00 AM WAT';
+    }
+  }, [ticketDateObj]);
+
+  const countdown = useMemo(() => {
+    if (!ticketDateObj) return null;
+    const diffMs = ticketDateObj.getTime() - currentTime;
+    if (diffMs <= 0) {
+      return { isPast: true, days: 0, hours: 0, minutes: 0, seconds: 0 };
+    }
+    const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+    return { isPast: false, days, hours, minutes, seconds };
+  }, [ticketDateObj, currentTime]);
 
   // Split eventDate into date and time components for PremiumDatePicker and PremiumTimePicker
   const eventDatePart = useMemo(() => {
@@ -335,6 +419,7 @@ export default function CreateLivestreamForm({
         id: 'timing',
         label: 'Select Event Date & Time',
         onClick: () => {
+          setIsScheduleFlipped(true);
           timingCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
       });
@@ -440,9 +525,12 @@ export default function CreateLivestreamForm({
   };
 
   const applyFramework = () => {
+    const bpFmt = appliedBlueprint?.format;
     const bpTitle = (appliedBlueprint?.typeTitle || appliedBlueprint?.title || '').toLowerCase();
     let flowKey = 'default';
-    if (bpTitle.includes('teardown') || bpTitle.includes('audit')) {
+    if (bpFmt && LIVESTREAM_TYPE_FLOWS[bpFmt]) {
+      flowKey = bpFmt;
+    } else if (bpTitle.includes('teardown') || bpTitle.includes('audit')) {
       flowKey = 'industry_teardown';
     } else if (bpTitle.includes('debate') || bpTitle.includes('panel')) {
       flowKey = 'panel_debate';
@@ -456,6 +544,9 @@ export default function CreateLivestreamForm({
     suggestedBlockIds.forEach((blockId) => {
       const def = DEF_BLOCK_DEFINITIONS[blockId];
       if (!def) return;
+      const customDesc = appliedBlueprint?.customBlockDescriptions?.[blockId]
+        || appliedBlueprint?.timelinePillars?.find((p: any) => p.blockId === blockId || (p.role && def.name && p.role.toLowerCase().includes(def.name.toLowerCase())))?.desc;
+
       def.subSlideTemplates.forEach((template: any, idx: number) => {
         realSlides.push({
           id: `def-${def.id}-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 6)}`,
@@ -476,10 +567,10 @@ export default function CreateLivestreamForm({
             fact: template.title,
             jobTitle: template.title,
             role: `Block ${def.blockNumber}: ${def.name}`,
-            description: template.subheadline,
-            focusSummary: `${def.actLabel} • ${def.name}`,
+            description: customDesc || template.subheadline,
+            focusSummary: customDesc ? `${def.name} • ${customDesc}` : `${def.actLabel} • ${def.name}`,
           },
-          speakerNotes: template.speakerNotes || '',
+          speakerNotes: template.speakerNotes || customDesc || '',
           durationStr: template.durationStr || '2m',
         });
       });
@@ -840,103 +931,559 @@ export default function CreateLivestreamForm({
               </Paper>
             </Box>
 
-            {/* ── BROADCAST SCHEDULE & TIMING CARD (SUPER SIMPLE & ACTION FOCUSED) ── */}
-            <Paper
+            {/* ── 3D FLIPPABLE BROADCAST TICKET CARD (Front: Authentic Event Ticket with Countdown, Back: Schedule Editor) ── */}
+            <Box
               ref={timingCardRef}
-              elevation={0}
               sx={{
+                width: '100%',
                 mb: 3.5,
-                p: { xs: 2.5, sm: 3 },
-                borderRadius: '22px',
-                bgcolor: '#ffffff',
-                border: '1.5px solid #e2e8f0',
-                boxShadow: '0 4px 20px rgba(15, 23, 42, 0.03)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 2,
+                perspective: '2000px',
+                position: 'relative',
               }}
             >
-              {/* Action-Oriented Header */}
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-                  <Box
-                    sx={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: '10px',
-                      bgcolor: alpha(hubColor, 0.12),
-                      color: hubColor,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 900,
-                    }}
-                  >
-                    📅
-                  </Box>
-                  <Box>
-                    <Typography sx={{ fontWeight: 900, color: '#0f172a', fontSize: '1.02rem', letterSpacing: '-0.01em', lineHeight: 1.2 }}>
-                      Broadcast Schedule
-                    </Typography>
-                    <Typography sx={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>
-                      Every {DAY_NAMES[CATEGORY_TO_DAY_MAP[category] || 1]} · 10:00 AM WAT
-                    </Typography>
-                  </Box>
-                </Box>
-
-                {/* 1-Click Fast Sync Action Button */}
-                <Button
-                  size="small"
-                  onClick={() => {
-                    const slotDate = getNextSlotForCategory(category, 10, 0);
-                    const year = slotDate.getFullYear();
-                    const month = String(slotDate.getMonth() + 1).padStart(2, '0');
-                    const day = String(slotDate.getDate()).padStart(2, '0');
-                    const hours = String(slotDate.getHours()).padStart(2, '0');
-                    const mins = String(slotDate.getMinutes()).padStart(2, '0');
-                    setEventDate(`${year}-${month}-${day}T${hours}:${mins}:00`);
-                  }}
-                  startIcon={<BoltIcon sx={{ fontSize: '15px !important' }} />}
+              <motion.div
+                animate={{ rotateY: isScheduleFlipped ? 180 : 0 }}
+                transition={{ type: 'spring', stiffness: 200, damping: 24, mass: 0.8 }}
+                style={{
+                  width: '100%',
+                  position: 'relative',
+                  transformStyle: 'preserve-3d',
+                  WebkitTransformStyle: 'preserve-3d',
+                }}
+              >
+                {/* ── TICKET FRONT: AUTHENTIC LIVESTREAM BROADCAST PASS ── */}
+                <Paper
+                  elevation={0}
                   sx={{
-                    color: hubColor,
-                    bgcolor: alpha(hubColor, 0.08),
-                    border: `1.5px solid ${alpha(hubColor, 0.25)}`,
-                    fontWeight: 800,
-                    fontSize: '0.76rem',
-                    borderRadius: '10px',
-                    px: 1.75,
-                    py: 0.6,
-                    textTransform: 'none',
-                    transition: 'all 0.2s ease',
-                    '&:hover': {
-                      bgcolor: alpha(hubColor, 0.16),
-                      transform: 'translateY(-1px)',
-                    },
+                    borderRadius: '26px',
+                    bgcolor: '#ffffff',
+                    backgroundImage: 'linear-gradient(135deg, #ffffff 0%, #fafbfc 100%)',
+                    border: '1.5px solid #e2e8f0',
+                    boxShadow: '0 10px 30px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02)',
+                    display: 'flex',
+                    flexDirection: { xs: 'column', md: 'row' },
+                    alignItems: 'stretch',
+                    position: isScheduleFlipped ? 'absolute' : 'relative',
+                    inset: isScheduleFlipped ? 0 : 'auto',
+                    backfaceVisibility: 'hidden',
+                    WebkitBackfaceVisibility: 'hidden',
+                    transform: 'rotateY(0deg) translateZ(1px)',
+                    pointerEvents: isScheduleFlipped ? 'none' : 'auto',
+                    overflow: 'hidden',
                   }}
                 >
-                  Sync to Next {DAY_NAMES[CATEGORY_TO_DAY_MAP[category] || 1]} (10 AM)
-                </Button>
-              </Box>
+                  {/* Left: Main Ticket Pass */}
+                  <Box
+                    sx={{
+                      flex: 1,
+                      p: { xs: 2.5, sm: 3 },
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      gap: 2,
+                    }}
+                  >
+                    {/* Ticket Header Row */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <TicketIcon sx={{ fontSize: 18, color: hubColor }} />
+                        <Typography
+                          sx={{
+                            fontSize: '0.72rem',
+                            fontWeight: 900,
+                            letterSpacing: '0.08em',
+                            color: '#64748b',
+                            textTransform: 'uppercase',
+                          }}
+                        >
+                          Broadcast Pass · #{`FN-${(category || 'LIVE').toUpperCase()}-2026`}
+                        </Typography>
+                      </Box>
+                      <Chip
+                        size="small"
+                        label={countdown?.isPast ? 'Broadcast Concluded' : 'Confirmed Schedule'}
+                        icon={
+                          <Box
+                            sx={{
+                              width: 6,
+                              height: 6,
+                              borderRadius: '50%',
+                              bgcolor: countdown?.isPast ? '#f59e0b' : '#10b981',
+                              boxShadow: countdown?.isPast ? 'none' : '0 0 8px #10b981',
+                              ml: '6px !important',
+                            }}
+                          />
+                        }
+                        sx={{
+                          height: 24,
+                          fontSize: '0.68rem',
+                          fontWeight: 900,
+                          bgcolor: countdown?.isPast ? 'rgba(245, 158, 11, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                          color: countdown?.isPast ? '#b45309' : '#059669',
+                          border: `1px solid ${countdown?.isPast ? 'rgba(245, 158, 11, 0.25)' : 'rgba(16, 185, 129, 0.25)'}`,
+                        }}
+                      />
+                    </Box>
 
-              {/* Event Date & Time Pickers */}
-              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
-                <PremiumDatePicker
-                  fullWidth
-                  label="Broadcast Date"
-                  value={eventDatePart}
-                  onChange={(e) => handleDateChange(e.target.value)}
-                  colorTheme={hubColor}
-                  minDate={new Date()}
-                />
-                <PremiumTimePicker
-                  fullWidth
-                  label="Broadcast Time"
-                  value={eventTimePart}
-                  onChange={(e) => handleTimeChange(e.target.value)}
-                  colorTheme={hubColor}
-                />
-              </Box>
-            </Paper>
+                    {/* Middle Row: Big Date Stub + Details */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 2, sm: 2.5 } }}>
+                      {/* Calendar Date Block */}
+                      <Box
+                        sx={{
+                          width: { xs: 74, sm: 84 },
+                          height: { xs: 84, sm: 94 },
+                          borderRadius: '18px',
+                          overflow: 'hidden',
+                          bgcolor: '#ffffff',
+                          border: '1.5px solid rgba(15, 23, 42, 0.1)',
+                          boxShadow: '0 4px 14px rgba(15, 23, 42, 0.05)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          flexShrink: 0,
+                          textAlign: 'center',
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            bgcolor: alpha(hubColor, 0.12),
+                            color: hubColor,
+                            fontWeight: 900,
+                            fontSize: '0.72rem',
+                            letterSpacing: '0.06em',
+                            py: 0.4,
+                          }}
+                        >
+                          {ticketMonth}
+                        </Box>
+                        <Box
+                          sx={{
+                            flex: 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: { xs: '1.85rem', sm: '2.15rem' },
+                            fontWeight: 950,
+                            color: '#0f172a',
+                            lineHeight: 1,
+                          }}
+                        >
+                          {ticketDayNumber}
+                        </Box>
+                        <Box
+                          sx={{
+                            fontSize: '0.65rem',
+                            fontWeight: 800,
+                            color: '#64748b',
+                            letterSpacing: '0.04em',
+                            pb: 0.4,
+                          }}
+                        >
+                          {ticketDayName}
+                        </Box>
+                      </Box>
+
+                      {/* Title & Metadata */}
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, flex: 1, minWidth: 0 }}>
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            fontWeight: 900,
+                            color: '#0f172a',
+                            fontSize: { xs: '1.02rem', sm: '1.18rem' },
+                            lineHeight: 1.25,
+                            letterSpacing: '-0.015em',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                          }}
+                        >
+                          {title || appliedBlueprint?.title || 'Your Scheduled Livestream Broadcast'}
+                        </Typography>
+
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
+                          <Chip
+                            size="small"
+                            label={appliedBlueprint?.format ? appliedBlueprint.format.replace('_', ' ').toUpperCase() : 'INDUSTRY TEARDOWN'}
+                            sx={{
+                              height: 22,
+                              fontSize: '0.66rem',
+                              fontWeight: 800,
+                              bgcolor: alpha(hubColor, 0.1),
+                              color: hubColor,
+                            }}
+                          />
+                          <Chip
+                            size="small"
+                            icon={<AccessTimeIcon sx={{ fontSize: '13px !important', color: '#475569 !important' }} />}
+                            label={ticketTimeString}
+                            sx={{
+                              height: 22,
+                              fontSize: '0.68rem',
+                              fontWeight: 800,
+                              bgcolor: 'rgba(15, 23, 42, 0.05)',
+                              color: '#334155',
+                            }}
+                          />
+                          <Chip
+                            size="small"
+                            label={`Hub: ${hubTitle}`}
+                            sx={{
+                              height: 22,
+                              fontSize: '0.66rem',
+                              fontWeight: 700,
+                              bgcolor: 'transparent',
+                              color: '#64748b',
+                              border: '1px solid #e2e8f0',
+                            }}
+                          />
+                        </Box>
+                      </Box>
+                    </Box>
+
+                    {/* Bottom Ticket Strip */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pt: 1, borderTop: '1px solid rgba(226, 232, 240, 0.7)', flexWrap: 'wrap', gap: 1 }}>
+                      <Typography sx={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600 }}>
+                        Every {DAY_NAMES[CATEGORY_TO_DAY_MAP[category] || 1]} · Standard 45m Studio Window · DEF Sequence
+                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: '2px', opacity: 0.35 }}>
+                          {[2, 3, 1, 4, 2, 1, 3, 2, 4, 1, 2].map((w, i) => (
+                            <Box key={i} sx={{ width: w, height: 11, bgcolor: '#0f172a' }} />
+                          ))}
+                        </Box>
+                        <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em' }}>
+                          ADMIT ALL VIEWERS
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+
+                  {/* Desktop Vertical Perforation Divider with Circular Notches */}
+                  <Box
+                    sx={{
+                      display: { xs: 'none', md: 'block' },
+                      width: 0,
+                      borderLeft: '2px dashed rgba(203, 213, 225, 0.95)',
+                      position: 'relative',
+                      alignSelf: 'stretch',
+                      my: 1.5,
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        top: -27,
+                        left: -13,
+                        width: 24,
+                        height: 24,
+                        borderRadius: '50%',
+                        bgcolor: '#f8fafc',
+                        border: '1.5px solid #e2e8f0',
+                        zIndex: 4,
+                      }}
+                    />
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        bottom: -27,
+                        left: -13,
+                        width: 24,
+                        height: 24,
+                        borderRadius: '50%',
+                        bgcolor: '#f8fafc',
+                        border: '1.5px solid #e2e8f0',
+                        zIndex: 4,
+                      }}
+                    />
+                  </Box>
+
+                  {/* Mobile Horizontal Perforation Divider with Circular Notches */}
+                  <Box
+                    sx={{
+                      display: { xs: 'block', md: 'none' },
+                      height: 0,
+                      borderTop: '2px dashed rgba(203, 213, 225, 0.95)',
+                      position: 'relative',
+                      width: '100%',
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        left: -13,
+                        top: -12,
+                        width: 24,
+                        height: 24,
+                        borderRadius: '50%',
+                        bgcolor: '#f8fafc',
+                        border: '1.5px solid #e2e8f0',
+                        zIndex: 4,
+                      }}
+                    />
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        right: -13,
+                        top: -12,
+                        width: 24,
+                        height: 24,
+                        borderRadius: '50%',
+                        bgcolor: '#f8fafc',
+                        border: '1.5px solid #e2e8f0',
+                        zIndex: 4,
+                      }}
+                    />
+                  </Box>
+
+                  {/* Right: Ticket Stub (Countdown & Edit Action) */}
+                  <Box
+                    sx={{
+                      width: { xs: '100%', md: 260, lg: 280 },
+                      bgcolor: 'rgba(248, 250, 252, 0.75)',
+                      p: { xs: 2.5, sm: 3 },
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      textAlign: 'center',
+                      gap: 1.75,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {/* Countdown Title */}
+                    <Typography
+                      sx={{
+                        fontSize: '0.72rem',
+                        fontWeight: 900,
+                        color: '#64748b',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.08em',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.6,
+                      }}
+                    >
+                      ⏱️ Goes Live In
+                    </Typography>
+
+                    {/* Live Digital Countdown Timer */}
+                    {countdown && !countdown.isPast ? (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                        <Box sx={{ textAlign: 'center', bgcolor: 'rgba(15, 23, 42, 0.05)', border: '1px solid rgba(15, 23, 42, 0.08)', borderRadius: '10px', px: 1, py: 0.6, minWidth: 40 }}>
+                          <Typography sx={{ fontWeight: 950, fontSize: '1.15rem', color: '#0f172a', fontFamily: 'monospace', lineHeight: 1 }}>
+                            {String(countdown.days).padStart(2, '0')}
+                          </Typography>
+                          <Typography sx={{ fontSize: '0.58rem', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', mt: 0.25 }}>days</Typography>
+                        </Box>
+                        <Typography sx={{ fontWeight: 900, color: '#94a3b8', fontSize: '1.1rem', mb: 1 }}>:</Typography>
+                        <Box sx={{ textAlign: 'center', bgcolor: 'rgba(15, 23, 42, 0.05)', border: '1px solid rgba(15, 23, 42, 0.08)', borderRadius: '10px', px: 1, py: 0.6, minWidth: 40 }}>
+                          <Typography sx={{ fontWeight: 950, fontSize: '1.15rem', color: '#0f172a', fontFamily: 'monospace', lineHeight: 1 }}>
+                            {String(countdown.hours).padStart(2, '0')}
+                          </Typography>
+                          <Typography sx={{ fontSize: '0.58rem', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', mt: 0.25 }}>hrs</Typography>
+                        </Box>
+                        <Typography sx={{ fontWeight: 900, color: '#94a3b8', fontSize: '1.1rem', mb: 1 }}>:</Typography>
+                        <Box sx={{ textAlign: 'center', bgcolor: 'rgba(15, 23, 42, 0.05)', border: '1px solid rgba(15, 23, 42, 0.08)', borderRadius: '10px', px: 1, py: 0.6, minWidth: 40 }}>
+                          <Typography sx={{ fontWeight: 950, fontSize: '1.15rem', color: '#0f172a', fontFamily: 'monospace', lineHeight: 1 }}>
+                            {String(countdown.minutes).padStart(2, '0')}
+                          </Typography>
+                          <Typography sx={{ fontSize: '0.58rem', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', mt: 0.25 }}>mins</Typography>
+                        </Box>
+                        <Typography sx={{ fontWeight: 900, color: '#94a3b8', fontSize: '1.1rem', mb: 1 }}>:</Typography>
+                        <Box sx={{ textAlign: 'center', bgcolor: alpha(hubColor, 0.1), border: `1px solid ${alpha(hubColor, 0.25)}`, borderRadius: '10px', px: 1, py: 0.6, minWidth: 40 }}>
+                          <Typography sx={{ fontWeight: 950, fontSize: '1.15rem', color: hubColor, fontFamily: 'monospace', lineHeight: 1 }}>
+                            {String(countdown.seconds).padStart(2, '0')}
+                          </Typography>
+                          <Typography sx={{ fontSize: '0.58rem', color: hubColor, fontWeight: 800, textTransform: 'uppercase', mt: 0.25 }}>secs</Typography>
+                        </Box>
+                      </Box>
+                    ) : (
+                      <Chip
+                        label="Broadcast Time Concluded"
+                        size="small"
+                        sx={{ bgcolor: 'rgba(245, 158, 11, 0.1)', color: '#b45309', fontWeight: 800, fontSize: '0.74rem' }}
+                      />
+                    )}
+
+                    {/* Edit Ticket Button */}
+                    <Button
+                      variant="contained"
+                      onClick={() => setIsScheduleFlipped(true)}
+                      startIcon={<EditIcon sx={{ fontSize: '14px !important' }} />}
+                      sx={{
+                        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+                        color: '#ffffff',
+                        fontWeight: 900,
+                        fontSize: '0.84rem',
+                        px: 3.2,
+                        py: 0.9,
+                        borderRadius: '999px',
+                        textTransform: 'none',
+                        letterSpacing: '0.01em',
+                        boxShadow: '0 4px 14px rgba(15, 23, 42, 0.18)',
+                        transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                        '&:hover': {
+                          background: 'linear-gradient(135deg, #020617 0%, #0f172a 100%)',
+                          transform: 'translateY(-2px) scale(1.02)',
+                          boxShadow: '0 8px 20px rgba(15, 23, 42, 0.28)',
+                        },
+                      }}
+                    >
+                      Edit Schedule
+                    </Button>
+
+                    <Typography sx={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 600 }}>
+                      Auto-synced to format slot
+                    </Typography>
+                  </Box>
+                </Paper>
+
+                {/* ── TICKET BACK: BROADCAST SCHEDULE & TIMING EDITOR ── */}
+                <Paper
+                  elevation={0}
+                  sx={{
+                    borderRadius: '26px',
+                    p: { xs: 2.5, sm: 3.5 },
+                    bgcolor: '#ffffff',
+                    border: '1.5px solid #e2e8f0',
+                    boxShadow: '0 12px 36px rgba(15, 23, 42, 0.05)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 2.5,
+                    position: isScheduleFlipped ? 'relative' : 'absolute',
+                    inset: isScheduleFlipped ? 'auto' : 0,
+                    backfaceVisibility: 'hidden',
+                    WebkitBackfaceVisibility: 'hidden',
+                    transform: 'rotateY(180deg) translateZ(1px)',
+                    pointerEvents: isScheduleFlipped ? 'auto' : 'none',
+                  }}
+                >
+                  {/* Top Bar on Back of Card */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1.5, borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap', gap: 1.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                      <Box
+                        sx={{
+                          width: 38,
+                          height: 38,
+                          borderRadius: '12px',
+                          bgcolor: alpha(hubColor, 0.12),
+                          color: hubColor,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: 900,
+                        }}
+                      >
+                        📅
+                      </Box>
+                      <Box>
+                        <Typography sx={{ fontWeight: 900, color: '#0f172a', fontSize: '1.05rem', letterSpacing: '-0.01em', lineHeight: 1.2 }}>
+                          Edit Broadcast Timing
+                        </Typography>
+                        <Typography sx={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>
+                          Format Slot: Every {DAY_NAMES[CATEGORY_TO_DAY_MAP[category] || 1]} · 10:00 AM WAT
+                        </Typography>
+                      </Box>
+                    </Box>
+
+                    <Button
+                      size="small"
+                      onClick={() => setIsScheduleFlipped(false)}
+                      startIcon={<CheckIcon sx={{ fontSize: 16 }} />}
+                      sx={{
+                        color: '#0f172a',
+                        bgcolor: 'rgba(15, 23, 42, 0.05)',
+                        fontWeight: 800,
+                        fontSize: '0.8rem',
+                        borderRadius: '999px',
+                        px: 2.4,
+                        py: 0.6,
+                        textTransform: 'none',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          bgcolor: 'rgba(15, 23, 42, 0.1)',
+                          transform: 'translateX(2px)',
+                        },
+                      }}
+                    >
+                      Done & View Ticket
+                    </Button>
+                  </Box>
+
+                  {/* Event Date & Time Pickers */}
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+                    <PremiumDatePicker
+                      fullWidth
+                      label="Broadcast Date"
+                      value={eventDatePart}
+                      onChange={(e) => handleDateChange(e.target.value)}
+                      colorTheme={hubColor}
+                      minDate={new Date()}
+                    />
+                    <PremiumTimePicker
+                      fullWidth
+                      label="Broadcast Time"
+                      value={eventTimePart}
+                      onChange={(e) => handleTimeChange(e.target.value)}
+                      colorTheme={hubColor}
+                    />
+                  </Box>
+
+                  {/* Actions Footer on Back of Card */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pt: 1.5, borderTop: '1px solid rgba(226, 232, 240, 0.8)', flexWrap: 'wrap', gap: 1.5 }}>
+                    <Button
+                      size="small"
+                      variant="text"
+                      onClick={() => {
+                        const slotDate = getNextSlotForCategory(category, 10, 0);
+                        const year = slotDate.getFullYear();
+                        const month = String(slotDate.getMonth() + 1).padStart(2, '0');
+                        const day = String(slotDate.getDate()).padStart(2, '0');
+                        const hours = String(slotDate.getHours()).padStart(2, '0');
+                        const mins = String(slotDate.getMinutes()).padStart(2, '0');
+                        setEventDate(`${year}-${month}-${day}T${hours}:${mins}:00`);
+                      }}
+                      startIcon={<BoltIcon sx={{ fontSize: 15 }} />}
+                      sx={{
+                        color: hubColor,
+                        fontWeight: 800,
+                        fontSize: '0.78rem',
+                        textTransform: 'none',
+                        borderRadius: '8px',
+                        px: 1.5,
+                        '&:hover': { bgcolor: alpha(hubColor, 0.08) },
+                      }}
+                    >
+                      Reset to Standard {DAY_NAMES[CATEGORY_TO_DAY_MAP[category] || 1]} (10 AM)
+                    </Button>
+
+                    <Button
+                      variant="contained"
+                      onClick={() => setIsScheduleFlipped(false)}
+                      sx={{
+                        bgcolor: '#0f172a',
+                        color: '#ffffff',
+                        fontWeight: 900,
+                        fontSize: '0.85rem',
+                        px: 3.5,
+                        py: 0.9,
+                        borderRadius: '999px',
+                        textTransform: 'none',
+                        boxShadow: '0 4px 14px rgba(15, 23, 42, 0.2)',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          bgcolor: '#020617',
+                          transform: 'translateY(-1px)',
+                        },
+                      }}
+                    >
+                      Save & View Ticket
+                    </Button>
+                  </Box>
+                </Paper>
+              </motion.div>
+            </Box>
 
             {/* ── 3D FLIPPABLE "GET LIVESTREAM IDEAS HERE" CARD (Front: AI Ideation, Back: Manual Form Textfields) ── */}
             <Box
@@ -2026,9 +2573,12 @@ export default function CreateLivestreamForm({
               <Box sx={{ mb: 6, mt: 2, maxWidth: 880, mx: 'auto', width: '100%' }}>
                 {(() => {
                   const era = ERA_CONFIG[timeframe] || ERA_CONFIG.present;
+                  const bpFmt = appliedBlueprint?.format;
                   const bpTitle = (appliedBlueprint?.typeTitle || appliedBlueprint?.title || '').toLowerCase();
                   let flowKey = 'default';
-                  if (bpTitle.includes('teardown') || bpTitle.includes('audit')) {
+                  if (bpFmt && LIVESTREAM_TYPE_FLOWS[bpFmt]) {
+                    flowKey = bpFmt;
+                  } else if (bpTitle.includes('teardown') || bpTitle.includes('audit')) {
                     flowKey = 'industry_teardown';
                   } else if (bpTitle.includes('debate') || bpTitle.includes('panel')) {
                     flowKey = 'panel_debate';
@@ -2121,6 +2671,8 @@ export default function CreateLivestreamForm({
                           if (!def) return null;
                           const slideCount = def.subSlideTemplates?.length || 1;
                           const color = def.themeColor || hubColor;
+                          const customDesc = appliedBlueprint?.customBlockDescriptions?.[bId]
+                            || appliedBlueprint?.timelinePillars?.find((p: any) => p.blockId === bId || (p.role && def.name && p.role.toLowerCase().includes(def.name.toLowerCase())))?.desc;
 
                           return (
                             <Box key={bId} sx={{ display: 'flex', alignItems: 'flex-start', mb: 2, position: 'relative' }}>
@@ -2185,7 +2737,7 @@ export default function CreateLivestreamForm({
                                   </Typography>
                                 </Box>
                                 <Typography sx={{ color: '#475569', fontSize: '0.84rem', lineHeight: 1.45 }}>
-                                  {def.description}
+                                  {customDesc || def.description}
                                 </Typography>
                               </Paper>
                             </Box>

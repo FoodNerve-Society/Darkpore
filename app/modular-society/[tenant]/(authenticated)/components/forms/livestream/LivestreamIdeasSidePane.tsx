@@ -49,12 +49,14 @@ export interface LivestreamIdeaOption {
   eraBadge: string;
   eraColor: string;
   category?: string;
+  format?: 'industry_teardown' | 'panel_debate' | 'talent_spotlight';
   title: string;
   description: string;
   hook: string;
   timelinePillars: LivestreamRundownSegment[];
   keyQuestions?: string[];
   suggestedJobsFocus?: string;
+  customBlockDescriptions?: Record<string, string>;
 }
 
 interface LivestreamIdeasSidePaneProps {
@@ -98,47 +100,161 @@ function parseLivestreamPayload(rawText: string, fallbackHub: string, fallbackCa
     past: { badge: '📜 Past Era', color: '#6366f1', icon: '📜' },
   };
 
-  // ── DETECTION 0: JSON PAYLOAD ──
-  if (text.startsWith('[') || text.startsWith('{')) {
-    try {
-      const parsed = JSON.parse(text);
-      const items = Array.isArray(parsed) ? parsed : (parsed.options || parsed.blueprints || parsed.payload || []);
-      if (Array.isArray(items) && items.length > 0) {
-        items.forEach((item: any, idx: number) => {
-          results.push({
-            id: item.id || `ls-json-${idx}-${Date.now()}`,
-            typeTitle: item.typeTitle || item.title || `Option ${idx + 1}`,
-            typeIcon: item.typeIcon || '🎙️',
-            timeframe: (item.timeframe === 'past' || item.timeframe === 'future') ? item.timeframe : 'present',
-            eraBadge: item.eraBadge || '⚡ Present Era',
-            eraColor: item.eraColor || '#10b981',
-            category: item.category || fallbackCategory,
-            title: item.title || `${fallbackHub} Livestream ${idx + 1}`,
-            description: item.description || '',
-            hook: item.hook || item.title || '',
-            timelinePillars: Array.isArray(item.timelinePillars) ? item.timelinePillars : [
-              { time: '00-15m', role: 'Act 1: The Open', desc: item.act1 || 'Anchor Tension & Reframe' },
-              { time: '15-35m', role: 'Act 2: The Meat', desc: item.act2 || 'Map System & Skeptic Defense' },
-              { time: '35-50m', role: 'Act 3: The Close', desc: item.act3 || 'Forked Close & Job/Deal Spotlight' }
-            ],
-            keyQuestions: item.keyQuestions || [],
-            suggestedJobsFocus: item.suggestedJobsFocus || item.cta || undefined
-          });
-        });
-        if (results.length > 0) return results;
-      }
-    } catch {
-      // Continue to markdown parsing
-    }
-  }
-
-  // ── DETECTION 1: LS-Doc 1c [LIVESTREAM_MENU_PAYLOAD] / Markdown Formats ──
   const angleDefaults = [
     { title: 'The Head-On Assault', icon: '🔴', color: '#ef4444', badge: '🔴 Head-On Assault' },
     { title: 'The Flank / Sideways Attack', icon: '🟡', color: '#f59e0b', badge: '🟡 Flank Attack' },
     { title: 'The Trojan Horse', icon: '🟢', color: '#10b981', badge: '🟢 Trojan Horse' },
     { title: 'The Contrarian Crossfire', icon: '🟣', color: '#a855f7', badge: '🟣 Contrarian Crossfire' },
   ];
+
+  // ── DETECTION 0: JSON PAYLOAD (Raw or wrapped in markdown code fence) ──
+  let jsonStringCandidate = '';
+  const fenceMatch = rawText.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if (fenceMatch && (fenceMatch[1].trim().startsWith('[') || fenceMatch[1].trim().startsWith('{'))) {
+    jsonStringCandidate = fenceMatch[1].trim();
+  } else {
+    const jsonMatch = text.match(/(\[[\s\S]*\]|\{[\s\S]*\})/);
+    if (jsonMatch) {
+      jsonStringCandidate = jsonMatch[0].trim();
+    }
+  }
+
+  if (jsonStringCandidate) {
+    try {
+      const parsed = JSON.parse(jsonStringCandidate);
+      let items: any[] = [];
+      if (Array.isArray(parsed)) {
+        items = parsed;
+      } else if (parsed && typeof parsed === 'object') {
+        if (Array.isArray(parsed.options)) items = parsed.options;
+        else if (Array.isArray(parsed.blueprints)) items = parsed.blueprints;
+        else if (Array.isArray(parsed.pitches)) items = parsed.pitches;
+        else if (Array.isArray(parsed.payload)) items = parsed.payload;
+        else if (Array.isArray(parsed.livestreams)) items = parsed.livestreams;
+        else if (parsed.title || parsed.blocks || parsed.format) {
+          items = [parsed];
+        }
+      }
+
+      if (items.length > 0) {
+        items.forEach((item: any, idx: number) => {
+          const angleIndex = idx % angleDefaults.length;
+          const fallbackAngle = angleDefaults[angleIndex];
+
+          const typeTitle = item.typeTitle || item.angle || fallbackAngle.title;
+          const typeIcon = item.typeIcon || fallbackAngle.icon;
+          const eraColor = item.eraColor || fallbackAngle.color;
+          const eraBadge = item.eraBadge || `${typeIcon} ${typeTitle}`;
+
+          const rawTf = (item.timeframe || item.era || 'present').toLowerCase();
+          const timeframe: 'past' | 'present' | 'future' = rawTf.includes('past') ? 'past' : (rawTf.includes('future') ? 'future' : 'present');
+
+          // Normalize format
+          let parsedFormat: 'industry_teardown' | 'panel_debate' | 'talent_spotlight' = 'industry_teardown';
+          const rawFmt = (item.format || '').toLowerCase();
+          if (rawFmt.includes('talent') || rawFmt.includes('spotlight')) parsedFormat = 'talent_spotlight';
+          else if (rawFmt.includes('debate') || rawFmt.includes('panel')) parsedFormat = 'panel_debate';
+          else parsedFormat = 'industry_teardown';
+
+          // Extract blocks
+          const customBlockDescriptions: Record<string, string> = {};
+          const rawBlocks = item.blocks || item.customBlockDescriptions || {};
+          if (typeof rawBlocks === 'object' && !Array.isArray(rawBlocks)) {
+            Object.entries(rawBlocks).forEach(([key, val]) => {
+              if (typeof val === 'string' && val.trim()) {
+                const norm = key.toLowerCase().replace(/[^a-z0-9_]+/g, '_');
+                let blockKey = norm;
+                if (norm.includes('tension') || norm.includes('anchor')) blockKey = 'anchor_tension';
+                else if (norm.includes('reframe') || norm.includes('question')) blockKey = 'reframe_question';
+                else if (norm.includes('funnel') || norm.includes('diagnostic')) blockKey = 'funnel_system';
+                else if (norm.includes('ideal') || norm.includes('feasible') || norm.includes('disconnect')) blockKey = 'ideal_vs_feasible';
+                else if (norm.includes('burden') || norm.includes('loss') || norm.includes('bleed')) blockKey = 'scaled_burden';
+                else if (norm.includes('power') || norm.includes('decider') || norm.includes('enforcer')) blockKey = 'power_map';
+                else if (norm.includes('response') || norm.includes('audit')) blockKey = 'response_audit';
+                else if (norm.includes('boundary') || norm.includes('gateway') || norm.includes('kpi')) blockKey = 'boundary_test';
+                else if (norm.includes('preempt') || norm.includes('objection') || norm.includes('skeptic')) blockKey = 'preempt_objections';
+                else if (norm.includes('return') || norm.includes('case')) blockKey = 'return_to_case';
+                else if (norm.includes('fork') || norm.includes('path') || norm.includes('close')) blockKey = 'forked_close';
+                else if (norm.includes('talent') || norm.includes('spotlight') || norm.includes('deal') || norm.includes('cta')) blockKey = 'talent_spotlight';
+                customBlockDescriptions[blockKey] = val.trim();
+              }
+            });
+          } else if (Array.isArray(rawBlocks)) {
+            rawBlocks.forEach((b: any) => {
+              const bName = b.name || b.role || b.title || '';
+              const bDesc = b.description || b.desc || '';
+              if (bName && bDesc) {
+                const norm = bName.toLowerCase().replace(/[^a-z0-9_]+/g, '_');
+                let blockKey = norm;
+                if (norm.includes('tension')) blockKey = 'anchor_tension';
+                else if (norm.includes('reframe')) blockKey = 'reframe_question';
+                else if (norm.includes('funnel')) blockKey = 'funnel_system';
+                else if (norm.includes('ideal')) blockKey = 'ideal_vs_feasible';
+                else if (norm.includes('burden')) blockKey = 'scaled_burden';
+                else if (norm.includes('power')) blockKey = 'power_map';
+                else if (norm.includes('response')) blockKey = 'response_audit';
+                else if (norm.includes('boundary')) blockKey = 'boundary_test';
+                else if (norm.includes('preempt')) blockKey = 'preempt_objections';
+                else if (norm.includes('return')) blockKey = 'return_to_case';
+                else if (norm.includes('fork')) blockKey = 'forked_close';
+                else if (norm.includes('talent')) blockKey = 'talent_spotlight';
+                customBlockDescriptions[blockKey] = bDesc.trim();
+              }
+            });
+          }
+
+          // Build timelinePillars from customBlockDescriptions or fallback
+          const timelinePillars: LivestreamRundownSegment[] = [];
+          if (Object.keys(customBlockDescriptions).length > 0) {
+            Object.entries(customBlockDescriptions).forEach(([k, desc]) => {
+              const def = DEF_BLOCK_DEFINITIONS[k];
+              timelinePillars.push({
+                time: def?.defaultDuration || '2m',
+                role: def?.name || k.replace(/_/g, ' ').toUpperCase(),
+                desc,
+              });
+            });
+          } else if (Array.isArray(item.timelinePillars) && item.timelinePillars.length > 0) {
+            item.timelinePillars.forEach((p: any) => {
+              timelinePillars.push({
+                time: p.time || '2m',
+                role: p.role || 'Segment',
+                desc: p.desc || p.description || '',
+              });
+            });
+          } else {
+            timelinePillars.push(
+              { time: '00-15m', role: 'Act 1: The Open', desc: item.description || 'Anchor Tension & Reframe' },
+              { time: '15-35m', role: 'Act 2: The Meat', desc: item.hook || 'Map System & Skeptic Defense' },
+              { time: '35-50m', role: 'Act 3: The Close', desc: item.suggestedJobsFocus || 'Forked Close & Job/Deal Spotlight' }
+            );
+          }
+
+          results.push({
+            id: item.id || `ls-json-${idx}-${Date.now()}`,
+            typeTitle,
+            typeIcon,
+            timeframe,
+            eraBadge,
+            eraColor,
+            category: item.category || fallbackCategory,
+            format: parsedFormat,
+            title: item.title || item.broadcastTitle || `${fallbackHub} Livestream ${idx + 1}`,
+            description: item.description || '',
+            hook: item.hook || item.coreDebate || '',
+            timelinePillars,
+            keyQuestions: Array.isArray(item.keyQuestions) ? item.keyQuestions : undefined,
+            suggestedJobsFocus: item.suggestedJobsFocus || item.cta || undefined,
+            customBlockDescriptions: Object.keys(customBlockDescriptions).length > 0 ? customBlockDescriptions : undefined,
+          });
+        });
+
+        if (results.length > 0) return results;
+      }
+    } catch (e) {
+      console.warn('JSON candidate parse error in parseLivestreamPayload:', e);
+    }
+  }
 
   // Split on Option headers while retaining the header line
   // Matches: ### OPTION 1, ## 🔴 OPTION 1, ### Option 1, **OPTION 1**, 1. OPTION 1, etc.
@@ -167,7 +283,7 @@ function parseLivestreamPayload(rawText: string, fallbackHub: string, fallbackCa
     else if (typeIcon === '🟢') eraColor = '#10b981';
     else if (typeIcon === '🟣') eraColor = '#a855f7';
 
-    // Persona title from header (e.g. "The Head-On Assault (Targeting: Smallholders)")
+    // Persona title from header (e.g. "[LIVESTREAM_PITCH_1]: The Head-On Assault")
     let personaTitle = fallbackAngle.title;
     if (cleanFirstLine.includes(':')) {
       const afterColon = cleanFirstLine.substring(cleanFirstLine.indexOf(':') + 1).replace(/[*_`]/g, '').trim();
@@ -194,7 +310,65 @@ function parseLivestreamPayload(rawText: string, fallbackHub: string, fallbackCa
       title = personaTitle && personaTitle.length > 5 ? personaTitle : `${fallbackHub} Broadcast Option ${results.length + 1}`;
     }
 
-    // 2. Extract Acts & CTA
+    // 2. Extract Explicit Format & Timeframe
+    const formatMatch = sec.match(/(?:^|\n)[*•-]?\s*\*?\*?Format\*?\*?:\s*([^\n\r*]+)/i);
+    let parsedFormat: 'industry_teardown' | 'panel_debate' | 'talent_spotlight' | undefined;
+    if (formatMatch) {
+      const rawFmt = formatMatch[1].toLowerCase();
+      if (rawFmt.includes('teardown') || rawFmt.includes('audit')) parsedFormat = 'industry_teardown';
+      else if (rawFmt.includes('debate') || rawFmt.includes('panel')) parsedFormat = 'panel_debate';
+      else if (rawFmt.includes('talent') || rawFmt.includes('spotlight') || rawFmt.includes('job')) parsedFormat = 'talent_spotlight';
+    }
+
+    const timeframeMatch = sec.match(/(?:^|\n)[*•-]?\s*\*?\*?Timeframe\*?\*?:\s*([^\n\r*]+)/i);
+    let timeframe: 'past' | 'present' | 'future' = 'present';
+    if (timeframeMatch) {
+      const rawTf = timeframeMatch[1].toLowerCase();
+      if (rawTf.includes('past')) timeframe = 'past';
+      else if (rawTf.includes('future')) timeframe = 'future';
+      else timeframe = 'present';
+    } else {
+      timeframe = /future|horizon|203\d/i.test(sec) ? 'future' : (/past|historical|origin/i.test(sec) ? 'past' : 'present');
+    }
+
+    // 3. Extract Block-by-Block Custom Descriptions
+    const customBlockDescriptions: Record<string, string> = {};
+    const blockSegments: LivestreamRundownSegment[] = [];
+
+    const blockRegex = /(?:^|\n)[*•-]?\s*\*?\*?Block\s*\d*[:.-]?\s*([^*:\n\r()]+)\*?\*?(?:\s*\(([^)]*)\))?[^\n\r:]*[:\-]?\s*(?:\n\s*[↳\-*•]?\s*\*?\*?Description\*?\*?:\s*|\s*)([^\n\r]+)/gi;
+    let bMatch: RegExpExecArray | null;
+    while ((bMatch = blockRegex.exec(sec)) !== null) {
+      const rawBlockName = bMatch[1].trim();
+      const timeInfo = bMatch[2] ? bMatch[2].trim() : '2m';
+      const blockDesc = bMatch[3] ? bMatch[3].trim().replace(/^[*_`\s]+|[*_`\s]+$/g, '') : '';
+      if (!blockDesc || blockDesc.toLowerCase().startsWith('block')) continue;
+
+      const norm = rawBlockName.toLowerCase().replace(/[^a-z0-9_]+/g, '_');
+      let blockKey = '';
+      if (norm.includes('tension') || norm.includes('anchor')) blockKey = 'anchor_tension';
+      else if (norm.includes('reframe') || norm.includes('question')) blockKey = 'reframe_question';
+      else if (norm.includes('funnel') || norm.includes('diagnostic')) blockKey = 'funnel_system';
+      else if (norm.includes('ideal') || norm.includes('feasible') || norm.includes('disconnect')) blockKey = 'ideal_vs_feasible';
+      else if (norm.includes('burden') || norm.includes('loss') || norm.includes('bleed')) blockKey = 'scaled_burden';
+      else if (norm.includes('power') || norm.includes('decider') || norm.includes('enforcer')) blockKey = 'power_map';
+      else if (norm.includes('response') || norm.includes('audit')) blockKey = 'response_audit';
+      else if (norm.includes('boundary') || norm.includes('gateway') || norm.includes('kpi')) blockKey = 'boundary_test';
+      else if (norm.includes('preempt') || norm.includes('objection') || norm.includes('skeptic')) blockKey = 'preempt_objections';
+      else if (norm.includes('return') || norm.includes('case')) blockKey = 'return_to_case';
+      else if (norm.includes('fork') || norm.includes('path') || norm.includes('close')) blockKey = 'forked_close';
+      else if (norm.includes('talent') || norm.includes('spotlight') || norm.includes('deal') || norm.includes('cta')) blockKey = 'talent_spotlight';
+
+      if (blockKey) {
+        customBlockDescriptions[blockKey] = blockDesc;
+        blockSegments.push({
+          time: timeInfo,
+          role: rawBlockName,
+          desc: blockDesc,
+        });
+      }
+    }
+
+    // 4. Fallback: Extract Acts & CTA if block bullets are absent
     const act1Match = sec.match(/(?:^|\n)[*•-]?\s*\*?\*?(?:Act\s*1\b|THE\s*OPEN\b)[^\n:]*[:\-]\s*([\s\S]*?)(?=(?:\n[*•-]?\s*\*?\*?(?:Act\s*2\b|THE\s*MEAT\b)|$))/i);
     const act2Match = sec.match(/(?:^|\n)[*•-]?\s*\*?\*?(?:Act\s*2\b|THE\s*MEAT\b)[^\n:]*[:\-]\s*([\s\S]*?)(?=(?:\n[*•-]?\s*\*?\*?(?:Act\s*3\b|THE\s*CLOSE\b)|$))/i);
     const act3Match = sec.match(/(?:^|\n)[*•-]?\s*\*?\*?(?:Act\s*3\b|THE\s*CLOSE\b)[^\n:]*[:\-]\s*([\s\S]*?)(?=(?:\n[*•-]?\s*\*?\*?(?:The\s+Ecosystem\s+Push|Ecosystem\s+CTA|CTA\b|The\s+Push)|$))/i);
@@ -205,7 +379,14 @@ function parseLivestreamPayload(rawText: string, fallbackHub: string, fallbackCa
     const act3Text = act3Match ? act3Match[1].replace(/^[*_`\s]+|[*_`\s]+$/g, '').trim() : '';
     const ctaText = ctaMatch ? ctaMatch[1].replace(/^[*_`\s]+|[*_`\s]+$/g, '').trim() : '';
 
-    // Build 3 DEF Timeline Segments
+    if (Object.keys(customBlockDescriptions).length === 0) {
+      if (act1Text) customBlockDescriptions['anchor_tension'] = act1Text;
+      if (act2Text) customBlockDescriptions['power_map'] = act2Text;
+      if (act3Text) customBlockDescriptions['forked_close'] = act3Text;
+      if (ctaText) customBlockDescriptions['talent_spotlight'] = ctaText;
+    }
+
+    // Build fallback DEF Timeline Segments if blocks not explicitly parsed
     const segments: LivestreamRundownSegment[] = [];
     if (act1Text || act2Text || act3Text) {
       segments.push({
@@ -228,16 +409,13 @@ function parseLivestreamPayload(rawText: string, fallbackHub: string, fallbackCa
       });
     }
 
-    // Determine era
-    const timeframe: 'past' | 'present' | 'future' = 
-      /future|horizon|203\d/i.test(sec) ? 'future' :
-      /past|historical|origin/i.test(sec) ? 'past' : 'present';
-
     // Hook: extract quote or first punchy sentence
     let hook = '';
-    const quoteMatch = act1Text.match(/"([^"]+)"/) || act1Text.match(/“([^”]+)”/);
+    const quoteMatch = (act1Text || customBlockDescriptions['anchor_tension'] || '').match(/"([^"]+)"/) || (act1Text || customBlockDescriptions['anchor_tension'] || '').match(/“([^”]+)”/);
     if (quoteMatch) {
       hook = `"${quoteMatch[1]}"`;
+    } else if (customBlockDescriptions['reframe_question']) {
+      hook = customBlockDescriptions['reframe_question'];
     } else if (act1Text) {
       hook = act1Text.length > 140 ? act1Text.slice(0, 140) + '...' : act1Text;
     } else {
@@ -255,11 +433,9 @@ function parseLivestreamPayload(rawText: string, fallbackHub: string, fallbackCa
     }
 
     // Description
-    const description = act1Text 
-      ? (act1Text.length > 220 ? `${act1Text.slice(0, 220)}...` : act1Text)
-      : `Broadcast blueprint engineered for ${personaTitle}.`;
+    const description = customBlockDescriptions['anchor_tension'] || act1Text || `Broadcast presentation engineered for ${personaTitle}.`;
 
-    if (title || segments.length > 0) {
+    if (title || blockSegments.length > 0 || segments.length > 0) {
       results.push({
         id: `ls-def-${results.length}-${Date.now()}`,
         typeTitle: personaTitle,
@@ -268,16 +444,18 @@ function parseLivestreamPayload(rawText: string, fallbackHub: string, fallbackCa
         eraBadge,
         eraColor,
         category: fallbackCategory,
+        format: parsedFormat,
         title,
         description,
         hook,
-        timelinePillars: segments.length > 0 ? segments : [
+        timelinePillars: blockSegments.length > 0 ? blockSegments : (segments.length > 0 ? segments : [
           { time: '00-15m', role: 'Act 1: The Open', desc: 'Anchor Tension & Reframe Question' },
           { time: '15-35m', role: 'Act 2: The Meat', desc: 'Map System & Skeptic Defense' },
           { time: '35-50m', role: 'Act 3: The Close', desc: 'Forked Close & Job/Deal Spotlight' }
-        ],
+        ]),
         keyQuestions: questions.length > 0 ? questions : undefined,
         suggestedJobsFocus: ctaText || undefined,
+        customBlockDescriptions: Object.keys(customBlockDescriptions).length > 0 ? customBlockDescriptions : undefined,
       });
     }
   });
@@ -296,6 +474,15 @@ function parseLivestreamPayload(rawText: string, fallbackHub: string, fallbackCa
     const rawEra = eraMatch ? eraMatch[1].toLowerCase().trim() : 'present';
     const timeframe: 'past' | 'present' | 'future' = rawEra.includes('past') ? 'past' : (rawEra.includes('future') ? 'future' : 'present');
 
+    const fmtMatch = sec.match(/[*•-]?\s*\*?\*?Format\*?\*?:\s*([^\n\r*]+)/i);
+    let parsedFormat: 'industry_teardown' | 'panel_debate' | 'talent_spotlight' | undefined;
+    if (fmtMatch) {
+      const fVal = fmtMatch[1].toLowerCase();
+      if (fVal.includes('talent') || fVal.includes('spotlight')) parsedFormat = 'talent_spotlight';
+      else if (fVal.includes('debate') || fVal.includes('panel')) parsedFormat = 'panel_debate';
+      else if (fVal.includes('teardown') || fVal.includes('industry')) parsedFormat = 'industry_teardown';
+    }
+
     const catMatch = sec.match(/[*•-]?\s*\*?\*?Category\*?\*?:\s*([^\n\r*]+)/i);
     const category = catMatch ? catMatch[1].replace(/[*_`]/g, '').trim().toLowerCase() : fallbackCategory;
 
@@ -304,6 +491,35 @@ function parseLivestreamPayload(rawText: string, fallbackHub: string, fallbackCa
 
     const hookMatch = sec.match(/[*•-]?\s*\*?\*?(?:Hook|Angle|Core Debate)\*?\*?:\s*([^\n\r*]+)/i);
     const hook = hookMatch ? hookMatch[1].replace(/[*_`]/g, '').trim() : `Unpack the structural mechanics behind ${title || fallbackHub}.`;
+
+    // Block descriptions in detection 2
+    const customBlockDescriptions: Record<string, string> = {};
+    const blockRegex = /(?:^|\n)[*•-]?\s*\*?\*?Block\s*\d*[:.-]?\s*([^*:\n\r()]+)\*?\*?(?:\s*\(([^)]*)\))?[^\n\r:]*[:\-]?\s*(?:\n\s*[↳\-*•]?\s*\*?\*?Description\*?\*?:\s*|\s*)([^\n\r]+)/gi;
+    let bMatch: RegExpExecArray | null;
+    while ((bMatch = blockRegex.exec(sec)) !== null) {
+      const rawBlockName = bMatch[1].trim();
+      const blockDesc = bMatch[3] ? bMatch[3].trim().replace(/^[*_`\s]+|[*_`\s]+$/g, '') : '';
+      if (!blockDesc || blockDesc.toLowerCase().startsWith('block')) continue;
+
+      const norm = rawBlockName.toLowerCase().replace(/[^a-z0-9_]+/g, '_');
+      let blockKey = '';
+      if (norm.includes('tension') || norm.includes('anchor')) blockKey = 'anchor_tension';
+      else if (norm.includes('reframe') || norm.includes('question')) blockKey = 'reframe_question';
+      else if (norm.includes('funnel') || norm.includes('diagnostic')) blockKey = 'funnel_system';
+      else if (norm.includes('ideal') || norm.includes('feasible') || norm.includes('disconnect')) blockKey = 'ideal_vs_feasible';
+      else if (norm.includes('burden') || norm.includes('loss') || norm.includes('bleed')) blockKey = 'scaled_burden';
+      else if (norm.includes('power') || norm.includes('decider') || norm.includes('enforcer')) blockKey = 'power_map';
+      else if (norm.includes('response') || norm.includes('audit')) blockKey = 'response_audit';
+      else if (norm.includes('boundary') || norm.includes('gateway') || norm.includes('kpi')) blockKey = 'boundary_test';
+      else if (norm.includes('preempt') || norm.includes('objection') || norm.includes('skeptic')) blockKey = 'preempt_objections';
+      else if (norm.includes('return') || norm.includes('case')) blockKey = 'return_to_case';
+      else if (norm.includes('fork') || norm.includes('path') || norm.includes('close')) blockKey = 'forked_close';
+      else if (norm.includes('talent') || norm.includes('spotlight') || norm.includes('deal') || norm.includes('cta')) blockKey = 'talent_spotlight';
+
+      if (blockKey) {
+        customBlockDescriptions[blockKey] = blockDesc;
+      }
+    }
 
     // Parse rundown / segments
     const segments: LivestreamRundownSegment[] = [];
@@ -349,11 +565,13 @@ function parseLivestreamPayload(rawText: string, fallbackHub: string, fallbackCa
         eraBadge: eraConfigMap[timeframe]?.badge || '⚡ Present Era',
         eraColor: eraConfigMap[timeframe]?.color || '#10b981',
         category,
+        format: parsedFormat,
         title,
         description,
         hook,
         timelinePillars: segments,
         keyQuestions: keyQuestions.length > 0 ? keyQuestions : undefined,
+        customBlockDescriptions: Object.keys(customBlockDescriptions).length > 0 ? customBlockDescriptions : undefined,
       });
     }
   });
@@ -838,10 +1056,11 @@ Output your entire response inside this single, clean Markdown block:
     return `### 📄 LS-DOCUMENT 1c: THE ANGLES OF ATTACK & BROADCAST SYNTHESIZER (MASTER PROMPT)
 
 **[SYSTEM PERSONA & SYNTHESIS CONSTRAINTS]**
-You are the Executive Producer and Showrunner for Food Nerve Society operating in ${currentMonthYear}. Your ONLY job is to take the raw inventory and the analytical "Smear" matrices, and synthesize them into 4 to 5 highly distinct, high-retention Livestream Pitches.
+You are the Executive Producer and Showrunner for Food Nerve Society in ${currentMonthYear}. Your ONLY job is to take the raw inventory and the analytical "Smear" matrices, and synthesize them into 4 distinct, high-retention Livestream Pitches.
 
-- **Tone:** Aggressive, highly structured, strict third-person. Use hard verbs. No fluffy adjectives.
-- **The DEF Rule:** Every single pitch MUST obey the Determinant Engagement Framework: Act 1 (Open/Tension) $\\to$ Act 2 (Meat/Diagnosis & Defense) $\\to$ Act 3 (Close/Conversion).
+- **Tone & Plain-English Rule:** Strict 8th-grade plain English. Zero high-sounding macroeconomic jargon (do NOT use words like "macroeconomic hegemony", "synthesizing fiscal apparatus", "transformative paradigms"). Write in simple, hard verbs and active voice.
+- **Physical Grounding:** Every single pitch must cite concrete ground reality: a specific commodity, real corridor locations, actual naira costs or lost amounts, and real field actors (farmers, truckers, union collectors, processors).
+- **The DEF Rule:** Every pitch MUST obey the Determinant Engagement Framework presentation blocks from start to finish.
 
 **[INPUT PAYLOAD DEFINITION]**
 
@@ -856,19 +1075,16 @@ Context: Synthesize the structured [LS_ASSET_INVENTORY] and [LS_THE_SMEAR_MATRIX
 
 Read the \`[LS_THE_SMEAR_MATRIX]\`. You must generate exactly 4 Livestream pitch options by applying these 4 specific editorial "Angles of Attack" to the data:
 
-1. **The Head-On Assault (The Obvious Bleed):** Attack the biggest, most undeniable "Commonality" found in Doc 1b. This is a direct problem-and-solution broadcast targeting the primary victim of the crisis.
-2. **The Flank / Sideways Attack (The Ignored Actor):** Do not focus on the obvious victim (e.g., the farmer). Focus on the hidden secondary actor (e.g., the truck mechanic, the warehouse guard, the local bureaucrat). Build the broadcast around how fixing *their* problem solves the macro crisis.
-3. **The Trojan Horse (The Bait & Switch):** Hook the audience using a highly relatable, everyday pain point (from a Present-era article), but midway through the Meat, execute a radical pivot to pitch a futuristic, obscure, or ${futureHorizonYear} technology (from a Future-era article or CTA) as the only real solution.
-4. **The Contrarian Crossfire (The Debate):** Build the entire broadcast around the biggest "Contradiction/Friction Point" found in Doc 1b. Pit the official narrative directly against the grassroots hack. This stream is designed for high-conflict live chat engagement.
+1. **The Head-On Assault (Format: Industry Teardown):** Attack the biggest, most undeniable bottleneck found in Doc 1b. Direct problem-and-solution broadcast targeting the primary victim of the crisis.
+2. **The Flank / Sideways Attack (Format: Talent Spotlight):** Focus on the hidden secondary actor (e.g. truck mechanic, aggregator, warehouse operator). Build the broadcast around how fixing their barrier solves the macro bleed.
+3. **The Trojan Horse (Format: Industry Teardown):** Hook the audience with an everyday field pain point, but midway through the sequence execute a radical pivot to pitch a modern technology or protocol as the only durable fix.
+4. **The Contrarian Crossfire (Format: Panel Debate):** Pit the official policy/donor narrative directly against the grassroots operator hack. Built for high-conflict live chat engagement.
 
-#### PHASE 2: The DEF Structure Enforcement
+#### PHASE 2: The Presentation Block Structure
 
-For every pitch option, you must format the broadcast into the 3-Act DEF structure:
-
-1. **Act 1 (THE OPEN):** State the Anchor Tension (The Killer Stat) and the Reframe Question to break the audience's assumptions immediately.
-2. **Act 2 (THE MEAT):** Map the system. Expose the Villain (Political Economy). Preempt the audience's primary objection (The Skeptic's FAQ) and destroy it live using the data.
-3. **Act 3 (THE CLOSE):** Force the audience into a corner. Provide the Forked Close: A Binary Choice (for a room that needs to make a decision today) OR an Open Question (for a room setting boundaries).
-4. **The Ecosystem Push:** Explicitly state how the Job/Deal/Grant from the \`[LS_ASSET_INVENTORY]\` is injected at the climax of the show.
+For every pitch option, you must output the exact slide sequence matching the DEF presentation blocks. For each block, provide:
+1. Block Name and slide count
+2. A single, punchy, concrete 1-2 sentence description of what will be presented for this topic.
 
 ---
 
@@ -881,35 +1097,81 @@ Output your entire response inside this single, clean Markdown block:
 
 **Broadcast Hub:** ${hubTitle} | **Category:** ${currentCategory}
 
-### 🔴 OPTION 1: The Head-On Assault (Targeting: [Insert Persona])
-*   **Broadcast Title:** [Punchy, Action-Spiky Title targeting the core crisis]
-*   **Act 1 (THE OPEN - Tension):** We open with [Insert Killer Stat]. We reframe the narrative by asking the audience: *"[Insert Reframe Question]"*
-*   **Act 2 (THE MEAT - Map & Defend):** We expose [Insert Villain/Profiteer]. We preempt the audience's primary objection: *"[Insert Skeptic FAQ]"* and destroy it live using [Insert Data Defense].
-*   **Act 3 (THE CLOSE - The Fork):** [Binary Choice OR Open Question].
-    *   *Path A (Status Quo):* [Cost of doing nothing].
-    *   *Path B (Intervention):* [The specific workaround/hack].
-*   **The Ecosystem Push (CTA):** We climax the stream by flashing \`[Insert Job/Deal Title]\` on screen to execute Path B today.
+### 🔴 [LIVESTREAM_PITCH_1]: The Head-On Assault
+*   **Broadcast Title:** [Punchy, Action-Spiky Title targeting real ground reality]
+*   **Format:** Industry Teardown
+*   **Timeframe:** Present
+*   **Target Audience:** [Specific Persona]
+*   **Block 1: Anchor Tension** (2 slides • 2m)
+    ↳ Description: [Field crisis snapshot and killer stat citation]
+*   **Block 2: Reframe Question** (1 slide • 1m)
+    ↳ Description: [The strategic pivot question breaking common assumptions]
+*   **Block 3: Funnel System** (3 slides • 3m)
+    ↳ Description: [The 3 operational layers from field symptom to structural lock]
+*   **Block 4: Power Map** (3 slides • 3m)
+    ↳ Description: [The deciders, union enforcers, and factory payers]
+*   **Block 5: Preempt Objections** (2 slides • 2m)
+    ↳ Description: [Voice the commercial skeptic's doubt and provide data disproof]
+*   **Block 6: Forked Close** (2 slides • 2m)
+    ↳ Description: [Binary choice: Path A daily bleed vs. Path B intervention]
+*   **Block 7: Talent & Deal Spotlight** (1 slide • 2m)
+    ↳ Description: [Specific Job/Deal to flash on screen at the climax]
 
-### 🟡 OPTION 2: The Flank / Sideways Attack (Targeting: [Secondary Actor])
-*   **Broadcast Title:** [Punchy, Action-Spiky Title targeting the ignored actor]
-*   **Act 1 (THE OPEN - Tension):** [Content mapped to the DEF]
-*   **Act 2 (THE MEAT - Map & Defend):** [Content mapped to the DEF]
-*   **Act 3 (THE CLOSE - The Fork):** [Content mapped to the DEF]
-*   **The Ecosystem Push (CTA):** [Content mapped to the DEF]
+### 🟡 [LIVESTREAM_PITCH_2]: The Flank / Sideways Attack
+*   **Broadcast Title:** [Punchy, Action-Spiky Title targeting the secondary actor]
+*   **Format:** Talent Spotlight
+*   **Timeframe:** Present
+*   **Target Audience:** [Specific Secondary Actor]
+*   **Block 1: Anchor Tension** (2 slides • 2m)
+    ↳ Description: [Field crisis snapshot and killer stat]
+*   **Block 2: Reframe Question** (1 slide • 1m)
+    ↳ Description: [Pivot question on why this role unlocks the corridor]
+*   **Block 3: Power Map** (3 slides • 3m)
+    ↳ Description: [Who holds power over this actor and where the money leaks]
+*   **Block 4: Boundary Test** (2 slides • 3m)
+    ↳ Description: [Regulatory gateway and 90-day verifiable milestone]
+*   **Block 5: Forked Close** (2 slides • 2m)
+    ↳ Description: [Cost of inaction vs return on joining this workflow]
+*   **Block 6: Talent Spotlight** (2 slides • 2m)
+    ↳ Description: [Flash verified role/bounty on screen to recruit immediately]
 
-### 🟢 OPTION 3: The Trojan Horse (Targeting: [Investors/Visionaries])
-*   **Broadcast Title:** [Punchy, Action-Spiky Title bridging a present crisis to a future tech]
-*   **Act 1 (THE OPEN - Tension):** [Content mapped to the DEF]
-*   **Act 2 (THE MEAT - Map & Defend):** [Content mapped to the DEF - Must include the radical pivot]
-*   **Act 3 (THE CLOSE - The Fork):** [Content mapped to the DEF]
-*   **The Ecosystem Push (CTA):** [Content mapped to the DEF]
+### 🟢 [LIVESTREAM_PITCH_3]: The Trojan Horse
+*   **Broadcast Title:** [Punchy, Action-Spiky Title bridging today's pain to tomorrow's fix]
+*   **Format:** Industry Teardown
+*   **Timeframe:** Future
+*   **Target Audience:** [Investors & Strategic Operators]
+*   **Block 1: Anchor Tension** (2 slides • 2m)
+    ↳ Description: [Current ground breakdown metric]
+*   **Block 2: Reframe Question** (1 slide • 1m)
+    ↳ Description: [Pivot question revealing the legacy trap]
+*   **Block 3: Ideal vs Feasible** (3 slides • 3m)
+    ↳ Description: [The donor ideal vs ground failure vs working tech fix]
+*   **Block 4: Boundary Test** (2 slides • 3m)
+    ↳ Description: [Scale pathway and 90-day deployment target]
+*   **Block 5: Forked Close** (2 slides • 2m)
+    ↳ Description: [Old model obsolescence vs first-mover advantage]
+*   **Block 6: Talent & Deal Spotlight** (1 slide • 2m)
+    ↳ Description: [Spotlight the deal/equity link for this solution]
 
-### 🟣 OPTION 4: The Contrarian Crossfire (Targeting: [Operators/Policymakers])
-*   **Broadcast Title:** [Punchy, Action-Spiky Title highlighting a deep contradiction]
-*   **Act 1 (THE OPEN - Tension):** [Content mapped to the DEF]
-*   **Act 2 (THE MEAT - Map & Defend):** [Content mapped to the DEF - Must highlight the clash between models]
-*   **Act 3 (THE CLOSE - The Fork):** [Content mapped to the DEF]
-*   **The Ecosystem Push (CTA):** [Content mapped to the DEF]
+### 🟣 [LIVESTREAM_PITCH_4]: The Contrarian Crossfire
+*   **Broadcast Title:** [Punchy, Action-Spiky Title highlighting the core debate]
+*   **Format:** Panel Debate
+*   **Timeframe:** Present
+*   **Target Audience:** [Operators & Policymakers]
+*   **Block 1: Anchor Tension** (2 slides • 2m)
+    ↳ Description: [The contradictory stat exposing the standoff]
+*   **Block 2: Reframe Question** (1 slide • 1m)
+    ↳ Description: [The controversial debate question for live audience polling]
+*   **Block 3: Ideal vs Feasible** (3 slides • 3m)
+    ↳ Description: [Clash between official policy and illegal survival hacks]
+*   **Block 4: Power Map** (3 slides • 3m)
+    ↳ Description: [Mapping which faction gains from maintaining the freeze]
+*   **Block 5: Preempt Objections** (2 slides • 2m)
+    ↳ Description: [Dismantling both sides' favorite excuses with hard numbers]
+*   **Block 6: Forked Close** (2 slides • 2m)
+    ↳ Description: [The binary vote forced upon the live panel and audience]
+*   **Block 7: Talent & Deal Spotlight** (1 slide • 2m)
+    ↳ Description: [Opportunity link for forward contracts]
 \`\`\``;
   }, [hubTitle, currentCategory, currentMonthYear, futureHorizonYear]);
 
