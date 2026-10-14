@@ -9,6 +9,7 @@ import { fetchLivestreamContentPool, createLearnContent } from '@/lib/actions/le
 import LivestreamRundownBuilder from './livestream/LivestreamRundownBuilder';
 import { DEF_BLOCK_DEFINITIONS, LIVESTREAM_TYPE_FLOWS } from './livestream/defBlocksConfig';
 import LivestreamIdeasSidePane, { LivestreamIdeaOption } from './livestream/LivestreamIdeasSidePane';
+import LivestreamSlideDraftingSidePane from './livestream/LivestreamSlideDraftingSidePane';
 import LivestreamScreenPreviewModal from './livestream/LivestreamScreenPreviewModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import PremiumTextField from '@/components/PremiumTextField';
@@ -114,6 +115,7 @@ export default function CreateLivestreamForm({
 
   // Ideation Assistant & Studio Slideshow State
   const [isIdeasDrawerOpen, setIsIdeasDrawerOpen] = useState(false);
+  const [isDraftingDrawerOpen, setIsDraftingDrawerOpen] = useState(false);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [ingestedBlueprints, setIngestedBlueprints] = useState<LivestreamIdeaOption[]>([]);
   const [deckActiveIndex, setDeckActiveIndex] = useState(0);
@@ -121,6 +123,15 @@ export default function CreateLivestreamForm({
   const [isIdeasCardFlipped, setIsIdeasCardFlipped] = useState(false);
   const [isScheduleFlipped, setIsScheduleFlipped] = useState(false);
   const [appliedBlueprint, setAppliedBlueprint] = useState<any>(initialDraftData?.livestream?.blueprint || null);
+  const resolvedFormat = useMemo(() => {
+    const bpFmt = appliedBlueprint?.format;
+    const bpTitle = (appliedBlueprint?.typeTitle || appliedBlueprint?.title || '').toLowerCase();
+    if (bpFmt && LIVESTREAM_TYPE_FLOWS[bpFmt]) return bpFmt;
+    if (bpTitle.includes('teardown') || bpTitle.includes('audit')) return 'industry_teardown';
+    if (bpTitle.includes('debate') || bpTitle.includes('panel')) return 'panel_debate';
+    if (bpTitle.includes('talent') || bpTitle.includes('spotlight') || bpTitle.includes('job')) return 'talent_spotlight';
+    return 'industry_teardown';
+  }, [appliedBlueprint]);
   const manualFieldsRef = useRef<HTMLDivElement>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
   const timingCardRef = useRef<HTMLDivElement>(null);
@@ -394,6 +405,15 @@ export default function CreateLivestreamForm({
     }
 
     if (step >= 2) {
+      if (!frameworkLoaded) {
+        items.push({
+          id: 'draft_slides',
+          label: 'Draft Slides with AI (~1 min)',
+          onClick: () => {
+            setIsDraftingDrawerOpen(true);
+          }
+        });
+      }
       if (distinctArticles < 5) {
         items.push({
           id: 'articles',
@@ -2578,19 +2598,7 @@ export default function CreateLivestreamForm({
               <Box sx={{ mb: 6, mt: 2, maxWidth: 880, mx: 'auto', width: '100%' }}>
                 {(() => {
                   const era = ERA_CONFIG[timeframe] || ERA_CONFIG.present;
-                  const bpFmt = appliedBlueprint?.format;
-                  const bpTitle = (appliedBlueprint?.typeTitle || appliedBlueprint?.title || '').toLowerCase();
-                  let flowKey = 'default';
-                  if (bpFmt && LIVESTREAM_TYPE_FLOWS[bpFmt]) {
-                    flowKey = bpFmt;
-                  } else if (bpTitle.includes('teardown') || bpTitle.includes('audit')) {
-                    flowKey = 'industry_teardown';
-                  } else if (bpTitle.includes('debate') || bpTitle.includes('panel')) {
-                    flowKey = 'panel_debate';
-                  } else if (bpTitle.includes('talent') || bpTitle.includes('spotlight') || bpTitle.includes('job')) {
-                    flowKey = 'talent_spotlight';
-                  }
-
+                  const flowKey = resolvedFormat;
                   const suggestedBlockIds = LIVESTREAM_TYPE_FLOWS[flowKey] || LIVESTREAM_TYPE_FLOWS.default;
                   const totalSlides = suggestedBlockIds.reduce((acc: number, bId: string) => {
                     const def = DEF_BLOCK_DEFINITIONS[bId];
@@ -2829,7 +2837,7 @@ export default function CreateLivestreamForm({
                           <Button
                             variant="contained"
                             onClick={() => {
-                              setIsIdeasDrawerOpen(true);
+                              setIsDraftingDrawerOpen(true);
                             }}
                             startIcon={<SparkleIcon sx={{ fontSize: 18 }} />}
                             sx={{
@@ -3287,6 +3295,36 @@ export default function CreateLivestreamForm({
             carouselRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }, 150);
         }}
+      />
+
+      {/* ── BROADCAST SLIDE DRAFTING & SCRIPTING SIDE PANE (PHASE 2) ── */}
+      <LivestreamSlideDraftingSidePane
+        open={isDraftingDrawerOpen}
+        onClose={() => setIsDraftingDrawerOpen(false)}
+        onOpen={() => setIsDraftingDrawerOpen(true)}
+        title={title}
+        description={description}
+        category={category}
+        subcategory={subcategory}
+        timeframe={timeframe as any}
+        format={resolvedFormat}
+        hubTitle={hubTitle}
+        hubColor={hubColor}
+        appliedBlueprint={appliedBlueprint}
+        guidingArticles={guidingArticles}
+        guidingJobs={guidingJobs}
+        guidingListings={guidingListings}
+        guidingCampaigns={guidingCampaigns}
+        onIngestSlides={(slides) => {
+          setRundownBlocks(slides);
+          setFrameworkLoaded(true);
+          setIsDraftingDrawerOpen(false);
+          setTimeout(() => {
+            scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+          }, 150);
+        }}
+        onUpdateTitle={(newTitle) => setTitle(newTitle)}
+        onUpdateDescription={(newDesc) => setDescription(newDesc)}
       />
     </Box>
   );
