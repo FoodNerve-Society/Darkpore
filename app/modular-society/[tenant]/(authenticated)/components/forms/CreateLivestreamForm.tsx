@@ -607,436 +607,319 @@ export default function CreateLivestreamForm({
               </Typography>
             </Box>
 
-            {/* ── SELECTED ANCHOR ARTICLES & CTAS CONTEXT BOARD ── */}
-            {(guidingArticles.length > 0 || guidingJobs.length > 0 || guidingListings.length > 0 || guidingCampaigns.length > 0) && (
-              <Box sx={{ mb: 3.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                
-                {/* 1. Selected Anchor Articles */}
-                {guidingArticles.length > 0 && (
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 0.5 }}>
-                      <Typography sx={{ fontSize: '0.84rem', fontWeight: 800, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                        <span>📚</span> Selected Anchor Articles ({guidingArticles.length})
+            {/* ── TWO DARK ASSET CARDS SIDE BY SIDE (ANCHOR ARTICLES & ECOSYSTEM CTAS) ── */}
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2, mb: 3 }}>
+              {/* Card 1: Anchor Articles */}
+              <Paper
+                elevation={0}
+                sx={{
+                  p: { xs: 2.5, sm: 3 },
+                  borderRadius: '22px',
+                  bgcolor: '#090d16',
+                  backgroundImage: 'radial-gradient(ellipse at top left, rgba(59, 130, 246, 0.12) 0%, transparent 70%)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  boxShadow: '0 12px 36px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  minHeight: 145,
+                  position: 'relative',
+                  overflow: 'hidden',
+                }}
+              >
+                <Box>
+                  <Typography sx={{ fontSize: '0.72rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', mb: 0.5 }}>
+                    Anchor Articles
+                  </Typography>
+                  <Typography sx={{ fontSize: { xs: '2.4rem', sm: '2.8rem' }, fontWeight: 950, color: '#ffffff', lineHeight: 1, letterSpacing: '-0.03em' }}>
+                    {guidingArticles.length}
+                  </Typography>
+                </Box>
+
+                {/* Fanned Images under the number */}
+                <Box sx={{ display: 'flex', alignItems: 'center', mt: 2.25, position: 'relative', height: 48 }}>
+                  {guidingArticles.length === 0 ? (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box
+                        sx={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: '12px',
+                          border: '1.5px dashed rgba(255, 255, 255, 0.15)',
+                          bgcolor: 'rgba(255, 255, 255, 0.03)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <ArticleIcon sx={{ fontSize: 18, color: 'rgba(255, 255, 255, 0.3)' }} />
+                      </Box>
+                      <Typography sx={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 600 }}>
+                        No articles linked
                       </Typography>
-                      <Chip
-                        label="Broadcast Inspiration"
-                        size="small"
-                        sx={{ bgcolor: 'rgba(15, 23, 42, 0.05)', color: '#475569', fontWeight: 700, fontSize: '0.68rem', height: 20 }}
-                      />
                     </Box>
-
-                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: guidingArticles.length > 1 ? 'repeat(auto-fit, minmax(320px, 1fr))' : '1fr' }, gap: 1.5 }}>
-                      {guidingArticles.map((art: any, artIdx: number) => {
-                        const artTitle = art.title || 'Untitled Article';
-                        const artDesc = art.description || art.summary || '';
-                        const artImg = art.coverImageUrl || art.imageUrl || art.article?.coverImageUrl || '';
-                        const artCat = art.category || art.taxonomy?.category || category;
-
+                  ) : (
+                    <>
+                      {guidingArticles.slice(0, 5).map((art: any, idx: number) => {
+                        const img = art.imageUrl || art.coverImageUrl || art.featuredImage || (typeof art.coverImage === 'string' ? art.coverImage : '');
+                        const count = Math.min(guidingArticles.length, 5);
+                        const rot = count > 1 ? -8 + (idx / (count - 1)) * 16 : 0;
                         return (
-                          <Paper
-                            key={art.id || `anchor-art-${artIdx}`}
-                            elevation={0}
+                          <Box
+                            key={art.id || `art-img-${idx}`}
                             sx={{
-                              p: 1.75,
-                              borderRadius: '20px',
-                              bgcolor: 'rgba(255, 255, 255, 0.88)',
-                              backdropFilter: 'blur(16px)',
-                              border: '1.5px solid rgba(226, 232, 240, 0.95)',
-                              boxShadow: '0 6px 20px rgba(15, 23, 42, 0.03), inset 0 1px 0 rgba(255, 255, 255, 1)',
+                              width: 46,
+                              height: 46,
+                              borderRadius: '12px',
+                              overflow: 'hidden',
+                              bgcolor: '#1e293b',
+                              border: '2px solid #090d16',
+                              boxShadow: '0 4px 14px rgba(0, 0, 0, 0.5)',
+                              ml: idx === 0 ? 0 : -2,
+                              transform: `rotate(${rot}deg)`,
+                              transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                              flexShrink: 0,
+                              zIndex: idx + 1,
                               display: 'flex',
                               alignItems: 'center',
-                              gap: 2,
-                              transition: 'all 0.2s ease',
+                              justifyContent: 'center',
                               '&:hover': {
-                                borderColor: 'rgba(15, 23, 42, 0.25)',
-                                boxShadow: '0 8px 24px rgba(15, 23, 42, 0.06)',
-                              }
+                                transform: 'rotate(0deg) scale(1.15) translateY(-4px)',
+                                zIndex: 25,
+                                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.7)',
+                              },
                             }}
                           >
-                            {/* Image Thumbnail */}
-                            <Box
-                              sx={{
-                                width: { xs: 60, sm: 72 },
-                                height: { xs: 60, sm: 72 },
-                                borderRadius: '14px',
-                                overflow: 'hidden',
-                                flexShrink: 0,
-                                bgcolor: '#f1f5f9',
-                                border: '1px solid rgba(0, 0, 0, 0.06)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                              }}
-                            >
-                              {artImg ? (
-                                <img
-                                  src={artImg}
-                                  alt={artTitle}
-                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                />
-                              ) : (
-                                <Typography sx={{ fontSize: '1.75rem' }}>📄</Typography>
-                              )}
-                            </Box>
-
-                            {/* Content */}
-                            <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0.35 }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                                <Chip
-                                  label={(artCat || 'ARTICLE').toUpperCase()}
-                                  size="small"
-                                  sx={{
-                                    bgcolor: 'rgba(59, 130, 246, 0.1)',
-                                    color: '#2563eb',
-                                    fontWeight: 900,
-                                    fontSize: '0.64rem',
-                                    letterSpacing: '0.04em',
-                                    height: 18,
-                                    borderRadius: '5px',
-                                  }}
-                                />
-                              </Box>
-                              <Typography
-                                sx={{
-                                  fontWeight: 800,
-                                  fontSize: '0.9rem',
-                                  color: '#0f172a',
-                                  lineHeight: 1.3,
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  display: '-webkit-box',
-                                  WebkitLineClamp: 2,
-                                  WebkitBoxOrient: 'vertical',
-                                }}
-                              >
-                                {artTitle}
-                              </Typography>
-                              {artDesc && (
-                                <Typography
-                                  sx={{
-                                    fontSize: '0.78rem',
-                                    color: '#64748b',
-                                    lineHeight: 1.4,
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    display: '-webkit-box',
-                                    WebkitLineClamp: 1,
-                                    WebkitBoxOrient: 'vertical',
-                                  }}
-                                >
-                                  {artDesc}
-                                </Typography>
-                              )}
-                            </Box>
-                          </Paper>
+                            {img ? (
+                              <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                              <ArticleIcon sx={{ fontSize: 20, color: '#38bdf8' }} />
+                            )}
+                          </Box>
                         );
                       })}
-                    </Box>
-                  </Box>
-                )}
+                      {guidingArticles.length > 5 && (
+                        <Box
+                          sx={{
+                            width: 34,
+                            height: 34,
+                            borderRadius: '50%',
+                            bgcolor: 'rgba(255, 255, 255, 0.1)',
+                            border: '1.5px solid rgba(255, 255, 255, 0.15)',
+                            color: '#fff',
+                            fontSize: '0.72rem',
+                            fontWeight: 900,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            ml: 1,
+                            flexShrink: 0,
+                          }}
+                        >
+                          +{guidingArticles.length - 5}
+                        </Box>
+                      )}
+                    </>
+                  )}
+                </Box>
+              </Paper>
 
-                {/* 2. Selected CTAs (Jobs / Deals / Listings) */}
-                {(guidingJobs.length > 0 || guidingListings.length > 0 || guidingCampaigns.length > 0) && (
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 0.5 }}>
-                      <Typography sx={{ fontSize: '0.84rem', fontWeight: 800, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                        <span>⚡</span> Spotlight CTAs & Deals ({guidingJobs.length + guidingListings.length + guidingCampaigns.length})
+              {/* Card 2: Ecosystem CTAs */}
+              <Paper
+                elevation={0}
+                sx={{
+                  p: { xs: 2.5, sm: 3 },
+                  borderRadius: '22px',
+                  bgcolor: '#090d16',
+                  backgroundImage: 'radial-gradient(ellipse at top left, rgba(245, 158, 11, 0.12) 0%, transparent 70%)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  boxShadow: '0 12px 36px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  minHeight: 145,
+                  position: 'relative',
+                  overflow: 'hidden',
+                }}
+              >
+                <Box>
+                  <Typography sx={{ fontSize: '0.72rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', mb: 0.5 }}>
+                    Ecosystem CTAs
+                  </Typography>
+                  <Typography sx={{ fontSize: { xs: '2.4rem', sm: '2.8rem' }, fontWeight: 950, color: '#ffffff', lineHeight: 1, letterSpacing: '-0.03em' }}>
+                    {guidingJobs.length + guidingListings.length + guidingCampaigns.length}
+                  </Typography>
+                </Box>
+
+                {/* Fanned Images/Icons under the number */}
+                <Box sx={{ display: 'flex', alignItems: 'center', mt: 2.25, position: 'relative', height: 48 }}>
+                  {(guidingJobs.length + guidingListings.length + guidingCampaigns.length) === 0 ? (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box
+                        sx={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: '12px',
+                          border: '1.5px dashed rgba(255, 255, 255, 0.15)',
+                          bgcolor: 'rgba(255, 255, 255, 0.03)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <BoltIcon sx={{ fontSize: 18, color: 'rgba(255, 255, 255, 0.3)' }} />
+                      </Box>
+                      <Typography sx={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 600 }}>
+                        No CTAs linked
                       </Typography>
-                      <Chip
-                        label="Ecosystem Push"
-                        size="small"
-                        sx={{ bgcolor: 'rgba(245, 158, 11, 0.1)', color: '#b45309', fontWeight: 700, fontSize: '0.68rem', height: 20 }}
-                      />
                     </Box>
-
-                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: (guidingJobs.length + guidingListings.length) > 1 ? 'repeat(auto-fit, minmax(320px, 1fr))' : '1fr' }, gap: 1.5 }}>
-                      {/* Jobs */}
-                      {guidingJobs.map((job: any, jobIdx: number) => {
-                        const jobTitle = job.title || 'Job Opportunity';
-                        const orgName = job.organization?.name || job.orgName || '';
-                        const jobDesc = job.compensationOrTarget || job.organizationChallenges || job.description || job.location || '';
-                        const jobLogo = job.organization?.logoUrl || job.orgLogo || job.coverImageUrl || '';
-
+                  ) : (
+                    <>
+                      {[...guidingListings, ...guidingJobs, ...guidingCampaigns].slice(0, 5).map((item: any, idx: number) => {
+                        const img = item.imageUrl || item.coverImageUrl || item.logoUrl || item.organizationLogo || '';
+                        const totalCount = Math.min(guidingJobs.length + guidingListings.length + guidingCampaigns.length, 5);
+                        const rot = totalCount > 1 ? -8 + (idx / (totalCount - 1)) * 16 : 0;
                         return (
-                          <Paper
-                            key={job.id || `anchor-job-${jobIdx}`}
-                            elevation={0}
+                          <Box
+                            key={item.id || `cta-img-${idx}`}
                             sx={{
-                              p: 1.75,
-                              borderRadius: '20px',
-                              bgcolor: 'rgba(255, 255, 255, 0.88)',
-                              backdropFilter: 'blur(16px)',
-                              border: '1.5px solid rgba(226, 232, 240, 0.95)',
-                              boxShadow: '0 6px 20px rgba(15, 23, 42, 0.03), inset 0 1px 0 rgba(255, 255, 255, 1)',
+                              width: 46,
+                              height: 46,
+                              borderRadius: '12px',
+                              overflow: 'hidden',
+                              bgcolor: '#1e293b',
+                              border: '2px solid #090d16',
+                              boxShadow: '0 4px 14px rgba(0, 0, 0, 0.5)',
+                              ml: idx === 0 ? 0 : -2,
+                              transform: `rotate(${rot}deg)`,
+                              transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                              flexShrink: 0,
+                              zIndex: idx + 1,
                               display: 'flex',
                               alignItems: 'center',
-                              gap: 2,
-                              transition: 'all 0.2s ease',
+                              justifyContent: 'center',
                               '&:hover': {
-                                borderColor: 'rgba(245, 158, 11, 0.45)',
-                                boxShadow: '0 8px 24px rgba(245, 158, 11, 0.08)',
-                              }
+                                transform: 'rotate(0deg) scale(1.15) translateY(-4px)',
+                                zIndex: 25,
+                                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.7)',
+                              },
                             }}
                           >
-                            <Box
-                              sx={{
-                                width: { xs: 60, sm: 72 },
-                                height: { xs: 60, sm: 72 },
-                                borderRadius: '14px',
-                                overflow: 'hidden',
-                                flexShrink: 0,
-                                bgcolor: '#fef3c7',
-                                border: '1px solid rgba(245, 158, 11, 0.2)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                              }}
-                            >
-                              {jobLogo ? (
-                                <img
-                                  src={jobLogo}
-                                  alt={jobTitle}
-                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                />
-                              ) : (
-                                <Typography sx={{ fontSize: '1.75rem' }}>💼</Typography>
-                              )}
-                            </Box>
-
-                            <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0.35 }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                                <Chip
-                                  label="HIRING SPOTLIGHT"
-                                  size="small"
-                                  sx={{
-                                    bgcolor: 'rgba(245, 158, 11, 0.15)',
-                                    color: '#b45309',
-                                    fontWeight: 900,
-                                    fontSize: '0.64rem',
-                                    letterSpacing: '0.04em',
-                                    height: 18,
-                                    borderRadius: '5px',
-                                  }}
-                                />
-                                {orgName && (
-                                  <Typography sx={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                    {orgName}
-                                  </Typography>
-                                )}
-                              </Box>
-                              <Typography
-                                sx={{
-                                  fontWeight: 800,
-                                  fontSize: '0.9rem',
-                                  color: '#0f172a',
-                                  lineHeight: 1.3,
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  display: '-webkit-box',
-                                  WebkitLineClamp: 2,
-                                  WebkitBoxOrient: 'vertical',
-                                }}
-                              >
-                                {jobTitle}
-                              </Typography>
-                              {jobDesc && (
-                                <Typography
-                                  sx={{
-                                    fontSize: '0.78rem',
-                                    color: '#64748b',
-                                    lineHeight: 1.4,
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    display: '-webkit-box',
-                                    WebkitLineClamp: 1,
-                                    WebkitBoxOrient: 'vertical',
-                                  }}
-                                >
-                                  {jobDesc}
-                                </Typography>
-                              )}
-                            </Box>
-                          </Paper>
+                            {img ? (
+                              <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                              <BoltIcon sx={{ fontSize: 20, color: '#fbbf24' }} />
+                            )}
+                          </Box>
                         );
                       })}
+                      {(guidingJobs.length + guidingListings.length + guidingCampaigns.length) > 5 && (
+                        <Box
+                          sx={{
+                            width: 34,
+                            height: 34,
+                            borderRadius: '50%',
+                            bgcolor: 'rgba(255, 255, 255, 0.1)',
+                            border: '1.5px solid rgba(255, 255, 255, 0.15)',
+                            color: '#fff',
+                            fontSize: '0.72rem',
+                            fontWeight: 900,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            ml: 1,
+                            flexShrink: 0,
+                          }}
+                        >
+                          +{(guidingJobs.length + guidingListings.length + guidingCampaigns.length) - 5}
+                        </Box>
+                      )}
+                    </>
+                  )}
+                </Box>
+              </Paper>
+            </Box>
 
-                      {/* Listings / Deals */}
-                      {guidingListings.map((listing: any, listIdx: number) => {
-                        const lTitle = listing.title || 'Ecosystem Deal';
-                        const lDesc = listing.description || listing.price || listing.location || '';
-                        const lImg = listing.imageUrl || listing.coverImageUrl || '';
-
-                        return (
-                          <Paper
-                            key={listing.id || `anchor-listing-${listIdx}`}
-                            elevation={0}
-                            sx={{
-                              p: 1.75,
-                              borderRadius: '20px',
-                              bgcolor: 'rgba(255, 255, 255, 0.88)',
-                              backdropFilter: 'blur(16px)',
-                              border: '1.5px solid rgba(226, 232, 240, 0.95)',
-                              boxShadow: '0 6px 20px rgba(15, 23, 42, 0.03), inset 0 1px 0 rgba(255, 255, 255, 1)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 2,
-                              transition: 'all 0.2s ease',
-                              '&:hover': {
-                                borderColor: 'rgba(16, 185, 129, 0.45)',
-                                boxShadow: '0 8px 24px rgba(16, 185, 129, 0.08)',
-                              }
-                            }}
-                          >
-                            <Box
-                              sx={{
-                                width: { xs: 60, sm: 72 },
-                                height: { xs: 60, sm: 72 },
-                                borderRadius: '14px',
-                                overflow: 'hidden',
-                                flexShrink: 0,
-                                bgcolor: '#ecfdf5',
-                                border: '1px solid rgba(16, 185, 129, 0.2)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                              }}
-                            >
-                              {lImg ? (
-                                <img
-                                  src={lImg}
-                                  alt={lTitle}
-                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                />
-                              ) : (
-                                <Typography sx={{ fontSize: '1.75rem' }}>🤝</Typography>
-                              )}
-                            </Box>
-
-                            <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0.35 }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                                <Chip
-                                  label="DEAL ROOM"
-                                  size="small"
-                                  sx={{
-                                    bgcolor: 'rgba(16, 185, 129, 0.15)',
-                                    color: '#065f46',
-                                    fontWeight: 900,
-                                    fontSize: '0.64rem',
-                                    letterSpacing: '0.04em',
-                                    height: 18,
-                                    borderRadius: '5px',
-                                  }}
-                                />
-                              </Box>
-                              <Typography
-                                sx={{
-                                  fontWeight: 800,
-                                  fontSize: '0.9rem',
-                                  color: '#0f172a',
-                                  lineHeight: 1.3,
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  display: '-webkit-box',
-                                  WebkitLineClamp: 2,
-                                  WebkitBoxOrient: 'vertical',
-                                }}
-                              >
-                                {lTitle}
-                              </Typography>
-                              {lDesc && (
-                                <Typography
-                                  sx={{
-                                    fontSize: '0.78rem',
-                                    color: '#64748b',
-                                    lineHeight: 1.4,
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    display: '-webkit-box',
-                                    WebkitLineClamp: 1,
-                                    WebkitBoxOrient: 'vertical',
-                                  }}
-                                >
-                                  {lDesc}
-                                </Typography>
-                              )}
-                            </Box>
-                          </Paper>
-                        );
-                      })}
-                    </Box>
-                  </Box>
-                )}
-              </Box>
-            )}
-
-            {/* ── DECOUPLED BROADCAST SCHEDULE & TIMING CARD ── */}
+            {/* ── BROADCAST SCHEDULE & TIMING CARD (SUPER SIMPLE & ACTION FOCUSED) ── */}
             <Paper
               ref={timingCardRef}
               elevation={0}
               sx={{
                 mb: 3.5,
-                p: { xs: 2.5, sm: 3.5 },
-                borderRadius: '24px',
-                bgcolor: 'rgba(255, 255, 255, 0.92)',
-                backdropFilter: 'blur(16px)',
-                border: '1.5px solid rgba(226, 232, 240, 0.95)',
-                boxShadow: '0 8px 30px rgba(15, 23, 42, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1)',
+                p: { xs: 2.5, sm: 3 },
+                borderRadius: '22px',
+                bgcolor: '#ffffff',
+                border: '1.5px solid #e2e8f0',
+                boxShadow: '0 4px 20px rgba(15, 23, 42, 0.03)',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 2.5,
+                gap: 2,
               }}
             >
-              {/* Header */}
+              {/* Action-Oriented Header */}
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
                   <Box
                     sx={{
-                      width: 42,
-                      height: 42,
-                      borderRadius: '12px',
+                      width: 36,
+                      height: 36,
+                      borderRadius: '10px',
                       bgcolor: alpha(hubColor, 0.12),
+                      color: hubColor,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      border: `1.5px solid ${alpha(hubColor, 0.25)}`,
+                      fontWeight: 900,
                     }}
                   >
-                    <Typography sx={{ fontSize: '1.3rem' }}>📅</Typography>
+                    📅
                   </Box>
                   <Box>
-                    <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', fontSize: '1.05rem', letterSpacing: '-0.01em' }}>
-                      Broadcast Schedule & Timing
+                    <Typography sx={{ fontWeight: 900, color: '#0f172a', fontSize: '1.02rem', letterSpacing: '-0.01em', lineHeight: 1.2 }}>
+                      Broadcast Schedule
                     </Typography>
-                    <Typography sx={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>
-                      Set the exact broadcast slot for this livestream. Pre-configured for your hub's weekly editorial rhythm.
+                    <Typography sx={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>
+                      Every {DAY_NAMES[CATEGORY_TO_DAY_MAP[category] || 1]} · 10:00 AM WAT
                     </Typography>
                   </Box>
                 </Box>
 
-                {/* Ecosystem Category Tri-Pillar Chips */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
-                  {hubCategoryPillars.map((catPillar) => (
-                    <Chip
-                      key={catPillar}
-                      label={catPillar.toUpperCase()}
-                      size="small"
-                      sx={{
-                        bgcolor: alpha(hubColor, 0.1),
-                        color: hubColor,
-                        fontWeight: 900,
-                        fontSize: '0.66rem',
-                        letterSpacing: '0.04em',
-                        height: 22,
-                        borderRadius: '6px',
-                        border: `1.5px solid ${alpha(hubColor, 0.25)}`,
-                      }}
-                    />
-                  ))}
-                </Box>
+                {/* 1-Click Fast Sync Action Button */}
+                <Button
+                  size="small"
+                  onClick={() => {
+                    const slotDate = getNextSlotForCategory(category, 10, 0);
+                    const year = slotDate.getFullYear();
+                    const month = String(slotDate.getMonth() + 1).padStart(2, '0');
+                    const day = String(slotDate.getDate()).padStart(2, '0');
+                    const hours = String(slotDate.getHours()).padStart(2, '0');
+                    const mins = String(slotDate.getMinutes()).padStart(2, '0');
+                    setEventDate(`${year}-${month}-${day}T${hours}:${mins}:00`);
+                  }}
+                  startIcon={<BoltIcon sx={{ fontSize: '15px !important' }} />}
+                  sx={{
+                    color: hubColor,
+                    bgcolor: alpha(hubColor, 0.08),
+                    border: `1.5px solid ${alpha(hubColor, 0.25)}`,
+                    fontWeight: 800,
+                    fontSize: '0.76rem',
+                    borderRadius: '10px',
+                    px: 1.75,
+                    py: 0.6,
+                    textTransform: 'none',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      bgcolor: alpha(hubColor, 0.16),
+                      transform: 'translateY(-1px)',
+                    },
+                  }}
+                >
+                  Sync to Next {DAY_NAMES[CATEGORY_TO_DAY_MAP[category] || 1]} (10 AM)
+                </Button>
               </Box>
 
               {/* Event Date & Time Pickers */}
-              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2.5 }}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
                 <PremiumDatePicker
                   fullWidth
                   label="Broadcast Date"
@@ -1052,66 +935,6 @@ export default function CreateLivestreamForm({
                   onChange={(e) => handleTimeChange(e.target.value)}
                   colorTheme={hubColor}
                 />
-              </Box>
-
-              {/* Editorial Matrix Sync Strip */}
-              <Box 
-                sx={{ 
-                  p: 2, 
-                  borderRadius: '16px', 
-                  bgcolor: alpha(hubColor, 0.05), 
-                  border: `1.5px solid ${alpha(hubColor, 0.2)}`,
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'space-between', 
-                  flexWrap: 'wrap', 
-                  gap: 1.5 
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-                  <Box sx={{ width: 36, height: 36, borderRadius: '10px', bgcolor: alpha(hubColor, 0.12), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Typography sx={{ fontSize: '1.1rem' }}>⏰</Typography>
-                  </Box>
-                  <Box>
-                    <Typography sx={{ fontSize: '0.86rem', color: '#0f172a', fontWeight: 800 }}>
-                      Weekly Editorial Matrix: Every <strong>{DAY_NAMES[CATEGORY_TO_DAY_MAP[category] || 1]}</strong> at 10:00 AM WAT
-                    </Typography>
-                    <Typography sx={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 500 }}>
-                      Broadcasts in <strong>{hubTitle}</strong> air every {DAY_NAMES[CATEGORY_TO_DAY_MAP[category] || 1]} for maximum audience reach.
-                    </Typography>
-                  </Box>
-                </Box>
-                <Button
-                  size="small"
-                  onClick={() => {
-                    const slotDate = getNextSlotForCategory(category, 10, 0);
-                    const year = slotDate.getFullYear();
-                    const month = String(slotDate.getMonth() + 1).padStart(2, '0');
-                    const day = String(slotDate.getDate()).padStart(2, '0');
-                    const hours = String(slotDate.getHours()).padStart(2, '0');
-                    const mins = String(slotDate.getMinutes()).padStart(2, '0');
-                    setEventDate(`${year}-${month}-${day}T${hours}:${mins}:00`);
-                  }}
-                  sx={{
-                    color: hubColor,
-                    bgcolor: '#ffffff',
-                    border: `1.5px solid ${alpha(hubColor, 0.3)}`,
-                    fontWeight: 800,
-                    fontSize: '0.76rem',
-                    borderRadius: '10px',
-                    px: 2,
-                    py: 0.6,
-                    textTransform: 'none',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                    transition: 'all 0.2s ease',
-                    '&:hover': { 
-                      bgcolor: alpha(hubColor, 0.08),
-                      transform: 'translateY(-1px)'
-                    }
-                  }}
-                >
-                  Sync to Next {DAY_NAMES[CATEGORY_TO_DAY_MAP[category] || 1]} (10:00 AM)
-                </Button>
               </Box>
             </Paper>
 
@@ -2804,6 +2627,7 @@ export default function CreateLivestreamForm({
       <LivestreamIdeasSidePane
         open={isIdeasDrawerOpen}
         onClose={() => setIsIdeasDrawerOpen(false)}
+        onOpen={() => setIsIdeasDrawerOpen(true)}
         hubTitle={hubTitle}
         hubColor={hubColor}
         currentCategory={category}
