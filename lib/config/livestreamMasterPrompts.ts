@@ -8,8 +8,34 @@ import {
   DEFBlockDefinition,
   LIVESTREAM_TYPE_FLOWS,
   DEF_ACTS,
+  DEF_BLOCKS_ORDER,
 } from '@/app/modular-society/[tenant]/(authenticated)/components/forms/livestream/defBlocksConfig';
 import { RundownItem } from '@/app/modular-society/[tenant]/(authenticated)/components/forms/livestream/LivestreamRundownBuilder';
+
+export interface LivestreamRundownSegment {
+  time: string;
+  role: string;
+  desc: string;
+  speakerNotes?: string;
+}
+
+export interface LivestreamIdeaOption {
+  id: string;
+  typeTitle: string;
+  typeIcon: string;
+  timeframe: 'past' | 'present' | 'future';
+  eraBadge: string;
+  eraColor: string;
+  category?: string;
+  format?: 'industry_teardown' | 'panel_debate' | 'talent_spotlight';
+  title: string;
+  description: string;
+  hook: string;
+  timelinePillars: LivestreamRundownSegment[];
+  keyQuestions?: string[];
+  suggestedJobsFocus?: string;
+  customBlockDescriptions?: Record<string, string>;
+}
 
 export interface LivestreamPromptContext {
   title: string;
@@ -686,9 +712,9 @@ export function normalizeLivestreamSlidePayload(
     }
   }
 
-  // Trailing commas cleanup
+  // Trailing commas cleanup (preserves whitespace and newlines)
   const cleanJsonCandidate = (candidate: string) => {
-    return candidate.replace(/,\s*([\]}])/g, '$1');
+    return candidate.replace(/,+(\s*[\]}])/g, '$1');
   };
 
   let parsedRaw: any;
@@ -697,43 +723,55 @@ export function normalizeLivestreamSlidePayload(
   try {
     parsedRaw = JSON.parse(cleanStr);
   } catch (err) {
-    // Stage 1: Repair unescaped newlines/tabs inside double-quoted strings
+    // Stage 1: Line-by-line inner unescaped quote repair
     try {
-      const sanitized = cleanStr.replace(
-        /"([^"\\]*(?:\\.[^"\\]*)*)"/g,
-        (match, inner) =>
-          '"' +
-          inner
-            .replace(/\n/g, '\\n')
-            .replace(/\r/g, '\\r')
-            .replace(/\t/g, '\\t') +
-          '"'
-      );
-      parsedRaw = JSON.parse(sanitized);
+      const lines = cleanStr.split('\n');
+      const fixedLines = lines.map((line) => {
+        const m = line.match(/^(\s*"[a-zA-Z0-9_-]+"\s*:\s*)"(.*)"(\s*[,\]}]*\s*)$/);
+        if (m) {
+          const prefix = m[1];
+          let val = m[2];
+          const suffix = m[3];
+          val = val.replace(/(?<!\\)"/g, '\\"');
+          return `${prefix}"${val}"${suffix}`;
+        }
+        return line;
+      });
+      parsedRaw = JSON.parse(cleanJsonCandidate(fixedLines.join('\n')));
     } catch (err2) {
-      // Stage 2: Line-by-line inner unescaped quote repair
+      // Stage 2: Repair unescaped newlines/tabs inside double-quoted strings
       try {
-        const lines = cleanStr.split('\n');
-        const fixedLines = lines.map((line) => {
-          const m = line.match(/^(\s*"[a-zA-Z0-9_-]+"\s*:\s*)"(.*)"(\s*,?\s*)$/);
-          if (m) {
-            const prefix = m[1];
-            let val = m[2];
-            const suffix = m[3];
-            val = val.replace(/(?<!\\)"/g, '\\"');
-            return `${prefix}"${val}"${suffix}`;
-          }
-          return line;
-        });
-        parsedRaw = JSON.parse(fixedLines.join('\n'));
+        const sanitized = cleanStr.replace(
+          /"([^"\\]*(?:\\.[^"\\]*)*)"/g,
+          (match, inner) =>
+            '"' +
+            inner
+              .replace(/\n/g, '\\n')
+              .replace(/\r/g, '\\r')
+              .replace(/\t/g, '\\t') +
+            '"'
+        );
+        parsedRaw = JSON.parse(cleanJsonCandidate(sanitized));
       } catch (err3) {
         // Stage 3: Attempt recovery by locating array substring
         const startIdx = jsonCandidate.indexOf('[');
         const endIdx = jsonCandidate.lastIndexOf(']');
         if (startIdx !== -1 && endIdx > startIdx) {
           try {
-            const arraySub = cleanJsonCandidate(jsonCandidate.substring(startIdx, endIdx + 1));
-            parsedRaw = JSON.parse(arraySub);
+            const subCandidate = jsonCandidate.substring(startIdx, endIdx + 1);
+            const subLines = cleanJsonCandidate(subCandidate).split('\n');
+            const subFixed = subLines.map((line) => {
+              const m = line.match(/^(\s*"[a-zA-Z0-9_-]+"\s*:\s*)"(.*)"(\s*[,\]}]*\s*)$/);
+              if (m) {
+                const prefix = m[1];
+                let val = m[2];
+                const suffix = m[3];
+                val = val.replace(/(?<!\\)"/g, '\\"');
+                return `${prefix}"${val}"${suffix}`;
+              }
+              return line;
+            });
+            parsedRaw = JSON.parse(cleanJsonCandidate(subFixed.join('\n')));
           } catch (err4) {
             throw new Error('Could not parse JSON payload. Please ensure you copied the complete JSON array output from LS-Doc 4.');
           }
@@ -1022,6 +1060,269 @@ export function normalizeLivestreamSlidePayload(
 
   if (extractedMetadata) {
     (results as any).metadata = extractedMetadata;
+  }
+
+  return results;
+}
+
+/**
+ * ═══════════════════════════════════════════════════════════════
+ * FAST INGEST PARSER: PHASE 1 BLUEPRINTS RELAY (LS-DOC 1c)
+ * ═══════════════════════════════════════════════════════════════
+ */
+export function parseLivestreamPayload(
+  rawText: string,
+  fallbackHub: string,
+  fallbackCategory: string
+): LivestreamIdeaOption[] {
+  if (!rawText || !rawText.trim()) return [];
+
+  let text = rawText.replace(/\r\n/g, '\n').trim();
+  // Strip wrapping markdown / json code fences
+  text = text.replace(/^```(?:markdown|json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+
+  const results: LivestreamIdeaOption[] = [];
+
+  const angleDefaults = [
+    { title: 'The Head-On Assault', icon: '🔴', color: '#ef4444', badge: '🔴 Head-On Assault' },
+    { title: 'The Flank / Sideways Attack', icon: '🟡', color: '#f59e0b', badge: '🟡 Flank Attack' },
+    { title: 'The Trojan Horse', icon: '🟢', color: '#10b981', badge: '🟢 Trojan Horse' },
+    { title: 'The Contrarian Crossfire', icon: '🟣', color: '#a855f7', badge: '🟣 Contrarian Crossfire' },
+  ];
+
+  // ── DETECTION 0: JSON PAYLOAD (Raw or wrapped in markdown code fence) ──
+  // 1. Strip top-level delimiter tags if present (e.g. [LIVESTREAM_MENU_PAYLOAD])
+  const cleanRaw = rawText.replace(/\[\s*(?:LIVESTREAM_MENU_PAYLOAD|LIVESTREAM_BLUEPRINTS|LS_DOC_1C_PAYLOAD)\s*\]/gi, '').trim();
+
+  // 2. Search all code fences for valid JSON array/object candidate
+  let jsonStringCandidate = '';
+  const fenceMatches = Array.from(cleanRaw.matchAll(/```(?:json|markdown)?\s*([\s\S]*?)\s*```/gi));
+  for (const match of fenceMatches) {
+    const inner = (match[1] || '').trim();
+    if ((inner.includes('{') && inner.includes('}')) || (inner.includes('[') && inner.includes(']'))) {
+      jsonStringCandidate = inner;
+      break;
+    }
+  }
+
+  // 3. Fallback to outermost array/object brackets
+  if (!jsonStringCandidate) {
+    if ((cleanRaw.startsWith('[') && cleanRaw.endsWith(']')) || (cleanRaw.startsWith('{') && cleanRaw.endsWith('}'))) {
+      jsonStringCandidate = cleanRaw;
+    } else {
+      const firstBracket = cleanRaw.indexOf('[');
+      const lastBracket = cleanRaw.lastIndexOf(']');
+      const firstBrace = cleanRaw.indexOf('{');
+      const lastBrace = cleanRaw.lastIndexOf('}');
+
+      let bracketSub = '';
+      if (firstBracket !== -1 && lastBracket > firstBracket) {
+        bracketSub = cleanRaw.substring(firstBracket, lastBracket + 1).trim();
+      }
+      let braceSub = '';
+      if (firstBrace !== -1 && lastBrace > firstBrace) {
+        braceSub = cleanRaw.substring(firstBrace, lastBrace + 1).trim();
+      }
+
+      if (bracketSub && (!braceSub || firstBracket < firstBrace)) {
+        jsonStringCandidate = bracketSub;
+      } else if (braceSub) {
+        jsonStringCandidate = braceSub;
+      } else {
+        jsonStringCandidate = cleanRaw;
+      }
+    }
+  }
+
+  // Trailing commas cleanup helper (preserves whitespace and newlines)
+  const cleanJsonCandidate = (candidate: string) => {
+    return candidate.replace(/,+(\s*[\]}])/g, '$1');
+  };
+
+  if (jsonStringCandidate) {
+    try {
+      let parsed: any;
+      const cleanStr = cleanJsonCandidate(jsonStringCandidate);
+
+      try {
+        parsed = JSON.parse(cleanStr);
+      } catch (err1) {
+        // Stage 1: Line-by-line inner unescaped quote repair
+        try {
+          const lines = cleanStr.split('\n');
+          const fixedLines = lines.map((line) => {
+            const m = line.match(/^(\s*"[a-zA-Z0-9_-]+"\s*:\s*)"(.*)"(\s*[,\]}]*\s*)$/);
+            if (m) {
+              const prefix = m[1];
+              let val = m[2];
+              const suffix = m[3];
+              val = val.replace(/(?<!\\)"/g, '\\"');
+              return `${prefix}"${val}"${suffix}`;
+            }
+            return line;
+          });
+          parsed = JSON.parse(cleanJsonCandidate(fixedLines.join('\n')));
+        } catch (err2) {
+          // Stage 2: Repair unescaped newlines/tabs inside double-quoted strings
+          try {
+            const sanitized = cleanStr.replace(
+              /"([^"\\]*(?:\\.[^"\\]*)*)"/g,
+              (match, inner) =>
+                '"' +
+                inner
+                  .replace(/\n/g, '\\n')
+                  .replace(/\r/g, '\\r')
+                  .replace(/\t/g, '\\t') +
+                '"'
+            );
+            parsed = JSON.parse(cleanJsonCandidate(sanitized));
+          } catch (err3) {
+            // Stage 3: Attempt recovery by locating array substring
+            const startIdx = jsonStringCandidate.indexOf('[');
+            const endIdx = jsonStringCandidate.lastIndexOf(']');
+            if (startIdx !== -1 && endIdx > startIdx) {
+              const subCandidate = jsonStringCandidate.substring(startIdx, endIdx + 1);
+              const subLines = cleanJsonCandidate(subCandidate).split('\n');
+              const subFixed = subLines.map((line) => {
+                const m = line.match(/^(\s*"[a-zA-Z0-9_-]+"\s*:\s*)"(.*)"(\s*[,\]}]*\s*)$/);
+                if (m) {
+                  const prefix = m[1];
+                  let val = m[2];
+                  const suffix = m[3];
+                  val = val.replace(/(?<!\\)"/g, '\\"');
+                  return `${prefix}"${val}"${suffix}`;
+                }
+                return line;
+              });
+              parsed = JSON.parse(cleanJsonCandidate(subFixed.join('\n')));
+            } else {
+              throw err3;
+            }
+          }
+        }
+      }
+
+      let items: any[] = [];
+      if (Array.isArray(parsed)) {
+        items = parsed;
+      } else if (parsed && typeof parsed === 'object') {
+        if (Array.isArray(parsed.options)) items = parsed.options;
+        else if (Array.isArray(parsed.blueprints)) items = parsed.blueprints;
+        else if (Array.isArray(parsed.pitches)) items = parsed.pitches;
+        else if (Array.isArray(parsed.payload)) items = parsed.payload;
+        else if (Array.isArray(parsed.livestreams)) items = parsed.livestreams;
+        else if (Array.isArray(parsed.menu)) items = parsed.menu;
+        else if (Array.isArray(parsed.items)) items = parsed.items;
+        else if (parsed.title || parsed.blocks || parsed.format) {
+          items = [parsed];
+        }
+      }
+
+      if (items.length > 0) {
+        items.forEach((item: any, idx: number) => {
+          const angleIndex = idx % angleDefaults.length;
+          const fallbackAngle = angleDefaults[angleIndex];
+
+          const typeTitle = item.typeTitle || item.angle || fallbackAngle.title;
+          const typeIcon = item.typeIcon || fallbackAngle.icon;
+          const eraColor = item.eraColor || fallbackAngle.color;
+          const eraBadge = item.eraBadge || `${typeIcon} ${typeTitle}`;
+
+          const rawTf = (item.timeframe || item.era || 'present').toLowerCase();
+          const timeframe: 'past' | 'present' | 'future' = rawTf.includes('past') ? 'past' : (rawTf.includes('future') ? 'future' : 'present');
+
+          // Normalize format
+          let parsedFormat: 'industry_teardown' | 'panel_debate' | 'talent_spotlight' = 'industry_teardown';
+          const rawFmt = (item.format || '').toLowerCase();
+          if (rawFmt.includes('talent') || rawFmt.includes('spotlight')) parsedFormat = 'talent_spotlight';
+          else if (rawFmt.includes('debate') || rawFmt.includes('panel')) parsedFormat = 'panel_debate';
+          else parsedFormat = 'industry_teardown';
+
+          // Extract blocks with canonical block IDs
+          const customBlockDescriptions: Record<string, string> = {};
+          const rawBlocks = item.blocks || item.customBlockDescriptions || {};
+          if (typeof rawBlocks === 'object' && !Array.isArray(rawBlocks)) {
+            Object.entries(rawBlocks).forEach(([key, val]) => {
+              if (typeof val === 'string' && val.trim()) {
+                const canonicalKey = canonicalizeDefBlockId(key);
+                customBlockDescriptions[canonicalKey] = val.trim();
+              }
+            });
+          } else if (Array.isArray(rawBlocks)) {
+            rawBlocks.forEach((b: any) => {
+              const bName = b.name || b.role || b.title || b.blockId || b.id || '';
+              const bDesc = b.description || b.desc || b.customDescription || '';
+              if (bName && typeof bDesc === 'string' && bDesc.trim()) {
+                const canonicalKey = canonicalizeDefBlockId(bName);
+                customBlockDescriptions[canonicalKey] = bDesc.trim();
+              }
+            });
+          }
+
+          // Build timelinePillars: prioritize explicit timelinePillars if provided, else order by format flow
+          const timelinePillars: LivestreamRundownSegment[] = [];
+          if (Array.isArray(item.timelinePillars) && item.timelinePillars.length > 0) {
+            item.timelinePillars.forEach((p: any) => {
+              const pRole = p.role || p.name || 'Segment';
+              const pDesc = p.desc || p.description || '';
+              const pCanonical = canonicalizeDefBlockId(pRole);
+              if (!customBlockDescriptions[pCanonical] && pDesc) {
+                customBlockDescriptions[pCanonical] = pDesc;
+              }
+              timelinePillars.push({
+                time: p.time || '2m',
+                role: pRole,
+                desc: pDesc,
+              });
+            });
+          } else if (Object.keys(customBlockDescriptions).length > 0) {
+            const flowOrder = LIVESTREAM_TYPE_FLOWS[parsedFormat] || DEF_BLOCKS_ORDER;
+            const orderedBlockIds = [
+              ...flowOrder.filter((bId) => customBlockDescriptions[bId]),
+              ...Object.keys(customBlockDescriptions).filter((bId) => !flowOrder.includes(bId)),
+            ];
+
+            orderedBlockIds.forEach((k) => {
+              const def = DEF_BLOCK_DEFINITIONS[k];
+              const desc = customBlockDescriptions[k];
+              timelinePillars.push({
+                time: def?.defaultDuration || '2m',
+                role: def?.name || k.replace(/_/g, ' ').toUpperCase(),
+                desc,
+              });
+            });
+          } else {
+            timelinePillars.push(
+              { time: '00-15m', role: 'Act 1: The Open', desc: item.description || 'Anchor Tension & Reframe' },
+              { time: '15-35m', role: 'Act 2: The Meat', desc: item.hook || 'Map System & Skeptic Defense' },
+              { time: '35-50m', role: 'Act 3: The Close', desc: item.suggestedJobsFocus || 'Forked Close & Job/Deal Spotlight' }
+            );
+          }
+
+          results.push({
+            id: item.id || `ls-json-${idx}-${Date.now()}`,
+            typeTitle,
+            typeIcon,
+            timeframe,
+            eraBadge,
+            eraColor,
+            category: item.category || fallbackCategory,
+            format: parsedFormat,
+            title: item.title || item.broadcastTitle || `${fallbackHub} Livestream ${idx + 1}`,
+            description: item.description || '',
+            hook: item.hook || item.coreDebate || '',
+            timelinePillars,
+            keyQuestions: Array.isArray(item.keyQuestions) ? item.keyQuestions : undefined,
+            suggestedJobsFocus: item.suggestedJobsFocus || item.cta || undefined,
+            customBlockDescriptions: Object.keys(customBlockDescriptions).length > 0 ? customBlockDescriptions : undefined,
+          });
+        });
+
+        if (results.length > 0) return results;
+      }
+    } catch (e) {
+      console.warn('JSON candidate parse error in parseLivestreamPayload:', e);
+    }
   }
 
   return results;

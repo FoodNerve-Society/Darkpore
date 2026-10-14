@@ -33,7 +33,7 @@ import { PromptFastIngestBox } from '@/components/prompts/PromptFastIngestBox';
 import { PromptChecklistItem } from '@/components/prompts/PromptChecklistItem';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePromptAssistant } from '@/context/PromptAssistantContext';
-import { DEF_BLOCK_DEFINITIONS } from './defBlocksConfig';
+import { DEF_BLOCK_DEFINITIONS, LIVESTREAM_TYPE_FLOWS, DEF_BLOCKS_ORDER } from './defBlocksConfig';
 import { canonicalizeDefBlockId } from '@/lib/config/livestreamMasterPrompts';
 
 export interface LivestreamRundownSegment {
@@ -88,7 +88,7 @@ interface LivestreamIdeasSidePaneProps {
  * Parses raw text containing livestream blueprint payloads.
  * Supports both [LIVESTREAM_MENU_PAYLOAD] (LS-Doc 1c) and legacy delimiter formats.
  */
-function parseLivestreamPayload(rawText: string, fallbackHub: string, fallbackCategory: string): LivestreamIdeaOption[] {
+export function parseLivestreamPayload(rawText: string, fallbackHub: string, fallbackCategory: string): LivestreamIdeaOption[] {
   if (!rawText || !rawText.trim()) return [];
 
   let text = rawText.replace(/\r\n/g, '\n').trim();
@@ -114,65 +114,110 @@ function parseLivestreamPayload(rawText: string, fallbackHub: string, fallbackCa
   // 1. Strip top-level delimiter tags if present (e.g. [LIVESTREAM_MENU_PAYLOAD])
   const cleanRaw = rawText.replace(/\[\s*(?:LIVESTREAM_MENU_PAYLOAD|LIVESTREAM_BLUEPRINTS|LS_DOC_1C_PAYLOAD)\s*\]/gi, '').trim();
 
-  // 2. Extract content from code fence if present
-  const fenceMatch = cleanRaw.match(/```(?:json|markdown)?\s*([\s\S]*?)\s*```/i);
-  const candidateText = (fenceMatch ? fenceMatch[1] : cleanRaw).trim();
-
+  // 2. Search all code fences for valid JSON array/object candidate
   let jsonStringCandidate = '';
-  if ((candidateText.startsWith('[') && candidateText.endsWith(']')) || (candidateText.startsWith('{') && candidateText.endsWith('}'))) {
-    jsonStringCandidate = candidateText;
-  } else {
-    // Locate outermost array or object
-    const firstBracket = candidateText.indexOf('[');
-    const firstBrace = candidateText.indexOf('{');
-    if (firstBracket !== -1 && (firstBrace === -1 || firstBracket < firstBrace)) {
-      const lastBracket = candidateText.lastIndexOf(']');
-      if (lastBracket > firstBracket) {
-        jsonStringCandidate = candidateText.substring(firstBracket, lastBracket + 1).trim();
+  const fenceMatches = Array.from(cleanRaw.matchAll(/```(?:json|markdown)?\s*([\s\S]*?)\s*```/gi));
+  for (const match of fenceMatches) {
+    const inner = (match[1] || '').trim();
+    if ((inner.includes('{') && inner.includes('}')) || (inner.includes('[') && inner.includes(']'))) {
+      jsonStringCandidate = inner;
+      break;
+    }
+  }
+
+  // 3. Fallback to outermost array/object brackets
+  if (!jsonStringCandidate) {
+    if ((cleanRaw.startsWith('[') && cleanRaw.endsWith(']')) || (cleanRaw.startsWith('{') && cleanRaw.endsWith('}'))) {
+      jsonStringCandidate = cleanRaw;
+    } else {
+      const firstBracket = cleanRaw.indexOf('[');
+      const lastBracket = cleanRaw.lastIndexOf(']');
+      const firstBrace = cleanRaw.indexOf('{');
+      const lastBrace = cleanRaw.lastIndexOf('}');
+
+      let bracketSub = '';
+      if (firstBracket !== -1 && lastBracket > firstBracket) {
+        bracketSub = cleanRaw.substring(firstBracket, lastBracket + 1).trim();
       }
-    } else if (firstBrace !== -1) {
-      const lastBrace = candidateText.lastIndexOf('}');
-      if (lastBrace > firstBrace) {
-        jsonStringCandidate = candidateText.substring(firstBrace, lastBrace + 1).trim();
+      let braceSub = '';
+      if (firstBrace !== -1 && lastBrace > firstBrace) {
+        braceSub = cleanRaw.substring(firstBrace, lastBrace + 1).trim();
+      }
+
+      if (bracketSub && (!braceSub || firstBracket < firstBrace)) {
+        jsonStringCandidate = bracketSub;
+      } else if (braceSub) {
+        jsonStringCandidate = braceSub;
+      } else {
+        jsonStringCandidate = cleanRaw;
       }
     }
   }
 
-  if (!jsonStringCandidate) {
-    jsonStringCandidate = candidateText;
-  }
-
-  // Trailing commas cleanup helper
+  // Trailing commas cleanup helper (preserves whitespace and newlines)
   const cleanJsonCandidate = (candidate: string) => {
-    return candidate.replace(/,\s*([\]}])/g, '$1');
+    return candidate.replace(/,+(\s*[\]}])/g, '$1');
   };
 
   if (jsonStringCandidate) {
     try {
       let parsed: any;
+      const cleanStr = cleanJsonCandidate(jsonStringCandidate);
+
       try {
-        parsed = JSON.parse(cleanJsonCandidate(jsonStringCandidate));
+        parsed = JSON.parse(cleanStr);
       } catch (err1) {
-        // Attempt relaxed recovery by repairing unescaped newlines/tabs inside double-quoted strings
+        // Stage 1: Line-by-line inner unescaped quote repair
         try {
-          const sanitized = cleanJsonCandidate(jsonStringCandidate).replace(
-            /"([^"\\]*(?:\\.[^"\\]*)*)"/g,
-            (match, inner) =>
-              '"' +
-              inner
-                .replace(/\n/g, '\\n')
-                .replace(/\r/g, '\\r')
-                .replace(/\t/g, '\\t') +
-              '"'
-          );
-          parsed = JSON.parse(sanitized);
+          const lines = cleanStr.split('\n');
+          const fixedLines = lines.map((line) => {
+            const m = line.match(/^(\s*"[a-zA-Z0-9_-]+"\s*:\s*)"(.*)"(\s*[,\]}]*\s*)$/);
+            if (m) {
+              const prefix = m[1];
+              let val = m[2];
+              const suffix = m[3];
+              val = val.replace(/(?<!\\)"/g, '\\"');
+              return `${prefix}"${val}"${suffix}`;
+            }
+            return line;
+          });
+          parsed = JSON.parse(cleanJsonCandidate(fixedLines.join('\n')));
         } catch (err2) {
-          const startIdx = jsonStringCandidate.indexOf('[');
-          const endIdx = jsonStringCandidate.lastIndexOf(']');
-          if (startIdx !== -1 && endIdx > startIdx) {
-            parsed = JSON.parse(cleanJsonCandidate(jsonStringCandidate.substring(startIdx, endIdx + 1)));
-          } else {
-            throw err2;
+          // Stage 2: Repair unescaped newlines/tabs inside double-quoted strings
+          try {
+            const sanitized = cleanStr.replace(
+              /"([^"\\]*(?:\\.[^"\\]*)*)"/g,
+              (match, inner) =>
+                '"' +
+                inner
+                  .replace(/\n/g, '\\n')
+                  .replace(/\r/g, '\\r')
+                  .replace(/\t/g, '\\t') +
+                '"'
+            );
+            parsed = JSON.parse(cleanJsonCandidate(sanitized));
+          } catch (err3) {
+            // Stage 3: Attempt recovery by locating array substring
+            const startIdx = jsonStringCandidate.indexOf('[');
+            const endIdx = jsonStringCandidate.lastIndexOf(']');
+            if (startIdx !== -1 && endIdx > startIdx) {
+              const subCandidate = jsonStringCandidate.substring(startIdx, endIdx + 1);
+              const subLines = cleanJsonCandidate(subCandidate).split('\n');
+              const subFixed = subLines.map((line) => {
+                const m = line.match(/^(\s*"[a-zA-Z0-9_-]+"\s*:\s*)"(.*)"(\s*[,\]}]*\s*)$/);
+                if (m) {
+                  const prefix = m[1];
+                  let val = m[2];
+                  const suffix = m[3];
+                  val = val.replace(/(?<!\\)"/g, '\\"');
+                  return `${prefix}"${val}"${suffix}`;
+                }
+                return line;
+              });
+              parsed = JSON.parse(cleanJsonCandidate(subFixed.join('\n')));
+            } else {
+              throw err3;
+            }
           }
         }
       }
@@ -234,23 +279,36 @@ function parseLivestreamPayload(rawText: string, fallbackHub: string, fallbackCa
             });
           }
 
-          // Build timelinePillars from customBlockDescriptions or fallback
+          // Build timelinePillars: prioritize explicit timelinePillars if provided, else order by format flow
           const timelinePillars: LivestreamRundownSegment[] = [];
-          if (Object.keys(customBlockDescriptions).length > 0) {
-            Object.entries(customBlockDescriptions).forEach(([k, desc]) => {
+          if (Array.isArray(item.timelinePillars) && item.timelinePillars.length > 0) {
+            item.timelinePillars.forEach((p: any) => {
+              const pRole = p.role || p.name || 'Segment';
+              const pDesc = p.desc || p.description || '';
+              const pCanonical = canonicalizeDefBlockId(pRole);
+              if (!customBlockDescriptions[pCanonical] && pDesc) {
+                customBlockDescriptions[pCanonical] = pDesc;
+              }
+              timelinePillars.push({
+                time: p.time || '2m',
+                role: pRole,
+                desc: pDesc,
+              });
+            });
+          } else if (Object.keys(customBlockDescriptions).length > 0) {
+            const flowOrder = LIVESTREAM_TYPE_FLOWS[parsedFormat] || DEF_BLOCKS_ORDER;
+            const orderedBlockIds = [
+              ...flowOrder.filter((bId) => customBlockDescriptions[bId]),
+              ...Object.keys(customBlockDescriptions).filter((bId) => !flowOrder.includes(bId)),
+            ];
+
+            orderedBlockIds.forEach((k) => {
               const def = DEF_BLOCK_DEFINITIONS[k];
+              const desc = customBlockDescriptions[k];
               timelinePillars.push({
                 time: def?.defaultDuration || '2m',
                 role: def?.name || k.replace(/_/g, ' ').toUpperCase(),
                 desc,
-              });
-            });
-          } else if (Array.isArray(item.timelinePillars) && item.timelinePillars.length > 0) {
-            item.timelinePillars.forEach((p: any) => {
-              timelinePillars.push({
-                time: p.time || '2m',
-                role: p.role || 'Segment',
-                desc: p.desc || p.description || '',
               });
             });
           } else {
@@ -1134,7 +1192,6 @@ For each block, write a concrete 1-2 sentence plain-English description of what 
 
 Output your entire response under the \`[LIVESTREAM_MENU_PAYLOAD]\` tag containing a single, strictly valid JSON array wrapped in a markdown code block:
 
-\`\`\`markdown
 [LIVESTREAM_MENU_PAYLOAD]
 \`\`\`json
 [

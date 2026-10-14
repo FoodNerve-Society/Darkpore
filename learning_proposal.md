@@ -33,16 +33,19 @@ When users copy LLM outputs from ChatGPT, Claude, or Gemini into headless ingest
 3. LLMs often introduce trailing commas (`{"key": "value",}`) which cause standard `JSON.parse` to throw `SyntaxError`.
 4. LLMs may output unescaped newlines or tabs within multi-line string properties (e.g., inside presenter teleprompter notes or descriptions).
 5. Prompts requesting delimiter tags (e.g., `[LIVESTREAM_MENU_PAYLOAD]` or `[LIVESTREAM_SLIDES_PAYLOAD]`) can result in greedy regular expressions matching the header brackets as part of the JSON array, breaking parsing.
+6. LLMs frequently output unescaped double quotes inside teleprompter speaker notes or titles (e.g. `"title": "The "Mile 12" Middleman Deadlock"` or `"speakerNotes": "Look at the "killer stat" here"`).
+7. Prompts containing markdown code blocks wrapping JSON examples can produce nested fences (e.g. outer ```` ```markdown ```` wrapping ```` ```json ````), causing naive single-match regexes to capture only whitespace between fences.
 
 ### The Solution: 5-Tier Resilient Ingestion
 Both `parseLivestreamPayload` (Phase 1) and `normalizeLivestreamSlidePayload` (Phase 2) implement this standard 5-tier pattern:
-1. **Delimiter Stripping:** Strip known platform tags (`[LIVESTREAM_MENU_PAYLOAD]`, `[LIVESTREAM_SLIDES_PAYLOAD]`, `[RUNDOWN_PAYLOAD]`) before string matching.
-2. **Fence Unwrapping:** Safely unwrap markdown code fences matching `/```(?:json|markdown)?\s*([\s\S]*?)\s*```/i`.
+1. **Delimiter Stripping:** Strip known platform tags (`[LIVESTREAM_MENU_PAYLOAD]`, `[LIVESTREAM_SLIDES_PAYLOAD]`, `[RUNDOWN_PAYLOAD]`, `[LS_DOC_1C_PAYLOAD]`, `[LS_DOC_4_PAYLOAD]`) before string matching.
+2. **Multi-Fence Scanning:** Safely scan all code fences across the raw payload using `matchAll(/```(?:json|markdown)?\s*([\s\S]*?)\s*```/gi)` and inspect candidate content for valid JSON braces/brackets.
 3. **Outermost Structural Detection:** Find the true outermost `[` ... `]` (or `{` ... `}`) bounds.
-4. **Trailing Comma Cleanup:** Strip trailing commas via `candidate.replace(/,\s*([\]}])/g, '$1')`.
-5. **Relaxed Error Recovery:** On initial parse failure:
-   - Repair unescaped newlines and tabs inside double-quoted string literals via regex: `/"([^"\\]*(?:\\.[^"\\]*)*)"/g`.
-   - As a final recovery, extract the innermost balanced array substring between the first `[` and last `]`.
+4. **Whitespace-Preserving Trailing Comma Cleanup:** Strip trailing commas via `candidate.replace(/,+(\s*[\]}])/g, '$1')`. Replacing commas while preserving following whitespace and newlines prevents lines from collapsing into previous lines (which breaks subsequent line-by-line quote repairs).
+5. **Multi-Stage Error Recovery:**
+   - **Stage 1 (Inner Quote Repair):** Line-by-line regex `^(\s*"[a-zA-Z0-9_-]+"\s*:\s*)"(.*)"(\s*[,\]}]*\s*)$` identifying property key-value lines and escaping unescaped internal double quotes via `replace(/(?<!\\)"/g, '\\"')`.
+   - **Stage 2 (Unescaped Newline/Tab Repair):** Repair unescaped newlines and tabs inside double-quoted string literals via regex `/"([^"\\]*(?:\\.[^"\\]*)*)"/g`.
+   - **Stage 3 (Balanced Substring Recovery):** If outer chatter or malformed prefixes persist, isolate the substring between the first `[` and last `]` and re-run Stages 1 and 2 over the sliced candidate.
 
 ---
 
@@ -61,9 +64,9 @@ Every prompt builder must enforce two paired constraints:
 
 ---
 
-## 4. Dynamic DEF Slide Counting & SubSlide Alignment
-### Discrepancy Clarified
-- The DEF framework is not a fixed 1:1 mapping of blocks to slides. Individual DEF blocks contain multiple canonical sub-slides (defined in `defBlocksConfig.ts` under `subSlideTemplates`):
+## 4. Dynamic DEF Slide Counting & Sub-Slide Blueprint Alignment
+### Discrepancy & Bug Resolved
+- The DEF framework is not a 1:1 mapping of blocks to slides. Individual DEF blocks contain multiple canonical sub-slides (defined in `defBlocksConfig.ts` under `subSlideTemplates`):
   - `anchor_tension`: 2 sub-slides (Crisis media snapshot + killer stat card)
   - `reframe_question`: 1 sub-slide
   - `funnel_system`: 3 sub-slides (Symptoms ➔ Logistics ➔ Policy)
@@ -76,11 +79,13 @@ Every prompt builder must enforce two paired constraints:
   - `return_to_case`: 1 sub-slide
   - `forked_close`: 2 sub-slides
   - `talent_spotlight`: 2 sub-slides
-- Therefore, total slides per broadcast format are dynamically calculated by `calculateExpectedSlideCount(format)`:
+- **The Sub-Slide Array Desynchronization Bug:** In previous implementations, `normalizeLivestreamSlidePayload` indexed into `flowBlocks[idx]` where `idx` was the slide number (0..20) instead of the block number. Because `flowBlocks` only has 10 blocks, slides 11..21 received `undefined`, causing half the presentation to incorrectly fallback to `anchor_tension`.
+- **Solution:** Introduced `getFormatSlideRundownBlueprint(format)` which pre-expands each DEF block into its constituent sub-slides, producing an exact 1:1 mapping of slide index to `{ defBlockId, slideIndex, slideCount, act, defBlockLabel }`.
+- Total slides per broadcast format:
   - `industry_teardown` (10 blocks): **21 slides**
-  - `panel_debate` (8 blocks): **17 slides**
+  - `panel_debate` (9 blocks, including Act 3 `talent_spotlight` parity): **19 slides**
   - `talent_spotlight` (6 blocks): **12 slides**
-- Prompts must dynamically inject `calculateExpectedSlideCount(ctx.format)` into LS-Doc 3 and LS-Doc 4 rather than relying on hardcoded slide counts.
+- Prompts dynamically inject `calculateExpectedSlideCount(ctx.format)` into LS-Doc 3 and LS-Doc 4 rather than relying on hardcoded slide counts.
 
 ---
 
