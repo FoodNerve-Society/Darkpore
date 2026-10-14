@@ -55,6 +55,53 @@ export function calculateExpectedSlideCount(format?: string): number {
   }, 0);
 }
 
+export interface CanonicalSlideBlueprintItem {
+  defBlockId: string;
+  defBlockLabel: string;
+  act: 'OPEN' | 'MEAT' | 'CLOSE';
+  slideIndex: number;
+  slideCount: number;
+  defaultSlideType: string;
+  defaultDuration: string;
+}
+
+export function getFormatSlideRundownBlueprint(format?: string): CanonicalSlideBlueprintItem[] {
+  const flowBlocks = getFlowBlocksForFormat(format);
+  const sequence: CanonicalSlideBlueprintItem[] = [];
+
+  flowBlocks.forEach((blockId) => {
+    const def = DEF_BLOCK_DEFINITIONS[blockId];
+    const subTemplates = def?.subSlideTemplates || [];
+    const count = subTemplates.length || 1;
+
+    if (subTemplates.length > 0) {
+      subTemplates.forEach((t, i) => {
+        sequence.push({
+          defBlockId: blockId,
+          defBlockLabel: def ? `Block ${def.blockNumber}: ${def.name}` : `Block (${blockId})`,
+          act: def?.act || 'MEAT',
+          slideIndex: i + 1,
+          slideCount: count,
+          defaultSlideType: t.slideType,
+          defaultDuration: t.durationStr || '45s',
+        });
+      });
+    } else {
+      sequence.push({
+        defBlockId: blockId,
+        defBlockLabel: def ? `Block ${def.blockNumber}: ${def.name}` : `Block (${blockId})`,
+        act: def?.act || 'MEAT',
+        slideIndex: 1,
+        slideCount: 1,
+        defaultSlideType: 'subheading',
+        defaultDuration: '45s',
+      });
+    }
+  });
+
+  return sequence;
+}
+
 export function canonicalizeDefBlockId(
   rawId?: string,
   fallbackIndex?: number,
@@ -72,42 +119,42 @@ export function canonicalizeDefBlockId(
   // Exact match first
   if (DEF_BLOCK_DEFINITIONS[s]) return s;
 
-  // Keyword / Substring match
-  if (s.includes('anchor') || s.includes('tension') || s.includes('crisis') || s.includes('snapshot') || s.includes('open')) {
-    return 'anchor_tension';
+  // Specific multi-word or compound matches first before single common words
+  if (s.includes('return') || s.includes('case') || s.includes('re_evaluat')) {
+    return 'return_to_case';
   }
   if (s.includes('reframe') || s.includes('question') || s.includes('pivot')) {
     return 'reframe_question';
   }
-  if (s.includes('funnel') || s.includes('diagnostic') || s.includes('layer')) {
-    return 'funnel_system';
-  }
-  if (s.includes('ideal') || s.includes('feasible') || s.includes('disconnect') || s.includes('myth') || s.includes('fracture')) {
+  if (s.includes('ideal') || s.includes('feasible') || s.includes('ngo') || s.includes('myth') || s.includes('fact') || s.includes('disconnect') || s.includes('fracture') || s.includes('workaround')) {
     return 'ideal_vs_feasible';
+  }
+  if (s.includes('funnel') || s.includes('diagnostic') || s.includes('symptom') || s.includes('layer')) {
+    return 'funnel_system';
   }
   if (s.includes('burden') || s.includes('loss') || s.includes('bleed') || s.includes('scaled')) {
     return 'scaled_burden';
   }
-  if (s.includes('power') || s.includes('decider') || s.includes('enforcer') || s.includes('payer') || s.includes('cartel')) {
+  if (s.includes('power') || s.includes('decider') || s.includes('enforcer') || s.includes('payer') || s.includes('cartel') || s.includes('syndicate')) {
     return 'power_map';
   }
-  if (s.includes('response') || s.includes('audit') || s.includes('needle') || s.includes('status_quo')) {
+  if (s.includes('response') || s.includes('audit') || s.includes('needle') || s.includes('status_quo') || s.includes('what_works')) {
     return 'response_audit';
   }
-  if (s.includes('boundary') || s.includes('gateway') || s.includes('gate') || s.includes('kpi')) {
+  if (s.includes('boundary') || s.includes('gateway') || s.includes('gate') || s.includes('kpi') || s.includes('milestone')) {
     return 'boundary_test';
   }
-  if (s.includes('preempt') || s.includes('objection') || s.includes('skeptic') || s.includes('disproof')) {
+  if (s.includes('preempt') || s.includes('objection') || s.includes('skeptic') || s.includes('disproof') || s.includes('doubt')) {
     return 'preempt_objections';
-  }
-  if (s.includes('return') || s.includes('case') || s.includes('re_evaluate')) {
-    return 'return_to_case';
   }
   if (s.includes('fork') || s.includes('diverg') || s.includes('path') || (s.includes('close') && !s.includes('talent'))) {
     return 'forked_close';
   }
-  if (s.includes('talent') || s.includes('spotlight') || s.includes('job') || s.includes('deal') || s.includes('bounty') || s.includes('hiring')) {
+  if (s.includes('talent') || s.includes('spotlight') || s.includes('job') || s.includes('deal') || s.includes('bounty') || s.includes('hiring') || s.includes('career') || s.includes('role')) {
     return 'talent_spotlight';
+  }
+  if (s.includes('anchor') || s.includes('tension') || s.includes('crisis') || s.includes('snapshot') || s.includes('killer_stat') || s.includes('open')) {
+    return 'anchor_tension';
   }
 
   // Fallback by index if available
@@ -211,11 +258,16 @@ Act as the Executive Broadcast Producer & Agribusiness Slide Architect for Food 
 Your mission is to take the user's approved broadcast blueprint and draft the complete slide-by-slide visual and textual content for **ACT 1: THE OPEN**.
 You are setting the narrative hook, exposing the ground-level crisis that official PR ignores, and delivering the spiky strategic pivot question that reframes the entire industry debate.
 
+[GROUNDED, PLAIN-ENGLISH GUARDRAILS & OPERATIONAL VOCABULARY]
+- Strictly avoid high-falutin corporate buzzwords and abstract jargon (e.g. "synergy", "paradigm shift", "leverage", "ecosystem alignment", "transformative paradigms").
+- Use authentic, plain-English field agribusiness terms (tonnage, spoilage rates, corridor haulage, jetty delays, off-take contracts, farmgate pricing, cold-chain breakages).
+- Ground all narratives in visceral physical scene descriptions and real geographic transit corridors.
+
 [BROADCAST METADATA BACKPACK]
 - **Broadcast Working Title:** "${ctx.title || 'Agribusiness Strategic Intelligence Broadcast'}"
 - **Strategic Category:** ${ctx.category.toUpperCase()} ${ctx.subcategory ? `(${ctx.subcategory})` : ''}
 - **Pillar Hub:** "${ctx.hubTitle || 'Production & Capital'}"
-- **Temporal Era:** ${ctx.timeframe.toUpperCase()} ERA
+- **Temporal Era:** ${(ctx.timeframe || 'present').toUpperCase()} ERA
 - **Broadcast Format:** ${(ctx.format || 'industry_teardown').toUpperCase().replace(/_/g, ' ')}
 ${ctx.description ? `- **Broadcast Premise:** "${ctx.description}"\n` : ''}
 [ANCHOR INVESTIGATIVE INTEL]
@@ -281,10 +333,21 @@ Act as the Senior Agribusiness Forensic Analyst & Presentation Architect for Foo
 You are ingesting the Act 1 Open and now drafting the heart of the broadcast: **ACT 2: THE MEAT (Diagnose, Map the System, and Defend the Thesis)**.
 Your goal is to tear down the industry problem systematically: diagnose the 3 layers of failure, contrast donor fantasies against brutal operator realities, map the political economy of who profits and who bleeds, and preempt the toughest skeptic in the audience.
 
-[BROADCAST CONTEXT]
-- **Title:** "${ctx.title || 'Agribusiness Strategic Intelligence'}"
-- **Category:** ${ctx.category.toUpperCase()} | **Format:** ${(ctx.format || 'industry_teardown').toUpperCase().replace(/_/g, ' ')}
-- **Temporal Era:** ${ctx.timeframe.toUpperCase()} ERA
+[PREVIOUS STEP HAND-OFF (ACT 1 OPEN)]
+Ingest the drafted Act 1 slides from LS-Doc 2a (Field Crisis Media Snapshot, Killer Stat Card, Strategic Reframe Question).
+Ensure Act 2 directly builds upon the crisis scene and reframe question established in Act 1 without losing context.
+
+[GROUNDED, PLAIN-ENGLISH GUARDRAILS & OPERATIONAL VOCABULARY]
+- Strictly avoid high-falutin corporate buzzwords and abstract jargon (e.g. "synergy", "paradigm shift", "leverage", "ecosystem alignment", "holistic solutions").
+- Use authentic, plain-English field agribusiness terms (tonnage, spoilage rates, corridor haulage, jetty delays, off-take contracts, union checkpoints, bankable collateral).
+- Ground every slide in concrete African and Nigerian agribusiness trade geography (Kaduna, Kano, Mile 12, Ibadan, Jebba, Apapa, etc.) and real commercial figures.
+
+[BROADCAST METADATA BACKPACK]
+- **Broadcast Working Title:** "${ctx.title || 'Agribusiness Strategic Intelligence'}"
+- **Strategic Category:** ${ctx.category.toUpperCase()}
+- **Pillar Hub:** "${ctx.hubTitle || 'Production & Capital'}"
+- **Temporal Era:** ${(ctx.timeframe || 'present').toUpperCase()} ERA
+- **Broadcast Format:** ${(ctx.format || 'industry_teardown').toUpperCase().replace(/_/g, ' ')}
 
 [ACT 2 DEF BLOCKS TO DRAFT FOR THIS BROADCAST FORMAT]
 ${blocksDoc}
@@ -327,7 +390,7 @@ For each active block in your sequence above, draft high-density content matchin
 
 [OUTPUT FORMAT]
 Output cleanly formatted Markdown structured by Slide Number and DEF Block.
-Ensure every slide has concrete Nigerian/African agricultural geography (Kaduna, Kano, Mile 12, Ibadan, Jebba, Apapa, etc.) and real commercial numbers.`;
+Ensure every slide has concrete operational details and real commercial numbers.`;
 }
 
 /**
@@ -354,10 +417,20 @@ Act as the Chief Monetization Strategist & Stage Closer for Food Nerve Society i
 You are drafting the climax of the livestream: **ACT 3: THE CLOSE (Return to Case, Forked Futures & Ecosystem Spotlight)**.
 A great livestream does not end with passive Q&A; it drives audience conversion. You will loop back to the opening crisis image, prove that the problem is an engineered solvable equation, split the audience between the losing status quo and the winning path, and spotlight high-impact ecosystem jobs and live bounties.
 
-[BROADCAST CONTEXT]
-- **Title:** "${ctx.title || 'Agribusiness Strategic Intelligence'}"
+[PREVIOUS STEP HAND-OFF (ACT 1 & ACT 2)]
+Ingest the drafted Act 1 Open and Act 2 Meat from LS-Doc 2a and 2b.
+In Slide 1 of Act 3 (\`return_to_case\`), you must explicitly loop back to and resolve the specific crisis scene established in Slide 1 of Act 1 through the lens of the verified system engineered in Act 2.
+
+[GROUNDED, PLAIN-ENGLISH GUARDRAILS & OPERATIONAL VOCABULARY]
+- Strictly avoid high-falutin corporate jargon (e.g. "synergy", "paradigm shift", "leverage", "ecosystem alignment").
+- Use plain-English, authentic field agribusiness terms (tonnage, spoilage rates, corridor haulage, jetty delays, off-take contracts, forward contracts, escrow compliance).
+
+[BROADCAST METADATA BACKPACK]
+- **Broadcast Working Title:** "${ctx.title || 'Agribusiness Strategic Intelligence'}"
 - **Strategic Category:** ${ctx.category.toUpperCase()}
-- **Format:** ${(ctx.format || 'industry_teardown').toUpperCase().replace(/_/g, ' ')}
+- **Pillar Hub:** "${ctx.hubTitle || 'Production & Capital'}"
+- **Temporal Era:** ${(ctx.timeframe || 'present').toUpperCase()} ERA
+- **Broadcast Format:** ${(ctx.format || 'industry_teardown').toUpperCase().replace(/_/g, ' ')}
 
 [LIVE ECOSYSTEM CAREERS & DEALS POOL]
 ${jobsSummary}
@@ -409,9 +482,23 @@ Act as an Elite Broadcast Speechwriter & Stage Director for Food Nerve Society i
 You have reviewed all drafted slides from LS-Doc 2a (The Open), LS-Doc 2b (The Meat), and LS-Doc 2c (The Close).
 Your task is to write the **Verbatim Teleprompter Script** and **Executive Speaker Notes** for EVERY slide across the entire ${expectedSlides}-slide presentation.
 
-[BROADCAST PARAMETERS]
+[PREVIOUS STEP HAND-OFF (ACT 1, ACT 2, ACT 3 SLIDES)]
+Ingest the complete drafted slides from LS-Doc 2a, 2b, and 2c.
+Write the verbatim spoken word and stage directions for each slide in order, preserving full continuity across the entire presentation arc.
+
+[GROUNDED, PLAIN-ENGLISH GUARDRAILS & PRESENTER VOICE]
+- Strictly avoid consultant buzzwords and academic jargon (e.g. "synergy", "paradigm shift", "leverage", "ecosystem alignment").
+- Speak directly to operators, bankers, and founders in the trenches using plain-English, authentic field agribusiness terms (tonnage, spoilage rates, corridor haulage, jetty delays, off-take contracts).
+- Write in punchy, short spoken sentences at an 8th-grade reading level.
+
+[BROADCAST PARAMETERS & METADATA]
 - **Show Title:** "${ctx.title || 'Agribusiness Strategic Intelligence'}"
-- **Host Persona:** Authoritative, deeply technical, urgent, conversational, operator-level insight. No consultant buzzwords. Speak directly to operators, bankers, and founders in the trenches.
+- **Strategic Category:** ${ctx.category.toUpperCase()}
+- **Pillar Hub:** "${ctx.hubTitle || 'Production & Capital'}"
+- **Temporal Era:** ${(ctx.timeframe || 'present').toUpperCase()} ERA
+- **Broadcast Format:** ${(ctx.format || 'industry_teardown').toUpperCase().replace(/_/g, ' ')}
+- **Expected Total Slides:** ${expectedSlides} slides
+- **Host Persona:** Authoritative, deeply technical, urgent, conversational, operator-level insight. Speak directly to operators, bankers, and founders in the trenches.
 - **Pacing Standard:** 130 to 145 words per minute.
 - **Slide Durations:** Standard slides are 45s (approx. 90-105 spoken words); anchor slides and transitions are 60s (approx. 130 spoken words).
 
@@ -453,6 +540,23 @@ export function buildLSDoc4Prompt(ctx: LivestreamPromptContext): string {
 You are the Headless CMS API Bridge for Food Nerve Society.
 Your sole job is to take the validated slides from LS-Doc 2a, 2b, 2c and the speaker notes from LS-Doc 3, and compile them into a **strictly valid JSON array** (or a wrapped object with metadata) that conforms to our platform's \`RundownItem\` schema.
 This JSON payload will be pasted directly into the Studio Fast Ingest Terminal to instantly populate all ${expectedSlides} broadcast slides, presenter notes, and stage directions into the interactive studio canvas in one click.
+
+[PREVIOUS STEP HAND-OFF]
+Ingest the complete slides from LS-Doc 2a, 2b, 2c and the verbatim speaker notes with stage directions from LS-Doc 3.
+Compile them into a single, clean JSON array matching the exact ${expectedSlides}-slide rundown sequence.
+
+[GROUNDED, PLAIN-ENGLISH GUARDRAILS & OPERATIONAL VOCABULARY]
+- Strictly avoid high-falutin corporate buzzwords and abstract jargon (e.g. "synergy", "paradigm shift", "leverage", "ecosystem alignment").
+- Use authentic, plain-English field agribusiness terms (tonnage, spoilage rates, corridor haulage, jetty delays, off-take contracts).
+- Ensure all titles, descriptions, and speaker notes within the compiled payload remain strictly grounded in operational agribusiness reality.
+
+[BROADCAST COMPILATION METADATA]
+- **Broadcast Title:** "${ctx.title || 'Agribusiness Strategic Intelligence'}"
+- **Strategic Category:** ${ctx.category.toUpperCase()}
+- **Pillar Hub:** "${ctx.hubTitle || 'Production & Capital'}"
+- **Temporal Era:** ${(ctx.timeframe || 'present').toUpperCase()} ERA
+- **Broadcast Format:** ${(ctx.format || 'industry_teardown').toUpperCase().replace(/_/g, ' ')}
+- **Target Slide Count:** Exactly ${expectedSlides} slides
 
 [MANDATORY JSON SPECIFICATIONS]
 - Output MUST be a valid JSON array of slide objects: \`[\n  {\n    ...  \n  }\n]\` OR a wrapped object \`{\n  "title": "Broadcast Title",\n  "description": "Broadcast Premise",\n  "slides": [ ... ]\n}\`.
@@ -539,36 +643,47 @@ export function normalizeLivestreamSlidePayload(
 ): RundownItem[] {
   if (!rawText || !rawText.trim()) return [];
 
-  let text = rawText.replace(/\r\n/g, '\n').trim();
+  // Strip top-level delimiter tags if present (e.g. [LIVESTREAM_SLIDES_PAYLOAD], [RUNDOWN_PAYLOAD])
+  const cleanRaw = rawText.replace(/\[\s*(?:LIVESTREAM_SLIDES_PAYLOAD|RUNDOWN_PAYLOAD|LIVESTREAM_MENU_PAYLOAD|LS_DOC_4_PAYLOAD)\s*\]/gi, '').trim();
 
-  // Strip wrapping markdown code fences
-  text = text.replace(/^```(?:json|markdown)?\s*/i, '').replace(/\s*```$/i, '').trim();
-
+  // 1. Search all code fences for valid JSON array/object candidate
   let jsonCandidate = '';
-  const fenceMatch = rawText.match(/```(?:json|markdown)?\s*([\s\S]*?)\s*```/i);
-  const candidateText = (fenceMatch ? fenceMatch[1] : text).trim();
-
-  if ((candidateText.startsWith('{') && candidateText.endsWith('}')) || (candidateText.startsWith('[') && candidateText.endsWith(']'))) {
-    jsonCandidate = candidateText;
-  } else {
-    const firstBrace = candidateText.indexOf('{');
-    const firstBracket = candidateText.indexOf('[');
-    if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
-      const lastBrace = candidateText.lastIndexOf('}');
-      if (lastBrace > firstBrace) {
-        jsonCandidate = candidateText.substring(firstBrace, lastBrace + 1).trim();
-      }
-    }
-    if (!jsonCandidate && firstBracket !== -1) {
-      const lastBracket = candidateText.lastIndexOf(']');
-      if (lastBracket > firstBracket) {
-        jsonCandidate = candidateText.substring(firstBracket, lastBracket + 1).trim();
-      }
+  const fenceMatches = Array.from(cleanRaw.matchAll(/```(?:json|markdown)?\s*([\s\S]*?)\s*```/gi));
+  for (const match of fenceMatches) {
+    const inner = (match[1] || '').trim();
+    if ((inner.includes('{') && inner.includes('}')) || (inner.includes('[') && inner.includes(']'))) {
+      jsonCandidate = inner;
+      break;
     }
   }
 
+  // 2. Outermost bracket extraction fallback
   if (!jsonCandidate) {
-    jsonCandidate = candidateText;
+    if ((cleanRaw.startsWith('{') && cleanRaw.endsWith('}')) || (cleanRaw.startsWith('[') && cleanRaw.endsWith(']'))) {
+      jsonCandidate = cleanRaw;
+    } else {
+      const firstBracket = cleanRaw.indexOf('[');
+      const lastBracket = cleanRaw.lastIndexOf(']');
+      const firstBrace = cleanRaw.indexOf('{');
+      const lastBrace = cleanRaw.lastIndexOf('}');
+
+      let bracketSub = '';
+      if (firstBracket !== -1 && lastBracket > firstBracket) {
+        bracketSub = cleanRaw.substring(firstBracket, lastBracket + 1).trim();
+      }
+      let braceSub = '';
+      if (firstBrace !== -1 && lastBrace > firstBrace) {
+        braceSub = cleanRaw.substring(firstBrace, lastBrace + 1).trim();
+      }
+
+      if (bracketSub && (!braceSub || firstBracket < firstBrace)) {
+        jsonCandidate = bracketSub;
+      } else if (braceSub) {
+        jsonCandidate = braceSub;
+      } else {
+        jsonCandidate = cleanRaw;
+      }
+    }
   }
 
   // Trailing commas cleanup
@@ -577,12 +692,14 @@ export function normalizeLivestreamSlidePayload(
   };
 
   let parsedRaw: any;
+  const cleanStr = cleanJsonCandidate(jsonCandidate);
+
   try {
-    parsedRaw = JSON.parse(cleanJsonCandidate(jsonCandidate));
+    parsedRaw = JSON.parse(cleanStr);
   } catch (err) {
-    // Attempt relaxed recovery by repairing unescaped newlines/tabs inside double-quoted strings
+    // Stage 1: Repair unescaped newlines/tabs inside double-quoted strings
     try {
-      const sanitized = cleanJsonCandidate(jsonCandidate).replace(
+      const sanitized = cleanStr.replace(
         /"([^"\\]*(?:\\.[^"\\]*)*)"/g,
         (match, inner) =>
           '"' +
@@ -594,18 +711,35 @@ export function normalizeLivestreamSlidePayload(
       );
       parsedRaw = JSON.parse(sanitized);
     } catch (err2) {
-      // Attempt recovery by locating array substring
-      const startIdx = jsonCandidate.indexOf('[');
-      const endIdx = jsonCandidate.lastIndexOf(']');
-      if (startIdx !== -1 && endIdx > startIdx) {
-        try {
-          const arraySub = cleanJsonCandidate(jsonCandidate.substring(startIdx, endIdx + 1));
-          parsedRaw = JSON.parse(arraySub);
-        } catch (err3) {
-          throw new Error('Could not parse JSON payload. Please ensure you copied the complete JSON array output from LS-Doc 4.');
+      // Stage 2: Line-by-line inner unescaped quote repair
+      try {
+        const lines = cleanStr.split('\n');
+        const fixedLines = lines.map((line) => {
+          const m = line.match(/^(\s*"[a-zA-Z0-9_-]+"\s*:\s*)"(.*)"(\s*,?\s*)$/);
+          if (m) {
+            const prefix = m[1];
+            let val = m[2];
+            const suffix = m[3];
+            val = val.replace(/(?<!\\)"/g, '\\"');
+            return `${prefix}"${val}"${suffix}`;
+          }
+          return line;
+        });
+        parsedRaw = JSON.parse(fixedLines.join('\n'));
+      } catch (err3) {
+        // Stage 3: Attempt recovery by locating array substring
+        const startIdx = jsonCandidate.indexOf('[');
+        const endIdx = jsonCandidate.lastIndexOf(']');
+        if (startIdx !== -1 && endIdx > startIdx) {
+          try {
+            const arraySub = cleanJsonCandidate(jsonCandidate.substring(startIdx, endIdx + 1));
+            parsedRaw = JSON.parse(arraySub);
+          } catch (err4) {
+            throw new Error('Could not parse JSON payload. Please ensure you copied the complete JSON array output from LS-Doc 4.');
+          }
+        } else {
+          throw new Error('Invalid JSON format. Please verify the copied output from LS-Doc 4.');
         }
-      } else {
-        throw new Error('Invalid JSON format. Please verify the copied output from LS-Doc 4.');
       }
     }
   }
@@ -634,19 +768,41 @@ export function normalizeLivestreamSlidePayload(
 
   if (rawList.length === 0) return [];
 
-  const flowBlocks = getFlowBlocksForFormat(ctx?.format);
+  const rundownBlueprint = getFormatSlideRundownBlueprint(ctx?.format);
   const results: RundownItem[] = [];
 
   rawList.forEach((item: any, idx: number) => {
     if (!item || typeof item !== 'object') return;
 
+    const bpSlot = rundownBlueprint[idx];
+
     // Resolve defBlockId canonically
     const rawBlockId = item.defBlockId || item.blockId || item.id?.split('-')?.[1] || item.type;
-    const defBlockId = canonicalizeDefBlockId(rawBlockId, idx, flowBlocks);
-    const def = DEF_BLOCK_DEFINITIONS[defBlockId];
+    let defBlockId = '';
+    if (rawBlockId) {
+      defBlockId = canonicalizeDefBlockId(rawBlockId);
+    }
+    const isExplicitAnchor = Boolean(rawBlockId && String(rawBlockId).toLowerCase().match(/(?:anchor|tension|crisis|snapshot)/));
+    if ((!rawBlockId || (defBlockId === 'anchor_tension' && !isExplicitAnchor)) && bpSlot) {
+      defBlockId = bpSlot.defBlockId;
+    }
+    if (!defBlockId) {
+      defBlockId = bpSlot?.defBlockId || 'anchor_tension';
+    }
 
-    const act: 'OPEN' | 'MEAT' | 'CLOSE' = item.act || def?.act || (idx < 3 ? 'OPEN' : idx > rawList.length - 4 ? 'CLOSE' : 'MEAT');
+    const def = DEF_BLOCK_DEFINITIONS[defBlockId];
+    const act: 'OPEN' | 'MEAT' | 'CLOSE' = item.act || (bpSlot && bpSlot.defBlockId === defBlockId ? bpSlot.act : undefined) || def?.act || (idx < 3 ? 'OPEN' : idx > rawList.length - 4 ? 'CLOSE' : 'MEAT');
     const isJob = defBlockId === 'talent_spotlight' || item.sourceType === 'job' || Boolean(item.originalContent?.jobTitle) || Boolean(item.jobTitle);
+
+    const slideIndex = item.slideIndex && item.slideIndex <= (def?.subSlideTemplates?.length || 5)
+      ? item.slideIndex
+      : (bpSlot && bpSlot.defBlockId === defBlockId ? bpSlot.slideIndex : 1);
+
+    const slideCount = item.slideCount && item.slideCount >= slideIndex
+      ? item.slideCount
+      : (bpSlot && bpSlot.defBlockId === defBlockId ? bpSlot.slideCount : (def?.subSlideTemplates?.length || 1));
+
+    const defBlockLabel = item.defBlockLabel || (bpSlot && bpSlot.defBlockId === defBlockId ? bpSlot.defBlockLabel : (def ? `Block ${def.blockNumber}: ${def.name}` : `Block ${idx + 1}`));
 
     // Parse stringified originalContent if needed
     let rawContent = item.originalContent;
@@ -851,9 +1007,9 @@ export function normalizeLivestreamSlidePayload(
       id: item.id || `def-${defBlockId}-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 6)}`,
       sourceType: isJob ? 'job' : 'def_block',
       defBlockId,
-      defBlockLabel: item.defBlockLabel || (def ? `Block ${def.blockNumber}: ${def.name}` : `Block ${idx + 1}`),
-      slideIndex: item.slideIndex || (idx + 1),
-      slideCount: item.slideCount || 1,
+      defBlockLabel,
+      slideIndex,
+      slideCount,
       act,
       originalBlockType: blockType,
       originalContent,

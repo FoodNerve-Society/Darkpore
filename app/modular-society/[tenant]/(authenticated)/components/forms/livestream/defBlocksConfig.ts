@@ -459,6 +459,7 @@ export const LIVESTREAM_TYPE_FLOWS: Record<string, string[]> = {
     'boundary_test',
     'preempt_objections',
     'forked_close',
+    'talent_spotlight',
   ],
   talent_spotlight: [
     'anchor_tension',

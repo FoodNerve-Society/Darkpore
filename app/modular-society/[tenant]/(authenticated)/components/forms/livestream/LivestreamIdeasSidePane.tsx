@@ -34,6 +34,7 @@ import { PromptChecklistItem } from '@/components/prompts/PromptChecklistItem';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePromptAssistant } from '@/context/PromptAssistantContext';
 import { DEF_BLOCK_DEFINITIONS } from './defBlocksConfig';
+import { canonicalizeDefBlockId } from '@/lib/config/livestreamMasterPrompts';
 
 export interface LivestreamRundownSegment {
   time: string;
@@ -67,6 +68,7 @@ interface LivestreamIdeasSidePaneProps {
   hubTitle?: string;
   hubColor?: string;
   currentCategory?: string;
+  currentTimeframe?: 'past' | 'present' | 'future';
   guidingArticles?: Array<{ id: string; title: string; description?: string; [key: string]: any }>;
   guidingJobs?: Array<{ id: string; title: string; compensationOrTarget?: string; organizationChallenges?: string; [key: string]: any }>;
   guidingListings?: Array<{ id: string; title: string; [key: string]: any }>;
@@ -109,20 +111,72 @@ function parseLivestreamPayload(rawText: string, fallbackHub: string, fallbackCa
   ];
 
   // ── DETECTION 0: JSON PAYLOAD (Raw or wrapped in markdown code fence) ──
+  // 1. Strip top-level delimiter tags if present (e.g. [LIVESTREAM_MENU_PAYLOAD])
+  const cleanRaw = rawText.replace(/\[\s*(?:LIVESTREAM_MENU_PAYLOAD|LIVESTREAM_BLUEPRINTS|LS_DOC_1C_PAYLOAD)\s*\]/gi, '').trim();
+
+  // 2. Extract content from code fence if present
+  const fenceMatch = cleanRaw.match(/```(?:json|markdown)?\s*([\s\S]*?)\s*```/i);
+  const candidateText = (fenceMatch ? fenceMatch[1] : cleanRaw).trim();
+
   let jsonStringCandidate = '';
-  const fenceMatch = rawText.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
-  if (fenceMatch && (fenceMatch[1].trim().startsWith('[') || fenceMatch[1].trim().startsWith('{'))) {
-    jsonStringCandidate = fenceMatch[1].trim();
+  if ((candidateText.startsWith('[') && candidateText.endsWith(']')) || (candidateText.startsWith('{') && candidateText.endsWith('}'))) {
+    jsonStringCandidate = candidateText;
   } else {
-    const jsonMatch = text.match(/(\[[\s\S]*\]|\{[\s\S]*\})/);
-    if (jsonMatch) {
-      jsonStringCandidate = jsonMatch[0].trim();
+    // Locate outermost array or object
+    const firstBracket = candidateText.indexOf('[');
+    const firstBrace = candidateText.indexOf('{');
+    if (firstBracket !== -1 && (firstBrace === -1 || firstBracket < firstBrace)) {
+      const lastBracket = candidateText.lastIndexOf(']');
+      if (lastBracket > firstBracket) {
+        jsonStringCandidate = candidateText.substring(firstBracket, lastBracket + 1).trim();
+      }
+    } else if (firstBrace !== -1) {
+      const lastBrace = candidateText.lastIndexOf('}');
+      if (lastBrace > firstBrace) {
+        jsonStringCandidate = candidateText.substring(firstBrace, lastBrace + 1).trim();
+      }
     }
   }
 
+  if (!jsonStringCandidate) {
+    jsonStringCandidate = candidateText;
+  }
+
+  // Trailing commas cleanup helper
+  const cleanJsonCandidate = (candidate: string) => {
+    return candidate.replace(/,\s*([\]}])/g, '$1');
+  };
+
   if (jsonStringCandidate) {
     try {
-      const parsed = JSON.parse(jsonStringCandidate);
+      let parsed: any;
+      try {
+        parsed = JSON.parse(cleanJsonCandidate(jsonStringCandidate));
+      } catch (err1) {
+        // Attempt relaxed recovery by repairing unescaped newlines/tabs inside double-quoted strings
+        try {
+          const sanitized = cleanJsonCandidate(jsonStringCandidate).replace(
+            /"([^"\\]*(?:\\.[^"\\]*)*)"/g,
+            (match, inner) =>
+              '"' +
+              inner
+                .replace(/\n/g, '\\n')
+                .replace(/\r/g, '\\r')
+                .replace(/\t/g, '\\t') +
+              '"'
+          );
+          parsed = JSON.parse(sanitized);
+        } catch (err2) {
+          const startIdx = jsonStringCandidate.indexOf('[');
+          const endIdx = jsonStringCandidate.lastIndexOf(']');
+          if (startIdx !== -1 && endIdx > startIdx) {
+            parsed = JSON.parse(cleanJsonCandidate(jsonStringCandidate.substring(startIdx, endIdx + 1)));
+          } else {
+            throw err2;
+          }
+        }
+      }
+
       let items: any[] = [];
       if (Array.isArray(parsed)) {
         items = parsed;
@@ -132,6 +186,8 @@ function parseLivestreamPayload(rawText: string, fallbackHub: string, fallbackCa
         else if (Array.isArray(parsed.pitches)) items = parsed.pitches;
         else if (Array.isArray(parsed.payload)) items = parsed.payload;
         else if (Array.isArray(parsed.livestreams)) items = parsed.livestreams;
+        else if (Array.isArray(parsed.menu)) items = parsed.menu;
+        else if (Array.isArray(parsed.items)) items = parsed.items;
         else if (parsed.title || parsed.blocks || parsed.format) {
           items = [parsed];
         }
@@ -157,49 +213,23 @@ function parseLivestreamPayload(rawText: string, fallbackHub: string, fallbackCa
           else if (rawFmt.includes('debate') || rawFmt.includes('panel')) parsedFormat = 'panel_debate';
           else parsedFormat = 'industry_teardown';
 
-          // Extract blocks
+          // Extract blocks with canonical block IDs
           const customBlockDescriptions: Record<string, string> = {};
           const rawBlocks = item.blocks || item.customBlockDescriptions || {};
           if (typeof rawBlocks === 'object' && !Array.isArray(rawBlocks)) {
             Object.entries(rawBlocks).forEach(([key, val]) => {
               if (typeof val === 'string' && val.trim()) {
-                const norm = key.toLowerCase().replace(/[^a-z0-9_]+/g, '_');
-                let blockKey = norm;
-                if (norm.includes('tension') || norm.includes('anchor')) blockKey = 'anchor_tension';
-                else if (norm.includes('reframe') || norm.includes('question')) blockKey = 'reframe_question';
-                else if (norm.includes('funnel') || norm.includes('diagnostic')) blockKey = 'funnel_system';
-                else if (norm.includes('ideal') || norm.includes('feasible') || norm.includes('disconnect')) blockKey = 'ideal_vs_feasible';
-                else if (norm.includes('burden') || norm.includes('loss') || norm.includes('bleed')) blockKey = 'scaled_burden';
-                else if (norm.includes('power') || norm.includes('decider') || norm.includes('enforcer')) blockKey = 'power_map';
-                else if (norm.includes('response') || norm.includes('audit')) blockKey = 'response_audit';
-                else if (norm.includes('boundary') || norm.includes('gateway') || norm.includes('kpi')) blockKey = 'boundary_test';
-                else if (norm.includes('preempt') || norm.includes('objection') || norm.includes('skeptic')) blockKey = 'preempt_objections';
-                else if (norm.includes('return') || norm.includes('case')) blockKey = 'return_to_case';
-                else if (norm.includes('fork') || norm.includes('path') || norm.includes('close')) blockKey = 'forked_close';
-                else if (norm.includes('talent') || norm.includes('spotlight') || norm.includes('deal') || norm.includes('cta')) blockKey = 'talent_spotlight';
-                customBlockDescriptions[blockKey] = val.trim();
+                const canonicalKey = canonicalizeDefBlockId(key);
+                customBlockDescriptions[canonicalKey] = val.trim();
               }
             });
           } else if (Array.isArray(rawBlocks)) {
             rawBlocks.forEach((b: any) => {
-              const bName = b.name || b.role || b.title || '';
-              const bDesc = b.description || b.desc || '';
-              if (bName && bDesc) {
-                const norm = bName.toLowerCase().replace(/[^a-z0-9_]+/g, '_');
-                let blockKey = norm;
-                if (norm.includes('tension')) blockKey = 'anchor_tension';
-                else if (norm.includes('reframe')) blockKey = 'reframe_question';
-                else if (norm.includes('funnel')) blockKey = 'funnel_system';
-                else if (norm.includes('ideal')) blockKey = 'ideal_vs_feasible';
-                else if (norm.includes('burden')) blockKey = 'scaled_burden';
-                else if (norm.includes('power')) blockKey = 'power_map';
-                else if (norm.includes('response')) blockKey = 'response_audit';
-                else if (norm.includes('boundary')) blockKey = 'boundary_test';
-                else if (norm.includes('preempt')) blockKey = 'preempt_objections';
-                else if (norm.includes('return')) blockKey = 'return_to_case';
-                else if (norm.includes('fork')) blockKey = 'forked_close';
-                else if (norm.includes('talent')) blockKey = 'talent_spotlight';
-                customBlockDescriptions[blockKey] = bDesc.trim();
+              const bName = b.name || b.role || b.title || b.blockId || b.id || '';
+              const bDesc = b.description || b.desc || b.customDescription || '';
+              if (bName && typeof bDesc === 'string' && bDesc.trim()) {
+                const canonicalKey = canonicalizeDefBlockId(bName);
+                customBlockDescriptions[canonicalKey] = bDesc.trim();
               }
             });
           }
@@ -587,6 +617,7 @@ export default function LivestreamIdeasSidePane({
   hubTitle = 'Production & Capital',
   hubColor = '#10b981',
   currentCategory = 'capital',
+  currentTimeframe = 'present',
   guidingArticles = [],
   guidingJobs = [],
   guidingListings = [],
@@ -898,12 +929,14 @@ You are the Senior Broadcast Architect and Data Ingestor for Food Nerve Society 
 - **Zero Synthesis Rule:** Do NOT attempt to connect the articles together, find commonalities, or build a "bridge" between the problems and the solutions yet. Your job is pure, isolated, deep extraction for each asset provided.
 - **Elasticity:** You must process every single item provided, whether there is 1 article or 5, and 1 CTA or 5.
 - **Tone:** Highly analytical, strict third-person. Use hard verbs.
+- **Grounded, Plain-English Guardrails:** Strictly avoid high-falutin corporate buzzwords and abstract jargon (e.g. "synergy", "paradigm shift", "leverage", "ecosystem alignment", "transformative paradigms"). Express every finding in plain-English, authentic field agribusiness terms (tonnage, spoilage rates, corridor haulage, jetty delays, off-take contracts, farmgate pricing).
 
-**[INPUT PAYLOAD DEFINITION]**
+**[INPUT PAYLOAD DEFINITION & METADATA]**
 
 \`\`\`
-Broadcast Hub & Category: ${hubTitle} | ${currentCategory}
-Livestream Timeframe: Present
+Broadcast Hub & Pillar: ${hubTitle}
+Strategic Category: ${currentCategory.toUpperCase()}
+Livestream Timeframe / Era: ${(currentTimeframe || 'present').toUpperCase()} ERA
 [ANCHOR_ARTICLE_JSON_ARRAY]: 
 ${articleJsonPayload}
 
@@ -941,7 +974,7 @@ Output your entire response inside this single, clean Markdown block:
 \`\`\`markdown
 # [LS_ASSET_INVENTORY]
 
-**Broadcast Context:** Hub: ${hubTitle} | Category: ${currentCategory} | Timeframe: Present
+**Broadcast Context:** Hub: ${hubTitle} | Category: ${currentCategory.toUpperCase()} | Timeframe: ${(currentTimeframe || 'present').toUpperCase()} ERA
 
 ### PART 1: The Article Dossiers
 *(Generate a dossier for EACH article provided in the payload)*
@@ -973,7 +1006,7 @@ Output your entire response inside this single, clean Markdown block:
 #### 💼 CTA 2: [Extracted Title] *(If present)*
 *   [Repeat structure...]
 \`\`\``;
-  }, [hubTitle, currentCategory, articleJsonPayload, ecosystemJsonPayload, currentMonthYear]);
+  }, [hubTitle, currentCategory, currentTimeframe, articleJsonPayload, ecosystemJsonPayload, currentMonthYear]);
 
   const compiledPrompt2 = useMemo(() => {
     return `### 📄 LS-DOCUMENT 1b: THE PATTERN & INTERSECTION MAPPING (MASTER PROMPT)
@@ -984,11 +1017,14 @@ You are a Senior Intelligence Analyst and Debate Architect for Food Nerve Societ
 - **Zero Broadcasting Strategy Yet:** Do not write livestream pitches or format ideas. Focus purely on mapping how the information interacts.
 - **Deep Extraction Rule:** Do not provide a single sentence per section. You must provide an extended, highly detailed list of insights (3-4 bullet points minimum) for each analytical category to give the production team deep material to work with.
 - **Tone:** Highly analytical, strict third-person, brutal honesty.
+- **Grounded, Plain-English Guardrails:** Strictly avoid high-falutin corporate buzzwords and abstract jargon (e.g. "synergy", "paradigm shift", "leverage", "ecosystem alignment"). Use authentic, plain-English field agribusiness terms (tonnage, spoilage rates, corridor haulage, jetty delays, off-take contracts, informal toll checkpoints, bankable collateral).
 
-**[INPUT PAYLOAD DEFINITION]**
+**[INPUT PAYLOAD DEFINITION & METADATA]**
 
 \`\`\`
-Broadcast Hub & Category: ${hubTitle} | ${currentCategory}
+Broadcast Hub & Pillar: ${hubTitle}
+Strategic Category: ${currentCategory.toUpperCase()}
+Livestream Timeframe / Era: ${(currentTimeframe || 'present').toUpperCase()} ERA
 [LS_ASSET_INVENTORY]: 
 Please analyze the complete structured [LS_ASSET_INVENTORY] generated in Step 1 above within this conversation session.
 \`\`\`
@@ -1024,7 +1060,7 @@ Output your entire response inside this single, clean Markdown block:
 \`\`\`markdown
 # [LS_THE_SMEAR_MATRIX]
 
-**Broadcast Context:** Derived from [LS_ASSET_INVENTORY]
+**Broadcast Context:** Derived from [LS_ASSET_INVENTORY] | Hub: ${hubTitle} | Category: ${currentCategory.toUpperCase()} | Timeframe: ${(currentTimeframe || 'present').toUpperCase()} ERA
 
 ### 1. The Commonalities (The Core Through-lines)
 *(List 3-4 detailed analytical insights where the articles and CTAs perfectly intersect)*
@@ -1051,7 +1087,7 @@ Output your entire response inside this single, clean Markdown block:
 *   **[Profiteer/Cartel Identification]:** [2-3 sentences explicitly naming the actors who benefit from the combined problems persisting across these assets, and how they extract their margin].
 *   **[Profiteer/Cartel Identification]:** [2-3 sentences detailing...].
 \`\`\``;
-  }, [hubTitle, currentCategory, currentMonthYear, currentYear, futureHorizonYear]);
+  }, [hubTitle, currentCategory, currentTimeframe, currentMonthYear, currentYear, futureHorizonYear]);
 
   const compiledPrompt3 = useMemo(() => {
     return `### 📄 LS-DOCUMENT 1c: THE ANGLES OF ATTACK & BROADCAST SYNTHESIZER (MASTER PROMPT)
@@ -1059,14 +1095,16 @@ Output your entire response inside this single, clean Markdown block:
 **[SYSTEM PERSONA & SYNTHESIS CONSTRAINTS]**
 You are the Executive Producer and Showrunner for Food Nerve Society in ${currentMonthYear}. Your ONLY job is to take the raw inventory and the analytical "Smear" matrices, and synthesize them into 4 distinct, high-retention Livestream Pitches.
 
-- **Tone & Plain-English Rule:** Strict 8th-grade plain English. Zero high-sounding macroeconomic jargon (do NOT use words like "macroeconomic hegemony", "synthesizing fiscal apparatus", "transformative paradigms"). Write in simple, hard verbs and active voice.
-- **Physical Grounding:** Every single pitch must cite concrete ground reality: a specific commodity, real corridor locations, actual naira costs or lost amounts, and real field actors (farmers, truckers, union collectors, processors).
+- **Grounded, Plain-English Guardrails:** Strict 8th-grade plain English. Strictly avoid high-falutin corporate/consultant buzzwords (do NOT use words like "synergy", "paradigm shift", "leverage", "ecosystem alignment", "macroeconomic hegemony", "synthesizing fiscal apparatus", "transformative paradigms"). Write in simple, hard verbs and active voice.
+- **Physical Grounding & Field Reality:** Every single pitch must cite concrete ground reality: a specific commodity, real corridor locations (e.g. Kaduna, Kano, Mile 12, Ibadan, Jebba, Apapa), authentic field agribusiness terms (tonnage, spoilage rates, corridor haulage, jetty delays, off-take contracts, farmgate pricing), actual naira costs or lost amounts, and real field actors (farmers, truckers, union collectors, processors).
 - **The DEF Rule:** Every pitch MUST obey the Determinant Engagement Framework presentation blocks from start to finish.
 
-**[INPUT PAYLOAD DEFINITION]**
+**[INPUT PAYLOAD DEFINITION & METADATA]**
 
 \`\`\`
-Hub Title & Category: ${hubTitle} | ${currentCategory}
+Broadcast Hub & Pillar: ${hubTitle}
+Strategic Category: ${currentCategory.toUpperCase()}
+Livestream Timeframe / Era: ${(currentTimeframe || 'present').toUpperCase()} ERA
 Context: Synthesize the structured [LS_ASSET_INVENTORY] and [LS_THE_SMEAR_MATRIX] generated in Step 1 and Step 2 above within this conversation session.
 \`\`\`
 
@@ -1094,8 +1132,10 @@ For each block, write a concrete 1-2 sentence plain-English description of what 
 
 #### OUTPUT FORMAT (LS-DOC 1c STRICT JSON ARRAY)
 
-Output your entire response inside a single, strictly valid JSON array wrapped in a markdown code block:
+Output your entire response under the \`[LIVESTREAM_MENU_PAYLOAD]\` tag containing a single, strictly valid JSON array wrapped in a markdown code block:
 
+\`\`\`markdown
+[LIVESTREAM_MENU_PAYLOAD]
 \`\`\`json
 [
   {
@@ -1103,6 +1143,7 @@ Output your entire response inside a single, strictly valid JSON array wrapped i
     "title": "Punchy, Action-Spiky Title targeting real ground reality",
     "format": "industry_teardown",
     "timeframe": "present",
+    "category": "${currentCategory}",
     "targetAudience": "Specific Persona or Field Operator",
     "description": "Concrete 1-2 sentence plain-English summary grounding the core friction and operational breakdown.",
     "hook": "Sharp field question or killer stat breaking consensus.",
@@ -1125,6 +1166,7 @@ Output your entire response inside a single, strictly valid JSON array wrapped i
     "title": "Punchy Title targeting the secondary actor",
     "format": "talent_spotlight",
     "timeframe": "present",
+    "category": "${currentCategory}",
     "targetAudience": "Specific Secondary Actor or Operator",
     "description": "Concrete 1-2 sentence summary of why this role unlocks the value chain.",
     "hook": "Sharp field question highlighting the hidden operator bottleneck.",
@@ -1143,6 +1185,7 @@ Output your entire response inside a single, strictly valid JSON array wrapped i
     "title": "Punchy Title bridging today's pain to tomorrow's breakthrough",
     "format": "industry_teardown",
     "timeframe": "future",
+    "category": "${currentCategory}",
     "targetAudience": "Forward-looking Agribusinesses & Capital Allocators",
     "description": "Concrete 1-2 sentence summary bridging current crisis to 2030 tech architecture.",
     "hook": "Sharp field question exposing why legacy equipment guarantees failure.",
@@ -1165,6 +1208,7 @@ Output your entire response inside a single, strictly valid JSON array wrapped i
     "title": "Punchy Title highlighting the central commercial clash",
     "format": "panel_debate",
     "timeframe": "present",
+    "category": "${currentCategory}",
     "targetAudience": "Commercial Off-Takers, Policymakers, & Trade Associations",
     "description": "Concrete 1-2 sentence summary framing the high-stakes clash between policy and field reality.",
     "hook": "Controversial question forcing operators and buyers to take an immediate stand.",
@@ -1183,8 +1227,8 @@ Output your entire response inside a single, strictly valid JSON array wrapped i
   }
 ]
 \`\`\`
-CRITICAL CONSTRAINT: Do NOT include any introductory or concluding text outside the JSON code block. Output ONLY the strictly valid JSON array.`;
-  }, [hubTitle, currentCategory, currentMonthYear]);
+CRITICAL CONSTRAINT: Do NOT include introductory chatter. Output the [LIVESTREAM_MENU_PAYLOAD] header tag followed by the strictly valid JSON array.`;
+  }, [hubTitle, currentCategory, currentTimeframe, currentMonthYear]);
 
   const handleApplyBlueprint = (blueprint: LivestreamIdeaOption) => {
     if (onApplyIdea) {

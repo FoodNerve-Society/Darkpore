@@ -3278,6 +3278,7 @@ export default function CreateLivestreamForm({
         hubTitle={hubTitle}
         hubColor={hubColor}
         currentCategory={category}
+        currentTimeframe={timeframe as any}
         guidingArticles={guidingArticles}
         guidingJobs={guidingJobs}
         guidingListings={guidingListings}
