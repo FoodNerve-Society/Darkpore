@@ -3275,18 +3275,16 @@ export default function CreateLivestreamForm({
         guidingListings={guidingListings}
         guidingCampaigns={guidingCampaigns}
         onApplyIdea={(idea) => {
-          handleSelectBlueprint(idea.blueprint || idea, true);
+          handleSelectBlueprint(idea.blueprint || idea, false);
         }}
         onIngestBlueprints={(blueprints) => {
           setIngestedBlueprints(blueprints);
           setDeckActiveIndex(0);
           setIsCardFlipped(false);
           setIsIdeasCardFlipped(false);
-          if (blueprints && blueprints.length > 0) {
-            handleSelectBlueprint(blueprints[0], true);
-          }
+          setStep(1);
           setTimeout(() => {
-            scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+            carouselRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }, 150);
         }}
       />
