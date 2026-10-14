@@ -30,6 +30,7 @@ import PremiumTextField from '@/components/PremiumTextField';
 import PremiumMarkdownEditor from '@/components/PremiumMarkdownEditor';
 import { PromptTerminalBox } from '@/components/prompts/PromptTerminalBox';
 import { PromptFastIngestBox } from '@/components/prompts/PromptFastIngestBox';
+import { PromptChecklistItem } from '@/components/prompts/PromptChecklistItem';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePromptAssistant } from '@/context/PromptAssistantContext';
 
@@ -1558,6 +1559,13 @@ Output your entire response inside this single, clean Markdown block:
               setChecklist(prev => ({ ...prev, chk1_copy: true }));
             }}
           />
+          <PromptChecklistItem
+            id="chk1_copy"
+            text="Step 1 Prompt copied — ready to run in ChatGPT, Claude, or Gemini"
+            checked={!!checklist['chk1_copy']}
+            onToggle={toggleChecklistItem}
+            colorTheme="#3b82f6"
+          />
         </Box>
 
         <Box sx={{ borderBottom: '1px solid rgba(0,0,0,0.08)', my: 0.5 }} />
@@ -1589,6 +1597,13 @@ Output your entire response inside this single, clean Markdown block:
             onCopy={() => {
               setChecklist(prev => ({ ...prev, chk2_copy: true }));
             }}
+          />
+          <PromptChecklistItem
+            id="chk2_copy"
+            text="Step 2 Prompt copied — paste into the SAME chat session"
+            checked={!!checklist['chk2_copy']}
+            onToggle={toggleChecklistItem}
+            colorTheme="#f59e0b"
           />
         </Box>
 
@@ -1633,6 +1648,13 @@ Output your entire response inside this single, clean Markdown block:
             onCopy={() => {
               setChecklist(prev => ({ ...prev, chk3_copy: true }));
             }}
+          />
+          <PromptChecklistItem
+            id="chk3_copy"
+            text="Step 3 Prompt copied — generate [LIVESTREAM_MENU_PAYLOAD]"
+            checked={!!checklist['chk3_copy']}
+            onToggle={toggleChecklistItem}
+            colorTheme="#a855f7"
           />
         </Box>
 
@@ -1690,6 +1712,13 @@ Output your entire response inside this single, clean Markdown block:
             liveBlockCount={liveParsedBriefs.length}
             expectedBlockCount={4}
             buttonLabel={`⚡ Ingest & Apply ${liveParsedBriefs.length > 0 ? liveParsedBriefs.length : 4} Broadcast Blueprints to Studio`}
+          />
+          <PromptChecklistItem
+            id="chk4_ingest"
+            text="Markdown payload detected & applied to Studio Carousel Deck"
+            checked={liveParsedBriefs.length >= 2 || !!checklist['chk4_ingest']}
+            onToggle={toggleChecklistItem}
+            colorTheme="#059669"
           />
         </Box>
 

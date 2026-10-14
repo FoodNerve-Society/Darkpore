@@ -2042,10 +2042,6 @@ export default function CreateLivestreamForm({
                     return acc + (def?.subSlideTemplates?.length || 1);
                   }, 0);
 
-                  const pillars = (appliedBlueprint?.timelinePillars && appliedBlueprint.timelinePillars.length > 0)
-                    ? appliedBlueprint.timelinePillars
-                    : (LIVESTREAM_FRAMEWORKS[timeframe] || LIVESTREAM_FRAMEWORKS.present);
-
                   return (
                     <Box
                       sx={{
@@ -2091,8 +2087,8 @@ export default function CreateLivestreamForm({
                             </Box>
                             <Typography sx={{ color: '#64748b', fontSize: '0.92rem', maxWidth: 650, lineHeight: 1.5 }}>
                               {appliedBlueprint?.title
-                                ? `Curated slide flow for "${appliedBlueprint.title}". Acts 1, 2, and 3 structure the narrative flow, guiding the generation of your broadcast slide array below.`
-                                : `Optimal presentation framework for a ${timeframe} focused broadcast. Acts define the narrative trajectory, guiding the DEF slide array below.`}
+                                ? `Curated slide flow for "${appliedBlueprint.title}". Recommended ${suggestedBlockIds.length} blocks to structure your broadcast presentation.`
+                                : `Optimal presentation framework for a ${timeframe} focused broadcast. Recommended ${suggestedBlockIds.length} blocks to structure your presentation.`}
                             </Typography>
                           </Box>
                         </Box>
@@ -2109,138 +2105,227 @@ export default function CreateLivestreamForm({
                         />
                       </Box>
 
-                      {/* Section 1: Narrative Acts Guidance (Informational Blueprint) */}
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                        <Typography sx={{ fontSize: '0.74rem', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                          Strategic Narrative Phases (Structuring Blueprint)
-                        </Typography>
-                        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 2 }}>
-                          {pillars.slice(0, 3).map((p: any, idx: number) => (
-                            <Box
-                              key={idx}
-                              sx={{
-                                p: 2,
-                                borderRadius: '16px',
-                                bgcolor: '#f8fafc',
-                                border: '1.5px solid #e2e8f0',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: 0.75,
-                              }}
-                            >
-                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <Chip
-                                  label={`Act ${idx + 1}`}
-                                  size="small"
-                                  sx={{ bgcolor: '#0f172a', color: '#ffffff', fontWeight: 800, fontSize: '0.68rem', height: 20 }}
-                                />
-                                <Typography sx={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 700 }}>
-                                  {p.time || '15m'}
-                                </Typography>
-                              </Box>
-                              <Typography sx={{ fontWeight: 800, fontSize: '0.92rem', color: '#0f172a' }}>
-                                {p.role || p.title || `Phase ${idx + 1}`}
-                              </Typography>
-                              <Typography sx={{ fontSize: '0.78rem', color: '#64748b', lineHeight: 1.45 }}>
-                                {p.desc || p.description || ''}
-                              </Typography>
-                            </Box>
-                          ))}
-                        </Box>
-                      </Box>
+                      {/* Live Reactive Timeline Preview (List of Broadcast Blocks) */}
+                      <Box sx={{ position: 'relative', pl: { xs: 3, md: 5 }, width: '100%', mx: 'auto', mt: 1 }}>
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            left: { xs: 12, md: 20 },
+                            top: 14,
+                            bottom: 14,
+                            width: 3,
+                            background: `linear-gradient(180deg, ${era.color} 0%, ${alpha(era.color, 0.1)} 100%)`,
+                            borderRadius: 2,
+                          }}
+                        />
 
-                      {/* Section 2: Suggested Broadcast Slides (DEF Slide Array to be Loaded) */}
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <Typography sx={{ fontSize: '0.74rem', fontWeight: 900, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                            Suggested Broadcast Slides (${suggestedBlockIds.length} DEF Blocks • ${totalSlides} Total Slides)
-                          </Typography>
-                          <Typography sx={{ fontSize: '0.74rem', color: '#94a3b8', fontWeight: 600 }}>
-                            Ready to load into rundown
-                          </Typography>
-                        </Box>
+                        {suggestedBlockIds.map((bId: string, idx: number) => {
+                          const def = DEF_BLOCK_DEFINITIONS[bId];
+                          if (!def) return null;
+                          const slideCount = def.subSlideTemplates?.length || 1;
+                          const color = def.themeColor || hubColor;
 
-                        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, gap: 1.5 }}>
-                          {suggestedBlockIds.map((bId: string, idx: number) => {
-                            const def = DEF_BLOCK_DEFINITIONS[bId];
-                            if (!def) return null;
-                            const slideCount = def.subSlideTemplates?.length || 1;
-                            return (
+                          return (
+                            <Box key={bId} sx={{ display: 'flex', alignItems: 'flex-start', mb: 2, position: 'relative' }}>
+                              {/* Numbered Node on Timeline */}
                               <Box
-                                key={bId}
                                 sx={{
-                                  p: 1.75,
-                                  borderRadius: '14px',
-                                  bgcolor: '#ffffff',
-                                  border: '1.5px solid #e2e8f0',
+                                  position: 'absolute',
+                                  left: { xs: -21.5, md: -33.5 },
+                                  width: 24,
+                                  height: 24,
+                                  borderRadius: '50%',
+                                  bgcolor: '#fff',
+                                  border: `3px solid ${color}`,
                                   display: 'flex',
                                   alignItems: 'center',
-                                  gap: 1.25,
-                                  boxShadow: '0 2px 6px rgba(15, 23, 42, 0.02)',
+                                  justifyContent: 'center',
+                                  mt: 1.5,
+                                  zIndex: 2,
+                                  boxShadow: `0 2px 8px ${alpha(color, 0.3)}`,
                                 }}
                               >
-                                <Box
-                                  sx={{
-                                    width: 28,
-                                    height: 28,
-                                    borderRadius: '8px',
-                                    bgcolor: alpha(def.themeColor || hubColor, 0.12),
-                                    color: def.themeColor || hubColor,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontWeight: 900,
-                                    fontSize: '0.74rem',
-                                    flexShrink: 0,
-                                  }}
-                                >
-                                  {idx + 1}
-                                </Box>
-                                <Box sx={{ minWidth: 0, flex: 1 }}>
-                                  <Typography sx={{ fontWeight: 800, fontSize: '0.82rem', color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                    {def.name}
-                                  </Typography>
-                                  <Typography sx={{ fontSize: '0.7rem', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                    {slideCount} {slideCount === 1 ? 'slide' : 'slides'} • {def.defaultDuration || '2m'}
-                                  </Typography>
-                                </Box>
+                                <Typography sx={{ fontSize: '0.7rem', fontWeight: 900, color: '#0f172a' }}>{idx + 1}</Typography>
                               </Box>
-                            );
-                          })}
-                        </Box>
+
+                              {/* Block Card */}
+                              <Paper
+                                elevation={0}
+                                sx={{
+                                  flex: 1,
+                                  p: 2.25,
+                                  borderRadius: '18px',
+                                  bgcolor: '#ffffff',
+                                  border: '1.5px solid #e2e8f0',
+                                  boxShadow: '0 2px 10px rgba(15, 23, 42, 0.03)',
+                                  transition: 'all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                                  '&:hover': {
+                                    transform: 'translateX(6px)',
+                                    borderColor: alpha(color, 0.5),
+                                    boxShadow: `0 8px 24px ${alpha(color, 0.12)}`,
+                                  },
+                                }}
+                              >
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5, flexWrap: 'wrap', gap: 1 }}>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                                    <Typography sx={{ fontWeight: 800, color: '#0f172a', fontSize: '0.98rem' }}>
+                                      {def.name}
+                                    </Typography>
+                                    <Chip
+                                      label={`${slideCount} ${slideCount === 1 ? 'slide' : 'slides'} • ${def.defaultDuration || '2m'}`}
+                                      size="small"
+                                      sx={{
+                                        height: 20,
+                                        fontSize: '0.68rem',
+                                        bgcolor: alpha(color, 0.12),
+                                        color: color,
+                                        fontWeight: 800,
+                                      }}
+                                    />
+                                  </Box>
+                                  <Typography sx={{ fontSize: '0.74rem', color: '#94a3b8', fontWeight: 700 }}>
+                                    {def.subtitle}
+                                  </Typography>
+                                </Box>
+                                <Typography sx={{ color: '#475569', fontSize: '0.84rem', lineHeight: 1.45 }}>
+                                  {def.description}
+                                </Typography>
+                              </Paper>
+                            </Box>
+                          );
+                        })}
                       </Box>
 
-                      {/* Primary Action Button */}
-                      <Box sx={{ pt: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                        <Button
-                          variant="contained"
-                          onClick={applyFramework}
-                          startIcon={<SparkleIcon sx={{ fontSize: '1.1rem !important' }} />}
+                      {/* ═══ BUILD WITH AI: START OR IGNORE CALL TO ACTION CARD ═══ */}
+                      <Paper
+                        elevation={0}
+                        sx={{
+                          p: { xs: 3, md: 3.75 },
+                          borderRadius: '28px',
+                          background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.96) 0%, rgba(30, 41, 59, 0.94) 100%)',
+                          backdropFilter: 'blur(24px)',
+                          border: '1.5px solid rgba(255, 255, 255, 0.12)',
+                          boxShadow: '0 24px 60px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
+                          display: 'flex',
+                          flexDirection: { xs: 'column', md: 'row' },
+                          alignItems: { xs: 'center', md: 'center' },
+                          justifyContent: 'space-between',
+                          gap: { xs: 2.5, md: 4 },
+                          position: 'relative',
+                          overflow: 'hidden',
+                          mt: 2,
+                          width: '100%',
+                        }}
+                      >
+                        {/* Ambient Radial Glow */}
+                        <Box
                           sx={{
-                            bgcolor: '#0f172a',
-                            color: '#ffffff',
-                            fontWeight: 900,
-                            px: 4.5,
-                            py: 1.5,
-                            borderRadius: '16px',
-                            fontSize: '0.98rem',
-                            letterSpacing: '0.01em',
-                            textTransform: 'none',
-                            boxShadow: '0 8px 24px rgba(15, 23, 42, 0.2)',
-                            transition: 'all 0.2s ease',
-                            '&:hover': {
-                              bgcolor: '#1e293b',
-                              transform: 'translateY(-2px)',
-                              boxShadow: '0 12px 32px rgba(15, 23, 42, 0.28)',
-                            },
+                            position: 'absolute',
+                            top: -40,
+                            right: -40,
+                            width: 200,
+                            height: 200,
+                            borderRadius: '50%',
+                            background: `radial-gradient(circle, ${alpha(era.color, 0.25)} 0%, transparent 70%)`,
+                            pointerEvents: 'none',
+                            filter: 'blur(20px)',
+                          }}
+                        />
+
+                        {/* Left Content */}
+                        <Box sx={{ flex: 1, textAlign: { xs: 'center', md: 'left' }, position: 'relative', zIndex: 1 }}>
+                          <Typography
+                            sx={{
+                              color: '#ffffff',
+                              fontWeight: 900,
+                              fontSize: { xs: '1.25rem', md: '1.4rem' },
+                              letterSpacing: '-0.025em',
+                              mb: 0.75,
+                              lineHeight: 1.2,
+                            }}
+                          >
+                            Build This Livestream with AI
+                          </Typography>
+                          <Typography
+                            sx={{
+                              color: 'rgba(255, 255, 255, 0.65)',
+                              fontSize: '0.9rem',
+                              lineHeight: 1.55,
+                              maxWidth: 500,
+                              fontWeight: 450,
+                            }}
+                          >
+                            Spend 1 minute to synthesize your broadcast blueprint with AI Assistant, or choose Ignore to load the framework directly.
+                          </Typography>
+                        </Box>
+
+                        {/* Right Action Buttons: Start & Ignore */}
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1.5,
+                            flexShrink: 0,
+                            flexWrap: 'wrap',
+                            justifyContent: 'center',
+                            position: 'relative',
+                            zIndex: 1,
                           }}
                         >
-                          Load Recommended Framework ({totalSlides} Broadcast Slides)
-                        </Button>
-                        <Typography sx={{ fontSize: '0.76rem', color: '#94a3b8', fontWeight: 600 }}>
-                          Populates your rundown with verified broadcast DEF slides. Fully customizable afterwards.
-                        </Typography>
-                      </Box>
+                          <Button
+                            variant="contained"
+                            onClick={() => {
+                              setIsIdeasDrawerOpen(true);
+                            }}
+                            startIcon={<SparkleIcon sx={{ fontSize: 18 }} />}
+                            sx={{
+                              bgcolor: era.color,
+                              color: '#fff',
+                              fontWeight: 900,
+                              px: 3.75,
+                              py: 1.35,
+                              borderRadius: '16px',
+                              fontSize: '0.95rem',
+                              textTransform: 'none',
+                              letterSpacing: '0.01em',
+                              boxShadow: `0 8px 24px ${alpha(era.color, 0.5)}`,
+                              transition: 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                              '&:hover': {
+                                bgcolor: alpha(era.color, 0.9),
+                                transform: 'translateY(-2px)',
+                                boxShadow: `0 12px 30px ${alpha(era.color, 0.65)}`,
+                              },
+                            }}
+                          >
+                            Start
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            onClick={applyFramework}
+                            sx={{
+                              borderColor: 'rgba(255, 255, 255, 0.2)',
+                              color: 'rgba(255, 255, 255, 0.9)',
+                              fontWeight: 800,
+                              px: 3.25,
+                              py: 1.35,
+                              borderRadius: '16px',
+                              fontSize: '0.95rem',
+                              textTransform: 'none',
+                              letterSpacing: '0.01em',
+                              backdropFilter: 'blur(10px)',
+                              bgcolor: 'rgba(255, 255, 255, 0.05)',
+                              transition: 'all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                              '&:hover': {
+                                borderColor: 'rgba(255, 255, 255, 0.4)',
+                                bgcolor: 'rgba(255, 255, 255, 0.1)',
+                                transform: 'translateY(-2px)',
+                              },
+                            }}
+                          >
+                            Ignore
+                          </Button>
+                        </Box>
+                      </Paper>
                     </Box>
                   );
                 })()}
