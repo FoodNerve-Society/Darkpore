@@ -26,6 +26,13 @@ async function deploy() {
       console.log("\nUncommitted changes detected. Committing...");
       execSync('git add .');
       execSync(`git commit -m "${commitMsg.replace(/"/g, '\\"')}"`);
+    } else {
+      // If working tree is clean but last commit contains [skip ci], create an explicit release commit so Vercel is never skipped
+      const lastCommitMsg = execSync('git log -1 --pretty=%B').toString();
+      if (lastCommitMsg.includes('[skip ci]') || lastCommitMsg.includes('[ci skip]')) {
+        console.log("\nLast commit had [skip ci]. Creating explicit release commit to trigger deployment...");
+        execSync(`git commit --allow-empty -m "${commitMsg.replace(/"/g, '\\"')}"`);
+      }
     }
 
     // 5. Detect current branch
