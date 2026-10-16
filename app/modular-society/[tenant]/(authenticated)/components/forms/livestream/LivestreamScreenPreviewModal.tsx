@@ -33,7 +33,15 @@ import {
   Laptop as DesktopIcon,
   PhoneIphone as MobileIcon,
   Opacity as TransparencyIcon,
+  Subtitles as TeleprompterIcon,
+  Flip as FlipIcon,
+  Edit as EditIcon,
+  Check as CheckIcon,
+  Tv as TvIcon,
+  Speed as SpeedIcon,
+  FormatSize as FormatSizeIcon,
 } from '@mui/icons-material';
+import { useMultiScreenPlacement, ScreenInfo } from './useMultiScreenPlacement';
 
 export interface LivestreamScreenPreviewModalProps {
   open: boolean;
@@ -70,23 +78,55 @@ export default function LivestreamScreenPreviewModal({
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [aspectRatio, setAspectRatio] = useState<SlideAspectRatio>('16:9');
   const [isTransparent, setIsTransparent] = useState(false);
+  const [localBlocks, setLocalBlocks] = useState<any[]>(rundownBlocks);
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const [prompterStatus, setPrompterStatus] = useState({
+    isPlaying: false,
+    scrollSpeed: 1.2,
+    fontSize: 44,
+    mirrorX: false,
+    mirrorY: false,
+  });
   const channelRef = useRef<BroadcastChannel | null>(null);
 
-  const totalSlides = rundownBlocks.length;
-  const currentItem = rundownBlocks[activeSlideIndex] || null;
-  const nextItem = activeSlideIndex < totalSlides - 1 ? rundownBlocks[activeSlideIndex + 1] : null;
+  const {
+    screens,
+    isMultiScreenExtended: isExtended,
+    permissionState,
+    newlyConnectedScreen,
+    dismissNewScreenAlert,
+    requestScreenAccess,
+    getWindowPlacementFeatures,
+  } = useMultiScreenPlacement(open);
+
+  useEffect(() => {
+    setLocalBlocks(rundownBlocks);
+  }, [rundownBlocks]);
+
+  const totalSlides = localBlocks.length;
+  const currentItem = localBlocks[activeSlideIndex] || null;
+  const nextItem = activeSlideIndex < totalSlides - 1 ? localBlocks[activeSlideIndex + 1] : null;
 
   // Broadcast and Cache Helper
-  const broadcastSync = (index: number, aspect = aspectRatio, transparent = isTransparent) => {
+  const broadcastSync = (
+    index: number,
+    aspect = aspectRatio,
+    transparent = isTransparent,
+    blocksOverride = localBlocks,
+    secOverride = timerSeconds,
+    runningOverride = isTimerRunning
+  ) => {
     try {
       const statePayload = {
         type: 'SYNC_STATE',
         activeSlideIndex: index,
-        rundownBlocks,
+        rundownBlocks: blocksOverride,
         title,
         hubColor,
         aspectRatio: aspect,
         isTransparent: transparent,
+        timerSeconds: secOverride,
+        isTimerRunning: runningOverride,
       };
 
       localStorage.setItem(STAGE_CACHE_KEY, JSON.stringify(statePayload));
@@ -97,6 +137,29 @@ export default function LivestreamScreenPreviewModal({
     } catch (e) {
       console.error('Error broadcasting state:', e);
     }
+  };
+
+  const sendPrompterCommand = (action: string, extra: Record<string, any> = {}) => {
+    try {
+      const payload = { type: 'PROMPTER_CONTROL', action, ...extra };
+      if (channelRef.current) {
+        channelRef.current.postMessage(payload);
+      } else {
+        const ch = new BroadcastChannel(SYNC_CHANNEL_NAME);
+        ch.postMessage(payload);
+        ch.close();
+      }
+    } catch (e) {
+      console.warn('Error sending prompter command:', e);
+    }
+  };
+
+  const handleUpdateSpeakerNotes = (newNotes: string) => {
+    const updated = localBlocks.map((b, idx) =>
+      idx === activeSlideIndex ? { ...b, speakerNotes: newNotes } : b
+    );
+    setLocalBlocks(updated);
+    broadcastSync(activeSlideIndex, aspectRatio, isTransparent, updated);
   };
 
   const handleToggleAspect = () => {
@@ -134,8 +197,19 @@ export default function LivestreamScreenPreviewModal({
         if (!data) return;
 
         if (data.type === 'REQUEST_STATE') {
-          // A stage window just opened and requested state
+          // A stage or teleprompter window just opened and requested state
           broadcastSync(activeSlideIndex);
+        } else if (data.type === 'SET_SLIDE_INDEX' && typeof data.index === 'number') {
+          setActiveSlideIndex(data.index);
+          broadcastSync(data.index);
+        } else if (data.type === 'PROMPTER_STATUS') {
+          setPrompterStatus({
+            isPlaying: Boolean(data.isPlaying),
+            scrollSpeed: typeof data.scrollSpeed === 'number' ? data.scrollSpeed : 1.2,
+            fontSize: typeof data.fontSize === 'number' ? data.fontSize : 44,
+            mirrorX: Boolean(data.mirrorX),
+            mirrorY: Boolean(data.mirrorY),
+          });
         } else if (data.type === 'NAVIGATE') {
           if (data.direction === 'next') {
             setActiveSlideIndex((prev) => {
@@ -163,14 +237,17 @@ export default function LivestreamScreenPreviewModal({
       channelRef.current?.close();
       channelRef.current = null;
     };
-  }, [open, activeSlideIndex, rundownBlocks, title, hubColor]);
+  }, [open, activeSlideIndex, localBlocks, title, hubColor, timerSeconds, isTimerRunning]);
 
   // Elapsed Timer Effect
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
     if (isTimerRunning) {
       interval = setInterval(() => {
-        setTimerSeconds((prev) => prev + 1);
+        setTimerSeconds((prev) => {
+          const nextSec = prev + 1;
+          return nextSec;
+        });
       }, 1000);
     }
     return () => {
@@ -182,6 +259,9 @@ export default function LivestreamScreenPreviewModal({
   useEffect(() => {
     if (!open) return;
     const handleKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+
       if (e.key === 'ArrowRight' || e.key === 'PageDown') {
         e.preventDefault();
         handleNext();
@@ -216,34 +296,85 @@ export default function LivestreamScreenPreviewModal({
     broadcastSync(idx);
   };
 
-  const handleLaunchStageWindow = (targetAspect?: SlideAspectRatio) => {
+  const handleLaunchStageWindow = async (targetAspect?: SlideAspectRatio, targetScreen?: ScreenInfo) => {
     const finalAspect = targetAspect || aspectRatio;
-    broadcastSync(activeSlideIndex);
-    // Auto-start elapsed timer when stage is launched
+    broadcastSync(activeSlideIndex, finalAspect, isTransparent, localBlocks, timerSeconds, true);
     setIsTimerRunning(true);
 
+    let activeScreens = screens;
+    if (isExtended && permissionState === 'prompt') {
+      activeScreens = await requestScreenAccess();
+    }
+
     const stageUrl = `/stage?aspect=${finalAspect}&transparent=${isTransparent}`;
+    const role = finalAspect === '9:16' ? 'mobile_stage' : 'desktop_stage';
     const windowName = finalAspect === '9:16' ? 'LivestreamStage_Mobile' : 'LivestreamStage_Desktop';
-    const features = finalAspect === '9:16'
-      ? 'width=520,height=920,menubar=no,toolbar=no,location=no,status=no,resizable=yes'
-      : 'width=1280,height=750,menubar=no,toolbar=no,location=no,status=no,resizable=yes';
+    const features = getWindowPlacementFeatures(role, {
+      customScreens: activeScreens,
+      targetScreen,
+    });
     window.open(stageUrl, windowName, features);
   };
 
-  const handleLaunchBothStages = () => {
-    broadcastSync(activeSlideIndex);
+  const handleLaunchTeleprompterWindow = async (targetScreen?: ScreenInfo) => {
+    broadcastSync(activeSlideIndex, aspectRatio, isTransparent, localBlocks, timerSeconds, true);
     setIsTimerRunning(true);
-    // Open Desktop 16:9 stage
+
+    let activeScreens = screens;
+    if (isExtended && permissionState === 'prompt') {
+      activeScreens = await requestScreenAccess();
+    }
+
+    const features = getWindowPlacementFeatures('teleprompter', {
+      customScreens: activeScreens,
+      targetScreen,
+    });
+    window.open('/stage/teleprompter', 'LivestreamStage_Teleprompter', features);
+    if (newlyConnectedScreen) {
+      dismissNewScreenAlert();
+    }
+  };
+
+  const handleLaunchFullStudioSuite = async () => {
+    broadcastSync(activeSlideIndex, aspectRatio, isTransparent, localBlocks, timerSeconds, true);
+    setIsTimerRunning(true);
+
+    let activeScreens = screens;
+    if (isExtended && permissionState === 'prompt') {
+      activeScreens = await requestScreenAccess();
+    }
+
+    // 1. Open Desktop 16:9 Stage in its designated monitor/coords
+    const desktopFeatures = getWindowPlacementFeatures('desktop_stage', {
+      customScreens: activeScreens,
+      suiteMode: true,
+    });
     window.open(
       `/stage?aspect=16:9&transparent=${isTransparent}`,
       'LivestreamStage_Desktop',
-      'width=1280,height=750,menubar=no,toolbar=no,location=no,status=no,resizable=yes'
+      desktopFeatures
     );
-    // Open Mobile 9:16 stage
+
+    // 2. Open Mobile 9:16 Stage in its designated monitor/coords
+    const mobileFeatures = getWindowPlacementFeatures('mobile_stage', {
+      customScreens: activeScreens,
+      suiteMode: true,
+    });
     window.open(
       `/stage?aspect=9:16&transparent=${isTransparent}`,
       'LivestreamStage_Mobile',
-      'width=520,height=920,menubar=no,toolbar=no,location=no,status=no,resizable=yes'
+      mobileFeatures
+    );
+
+    // 3. Open Dedicated Teleprompter Window in its designated monitor/coords
+    const prompterFeatures = getWindowPlacementFeatures('teleprompter', {
+      customScreens: activeScreens,
+      suiteMode: true,
+    });
+    window.open(
+      '/stage/teleprompter',
+      'LivestreamStage_Teleprompter',
+      prompterFeatures
     );
   };
 
@@ -298,7 +429,7 @@ export default function LivestreamScreenPreviewModal({
           zIndex: 10,
         }}
       >
-        {/* Left: Deck Branding */}
+        {/* Left: Deck Branding & Display Sensor */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Box
             sx={{
@@ -314,11 +445,48 @@ export default function LivestreamScreenPreviewModal({
             <LiveIcon sx={{ color: hubColor, fontSize: '1.25rem' }} />
           </Box>
           <Box>
-            <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', letterSpacing: '-0.01em', lineHeight: 1.2 }}>
-              Director&apos;s Deck
-            </Typography>
-            <Typography variant="body2" sx={{ color: '#64748b', fontSize: '0.78rem' }}>
-              Live stage cockpit & dual presentation controller
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', letterSpacing: '-0.01em', lineHeight: 1.2 }}>
+                Director&apos;s Deck
+              </Typography>
+              <Tooltip
+                title={
+                  screens.length > 1
+                    ? `${screens.length} displays mapped (${screens.map((s) => s.label).join(' • ')}). Windows will auto-route to their designated monitors.`
+                    : isExtended
+                    ? 'External display detected! Click to authorize automatic multi-monitor window placement.'
+                    : 'Single display mode — windows will tile cleanly side-by-side. Plug in an HDMI/USB-C monitor anytime for auto-routing.'
+                }
+              >
+                <Chip
+                  icon={<TvIcon sx={{ fontSize: '0.85rem !important', color: isExtended ? '#10b981 !important' : '#64748b !important' }} />}
+                  label={
+                    screens.length > 1
+                      ? `${screens.length} Displays Active`
+                      : isExtended
+                      ? 'Multi-Display Ready (Sync)'
+                      : '1 Display'
+                  }
+                  size="small"
+                  onClick={() => {
+                    if (isExtended && permissionState !== 'granted') {
+                      requestScreenAccess();
+                    }
+                  }}
+                  sx={{
+                    height: 22,
+                    fontSize: '0.68rem',
+                    fontWeight: 800,
+                    cursor: isExtended && permissionState !== 'granted' ? 'pointer' : 'default',
+                    bgcolor: isExtended ? 'rgba(16, 185, 129, 0.1)' : '#f1f5f9',
+                    color: isExtended ? '#047857' : '#64748b',
+                    border: `1px solid ${isExtended ? 'rgba(16, 185, 129, 0.3)' : '#e2e8f0'}`,
+                  }}
+                />
+              </Tooltip>
+            </Box>
+            <Typography variant="body2" sx={{ color: '#64748b', fontSize: '0.76rem' }}>
+              Multi-monitor stage router, live teleprompter & broadcast controller
             </Typography>
           </Box>
         </Box>
@@ -349,71 +517,95 @@ export default function LivestreamScreenPreviewModal({
           </IconButton>
         </Box>
 
-        {/* Right: Dual Stage Window Launchers & Close */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Tooltip title="Launch 16:9 widescreen stage for YouTube/Twitch/Desktop monitor">
+        {/* Right: Stage & Teleprompter Window Launchers & Close */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.85, flexWrap: 'wrap' }}>
+          <Tooltip title="Launch dedicated OLED Teleprompter window (auto-places on external/teleprompter monitor with Flip X/Y mirror support)">
+            <Button
+              variant="contained"
+              onClick={() => handleLaunchTeleprompterWindow()}
+              startIcon={<TeleprompterIcon sx={{ fontSize: '0.9rem !important' }} />}
+              endIcon={<OpenInNewIcon sx={{ fontSize: '0.78rem !important' }} />}
+              sx={{
+                borderRadius: '12px',
+                fontWeight: 800,
+                px: 1.6,
+                py: 0.65,
+                bgcolor: '#f59e0b',
+                color: '#0f172a',
+                fontSize: '0.76rem',
+                textTransform: 'none',
+                boxShadow: '0 4px 12px rgba(245, 158, 11, 0.25)',
+                '&:hover': { bgcolor: '#d97706', color: '#ffffff' },
+              }}
+            >
+              Teleprompter
+            </Button>
+          </Tooltip>
+
+          <Tooltip title="Launch 16:9 widescreen stage (auto-places on external presentation monitor)">
             <Button
               variant="contained"
               onClick={() => handleLaunchStageWindow('16:9')}
               startIcon={<DesktopIcon sx={{ fontSize: '0.9rem !important' }} />}
-              endIcon={<OpenInNewIcon sx={{ fontSize: '0.8rem !important' }} />}
+              endIcon={<OpenInNewIcon sx={{ fontSize: '0.78rem !important' }} />}
               sx={{
                 borderRadius: '12px',
                 fontWeight: 800,
-                px: 1.8,
+                px: 1.6,
                 py: 0.65,
                 bgcolor: '#0f172a',
                 color: '#ffffff',
-                fontSize: '0.78rem',
+                fontSize: '0.76rem',
                 textTransform: 'none',
                 boxShadow: 'none',
                 '&:hover': { bgcolor: '#1e293b' },
               }}
             >
-              Desktop Stage (16:9)
+              16:9 Stage
             </Button>
           </Tooltip>
 
-          <Tooltip title="Launch 9:16 vertical stage for TikTok/Instagram/Mobile monitor">
+          <Tooltip title="Launch 9:16 vertical stage for TikTok/Instagram/Reels monitor">
             <Button
               variant="contained"
               onClick={() => handleLaunchStageWindow('9:16')}
               startIcon={<MobileIcon sx={{ fontSize: '0.9rem !important' }} />}
-              endIcon={<OpenInNewIcon sx={{ fontSize: '0.8rem !important' }} />}
+              endIcon={<OpenInNewIcon sx={{ fontSize: '0.78rem !important' }} />}
               sx={{
                 borderRadius: '12px',
                 fontWeight: 800,
-                px: 1.8,
+                px: 1.6,
                 py: 0.65,
                 bgcolor: '#db2777',
                 color: '#ffffff',
-                fontSize: '0.78rem',
+                fontSize: '0.76rem',
                 textTransform: 'none',
                 boxShadow: '0 4px 12px rgba(219, 39, 119, 0.25)',
                 '&:hover': { bgcolor: '#be185d' },
               }}
             >
-              Mobile Stage (9:16)
+              9:16 Stage
             </Button>
           </Tooltip>
 
-          <Tooltip title="Launch both Desktop and Mobile stage windows simultaneously">
+          <Tooltip title="Automatically open and place Desktop Stage (16:9), Mobile Stage (9:16), and Teleprompter into their respective windows/monitors">
             <Button
               variant="outlined"
-              onClick={handleLaunchBothStages}
+              onClick={handleLaunchFullStudioSuite}
               sx={{
                 borderRadius: '12px',
-                fontWeight: 800,
+                fontWeight: 900,
                 px: 1.5,
                 py: 0.65,
-                borderColor: '#cbd5e1',
-                color: '#0f172a',
-                fontSize: '0.78rem',
+                borderColor: '#10b981',
+                color: '#047857',
+                bgcolor: 'rgba(16, 185, 129, 0.06)',
+                fontSize: '0.76rem',
                 textTransform: 'none',
-                '&:hover': { borderColor: '#0f172a', bgcolor: '#f8fafc' },
+                '&:hover': { borderColor: '#059669', bgcolor: 'rgba(16, 185, 129, 0.14)' },
               }}
             >
-              Launch Dual
+              Launch All (3 Windows)
             </Button>
           </Tooltip>
 
@@ -431,6 +623,74 @@ export default function LivestreamScreenPreviewModal({
           </IconButton>
         </Box>
       </Box>
+
+      {/* ── LIVE HARDWARE HOT-PLUG BANNER (WHEN NEW DISPLAY IS CONNECTED) ── */}
+      {newlyConnectedScreen && (
+        <Box
+          sx={{
+            px: { xs: 2.5, md: 3.5 },
+            py: 1,
+            bgcolor: '#0f172a',
+            color: '#ffffff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 1.5,
+            borderBottom: '1px solid rgba(16, 185, 129, 0.35)',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+            <Box sx={{ width: 9, height: 9, borderRadius: '50%', bgcolor: '#10b981', boxShadow: '0 0 10px #10b981' }} />
+            <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#f8fafc' }}>
+              New Display Connected: <Box component="span" sx={{ color: '#34d399' }}>{newlyConnectedScreen.label}</Box> ({newlyConnectedScreen.width}×{newlyConnectedScreen.height})
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Button
+              size="small"
+              variant="contained"
+              onClick={() => handleLaunchTeleprompterWindow(newlyConnectedScreen)}
+              startIcon={<TeleprompterIcon sx={{ fontSize: '0.85rem !important' }} />}
+              sx={{
+                borderRadius: '8px',
+                bgcolor: '#f59e0b',
+                color: '#0f172a',
+                fontWeight: 900,
+                fontSize: '0.72rem',
+                textTransform: 'none',
+                py: 0.35,
+                '&:hover': { bgcolor: '#d97706', color: '#fff' },
+              }}
+            >
+              Send Teleprompter to {newlyConnectedScreen.label}
+            </Button>
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={() => {
+                handleLaunchStageWindow('16:9', newlyConnectedScreen);
+                dismissNewScreenAlert();
+              }}
+              sx={{
+                borderRadius: '8px',
+                borderColor: 'rgba(255,255,255,0.25)',
+                color: '#f8fafc',
+                fontWeight: 800,
+                fontSize: '0.72rem',
+                textTransform: 'none',
+                py: 0.35,
+                '&:hover': { borderColor: '#fff', bgcolor: 'rgba(255,255,255,0.08)' },
+              }}
+            >
+              Send 16:9 Stage Here
+            </Button>
+            <IconButton size="small" onClick={dismissNewScreenAlert} sx={{ color: '#94a3b8', p: 0.3 }}>
+              <CloseIcon sx={{ fontSize: 15 }} />
+            </IconButton>
+          </Box>
+        </Box>
+      )}
 
       {/* ── MAIN COCKPIT: 2-COLUMN SPLIT ── */}
       <DialogContent sx={{ p: { xs: 2, md: 3 }, flex: 1, display: 'flex', flexDirection: 'column', gap: 2, minHeight: 0, overflowY: 'auto' }}>
@@ -571,7 +831,7 @@ export default function LivestreamScreenPreviewModal({
                 {[-2, -1, 0, 1, 2].map((offset) => {
                   const targetIdx = activeSlideIndex + offset;
                   if (targetIdx < 0 || targetIdx >= totalSlides) return null;
-                  const slide = rundownBlocks[targetIdx];
+                  const slide = localBlocks[targetIdx];
                   const isActive = offset === 0;
 
                   // 3D Transform and depth values with proper horizontal spread
@@ -721,7 +981,7 @@ export default function LivestreamScreenPreviewModal({
             </Box>
           </Box>
 
-          {/* ── RIGHT COLUMN: NEXT UP & PRESENTER NOTES ── */}
+          {/* ── RIGHT COLUMN: NEXT UP & PRESENTER NOTES / TELEPROMPTER REMOTE ── */}
           <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
             
             {/* 1. Next Up On Stage (Atop the right column) */}
@@ -783,7 +1043,7 @@ export default function LivestreamScreenPreviewModal({
               </Box>
             </Box>
 
-            {/* 2. Presenter Notes & Cues (Current Segment Header card removed, notes smaller) */}
+            {/* 2. Presenter Notes, Teleprompter Remote & Cues */}
             <Box
               sx={{
                 flex: 1,
@@ -795,52 +1055,204 @@ export default function LivestreamScreenPreviewModal({
                 boxShadow: '0 4px 16px rgba(15, 23, 42, 0.03)',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 1.75,
+                gap: 1.5,
               }}
             >
-              {/* Header: Title & Target Duration */}
+              {/* Header: Title, Edit Script Toggle & Target Duration */}
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <NotesIcon sx={{ color: hubColor, fontSize: '1.15rem' }} />
                   <Typography sx={{ fontWeight: 900, fontSize: '0.84rem', color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Presenter Notes & Talking Points
+                    Teleprompter Script & Notes
                   </Typography>
                 </Box>
 
-                {currentItem?.durationStr && (
-                  <Chip
-                    label={`⏱️ Target: ${currentItem.durationStr}`}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                  <Button
                     size="small"
+                    variant={isEditingNotes ? 'contained' : 'outlined'}
+                    onClick={() => setIsEditingNotes(!isEditingNotes)}
+                    startIcon={isEditingNotes ? <CheckIcon sx={{ fontSize: '0.85rem !important' }} /> : <EditIcon sx={{ fontSize: '0.8rem !important' }} />}
                     sx={{
-                      bgcolor: alpha(hubColor, 0.1),
-                      color: hubColor,
-                      fontWeight: 900,
-                      fontSize: '0.7rem',
                       borderRadius: '8px',
+                      fontSize: '0.68rem',
+                      fontWeight: 800,
+                      textTransform: 'none',
+                      py: 0.25,
+                      px: 1,
+                      minWidth: 0,
+                      bgcolor: isEditingNotes ? '#10b981' : 'transparent',
+                      borderColor: isEditingNotes ? '#10b981' : '#cbd5e1',
+                      color: isEditingNotes ? '#ffffff' : '#475569',
+                      '&:hover': {
+                        bgcolor: isEditingNotes ? '#059669' : '#f8fafc',
+                        borderColor: isEditingNotes ? '#059669' : '#0f172a',
+                      },
                     }}
-                  />
-                )}
+                  >
+                    {isEditingNotes ? 'Done' : 'Edit Live'}
+                  </Button>
+
+                  {currentItem?.durationStr && (
+                    <Chip
+                      label={`⏱️ ${currentItem.durationStr}`}
+                      size="small"
+                      sx={{
+                        bgcolor: alpha(hubColor, 0.1),
+                        color: hubColor,
+                        fontWeight: 900,
+                        fontSize: '0.7rem',
+                        borderRadius: '8px',
+                      }}
+                    />
+                  )}
+                </Box>
               </Box>
 
-              {/* Private Speaker Notes (Clean, compact, ergonomic) */}
+              {/* Remote Teleprompter Control Bar */}
+              <Box
+                sx={{
+                  px: 1.25,
+                  py: 0.85,
+                  borderRadius: '12px',
+                  bgcolor: '#0f172a',
+                  color: '#f8fafc',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: 1,
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                  <Button
+                    size="small"
+                    variant="contained"
+                    onClick={() => sendPrompterCommand('TOGGLE_PLAY')}
+                    startIcon={prompterStatus.isPlaying ? <PauseIcon sx={{ fontSize: '0.85rem !important' }} /> : <PlayIcon sx={{ fontSize: '0.85rem !important' }} />}
+                    sx={{
+                      borderRadius: '8px',
+                      bgcolor: prompterStatus.isPlaying ? '#ef4444' : '#10b981',
+                      color: prompterStatus.isPlaying ? '#fff' : '#052e16',
+                      fontWeight: 900,
+                      fontSize: '0.68rem',
+                      textTransform: 'none',
+                      py: 0.3,
+                      px: 1.1,
+                      minWidth: 0,
+                      '&:hover': { bgcolor: prompterStatus.isPlaying ? '#dc2626' : '#059669' },
+                    }}
+                  >
+                    {prompterStatus.isPlaying ? 'Pause Scroll' : 'Auto-Scroll'}
+                  </Button>
+
+                  {/* Speed remote */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3, bgcolor: 'rgba(255,255,255,0.08)', px: 0.75, py: 0.2, borderRadius: '7px' }}>
+                    <SpeedIcon sx={{ fontSize: 13, color: '#94a3b8' }} />
+                    <IconButton
+                      size="small"
+                      onClick={() => sendPrompterCommand('SET_SPEED', { value: Math.max(0.4, Number((prompterStatus.scrollSpeed - 0.2).toFixed(1))) })}
+                      sx={{ color: '#e2e8f0', p: 0.2, fontSize: '0.72rem', fontWeight: 900 }}
+                    >
+                      -
+                    </IconButton>
+                    <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, fontFamily: 'monospace', color: '#f8fafc', minWidth: 28, textAlign: 'center' }}>
+                      {prompterStatus.scrollSpeed.toFixed(1)}x
+                    </Typography>
+                    <IconButton
+                      size="small"
+                      onClick={() => sendPrompterCommand('SET_SPEED', { value: Math.min(3.5, Number((prompterStatus.scrollSpeed + 0.2).toFixed(1))) })}
+                      sx={{ color: '#e2e8f0', p: 0.2, fontSize: '0.72rem', fontWeight: 900 }}
+                    >
+                      +
+                    </IconButton>
+                  </Box>
+
+                  {/* Font size remote */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3, bgcolor: 'rgba(255,255,255,0.08)', px: 0.75, py: 0.2, borderRadius: '7px' }}>
+                    <FormatSizeIcon sx={{ fontSize: 13, color: '#94a3b8' }} />
+                    <IconButton
+                      size="small"
+                      onClick={() => sendPrompterCommand('SET_FONT_SIZE', { value: Math.max(24, prompterStatus.fontSize - 4) })}
+                      sx={{ color: '#e2e8f0', p: 0.2, fontSize: '0.68rem', fontWeight: 900 }}
+                    >
+                      -
+                    </IconButton>
+                    <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, fontFamily: 'monospace', color: '#f8fafc' }}>
+                      {prompterStatus.fontSize}
+                    </Typography>
+                    <IconButton
+                      size="small"
+                      onClick={() => sendPrompterCommand('SET_FONT_SIZE', { value: Math.min(84, prompterStatus.fontSize + 4) })}
+                      sx={{ color: '#e2e8f0', p: 0.2, fontSize: '0.68rem', fontWeight: 900 }}
+                    >
+                      +
+                    </IconButton>
+                  </Box>
+                </Box>
+
+                {/* Mirror toggle & Pop Out */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <Tooltip title="Remote toggle horizontal mirror (Flip X) on the Teleprompter window">
+                    <Chip
+                      icon={<FlipIcon sx={{ fontSize: '0.75rem !important', color: prompterStatus.mirrorX ? '#0f172a !important' : '#cbd5e1 !important' }} />}
+                      label="Flip X"
+                      size="small"
+                      onClick={() => sendPrompterCommand('TOGGLE_MIRROR_X')}
+                      sx={{
+                        height: 22,
+                        fontSize: '0.65rem',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        bgcolor: prompterStatus.mirrorX ? '#f59e0b' : 'rgba(255,255,255,0.08)',
+                        color: prompterStatus.mirrorX ? '#0f172a' : '#cbd5e1',
+                      }}
+                    />
+                  </Tooltip>
+                </Box>
+              </Box>
+
+              {/* Private Speaker Notes (Clean, compact, ergonomic, or live-editable) */}
               <Box
                 sx={{
                   p: 1.75,
                   borderRadius: '12px',
                   bgcolor: '#f8fafc',
                   border: '1.5px solid #e2e8f0',
-                  maxHeight: 180,
-                  minHeight: 80,
+                  maxHeight: 200,
+                  minHeight: 95,
                   overflowY: 'auto',
                 }}
               >
-                {currentItem?.speakerNotes ? (
+                {isEditingNotes ? (
+                  <TextField
+                    multiline
+                    minRows={3}
+                    maxRows={6}
+                    fullWidth
+                    variant="standard"
+                    placeholder="Type presenter script or cues like [PAUSE 2s], [SHOW STAT]... Updates live on the Teleprompter window."
+                    value={currentItem?.speakerNotes || ''}
+                    onChange={(e) => handleUpdateSpeakerNotes(e.target.value)}
+                    slotProps={{
+                      input: {
+                        disableUnderline: true,
+                        sx: {
+                          fontSize: '0.86rem',
+                          color: '#0f172a',
+                          lineHeight: 1.55,
+                          fontFamily: 'inherit',
+                        },
+                      },
+                    }}
+                  />
+                ) : currentItem?.speakerNotes ? (
                   <Typography sx={{ fontSize: '0.86rem', color: '#1e293b', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>
                     {currentItem.speakerNotes}
                   </Typography>
                 ) : (
                   <Typography sx={{ fontSize: '0.82rem', color: '#94a3b8', fontStyle: 'italic' }}>
-                    No private speaker notes written for this slide. Focus on the core graphic insight on stage.
+                    No private speaker notes written for this slide. The Teleprompter window will automatically synthesize talking points from the slide&apos;s headline, stat, and body copy—or click &ldquo;Edit Live&rdquo; above to type custom notes.
                   </Typography>
                 )}
               </Box>
