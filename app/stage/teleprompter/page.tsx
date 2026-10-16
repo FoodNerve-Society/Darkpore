@@ -1,24 +1,32 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Box, Typography, IconButton, Button, Chip, Tooltip, GlobalStyles } from '@mui/material';
 import {
-  PlayArrow as PlayIcon,
-  Pause as PauseIcon,
-  Flip as FlipHorizontalIcon,
-  SwapVert as FlipVerticalIcon,
-  Fullscreen as FullscreenIcon,
-  FullscreenExit as FullscreenExitIcon,
-  SkipPrevious as PrevSlideIcon,
-  SkipNext as NextSlideIcon,
-  Speed as SpeedIcon,
-  FormatSize as FontSizeIcon,
-  VerticalAlignCenter as EyeLineIcon,
-  Sensors as LiveIcon,
-  AccessTime as AccessTimeIcon,
-  Forum as ChatIcon,
-  Bolt as CueIcon,
-  ViewColumn as ColumnWidthIcon,
+  Box,
+  Typography,
+  IconButton,
+  Button,
+  Chip,
+  Popover,
+  GlobalStyles,
+} from '@mui/material';
+import {
+  PlayArrowRounded as PlayIcon,
+  PauseRounded as PauseIcon,
+  FlipRounded as FlipHorizontalIcon,
+  SwapVertRounded as FlipVerticalIcon,
+  FullscreenRounded as FullscreenIcon,
+  FullscreenExitRounded as FullscreenExitIcon,
+  ChevronLeftRounded as PrevSlideIcon,
+  ChevronRightRounded as NextSlideIcon,
+  SpeedRounded as SpeedIcon,
+  VerticalAlignCenterRounded as EyeLineIcon,
+  SensorsRounded as LiveIcon,
+  AccessTimeRounded as AccessTimeIcon,
+  ForumRounded as ChatIcon,
+  BoltRounded as CueIcon,
+  TuneRounded as OpticsIcon,
+  KeyboardArrowDownRounded as ArrowDownIcon,
 } from '@mui/icons-material';
 import ThemeRegistry from '@/theme/ThemeRegistry';
 import { DEF_BLOCK_DEFINITIONS } from '@/app/modular-society/[tenant]/(authenticated)/components/forms/livestream/defBlocksConfig';
@@ -52,7 +60,6 @@ function buildFallbackScriptFromSlide(slide: any, idx: number): string {
     lines.push(text);
   }
 
-  // Analytical & diagnostic fields from Phase 2 blocks
   if (oc.convention) {
     lines.push(`[LAYER 1: CONVENTION] On the surface, the conventional industry view says: ${oc.convention}`);
   }
@@ -87,16 +94,15 @@ function renderPrompterScriptWithCues(rawScript: string, fontSize: number) {
   const paragraphs = rawScript.split(/\n+/).filter((p) => p.trim().length > 0);
 
   return paragraphs.map((para, pIdx) => {
-    // Split paragraph by bracketed stage directions e.g. [PAUSE 2s], [LEAN FORWARD]
     const parts = para.split(/(\[[^\]]+\])/g).filter(Boolean);
 
     return (
       <Box
         key={pIdx}
         sx={{
-          mb: `${Math.round(fontSize * 0.65)}px`,
-          lineHeight: 1.48,
-          letterSpacing: '-0.01em',
+          mb: `${Math.round(fontSize * 0.62)}px`,
+          lineHeight: 1.5,
+          letterSpacing: '-0.015em',
         }}
       >
         {parts.map((part, partIdx) => {
@@ -110,24 +116,23 @@ function renderPrompterScriptWithCues(rawScript: string, fontSize: number) {
                 sx={{
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: 0.75,
+                  gap: 0.65,
                   px: 1.5,
                   py: 0.35,
-                  mx: 0.5,
-                  my: 0.4,
+                  mx: 0.45,
+                  my: 0.35,
                   borderRadius: '10px',
-                  bgcolor: 'rgba(245, 158, 11, 0.18)',
-                  border: '2px solid rgba(245, 158, 11, 0.65)',
+                  bgcolor: 'rgba(245, 158, 11, 0.16)',
+                  border: '1.5px solid rgba(245, 158, 11, 0.6)',
                   color: '#fbbf24',
-                  fontSize: `${Math.max(18, Math.round(fontSize * 0.58))}px`,
-                  fontWeight: 900,
+                  fontSize: `${Math.max(18, Math.round(fontSize * 0.52))}px`,
+                  fontWeight: 800,
                   textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
+                  letterSpacing: '0.06em',
                   verticalAlign: 'middle',
-                  boxShadow: '0 0 18px rgba(245, 158, 11, 0.15)',
                 }}
               >
-                <CueIcon sx={{ fontSize: `${Math.max(18, Math.round(fontSize * 0.58))}px` }} />
+                <CueIcon sx={{ fontSize: `${Math.max(18, Math.round(fontSize * 0.52))}px` }} />
                 {cueContent}
               </Box>
             );
@@ -140,7 +145,7 @@ function renderPrompterScriptWithCues(rawScript: string, fontSize: number) {
               sx={{
                 color: '#f8fafc',
                 fontSize: `${fontSize}px`,
-                fontWeight: 700,
+                fontWeight: 600,
                 fontFamily: 'var(--font-inter), system-ui, -apple-system, sans-serif',
               }}
             >
@@ -164,14 +169,18 @@ export default function LivestreamTeleprompterPage() {
 
   // Teleprompter Optical & Ergonomic Controls
   const [isPlaying, setIsPlaying] = useState(false);
-  const [scrollSpeed, setScrollSpeed] = useState<number>(1.2); // 0.4x to 3.5x (~135 WPM at 1.2x)
-  const [fontSize, setFontSize] = useState<number>(44); // px
-  const [columnWidthPct, setColumnWidthPct] = useState<number>(68); // 50%, 68%, 85%
-  const [mirrorX, setMirrorX] = useState<boolean>(false); // Horizontal flip for beamsplitter glass
-  const [mirrorY, setMirrorY] = useState<boolean>(false); // Vertical flip for inverted rigs
+  const [scrollSpeed, setScrollSpeed] = useState<number>(1.2);
+  const [fontSize, setFontSize] = useState<number>(48);
+  const [columnWidthPct, setColumnWidthPct] = useState<number>(68);
+  const [mirrorX, setMirrorX] = useState<boolean>(false);
+  const [mirrorY, setMirrorY] = useState<boolean>(false);
   const [showEyeLine, setShowEyeLine] = useState<boolean>(true);
   const [autoFollowDeck, setAutoFollowDeck] = useState<boolean>(true);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+
+  // Studio Dropdown Popovers
+  const [speedAnchorEl, setSpeedAnchorEl] = useState<null | HTMLElement>(null);
+  const [opticsAnchorEl, setOpticsAnchorEl] = useState<null | HTMLElement>(null);
 
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const slideSectionRefs = useRef<Record<number, HTMLDivElement | null>>({});
@@ -179,14 +188,21 @@ export default function LivestreamTeleprompterPage() {
   const isProgrammaticScrollRef = useRef<boolean>(false);
   const channelRef = useRef<BroadcastChannel | null>(null);
 
-  // Set distinct window title
   useEffect(() => {
     document.title = `[Teleprompter] ${title || 'Live Broadcast'}`;
   }, [title]);
 
-  // Broadcast current prompter status back to Director's Deck
   const broadcastPrompterStatus = useCallback(
-    (overrides?: Partial<{ isPlaying: boolean; scrollSpeed: number; fontSize: number; mirrorX: boolean; mirrorY: boolean }>) => {
+    (
+      overrides?: Partial<{
+        isPlaying: boolean;
+        scrollSpeed: number;
+        fontSize: number;
+        mirrorX: boolean;
+        mirrorY: boolean;
+        keyLabel?: string;
+      }>
+    ) => {
       try {
         if (channelRef.current) {
           channelRef.current.postMessage({
@@ -196,6 +212,7 @@ export default function LivestreamTeleprompterPage() {
             fontSize: overrides?.fontSize ?? fontSize,
             mirrorX: overrides?.mirrorX ?? mirrorX,
             mirrorY: overrides?.mirrorY ?? mirrorY,
+            keyLabel: overrides?.keyLabel,
           });
         }
       } catch {}
@@ -203,7 +220,6 @@ export default function LivestreamTeleprompterPage() {
     [isPlaying, scrollSpeed, fontSize, mirrorX, mirrorY]
   );
 
-  // Scroll smoothly to a specific slide section
   const scrollToSlide = useCallback((index: number, behavior: ScrollBehavior = 'smooth') => {
     const targetEl = slideSectionRefs.current[index];
     const container = scrollContainerRef.current;
@@ -218,7 +234,6 @@ export default function LivestreamTeleprompterPage() {
     }
   }, []);
 
-  // Load initial state from localStorage cache
   useEffect(() => {
     try {
       const cached = localStorage.getItem(STAGE_CACHE_KEY);
@@ -237,7 +252,6 @@ export default function LivestreamTeleprompterPage() {
     }
   }, []);
 
-  // Connect to BroadcastChannel for real-time two-way sync with Director's Deck
   useEffect(() => {
     let channel: BroadcastChannel | null = null;
     try {
@@ -275,38 +289,52 @@ export default function LivestreamTeleprompterPage() {
           if (data.action === 'TOGGLE_PLAY') {
             setIsPlaying((prev) => {
               const next = typeof data.value === 'boolean' ? data.value : !prev;
-              broadcastPrompterStatus({ isPlaying: next });
+              broadcastPrompterStatus({ isPlaying: next, keyLabel: data.keyLabel });
               return next;
             });
           } else if (data.action === 'SET_SPEED' && typeof data.value === 'number') {
             const clamped = Math.max(0.4, Math.min(3.5, Number(data.value.toFixed(1))));
             setScrollSpeed(clamped);
-            broadcastPrompterStatus({ scrollSpeed: clamped });
+            broadcastPrompterStatus({ scrollSpeed: clamped, keyLabel: data.keyLabel });
+          } else if (data.action === 'ADJUST_SPEED' && typeof data.delta === 'number') {
+            setScrollSpeed((prev) => {
+              const clamped = Math.max(0.4, Math.min(3.5, Number((prev + data.delta).toFixed(1))));
+              broadcastPrompterStatus({ scrollSpeed: clamped, keyLabel: data.keyLabel });
+              return clamped;
+            });
           } else if (data.action === 'SET_FONT_SIZE' && typeof data.value === 'number') {
-            const clamped = Math.max(24, Math.min(84, data.value));
+            const clamped = Math.max(28, Math.min(88, data.value));
             setFontSize(clamped);
-            broadcastPrompterStatus({ fontSize: clamped });
+            broadcastPrompterStatus({ fontSize: clamped, keyLabel: data.keyLabel });
+          } else if (data.action === 'ADJUST_FONT_SIZE' && typeof data.delta === 'number') {
+            setFontSize((prev) => {
+              const clamped = Math.max(28, Math.min(88, prev + data.delta));
+              broadcastPrompterStatus({ fontSize: clamped, keyLabel: data.keyLabel });
+              return clamped;
+            });
           } else if (data.action === 'TOGGLE_MIRROR_X') {
             setMirrorX((prev) => {
               const next = typeof data.value === 'boolean' ? data.value : !prev;
-              broadcastPrompterStatus({ mirrorX: next });
+              broadcastPrompterStatus({ mirrorX: next, keyLabel: data.keyLabel });
               return next;
             });
           } else if (data.action === 'TOGGLE_MIRROR_Y') {
             setMirrorY((prev) => {
               const next = typeof data.value === 'boolean' ? data.value : !prev;
-              broadcastPrompterStatus({ mirrorY: next });
+              broadcastPrompterStatus({ mirrorY: next, keyLabel: data.keyLabel });
               return next;
             });
           } else if (data.action === 'SCROLL_TO_SLIDE' && typeof data.index === 'number') {
             scrollToSlide(data.index);
           } else if (data.action === 'NUDGE_SCROLL' && typeof data.delta === 'number') {
             scrollContainerRef.current?.scrollBy({ top: data.delta, behavior: 'smooth' });
+            if (data.keyLabel) {
+              broadcastPrompterStatus({ keyLabel: data.keyLabel });
+            }
           }
         }
       };
 
-      // Request latest state from Director's Deck on open
       channel.postMessage({ type: 'REQUEST_STATE' });
     } catch (e) {
       console.warn('BroadcastChannel error in Teleprompter:', e);
@@ -318,7 +346,6 @@ export default function LivestreamTeleprompterPage() {
     };
   }, [autoFollowDeck, scrollToSlide, broadcastPrompterStatus]);
 
-  // Local timer tick if running
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
     if (isTimerRunning) {
@@ -344,7 +371,6 @@ export default function LivestreamTeleprompterPage() {
 
       const container = scrollContainerRef.current;
       if (container) {
-        // Base speed: ~48 pixels per second at 1.0x, scaled by fontSize ratio
         const fontFactor = fontSize / 44;
         const pixelsPerSecond = 48 * scrollSpeed * fontFactor;
         subPixelAccumulatorRef.current += pixelsPerSecond * dt;
@@ -354,7 +380,6 @@ export default function LivestreamTeleprompterPage() {
           subPixelAccumulatorRef.current -= wholePixels;
           container.scrollTop += wholePixels;
 
-          // Auto-pause if reached very bottom of script
           if (container.scrollTop + container.clientHeight >= container.scrollHeight - 4) {
             setIsPlaying(false);
             broadcastPrompterStatus({ isPlaying: false });
@@ -370,7 +395,6 @@ export default function LivestreamTeleprompterPage() {
     return () => cancelAnimationFrame(animId);
   }, [isPlaying, scrollSpeed, fontSize, broadcastPrompterStatus]);
 
-  // Navigate slide & sync back to Director's Deck + Stage windows
   const navigateSlide = useCallback(
     (direction: 'next' | 'prev' | number) => {
       const total = rundownBlocks.length;
@@ -390,11 +414,11 @@ export default function LivestreamTeleprompterPage() {
 
       try {
         if (channelRef.current) {
-          if (typeof direction === 'string') {
-            channelRef.current.postMessage({ type: 'NAVIGATE', direction });
-          } else {
-            channelRef.current.postMessage({ type: 'SET_SLIDE_INDEX', index: targetIdx });
-          }
+          channelRef.current.postMessage({
+            type: 'SET_SLIDE_INDEX',
+            index: targetIdx,
+            keyLabel: direction === 'next' ? '→ Next Slide' : direction === 'prev' ? '← Prev Slide' : `Slide ${targetIdx + 1}`,
+          });
         }
       } catch {}
     },
@@ -411,14 +435,14 @@ export default function LivestreamTeleprompterPage() {
     }
   }, []);
 
-  // Keyboard shortcuts for hands-free / foot-pedal / clicker operation
+  // Unified Studio Keyboard & Stream Deck Hotkeys
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === ' ') {
         e.preventDefault();
         setIsPlaying((prev) => {
           const next = !prev;
-          broadcastPrompterStatus({ isPlaying: next });
+          broadcastPrompterStatus({ isPlaying: next, keyLabel: 'SPACE • Play/Pause' });
           return next;
         });
       } else if (e.key === 'ArrowUp') {
@@ -426,23 +450,53 @@ export default function LivestreamTeleprompterPage() {
         if (e.shiftKey) {
           setScrollSpeed((s) => {
             const next = Math.min(3.5, Number((s + 0.2).toFixed(1)));
-            broadcastPrompterStatus({ scrollSpeed: next });
+            broadcastPrompterStatus({ scrollSpeed: next, keyLabel: 'SHIFT+↑ • Speed +' });
             return next;
           });
         } else {
-          scrollContainerRef.current?.scrollBy({ top: -120, behavior: 'smooth' });
+          scrollContainerRef.current?.scrollBy({ top: -140, behavior: 'smooth' });
+          broadcastPrompterStatus({ keyLabel: '↑ • Scroll Up' });
         }
       } else if (e.key === 'ArrowDown') {
         e.preventDefault();
         if (e.shiftKey) {
           setScrollSpeed((s) => {
             const next = Math.max(0.4, Number((s - 0.2).toFixed(1)));
-            broadcastPrompterStatus({ scrollSpeed: next });
+            broadcastPrompterStatus({ scrollSpeed: next, keyLabel: 'SHIFT+↓ • Speed -' });
             return next;
           });
         } else {
-          scrollContainerRef.current?.scrollBy({ top: 120, behavior: 'smooth' });
+          scrollContainerRef.current?.scrollBy({ top: 140, behavior: 'smooth' });
+          broadcastPrompterStatus({ keyLabel: '↓ • Scroll Down' });
         }
+      } else if (e.key === '+' || e.key === '=') {
+        e.preventDefault();
+        setScrollSpeed((s) => {
+          const next = Math.min(3.5, Number((s + 0.2).toFixed(1)));
+          broadcastPrompterStatus({ scrollSpeed: next, keyLabel: '+ • Speed Up' });
+          return next;
+        });
+      } else if (e.key === '-' || e.key === '_') {
+        e.preventDefault();
+        setScrollSpeed((s) => {
+          const next = Math.max(0.4, Number((s - 0.2).toFixed(1)));
+          broadcastPrompterStatus({ scrollSpeed: next, keyLabel: '- • Slow Down' });
+          return next;
+        });
+      } else if (e.key === ']') {
+        e.preventDefault();
+        setFontSize((f) => {
+          const next = Math.min(88, f + 4);
+          broadcastPrompterStatus({ fontSize: next, keyLabel: '] • Font +' });
+          return next;
+        });
+      } else if (e.key === '[') {
+        e.preventDefault();
+        setFontSize((f) => {
+          const next = Math.max(28, f - 4);
+          broadcastPrompterStatus({ fontSize: next, keyLabel: '[ • Font -' });
+          return next;
+        });
       } else if (e.key === 'ArrowRight' || e.key === 'PageDown') {
         e.preventDefault();
         navigateSlide('next');
@@ -450,12 +504,21 @@ export default function LivestreamTeleprompterPage() {
         e.preventDefault();
         navigateSlide('prev');
       } else if (e.key === 'm' || e.key === 'M') {
+        e.preventDefault();
         setMirrorX((prev) => {
           const next = !prev;
-          broadcastPrompterStatus({ mirrorX: next });
+          broadcastPrompterStatus({ mirrorX: next, keyLabel: 'M • Flip X' });
           return next;
         });
+      } else if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault();
+        channelRef.current?.postMessage({
+          type: 'STUDIO_COMMAND',
+          action: 'TOGGLE_TIMER',
+          keyLabel: 'R • Timer',
+        });
       } else if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
         toggleFullscreen();
       }
     };
@@ -471,10 +534,6 @@ export default function LivestreamTeleprompterPage() {
   };
 
   const estimatedWpm = Math.round(scrollSpeed * 115);
-
-  const cycleColumnWidth = () => {
-    setColumnWidthPct((prev) => (prev === 68 ? 52 : prev === 52 ? 84 : 68));
-  };
 
   return (
     <ThemeRegistry initialTenant="food" initialMode="dark">
@@ -497,7 +556,7 @@ export default function LivestreamTeleprompterPage() {
             background: '#050505',
           },
           '*::-webkit-scrollbar-thumb': {
-            background: 'rgba(255, 255, 255, 0.18)',
+            background: 'rgba(255, 255, 255, 0.2)',
             borderRadius: '3px',
           },
         }}
@@ -515,307 +574,459 @@ export default function LivestreamTeleprompterPage() {
           userSelect: 'none',
         }}
       >
-        {/* ── TOP BROADCAST TELEPROMPTER HUD BAR ── */}
+        {/* ── STUDIO CONSOLE TOP BAR ── */}
         <Box
           sx={{
-            px: { xs: 2, md: 3 },
-            py: 1.25,
-            bgcolor: 'rgba(10, 10, 12, 0.92)',
-            backdropFilter: 'blur(16px)',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
+            px: { xs: 2, md: 3.5 },
+            py: 1.35,
+            bgcolor: 'rgba(9, 13, 22, 0.92)',
+            backdropFilter: 'blur(24px)',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             flexWrap: 'wrap',
-            gap: 1.5,
+            gap: 2,
             zIndex: 30,
           }}
         >
-          {/* Left: Connection Status, Clock & Slide Counter */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.75,
-                px: 1.25,
-                py: 0.4,
-                borderRadius: '8px',
-                bgcolor: isConnected ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-                border: `1px solid ${isConnected ? 'rgba(16, 185, 129, 0.4)' : 'rgba(245, 158, 11, 0.4)'}`,
-              }}
-            >
-              <Box
-                sx={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: '50%',
-                  bgcolor: isConnected ? '#10b981' : '#f59e0b',
-                  boxShadow: isConnected ? '0 0 8px #10b981' : 'none',
-                }}
-              />
-              <Typography sx={{ fontSize: '0.7rem', fontWeight: 900, color: '#fff', letterSpacing: '0.05em' }}>
-                {isConnected ? 'STUDIO SYNC' : 'STANDBY'}
-              </Typography>
-            </Box>
-
-            {/* Elapsed Timer */}
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.75,
-                px: 1.25,
-                py: 0.4,
-                borderRadius: '8px',
-                bgcolor: 'rgba(255, 255, 255, 0.06)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-              }}
-            >
-              <AccessTimeIcon sx={{ fontSize: 15, color: '#94a3b8' }} />
-              <Typography sx={{ fontSize: '0.85rem', fontWeight: 900, fontFamily: 'monospace', color: '#f8fafc' }}>
-                {formatTimer(timerSeconds)}
-              </Typography>
-            </Box>
-
-            {/* Slide Stepper */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <IconButton
-                size="small"
-                onClick={() => navigateSlide('prev')}
-                disabled={activeSlideIndex <= 0}
-                sx={{ color: '#fff', bgcolor: 'rgba(255,255,255,0.06)', '&:hover': { bgcolor: 'rgba(255,255,255,0.14)' } }}
-              >
-                <PrevSlideIcon fontSize="small" />
-              </IconButton>
-              <Chip
-                label={`SLIDE ${rundownBlocks.length > 0 ? activeSlideIndex + 1 : 0} / ${rundownBlocks.length}`}
-                size="small"
-                sx={{
-                  bgcolor: 'rgba(255, 255, 255, 0.08)',
-                  color: '#ffffff',
-                  fontWeight: 900,
-                  fontSize: '0.72rem',
-                  borderRadius: '8px',
-                }}
-              />
-              <IconButton
-                size="small"
-                onClick={() => navigateSlide('next')}
-                disabled={activeSlideIndex >= rundownBlocks.length - 1}
-                sx={{ color: '#fff', bgcolor: 'rgba(255,255,255,0.06)', '&:hover': { bgcolor: 'rgba(255,255,255,0.14)' } }}
-              >
-                <NextSlideIcon fontSize="small" />
-              </IconButton>
-            </Box>
-          </Box>
-
-          {/* Center: Auto-Scroll Play/Pause & Speed Controls */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {/* Left: Clean Prev / Slide Counter & Clock / Next */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
             <Button
               variant="contained"
-              onClick={() => {
-                const next = !isPlaying;
-                setIsPlaying(next);
-                broadcastPrompterStatus({ isPlaying: next });
-              }}
-              startIcon={isPlaying ? <PauseIcon /> : <PlayIcon />}
+              onClick={() => navigateSlide('prev')}
+              disabled={activeSlideIndex <= 0}
+              startIcon={<PrevSlideIcon sx={{ fontSize: '1.35rem !important' }} />}
               sx={{
-                borderRadius: '10px',
-                px: 2.25,
-                py: 0.6,
-                fontWeight: 900,
-                fontSize: '0.8rem',
-                textTransform: 'none',
-                bgcolor: isPlaying ? '#ef4444' : '#10b981',
+                minHeight: 46,
+                px: 2,
+                borderRadius: '14px',
+                bgcolor: 'rgba(255,255,255,0.08)',
                 color: '#ffffff',
-                boxShadow: isPlaying ? '0 0 20px rgba(239, 68, 68, 0.4)' : '0 0 20px rgba(16, 185, 129, 0.35)',
-                '&:hover': { bgcolor: isPlaying ? '#dc2626' : '#059669' },
+                fontWeight: 800,
+                fontSize: '0.92rem',
+                textTransform: 'none',
+                border: '1px solid rgba(255,255,255,0.1)',
+                '&:hover': { bgcolor: 'rgba(255,255,255,0.16)' },
+                '&:disabled': { opacity: 0.25, color: '#64748b' },
               }}
             >
-              {isPlaying ? 'Pause Scroll (Space)' : 'Start Scroll (Space)'}
+              Prev
             </Button>
 
-            {/* Speed Multiplier & WPM */}
             <Box
               sx={{
+                px: 2,
+                py: 0.7,
+                borderRadius: '14px',
+                bgcolor: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 0.5,
-                px: 1,
-                py: 0.3,
-                borderRadius: '10px',
-                bgcolor: 'rgba(255, 255, 255, 0.06)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
+                gap: 1.5,
               }}
             >
-              <SpeedIcon sx={{ fontSize: 16, color: '#fbbf24', ml: 0.5 }} />
-              <IconButton
-                size="small"
-                onClick={() => {
-                  const next = Math.max(0.4, Number((scrollSpeed - 0.2).toFixed(1)));
-                  setScrollSpeed(next);
-                  broadcastPrompterStatus({ scrollSpeed: next });
-                }}
-                sx={{ color: '#fff', p: 0.4 }}
-              >
-                <Typography sx={{ fontWeight: 900, fontSize: '0.85rem', lineHeight: 1 }}>−</Typography>
-              </IconButton>
-              <Typography sx={{ fontSize: '0.76rem', fontWeight: 900, color: '#fff', minWidth: 74, textAlign: 'center' }}>
-                {scrollSpeed.toFixed(1)}x ({estimatedWpm} WPM)
-              </Typography>
-              <IconButton
-                size="small"
-                onClick={() => {
-                  const next = Math.min(3.5, Number((scrollSpeed + 0.2).toFixed(1)));
-                  setScrollSpeed(next);
-                  broadcastPrompterStatus({ scrollSpeed: next });
-                }}
-                sx={{ color: '#fff', p: 0.4 }}
-              >
-                <Typography sx={{ fontWeight: 900, fontSize: '0.85rem', lineHeight: 1 }}>+</Typography>
-              </IconButton>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                <Box
+                  sx={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    bgcolor: isConnected ? '#10b981' : '#f59e0b',
+                    boxShadow: isConnected ? '0 0 10px #10b981' : 'none',
+                  }}
+                />
+                <Typography sx={{ fontSize: '0.95rem', fontWeight: 800, fontFamily: 'monospace', color: '#ffffff' }}>
+                  {String(rundownBlocks.length > 0 ? activeSlideIndex + 1 : 0).padStart(2, '0')} / {String(rundownBlocks.length).padStart(2, '0')}
+                </Typography>
+              </Box>
+              <Box sx={{ width: '1px', height: 18, bgcolor: 'rgba(255,255,255,0.14)' }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
+                <AccessTimeIcon sx={{ fontSize: 16, color: '#94a3b8' }} />
+                <Typography sx={{ fontSize: '0.95rem', fontWeight: 800, fontFamily: 'monospace', color: '#e2e8f0' }}>
+                  {formatTimer(timerSeconds)}
+                </Typography>
+              </Box>
             </Box>
 
-            {/* Font Size Control */}
-            <Box
+            <Button
+              variant="contained"
+              onClick={() => navigateSlide('next')}
+              disabled={activeSlideIndex >= rundownBlocks.length - 1}
+              endIcon={<NextSlideIcon sx={{ fontSize: '1.35rem !important' }} />}
               sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.4,
-                px: 1,
-                py: 0.3,
-                borderRadius: '10px',
-                bgcolor: 'rgba(255, 255, 255, 0.06)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
+                minHeight: 46,
+                px: 2,
+                borderRadius: '14px',
+                bgcolor: 'rgba(255,255,255,0.08)',
+                color: '#ffffff',
+                fontWeight: 800,
+                fontSize: '0.92rem',
+                textTransform: 'none',
+                border: '1px solid rgba(255,255,255,0.1)',
+                '&:hover': { bgcolor: 'rgba(255,255,255,0.16)' },
+                '&:disabled': { opacity: 0.25, color: '#64748b' },
               }}
             >
-              <FontSizeIcon sx={{ fontSize: 16, color: '#94a3b8', ml: 0.5 }} />
-              <IconButton
-                size="small"
-                onClick={() => {
-                  const next = Math.max(24, fontSize - 4);
-                  setFontSize(next);
-                  broadcastPrompterStatus({ fontSize: next });
-                }}
-                sx={{ color: '#fff', p: 0.4 }}
-              >
-                <Typography sx={{ fontWeight: 900, fontSize: '0.75rem' }}>A−</Typography>
-              </IconButton>
-              <Typography sx={{ fontSize: '0.74rem', fontWeight: 800, color: '#e2e8f0', minWidth: 36, textAlign: 'center' }}>
-                {fontSize}px
-              </Typography>
-              <IconButton
-                size="small"
-                onClick={() => {
-                  const next = Math.min(84, fontSize + 4);
-                  setFontSize(next);
-                  broadcastPrompterStatus({ fontSize: next });
-                }}
-                sx={{ color: '#fff', p: 0.4 }}
-              >
-                <Typography sx={{ fontWeight: 900, fontSize: '0.75rem' }}>A+</Typography>
-              </IconButton>
-            </Box>
+              Next
+            </Button>
           </Box>
 
-          {/* Right: Optical Mirroring, Column Width, Eye-Line & Fullscreen */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-            <Tooltip title="Cycle eye-scan reading column width (Narrow 52% / Standard 68% / Wide 84%)">
-              <Chip
-                icon={<ColumnWidthIcon sx={{ fontSize: '14px !important', color: '#cbd5e1 !important' }} />}
-                label={`${columnWidthPct}% Width`}
-                size="small"
-                onClick={cycleColumnWidth}
-                sx={{
-                  bgcolor: 'rgba(255, 255, 255, 0.07)',
-                  color: '#e2e8f0',
-                  fontWeight: 800,
-                  fontSize: '0.7rem',
-                  cursor: 'pointer',
-                  border: '1px solid rgba(255, 255, 255, 0.12)',
-                }}
-              />
-            </Tooltip>
+          {/* Center: Sculptural Start / Pause Scroll Pill */}
+          <Button
+            variant="contained"
+            onClick={() => {
+              const next = !isPlaying;
+              setIsPlaying(next);
+              broadcastPrompterStatus({ isPlaying: next });
+            }}
+            startIcon={isPlaying ? <PauseIcon sx={{ fontSize: '1.4rem !important' }} /> : <PlayIcon sx={{ fontSize: '1.4rem !important' }} />}
+            sx={{
+              minHeight: 48,
+              px: 3.5,
+              borderRadius: '16px',
+              fontWeight: 800,
+              fontSize: '1rem',
+              textTransform: 'none',
+              bgcolor: isPlaying ? '#ef4444' : '#10b981',
+              color: isPlaying ? '#ffffff' : '#052e16',
+              boxShadow: isPlaying ? '0 0 24px rgba(239, 68, 68, 0.4)' : '0 0 24px rgba(16, 185, 129, 0.35)',
+              '&:hover': { bgcolor: isPlaying ? '#dc2626' : '#059669', color: '#ffffff' },
+            }}
+          >
+            {isPlaying ? 'Pause Scroll' : 'Start Scroll'}
+          </Button>
 
-            <Tooltip title="Toggle Camera Eye-Line Focus Guide">
-              <IconButton
-                size="small"
-                onClick={() => setShowEyeLine(!showEyeLine)}
-                sx={{
-                  color: showEyeLine ? '#fbbf24' : '#64748b',
-                  bgcolor: showEyeLine ? 'rgba(245, 158, 11, 0.15)' : 'rgba(255, 255, 255, 0.05)',
-                  border: `1px solid ${showEyeLine ? 'rgba(245, 158, 11, 0.4)' : 'rgba(255, 255, 255, 0.1)'}`,
-                  borderRadius: '8px',
-                }}
-              >
-                <EyeLineIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
+          {/* Right: Two Clean Studio Dropdowns + Fullscreen */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Button
+              variant="outlined"
+              onClick={(e) => setSpeedAnchorEl(e.currentTarget)}
+              startIcon={<SpeedIcon sx={{ color: '#fbbf24', fontSize: '1.15rem !important' }} />}
+              endIcon={<ArrowDownIcon />}
+              sx={{
+                minHeight: 46,
+                px: 2,
+                borderRadius: '14px',
+                borderColor: 'rgba(255, 255, 255, 0.16)',
+                bgcolor: 'rgba(255, 255, 255, 0.05)',
+                color: '#ffffff',
+                fontWeight: 800,
+                fontSize: '0.9rem',
+                textTransform: 'none',
+                '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.12)', borderColor: 'rgba(255, 255, 255, 0.3)' },
+              }}
+            >
+              {scrollSpeed.toFixed(1)}x • {fontSize}px
+            </Button>
 
-            <Tooltip title="Horizontal Mirror (Flip X) for physical beamsplitter teleprompter glass (Shortcut: M)">
-              <Button
-                size="small"
-                onClick={() => {
-                  const next = !mirrorX;
-                  setMirrorX(next);
-                  broadcastPrompterStatus({ mirrorX: next });
-                }}
-                startIcon={<FlipHorizontalIcon sx={{ fontSize: '15px !important' }} />}
-                sx={{
-                  borderRadius: '8px',
-                  textTransform: 'none',
-                  fontWeight: 800,
-                  fontSize: '0.72rem',
-                  px: 1.25,
-                  py: 0.4,
-                  color: mirrorX ? '#000' : '#fff',
-                  bgcolor: mirrorX ? '#fbbf24' : 'rgba(255, 255, 255, 0.07)',
-                  border: `1px solid ${mirrorX ? '#fbbf24' : 'rgba(255, 255, 255, 0.15)'}`,
-                  '&:hover': { bgcolor: mirrorX ? '#f59e0b' : 'rgba(255, 255, 255, 0.14)' },
-                }}
-              >
-                Flip X {mirrorX ? 'ON' : ''}
-              </Button>
-            </Tooltip>
+            <Button
+              variant="outlined"
+              onClick={(e) => setOpticsAnchorEl(e.currentTarget)}
+              startIcon={<OpticsIcon sx={{ color: mirrorX || mirrorY ? '#0f172a' : '#38bdf8', fontSize: '1.15rem !important' }} />}
+              endIcon={<ArrowDownIcon />}
+              sx={{
+                minHeight: 46,
+                px: 2,
+                borderRadius: '14px',
+                borderColor: mirrorX || mirrorY ? '#fbbf24' : 'rgba(255, 255, 255, 0.16)',
+                bgcolor: mirrorX || mirrorY ? '#fbbf24' : 'rgba(255, 255, 255, 0.05)',
+                color: mirrorX || mirrorY ? '#0f172a' : '#ffffff',
+                fontWeight: 800,
+                fontSize: '0.9rem',
+                textTransform: 'none',
+                '&:hover': {
+                  bgcolor: mirrorX || mirrorY ? '#f59e0b' : 'rgba(255, 255, 255, 0.12)',
+                  borderColor: '#fbbf24',
+                },
+              }}
+            >
+              {mirrorX ? 'Mirror X' : mirrorY ? 'Mirror Y' : 'Optics'}
+            </Button>
 
-            <Tooltip title="Vertical Flip (Flip Y) for inverted teleprompter monitor mounts">
-              <IconButton
-                size="small"
-                onClick={() => {
-                  const next = !mirrorY;
-                  setMirrorY(next);
-                  broadcastPrompterStatus({ mirrorY: next });
-                }}
-                sx={{
-                  color: mirrorY ? '#000' : '#cbd5e1',
-                  bgcolor: mirrorY ? '#fbbf24' : 'rgba(255, 255, 255, 0.07)',
-                  border: `1px solid ${mirrorY ? '#fbbf24' : 'rgba(255, 255, 255, 0.15)'}`,
-                  borderRadius: '8px',
-                }}
-              >
-                <FlipVerticalIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-
-            <Tooltip title="Toggle Fullscreen (Shortcut: F)">
-              <IconButton
-                size="small"
-                onClick={toggleFullscreen}
-                sx={{
-                  color: '#ffffff',
-                  bgcolor: 'rgba(255, 255, 255, 0.08)',
-                  borderRadius: '8px',
-                  '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.16)' },
-                }}
-              >
-                {isFullscreen ? <FullscreenExitIcon fontSize="small" /> : <FullscreenIcon fontSize="small" />}
-              </IconButton>
-            </Tooltip>
+            <IconButton
+              onClick={toggleFullscreen}
+              sx={{
+                width: 46,
+                height: 46,
+                color: '#ffffff',
+                bgcolor: 'rgba(255, 255, 255, 0.06)',
+                border: '1px solid rgba(255, 255, 255, 0.14)',
+                borderRadius: '14px',
+                '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.14)' },
+              }}
+            >
+              {isFullscreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
+            </IconButton>
           </Box>
         </Box>
 
-        {/* ── MAIN OPTICAL TELEPROMPTER VIEWPORT (WITH MIRROR TRANSFORMS) ── */}
+        {/* ── STUDIO POPOVER 1: SPEED & FONT SIZE ── */}
+        <Popover
+          open={Boolean(speedAnchorEl)}
+          anchorEl={speedAnchorEl}
+          onClose={() => setSpeedAnchorEl(null)}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+          slotProps={{
+            paper: {
+              sx: {
+                mt: 1.25,
+                p: 2.5,
+                width: 340,
+                borderRadius: '22px',
+                bgcolor: 'rgba(15, 23, 42, 0.98)',
+                backdropFilter: 'blur(24px)',
+                border: '1px solid rgba(255, 255, 255, 0.16)',
+                color: '#ffffff',
+                boxShadow: '0 24px 60px rgba(0, 0, 0, 0.75)',
+              },
+            },
+          }}
+        >
+          <Typography sx={{ fontSize: '0.76rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', mb: 1.25 }}>
+            Scroll Speed ({estimatedWpm} WPM)
+          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, mb: 1.5 }}>
+            <Button
+              variant="contained"
+              onClick={() => {
+                const next = Math.max(0.4, Number((scrollSpeed - 0.2).toFixed(1)));
+                setScrollSpeed(next);
+                broadcastPrompterStatus({ scrollSpeed: next });
+              }}
+              sx={{ minHeight: 46, minWidth: 68, borderRadius: '12px', bgcolor: 'rgba(255,255,255,0.1)', fontSize: '1.25rem', fontWeight: 800 }}
+            >
+              −
+            </Button>
+            <Typography sx={{ fontSize: '1.4rem', fontWeight: 800, fontFamily: 'monospace', color: '#fbbf24' }}>
+              {scrollSpeed.toFixed(1)}x
+            </Typography>
+            <Button
+              variant="contained"
+              onClick={() => {
+                const next = Math.min(3.5, Number((scrollSpeed + 0.2).toFixed(1)));
+                setScrollSpeed(next);
+                broadcastPrompterStatus({ scrollSpeed: next });
+              }}
+              sx={{ minHeight: 46, minWidth: 68, borderRadius: '12px', bgcolor: 'rgba(255,255,255,0.1)', fontSize: '1.25rem', fontWeight: 800 }}
+            >
+              +
+            </Button>
+          </Box>
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1, mb: 2.5 }}>
+            {[0.8, 1.2, 1.6, 2.2].map((preset) => (
+              <Button
+                key={preset}
+                variant={scrollSpeed === preset ? 'contained' : 'outlined'}
+                onClick={() => {
+                  setScrollSpeed(preset);
+                  broadcastPrompterStatus({ scrollSpeed: preset });
+                }}
+                sx={{
+                  py: 0.85,
+                  borderRadius: '10px',
+                  fontWeight: 800,
+                  fontSize: '0.84rem',
+                  bgcolor: scrollSpeed === preset ? '#fbbf24' : 'transparent',
+                  color: scrollSpeed === preset ? '#0f172a' : '#e2e8f0',
+                  borderColor: 'rgba(255,255,255,0.16)',
+                }}
+              >
+                {preset}x
+              </Button>
+            ))}
+          </Box>
+
+          <Typography sx={{ fontSize: '0.76rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', mb: 1.25 }}>
+            Script Text Size
+          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, mb: 1.5 }}>
+            <Button
+              variant="contained"
+              onClick={() => {
+                const next = Math.max(28, fontSize - 4);
+                setFontSize(next);
+                broadcastPrompterStatus({ fontSize: next });
+              }}
+              sx={{ minHeight: 46, minWidth: 68, borderRadius: '12px', bgcolor: 'rgba(255,255,255,0.1)', fontSize: '1rem', fontWeight: 800 }}
+            >
+              A−
+            </Button>
+            <Typography sx={{ fontSize: '1.4rem', fontWeight: 800, fontFamily: 'monospace', color: '#38bdf8' }}>
+              {fontSize}px
+            </Typography>
+            <Button
+              variant="contained"
+              onClick={() => {
+                const next = Math.min(88, fontSize + 4);
+                setFontSize(next);
+                broadcastPrompterStatus({ fontSize: next });
+              }}
+              sx={{ minHeight: 46, minWidth: 68, borderRadius: '12px', bgcolor: 'rgba(255,255,255,0.1)', fontSize: '1rem', fontWeight: 800 }}
+            >
+              A+
+            </Button>
+          </Box>
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1 }}>
+            {[36, 48, 60, 76].map((sizePreset) => (
+              <Button
+                key={sizePreset}
+                variant={fontSize === sizePreset ? 'contained' : 'outlined'}
+                onClick={() => {
+                  setFontSize(sizePreset);
+                  broadcastPrompterStatus({ fontSize: sizePreset });
+                }}
+                sx={{
+                  py: 0.85,
+                  borderRadius: '10px',
+                  fontWeight: 800,
+                  fontSize: '0.84rem',
+                  bgcolor: fontSize === sizePreset ? '#38bdf8' : 'transparent',
+                  color: fontSize === sizePreset ? '#0f172a' : '#e2e8f0',
+                  borderColor: 'rgba(255,255,255,0.16)',
+                }}
+              >
+                {sizePreset}px
+              </Button>
+            ))}
+          </Box>
+        </Popover>
+
+        {/* ── STUDIO POPOVER 2: OPTICS, MIRRORING & RIG WIDTH ── */}
+        <Popover
+          open={Boolean(opticsAnchorEl)}
+          anchorEl={opticsAnchorEl}
+          onClose={() => setOpticsAnchorEl(null)}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+          slotProps={{
+            paper: {
+              sx: {
+                mt: 1.25,
+                p: 2.5,
+                width: 340,
+                borderRadius: '22px',
+                bgcolor: 'rgba(15, 23, 42, 0.98)',
+                backdropFilter: 'blur(24px)',
+                border: '1px solid rgba(255, 255, 255, 0.16)',
+                color: '#ffffff',
+                boxShadow: '0 24px 60px rgba(0, 0, 0, 0.75)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 1.25,
+              },
+            },
+          }}
+        >
+          <Typography sx={{ fontSize: '0.76rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            Optical Beamsplitter & Rig
+          </Typography>
+
+          <Button
+            fullWidth
+            variant="contained"
+            onClick={() => {
+              const next = !mirrorX;
+              setMirrorX(next);
+              broadcastPrompterStatus({ mirrorX: next });
+            }}
+            startIcon={<FlipHorizontalIcon />}
+            sx={{
+              minHeight: 48,
+              justifyContent: 'flex-start',
+              px: 2,
+              borderRadius: '14px',
+              fontWeight: 800,
+              fontSize: '0.92rem',
+              textTransform: 'none',
+              bgcolor: mirrorX ? '#fbbf24' : 'rgba(255,255,255,0.08)',
+              color: mirrorX ? '#0f172a' : '#ffffff',
+              '&:hover': { bgcolor: mirrorX ? '#f59e0b' : 'rgba(255,255,255,0.14)' },
+            }}
+          >
+            Flip Horizontal (M): {mirrorX ? 'ON' : 'OFF'}
+          </Button>
+
+          <Button
+            fullWidth
+            variant="contained"
+            onClick={() => {
+              const next = !mirrorY;
+              setMirrorY(next);
+              broadcastPrompterStatus({ mirrorY: next });
+            }}
+            startIcon={<FlipVerticalIcon />}
+            sx={{
+              minHeight: 48,
+              justifyContent: 'flex-start',
+              px: 2,
+              borderRadius: '14px',
+              fontWeight: 800,
+              fontSize: '0.92rem',
+              textTransform: 'none',
+              bgcolor: mirrorY ? '#fbbf24' : 'rgba(255,255,255,0.08)',
+              color: mirrorY ? '#0f172a' : '#ffffff',
+              '&:hover': { bgcolor: mirrorY ? '#f59e0b' : 'rgba(255,255,255,0.14)' },
+            }}
+          >
+            Flip Vertical: {mirrorY ? 'ON' : 'OFF'}
+          </Button>
+
+          <Button
+            fullWidth
+            variant="contained"
+            onClick={() => setShowEyeLine(!showEyeLine)}
+            startIcon={<EyeLineIcon />}
+            sx={{
+              minHeight: 48,
+              justifyContent: 'flex-start',
+              px: 2,
+              borderRadius: '14px',
+              fontWeight: 800,
+              fontSize: '0.92rem',
+              textTransform: 'none',
+              bgcolor: showEyeLine ? 'rgba(16, 185, 129, 0.18)' : 'rgba(255,255,255,0.08)',
+              color: showEyeLine ? '#34d399' : '#ffffff',
+              border: showEyeLine ? '1px solid rgba(16, 185, 129, 0.45)' : 'none',
+            }}
+          >
+            Eye-Line Focus Bar: {showEyeLine ? 'ON' : 'OFF'}
+          </Button>
+
+          <Box sx={{ pt: 0.75 }}>
+            <Typography sx={{ fontSize: '0.74rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', mb: 1 }}>
+              Reading Column Width
+            </Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1 }}>
+              {[
+                { pct: 52, label: '52%' },
+                { pct: 68, label: '68%' },
+                { pct: 84, label: '84%' },
+              ].map((col) => (
+                <Button
+                  key={col.pct}
+                  variant={columnWidthPct === col.pct ? 'contained' : 'outlined'}
+                  onClick={() => setColumnWidthPct(col.pct)}
+                  sx={{
+                    py: 0.9,
+                    borderRadius: '10px',
+                    fontWeight: 800,
+                    fontSize: '0.84rem',
+                    textTransform: 'none',
+                    bgcolor: columnWidthPct === col.pct ? '#10b981' : 'transparent',
+                    color: columnWidthPct === col.pct ? '#052e16' : '#e2e8f0',
+                    borderColor: 'rgba(255,255,255,0.16)',
+                  }}
+                >
+                  {col.label}
+                </Button>
+              ))}
+            </Box>
+          </Box>
+        </Popover>
+
+        {/* ── MAIN OPTICAL TELEPROMPTER VIEWPORT ── */}
         <Box
           sx={{
             flex: 1,
@@ -826,7 +1037,6 @@ export default function LivestreamTeleprompterPage() {
             transition: 'transform 0.25s ease',
           }}
         >
-          {/* Top & Bottom Optical Vignette Shades to keep eyes locked on the reading zone */}
           {showEyeLine && (
             <>
               <Box
@@ -836,7 +1046,7 @@ export default function LivestreamTeleprompterPage() {
                   left: 0,
                   right: 0,
                   height: '22%',
-                  background: 'linear-gradient(180deg, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0) 100%)',
+                  background: 'linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%)',
                   pointerEvents: 'none',
                   zIndex: 10,
                 }}
@@ -854,7 +1064,7 @@ export default function LivestreamTeleprompterPage() {
                 }}
               />
 
-              {/* Fixed Eye-Line Reading Sweet-Spot Bar at 30% height */}
+              {/* Precision Laser Eye-Line Focus Guide at 30% height */}
               <Box
                 sx={{
                   position: 'absolute',
@@ -863,37 +1073,35 @@ export default function LivestreamTeleprompterPage() {
                   right: 0,
                   height: `${Math.round(fontSize * 1.65)}px`,
                   transform: 'translateY(-35%)',
-                  borderTop: '1.5px solid rgba(251, 191, 36, 0.28)',
-                  borderBottom: '1.5px solid rgba(251, 191, 36, 0.28)',
+                  borderTop: '1px solid rgba(251, 191, 36, 0.3)',
+                  borderBottom: '1px solid rgba(251, 191, 36, 0.3)',
                   bgcolor: 'rgba(251, 191, 36, 0.03)',
                   pointerEvents: 'none',
                   zIndex: 15,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  px: { xs: 1.5, md: 3 },
+                  px: { xs: 2, md: 4 },
                 }}
               >
-                <Typography
+                <Box
                   sx={{
-                    color: '#fbbf24',
-                    fontSize: '1.75rem',
-                    fontWeight: 900,
-                    textShadow: '0 0 16px rgba(251, 191, 36, 0.8)',
+                    width: 6,
+                    height: '65%',
+                    borderRadius: '4px',
+                    bgcolor: '#fbbf24',
+                    boxShadow: '0 0 16px rgba(251, 191, 36, 0.85)',
                   }}
-                >
-                  ▶
-                </Typography>
-                <Typography
+                />
+                <Box
                   sx={{
-                    color: '#fbbf24',
-                    fontSize: '1.75rem',
-                    fontWeight: 900,
-                    textShadow: '0 0 16px rgba(251, 191, 36, 0.8)',
+                    width: 6,
+                    height: '65%',
+                    borderRadius: '4px',
+                    bgcolor: '#fbbf24',
+                    boxShadow: '0 0 16px rgba(251, 191, 36, 0.85)',
                   }}
-                >
-                  ◀
-                </Typography>
+                />
               </Box>
             </>
           )}
@@ -922,11 +1130,11 @@ export default function LivestreamTeleprompterPage() {
               {rundownBlocks.length === 0 ? (
                 <Box sx={{ textAlign: 'center', py: 12 }}>
                   <LiveIcon sx={{ fontSize: '4rem', color: hubColor, mb: 2 }} />
-                  <Typography sx={{ fontSize: '2.2rem', fontWeight: 900, color: '#ffffff', mb: 1.5 }}>
-                    {title || 'Teleprompter Ready'}
+                  <Typography sx={{ fontSize: '2.2rem', fontWeight: 800, color: '#ffffff', mb: 1.5 }}>
+                    {title || 'Teleprompter Standby'}
                   </Typography>
-                  <Typography sx={{ fontSize: '1.25rem', color: '#94a3b8', maxWidth: 640, mx: 'auto' }}>
-                    Waiting for slide rundown from your Director&apos;s Deck. Load a presentation framework in the Livestream Studio to populate your teleprompter script.
+                  <Typography sx={{ fontSize: '1.2rem', color: '#94a3b8', maxWidth: 600, mx: 'auto' }}>
+                    Load a broadcast framework in your Director&apos;s Deck to populate your live script.
                   </Typography>
                 </Box>
               ) : (
@@ -956,12 +1164,12 @@ export default function LivestreamTeleprompterPage() {
                       sx={{
                         mb: 8,
                         pb: 6,
-                        borderBottom: '2px dashed rgba(255, 255, 255, 0.14)',
-                        opacity: isCurrentSlide ? 1 : 0.72,
+                        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                        opacity: isCurrentSlide ? 1 : 0.65,
                         transition: 'opacity 0.25s ease',
                       }}
                     >
-                      {/* Slide Boundary Header Bar */}
+                      {/* Studio Slate Slide Header */}
                       <Box
                         onClick={() => navigateSlide(idx)}
                         sx={{
@@ -970,46 +1178,47 @@ export default function LivestreamTeleprompterPage() {
                           justifyContent: 'space-between',
                           flexWrap: 'wrap',
                           gap: 1.5,
-                          p: 2,
+                          px: 2.5,
+                          py: 1.75,
                           mb: 3.5,
                           borderRadius: '16px',
-                          bgcolor: isCurrentSlide ? 'rgba(16, 185, 129, 0.14)' : 'rgba(255, 255, 255, 0.05)',
-                          border: `2px solid ${isCurrentSlide ? '#10b981' : 'rgba(255, 255, 255, 0.12)'}`,
+                          bgcolor: isCurrentSlide ? 'rgba(255, 255, 255, 0.07)' : 'rgba(255, 255, 255, 0.03)',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          borderLeft: `4px solid ${isCurrentSlide ? '#10b981' : blockColor}`,
                           cursor: 'pointer',
                           '&:hover': {
-                            borderColor: '#10b981',
-                            bgcolor: 'rgba(16, 185, 129, 0.18)',
+                            bgcolor: 'rgba(255, 255, 255, 0.1)',
                           },
                         }}
                       >
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-                          <Chip
-                            label={`SLIDE ${idx + 1} OF ${rundownBlocks.length}`}
+                          <Typography
                             sx={{
-                              bgcolor: isCurrentSlide ? '#10b981' : '#334155',
-                              color: '#ffffff',
-                              fontWeight: 900,
-                              fontSize: '0.85rem',
-                              height: 30,
-                              borderRadius: '8px',
+                              fontSize: '0.88rem',
+                              fontWeight: 800,
+                              fontFamily: 'monospace',
+                              color: isCurrentSlide ? '#34d399' : '#94a3b8',
+                              letterSpacing: '0.05em',
                             }}
-                          />
+                          >
+                            {String(idx + 1).padStart(2, '0')} / {String(rundownBlocks.length).padStart(2, '0')}
+                          </Typography>
                           <Chip
-                            label={`ACT: ${actLabel}`}
+                            label={actLabel}
+                            size="small"
                             sx={{
                               bgcolor: 'rgba(255, 255, 255, 0.08)',
-                              color: blockColor,
-                              fontWeight: 900,
-                              fontSize: '0.8rem',
-                              height: 30,
-                              borderRadius: '8px',
-                              border: `1.5px solid ${blockColor}`,
+                              color: '#e2e8f0',
+                              fontWeight: 800,
+                              fontSize: '0.75rem',
+                              height: 26,
+                              borderRadius: '7px',
                             }}
                           />
                           <Typography
                             sx={{
-                              fontSize: `${Math.max(20, Math.round(fontSize * 0.55))}px`,
-                              fontWeight: 900,
+                              fontSize: `${Math.max(20, Math.round(fontSize * 0.5))}px`,
+                              fontWeight: 800,
                               color: '#ffffff',
                               letterSpacing: '-0.01em',
                             }}
@@ -1020,56 +1229,56 @@ export default function LivestreamTeleprompterPage() {
 
                         {slide.durationStr && (
                           <Chip
-                            label={`⏱️ Target: ${slide.durationStr}`}
+                            label={slide.durationStr}
+                            size="small"
                             sx={{
                               bgcolor: 'rgba(251, 191, 36, 0.14)',
                               color: '#fbbf24',
-                              fontWeight: 900,
+                              fontWeight: 800,
                               fontSize: '0.82rem',
-                              height: 30,
+                              height: 28,
                               borderRadius: '8px',
-                              border: '1px solid rgba(251, 191, 36, 0.4)',
                             }}
                           />
                         )}
                       </Box>
 
-                      {/* Main Spoken Teleprompter Script with Highlighted [STAGE DIRECTIONS] */}
+                      {/* Main Spoken Teleprompter Script */}
                       <Box sx={{ px: { xs: 1, md: 2 } }}>{renderPrompterScriptWithCues(scriptText, fontSize)}</Box>
 
-                      {/* Audience Chat / Discussion Prompt Callout */}
+                      {/* Audience Chat Callout */}
                       {slide.originalContent?.description && (
                         <Box
                           sx={{
                             mt: 3.5,
                             p: 2.5,
                             borderRadius: '16px',
-                            bgcolor: 'rgba(6, 182, 212, 0.12)',
-                            border: '2px solid rgba(6, 182, 212, 0.45)',
+                            bgcolor: 'rgba(56, 189, 248, 0.08)',
+                            border: '1px solid rgba(56, 189, 248, 0.35)',
                             display: 'flex',
                             alignItems: 'flex-start',
-                            gap: 2,
+                            gap: 1.75,
                           }}
                         >
-                          <ChatIcon sx={{ color: '#22d3ee', fontSize: `${Math.max(24, Math.round(fontSize * 0.65))}px`, mt: 0.4 }} />
+                          <ChatIcon sx={{ color: '#38bdf8', fontSize: `${Math.max(24, Math.round(fontSize * 0.6))}px`, mt: 0.3 }} />
                           <Box>
                             <Typography
                               sx={{
-                                fontSize: '0.85rem',
-                                fontWeight: 900,
-                                color: '#22d3ee',
+                                fontSize: '0.82rem',
+                                fontWeight: 800,
+                                color: '#38bdf8',
                                 textTransform: 'uppercase',
                                 letterSpacing: '0.06em',
-                                mb: 0.5,
+                                mb: 0.4,
                               }}
                             >
-                              💬 Ask The Live Audience / Chat Callout
+                              Audience Prompt
                             </Typography>
                             <Typography
                               sx={{
-                                fontSize: `${Math.max(22, Math.round(fontSize * 0.72))}px`,
-                                fontWeight: 800,
-                                color: '#ecfeff',
+                                fontSize: `${Math.max(22, Math.round(fontSize * 0.68))}px`,
+                                fontWeight: 700,
+                                color: '#f0f9ff',
                                 lineHeight: 1.4,
                               }}
                             >
