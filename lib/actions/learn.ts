@@ -40,10 +40,37 @@ export type CreateLearnContentPayload = {
   reportPages?: number;
   thumbnailUrl?: string;
   targetDate?: string;
+  // Nested structure compatibility:
+  taxonomy?: {
+    category?: string;
+    subcategory?: string;
+    timeframe?: string;
+    [key: string]: any;
+  };
+  livestream?: {
+    streamUrl?: string;
+    guestStudioUrl?: string;
+    scheduledFor?: string | Date;
+    eventDate?: string | Date;
+    blocks?: ArticleBlockPayload[];
+    communications?: any;
+    [key: string]: any;
+  };
+  [key: string]: any;
 };
 
 export async function createLearnContent(data: CreateLearnContentPayload, isDraft = false) {
   let finalSlug = data.slug.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+
+  const rawData = data as any;
+  const finalCategory = data.category || rawData.taxonomy?.category || null;
+  const finalSubcategory = data.subcategory || rawData.taxonomy?.subcategory || null;
+  const finalTimeframe = data.timeframe || rawData.taxonomy?.timeframe || null;
+  const finalThumbnailUrl = data.thumbnailUrl || rawData.thumbnail || rawData.coverImageUrl || null;
+  const finalLivestreamUrl = data.livestreamUrl || rawData.livestream?.streamUrl || rawData.livestream?.livestreamUrl || null;
+  const rawTargetDate = data.targetDate || rawData.livestream?.scheduledFor || rawData.livestream?.eventDate || rawData.scheduledFor;
+  const finalTargetDate = rawTargetDate ? new Date(rawTargetDate) : null;
+  const finalLivestreamBlocks = data.livestreamBlocks || rawData.livestream?.blocks || null;
 
   let targetStatus = isDraft ? 'draft' : 'published';
   if (!isDraft && data.organizationId && data.authorId) {
@@ -52,9 +79,8 @@ export async function createLearnContent(data: CreateLearnContentPayload, isDraf
   }
 
   // If approved to publish (not draft and not pending org approval), check if targetDate is scheduled for the future
-  if (!isDraft && targetStatus === 'published' && data.targetDate) {
-    const targetDateObj = new Date(data.targetDate);
-    if (!isNaN(targetDateObj.getTime()) && targetDateObj.getTime() > Date.now()) {
+  if (!isDraft && targetStatus === 'published' && finalTargetDate) {
+    if (!isNaN(finalTargetDate.getTime()) && finalTargetDate.getTime() > Date.now()) {
       targetStatus = 'scheduled';
     }
   }
@@ -90,17 +116,17 @@ export async function createLearnContent(data: CreateLearnContentPayload, isDraf
           description: data.description,
           type: data.type,
           status: targetStatus,
-          bottleneckTags: JSON.stringify(data.bottleneckTags),
-          category: data.category || null,
-          subcategory: data.subcategory || null,
-          timeframe: data.timeframe || null,
-          thumbnailUrl: data.thumbnailUrl,
+          bottleneckTags: JSON.stringify(data.bottleneckTags || []),
+          category: finalCategory,
+          subcategory: finalSubcategory,
+          timeframe: finalTimeframe,
+          thumbnailUrl: finalThumbnailUrl,
           authorId: data.authorId,
           authorName: data.authorName,
           authorAvatarUrl: data.authorAvatarUrl,
           organizationId: data.organizationId || null,
           collaborators: data.collaborators ? (typeof data.collaborators === 'string' ? data.collaborators : JSON.stringify(data.collaborators)) : undefined,
-          targetDate: data.targetDate ? new Date(data.targetDate) : null,
+          targetDate: finalTargetDate,
         },
       });
     } else {
@@ -111,17 +137,17 @@ export async function createLearnContent(data: CreateLearnContentPayload, isDraf
           slug: finalSlug,
           type: data.type,
           status: targetStatus,
-          bottleneckTags: JSON.stringify(data.bottleneckTags),
-          category: data.category || null,
-          subcategory: data.subcategory || null,
-          timeframe: data.timeframe || null,
-          thumbnailUrl: data.thumbnailUrl,
+          bottleneckTags: JSON.stringify(data.bottleneckTags || []),
+          category: finalCategory,
+          subcategory: finalSubcategory,
+          timeframe: finalTimeframe,
+          thumbnailUrl: finalThumbnailUrl,
           authorId: data.authorId,
           authorName: data.authorName,
           authorAvatarUrl: data.authorAvatarUrl,
           organizationId: data.organizationId || null,
           collaborators: data.collaborators ? (typeof data.collaborators === 'string' ? data.collaborators : JSON.stringify(data.collaborators)) : '[]',
-          targetDate: data.targetDate ? new Date(data.targetDate) : null,
+          targetDate: finalTargetDate,
         },
       });
     }
@@ -192,16 +218,16 @@ export async function createLearnContent(data: CreateLearnContentPayload, isDraf
           stream = await tx.learnLivestream.update({
             where: { learnContentId: content.id },
             data: { 
-              streamUrl: data.livestreamUrl,
-              scheduledFor: data.targetDate ? new Date(data.targetDate) : null,
+              streamUrl: finalLivestreamUrl,
+              scheduledFor: finalTargetDate,
             }
           });
         } else {
           stream = await tx.learnLivestream.create({
             data: {
               learnContentId: content.id,
-              streamUrl: data.livestreamUrl,
-              scheduledFor: data.targetDate ? new Date(data.targetDate) : null,
+              streamUrl: finalLivestreamUrl,
+              scheduledFor: finalTargetDate,
             },
           });
         }
@@ -209,9 +235,9 @@ export async function createLearnContent(data: CreateLearnContentPayload, isDraf
         // Delete old blocks
         await tx.learnLivestreamBlock.deleteMany({ where: { livestreamId: stream.id } });
         
-        if (data.livestreamBlocks && data.livestreamBlocks.length > 0) {
+        if (finalLivestreamBlocks && finalLivestreamBlocks.length > 0) {
           await tx.learnLivestreamBlock.createMany({
-            data: data.livestreamBlocks.map(block => ({
+            data: finalLivestreamBlocks.map(block => ({
               livestreamId: stream!.id,
               orderIndex: block.orderIndex,
               blockType: block.blockType,
@@ -257,13 +283,46 @@ export async function createLearnContent(data: CreateLearnContentPayload, isDraf
       dateType = 'START_TIME';
     }
 
+    const startDate = result.targetDate || result.createdAt;
+    let calculatedEndDate: Date | undefined = undefined;
+
+    if (result.type === 'livestream' && startDate) {
+      let totalDurationMinutes = 0;
+      if (finalLivestreamBlocks && Array.isArray(finalLivestreamBlocks)) {
+        for (const block of finalLivestreamBlocks) {
+          let dStr = (block as any).durationStr;
+          if (!dStr && block.content) {
+            try {
+              const parsed = typeof block.content === 'string' ? JSON.parse(block.content) : block.content;
+              dStr = parsed?.durationStr;
+            } catch (e) {}
+          }
+          if (dStr && typeof dStr === 'string') {
+            const match = dStr.match(/(\d+)\s*m/i);
+            if (match) {
+              totalDurationMinutes += parseInt(match[1], 10);
+            }
+          } else {
+            totalDurationMinutes += 2; // Default ~2 mins per slide
+          }
+        }
+      }
+
+      if (totalDurationMinutes < 15) {
+        totalDurationMinutes = 35; // Standard default broadcast duration
+      }
+
+      calculatedEndDate = new Date(new Date(startDate).getTime() + totalDurationMinutes * 60 * 1000);
+    }
+
     await syncCalendarEvent({
       sourceType: result.type,
       sourceId: result.id,
       slug: result.slug,
       dateType,
       title: result.title,
-      date: result.targetDate || result.createdAt,
+      date: startDate,
+      endDate: calculatedEndDate,
       imageUrl: result.thumbnailUrl ?? undefined,
       category: result.category ?? result.type,
       organizationName: orgName,
@@ -349,16 +408,70 @@ export async function getUserDrafts(userId: string, userEmail?: string) {
       },
       video: true,
       class: true,
-      livestream: true,
+      livestream: {
+        include: {
+          blocks: {
+            orderBy: { orderIndex: 'asc' }
+          }
+        }
+      },
       report: true,
     }
   });
 }
 
-export async function getUserPublishedContent(userId: string) {
+export async function getUserPublishedContent(userId: string, userEmail?: string) {
+  let aliases: string[] = [userId];
+  if (userEmail) aliases.push(userEmail);
+
+  try {
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { id: userId },
+          { firebaseUid: userId },
+          ...(userEmail ? [{ email: userEmail }] : [])
+        ]
+      },
+      select: { id: true, firebaseUid: true, email: true }
+    });
+    if (user) {
+      if (user.id) aliases.push(user.id);
+      if (user.firebaseUid) aliases.push(user.firebaseUid);
+      if (user.email) aliases.push(user.email);
+    }
+  } catch (e) {}
+
+  aliases = Array.from(new Set(aliases.filter(Boolean)));
+
   return await prisma.learnContent.findMany({
-    where: { authorId: userId, status: 'published' },
-    orderBy: { createdAt: 'desc' }
+    where: { 
+      authorId: { in: aliases }, 
+      status: { in: ['published', 'scheduled'] } 
+    },
+    orderBy: { createdAt: 'desc' },
+    include: {
+      article: {
+        include: {
+          blocks: {
+            orderBy: {
+              orderIndex: 'asc'
+            }
+          }
+        }
+      },
+      video: true,
+      class: true,
+      livestream: {
+        include: {
+          blocks: {
+            orderBy: { orderIndex: 'asc' }
+          }
+        }
+      },
+      report: true,
+      organization: true,
+    }
   });
 }
 
@@ -384,8 +497,13 @@ export async function deleteLearnContent(id: string) {
 }
 
 export async function getLearnContentById(id: string) {
-  return await prisma.learnContent.findUnique({
-    where: { id },
+  return await prisma.learnContent.findFirst({
+    where: {
+      OR: [
+        { id },
+        { slug: id }
+      ]
+    },
     include: {
       article: {
         include: {
@@ -476,8 +594,94 @@ export async function fetchLivestreamContentPool(userId: string, orgId: string |
     orderBy: { postedAt: 'desc' },
     take: 10
   });
+
+  let lastUsedLinks: { guestStudioUrl: string; streamUrl: string; communications?: any } | null = null;
+  try {
+    let aliases: string[] = [userId];
+    if (!orgId) {
+      try {
+        const user = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { id: userId },
+              { firebaseUid: userId }
+            ]
+          },
+          select: { id: true, firebaseUid: true, email: true }
+        });
+        if (user) {
+          if (user.id) aliases.push(user.id);
+          if (user.firebaseUid) aliases.push(user.firebaseUid);
+          if (user.email) aliases.push(user.email);
+        }
+      } catch (e) {}
+    }
+    aliases = Array.from(new Set(aliases.filter(Boolean)));
+
+    const recentLivestreams = await prisma.learnContent.findMany({
+      where: {
+        type: 'livestream',
+        ...(orgId 
+          ? { organizationId: orgId }
+          : { authorId: { in: aliases } })
+      },
+      include: {
+        livestream: {
+          include: {
+            blocks: {
+              orderBy: { orderIndex: 'asc' },
+            }
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+    });
+
+    let foundGuest = '';
+    let foundStream = '';
+    let foundComms: any = undefined;
+
+    for (const ls of recentLivestreams) {
+      if (!foundStream && ls.livestream?.streamUrl) {
+        foundStream = ls.livestream.streamUrl;
+      }
+
+      const blocks = ls.livestream?.blocks || [];
+      for (const b of blocks) {
+        if (b.content) {
+          try {
+            const parsed = JSON.parse(b.content);
+            if (parsed?._studioMeta) {
+              if (!foundGuest && parsed._studioMeta.guestStudioUrl) {
+                foundGuest = parsed._studioMeta.guestStudioUrl;
+              }
+              if (!foundStream && parsed._studioMeta.streamUrl) {
+                foundStream = parsed._studioMeta.streamUrl;
+              }
+              if (!foundComms && parsed._studioMeta.communications) {
+                foundComms = parsed._studioMeta.communications;
+              }
+            }
+          } catch (e) {}
+        }
+      }
+
+      if (foundGuest && foundStream && foundComms) break;
+    }
+
+    if (foundGuest || foundStream) {
+      lastUsedLinks = {
+        guestStudioUrl: foundGuest,
+        streamUrl: foundStream,
+        communications: foundComms,
+      };
+    }
+  } catch (err) {
+    console.error('Error fetching lastUsedLinks in fetchLivestreamContentPool:', err);
+  }
   
-  return { articles, jobs };
+  return { articles, jobs, lastUsedLinks };
 }
 
 export async function fetchGlobalLivestreamArticles(engine: 'production_foundations' | 'resilience_disruption' | 'markets_people_solutions' | 'the_breakdown' | 'the_masterclass' | 'the_opportunity_desk' | string) {
@@ -1128,7 +1332,13 @@ export async function getCollaborationDraft(draftId: string, userId?: string) {
         },
         video: true,
         class: true,
-        livestream: true,
+        livestream: {
+          include: {
+            blocks: {
+              orderBy: { orderIndex: 'asc' }
+            }
+          }
+        },
         report: true,
       }
     });

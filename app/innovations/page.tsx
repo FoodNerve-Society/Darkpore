@@ -77,7 +77,12 @@ export default async function InnovationsHomepage() {
   let recentIntelligence: any[] = [];
   try {
     const recentLC = await prisma.learnContent.findMany({
-      where: { status: 'published' },
+      where: {
+        OR: [
+          { status: 'published' },
+          { type: 'livestream', status: 'scheduled' }
+        ]
+      },
       orderBy: { createdAt: 'desc' },
       take: 20,
       include: {
@@ -87,13 +92,17 @@ export default async function InnovationsHomepage() {
               orderBy: { orderIndex: 'asc' }
             }
           }
-        }
+        },
+        livestream: true,
       }
     });
 
     recentIntelligence = recentLC.map((lc: any) => {
       // Find the first image block to use as thumbnail
       const imageBlock = lc.article?.blocks?.find((b: any) => b.type === 'image' && b.payload?.url);
+      const fallbackLivestreamThumb = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200&q=80';
+      const scheduledDate = lc.livestream?.scheduledFor || lc.targetDate;
+      const formattedDate = scheduledDate ? new Date(scheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
       return {
         id: lc.id,
         challengeId: lc.challengeId || 'global',
@@ -101,11 +110,11 @@ export default async function InnovationsHomepage() {
         slug: lc.slug,
         title: lc.title,
         type: lc.type, // 'article', 'video', 'class', 'livestream'
-        thumbnailUrl: lc.thumbnailUrl || imageBlock?.payload?.url || '/images/default-thumbnail.jpg',
+        thumbnailUrl: lc.thumbnailUrl || imageBlock?.payload?.url || (lc.type === 'livestream' ? fallbackLivestreamThumb : '/images/default-thumbnail.jpg'),
         author: lc.authorName || 'Society Architect',
         dateAdded: lc.createdAt,
-        readTime: lc.type === 'video' || lc.type === 'livestream' ? 'Watch' : '5 min read',
-        link: `/learn/article/${lc.slug}`,
+        readTime: lc.type === 'livestream' ? (formattedDate ? `UPCOMING • ${formattedDate}` : 'Watch Live') : (lc.type === 'video' ? 'Watch' : '5 min read'),
+        link: lc.type === 'livestream' ? `/learn/livestream/${lc.id}` : `/learn/article/${lc.slug}`,
         blocks: lc.article?.blocks || []
       };
     });
@@ -146,7 +155,7 @@ export default async function InnovationsHomepage() {
         }
       }),
       prisma.learnContent.count({ where: { status: 'published' } }),
-      prisma.calendarEvent.count({ where: { sourceType: 'livestream', status: { in: ['upcoming', 'live'] } } }),
+      prisma.learnContent.count({ where: { type: 'livestream', status: { in: ['published', 'scheduled'] } } }),
       prisma.tradeListing.count({ where: { category: { in: ['jobs', 'job', 'volunteer', 'internship', 'internships'] }, status: 'active' } }),
       prisma.campaign.count({ where: { status: 'active_deployment' } })
     ]);

@@ -532,7 +532,7 @@ export default function CreatorStudioDashboard({
   drafts?: any[];
   workspaceTabs?: any[];
   onStartFresh: (type: string, taxonomy: any, initialDraftData?: any) => void;
-  onEditDraft: (draftId: string) => void;
+  onEditDraft: (draftId: string, type?: string) => void;
   onDeleteDraft: (draftId: string) => void;
   challengesData: any[];
   userName?: string;
@@ -4365,7 +4365,7 @@ export default function CreatorStudioDashboard({
                             <InfoOutlinedIcon sx={{ color: '#2563eb', fontSize: 22, flexShrink: 0 }} />
                             <Box sx={{ flex: 1 }}>
                               <Typography sx={{ color: '#1e40af', fontSize: '0.84rem', fontWeight: 600, lineHeight: 1.5 }}>
-                                We haven't detected your ingested articles yet. Don't worry — your progress is saved in your browser, and you can resume anytime by clicking <strong>Start</strong> above.
+                                We haven&apos;t detected your ingested articles yet. Don&apos;t worry — your progress is saved in your browser, and you can resume anytime by clicking <strong>Start</strong> above.
                               </Typography>
                             </Box>
                           </Paper>
@@ -4897,7 +4897,7 @@ export default function CreatorStudioDashboard({
                                                                 letterSpacing: '-0.03em',
                                                               }}
                                                             >
-                                                              You've Explored Every Angle
+                                                              You&apos;ve Explored Every Angle
                                                             </Typography>
                                                             <Typography
                                                               sx={{
@@ -5411,7 +5411,7 @@ export default function CreatorStudioDashboard({
                                                              </Box>
                                                            ) : (
                                                              <Typography sx={{ color: '#475569', fontSize: { xs: '0.96rem', sm: '1.05rem' }, lineHeight: 1.6, fontStyle: 'italic' }}>
-                                                               "{item.hook || `Strategic editorial insight covering real-time dynamics in ${selectedCommodity}.`}"
+                                                               &ldquo;{item.hook || `Strategic editorial insight covering real-time dynamics in ${selectedCommodity}.`}&rdquo;
                                                              </Typography>
                                                            )}
 
@@ -5559,7 +5559,7 @@ export default function CreatorStudioDashboard({
                 }))
               }
             ]}
-            onEdit={(id) => onEditDraft(id)}
+            onEdit={(id, type) => onEditDraft(id, type)}
             onDelete={(id) => onDeleteDraft(id)}
           />
         </Box>

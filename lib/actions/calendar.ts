@@ -21,12 +21,18 @@ export async function getCalendarEvents(tenantId: string) {
 
   return prisma.calendarEvent.findMany({
     where: {
-      tenantId,
       status: { not: 'expired' },
       OR: [
         { visibility: 'society' },
-        ...(userId ? [{ visibility: 'personal', userId }] : []),
-        ...(userOrganizationIds.length > 0 ? [{ visibility: 'organization', organizationId: { in: userOrganizationIds } }] : [])
+        {
+          tenantId,
+          ...(userId || userOrganizationIds.length > 0 ? {
+            OR: [
+              ...(userId ? [{ visibility: 'personal', userId }] : []),
+              ...(userOrganizationIds.length > 0 ? [{ visibility: 'organization', organizationId: { in: userOrganizationIds } }] : [])
+            ]
+          } : {})
+        }
       ]
     },
     orderBy: { date: 'asc' },

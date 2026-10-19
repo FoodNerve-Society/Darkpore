@@ -1,4 +1,3 @@
-// @ts-nocheck
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
@@ -41,9 +40,7 @@ import {
   AccountCircle as AccountCircleIcon,
   Business as BusinessIcon,
   SwapHoriz as SwapHorizIcon,
-  KeyboardArrowDown as KeyboardArrowDownIcon,
   Close as CloseIcon,
-  DeleteOutline as DeleteOutlineIcon,
 } from "@mui/icons-material";
 
 import { useRouter, useParams, usePathname, useSearchParams } from "next/navigation";
@@ -54,7 +51,7 @@ import {
 } from "@/lib/db/society";
 import { useSociety, type Challenge, RANK_NAMES, type RankLevel } from "@/context/SocietyContext";
 import { getTenantConfig } from "@/lib/cms";
-import { getUserDrafts, deleteLearnContent, getOrgLearnContent, getUserPublishedContent, getCollaborationDraft, joinCollaborationDraft } from "@/lib/actions/learn";
+import { getUserDrafts, deleteLearnContent, getOrgLearnContent, getUserPublishedContent, getCollaborationDraft, joinCollaborationDraft, getLearnContentById } from "@/lib/actions/learn";
 import FlipContainer from "../components/shared/FlipContainer";
 import CreateLearnContentForm from "../components/forms/CreateLearnContentForm";
 import CreateLivestreamForm from "../components/forms/CreateLivestreamForm";
@@ -418,7 +415,7 @@ function LivestreamCard({
           sx={{
             position: "absolute",
             inset: 0,
-            backgroundImage: `url(${item.thumbnailUrl})`,
+            backgroundImage: `url(${item.thumbnailUrl || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200&q=80'})`,
             backgroundSize: "cover",
             backgroundPosition: "center",
             transition: "transform 0.5s ease",
@@ -1275,6 +1272,12 @@ function renderCard(
 ) {
   const handleClick = () => onNavigate(item);
   switch (swimlane) {
+    case "scheduled":
+      if ((item as any).type === 'livestream') return <LivestreamCard key={item.id} item={item} index={index} onClick={handleClick} />;
+      if ((item as any).type === 'video') return <VideoCard key={item.id} item={item} index={index} onClick={handleClick} />;
+      if ((item as any).type === 'class') return <ClassCard key={item.id} item={item} index={index} onClick={handleClick} />;
+      if ((item as any).type === 'report') return <ReportCard key={item.id} item={item} index={index} onClick={handleClick} />;
+      return <ArticleCard key={item.id} item={item} index={index} onClick={handleClick} />;
     case "livestreams":
       return <LivestreamCard key={item.id} item={item} index={index} onClick={handleClick} />;
     case "classes":
@@ -1369,7 +1372,9 @@ export default function LearnPage() {
   
   useEffect(() => {
     if (profile?.organizations && profile.organizations.length > 0 && !selectedOrgId) {
-      setSelectedOrgId(profile.organizations[0].id);
+      queueMicrotask(() => {
+        setSelectedOrgId(profile.organizations[0].id);
+      });
     }
   }, [profile?.organizations, selectedOrgId]);
   
@@ -1403,16 +1408,22 @@ export default function LearnPage() {
   const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
   const [expandedStartType, setExpandedStartType] = useState<string | null>(null);
   const [selectedChallenge, setSelectedChallenge] = useState<string | null>(null);
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
+  const [draftTaxonomy, setDraftTaxonomy] = useState<any>(null);
+  const [fastPayload, setFastPayload] = useState<any>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
-    async function fetchWorkspaceData() {
-      if (profile?.uid) {
-        const userDrafts = await getUserDrafts(profile.uid, profile.email);
-        const userPublished = await getUserPublishedContent(profile.uid);
+    async function loadWorkspaceData() {
+      if (!profile?.uid) return;
+      try {
+        const userEmail = (profile as any)?.email;
+        const userDrafts = await getUserDrafts(profile.uid, userEmail);
+        const userPublished = await getUserPublishedContent(profile.uid, userEmail);
         if (cancelled) return;
 
-        let personalItems: any[] = [
+        const personalItems: any[] = [
           ...userDrafts.map(d => ({ 
             id: d.id, 
             title: d.title, 
@@ -1427,7 +1438,7 @@ export default function LearnPage() {
         // Sort newest first
         personalItems.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-        let newTabs: any[] = [{ id: 'personal', label: 'Personal', items: personalItems }];
+        const newTabs: any[] = [{ id: 'personal', label: 'Personal', items: personalItems }];
 
         // Check if there are any co-authored drafts
         const coAuthoredDrafts = userDrafts.filter(d => d.authorId !== profile.uid);
@@ -1457,11 +1468,15 @@ export default function LearnPage() {
         
         setWorkspaceTabs(newTabs);
         setDrafts(userDrafts);
+      } catch (e) {
+        console.error('Failed to fetch workspace data:', e);
       }
     }
-    fetchWorkspaceData();
-    return () => { cancelled = true; };
-  }, [profile?.uid, profile?.organizations, isFlipped]);
+    loadWorkspaceData();
+    return () => {
+      cancelled = true;
+    };
+  }, [profile?.uid, profile?.displayName, (profile as any)?.email, profile?.organizations, isFlipped, refreshTrigger]);
 
   // Handle direct collaboration link (e.g., ?draftId=[id]&invite=true)
   useEffect(() => {
@@ -1469,15 +1484,17 @@ export default function LearnPage() {
     const isInvite = searchParams?.get('invite') === 'true';
 
     if (draftIdParam) {
-      setSelectedDraftId(draftIdParam);
-      setIsFlipped(true);
+      queueMicrotask(() => {
+        setSelectedDraftId(draftIdParam);
+        setIsFlipped(true);
+      });
 
       if (profile?.uid) {
         if (isInvite) {
           joinCollaborationDraft(draftIdParam, {
             uid: profile.uid,
             name: profile.displayName || profile.firstName || 'Collaborator',
-            email: profile.email || '',
+            email: (profile as any)?.email || '',
             avatarUrl: profile.avatarUrl || ''
           });
         }
@@ -1492,10 +1509,6 @@ export default function LearnPage() {
       }
     }
   }, [searchParams, profile?.uid]);
-  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
-  const [draftTaxonomy, setDraftTaxonomy] = useState<any>(null);
-  const [expandedDraftId, setExpandedDraftId] = useState<string | null>(null);
-  const [fastPayload, setFastPayload] = useState<any>(null);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -1509,25 +1522,32 @@ export default function LearnPage() {
 
   // ═══════════════════════ NAVIGATION HANDLER ═══════════════════════
   const handleNavigate = useCallback((item: LearnContent) => {
-    switch (item.swimlane) {
-      case 'livestreams':
+    const targetType = (item as any).type || (
+      item.swimlane === 'livestreams' ? 'livestream' :
+      item.swimlane === 'classes' ? 'class' :
+      item.swimlane === 'videos' ? 'video' :
+      item.swimlane === 'reports' ? 'report' : 'article'
+    );
+
+    switch (targetType) {
+      case 'livestream':
         router.push(`/learn/livestream/${item.id}`);
         break;
-      case 'classes':
+      case 'class':
         router.push(`/learn/class/${item.id}`);
         break;
-      case 'articles':
-      case 'reports':
+      case 'article':
+      case 'report':
         window.history.pushState(null, '', `${pathname}/article/${item.id}`);
         setActiveArticle(item);
         break;
-      case 'videos':
+      case 'video':
         // Videos stay in-page for now
         break;
       default:
         break;
     }
-  }, [router]);
+  }, [router, pathname, setActiveArticle]);
 
   // ═══════════════════════ FILTERED CONTENT ═══════════════════════
   const filteredContentMap = useMemo(() => {
@@ -1560,8 +1580,7 @@ export default function LearnPage() {
 
   useEffect(() => {
     let cancelled = false;
-    async function load() {
-      setLoading(true);
+    async function loadContent() {
       try {
         const allContent = await getLearnContent({ includeScheduled: true });
         if (cancelled) return;
@@ -1577,6 +1596,9 @@ export default function LearnPage() {
         for (const item of allContent) {
           if (grouped[item.swimlane]) {
             grouped[item.swimlane].push(item);
+          }
+          if (item.status === 'scheduled' && item.swimlane !== 'scheduled') {
+            grouped.scheduled.push(item);
           }
         }
 
@@ -1595,11 +1617,11 @@ export default function LearnPage() {
         if (!cancelled) setLoading(false);
       }
     }
-    load();
+    loadContent();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [refreshTrigger]);
 
   const frontContent = (
     <Paper
@@ -1761,9 +1783,9 @@ export default function LearnPage() {
                             }}
                           >
                             <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#FF416C', boxShadow: '0 0 8px #FF416C', flexShrink: 0 }} />
-                            <Typography sx={{ 
+                            <Typography noWrap sx={{ 
                               fontSize: '0.8rem', fontWeight: 700, color: '#334155', 
-                              noWrap: true, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' 
+                              textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' 
                             }}>
                               {drafts[0].title || "Untitled Draft"}
                             </Typography>
@@ -1912,7 +1934,7 @@ export default function LearnPage() {
           ? swimlaneConfigs.map((cfg) => (
               <SwimlaneSkeleton key={cfg.key} />
             ))
-          : swimlaneConfigs.map((cfg, rowIndex) => {
+          : swimlaneConfigs.map((cfg) => {
               const items = filteredContentMap[cfg.key];
               if (items.length === 0) return null;
 
@@ -2219,7 +2241,7 @@ export default function LearnPage() {
               ? `${profile.prefixes && profile.prefixes.length > 0 ? profile.prefixes.join(' ') + ' ' : ''}${profile.firstName}`
               : (profile?.displayName ? profile.displayName.split(' ')[0] : 'Creative')
           }
-          userSpendableNP={profile?.spendableNP || 0}
+          userSpendableNP={(profile as any)?.spendableNP || 0}
           firebaseUid={profile?.uid}
           drafts={drafts}
           workspaceTabs={workspaceTabs}
@@ -2230,15 +2252,29 @@ export default function LearnPage() {
             setFastPayload(payload || null);
             setSelectedDraftId('new');
           }}
-          onEditDraft={(draftId) => {
+          onEditDraft={async (draftId, type) => {
             setFastPayload(null);
             setDraftTaxonomy(null);
-            setSelectedDraftId(draftId);
             const foundDraft = drafts.find((d: any) => d.id === draftId);
-            if (foundDraft?.type) {
-              setCreateContentType(foundDraft.type);
+            if (foundDraft) {
+              setCreateContentType(foundDraft.type || type || 'article');
+              setSelectedDraftId(draftId);
             } else {
-              setCreateContentType('article');
+              try {
+                const fullItem = await getLearnContentById(draftId);
+                if (fullItem) {
+                  setFastPayload(fullItem);
+                  setCreateContentType(fullItem.type || type || 'livestream');
+                  setSelectedDraftId(draftId);
+                } else {
+                  setCreateContentType(type || 'article');
+                  setSelectedDraftId(draftId);
+                }
+              } catch (e) {
+                console.error('Failed to load item for editing:', e);
+                setCreateContentType(type || 'article');
+                setSelectedDraftId(draftId);
+              }
             }
           }}
           onDeleteDraft={async (draftId) => {
@@ -2248,10 +2284,11 @@ export default function LearnPage() {
         />
       ) : createContentType === 'livestream' ? (
         <CreateLivestreamForm 
-          key={sessionKey}
+          key={`${sessionKey}-${selectedDraftId || 'new'}`}
           onSuccess={() => {
             setIsFlipped(false);
             setFastPayload(null);
+            setRefreshTrigger(k => k + 1);
             setTimeout(() => {
               setCreateContentType('');
               setSelectedDraftId(null);
@@ -2273,10 +2310,11 @@ export default function LearnPage() {
         />
       ) : (
         <CreateLearnContentForm 
-          key={sessionKey}
+          key={`${sessionKey}-${selectedDraftId || 'new'}`}
           onSuccess={() => {
             setIsFlipped(false);
             setFastPayload(null);
+            setRefreshTrigger(k => k + 1);
             setTimeout(() => {
               setCreateContentType('');
               setSelectedDraftId(null);

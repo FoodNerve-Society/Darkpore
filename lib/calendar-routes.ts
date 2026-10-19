@@ -15,22 +15,22 @@ export function getCalendarEventRoute(event: CalendarRouteSource, tenantId: stri
     case 'job':
       return `/careers/${event.sourceId}`;
     case 'listing':
-      return `/modular-society/${tenantId}/trade/${event.sourceId}`;
+      return `/trade/${event.sourceId}`;
     case 'livestream':
-      return `/modular-society/${tenantId}/learn/livestream/${event.sourceId}`;
+      return `/learn/livestream/${event.sourceId}`;
     case 'article':
-      return `/modular-society/${tenantId}/learn/article/${identifier}`;
+      return `/learn/article/${identifier}`;
     case 'video':
-      return `/modular-society/${tenantId}/learn/video/${event.sourceId}`;
+      return `/learn/video/${event.sourceId}`;
     case 'class':
-      return `/modular-society/${tenantId}/learn/class/${event.sourceId}`;
+      return `/learn/class/${event.sourceId}`;
     case 'report':
-      return `/modular-society/${tenantId}/learn/article/${identifier}`;
+      return `/learn/article/${identifier}`;
     case 'meetEvent':
-      return `/modular-society/${tenantId}/meet/${event.sourceId}`;
+      return `/meet/${event.sourceId}`;
     case 'campaign':
-      return `/modular-society/${tenantId}/support/${event.sourceId}`;
+      return `/support/${event.sourceId}`;
     default:
-      return `/modular-society/${tenantId}`;
+      return `/learn`;
   }
 }

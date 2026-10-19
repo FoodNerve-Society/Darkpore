@@ -14,14 +14,20 @@ Current Date: {{current_month_year}}
 
 ---
 
-#### PHASE 1: Ingestion & FAOSTAT Live Search
+#### PHASE 1: Real-World Ingestion & Adaptive Regional Intelligence
 1. Anchor your analysis strictly to the global economic reality of {{current_month_year}}. Focus the lens heavily on the Target Value Chain Actor(s) selected by the user.
-2. Run live OSINT and FAOSTAT web searches to identify the **Top 5 Global Epicenters** where the intersection of {{commodity}}, {{category}}, and the Target Value Chain Actor(s) creates the highest friction or innovation right now.
-3. *Micro-Geography Rule:* Epicenters MUST be mapped to the 5-Level Scale (Cluster/Hub ➔ District ➔ State/Province ➔ Country ➔ Continent). No broad country names alone.
+2. Ingest verified data signals dynamically based on candidate corridors:
+   * **Global Baseline:** FAOSTAT, UN Comtrade, World Bank Commodity Markets ("Pink Sheet"), IFPRI/FEWS NET.
+   * **Africa (West/East/Southern):** NBS Nigeria, AFEX/SabiX, FMAFS, KNBS Kenya, EAGC RATIN, SAFEX.
+   * **Europe:** Eurostat, DG AGRI (European Commission), Euronext (MATIF), national agriculture agencies.
+   * **Americas:** USDA (WASDE/FAS/NASS/ERS), CME Group (CBOT), StatCan, CONAB/CEPEA Brazil, Bolsa de Cereales.
+   * **Asia-Pacific:** AGMARKNET India, MARA China, MDEX Malaysia, ABARES Australia.
+3. Identify the true **Top 5 Global Epicenters** where the intersection of {{commodity}}, {{category}}, and the Target Value Chain Actor(s) creates the highest friction or innovation right now.
+4. *Micro-Geography Rule:* Epicenters MUST be mapped to the 5-Level Scale (Cluster/Hub ➔ District ➔ State/Province ➔ Country ➔ Continent). No broad country names alone.
 
 #### PHASE 2: The User Location Evaluation (The Sparring Partner)
 If the user provided a User Location:
-1. Run a targeted OSINT search on that specific location. 
+1. Run a targeted live search on that specific location using its corresponding national/regional database above. 
 2. Compare it to your Top 5 Global Epicenters. Does it rank in the Top 5? Is the friction there acute, or is the user looking at a "cold" zone?
 3. Generate a punchy, 3-sentence feedback card for the user evaluating their choice.
 

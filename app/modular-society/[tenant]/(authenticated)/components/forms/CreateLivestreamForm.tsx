@@ -5,7 +5,7 @@ import { Box, Typography, Button, TextField, MenuItem, Select, FormControl, Inpu
 import { ArrowBack as ArrowBackIcon, LiveTv as LiveTvIcon, CheckCircle as CheckCircleIcon, Article as ArticleIcon, AutoAwesome as SparkleIcon, Image as ImageIcon, Check as CheckIcon, Info as InfoIcon, ArrowForward as ArrowForwardIcon, Close as CloseIcon, Bolt as BoltIcon, CalendarMonth as CalendarMonthIcon, Edit as EditIcon, AccessTime as AccessTimeIcon, ConfirmationNumber as TicketIcon } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import { useSociety } from '@/context/SocietyContext';
-import { fetchLivestreamContentPool, createLearnContent } from '@/lib/actions/learn';
+import { fetchLivestreamContentPool, createLearnContent, CreateLearnContentPayload, ArticleBlockPayload } from '@/lib/actions/learn';
 import LivestreamRundownBuilder from './livestream/LivestreamRundownBuilder';
 import { DEF_BLOCK_DEFINITIONS, LIVESTREAM_TYPE_FLOWS } from './livestream/defBlocksConfig';
 import LivestreamIdeasSidePane, { LivestreamIdeaOption } from './livestream/LivestreamIdeasSidePane';
@@ -61,7 +61,7 @@ export function getNextSlotForCategory(categorySlug: string, defaultHour = 10, d
   const now = new Date();
   const currentDay = now.getDay();
 
-  let daysToAdd = (targetDay - currentDay + 7) % 7;
+  const daysToAdd = (targetDay - currentDay + 7) % 7;
   const candidate = new Date(now);
   candidate.setDate(now.getDate() + daysToAdd);
   candidate.setHours(defaultHour, defaultMinute, 0, 0);
@@ -113,6 +113,13 @@ export default function CreateLivestreamForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [contentPool, setContentPool] = useState<{ articles: any[], jobs: any[] } | null>(null);
 
+  // Track draft ID for updating in-place
+  const [currentDraftId, setCurrentDraftId] = useState<string | null>(
+    (draftId && draftId !== 'new') ? draftId : (initialDraftData?.type === 'livestream' && initialDraftData?.id ? initialDraftData.id : null)
+  );
+  const [saveStatusMsg, setSaveStatusMsg] = useState<string | null>(null);
+  const [saveErrorMsg, setSaveErrorMsg] = useState<string | null>(null);
+
   // Ideation Assistant & Studio Slideshow State
   const [isIdeasDrawerOpen, setIsIdeasDrawerOpen] = useState(false);
   const [isDraftingDrawerOpen, setIsDraftingDrawerOpen] = useState(false);
@@ -122,7 +129,25 @@ export default function CreateLivestreamForm({
   const [isCardFlipped, setIsCardFlipped] = useState(false);
   const [isIdeasCardFlipped, setIsIdeasCardFlipped] = useState(false);
   const [isScheduleFlipped, setIsScheduleFlipped] = useState(false);
-  const [appliedBlueprint, setAppliedBlueprint] = useState<any>(initialDraftData?.livestream?.blueprint || null);
+
+  // Studio metadata extracted from draft blocks or initialDraftData
+  const studioMeta = useMemo(() => {
+    if ((initialDraftData as any)?._studioMeta) return (initialDraftData as any)._studioMeta;
+    if ((initialDraftData?.livestream as any)?._studioMeta) return (initialDraftData.livestream as any)._studioMeta;
+    const blocks = initialDraftData?.livestream?.blocks || initialDraftData?.livestreamBlocks || [];
+    for (const b of blocks) {
+      try {
+        const parsed = typeof b.content === 'string' ? JSON.parse(b.content) : b.content;
+        if (parsed?._studioMeta) return parsed._studioMeta;
+      } catch (e) {}
+    }
+    return null;
+  }, [initialDraftData]);
+
+  const [appliedBlueprint, setAppliedBlueprint] = useState<any>(
+    studioMeta?.appliedBlueprint || initialDraftData?.livestream?.blueprint || null
+  );
+
   const resolvedFormat = useMemo(() => {
     const bpFmt = appliedBlueprint?.format;
     const bpTitle = (appliedBlueprint?.typeTitle || appliedBlueprint?.title || '').toLowerCase();
@@ -132,6 +157,7 @@ export default function CreateLivestreamForm({
     if (bpTitle.includes('talent') || bpTitle.includes('spotlight') || bpTitle.includes('job')) return 'talent_spotlight';
     return 'industry_teardown';
   }, [appliedBlueprint]);
+
   const manualFieldsRef = useRef<HTMLDivElement>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
   const timingCardRef = useRef<HTMLDivElement>(null);
@@ -150,18 +176,18 @@ export default function CreateLivestreamForm({
   const currentBlueprint = (ingestedBlueprints.length > 0 && ingestedBlueprints[deckActiveIndex]) ? ingestedBlueprints[deckActiveIndex] : (ingestedBlueprints[0] || null);
 
   // Hub & Context from Studio Handoff
-  const hubTitle = initialTaxonomy?.hubTitle || initialDraftData?.livestream?.hub?.title || 'Production & Capital';
-  const hubColor = initialTaxonomy?.hubColor || initialDraftData?.livestream?.hub?.color || '#10b981';
+  const hubTitle = studioMeta?.hubTitle || initialTaxonomy?.hubTitle || initialDraftData?.livestream?.hub?.title || 'Production & Capital';
+  const hubColor = studioMeta?.hubColor || initialTaxonomy?.hubColor || initialDraftData?.livestream?.hub?.color || '#10b981';
   const guidingArticles = useMemo(() => {
-    const list = [...(initialDraftData?.anchorArticles || initialDraftData?.livestream?.anchorArticles || [])];
+    const list = [...(studioMeta?.guidingArticles || initialDraftData?.anchorArticles || initialDraftData?.livestream?.anchorArticles || [])];
     if (initialDraftData?.type === 'article' && initialDraftData.id && !list.some((a: any) => a.id === initialDraftData.id)) {
       list.unshift(initialDraftData);
     }
     return list;
-  }, [initialDraftData]);
-  const guidingJobs = initialDraftData?.livestream?.ctaJobs || [];
-  const guidingListings = initialDraftData?.livestream?.ctaListings || [];
-  const guidingCampaigns = initialDraftData?.livestream?.ctaCampaigns || [];
+  }, [initialDraftData, studioMeta]);
+  const guidingJobs = studioMeta?.guidingJobs || initialDraftData?.livestream?.ctaJobs || [];
+  const guidingListings = studioMeta?.guidingListings || initialDraftData?.livestream?.ctaListings || [];
+  const guidingCampaigns = studioMeta?.guidingCampaigns || initialDraftData?.livestream?.ctaCampaigns || [];
 
   const hubCategoryPillars = useMemo(() => {
     const hubKey = (hubTitle || '').toLowerCase();
@@ -177,17 +203,27 @@ export default function CreateLivestreamForm({
     return ['capital', 'land', 'inputs'];
   }, [hubTitle]);
 
-  // Form State: Do NOT auto-select title or description from an article handoff!
-  const isActualLivestreamDraft = initialDraftData?.type === 'livestream';
-  const [title, setTitle] = useState(isActualLivestreamDraft ? (initialDraftData?.title || '') : '');
-  const [description, setDescription] = useState(isActualLivestreamDraft ? (initialDraftData?.description || '') : '');
-  const [coverImage, setCoverImage] = useState<File | string | null>(initialDraftData?.coverImageUrl || null);
-  const [streamUrl, setStreamUrl] = useState(initialDraftData?.livestream?.streamUrl || '');
+  // Form State
+  const [title, setTitle] = useState(initialDraftData?.title || '');
+  const [description, setDescription] = useState(initialDraftData?.description || '');
+  const [coverImage, setCoverImage] = useState<File | string | null>(initialDraftData?.thumbnailUrl || initialDraftData?.coverImageUrl || null);
+  const [streamUrl, setStreamUrl] = useState(initialDraftData?.livestream?.streamUrl || studioMeta?.streamUrl || initialDraftData?.livestreamUrl || '');
+  const [guestStudioUrl, setGuestStudioUrl] = useState(studioMeta?.guestStudioUrl || initialDraftData?.livestream?.guestStudioUrl || initialDraftData?.guestStudioUrl || '');
+
   const [eventDate, setEventDate] = useState<string>(() => {
-    if (initialDraftData?.livestream?.eventDate) {
-      return new Date(initialDraftData.livestream.eventDate).toISOString().slice(0, 16);
+    const scheduledDate = initialDraftData?.targetDate || initialDraftData?.livestream?.scheduledFor || initialDraftData?.livestream?.eventDate;
+    if (scheduledDate) {
+      const d = new Date(scheduledDate);
+      if (!isNaN(d.getTime())) {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const hours = String(d.getHours()).padStart(2, '0');
+        const mins = String(d.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day}T${hours}:${mins}:00`;
+      }
     }
-    const slotDate = getNextSlotForCategory(initialTaxonomy?.category || 'capital', 10, 0);
+    const slotDate = getNextSlotForCategory(initialTaxonomy?.category || initialDraftData?.category || 'capital', 10, 0);
     const year = slotDate.getFullYear();
     const month = String(slotDate.getMonth() + 1).padStart(2, '0');
     const day = String(slotDate.getDate()).padStart(2, '0');
@@ -197,22 +233,136 @@ export default function CreateLivestreamForm({
   });
   
   // Step 3 (Communications) State
-  const [guestStudioUrl, setGuestStudioUrl] = useState(initialDraftData?.livestream?.guestStudioUrl || '');
-  const [guestMessageText, setGuestMessageText] = useState(initialDraftData?.livestream?.communications?.guestMessage?.text || '');
-  const [guestButtonText, setGuestButtonText] = useState(initialDraftData?.livestream?.communications?.guestMessage?.buttonText || '');
-  const [guestButtonLink, setGuestButtonLink] = useState(initialDraftData?.livestream?.communications?.guestMessage?.buttonLink || '');
+  const initialComms = studioMeta?.communications || initialDraftData?.livestream?.communications;
+  const [guestMessageText, setGuestMessageText] = useState(initialComms?.guestMessage?.text || '');
+  const [guestButtonText, setGuestButtonText] = useState(initialComms?.guestMessage?.buttonText || '');
+  const [guestButtonLink, setGuestButtonLink] = useState(initialComms?.guestMessage?.buttonLink || '');
   
-  const [audienceMessageText, setAudienceMessageText] = useState(initialDraftData?.livestream?.communications?.audienceMessage?.text || '');
-  const [audienceButtonText, setAudienceButtonText] = useState(initialDraftData?.livestream?.communications?.audienceMessage?.buttonText || '');
-  const [audienceButtonLink, setAudienceButtonLink] = useState(initialDraftData?.livestream?.communications?.audienceMessage?.buttonLink || '');
+  const [audienceMessageText, setAudienceMessageText] = useState(initialComms?.audienceMessage?.text || '');
+  const [audienceButtonText, setAudienceButtonText] = useState(initialComms?.audienceMessage?.buttonText || '');
+  const [audienceButtonLink, setAudienceButtonLink] = useState(initialComms?.audienceMessage?.buttonLink || '');
   
   // Taxonomy State
-  const [category, setCategory] = useState(initialTaxonomy?.category || 'capital');
-  const [subcategory, setSubcategory] = useState(initialTaxonomy?.subcategory || '');
-  const [timeframe, setTimeframe] = useState(initialTaxonomy?.timeframe || 'present');
+  const [category, setCategory] = useState(initialDraftData?.category || initialTaxonomy?.category || 'capital');
+  const [subcategory, setSubcategory] = useState(initialDraftData?.subcategory || initialTaxonomy?.subcategory || '');
+  const [timeframe, setTimeframe] = useState(initialDraftData?.timeframe || initialTaxonomy?.timeframe || 'present');
+
+  // Smart Link Memory: auto-prefill from last livestream or localStorage
+  const [linksPrefilledFromMemory, setLinksPrefilledFromMemory] = useState(false);
+
+  useEffect(() => {
+    // If both links already have values, no need to auto-fill
+    if (guestStudioUrl && streamUrl) return;
+
+    queueMicrotask(() => {
+      let candidateGuest = guestStudioUrl;
+      let candidateStream = streamUrl;
+      let didPrefill = false;
+
+      // 1. Check contentPool?.lastUsedLinks
+      const lastUsed = (contentPool as any)?.lastUsedLinks;
+      if (lastUsed) {
+        if (!candidateGuest && lastUsed.guestStudioUrl) {
+          candidateGuest = lastUsed.guestStudioUrl;
+          didPrefill = true;
+        }
+        if (!candidateStream && lastUsed.streamUrl) {
+          candidateStream = lastUsed.streamUrl;
+          didPrefill = true;
+        }
+        if (lastUsed.communications) {
+          if (!guestMessageText && lastUsed.communications.guestMessage?.text) {
+            setGuestMessageText(lastUsed.communications.guestMessage.text);
+          }
+          if (!guestButtonText && lastUsed.communications.guestMessage?.buttonText) {
+            setGuestButtonText(lastUsed.communications.guestMessage.buttonText);
+          }
+          if (!guestButtonLink && lastUsed.communications.guestMessage?.buttonLink) {
+            setGuestButtonLink(lastUsed.communications.guestMessage.buttonLink);
+          }
+          if (!audienceMessageText && lastUsed.communications.audienceMessage?.text) {
+            setAudienceMessageText(lastUsed.communications.audienceMessage.text);
+          }
+          if (!audienceButtonText && lastUsed.communications.audienceMessage?.buttonText) {
+            setAudienceButtonText(lastUsed.communications.audienceMessage.buttonText);
+          }
+          if (!audienceButtonLink && lastUsed.communications.audienceMessage?.buttonLink) {
+            setAudienceButtonLink(lastUsed.communications.audienceMessage.buttonLink);
+          }
+        }
+      }
+
+      // 2. Check localStorage fallback if either is still missing
+      if (typeof window !== 'undefined' && (!candidateGuest || !candidateStream)) {
+        try {
+          const storageKey = `foodnerve_last_livestream_links_${profile?.uid || 'default'}`;
+          const stored = localStorage.getItem(storageKey);
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (!candidateGuest && parsed.guestStudioUrl) {
+              candidateGuest = parsed.guestStudioUrl;
+              didPrefill = true;
+            }
+            if (!candidateStream && parsed.streamUrl) {
+              candidateStream = parsed.streamUrl;
+              didPrefill = true;
+            }
+            if (parsed.communications && !lastUsed?.communications) {
+              if (!guestMessageText && parsed.communications.guestMessage?.text) {
+                setGuestMessageText(parsed.communications.guestMessage.text);
+              }
+              if (!guestButtonText && parsed.communications.guestMessage?.buttonText) {
+                setGuestButtonText(parsed.communications.guestMessage.buttonText);
+              }
+              if (!guestButtonLink && parsed.communications.guestMessage?.buttonLink) {
+                setGuestButtonLink(parsed.communications.guestMessage.buttonLink);
+              }
+              if (!audienceMessageText && parsed.communications.audienceMessage?.text) {
+                setAudienceMessageText(parsed.communications.audienceMessage.text);
+              }
+              if (!audienceButtonText && parsed.communications.audienceMessage?.buttonText) {
+                setAudienceButtonText(parsed.communications.audienceMessage.buttonText);
+              }
+              if (!audienceButtonLink && parsed.communications.audienceMessage?.buttonLink) {
+                setAudienceButtonLink(parsed.communications.audienceMessage.buttonLink);
+              }
+            }
+          }
+        } catch (e) {}
+      }
+
+      if (candidateGuest !== guestStudioUrl) setGuestStudioUrl(candidateGuest);
+      if (candidateStream !== streamUrl) setStreamUrl(candidateStream);
+      if (didPrefill) setLinksPrefilledFromMemory(true);
+    });
+  }, [(contentPool as any)?.lastUsedLinks, profile?.uid]);
+
+  const updateGuestStudioUrl = (val: string) => {
+    setGuestStudioUrl(val);
+    if (typeof window !== 'undefined') {
+      try {
+        const storageKey = `foodnerve_last_livestream_links_${profile?.uid || 'default'}`;
+        const stored = localStorage.getItem(storageKey);
+        const prev = stored ? JSON.parse(stored) : {};
+        localStorage.setItem(storageKey, JSON.stringify({ ...prev, guestStudioUrl: val }));
+      } catch (e) {}
+    }
+  };
+
+  const updateStreamUrl = (val: string) => {
+    setStreamUrl(val);
+    if (typeof window !== 'undefined') {
+      try {
+        const storageKey = `foodnerve_last_livestream_links_${profile?.uid || 'default'}`;
+        const stored = localStorage.getItem(storageKey);
+        const prev = stored ? JSON.parse(stored) : {};
+        localStorage.setItem(storageKey, JSON.stringify({ ...prev, streamUrl: val }));
+      } catch (e) {}
+    }
+  };
 
   // Auto-sync schedule when category changes if user hasn't manually customized a pre-existing saved draft
-  const hasLoadedInitialDate = useRef(Boolean(initialDraftData?.livestream?.eventDate));
+  const hasLoadedInitialDate = useRef(Boolean(initialDraftData?.targetDate || initialDraftData?.livestream?.scheduledFor || initialDraftData?.livestream?.eventDate));
   const isFirstCategoryRun = useRef(true);
   useEffect(() => {
     if (isFirstCategoryRun.current) {
@@ -231,8 +381,9 @@ export default function CreateLivestreamForm({
   }, [category]);
 
   // Live Clock & Ticket Helpers
-  const [currentTime, setCurrentTime] = useState<number>(Date.now());
+  const [currentTime, setCurrentTime] = useState<number>(0);
   useEffect(() => {
+    queueMicrotask(() => setCurrentTime(Date.now()));
     const timer = setInterval(() => {
       setCurrentTime(Date.now());
     }, 1000);
@@ -284,43 +435,39 @@ export default function CreateLivestreamForm({
   }, [ticketDateObj, currentTime]);
 
   // Split eventDate into date and time components for PremiumDatePicker and PremiumTimePicker
-  const eventDatePart = useMemo(() => {
-    if (!eventDate) return '';
+  let eventDatePart = '';
+  if (eventDate) {
     try {
       if (eventDate.includes('T')) {
-        return eventDate.split('T')[0];
+        eventDatePart = eventDate.split('T')[0];
+      } else {
+        const d = new Date(eventDate);
+        if (!isNaN(d.getTime())) {
+          const year = d.getFullYear();
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          eventDatePart = `${year}-${month}-${day}`;
+        }
       }
-      const d = new Date(eventDate);
-      if (!isNaN(d.getTime())) {
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-      }
-      return '';
-    } catch {
-      return '';
-    }
-  }, [eventDate]);
+    } catch {}
+  }
 
-  const eventTimePart = useMemo(() => {
-    if (!eventDate) return '10:00';
+  let eventTimePart = '10:00';
+  if (eventDate) {
     try {
       if (eventDate.includes('T')) {
         const timeSub = eventDate.split('T')[1];
-        return timeSub.substring(0, 5);
+        eventTimePart = timeSub.substring(0, 5);
+      } else {
+        const d = new Date(eventDate);
+        if (!isNaN(d.getTime())) {
+          const hours = String(d.getHours()).padStart(2, '0');
+          const mins = String(d.getMinutes()).padStart(2, '0');
+          eventTimePart = `${hours}:${mins}`;
+        }
       }
-      const d = new Date(eventDate);
-      if (!isNaN(d.getTime())) {
-        const hours = String(d.getHours()).padStart(2, '0');
-        const mins = String(d.getMinutes()).padStart(2, '0');
-        return `${hours}:${mins}`;
-      }
-      return '10:00';
-    } catch {
-      return '10:00';
-    }
-  }, [eventDate]);
+    } catch {}
+  }
 
   const handleDateChange = (newDateStr: string) => {
     const time = eventTimePart || '10:00';
@@ -339,23 +486,35 @@ export default function CreateLivestreamForm({
   };
 
   // Rundown Blocks
-  const [rundownBlocks, setRundownBlocks] = useState<any[]>(
-    initialDraftData?.livestream?.blocks?.map((b: any) => {
-      const parsedContent = typeof b.content === 'string' ? JSON.parse(b.content) : (b.content || {});
+  const [rundownBlocks, setRundownBlocks] = useState<any[]>(() => {
+    const rawBlocks = initialDraftData?.livestream?.blocks || initialDraftData?.livestreamBlocks || [];
+    const filtered = rawBlocks.filter((b: any) => b.blockType !== 'metadata');
+    return filtered.map((b: any, index: number) => {
+      let parsedContent: any = {};
+      try {
+        parsedContent = typeof b.content === 'string' ? JSON.parse(b.content) : (b.content || {});
+      } catch (e) {
+        parsedContent = {};
+      }
       const isAct = b.blockType === 'rundown_act' || parsedContent.role || parsedContent.title?.toLowerCase().includes('act');
       return {
-        id: b.id || Math.random().toString(),
-        sourceType: isAct ? 'act' : (b.blockType === 'transition' ? 'transition' : (parsedContent.jobTitle ? 'job' : 'article_block')),
-        sourceId: b.sourceId,
-        parentArticleId: b.parentArticleId || parsedContent.parentArticleId,
-        parentArticleTitle: b.parentArticleTitle || parsedContent.parentArticleTitle,
-        originalBlockType: b.blockType,
+        id: b.id || `restored-block-${index}-${Date.now()}`,
+        sourceType: parsedContent.sourceType || (isAct ? 'act' : (b.blockType === 'transition' ? 'transition' : (parsedContent.jobTitle ? 'job' : 'def_block'))),
+        defBlockId: parsedContent.defBlockId || b.defBlockId,
+        defBlockLabel: parsedContent.defBlockLabel || b.defBlockLabel,
+        slideIndex: parsedContent.slideIndex || b.slideIndex,
+        slideCount: parsedContent.slideCount || b.slideCount,
+        act: parsedContent.act || b.act,
+        originalBlockType: parsedContent.originalBlockType || b.blockType,
         originalContent: parsedContent,
         speakerNotes: b.speakerNotes || parsedContent.speakerNotes || '',
-        durationStr: b.durationStr || parsedContent.durationStr || ''
+        durationStr: b.durationStr || parsedContent.durationStr || '',
+        parentArticleId: b.parentArticleId || parsedContent.parentArticleId,
+        parentArticleTitle: b.parentArticleTitle || parsedContent.parentArticleTitle,
+        sourceId: b.sourceId || parsedContent.sourceId
       };
-    }) || []
-  );
+    });
+  });
 
   const [frameworkLoaded, setFrameworkLoaded] = useState(rundownBlocks.length > 0);
 
@@ -367,146 +526,234 @@ export default function CreateLivestreamForm({
     }
   }, [profile?.uid, postingAs, selectedOrgId]);
 
-  // Handle distinct article calculation
-  const distinctArticles = useMemo(() => {
-    const articleIds = new Set<string>();
-    rundownBlocks.forEach(b => {
-      if (b.sourceType === 'article_block' && b.parentArticleId) {
-        articleIds.add(b.parentArticleId);
-      }
-    });
-    return articleIds.size;
-  }, [rundownBlocks]);
-
-  const canPublish = distinctArticles >= 5 && title.trim() && description.trim() && category && eventDatePart && eventTimePart && streamUrl;
+  const canPublish = Boolean(
+    title.trim() && 
+    category && 
+    eventDatePart && 
+    eventTimePart && 
+    rundownBlocks.length > 0 && 
+    guestStudioUrl.trim() && 
+    streamUrl.trim()
+  );
   const canAdvanceStep1 = Boolean(title.trim() && eventDatePart && eventTimePart);
 
-  // Action Items Checklist
-  const actionItems = useMemo(() => {
-    const items: { id: string; label: string; onClick: () => void }[] = [];
-    if (!title.trim()) {
-      items.push({
-        id: 'title',
-        label: 'Add Livestream Title',
-        onClick: () => {
-          setIsIdeasDrawerOpen(true);
-        }
-      });
+  const handleScrollToTiming = () => {
+    setIsScheduleFlipped(true);
+    if (typeof document !== 'undefined') {
+      document.getElementById('broadcast-timing-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-    if (!eventDatePart || !eventTimePart) {
-      items.push({
-        id: 'timing',
-        label: 'Select Event Date & Time',
-        onClick: () => {
-          setIsScheduleFlipped(true);
-          timingCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      });
-    }
+  };
 
-    if (step >= 2) {
-      if (!frameworkLoaded) {
-        items.push({
-          id: 'draft_slides',
-          label: 'Draft Slides with AI (~1 min)',
-          onClick: () => {
-            setIsDraftingDrawerOpen(true);
-          }
-        });
-      }
-      if (distinctArticles < 5) {
-        items.push({
-          id: 'articles',
-          label: `Reference at least 5 articles (${distinctArticles}/5)`,
-          onClick: () => {}
-        });
-      }
+  const handleScrollToCover = () => {
+    if (typeof document !== 'undefined') {
+      document.getElementById('broadcast-cover-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-    if (step === 3) {
-      if (!streamUrl) {
-        items.push({
-          id: 'streamUrl',
-          label: 'Configure Public Stream URL',
-          onClick: () => {}
-        });
-      }
-      if (!coverImage) {
-        items.push({
-          id: 'cover',
-          label: 'Upload or Generate Cover Image',
-          onClick: () => {
-            coverCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
-        });
-      }
+  };
+
+  const handleScrollToBackstage = () => {
+    if (typeof document !== 'undefined') {
+      document.getElementById('broadcast-guest-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-    return items;
-  }, [streamUrl, eventDatePart, eventTimePart, title, coverImage, distinctArticles, step]);
+  };
+
+  const handleScrollToStage = () => {
+    if (typeof document !== 'undefined') {
+      document.getElementById('broadcast-stream-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
+  // Action Items Checklist
+  const actionItems: { id: string; label: string; onClick: () => void }[] = [];
+  if (!title.trim()) {
+    actionItems.push({
+      id: 'title',
+      label: 'Add Livestream Title',
+      onClick: () => {
+        setIsIdeasDrawerOpen(true);
+      }
+    });
+  }
+  if (!eventDatePart || !eventTimePart) {
+    actionItems.push({
+      id: 'timing',
+      label: 'Select Event Date & Time',
+      onClick: handleScrollToTiming
+    });
+  }
+
+  if (step >= 2) {
+    if (!frameworkLoaded || rundownBlocks.length === 0) {
+      actionItems.push({
+        id: 'draft_slides',
+        label: 'Draft Slides with AI (~1 min)',
+        onClick: () => {
+          setIsDraftingDrawerOpen(true);
+        }
+      });
+    }
+  }
+  if (step === 3) {
+    if (!guestStudioUrl.trim()) {
+      actionItems.push({
+        id: 'guestStudioUrl',
+        label: 'Configure Guest Studio Link (Required)',
+        onClick: handleScrollToBackstage
+      });
+    }
+    if (!streamUrl.trim()) {
+      actionItems.push({
+        id: 'streamUrl',
+        label: 'Configure Public Stream Link (Required)',
+        onClick: handleScrollToStage
+      });
+    }
+    if (!coverImage) {
+      actionItems.push({
+        id: 'cover',
+        label: 'Upload or Generate Cover Image',
+        onClick: handleScrollToCover
+      });
+    }
+  }
 
   const [isActionItemsMinimized, setIsActionItemsMinimized] = useState(false);
 
   const handleSave = async (isPublish: boolean) => {
     if (!profile?.uid) return;
     setIsSubmitting(true);
+    setSaveErrorMsg(null);
+    setSaveStatusMsg(null);
+
     try {
       let finalCoverUrl = typeof coverImage === 'string' ? coverImage : '';
       if (coverImage instanceof File) {
         const res = await uploadFile(coverImage);
         finalCoverUrl = res?.secure_url || '';
       }
+      if (!finalCoverUrl && isPublish) {
+        const categoryCoverMap: Record<string, string> = {
+          capital: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=1200&q=80',
+          land: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200&q=80',
+          inputs: 'https://images.unsplash.com/photo-1585314062340-f1a5a7c9328d?auto=format&fit=crop&w=1200&q=80',
+          energy: 'https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=1200&q=80',
+          insecurity: 'https://images.unsplash.com/photo-1509099836639-18ba1795216d?auto=format&fit=crop&w=1200&q=80',
+          'post-harvest': 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200&q=80',
+          'people-talent': 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80',
+        };
+        finalCoverUrl = categoryCoverMap[category] || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200&q=80';
+      }
 
-      // Format blocks for the backend
-      const formattedBlocks = rundownBlocks.map((b, index) => ({
-        blockType: b.sourceType === 'act' ? 'rundown_act' : (b.sourceType === 'transition' ? 'transition' : b.originalBlockType || b.sourceType),
-        orderIndex: index,
-        content: JSON.stringify({
-          ...(b.originalContent || {}),
-          speakerNotes: b.speakerNotes,
-          durationStr: b.durationStr,
-          parentArticleId: b.parentArticleId,
-          parentArticleTitle: b.parentArticleTitle,
-        }),
-        speakerNotes: b.speakerNotes,
-        durationStr: b.durationStr,
-        sourceId: b.sourceId, // Keep reference to original source
-      }));
-
-      const payload = {
-        title,
-        description,
-        type: 'livestream' as const,
-        authorId: profile.uid,
-        organizationId: postingAs === 'organization' ? selectedOrgId : undefined,
-        slug: title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-        coverImageUrl: finalCoverUrl,
-        taxonomy: { category, subcategory, timeframe },
-        bottleneckTags: [],
-        livestream: {
-          streamUrl,
-          guestStudioUrl,
-          eventDate: new Date(eventDate),
-          status: 'scheduled',
-          blocks: formattedBlocks,
-          communications: {
-            guestMessage: {
-              text: guestMessageText,
-              buttonText: guestButtonText,
-              buttonLink: guestButtonLink
-            },
-            audienceMessage: {
-              text: audienceMessageText,
-              buttonText: audienceButtonText,
-              buttonLink: audienceButtonLink
-            }
-          }
+      const communications = {
+        guestMessage: {
+          text: guestMessageText,
+          buttonText: guestButtonText,
+          buttonLink: guestButtonLink.trim() || guestStudioUrl.trim()
+        },
+        audienceMessage: {
+          text: audienceMessageText,
+          buttonText: audienceButtonText,
+          buttonLink: audienceButtonLink.trim() || streamUrl.trim()
         }
       };
 
-      await createLearnContent(payload, !isPublish);
-      alert(isPublish ? 'Livestream Scheduled!' : 'Draft Saved!');
-      onSuccess();
+      const metaPayload = {
+        appliedBlueprint,
+        guidingArticles,
+        guidingJobs,
+        guidingListings,
+        guidingCampaigns,
+        guestStudioUrl,
+        streamUrl,
+        communications,
+        hubTitle,
+        hubColor
+      };
+
+      if (typeof window !== 'undefined') {
+        try {
+          const storageKey = `foodnerve_last_livestream_links_${profile?.uid || 'default'}`;
+          const stored = localStorage.getItem(storageKey);
+          const prev = stored ? JSON.parse(stored) : {};
+          localStorage.setItem(storageKey, JSON.stringify({
+            ...prev,
+            guestStudioUrl,
+            streamUrl,
+            communications
+          }));
+        } catch (e) {}
+      }
+
+      let formattedBlocks: ArticleBlockPayload[] = [];
+      if (rundownBlocks.length > 0) {
+        formattedBlocks = rundownBlocks.map((b, index) => {
+          const blockContentObj: any = {
+            ...(b.originalContent || {}),
+            sourceType: b.sourceType || 'def_block',
+            defBlockId: b.defBlockId,
+            defBlockLabel: b.defBlockLabel,
+            slideIndex: b.slideIndex,
+            slideCount: b.slideCount,
+            act: b.act,
+            originalBlockType: b.originalBlockType,
+            speakerNotes: b.speakerNotes,
+            durationStr: b.durationStr,
+            parentArticleId: b.parentArticleId,
+            parentArticleTitle: b.parentArticleTitle,
+          };
+          if (index === 0) {
+            blockContentObj._studioMeta = metaPayload;
+          }
+          return {
+            blockType: b.sourceType === 'act' ? 'rundown_act' : (b.sourceType === 'transition' ? 'transition' : (b.originalBlockType || b.sourceType)),
+            orderIndex: index,
+            content: JSON.stringify(blockContentObj),
+          };
+        });
+      } else {
+        formattedBlocks = [{
+          blockType: 'metadata',
+          orderIndex: 0,
+          content: JSON.stringify({ _studioMeta: metaPayload }),
+        }];
+      }
+
+      const payload: CreateLearnContentPayload = {
+        id: currentDraftId || undefined,
+        title: title.trim() || 'Untitled Livestream Draft',
+        description: description.trim() || appliedBlueprint?.description || '',
+        slug: (title.trim() || 'untitled-livestream').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
+        type: 'livestream',
+        bottleneckTags: [category, subcategory, timeframe].filter(Boolean) as string[],
+        category,
+        subcategory,
+        timeframe,
+        authorId: profile.uid,
+        authorName: profile.displayName || profile.firstName || 'Broadcast Host',
+        authorAvatarUrl: profile.avatarUrl || '',
+        organizationId: postingAs === 'organization' ? selectedOrgId : null,
+        thumbnailUrl: finalCoverUrl || undefined,
+        targetDate: eventDate ? new Date(eventDate).toISOString() : new Date().toISOString(),
+        livestreamUrl: streamUrl,
+        livestreamBlocks: formattedBlocks,
+      };
+
+      const res = await createLearnContent(payload, !isPublish);
+
+      if (res?.id) {
+        setCurrentDraftId(res.id);
+      }
+
+      if (isPublish) {
+        onSuccess?.();
+      } else {
+        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        setSaveStatusMsg(`Draft saved at ${timeStr}`);
+        setTimeout(() => setSaveStatusMsg(null), 5000);
+      }
     } catch (e: any) {
-      alert(e.message || 'Failed to save');
+      console.error('Error saving livestream:', e);
+      setSaveErrorMsg(e.message || 'Failed to save');
+      setTimeout(() => setSaveErrorMsg(null), 6000);
     } finally {
       setIsSubmitting(false);
     }
@@ -958,7 +1205,7 @@ export default function CreateLivestreamForm({
 
             {/* ── 3D FLIPPABLE BROADCAST TICKET CARD (Front: Authentic Event Ticket with Countdown, Back: Schedule Editor) ── */}
             <Box
-              ref={timingCardRef}
+              id="broadcast-timing-card" ref={timingCardRef}
               sx={{
                 width: '100%',
                 mb: 3.5,
@@ -2530,7 +2777,7 @@ export default function CreateLivestreamForm({
                                        </Box>
                                      ) : (
                                        <Typography sx={{ color: '#475569', fontSize: '0.88rem', lineHeight: 1.6, fontStyle: 'italic' }}>
-                                         "{item.description || item.hook}"
+                                         &ldquo;{item.description || item.hook}&rdquo;
                                        </Typography>
                                      )}
 
@@ -2933,7 +3180,7 @@ export default function CreateLivestreamForm({
 
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               {/* Broadcast Cover Image Section */}
-              <Box ref={coverCardRef} sx={{ p: 4, borderRadius: '24px', bgcolor: '#fff', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 8px 32px rgba(0,0,0,0.02)' }}>
+              <Box id="broadcast-cover-card" ref={coverCardRef} sx={{ p: 4, borderRadius: '24px', bgcolor: '#fff', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 8px 32px rgba(0,0,0,0.02)' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3, flexWrap: 'wrap', gap: 1.5 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                     <Box sx={{ width: 32, height: 32, borderRadius: '8px', bgcolor: alpha(hubColor, 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -3044,7 +3291,7 @@ export default function CreateLivestreamForm({
               </Box>
               
               {/* Backstage (Guests) */}
-              <Box sx={{ p: 4, borderRadius: '24px', bgcolor: '#fff', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 8px 32px rgba(0,0,0,0.02)' }}>
+              <Box id="broadcast-guest-card" sx={{ p: 4, borderRadius: '24px', bgcolor: '#fff', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 8px 32px rgba(0,0,0,0.02)' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
                   <Box sx={{ width: 32, height: 32, borderRadius: '8px', bgcolor: 'rgba(99, 102, 241, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Typography sx={{ fontSize: '1.2rem' }}>🎙️</Typography>
@@ -3054,8 +3301,13 @@ export default function CreateLivestreamForm({
                 
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                   <TextField 
-                    fullWidth label="Guest Studio Link (Optional)" placeholder="e.g. Evmux, Streamyard, or Meet invite link" 
-                    value={guestStudioUrl} onChange={e => setGuestStudioUrl(e.target.value)} 
+                    fullWidth 
+                    label="Guest Studio Link (Required to publish)" 
+                    placeholder="e.g. Evmux, Streamyard, or Meet invite link" 
+                    value={guestStudioUrl} 
+                    onChange={e => updateGuestStudioUrl(e.target.value)} 
+                    error={!guestStudioUrl.trim() && actionItems.some(i => i.id === 'guestStudioUrl')}
+                    helperText={!guestStudioUrl.trim() ? "Required: internal participation link for you and guests." : (linksPrefilledFromMemory ? "Pre-filled from your last livestream — edit anytime" : "")}
                   />
                   <TextField 
                     fullWidth multiline rows={3} label="Message to Guests" placeholder="e.g. Join 15 mins early to test your mic." 
@@ -3069,7 +3321,7 @@ export default function CreateLivestreamForm({
               </Box>
 
               {/* Stage (Audience) */}
-              <Box sx={{ p: 4, borderRadius: '24px', bgcolor: '#fff', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 8px 32px rgba(0,0,0,0.02)' }}>
+              <Box id="broadcast-stream-card" sx={{ p: 4, borderRadius: '24px', bgcolor: '#fff', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 8px 32px rgba(0,0,0,0.02)' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
                   <Box sx={{ width: 32, height: 32, borderRadius: '8px', bgcolor: 'rgba(16, 185, 129, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Typography sx={{ fontSize: '1.2rem' }}>📺</Typography>
@@ -3079,9 +3331,13 @@ export default function CreateLivestreamForm({
                 
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                   <TextField 
-                    fullWidth label="Public Stream Link (Required)" placeholder="e.g. YouTube Live or Twitch embed URL" 
-                    value={streamUrl} onChange={e => setStreamUrl(e.target.value)} 
-                    error={!streamUrl && actionItems.some(i => i.id === 'streamUrl')}
+                    fullWidth 
+                    label="Public Stream Link (Required to publish)" 
+                    placeholder="e.g. YouTube Live or Twitch embed URL" 
+                    value={streamUrl} 
+                    onChange={e => updateStreamUrl(e.target.value)} 
+                    error={!streamUrl.trim() && actionItems.some(i => i.id === 'streamUrl')}
+                    helperText={!streamUrl.trim() ? "Required: link where audience watches the live broadcast." : (linksPrefilledFromMemory ? "Pre-filled from your last livestream — edit anytime" : "")}
                   />
                   <TextField 
                     fullWidth multiline rows={3} label="RSVP Confirmation Message" placeholder="e.g. Thanks for registering! Read our prep article below." 
@@ -3133,6 +3389,29 @@ export default function CreateLivestreamForm({
 
         {/* Right Side: Actions */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {saveStatusMsg && (
+            <Chip
+              size="small"
+              icon={<CheckCircleIcon sx={{ fontSize: '1rem !important', color: '#10b981' }} />}
+              label={saveStatusMsg}
+              sx={{
+                bgcolor: 'rgba(16,185,129,0.1)',
+                color: '#065f46',
+                fontWeight: 700,
+                fontSize: '0.78rem',
+                border: '1px solid rgba(16,185,129,0.2)',
+              }}
+            />
+          )}
+          {saveErrorMsg && (
+            <Chip
+              size="small"
+              label={saveErrorMsg}
+              color="error"
+              sx={{ fontWeight: 700, fontSize: '0.78rem' }}
+            />
+          )}
+
           <Button 
             variant="outlined" 
             onClick={() => handleSave(false)} 
@@ -3220,36 +3499,47 @@ export default function CreateLivestreamForm({
               )}
             </Box>
           ) : (
-            <Button 
-              variant="contained" 
-              onClick={() => handleSave(true)}
-              disabled={!canPublish || isSubmitting}
-              sx={{ 
-                borderRadius: '14px', 
-                fontWeight: 900, 
-                px: 4, 
-                py: 1.25,
-                background: `linear-gradient(135deg, #10b981 0%, #059669 100%)`,
-                color: '#ffffff',
-                boxShadow: '0 8px 24px rgba(16,185,129,0.35)',
-                textTransform: 'none',
-                fontSize: '0.95rem',
-                letterSpacing: '-0.01em',
-                transition: 'all 0.2s ease',
-                '&:hover': { 
-                  background: `linear-gradient(135deg, #059669 0%, #047857 100%)`,
-                  transform: 'translateY(-1px)',
-                  boxShadow: '0 10px 28px rgba(16,185,129,0.45)'
-                },
-                '&.Mui-disabled': {
-                  background: 'rgba(15,23,42,0.12)',
-                  color: 'rgba(15,23,42,0.38)',
-                  boxShadow: 'none'
-                }
-              }}
-            >
-              Schedule & Publish
-            </Button>
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5 }}>
+              <Button 
+                variant="contained" 
+                onClick={() => handleSave(true)}
+                disabled={!canPublish || isSubmitting}
+                sx={{ 
+                  borderRadius: '14px', 
+                  fontWeight: 900, 
+                  px: 4, 
+                  py: 1.25,
+                  background: `linear-gradient(135deg, #10b981 0%, #059669 100%)`,
+                  color: '#ffffff',
+                  boxShadow: '0 8px 24px rgba(16,185,129,0.35)',
+                  textTransform: 'none',
+                  fontSize: '0.95rem',
+                  letterSpacing: '-0.01em',
+                  transition: 'all 0.2s ease',
+                  '&:hover': { 
+                    background: `linear-gradient(135deg, #059669 0%, #047857 100%)`,
+                    transform: 'translateY(-1px)',
+                    boxShadow: '0 10px 28px rgba(16,185,129,0.45)'
+                  },
+                  '&.Mui-disabled': {
+                    background: 'rgba(15,23,42,0.12)',
+                    color: 'rgba(15,23,42,0.38)',
+                    boxShadow: 'none'
+                  }
+                }}
+              >
+                Schedule & Publish
+              </Button>
+              {!canPublish && (
+                <Typography sx={{ fontSize: '0.74rem', color: '#ef4444', fontWeight: 700, mr: 0.5 }}>
+                  {!title.trim() ? 'Livestream title required' :
+                   (!eventDatePart || !eventTimePart) ? 'Event date & time required' :
+                   rundownBlocks.length === 0 ? 'Broadcast slides required' :
+                   (!guestStudioUrl.trim() || !streamUrl.trim()) ? 'Both Guest & Public stream links required' :
+                   'Complete required fields to publish'}
+                </Typography>
+              )}
+            </Box>
           )}
         </Box>
       </Box>

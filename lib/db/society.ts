@@ -220,7 +220,14 @@ export async function getLearnContent(options?: { swimlane?: LearnSwimlane; limi
 
   const result = await prisma.learnContent.findMany({
     where: {
-      status: options?.includeScheduled ? { in: ['published', 'scheduled'] } : 'published',
+      ...(options?.includeScheduled
+        ? { status: { in: ['published', 'scheduled'] } }
+        : {
+            OR: [
+              { status: 'published' },
+              { type: 'livestream', status: 'scheduled' }
+            ]
+          }),
       ...(options?.swimlane && options.swimlane !== 'scheduled' ? { type: typeMap[options.swimlane] } : {})
     },
     include: {
@@ -233,6 +240,13 @@ export async function getLearnContent(options?: { swimlane?: LearnSwimlane; limi
                 select: { revisions: true }
               }
             }
+          }
+        }
+      },
+      livestream: {
+        include: {
+          blocks: {
+            orderBy: { orderIndex: 'asc' }
           }
         }
       }
@@ -253,13 +267,35 @@ export async function getLearnContent(options?: { swimlane?: LearnSwimlane; limi
     
     let tags = [];
     try { tags = JSON.parse(r.bottleneckTags || '[]'); } catch (e) {}
+    if (tags.length === 0 && r.category) {
+      tags.push(r.category);
+    }
 
     let collaborators = [];
     try { collaborators = JSON.parse(r.collaborators || '[]'); } catch (e) {}
 
+    const rawScheduled = r.livestream?.scheduledFor || r.targetDate || r.createdAt;
+    const scheduledAt = rawScheduled ? new Date(rawScheduled).toISOString() : undefined;
+    let liveStatus: 'live' | 'upcoming' | 'past' | undefined = undefined;
+    if (r.type === 'livestream') {
+      if (r.livestream?.isLive) {
+        liveStatus = 'live';
+      } else if (rawScheduled && new Date(rawScheduled).getTime() > Date.now()) {
+        liveStatus = 'upcoming';
+      } else if (r.status === 'scheduled') {
+        liveStatus = 'upcoming';
+      } else {
+        liveStatus = 'past';
+      }
+    }
+
     return {
       ...r,
-      swimlane: r.status === 'scheduled' ? 'scheduled' : (swimlaneMap[r.type] || 'articles'),
+      swimlane: (options?.swimlane === 'scheduled' || (r.status === 'scheduled' && r.type !== 'livestream')) 
+        ? 'scheduled' 
+        : (swimlaneMap[r.type] || 'articles'),
+      liveStatus,
+      scheduledAt,
       author: {
         name: r.authorName,
         avatarUrl: r.authorAvatarUrl || '',

@@ -15,7 +15,12 @@ export default async function GlobalLearnHub() {
   let rawMaterials: any[] = [];
   try {
     const rawLC = await prisma.learnContent.findMany({
-      where: { status: 'published' },
+      where: {
+        OR: [
+          { status: 'published' },
+          { type: 'livestream', status: 'scheduled' }
+        ]
+      },
       orderBy: { createdAt: 'desc' },
       include: {
         article: {
@@ -24,20 +29,22 @@ export default async function GlobalLearnHub() {
               orderBy: { orderIndex: 'asc' }
             }
           }
-        }
+        },
+        livestream: true,
       }
     });
 
     rawMaterials = rawLC.map((lc: any) => {
       const imageBlock = lc.article?.blocks?.find((b: any) => b.type === 'image' && b.payload?.url);
+      const fallbackLivestreamThumb = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200&q=80';
       return {
         id: lc.id,
         challengeId: lc.challengeId || 'global',
         subcategoryId: lc.subcategory || 'general',
-        slug: lc.slug,
+        slug: lc.type === 'livestream' ? lc.id : lc.slug,
         title: lc.title,
         type: lc.type, 
-        thumbnailUrl: lc.thumbnailUrl || imageBlock?.payload?.url || '/images/default-thumbnail.jpg',
+        thumbnailUrl: lc.thumbnailUrl || imageBlock?.payload?.url || (lc.type === 'livestream' ? fallbackLivestreamThumb : '/images/default-thumbnail.jpg'),
         author: lc.authorName || 'Society Architect',
         dateAdded: lc.createdAt,
         readTime: lc.type === 'video' || lc.type === 'livestream' ? 'Watch' : '5 min read'

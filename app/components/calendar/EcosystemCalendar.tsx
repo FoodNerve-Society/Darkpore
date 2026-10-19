@@ -21,6 +21,8 @@ import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import Link from 'next/link';
 import { getCalendarEvents } from '@/lib/actions/calendar';
 import { getMatrixForWeekClient, getCommodityBiddingLeaderboard, placeCommodityBid } from '@/lib/actions/matrix';
+import { getCalendarEventRoute } from '@/lib/calendar-routes';
+import { useCalendarOverlay } from '@/context/CalendarOverlayContext';
 import { CalendarEvent } from '@prisma/client';
 import AddEventSidebar from './AddEventSidebar';
 import CommodityWatermark from './CommodityWatermark';
@@ -51,6 +53,7 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
   const theme = useTheme();
   const primaryColor = themeColor || theme.palette.primary.main;
   const { profile: user } = useSociety();
+  const { closeCalendar } = useCalendarOverlay();
   
   const [viewMode, setViewMode] = useState<ViewMode>(initialView);
   const [currentDate, setCurrentDate] = useState(initialDate || new Date());
@@ -1231,53 +1234,62 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
                       >
                         {dayEvents.map(e => {
                           const dotColor = getIntentColor(e.dateType);
+                          const eventUrl = getCalendarEventRoute({ sourceType: e.sourceType, sourceId: e.sourceId, slug: e.slug });
+                          const eventImage = e.imageUrl || (e.category === 'Livestream' ? 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=100&q=80' : undefined);
                           return (
                             <Box 
                               key={e.id} 
-                              component={motion.div}
-                              layoutId={`event-card-${e.id}`}
+                              component={Link}
+                              href={eventUrl}
+                              onClick={(ev: any) => {
+                                ev.stopPropagation();
+                                try { closeCalendar?.(); } catch (err) {}
+                              }}
                               sx={{ 
+                                textDecoration: 'none',
                                 display: 'flex', alignItems: 'center', gap: 1.5,
                                 bgcolor: alpha(dotColor, 0.05), p: 1, borderRadius: 3, flexShrink: 0,
                                 minWidth: 180, height: 60,
                                 boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
                                 border: `1px solid ${alpha(dotColor, 0.1)}`,
-                                backdropFilter: 'blur(10px)'
+                                backdropFilter: 'blur(10px)',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                                '&:hover': {
+                                  bgcolor: alpha(dotColor, 0.12),
+                                  transform: 'translateY(-2px)',
+                                  boxShadow: `0 8px 20px ${alpha(dotColor, 0.15)}`,
+                                }
                               }}
                             >
                               {/* Optional Image Placeholder for premium feel */}
                               <Box 
-                                component={motion.div}
-                                layoutId={`event-img-${e.id}`}
                                 sx={{ 
                                   width: 44, height: 44, borderRadius: 2, 
                                   bgcolor: alpha(dotColor, 0.1),
                                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  backgroundImage: e.category === 'Livestream' ? 'url(https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=100&q=80)' : 'none',
-                                  backgroundSize: 'cover', backgroundPosition: 'center'
+                                  backgroundImage: eventImage ? `url(${eventImage})` : 'none',
+                                  backgroundSize: 'cover', backgroundPosition: 'center',
+                                  flexShrink: 0,
                                 }}
                               >
-                                {e.category !== 'Livestream' && (
+                                {!eventImage && (
                                   <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: dotColor }} />
                                 )}
                               </Box>
                               
                               <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
                                 <Typography 
-                                  component={motion.span} 
-                                  layoutId={`event-title-${e.id}`}
                                   variant="caption" 
                                   sx={{ fontWeight: 800, color: '#0f172a', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
                                 >
                                   {e.title}
                                 </Typography>
                                 <Typography 
-                                  component={motion.span} 
-                                  layoutId={`event-time-${e.id}`}
                                   variant="caption" 
                                   sx={{ fontWeight: 700, color: dotColor, fontSize: '0.65rem', mt: 0.5 }}
                                 >
-                                  {formatTimeSpan(e.date, e.endDate).split(' ')[0]} {formatTimeSpan(e.date, e.endDate).split(' ')[1]}
+                                  {formatTimeSpan(e.date, e.endDate)}
                                 </Typography>
                               </Box>
                             </Box>
@@ -1362,20 +1374,30 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
                       ) : (
                         dayEvents.slice(0, 5).map(event => {
                           const dotColor = getIntentColor(event.dateType);
+                          const eventUrl = getCalendarEventRoute({ sourceType: event.sourceType, sourceId: event.sourceId, slug: event.slug });
+                          const eventImage = event.imageUrl || (event.category === 'Livestream' ? 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=150&q=80' : undefined);
+                          const timeSpan = formatTimeSpan(event.date, event.endDate);
+                          const timeParts = timeSpan.split(' ');
                           return (
                             <Box 
                               key={event.id} 
-                              component={motion.div}
-                              layoutId={`event-card-${event.id}`}
+                              component={Link}
+                              href={eventUrl}
+                              onClick={(ev: any) => {
+                                ev.stopPropagation();
+                                try { closeCalendar?.(); } catch (err) {}
+                              }}
                               sx={{ 
+                                textDecoration: 'none',
                                 bgcolor: alpha(dotColor, 0.08), p: 2.5, borderRadius: 4, 
                                 display: 'flex', alignItems: 'center', gap: 3,
                                 boxShadow: '0 8px 32px rgba(0,0,0,0.06)',
                                 border: `1px solid ${alpha(dotColor, 0.2)}`,
                                 backdropFilter: 'blur(20px)',
                                 transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                                cursor: 'pointer',
                                 '&:hover': { 
-                                  bgcolor: alpha(dotColor, 0.12), 
+                                  bgcolor: alpha(dotColor, 0.14), 
                                   transform: 'translateY(-2px)',
                                   boxShadow: `0 12px 40px ${alpha(dotColor, 0.2)}`
                                 }
@@ -1391,23 +1413,19 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
                               }}>
                                 <Box sx={{ position: 'absolute', top: 6, right: 6, width: 6, height: 6, borderRadius: '50%', bgcolor: dotColor, boxShadow: `0 0 8px ${dotColor}` }} />
                                 <Typography 
-                                  component={motion.span} 
-                                  layoutId={`event-time-${event.id}`}
                                   variant="h6" 
                                   sx={{ fontWeight: 900, lineHeight: 1.1, fontFamily: 'var(--font-dosis)' }}
                                 >
-                                  {formatTimeSpan(event.date, event.endDate).split(' ')[0]}
+                                  {timeParts[0]}
                                 </Typography>
                                 <Typography variant="caption" sx={{ fontWeight: 800, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                  {formatTimeSpan(event.date, event.endDate).split(' ')[1] || ''}
+                                  {timeParts.slice(1).join(' ') || ''}
                                 </Typography>
                               </Box>
                               
                               {/* Premium Content */}
                               <Box sx={{ flex: 1 }}>
                                 <Typography 
-                                  component={motion.span} 
-                                  layoutId={`event-title-${event.id}`}
                                   variant="h6" 
                                   sx={{ fontWeight: 900, color: '#0f172a', mb: 0.5, lineHeight: 1.2, display: 'block' }}
                                 >
@@ -1432,13 +1450,11 @@ export default function EcosystemCalendar({ tenantId, initialView = 'week', init
                               </Box>
 
                               {/* Optional Right Image/Avatar */}
-                              {event.category === 'Livestream' && (
+                              {eventImage && (
                                 <Box 
-                                  component={motion.div}
-                                  layoutId={`event-img-${event.id}`}
                                   sx={{ 
                                     width: 56, height: 56, borderRadius: 3, flexShrink: 0,
-                                    backgroundImage: 'url(https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=150&q=80)',
+                                    backgroundImage: `url(${eventImage})`,
                                     backgroundSize: 'cover', backgroundPosition: 'center',
                                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                                   }} 

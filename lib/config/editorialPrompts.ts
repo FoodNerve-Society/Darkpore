@@ -45,23 +45,48 @@ Current Date: {{current_month_year}}
 
 ---
 
-#### PHASE 1: Real-World Data Ingestion (FAOSTAT, NBS & FEWS NET)
+#### PHASE 1: Real-World Data Ingestion & Adaptive Regional Intelligence
 Anchor your analysis strictly to the economic reality of {{current_month_year}}. Focus heavily on the Target Value Chain Actor(s).
-Pull verified data signals across authoritative databases:
-1. **FAOSTAT:** Annual crop/livestock production tonnages, yield deficits, and national commodity utilization balance sheets.
-2. **NBS (National Bureau of Statistics Nigeria):** State-level CPI food price indices, wholesale commodity prices, and diesel/transport freight inflation.
-3. **FEWS NET & WFP VAM:** Cross-border trade flow bulletins, seasonal supply routes, security corridors, and market deficit alerts.
-4. **AFEX / SabiX Commodity Exchanges:** Spot farmgate aggregation prices vs. terminal off-take cash market prices.
-5. **FMAFS / Sahel Consulting:** Processing facility capacities, cold chain/silo deficits, and post-harvest loss percentages.
+Pull verified data signals dynamically based on the geographic scope of candidate corridors and the User's Location:
+
+1. **Global Baseline Databases (Universal):**
+   * **FAOSTAT & UN Comtrade:** National crop/livestock production tonnages, yield deficits, global trade flows, and commodity utilization balance sheets.
+   * **World Bank Commodity Markets ("Pink Sheet") / IMF Primary Commodities:** Benchmark international spot prices, input/fertilizer inflation, and macroeconomic commodity forecasts.
+   * **FEWS NET, WFP VAM & Global Food Security Systems:** Cross-border trade flow bulletins, seasonal supply deficits, and security corridor alerts.
+
+2. **Regional & National Authoritative Intelligence Tiers (Adaptive Selection):**
+   * **Nigeria & West Africa:**
+     - **NBS (National Bureau of Statistics Nigeria):** State-level CPI food price indices, wholesale commodity prices, and diesel freight inflation.
+     - **AFEX / SabiX Commodity Exchanges:** Spot farmgate aggregation prices vs. terminal off-take cash market prices.
+     - **FMAFS / Sahel Consulting / CILSS:** Processing facility capacities, cold chain/silo deficits, and post-harvest loss percentages.
+   * **East & Southern Africa:**
+     - **National Statistics (e.g. KNBS Kenya, UBOS Uganda, ZAMSTATS Zambia):** National food CPI, county/district commodity pricing, and freight rates.
+     - **EAGC RATIN (Regional Agricultural Trade Intelligence Network) & SAFEX (JSE South Africa):** Cross-border grain corridors, spot aggregation vs. terminal exchange prices.
+     - **COMESA / SADC / AGRA:** Regional warehouse receipts, grain reserves, and corridor bottleneck assessments.
+   * **Europe (EU & UK):**
+     - **Eurostat & DG AGRI (European Commission):** Agri-food trade dashboards, harvest volumes, producer price indices, and fertilizer cost tracking.
+     - **Euronext Commodities (MATIF) / AHDB:** Milling wheat, rapeseed, corn terminal futures vs. physical farmgate aggregation.
+     - **National Agencies (e.g. FranceAgriMer, BLE Germany, DEFRA UK):** Port grain terminal flows, cold chain infrastructure, and farmgate margins.
+   * **Americas (North & Latin America):**
+     - **USDA (WASDE, FAS, NASS, ERS) & StatCan:** Yield estimates, ending stocks, export inspections, and county-level cost-of-production.
+     - **CME Group (CBOT) / B3 Brazil / Bolsa de Cereales Argentina:** Futures settlement vs. physical barge/rail interior basis.
+     - **CONAB / CEPEA (Brazil) & SAGARPA (Mexico):** National supply balances, agro-logistics corridors (e.g. BR-163), and port demurrage.
+   * **Asia-Pacific:**
+     - **AGMARKNET / Ministry of Agriculture (India), MARA (China), MDEX / Bursa Malaysia:** Mandi arrival volumes, wholesale modal prices, palm oil benchmarks.
+     - **ABARES (Australia) & ASEAN Food Security Information System (AFSIS):** Export parity pricing, bulk terminal throughput, and regional supply pacts.
+
+3. **Geographic Selection & Comparative Corridor Protocol:**
+   * **When User Location is Specified:** Anchor the User Location analysis directly to its corresponding national/regional database above. If the user specifies an international comparison (e.g., "Costa Rica ➔ Nigeria" or "Netherlands ➔ Kenya"), bridge the exporter's production/yield data (e.g. FAOSTAT/Eurostat/USDA) directly against the importer's terminal market deficit, tariffs, and freight spread (e.g. NBS/AFEX or KNBS).
+   * **When User Location is Open/Unspecified:** Identify the true **Top 5 Global/Regional Epicenters** where {{commodity}} friction, production volume, or trade arbitrage is highest in the world in {{current_month_year}}, dynamically citing the respective regional bureau for each ranked epicenter.
 
 #### PHASE 2: The 6 Location Ranking Parameters & Mathematical Composite Formula
 Score all candidate corridors and the User's Location across the **6 Strategic Ranking Parameters (Score 1–10 each)**:
-* **$P_1$. Trade Volume & Market Liquidity (Weight: 2.5 | Max: 25 pts):** Physical metric tons traded weekly, cash transaction velocity, and buyer density (grounded in FAOSTAT/NBS).
-* **$P_2$. Bottleneck & Deficit Severity (Weight: 2.0 | Max: 20 pts):** Post-harvest loss %, storage/silo deficit, and processing shortage.
-* **$P_3$. Logistics Corridor Centrality (Weight: 2.0 | Max: 20 pts):** Arterial transit access, interstate routes, port/rail linkages, and border permeability (grounded in FEWS NET).
-* **$P_4$. Price Arbitrage Spread (Weight: 1.5 | Max: 15 pts):** Margin spread between local farmgate buy price and terminal/export off-take price (grounded in AFEX/NBS).
-* **$P_5$. Capital & Institutional Density (Weight: 1.0 | Max: 10 pts):** Presence of commercial banks, industrial processors, and warehouse receipt systems.
-* **$P_6$. Regulatory & Operational Risk (Weight: 1.0 | Max: 10 pts):** Extortion checkpoints, transport union haulage levies, transit demurrage, and route insecurity.
+* **$P_1$. Trade Volume & Market Liquidity (Weight: 2.5 | Max: 25 pts):** Physical metric tons traded weekly, cash transaction velocity, and buyer density (grounded in FAOSTAT / Regional Statistical Bureaus).
+* **$P_2$. Bottleneck & Deficit Severity (Weight: 2.0 | Max: 20 pts):** Post-harvest loss %, storage/silo deficit, processing shortage, or terminal import deficit.
+* **$P_3$. Logistics Corridor Centrality (Weight: 2.0 | Max: 20 pts):** Arterial transit access, interstate/cross-border routes, deep-sea port/rail linkages, and customs permeability (grounded in FEWS NET / UN Comtrade / Regional Transit Data).
+* **$P_4$. Price Arbitrage Spread (Weight: 1.5 | Max: 15 pts):** Margin spread between local farmgate buy price and terminal/export off-take price (grounded in regional Commodity Exchanges / Wholesale Price Monitors).
+* **$P_5$. Capital & Institutional Density (Weight: 1.0 | Max: 10 pts):** Presence of commercial ag-lenders, industrial processors, cold-storage operators, and warehouse receipt systems.
+* **$P_6$. Regulatory & Operational Risk (Weight: 1.0 | Max: 10 pts):** Port/jetty demurrage, customs clearance friction, haulage tariffs, transit extortion checkpoints/union levies, export restrictions, and route insecurity.
 
 **The Corridor Attractiveness & Friction Index (CAFI) Formula:**
 $$\\text{Composite CAFI Score} = (P_1 \\times 2.5) + (P_2 \\times 2.0) + (P_3 \\times 2.0) + (P_4 \\times 1.5) + (P_5 \\times 1.0) + (P_6 \\times 1.0) \\quad (\\text{out of } 100)$$
@@ -96,8 +121,8 @@ Output your response strictly in the two Markdown blocks below. Do not include c
 
 **Location Evaluated:** {{user_location}}
 *   🏆 **Leaderboard Rank:** [e.g., Ranked #2 of 6 Epicenters (CAFI Score: 82.5/100) | Or: Ranked #4 of 6]
-*   🟢 **Verdict:** [State clearly how it stacks against the top national corridors].
-*   📊 **The Reality:** [1-2 sentences of hard data on actual {{commodity}} conditions here right now from NBS/FAOSTAT].
+*   🟢 **Verdict:** [State clearly how it stacks against the top global/regional trade corridors for this commodity].
+*   📊 **The Reality:** [1-2 sentences of hard data on actual {{commodity}} conditions here right now citing authoritative regional/global databases].
 *   🔄 **Strategic Advice:** [1 sentence advising whether to focus here or leverage other ranked epicenters].
 
 ***
@@ -109,9 +134,9 @@ Output your response strictly in the two Markdown blocks below. Do not include c
 ### 📐 Corridor Ranking Formula & Evidence Matrix
 **Formula:** $\\text{CAFI Score} = (P_1 \\times 2.5) + (P_2 \\times 2.0) + (P_3 \\times 2.0) + (P_4 \\times 1.5) + (P_5 \\times 1.0) + (P_6 \\times 1.0)$
 
-| Rank | Corridor / Location (5-Level Micro-Geography) | Authoritative Data Citations (FAOSTAT, NBS, FEWS NET) | P1 (x2.5) | P2 (x2.0) | P3 (x2.0) | P4 (x1.5) | P5 (x1.0) | P6 (x1.0) | CAFI Composite Score |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **#1** | [Level 5 Micro-Geography] | [FAOSTAT: X MT/yr, NBS: Y% inflation, FEWS NET corridor flow] | [X] | [X] | [X] | [X] | [X] | [X] | **XX.X / 100** |
+| Rank | Corridor / Location (5-Level Micro-Geography) | Authoritative Data Citations (FAOSTAT, Regional Bureau, Commodity Exchanges) | P1 (x2.5) | P2 (x2.0) | P3 (x2.0) | P4 (x1.5) | P5 (x1.0) | P6 (x1.0) | CAFI Composite Score |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **#1** | [Level 5 Micro-Geography] | [FAOSTAT: X MT/yr, Regional Bureau (e.g. NBS/Eurostat/USDA): Y% metric, Exchange spot price] | [X] | [X] | [X] | [X] | [X] | [X] | **XX.X / 100** |
 | **#2** | [Level 5 Micro-Geography] | [Citations...] | [X] | [X] | [X] | [X] | [X] | [X] | **XX.X / 100** |
 | **#3** | [Level 5 Micro-Geography] | [Citations...] | [X] | [X] | [X] | [X] | [X] | [X] | **XX.X / 100** |
 | **#4** | [Level 5 Micro-Geography] | [Citations...] | [X] | [X] | [X] | [X] | [X] | [X] | **XX.X / 100** |
@@ -123,7 +148,7 @@ Output your response strictly in the two Markdown blocks below. Do not include c
 ### 📍 Rank #1 Epicenter: [Insert Level 5 Micro-Geography] (CAFI Score: XX.X/100)
 *   **Scoring Drivers:** [e.g., Trade Volume: 9/10, Corridor Centrality: 9/10]
 *   **Past Trajectory:** [Historical root/failure]
-*   **Present Ground Truth:** [{{current_month_year}} Killer Stat citing NBS/FAOSTAT]
+*   **Present Ground Truth:** [{{current_month_year}} Killer Stat citing authoritative regional/global database]
 *   **Future Trajectory:** [2030 Horizon projection]
 *   **Primary Capital Driver:** [Who funds/fails this]
 *   **Local Trade-off Required:** [Specific compromise for the Target Actor]

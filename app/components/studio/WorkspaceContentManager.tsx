@@ -12,7 +12,8 @@ import {
   Event as EventIcon,
   PlayCircleOutlined as VideoIcon,
   School as ClassIcon,
-  Storefront as ListingIcon
+  Storefront as ListingIcon,
+  LiveTv as LiveTvIcon
 } from '@mui/icons-material';
 
 export interface WorkspaceItem {
@@ -44,11 +45,14 @@ interface WorkspaceContentManagerProps {
 const getTypeIcon = (type: string, color: string) => {
   const props = { sx: { color, fontSize: '1.4rem' } };
   switch (type) {
+    case 'livestream': return <LiveTvIcon {...props} />;
     case 'article': return <ArticleIcon {...props} />;
     case 'job': return <JobIcon {...props} />;
     case 'event': return <EventIcon {...props} />;
     case 'video': return <VideoIcon {...props} />;
+    case 'class':
     case 'course': return <ClassIcon {...props} />;
+    case 'report': return <ArticleIcon {...props} />;
     case 'listing': return <ListingIcon {...props} />;
     default: return <ArticleIcon {...props} />;
   }
@@ -77,7 +81,9 @@ export default function WorkspaceContentManager({ tabs, onEdit, onDelete, colorT
   // Ensure activeTabId is set correctly if tabs load asynchronously
   useEffect(() => {
     if (tabs && tabs.length > 0 && !tabs.find(t => t.id === activeTabId)) {
-      setActiveTabId(tabs[0].id);
+      queueMicrotask(() => {
+        setActiveTabId(tabs[0].id);
+      });
     }
   }, [tabs, activeTabId]);
 

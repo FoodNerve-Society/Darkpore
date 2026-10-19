@@ -112,7 +112,10 @@ export async function getCalendarEvents(options: {
   limit?: number;
 }) {
   const where: any = {
-    tenantId: options.tenantId,
+    OR: [
+      { tenantId: options.tenantId },
+      { visibility: 'society' },
+    ],
   };
 
   if (options?.startDate || options?.endDate) {

@@ -86,6 +86,7 @@ export function CalendarOverlayProvider({ children }: { children: ReactNode }) {
         }}
       >
         <IconButton 
+          aria-label="close"
           onClick={closeCalendar}
           sx={{ 
             position: 'absolute', right: 16, top: 16, zIndex: 10,
