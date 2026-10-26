@@ -146,7 +146,7 @@ const ExecutiveMemoVariant: React.FC<StrategicDirectiveBlockProps> = ({ content,
                   '& p': { m: 0 },
                   '& strong': { fontWeight: 700 },
                   '& a': { color: urgencyColor, textDecoration: 'none', borderBottom: `1px solid ${urgencyColor}` },
-                  fontFamily: 'var(--font-inter), Inter, sans-serif'
+                  fontFamily: 'var(--article-body-font, var(--font-lexend), sans-serif)'
                 }} dangerouslySetInnerHTML={{ __html: html }} />
               </Box>
             )
@@ -167,7 +167,7 @@ const ExecutiveMemoVariant: React.FC<StrategicDirectiveBlockProps> = ({ content,
                   sx={{
                     bgcolor: textColor,
                     color: bgColor,
-                    fontFamily: 'var(--font-inter), Inter, sans-serif',
+                    fontFamily: 'var(--article-body-font, var(--font-lexend), sans-serif)',
                     fontWeight: 600,
                     px: 4,
                     py: 1.5,
@@ -301,7 +301,7 @@ const ActionTimelineVariant: React.FC<StrategicDirectiveBlockProps> = ({ content
                     '& p': { m: 0 },
                     '& strong': { fontWeight: 700 },
                     '& a': { color: point.color, textDecoration: 'none' },
-                    fontFamily: 'var(--font-inter), Inter, sans-serif'
+                    fontFamily: 'var(--article-body-font, var(--font-lexend), sans-serif)'
                   }} dangerouslySetInnerHTML={{ __html: html }} />
                 </Box>
               </Box>
@@ -323,7 +323,7 @@ const ActionTimelineVariant: React.FC<StrategicDirectiveBlockProps> = ({ content
                   sx={{
                     bgcolor: alpha(urgencyColor, 0.1),
                     color: urgencyColor,
-                    fontFamily: 'var(--font-inter), Inter, sans-serif',
+                    fontFamily: 'var(--article-body-font, var(--font-lexend), sans-serif)',
                     fontWeight: 700,
                     px: 3,
                     py: 1.5,

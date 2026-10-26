@@ -34,9 +34,9 @@ export const MainAnalysisBlock: React.FC<MainAnalysisBlockProps> = ({ content, t
           key={i}
           sx={{ 
             color: isDark ? 'rgba(255,255,255,0.85)' : '#334155', 
-            fontFamily: 'var(--font-inter), system-ui, -apple-system, sans-serif',
-            fontSize: { xs: '1.05rem', md: '1.125rem' }, 
-            lineHeight: 1.78,
+            fontFamily: 'var(--article-body-font, var(--font-lexend), system-ui, sans-serif)',
+            fontSize: 'var(--article-body-size, 1.2rem)', 
+            lineHeight: 'var(--article-line-height, 1.82)',
             letterSpacing: '-0.01em',
             mb: 2.5, // Creates the one-line paragraph spacing
             '& strong': { fontWeight: 800, color: isDark ? '#fff' : '#0f172a' },
@@ -54,14 +54,14 @@ export const MainAnalysisBlock: React.FC<MainAnalysisBlockProps> = ({ content, t
     <Box sx={{ my: 4 }}>
       {/* Heading */}
       {headingText && (
-        <Typography sx={{ 
+        <Typography variant="h3" sx={{ fontFamily: 'var(--article-heading-font) !important', 
           fontWeight: 900, 
           fontSize: '1.8rem', 
           mb: 3,
           letterSpacing: '-0.03em',
           background: isDark ? 'linear-gradient(135deg, #fff 0%, #94a3b8 100%)' : 'linear-gradient(135deg, #0f172a 0%, #475569 100%)',
           WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent'
+          color: isDark ? '#f8fafc' : '#0f172a'
         }}>
           {headingText}
         </Typography>

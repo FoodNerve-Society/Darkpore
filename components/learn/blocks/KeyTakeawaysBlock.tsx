@@ -52,9 +52,9 @@ export const KeyTakeawaysBlock: React.FC<KeyTakeawaysBlockProps> = ({
         display: 'flex',
         alignItems: 'center',
         gap: 1.5,
-        fontFamily: 'var(--font-quicksand), Quicksand, sans-serif'
+        fontFamily: 'var(--article-heading-font, var(--font-quicksand), sans-serif)'
       }}>
-        <Box sx={{ width: 8, height: 24, borderRadius: 4, bgcolor: accentColor }} />
+        <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: accentColor }} />
         Executive Summary
       </Typography>
 
@@ -82,9 +82,10 @@ export const KeyTakeawaysBlock: React.FC<KeyTakeawaysBlockProps> = ({
               </Typography>
             </Box>
             <Box sx={{ 
-              color: isDark ? 'rgba(255,255,255,0.9)' : '#1e293b', 
-              lineHeight: 1.7, 
-              fontSize: '1.05rem',
+              color: isDark ? '#f1f5f9' : '#1e293b', 
+              lineHeight: 'var(--article-line-height, 1.8)', 
+              fontSize: 'var(--article-body-size, 1.15rem)',
+              fontFamily: 'var(--article-body-font)',
               fontWeight: 500,
               '& p': { m: 0 },
               '& strong': { fontWeight: 800, color: isDark ? '#fff' : '#0f172a' },

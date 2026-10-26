@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Box, Typography, Button, IconButton, Tooltip, alpha, Avatar, Dialog } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { ArticleBlockRenderer } from './ArticleBlockRenderer';
+import { ArticleTypographyScope } from './ArticleTypographyBar';
 import { BlockInsightsDrawer } from './BlockInsightsDrawer';
 import { 
   Share as ShareIcon, 
@@ -108,7 +109,7 @@ export function PublicArticleViewer({
   }
 
   return (
-    <Box sx={{ position: 'relative' }}>
+    <Box className="article-typography-scope" sx={{ position: 'relative' }}>
       
       {/* ── Vertical Beaded Progress Bar (Custom Scrollbar) ── */}
       {parsedBlocks.length > 0 && (
@@ -246,6 +247,7 @@ export function PublicArticleViewer({
           </Tooltip>
         </Box>
 
+        <ArticleTypographyScope articleSlug={material.slug || material.id} tags={tags} themeMode={themeMode} accentColor={themeColor} />
         {/* ═══════════════════════ PREMIUM ARTICLE HEADER ═══════════════════════ */}
         <Box sx={{ mb: 6 }}>
           
@@ -321,7 +323,7 @@ export function PublicArticleViewer({
         {/* ═══════════════════════ ARTICLE BODY ═══════════════════════ */}
         {/* Render Intelligence Blocks, skipping the first if it was already rendered as a subheading */}
         {material.type === 'article' && parsedBlocks.length > 0 ? (
-          <Box sx={{ position: 'relative' }}>
+          <Box className="article-typography-scope" sx={{ position: 'relative' }}>
             {parsedBlocks.slice(parsedBlocks[0]?.blockType === 'subheading' ? 1 : 0).map((block: any, idx: number) => (
               <Box 
                 id={`article-block-${block.id || idx}`} 

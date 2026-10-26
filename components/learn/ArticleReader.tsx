@@ -53,6 +53,7 @@ import {
 } from "@/lib/db/society";
 import { useSociety } from "@/context/SocietyContext";
 import { ArticleBlockRenderer } from "@/components/learn/ArticleBlockRenderer";
+import { ArticleTypographyScope } from "@/components/learn/ArticleTypographyBar";
 import { BlockInsightsDrawer } from "@/components/learn/BlockInsightsDrawer";
 import { normalizeArticleBlocks } from "@/lib/utils/normalizeArticleBlocks";
 
@@ -266,7 +267,7 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
         const found = allContent.find(
           (c) =>
             (c.swimlane === "articles" || c.swimlane === "reports") &&
-            c.id === slug
+            (c.id === slug || (c as any).slug === slug)
         );
         setArticle(found || null);
       } catch (error) {
@@ -451,7 +452,7 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
   };
 
   return (
-    <Box sx={{ pb: 12 }}>
+    <Box className="article-typography-scope" sx={{ pb: 12 }}>
       <Box sx={{ maxWidth: { xs: '100%', md: '90%', lg: '85%' }, mx: "auto", px: { xs: 2.5, md: 4, lg: 8 }, pt: { xs: 4, md: 8 }, position: 'relative' }}>
         <Box id="article-top-sentinel" sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1, pointerEvents: 'none' }} />
 
@@ -610,6 +611,7 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
           </Tooltip>
         </Box>
 
+        <ArticleTypographyScope articleSlug={(article as any).slug || article.id} tags={article.tags} themeMode={theme.palette.mode} accentColor={accentColor} />
         {/* ═══════════════════════ PREMIUM ARTICLE HEADER ═══════════════════════ */}
         <Box sx={{ mb: 6 }}>
 
@@ -702,7 +704,7 @@ export function ArticleReader({ slug, articleData, onBack }: { slug?: string; ar
 
       </Box>
 
-      {/* ═══════════════════════ INSIGHTS DRAWER ═══════════════════════ */}
+      {/* ═══════════════════════ INSIGHTS DRAWER (OUTSIDE SCOPE) ═══════════════════════ */}
       <BlockInsightsDrawer 
         open={!!activeInsightBlockId} 
         onClose={() => setActiveInsightBlockId(null)} 

@@ -58,7 +58,7 @@ export const SpikyTitleBlock: React.FC<SpikyTitleBlockProps> = ({
               fontSize: '0.75rem', 
               textTransform: 'uppercase', 
               letterSpacing: '0.1em',
-              fontFamily: 'var(--font-quicksand)',
+              fontFamily: 'var(--article-heading-font, var(--font-quicksand))',
               display: 'inline-block',
               boxShadow: `0 4px 12px ${accentColor}1A`
             }}>
@@ -88,7 +88,7 @@ export const SpikyTitleBlock: React.FC<SpikyTitleBlockProps> = ({
               display: 'inline-block', 
               ml: 1, 
               color: isDark ? '#cbd5e1' : '#475569',
-              fontFamily: 'var(--font-ysabeau-infant)'
+              fontFamily: 'var(--article-stylised-font, var(--font-ysabeau-infant))'
             }}
           >
             {afterColon}

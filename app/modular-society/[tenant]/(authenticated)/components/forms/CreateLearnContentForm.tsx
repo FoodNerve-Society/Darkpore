@@ -76,6 +76,7 @@ import { MICRO_CTAS, MACRO_CTAS } from '@/lib/cms/ctas';
 import { commoditiesList, formatCommoditySelectionTitle, findMatchingBasket } from '@/lib/cms/commodities';
 import { useStorageUpload } from '@/hooks/useStorageUpload';
 import { ArticleBlockRenderer } from '@/components/learn/ArticleBlockRenderer';
+import { ArticleTypographyScope } from '@/components/learn/ArticleTypographyBar';
 import PremiumTextField from '@/components/PremiumTextField';
 import PremiumAutocomplete from '@/components/PremiumAutocomplete';
 import PremiumButton from '@/components/PremiumButton';
@@ -4297,7 +4298,8 @@ export default function CreateLearnContentForm({
         </Box>
 
         <Box sx={{ flex: 1, overflowY: 'auto', p: { xs: 3, md: 6, lg: 8 }, display: 'flex', justifyContent: 'center', bgcolor: '#fff' }}>
-          <Box sx={{ width: '100%', maxWidth: 800 }}>
+          <Box className="article-typography-scope" sx={{ width: '100%', maxWidth: 800 }}>
+            <ArticleTypographyScope themeMode="light" accentColor={selectedTimeframe === 'past' ? '#ef4444' : selectedTimeframe === 'present' ? '#10b981' : '#3b82f6'} compactTopMargin />
             {/* Content Blocks */}
             {blocks.map((b) => (
               <Box key={b.id} sx={{ mb: 5, position: 'relative' }}>

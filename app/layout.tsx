@@ -1,5 +1,5 @@
 import React from 'react';
-import { playfairDisplay, eduNswActFoundation, dosis, quicksand, ysabeauInfant } from '@/theme/fonts';
+import { allFontVariables } from '@/theme/fonts';
 import './globals.css';
 
 import { headers } from 'next/headers';
@@ -24,7 +24,7 @@ import NextTopLoader from 'nextjs-toploader';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${playfairDisplay.variable} ${eduNswActFoundation.variable} ${dosis.variable} ${quicksand.variable} ${ysabeauInfant.variable}`}>
+    <html lang="en" className={allFontVariables}>
       <body>
         <NextTopLoader color="#10b981" showSpinner={false} />
         {children}

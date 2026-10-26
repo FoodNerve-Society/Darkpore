@@ -54,7 +54,7 @@ export const PersonaDossierBlock: React.FC<PersonaDossierBlockProps> = ({
           color: isDark ? '#e2e8f0' : '#475569',
           textTransform: 'uppercase',
           letterSpacing: '0.08em',
-          fontFamily: 'var(--font-quicksand), Quicksand, sans-serif',
+          fontFamily: 'var(--article-heading-font, var(--font-quicksand), sans-serif)',
         }}>
           Ground Reality · Operator Dossier
         </Typography>
@@ -145,7 +145,7 @@ export const PersonaDossierBlock: React.FC<PersonaDossierBlockProps> = ({
                   fontSize: '5rem',
                   fontWeight: 900,
                   color: 'rgba(255, 255, 255, 0.25)',
-                  fontFamily: 'var(--font-quicksand), Quicksand, sans-serif',
+                  fontFamily: 'var(--article-heading-font, var(--font-quicksand), sans-serif)',
                 }}>
                   {content.name ? content.name.charAt(0).toUpperCase() : 'O'}
                 </Typography>
@@ -226,7 +226,7 @@ export const PersonaDossierBlock: React.FC<PersonaDossierBlockProps> = ({
                       fontWeight: 900,
                       color: '#ffffff',
                       fontSize: '0.92rem',
-                      fontFamily: 'var(--font-quicksand), Quicksand, sans-serif',
+                      fontFamily: 'var(--article-heading-font, var(--font-quicksand), sans-serif)',
                       lineHeight: 1.2,
                       mt: 0.25,
                     }}>

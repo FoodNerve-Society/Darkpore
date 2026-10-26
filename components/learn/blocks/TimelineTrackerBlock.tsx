@@ -49,7 +49,7 @@ export const TimelineTrackerBlock: React.FC<TimelineTrackerBlockProps> = ({
           color: isDark ? '#e2e8f0' : '#475569',
           textTransform: 'uppercase',
           letterSpacing: '0.08em',
-          fontFamily: 'var(--font-quicksand), Quicksand, sans-serif',
+          fontFamily: 'var(--article-heading-font, var(--font-quicksand), sans-serif)',
         }}>
           Timeline & Roadmap
         </Typography>
@@ -168,7 +168,7 @@ export const TimelineTrackerBlock: React.FC<TimelineTrackerBlockProps> = ({
                         color: accentColor,
                         fontSize: '0.85rem',
                         letterSpacing: '0.04em',
-                        fontFamily: 'var(--font-quicksand), Quicksand, sans-serif',
+                        fontFamily: 'var(--article-heading-font, var(--font-quicksand), sans-serif)',
                         textTransform: 'uppercase',
                       }}
                     >

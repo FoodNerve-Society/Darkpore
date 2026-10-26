@@ -246,7 +246,7 @@ export const EvidenceGalleryBlock: React.FC<EvidenceGalleryBlockProps> = ({ cont
                     fontSize: '0.95rem', 
                     fontStyle: 'italic',
                     lineHeight: 1.5,
-                    borderLeft: `3px solid ${isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)'}`,
+                    borderLeft: 'none',
                     pl: 1.5,
                     display: '-webkit-box',
                     WebkitLineClamp: 2,

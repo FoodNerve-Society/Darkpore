@@ -55,9 +55,9 @@ export const UnitEconomicsCardBlock: React.FC<UnitEconomicsCardBlockProps> = ({
         display: 'flex',
         alignItems: 'center',
         gap: 1.5,
-        fontFamily: 'var(--font-quicksand), Quicksand, sans-serif'
+        fontFamily: 'var(--article-heading-font, var(--font-quicksand), sans-serif)'
       }}>
-        <Box sx={{ width: 8, height: 24, borderRadius: 4, bgcolor: accentColor }} />
+        <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: accentColor }} />
         Investment Memo · Unit Economics Dashboard
       </Typography>
 

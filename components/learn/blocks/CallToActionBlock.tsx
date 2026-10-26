@@ -68,7 +68,7 @@ export const CallToActionBlock: React.FC<CallToActionBlockProps> = ({
         lineHeight: 1.6,
         position: 'relative',
         zIndex: 1,
-        fontFamily: 'var(--font-inter), Inter, sans-serif'
+        fontFamily: 'var(--article-body-font, var(--font-lexend), sans-serif)'
       }}>
         {cta.subtext}
       </Typography>

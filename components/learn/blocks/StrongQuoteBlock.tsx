@@ -50,7 +50,7 @@ export const StrongQuoteBlock: React.FC<StrongQuoteBlockProps> = ({ content, the
           letterSpacing: '-0.01em',
           position: 'relative',
           zIndex: 1,
-          fontStyle: 'italic'
+          fontStyle: 'italic', fontFamily: 'var(--article-stylised-font) !important'
           }}>
             {content.quote}
           </MarkdownText>
