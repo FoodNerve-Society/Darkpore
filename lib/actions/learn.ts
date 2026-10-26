@@ -4,7 +4,7 @@ import { prisma } from '@/lib/db/client';
 import { syncCalendarEvent, removeCalendarEvent } from '@/lib/calendar-sync';
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 export type ArticleBlockPayload = {
   blockType: string;
@@ -269,6 +269,12 @@ export async function createLearnContent(data: CreateLearnContentPayload, isDraf
   });
 
   if (result.status === 'published' || result.status === 'scheduled') {
+    if (result.type === 'livestream') {
+      notifyCoHostsOnPublish(result.id, result.authorName || undefined).catch((err) => {
+        console.error('Failed to notify co-hosts on publish/schedule:', err);
+      });
+    }
+
     let orgName: string | undefined;
     if (result.organizationId) {
       const org = await prisma.organization.findUnique({
@@ -505,6 +511,7 @@ export async function getLearnContentById(id: string) {
       ]
     },
     include: {
+      organization: true,
       article: {
         include: {
           blocks: {
@@ -1220,6 +1227,535 @@ export async function inviteCoAuthorAction(data: {
   }
 }
 
+export async function inviteCoHostAction(data: {
+  draftId?: string;
+  collaborator: {
+    name: string;
+    email: string;
+    uid?: string;
+    avatarUrl?: string;
+    role?: 'Co-Host' | 'Guest Panelist' | 'Moderator' | 'Technical Presenter' | string;
+    rank?: number;
+    isOrg?: boolean;
+    note?: string;
+    status?: 'invited' | 'confirmed' | 'accepted' | 'declined';
+  };
+  inviterName?: string;
+  livestreamTitle?: string;
+  scheduledTime?: string;
+  category?: string;
+  tenant?: string;
+  guestStudioUrl?: string;
+  note?: string;
+}) {
+  try {
+    const timestamp = new Date().toISOString();
+    const normEmail = data.collaborator.email ? data.collaborator.email.toLowerCase().trim() : '';
+    const newCollab = {
+      ...data.collaborator,
+      email: normEmail,
+      role: data.collaborator.role || 'Co-Host',
+      status: (data.collaborator.status || 'invited') as 'invited' | 'confirmed' | 'accepted' | 'declined',
+      invitedAt: timestamp,
+      timestamp,
+      note: data.note || data.collaborator.note,
+    };
+
+    let resolvedTitle = data.livestreamTitle;
+    let resolvedScheduledTime = data.scheduledTime;
+    let resolvedCategory = data.category;
+    let resolvedGuestStudioUrl = data.guestStudioUrl;
+    let targetDraftParam = data.draftId || '';
+
+    if (data.draftId) {
+      const existing = await prisma.learnContent.findFirst({
+        where: {
+          OR: [
+            { id: data.draftId },
+            { slug: data.draftId }
+          ]
+        },
+        select: {
+          id: true,
+          collaborators: true,
+          title: true,
+          targetDate: true,
+          category: true,
+          livestream: {
+            include: { blocks: true }
+          }
+        }
+      });
+
+      if (existing) {
+        targetDraftParam = existing.id;
+        if (!resolvedTitle) resolvedTitle = existing.title;
+        if (!resolvedScheduledTime && existing.targetDate) {
+          resolvedScheduledTime = existing.targetDate.toISOString();
+        }
+        if (!resolvedCategory && existing.category) resolvedCategory = existing.category;
+
+        let collabs: any[] = [];
+        try {
+          collabs = JSON.parse(existing.collaborators || '[]');
+        } catch (e) {
+          collabs = [];
+        }
+
+        // Fallback to studioMeta if empty
+        if (collabs.length === 0 && existing.livestream?.blocks) {
+          for (const b of existing.livestream.blocks) {
+            try {
+              const parsed = typeof b.content === 'string' ? JSON.parse(b.content) : b.content;
+              if (parsed?._studioMeta?.collaborators && Array.isArray(parsed._studioMeta.collaborators)) {
+                collabs = parsed._studioMeta.collaborators;
+                break;
+              }
+            } catch {}
+          }
+        }
+
+        if (!resolvedGuestStudioUrl && existing.livestream?.blocks) {
+          for (const b of existing.livestream.blocks) {
+            try {
+              const parsed = typeof b.content === 'string' ? JSON.parse(b.content) : b.content;
+              if (parsed?._studioMeta?.guestStudioUrl) {
+                resolvedGuestStudioUrl = parsed._studioMeta.guestStudioUrl;
+                break;
+              }
+            } catch {}
+          }
+        }
+
+        const existingIdx = collabs.findIndex(c =>
+          (normEmail && c.email?.toLowerCase().trim() === normEmail) ||
+          (data.collaborator.uid && c.uid === data.collaborator.uid)
+        );
+
+        if (existingIdx !== -1) {
+          collabs[existingIdx] = {
+            ...collabs[existingIdx],
+            ...newCollab,
+            timestamp,
+          };
+        } else {
+          collabs.push(newCollab);
+        }
+
+        await prisma.learnContent.update({
+          where: { id: existing.id },
+          data: { collaborators: JSON.stringify(collabs) }
+        });
+      }
+    }
+
+    // Build livestream viewer / acceptance URL
+    const appBase = process.env.NEXT_PUBLIC_APP_URL || 'https://darkpore.com';
+    const viewerUrl = targetDraftParam
+      ? `${appBase}/modular-society/${data.tenant || 'food'}/learn/livestream/${targetDraftParam}`
+      : `${appBase}/modular-society/${data.tenant || 'food'}/learn`;
+
+    let formattedDate = '';
+    if (resolvedScheduledTime) {
+      try {
+        const d = new Date(resolvedScheduledTime);
+        if (!isNaN(d.getTime())) {
+          formattedDate = d.toLocaleString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZoneName: 'short',
+          });
+        }
+      } catch (e) {}
+    }
+
+    if (normEmail) {
+      if (resend && process.env.RESEND_API_KEY) {
+        try {
+          const subject = `You're invited to co-host "${resolvedTitle || 'Livestream Broadcast'}" on FoodNerve`;
+          const emailHtml = `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #0f172a; line-height: 1.6;">
+              <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding: 28px; border-radius: 16px; margin-bottom: 24px; text-align: center; border: 1px solid rgba(255,255,255,0.1);">
+                <span style="display: inline-block; background: rgba(99, 102, 241, 0.2); color: #818cf8; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 12px; border-radius: 100px; border: 1px solid rgba(129, 140, 248, 0.3); margin-bottom: 12px;">
+                  🎙️ Official Broadcast Co-Host Invitation
+                </span>
+                <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.02em;">FoodNerve Broadcast Intelligence</h1>
+                <p style="color: #94a3b8; margin: 8px 0 0 0; font-size: 14px;">Studio Greenroom & Stage Participation</p>
+              </div>
+
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 26px; margin-bottom: 24px;">
+                <p style="margin-top: 0; font-size: 16px; font-weight: 600; color: #1e293b;">
+                  Hello ${data.collaborator.name || 'there'},
+                </p>
+                <p style="font-size: 15px; color: #475569;">
+                  <strong>${data.inviterName || 'The broadcast host'}</strong> has invited you to join the stage as an official <strong>${data.collaborator.role || 'Co-Host'}</strong> for the upcoming live broadcast:
+                </p>
+                <div style="background: #ffffff; border-left: 4px solid #6366f1; padding: 16px 20px; border-radius: 10px; margin: 18px 0; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
+                  <div style="font-weight: 800; font-size: 18px; color: #0f172a; margin-bottom: 6px;">
+                    "${resolvedTitle || 'Untitled Livestream Broadcast'}"
+                  </div>
+                  <div style="display: flex; gap: 12px; font-size: 13px; color: #64748b; flex-wrap: wrap;">
+                    <span style="background: #eef2ff; color: #4338ca; padding: 3px 8px; border-radius: 6px; font-weight: 700;">Role: ${data.collaborator.role || 'Co-Host'}</span>
+                    ${formattedDate ? `<span style="background: #f1f5f9; color: #334155; padding: 3px 8px; border-radius: 6px; font-weight: 600;">🗓️ ${formattedDate}</span>` : ''}
+                    ${resolvedCategory ? `<span style="background: #ecfdf5; color: #065f46; padding: 3px 8px; border-radius: 6px; font-weight: 600; text-transform: capitalize;">Corridor: ${resolvedCategory}</span>` : ''}
+                  </div>
+                </div>
+
+                ${(data.note || data.collaborator.note) ? `
+                  <div style="background: #f1f5f9; border-radius: 10px; padding: 14px 18px; margin: 18px 0; font-size: 14px; color: #475569; font-style: italic; border-left: 3px solid #94a3b8;">
+                    <strong>Personal note from host:</strong> "${data.note || data.collaborator.note}"
+                  </div>
+                ` : ''}
+
+                <p style="font-size: 14px; color: #64748b; line-height: 1.5; margin: 18px 0;">
+                  As a confirmed speaker, you will receive access to the private backstage greenroom studio link, live slide presentation deck, and host cue notes.
+                </p>
+
+                <div style="text-align: center; margin-top: 28px; margin-bottom: 12px;">
+                  <a href="${viewerUrl}" style="display: inline-block; background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 12px; font-weight: 800; font-size: 15px; box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);">
+                    Review & Accept Co-Host Invitation →
+                  </a>
+                </div>
+              </div>
+
+              <p style="font-size: 12px; color: #94a3b8; text-align: center; margin: 0;">
+                FoodNerve Broadcast Intelligence Network • Global Agribusiness Corridors
+              </p>
+            </div>
+          `;
+
+          const emailRes = await resend.emails.send({
+            from: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
+            to: normEmail,
+            subject,
+            html: emailHtml,
+          });
+
+          if (emailRes.error) {
+            console.error('Failed to dispatch co-host invitation email via Resend:', emailRes.error);
+          } else {
+            console.log(`Co-host invitation email dispatched to ${normEmail}`);
+          }
+        } catch (mailErr) {
+          console.error('Error sending co-host email:', mailErr);
+        }
+      } else {
+        console.log(`[SIMULATED EMAIL DISPATCH] To: ${normEmail} | Subject: Invitation to Co-Host "${resolvedTitle}" | URL: ${viewerUrl}`);
+      }
+    }
+
+    return {
+      success: true,
+      collaborator: newCollab,
+      message: `Co-host invitation sent to ${data.collaborator.name} (${normEmail})`
+    };
+  } catch (err: any) {
+    console.error('Error inviting co-host:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+export async function respondToCoHostInvitation(data: {
+  livestreamId: string;
+  accept: boolean;
+  user: {
+    uid?: string;
+    name?: string;
+    email?: string;
+    avatarUrl?: string;
+  };
+}) {
+  try {
+    if (!data.livestreamId) {
+      return { success: false, error: 'Livestream ID is required' };
+    }
+
+    const content = await prisma.learnContent.findFirst({
+      where: {
+        OR: [
+          { id: data.livestreamId },
+          { slug: data.livestreamId }
+        ]
+      },
+      select: {
+        id: true,
+        collaborators: true,
+        title: true,
+        livestream: {
+          include: { blocks: true }
+        }
+      }
+    });
+
+    if (!content) {
+      return { success: false, error: 'Livestream not found' };
+    }
+
+    let collabs: any[] = [];
+    try {
+      collabs = JSON.parse(content.collaborators || '[]');
+    } catch {
+      collabs = [];
+    }
+
+    // Fallback to studioMeta if empty
+    if (collabs.length === 0 && content.livestream?.blocks) {
+      for (const b of content.livestream.blocks) {
+        try {
+          const parsed = typeof b.content === 'string' ? JSON.parse(b.content) : b.content;
+          if (parsed?._studioMeta?.collaborators && Array.isArray(parsed._studioMeta.collaborators)) {
+            collabs = parsed._studioMeta.collaborators;
+            break;
+          }
+        } catch {}
+      }
+    }
+
+    const userEmail = data.user.email?.toLowerCase().trim();
+    const userUid = data.user.uid;
+
+    const targetIdx = collabs.findIndex(c =>
+      (userUid && c.uid === userUid) ||
+      (userEmail && c.email?.toLowerCase().trim() === userEmail)
+    );
+
+    const timestamp = new Date().toISOString();
+    let updatedCollab: any = null;
+
+    if (targetIdx !== -1) {
+      const existingCollab = collabs[targetIdx];
+      updatedCollab = {
+        ...existingCollab,
+        status: data.accept ? 'accepted' : 'declined',
+        ...(data.accept ? { acceptedAt: timestamp } : { declinedAt: timestamp }),
+        name: data.user.name || existingCollab.name,
+        avatarUrl: data.user.avatarUrl || existingCollab.avatarUrl,
+        uid: data.user.uid || existingCollab.uid,
+        email: existingCollab.email || userEmail,
+      };
+      collabs[targetIdx] = updatedCollab;
+    } else {
+      if (data.accept && (userEmail || userUid)) {
+        updatedCollab = {
+          name: data.user.name || 'Co-Host',
+          email: userEmail || '',
+          uid: data.user.uid,
+          avatarUrl: data.user.avatarUrl,
+          role: 'Co-Host',
+          status: 'accepted',
+          acceptedAt: timestamp,
+          timestamp,
+        };
+        collabs.push(updatedCollab);
+      } else {
+        return { success: false, error: 'Collaborator invitation not found in roster' };
+      }
+    }
+
+    await prisma.learnContent.update({
+      where: { id: content.id },
+      data: { collaborators: JSON.stringify(collabs) }
+    });
+
+    return {
+      success: true,
+      status: updatedCollab?.status,
+      collaborator: updatedCollab,
+      message: data.accept
+        ? 'Co-host invitation accepted successfully'
+        : 'Co-host invitation declined'
+    };
+  } catch (err: any) {
+    console.error('Error responding to co-host invitation:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+export async function notifyCoHostsOnPublish(livestreamId: string, inviterName?: string) {
+  try {
+    const content = await prisma.learnContent.findFirst({
+      where: {
+        OR: [
+          { id: livestreamId },
+          { slug: livestreamId }
+        ]
+      },
+      include: {
+        livestream: {
+          include: { blocks: true }
+        }
+      }
+    });
+
+    if (!content) return { success: false, error: 'Content not found' };
+
+    let collabs: any[] = [];
+    try {
+      collabs = JSON.parse(content.collaborators || '[]');
+    } catch {
+      collabs = [];
+    }
+
+    // Fallback to studioMeta if empty
+    if (collabs.length === 0 && content.livestream?.blocks) {
+      for (const b of content.livestream.blocks) {
+        try {
+          const parsed = typeof b.content === 'string' ? JSON.parse(b.content) : b.content;
+          if (parsed?._studioMeta?.collaborators && Array.isArray(parsed._studioMeta.collaborators)) {
+            collabs = parsed._studioMeta.collaborators;
+            break;
+          }
+        } catch {}
+      }
+    }
+
+    // Filter active co-hosts (exclude declined) and deduplicate by normalized email
+    const activeCoHosts = collabs.filter(c => c.status !== 'declined' && c.email);
+    const seenEmails = new Set<string>();
+    const uniqueCoHosts: typeof activeCoHosts = [];
+    for (const c of activeCoHosts) {
+      const norm = c.email.toLowerCase().trim();
+      if (!seenEmails.has(norm)) {
+        seenEmails.add(norm);
+        uniqueCoHosts.push(c);
+      }
+    }
+
+    if (uniqueCoHosts.length === 0) {
+      return { success: true, count: 0, message: 'No co-hosts to notify' };
+    }
+
+    const appBase = process.env.NEXT_PUBLIC_APP_URL || 'https://darkpore.com';
+    const viewerUrl = `${appBase}/modular-society/food/learn/livestream/${content.id}`;
+
+    // Extract guest greenroom link from studio metadata or livestream object
+    let guestStudioLink = (content.livestream as any)?.guestStudioUrl || '';
+    const rawBlocks = content.livestream?.blocks || [];
+    if (!guestStudioLink) {
+      for (const b of rawBlocks) {
+        try {
+          const parsed = typeof b.content === 'string' ? JSON.parse(b.content) : b.content;
+          if (parsed?._studioMeta?.guestStudioUrl) {
+            guestStudioLink = parsed._studioMeta.guestStudioUrl;
+            break;
+          }
+        } catch {}
+      }
+    }
+
+    let formattedDate = '';
+    const rawTargetDate = content.targetDate || content.livestream?.scheduledFor;
+    if (rawTargetDate) {
+      try {
+        const d = new Date(rawTargetDate);
+        if (!isNaN(d.getTime())) {
+          formattedDate = d.toLocaleString('en-US', {
+            weekday: 'long',
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZoneName: 'short',
+          });
+        }
+      } catch {}
+    }
+
+    const slideCount = rawBlocks.filter(b => b.blockType !== 'metadata').length;
+
+    let dispatchedCount = 0;
+    for (const coHost of uniqueCoHosts) {
+      if (resend && process.env.RESEND_API_KEY) {
+        try {
+          const subject = `Confirmed Broadcast Schedule: "${content.title}" on FoodNerve`;
+          const emailHtml = `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #0f172a; line-height: 1.6;">
+              <div style="background: linear-gradient(135deg, #064e3b 0%, #022c22 100%); padding: 28px; border-radius: 16px; margin-bottom: 24px; text-align: center; border: 1px solid rgba(16, 185, 129, 0.2);">
+                <span style="display: inline-block; background: rgba(16, 185, 129, 0.2); color: #34d399; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 12px; border-radius: 100px; border: 1px solid rgba(52, 211, 153, 0.3); margin-bottom: 12px;">
+                  🗓️ Broadcast Officially Scheduled & Published
+                </span>
+                <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.02em;">Speaker Briefing & Schedule Confirmation</h1>
+                <p style="color: #a7f3d0; margin: 8px 0 0 0; font-size: 14px;">FoodNerve Broadcast Intelligence</p>
+              </div>
+
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 26px; margin-bottom: 24px;">
+                <p style="margin-top: 0; font-size: 16px; font-weight: 600; color: #1e293b;">
+                  Hello ${coHost.name || 'Co-Host'},
+                </p>
+                <p style="font-size: 15px; color: #475569;">
+                  The live broadcast session <strong>"${content.title}"</strong> has been officially confirmed and published on the FoodNerve network by <strong>${inviterName || content.authorName || 'the host'}</strong>.
+                </p>
+
+                <div style="background: #ffffff; border-left: 4px solid #10b981; padding: 16px 20px; border-radius: 10px; margin: 18px 0; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
+                  <div style="font-weight: 800; font-size: 17px; color: #0f172a; margin-bottom: 8px;">
+                    "${content.title}"
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; color: #475569;">
+                    <div><strong>Your Assigned Role:</strong> <span style="color: #065f46; font-weight: 700;">${coHost.role || 'Co-Host'}</span></div>
+                    ${formattedDate ? `<div><strong>Broadcast Time:</strong> <span style="color: #0f172a; font-weight: 700;">${formattedDate}</span></div>` : ''}
+                    ${slideCount > 0 ? `<div><strong>Presentation Deck:</strong> ${slideCount} DEF sequence slides prepared</div>` : ''}
+                  </div>
+                </div>
+
+                ${guestStudioLink ? `
+                  <div style="background: #ecfdf5; border: 1.5px dashed #10b981; border-radius: 12px; padding: 16px 20px; margin: 20px 0;">
+                    <p style="margin: 0 0 6px 0; font-size: 13px; font-weight: 800; color: #065f46; text-transform: uppercase; letter-spacing: 0.05em;">
+                      🎙️ Private Backstage Studio Greenroom Link:
+                    </p>
+                    <p style="margin: 0 0 10px 0; font-size: 13px; color: #047857;">
+                      Join 15 minutes before showtime to test video, audio, and review the DEF rundown.
+                    </p>
+                    <a href="${guestStudioLink}" style="display: inline-block; background: #059669; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; font-size: 13.5px;">
+                      Enter Greenroom Studio Room ↗
+                    </a>
+                  </div>
+                ` : ''}
+
+                <div style="text-align: center; margin-top: 24px;">
+                  <a href="${viewerUrl}" style="display: inline-block; background: #0f172a; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 12px; font-weight: 800; font-size: 14px;">
+                    Open Society Broadcast Viewer →
+                  </a>
+                </div>
+              </div>
+
+              <p style="font-size: 12px; color: #94a3b8; text-align: center; margin: 0;">
+                FoodNerve Broadcast Intelligence Network • Global Agribusiness Corridors
+              </p>
+            </div>
+          `;
+
+          const emailRes = await resend.emails.send({
+            from: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
+            to: coHost.email,
+            subject,
+            html: emailHtml,
+          });
+          if (emailRes.error) {
+            console.error(`Failed to dispatch schedule confirmation to ${coHost.email}:`, emailRes.error);
+          } else {
+            dispatchedCount++;
+          }
+        } catch (e) {
+          console.error(`Failed to dispatch schedule confirmation to ${coHost.email}:`, e);
+        }
+      } else {
+        console.log(`[SIMULATED PUBLISH NOTIFICATION] To: ${coHost.email} | Subject: Broadcast Schedule Confirmation: "${content.title}" | Viewer: ${viewerUrl}`);
+        dispatchedCount++;
+      }
+    }
+
+    return { success: true, count: dispatchedCount };
+  } catch (err: any) {
+    console.error('Error in notifyCoHostsOnPublish:', err);
+    return { success: false, error: err.message };
+  }
+}
+
 export async function findMatchingDraft({
   userId,
   userEmail,
@@ -1314,6 +1850,198 @@ export async function findMatchingDraft({
     return { success: true, draft: draftsWithInfo[0] };
   } catch (err: any) {
     console.error('Error finding matching draft:', err);
+    return { success: false, draft: null, error: err.message };
+  }
+}
+
+export async function findMatchingLivestreamDraft({
+  userId,
+  userEmail,
+  organizationId,
+  anchorArticleIds = [],
+  ctaIds = [],
+  category,
+  timeframe,
+  blueprintTitle,
+  excludeDraftId,
+}: {
+  userId?: string;
+  userEmail?: string;
+  organizationId?: string | null;
+  anchorArticleIds?: string[];
+  ctaIds?: string[];
+  category?: string;
+  timeframe?: string;
+  blueprintTitle?: string;
+  excludeDraftId?: string | null;
+}) {
+  try {
+    if (!userId && !userEmail && !organizationId) {
+      return { success: false, draft: null };
+    }
+
+    // Resolve aliases
+    let aliases: string[] = [];
+    if (userId) aliases.push(userId);
+    if (userEmail) aliases.push(userEmail);
+
+    try {
+      const user = await prisma.user.findFirst({
+        where: {
+          OR: [
+            ...(userId ? [{ id: userId }, { firebaseUid: userId }] : []),
+            ...(userEmail ? [{ email: userEmail }] : [])
+          ]
+        },
+        select: { id: true, firebaseUid: true, email: true }
+      });
+      if (user) {
+        if (user.id) aliases.push(user.id);
+        if (user.firebaseUid) aliases.push(user.firebaseUid);
+        if (user.email) aliases.push(user.email);
+      }
+    } catch (e) {}
+
+    aliases = Array.from(new Set(aliases.filter(Boolean)));
+
+    const userOrConditions: any[] = [];
+    if (aliases.length > 0) {
+      userOrConditions.push({ authorId: { in: aliases } });
+      aliases.forEach(a => {
+        userOrConditions.push({ collaborators: { contains: a } });
+      });
+    }
+
+    const whereClause: any = {
+      status: 'draft',
+      type: 'livestream',
+      ...(excludeDraftId ? { id: { not: excludeDraftId } } : {}),
+    };
+
+    if (organizationId) {
+      whereClause.organizationId = organizationId;
+      if (userOrConditions.length > 0) {
+        whereClause.OR = userOrConditions;
+      }
+    } else {
+      whereClause.organizationId = null;
+      if (userOrConditions.length > 0) {
+        whereClause.OR = userOrConditions;
+      }
+    }
+
+    const drafts = await prisma.learnContent.findMany({
+      where: whereClause,
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        livestream: {
+          include: {
+            blocks: {
+              orderBy: { orderIndex: 'asc' }
+            }
+          }
+        },
+        organization: true
+      }
+    });
+
+    if (!drafts || drafts.length === 0) {
+      return { success: true, draft: null };
+    }
+
+    const normAnchor = Array.from(new Set(anchorArticleIds)).filter(Boolean).sort();
+    const normCtas = Array.from(new Set(ctaIds)).filter(Boolean).sort();
+    const targetBpTitle = (blueprintTitle || '').toLowerCase().trim();
+    const targetCategory = (category || '').toLowerCase().trim();
+    const targetTimeframe = (timeframe || '').toLowerCase().trim();
+
+    let bestMatch: any = null;
+    let highestScore = -1;
+
+    for (const draft of drafts) {
+      let meta: any = null;
+      if ((draft as any)._studioMeta) {
+        meta = (draft as any)._studioMeta;
+      } else if ((draft.livestream as any)?._studioMeta) {
+        meta = (draft.livestream as any)._studioMeta;
+      } else {
+        const blocks = draft.livestream?.blocks || (draft as any).livestreamBlocks || [];
+        for (const b of blocks) {
+          try {
+            const parsed = typeof b.content === 'string' ? JSON.parse(b.content) : b.content;
+            if (parsed?._studioMeta) {
+              meta = parsed._studioMeta;
+              break;
+            }
+          } catch (e) {}
+        }
+      }
+
+      const draftArticleIds = (meta?.guidingArticles || []).map((a: any) => typeof a === 'string' ? a : (a?.id || '')).filter(Boolean);
+      const draftCtaIds = [
+        ...(meta?.guidingJobs || []),
+        ...(meta?.guidingListings || []),
+        ...(meta?.guidingCampaigns || [])
+      ].map((c: any) => typeof c === 'string' ? c : (c?.id || '')).filter(Boolean);
+
+      const normDraftAnchor = Array.from(new Set(draftArticleIds)).filter(Boolean).sort();
+      const normDraftCtas = Array.from(new Set(draftCtaIds)).filter(Boolean).sort();
+
+      const bp = meta?.appliedBlueprint;
+      const draftBpTitle = (bp?.typeTitle || bp?.title || '').toLowerCase().trim();
+      const draftCategory = (draft.category || bp?.category || '').toLowerCase().trim();
+      const draftTimeframe = (draft.timeframe || bp?.timeframe || '').toLowerCase().trim();
+
+      // Check anchor articles match
+      const exactArticlesMatch = normAnchor.length > 0 &&
+        normAnchor.length === normDraftAnchor.length &&
+        normAnchor.every((id, idx) => id === normDraftAnchor[idx]);
+
+      // Check CTAs match
+      const exactCtasMatch = normCtas.length === normDraftCtas.length &&
+        normCtas.every((id, idx) => id === normDraftCtas[idx]);
+
+      const blueprintMatch = Boolean(
+        targetBpTitle && draftBpTitle && (draftBpTitle === targetBpTitle || draftBpTitle.includes(targetBpTitle) || targetBpTitle.includes(draftBpTitle))
+      );
+
+      const categoryMatch = Boolean(targetCategory && draftCategory && draftCategory === targetCategory);
+      const timeframeMatch = Boolean(targetTimeframe && draftTimeframe && draftTimeframe === targetTimeframe);
+
+      // Scoring
+      let score = 0;
+
+      if (normAnchor.length > 0) {
+        // Tier 1: Anchor articles + CTAs must match
+        if (!exactArticlesMatch || !exactCtasMatch) continue;
+        score += 100;
+
+        if (blueprintMatch) score += 40;
+        if (categoryMatch) score += 20;
+        if (timeframeMatch) score += 10;
+      } else if (targetBpTitle && blueprintMatch) {
+        // Tier 2: Studio Blueprint match when blueprint is selected without articles
+        score += 60;
+        if (exactCtasMatch) score += 20;
+        if (categoryMatch) score += 15;
+        if (timeframeMatch) score += 10;
+      } else {
+        // Neither anchor articles nor blueprint matched: no collision
+        continue;
+      }
+
+      const draftTime = new Date(draft.updatedAt || draft.createdAt || 0).getTime();
+      const bestTime = bestMatch ? new Date(bestMatch.updatedAt || bestMatch.createdAt || 0).getTime() : -1;
+
+      if (score > highestScore || (score === highestScore && draftTime > bestTime)) {
+        highestScore = score;
+        bestMatch = { ...draft, _studioMeta: meta };
+      }
+    }
+
+    return { success: true, draft: bestMatch || null };
+  } catch (err: any) {
+    console.error('Error finding matching livestream draft:', err);
     return { success: false, draft: null, error: err.message };
   }
 }

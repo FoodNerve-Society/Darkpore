@@ -1,16 +1,18 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Box, Typography, Button, TextField, MenuItem, Select, FormControl, InputLabel, CircularProgress, Chip, IconButton, Alert, Paper, useTheme, useMediaQuery } from '@mui/material';
-import { ArrowBack as ArrowBackIcon, LiveTv as LiveTvIcon, CheckCircle as CheckCircleIcon, Article as ArticleIcon, AutoAwesome as SparkleIcon, Image as ImageIcon, Check as CheckIcon, Info as InfoIcon, ArrowForward as ArrowForwardIcon, Close as CloseIcon, Bolt as BoltIcon, CalendarMonth as CalendarMonthIcon, Edit as EditIcon, AccessTime as AccessTimeIcon, ConfirmationNumber as TicketIcon } from '@mui/icons-material';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { Box, Typography, Button, TextField, MenuItem, Select, FormControl, InputLabel, CircularProgress, Chip, IconButton, Alert, Paper, useTheme, useMediaQuery, Dialog, DialogContent, Tooltip, Avatar, Divider, InputBase } from '@mui/material';
+import { ArrowBack as ArrowBackIcon, LiveTv as LiveTvIcon, CheckCircle as CheckCircleIcon, Article as ArticleIcon, AutoAwesome as SparkleIcon, Image as ImageIcon, Check as CheckIcon, Info as InfoIcon, ArrowForward as ArrowForwardIcon, Close as CloseIcon, Bolt as BoltIcon, CalendarMonth as CalendarMonthIcon, Edit as EditIcon, AccessTime as AccessTimeIcon, ConfirmationNumber as TicketIcon, OpenInNew as OpenInNewIcon, PhotoCamera as PhotoCameraIcon, Fullscreen as FullscreenIcon, RestartAlt as RestartAltIcon, Mic as MicIcon, Sensors as SensorsIcon, Palette as PaletteIcon, AccountBalance as CapitalIcon, Landscape as LandIcon, Science as InputsIcon, Shield as SecurityIcon, Inventory as HarvestIcon, Groups as TalentIcon, People as PeopleIcon, PersonAdd as PersonAddIcon, Send as SendIcon, DeleteOutlined as DeleteIcon } from '@mui/icons-material';
+import { useRouter, useParams } from 'next/navigation';
 import { useSociety } from '@/context/SocietyContext';
-import { fetchLivestreamContentPool, createLearnContent, CreateLearnContentPayload, ArticleBlockPayload } from '@/lib/actions/learn';
+import { fetchLivestreamContentPool, createLearnContent, findMatchingLivestreamDraft, CreateLearnContentPayload, ArticleBlockPayload, inviteCoHostAction } from '@/lib/actions/learn';
+import { CoAuthorModal, CollaboratorItem } from './CoAuthorModal';
 import LivestreamRundownBuilder from './livestream/LivestreamRundownBuilder';
 import { DEF_BLOCK_DEFINITIONS, LIVESTREAM_TYPE_FLOWS } from './livestream/defBlocksConfig';
-import LivestreamIdeasSidePane, { LivestreamIdeaOption } from './livestream/LivestreamIdeasSidePane';
+import LivestreamIdeasSidePane, { LivestreamIdeaOption, parseLivestreamPayload } from './livestream/LivestreamIdeasSidePane';
 import LivestreamSlideDraftingSidePane from './livestream/LivestreamSlideDraftingSidePane';
 import LivestreamScreenPreviewModal from './livestream/LivestreamScreenPreviewModal';
+import LivestreamThumbnailGeneratorSidePane from './livestream/LivestreamThumbnailGeneratorSidePane';
 import { motion, AnimatePresence } from 'framer-motion';
 import PremiumTextField from '@/components/PremiumTextField';
 import PremiumDatePicker from '@/components/PremiumDatePicker';
@@ -55,6 +57,88 @@ export const CATEGORY_TO_DAY_MAP: Record<string, number> = {
 
 export const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
+export interface CorridorPreset {
+  key: string;
+  name: string;
+  shortName: string;
+  color: string;
+  url: string;
+  description: string;
+}
+
+export const CORRIDOR_PRESETS: CorridorPreset[] = [
+  {
+    key: 'capital',
+    name: 'Capital & Finance',
+    shortName: 'Capital',
+    color: '#3b82f6',
+    url: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=1200&q=80',
+    description: 'Trading floors, sovereign ag-funds & liquidity corridors'
+  },
+  {
+    key: 'land',
+    name: 'Land & Agro-Corridors',
+    shortName: 'Land',
+    color: '#10b981',
+    url: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200&q=80',
+    description: 'Fertile acreage, river basins & land tenure maps'
+  },
+  {
+    key: 'inputs',
+    name: 'Inputs & Agriscience',
+    shortName: 'Inputs',
+    color: '#84cc16',
+    url: 'https://images.unsplash.com/photo-1585314062340-f1a5a7c9328d?auto=format&fit=crop&w=1200&q=80',
+    description: 'High-yield seeds, fertilizer blenders & bio-stimulants'
+  },
+  {
+    key: 'energy',
+    name: 'Energy & Cold Chain',
+    shortName: 'Energy',
+    color: '#f59e0b',
+    url: 'https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=1200&q=80',
+    description: 'Mini-grids, solar chillers & off-grid packhouses'
+  },
+  {
+    key: 'insecurity',
+    name: 'Corridor Security & Ops',
+    shortName: 'Security',
+    color: '#ef4444',
+    url: 'https://images.unsplash.com/photo-1509099836639-18ba1795216d?auto=format&fit=crop&w=1200&q=80',
+    description: 'Haulage escort telemetry, checkpoint radar & asset safety'
+  },
+  {
+    key: 'post-harvest',
+    name: 'Post-Harvest & Storage',
+    shortName: 'Harvest',
+    color: '#ec4899',
+    url: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200&q=80',
+    description: 'Dry grain silos, jetty transshipment & spoilage control'
+  },
+  {
+    key: 'people-talent',
+    name: 'Talent & Extension',
+    shortName: 'Talent',
+    color: '#8b5cf6',
+    url: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80',
+    description: 'Lead agronomists, warehouse superintendents & operators'
+  },
+];
+
+export function renderPresetIcon(key: string, color?: string) {
+  const iconColor = color || 'inherit';
+  switch (key) {
+    case 'capital': return <CapitalIcon sx={{ fontSize: 16, color: iconColor }} />;
+    case 'land': return <LandIcon sx={{ fontSize: 16, color: iconColor }} />;
+    case 'inputs': return <InputsIcon sx={{ fontSize: 16, color: iconColor }} />;
+    case 'energy': return <BoltIcon sx={{ fontSize: 16, color: iconColor }} />;
+    case 'insecurity': return <SecurityIcon sx={{ fontSize: 16, color: iconColor }} />;
+    case 'post-harvest': return <HarvestIcon sx={{ fontSize: 16, color: iconColor }} />;
+    case 'people-talent': return <TalentIcon sx={{ fontSize: 16, color: iconColor }} />;
+    default: return <PaletteIcon sx={{ fontSize: 16, color: iconColor }} />;
+  }
+}
+
 export function getNextSlotForCategory(categorySlug: string, defaultHour = 10, defaultMinute = 0): Date {
   const normKey = (categorySlug || 'capital').toLowerCase().trim();
   const targetDay = CATEGORY_TO_DAY_MAP[normKey] !== undefined ? CATEGORY_TO_DAY_MAP[normKey] : 1;
@@ -92,6 +176,21 @@ const LIVESTREAM_FRAMEWORKS: Record<string, any[]> = {
   ]
 };
 
+export function extractStudioMetaFromDraft(draftData: any) {
+  if (draftData?._studioMeta) return draftData._studioMeta;
+  if (draftData?.livestream?._studioMeta) return draftData.livestream._studioMeta;
+  const blocks = draftData?.livestream?.blocks || draftData?.livestreamBlocks || (draftData as any)?.blocks || [];
+  for (const b of blocks) {
+    try {
+      if (b?._studioMeta) return b._studioMeta;
+      const parsed = typeof b.content === 'string' ? JSON.parse(b.content) : b.content;
+      if (parsed?._studioMeta) return parsed._studioMeta;
+      if (b?.originalContent?._studioMeta) return b.originalContent._studioMeta;
+    } catch (e) {}
+  }
+  return null;
+}
+
 export default function CreateLivestreamForm({ 
   onSuccess, 
   onCancel,
@@ -99,17 +198,42 @@ export default function CreateLivestreamForm({
   selectedOrgId = null,
   draftId = null,
   initialTaxonomy = null,
-  initialDraftData = null
+  initialDraftData = null,
+  onDraftSaved
 }: any) {
   const router = useRouter();
+  const params = useParams();
+  const tenant = (params?.tenant as string) || 'food';
   const { profile } = useSociety();
   const { uploadFile, uploading } = useStorageUpload();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
-  
-  const [step, setStep] = useState(1);
+
+  // Studio metadata extracted from draft blocks or initialDraftData
+  const studioMeta = useMemo(() => {
+    return extractStudioMetaFromDraft(initialDraftData);
+  }, [initialDraftData]);
+
+  // Hub & Context from Studio Handoff
+  const hubTitle = studioMeta?.hubTitle || initialTaxonomy?.hubTitle || initialDraftData?.livestream?.hub?.title || 'Production & Capital';
+  const hubColor = studioMeta?.hubColor || initialTaxonomy?.hubColor || initialDraftData?.livestream?.hub?.color || '#10b981';
+
+  const [appliedBlueprint, setAppliedBlueprint] = useState<any>(
+    studioMeta?.appliedBlueprint || initialDraftData?.livestream?.blueprint || (initialDraftData as any)?.blueprint || null
+  );
+
+  // Requirement 1: Dynamically initialize step: if initialDraftData has slide blocks (rundownBlocks.length > 0)
+  // or an appliedBlueprint (from _studioMeta or draft.livestream.blueprint), initialize step to 2 instead of 1.
+  const [step, setStep] = useState<number>(() => {
+    const rawBlocks = initialDraftData?.livestream?.blocks || initialDraftData?.livestreamBlocks || (initialDraftData as any)?.blocks || [];
+    const hasSlides = rawBlocks.filter((b: any) => b.blockType !== 'metadata').length > 0;
+    const initialMeta = extractStudioMetaFromDraft(initialDraftData);
+    const hasBlueprint = Boolean(initialMeta?.appliedBlueprint || initialDraftData?.livestream?.blueprint || (initialDraftData as any)?.blueprint);
+    return (hasSlides || hasBlueprint) ? 2 : 1;
+  });
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [contentPool, setContentPool] = useState<{ articles: any[], jobs: any[] } | null>(null);
 
@@ -120,33 +244,89 @@ export default function CreateLivestreamForm({
   const [saveStatusMsg, setSaveStatusMsg] = useState<string | null>(null);
   const [saveErrorMsg, setSaveErrorMsg] = useState<string | null>(null);
 
+  // Auto-Save & Collision Detection State
+  const [detectedDraft, setDetectedDraft] = useState<any | null>(null);
+  const [checkingDraft, setCheckingDraft] = useState<boolean>(false);
+  const [isAutosaving, setIsAutosaving] = useState<boolean>(false);
+  const [lastAutosavedAt, setLastAutosavedAt] = useState<Date | null>(null);
+  const [userDeclinedResume, setUserDeclinedResume] = useState<boolean>(
+    Boolean(initialTaxonomy?.forceNewDraft)
+  );
+  const lastSavedContentRef = useRef<string>('');
+
   // Ideation Assistant & Studio Slideshow State
   const [isIdeasDrawerOpen, setIsIdeasDrawerOpen] = useState(false);
   const [isDraftingDrawerOpen, setIsDraftingDrawerOpen] = useState(false);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
-  const [ingestedBlueprints, setIngestedBlueprints] = useState<LivestreamIdeaOption[]>([]);
-  const [deckActiveIndex, setDeckActiveIndex] = useState(0);
+  const [isThumbnailDrawerOpen, setIsThumbnailDrawerOpen] = useState(false);
+
+  // Requirement 2: Multi-tier hydration for ingestedBlueprints:
+  // Tier 1: studioMeta?.ingestedBlueprints (from draft blocks / metadata)
+  // Tier 2: localStorage payload for category or general parsed via parseLivestreamPayload
+  // Fallback: [appliedBlueprint]
+  const [ingestedBlueprints, setIngestedBlueprints] = useState<LivestreamIdeaOption[]>(() => {
+    const initialMeta = extractStudioMetaFromDraft(initialDraftData);
+    if (Array.isArray(initialMeta?.ingestedBlueprints) && initialMeta.ingestedBlueprints.length > 0) {
+      return initialMeta.ingestedBlueprints;
+    }
+
+    if (typeof window !== 'undefined') {
+      try {
+        const catKey = (initialTaxonomy?.category || initialDraftData?.category || 'general').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+        const hub = initialTaxonomy?.hubTitle || initialDraftData?.livestream?.hub?.title || 'Production & Capital';
+        const savedPayload =
+          localStorage.getItem(`ls_ideas_ingest_${catKey}_latest_payload`) ||
+          localStorage.getItem('ls_ideas_ingest_latest_payload');
+        if (savedPayload) {
+          const parsed = parseLivestreamPayload(savedPayload, hub, catKey);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed;
+          }
+        }
+      } catch (e) {}
+    }
+
+    const initialBp = initialMeta?.appliedBlueprint || initialDraftData?.livestream?.blueprint;
+    if (initialBp) {
+      return [initialBp];
+    }
+
+    return [];
+  });
+
+  // Requirement 4: Synchronize deckActiveIndex: initialize to index of appliedBlueprint
+  const [deckActiveIndex, setDeckActiveIndex] = useState<number>(() => {
+    const initialMeta = extractStudioMetaFromDraft(initialDraftData);
+    const initialBp = initialMeta?.appliedBlueprint || initialDraftData?.livestream?.blueprint || (initialDraftData as any)?.blueprint;
+    if (initialBp && ingestedBlueprints.length > 0) {
+      const target = initialBp.title?.trim().toLowerCase();
+      const idx = ingestedBlueprints.findIndex((b: any) => b.title?.trim().toLowerCase() === target);
+      return idx >= 0 ? idx : 0;
+    }
+    return 0;
+  });
+
+  const lastAlignedBlueprintRef = useRef<string | null>(
+    (studioMeta?.appliedBlueprint || initialDraftData?.livestream?.blueprint || (initialDraftData as any)?.blueprint)?.title?.trim().toLowerCase() || null
+  );
+
+  useEffect(() => {
+    if (appliedBlueprint?.title && ingestedBlueprints.length > 0) {
+      const target = appliedBlueprint.title.trim().toLowerCase();
+      if (lastAlignedBlueprintRef.current !== target) {
+        lastAlignedBlueprintRef.current = target;
+        const idx = ingestedBlueprints.findIndex((b: any) => b.title?.trim().toLowerCase() === target);
+        if (idx >= 0) {
+          setDeckActiveIndex(idx);
+        }
+      }
+    }
+  }, [appliedBlueprint?.title, ingestedBlueprints]);
+
   const [isCardFlipped, setIsCardFlipped] = useState(false);
   const [isIdeasCardFlipped, setIsIdeasCardFlipped] = useState(false);
   const [isScheduleFlipped, setIsScheduleFlipped] = useState(false);
-
-  // Studio metadata extracted from draft blocks or initialDraftData
-  const studioMeta = useMemo(() => {
-    if ((initialDraftData as any)?._studioMeta) return (initialDraftData as any)._studioMeta;
-    if ((initialDraftData?.livestream as any)?._studioMeta) return (initialDraftData.livestream as any)._studioMeta;
-    const blocks = initialDraftData?.livestream?.blocks || initialDraftData?.livestreamBlocks || [];
-    for (const b of blocks) {
-      try {
-        const parsed = typeof b.content === 'string' ? JSON.parse(b.content) : b.content;
-        if (parsed?._studioMeta) return parsed._studioMeta;
-      } catch (e) {}
-    }
-    return null;
-  }, [initialDraftData]);
-
-  const [appliedBlueprint, setAppliedBlueprint] = useState<any>(
-    studioMeta?.appliedBlueprint || initialDraftData?.livestream?.blueprint || null
-  );
+  const [isStep3ScheduleFlipped, setIsStep3ScheduleFlipped] = useState(false);
 
   const resolvedFormat = useMemo(() => {
     const bpFmt = appliedBlueprint?.format;
@@ -175,9 +355,6 @@ export default function CreateLivestreamForm({
 
   const currentBlueprint = (ingestedBlueprints.length > 0 && ingestedBlueprints[deckActiveIndex]) ? ingestedBlueprints[deckActiveIndex] : (ingestedBlueprints[0] || null);
 
-  // Hub & Context from Studio Handoff
-  const hubTitle = studioMeta?.hubTitle || initialTaxonomy?.hubTitle || initialDraftData?.livestream?.hub?.title || 'Production & Capital';
-  const hubColor = studioMeta?.hubColor || initialTaxonomy?.hubColor || initialDraftData?.livestream?.hub?.color || '#10b981';
   const guidingArticles = useMemo(() => {
     const list = [...(studioMeta?.guidingArticles || initialDraftData?.anchorArticles || initialDraftData?.livestream?.anchorArticles || [])];
     if (initialDraftData?.type === 'article' && initialDraftData.id && !list.some((a: any) => a.id === initialDraftData.id)) {
@@ -207,6 +384,8 @@ export default function CreateLivestreamForm({
   const [title, setTitle] = useState(initialDraftData?.title || '');
   const [description, setDescription] = useState(initialDraftData?.description || '');
   const [coverImage, setCoverImage] = useState<File | string | null>(initialDraftData?.thumbnailUrl || initialDraftData?.coverImageUrl || null);
+  const coverFileInputRef = useRef<HTMLInputElement>(null);
+  const [isCoverPreviewOpen, setIsCoverPreviewOpen] = useState(false);
   const [streamUrl, setStreamUrl] = useState(initialDraftData?.livestream?.streamUrl || studioMeta?.streamUrl || initialDraftData?.livestreamUrl || '');
   const [guestStudioUrl, setGuestStudioUrl] = useState(studioMeta?.guestStudioUrl || initialDraftData?.livestream?.guestStudioUrl || initialDraftData?.guestStudioUrl || '');
 
@@ -236,16 +415,175 @@ export default function CreateLivestreamForm({
   const initialComms = studioMeta?.communications || initialDraftData?.livestream?.communications;
   const [guestMessageText, setGuestMessageText] = useState(initialComms?.guestMessage?.text || '');
   const [guestButtonText, setGuestButtonText] = useState(initialComms?.guestMessage?.buttonText || '');
-  const [guestButtonLink, setGuestButtonLink] = useState(initialComms?.guestMessage?.buttonLink || '');
   
   const [audienceMessageText, setAudienceMessageText] = useState(initialComms?.audienceMessage?.text || '');
   const [audienceButtonText, setAudienceButtonText] = useState(initialComms?.audienceMessage?.buttonText || '');
-  const [audienceButtonLink, setAudienceButtonLink] = useState(initialComms?.audienceMessage?.buttonLink || '');
   
+  // Collaborators & Co-Host State
+  const [collaborators, setCollaborators] = useState<CollaboratorItem[]>(() => {
+    if (initialDraftData?.collaborators) {
+      try {
+        return typeof initialDraftData.collaborators === 'string'
+          ? JSON.parse(initialDraftData.collaborators)
+          : initialDraftData.collaborators;
+      } catch (e) {
+        return [];
+      }
+    }
+    if (studioMeta?.collaborators && Array.isArray(studioMeta.collaborators)) {
+      return studioMeta.collaborators;
+    }
+    return [];
+  });
+  const [isCoHostModalOpen, setIsCoHostModalOpen] = useState(false);
+  const [inlineEmail, setInlineEmail] = useState('');
+  const [inlineRole, setInlineRole] = useState<'Co-Host' | 'Guest Panelist' | 'Moderator' | 'Technical Presenter'>('Co-Host');
+  const [invitingCoHost, setInvitingCoHost] = useState(false);
+  const [coHostNotification, setCoHostNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  useEffect(() => {
+    if (initialDraftData) {
+      if (initialDraftData.collaborators) {
+        try {
+          const parsed = typeof initialDraftData.collaborators === 'string'
+            ? JSON.parse(initialDraftData.collaborators)
+            : initialDraftData.collaborators;
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setCollaborators(parsed);
+          }
+        } catch (e) {}
+      } else if (studioMeta?.collaborators && Array.isArray(studioMeta.collaborators)) {
+        setCollaborators(studioMeta.collaborators);
+      }
+    }
+  }, [initialDraftData, studioMeta]);
+
+  const handleAddInlineCoHost = async () => {
+    if (!inlineEmail.trim()) {
+      setCoHostNotification({ type: 'error', message: 'Please enter a valid co-host email.' });
+      return;
+    }
+    const email = inlineEmail.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setCoHostNotification({ type: 'error', message: 'Please enter a valid email address (e.g. speaker@organization.com).' });
+      return;
+    }
+    if (collaborators.some(c => c.email?.toLowerCase().trim() === email)) {
+      setCoHostNotification({ type: 'error', message: 'This email is already in the invited roster.' });
+      return;
+    }
+    setInvitingCoHost(true);
+    setCoHostNotification(null);
+    try {
+      let activeDraftId = currentDraftId;
+      if (!activeDraftId) {
+        const saveRes = await handleSave(false, { isAutoSave: true });
+        if (saveRes?.id) {
+          activeDraftId = saveRes.id;
+          setCurrentDraftId(saveRes.id);
+        }
+      }
+
+      const newCollab: CollaboratorItem = {
+        name: email.split('@')[0],
+        email: email,
+        role: inlineRole,
+        status: 'invited',
+        timestamp: new Date().toISOString(),
+        invitedAt: new Date().toISOString(),
+      };
+
+      const res = await inviteCoHostAction({
+        draftId: activeDraftId || undefined,
+        collaborator: newCollab,
+        inviterName: profile?.displayName || profile?.firstName || 'Broadcast Host',
+        livestreamTitle: title,
+        scheduledTime: eventDate,
+        category,
+        tenant,
+        guestStudioUrl,
+      });
+
+      if (res.success) {
+        setCollaborators(prev => [...prev, (res.collaborator as CollaboratorItem) || newCollab]);
+        setInlineEmail('');
+        setCoHostNotification({ type: 'success', message: `Invitation dispatched to ${email}!` });
+        setTimeout(() => setCoHostNotification(null), 4000);
+      } else {
+        setCoHostNotification({ type: 'error', message: res.error || 'Failed to dispatch invitation.' });
+      }
+    } catch (err: any) {
+      setCoHostNotification({ type: 'error', message: err.message || 'Error sending invite.' });
+    } finally {
+      setInvitingCoHost(false);
+    }
+  };
+
+  const handleResendCoHostInvite = async (collab: CollaboratorItem) => {
+    try {
+      let activeDraftId = currentDraftId;
+      if (!activeDraftId) {
+        const saveRes = await handleSave(false, { isAutoSave: true });
+        if (saveRes?.id) {
+          activeDraftId = saveRes.id;
+          setCurrentDraftId(saveRes.id);
+        }
+      }
+
+      const res = await inviteCoHostAction({
+        draftId: activeDraftId || undefined,
+        collaborator: collab,
+        inviterName: profile?.displayName || profile?.firstName || 'Broadcast Host',
+        livestreamTitle: title,
+        scheduledTime: eventDate,
+        category,
+        tenant,
+        guestStudioUrl,
+      });
+      if (res.success) {
+        setCoHostNotification({ type: 'success', message: `Invitation resent to ${collab.email}` });
+        setTimeout(() => setCoHostNotification(null), 3500);
+      }
+    } catch (err: any) {
+      setCoHostNotification({ type: 'error', message: err.message || 'Failed to resend invite.' });
+    }
+  };
+
+  const handleRemoveCoHost = (indexToRemove: number) => {
+    setCollaborators(prev => prev.filter((_, idx) => idx !== indexToRemove));
+  };
+
   // Taxonomy State
   const [category, setCategory] = useState(initialDraftData?.category || initialTaxonomy?.category || 'capital');
   const [subcategory, setSubcategory] = useState(initialDraftData?.subcategory || initialTaxonomy?.subcategory || '');
   const [timeframe, setTimeframe] = useState(initialDraftData?.timeframe || initialTaxonomy?.timeframe || 'present');
+
+  // Tier 2 Hydration on mount/category change if ingestedBlueprints is empty
+  useEffect(() => {
+    if (ingestedBlueprints.length === 0 && typeof window !== 'undefined') {
+      try {
+        const catKey = (category || initialTaxonomy?.category || 'general').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+        const savedPayload =
+          localStorage.getItem(`ls_ideas_ingest_${catKey}_latest_payload`) ||
+          localStorage.getItem('ls_ideas_ingest_latest_payload');
+        if (savedPayload) {
+          const parsed = parseLivestreamPayload(savedPayload, hubTitle, category || 'general');
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setIngestedBlueprints(parsed);
+          }
+        }
+      } catch (e) {}
+    }
+  }, [category, hubTitle, ingestedBlueprints.length]);
+
+  const activeCoverUrl = useMemo(() => {
+    if (coverImage) {
+      return typeof coverImage === 'string' ? coverImage : URL.createObjectURL(coverImage);
+    }
+    const preset = CORRIDOR_PRESETS.find(p => p.key === category);
+    return preset?.url || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200&q=80';
+  }, [coverImage, category]);
 
   // Smart Link Memory: auto-prefill from last livestream or localStorage
   const [linksPrefilledFromMemory, setLinksPrefilledFromMemory] = useState(false);
@@ -277,17 +615,11 @@ export default function CreateLivestreamForm({
           if (!guestButtonText && lastUsed.communications.guestMessage?.buttonText) {
             setGuestButtonText(lastUsed.communications.guestMessage.buttonText);
           }
-          if (!guestButtonLink && lastUsed.communications.guestMessage?.buttonLink) {
-            setGuestButtonLink(lastUsed.communications.guestMessage.buttonLink);
-          }
           if (!audienceMessageText && lastUsed.communications.audienceMessage?.text) {
             setAudienceMessageText(lastUsed.communications.audienceMessage.text);
           }
           if (!audienceButtonText && lastUsed.communications.audienceMessage?.buttonText) {
             setAudienceButtonText(lastUsed.communications.audienceMessage.buttonText);
-          }
-          if (!audienceButtonLink && lastUsed.communications.audienceMessage?.buttonLink) {
-            setAudienceButtonLink(lastUsed.communications.audienceMessage.buttonLink);
           }
         }
       }
@@ -314,17 +646,11 @@ export default function CreateLivestreamForm({
               if (!guestButtonText && parsed.communications.guestMessage?.buttonText) {
                 setGuestButtonText(parsed.communications.guestMessage.buttonText);
               }
-              if (!guestButtonLink && parsed.communications.guestMessage?.buttonLink) {
-                setGuestButtonLink(parsed.communications.guestMessage.buttonLink);
-              }
               if (!audienceMessageText && parsed.communications.audienceMessage?.text) {
                 setAudienceMessageText(parsed.communications.audienceMessage.text);
               }
               if (!audienceButtonText && parsed.communications.audienceMessage?.buttonText) {
                 setAudienceButtonText(parsed.communications.audienceMessage.buttonText);
-              }
-              if (!audienceButtonLink && parsed.communications.audienceMessage?.buttonLink) {
-                setAudienceButtonLink(parsed.communications.audienceMessage.buttonLink);
               }
             }
           }
@@ -487,7 +813,7 @@ export default function CreateLivestreamForm({
 
   // Rundown Blocks
   const [rundownBlocks, setRundownBlocks] = useState<any[]>(() => {
-    const rawBlocks = initialDraftData?.livestream?.blocks || initialDraftData?.livestreamBlocks || [];
+    const rawBlocks = initialDraftData?.livestream?.blocks || initialDraftData?.livestreamBlocks || (initialDraftData as any)?.blocks || [];
     const filtered = rawBlocks.filter((b: any) => b.blockType !== 'metadata');
     return filtered.map((b: any, index: number) => {
       let parsedContent: any = {};
@@ -618,15 +944,75 @@ export default function CreateLivestreamForm({
 
   const [isActionItemsMinimized, setIsActionItemsMinimized] = useState(false);
 
-  const handleSave = async (isPublish: boolean) => {
-    if (!profile?.uid) return;
-    setIsSubmitting(true);
-    setSaveErrorMsg(null);
-    setSaveStatusMsg(null);
+  const serializeContentState = useCallback(() => {
+    return JSON.stringify({
+      title,
+      description,
+      category,
+      subcategory,
+      timeframe,
+      eventDate,
+      streamUrl,
+      guestStudioUrl,
+      guestMessageText,
+      guestButtonText,
+      audienceMessageText,
+      audienceButtonText,
+      appliedBlueprintTitle: appliedBlueprint?.title || appliedBlueprint?.typeTitle || '',
+      ingestedBlueprintsCount: ingestedBlueprints.length,
+      ingestedBlueprintsTitles: ingestedBlueprints.map(b => b.title).join('|'),
+      blocksCount: rundownBlocks.length,
+      blocks: rundownBlocks.map(b => ({
+        id: b.id,
+        speakerNotes: b.speakerNotes,
+        content: b.originalContent,
+        durationStr: b.durationStr
+      }))
+    });
+  }, [
+    title, description, category, subcategory, timeframe, eventDate,
+    streamUrl, guestStudioUrl, guestMessageText, guestButtonText,
+    audienceMessageText, audienceButtonText, appliedBlueprint, ingestedBlueprints, rundownBlocks
+  ]);
+
+  const handleSave = async (
+    isPublish: boolean = false,
+    options?: {
+      isAutoSave?: boolean;
+      forceNew?: boolean;
+      overrideBlueprint?: any;
+      overrideTitle?: string;
+      overrideDescription?: string;
+      overrideCategory?: string;
+      overrideSubcategory?: string;
+      overrideTimeframe?: string;
+      overrideEventDate?: string;
+      overrideBlocks?: any[];
+    }
+  ) => {
+    if (!profile?.uid) return null;
+    const isAutoSave = Boolean(options?.isAutoSave);
+
+    if (isAutoSave) {
+      setIsAutosaving(true);
+    } else {
+      setIsSubmitting(true);
+      setSaveErrorMsg(null);
+      setSaveStatusMsg(null);
+    }
 
     try {
+      const activeBlueprint = options?.overrideBlueprint !== undefined ? options.overrideBlueprint : appliedBlueprint;
+      const activeTitle = (options?.overrideTitle !== undefined ? options.overrideTitle : title) || '';
+      const activeDescription = (options?.overrideDescription !== undefined ? options.overrideDescription : description) || '';
+      const activeCategory = (options?.overrideCategory !== undefined ? options.overrideCategory : category) || 'capital';
+      const activeSubcategory = (options?.overrideSubcategory !== undefined ? options.overrideSubcategory : subcategory) || '';
+      const activeTimeframe = (options?.overrideTimeframe !== undefined ? options.overrideTimeframe : timeframe) || 'present';
+      const activeEventDate = options?.overrideEventDate !== undefined ? options.overrideEventDate : eventDate;
+      const activeBlocks = options?.overrideBlocks !== undefined ? options.overrideBlocks : rundownBlocks;
+
       let finalCoverUrl = typeof coverImage === 'string' ? coverImage : '';
-      if (coverImage instanceof File) {
+      if (!isAutoSave && coverImage instanceof File) {
         const res = await uploadFile(coverImage);
         finalCoverUrl = res?.secure_url || '';
       }
@@ -640,24 +1026,25 @@ export default function CreateLivestreamForm({
           'post-harvest': 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200&q=80',
           'people-talent': 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80',
         };
-        finalCoverUrl = categoryCoverMap[category] || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200&q=80';
+        finalCoverUrl = categoryCoverMap[activeCategory] || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200&q=80';
       }
 
       const communications = {
         guestMessage: {
           text: guestMessageText,
-          buttonText: guestButtonText,
-          buttonLink: guestButtonLink.trim() || guestStudioUrl.trim()
+          buttonText: guestButtonText.trim() || 'Join Backstage Studio',
+          buttonLink: guestStudioUrl.trim()
         },
         audienceMessage: {
           text: audienceMessageText,
-          buttonText: audienceButtonText,
-          buttonLink: audienceButtonLink.trim() || streamUrl.trim()
+          buttonText: audienceButtonText.trim() || 'Watch Livestream',
+          buttonLink: streamUrl.trim()
         }
       };
 
       const metaPayload = {
-        appliedBlueprint,
+        appliedBlueprint: activeBlueprint,
+        ingestedBlueprints: ingestedBlueprints.length > 0 ? ingestedBlueprints : (activeBlueprint ? [activeBlueprint] : []),
         guidingArticles,
         guidingJobs,
         guidingListings,
@@ -665,6 +1052,7 @@ export default function CreateLivestreamForm({
         guestStudioUrl,
         streamUrl,
         communications,
+        collaborators,
         hubTitle,
         hubColor
       };
@@ -684,8 +1072,8 @@ export default function CreateLivestreamForm({
       }
 
       let formattedBlocks: ArticleBlockPayload[] = [];
-      if (rundownBlocks.length > 0) {
-        formattedBlocks = rundownBlocks.map((b, index) => {
+      if (activeBlocks && activeBlocks.length > 0) {
+        formattedBlocks = activeBlocks.map((b: any, index: number) => {
           const blockContentObj: any = {
             ...(b.originalContent || {}),
             sourceType: b.sourceType || 'def_block',
@@ -717,22 +1105,25 @@ export default function CreateLivestreamForm({
         }];
       }
 
+      const saveDraftId = options?.forceNew ? undefined : (currentDraftId || undefined);
+
       const payload: CreateLearnContentPayload = {
-        id: currentDraftId || undefined,
-        title: title.trim() || 'Untitled Livestream Draft',
-        description: description.trim() || appliedBlueprint?.description || '',
-        slug: (title.trim() || 'untitled-livestream').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
+        id: saveDraftId,
+        title: activeTitle.trim() || 'Untitled Livestream Draft',
+        description: activeDescription.trim() || activeBlueprint?.description || '',
+        slug: (activeTitle.trim() || 'untitled-livestream').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
         type: 'livestream',
-        bottleneckTags: [category, subcategory, timeframe].filter(Boolean) as string[],
-        category,
-        subcategory,
-        timeframe,
+        bottleneckTags: [activeCategory, activeSubcategory, activeTimeframe].filter(Boolean) as string[],
+        category: activeCategory,
+        subcategory: activeSubcategory,
+        timeframe: activeTimeframe,
         authorId: profile.uid,
         authorName: profile.displayName || profile.firstName || 'Broadcast Host',
         authorAvatarUrl: profile.avatarUrl || '',
         organizationId: postingAs === 'organization' ? selectedOrgId : null,
+        collaborators: collaborators,
         thumbnailUrl: finalCoverUrl || undefined,
-        targetDate: eventDate ? new Date(eventDate).toISOString() : new Date().toISOString(),
+        targetDate: activeEventDate ? new Date(activeEventDate).toISOString() : new Date().toISOString(),
         livestreamUrl: streamUrl,
         livestreamBlocks: formattedBlocks,
       };
@@ -741,21 +1132,33 @@ export default function CreateLivestreamForm({
 
       if (res?.id) {
         setCurrentDraftId(res.id);
+        const now = new Date();
+        setLastAutosavedAt(now);
+        lastSavedContentRef.current = serializeContentState();
+        onDraftSaved?.(res.id);
       }
 
       if (isPublish) {
         onSuccess?.();
-      } else {
+      } else if (!isAutoSave) {
         const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         setSaveStatusMsg(`Draft saved at ${timeStr}`);
         setTimeout(() => setSaveStatusMsg(null), 5000);
       }
+      return res;
     } catch (e: any) {
       console.error('Error saving livestream:', e);
-      setSaveErrorMsg(e.message || 'Failed to save');
-      setTimeout(() => setSaveErrorMsg(null), 6000);
+      if (!isAutoSave) {
+        setSaveErrorMsg(e.message || 'Failed to save');
+        setTimeout(() => setSaveErrorMsg(null), 6000);
+      }
+      return null;
     } finally {
-      setIsSubmitting(false);
+      if (isAutoSave) {
+        setIsAutosaving(false);
+      } else {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -819,7 +1222,225 @@ export default function CreateLivestreamForm({
     setFrameworkLoaded(true);
   };
 
-  const handleSelectBlueprint = (blueprint: any, autoLoadSlides: boolean = false) => {
+  const checkDraftCollisionAndAutoSave = async (overrides?: {
+    overrideBlueprint?: any;
+    overrideTitle?: string;
+    overrideDescription?: string;
+    overrideCategory?: string;
+    overrideSubcategory?: string;
+    overrideTimeframe?: string;
+    overrideEventDate?: string;
+    overrideBlocks?: any[];
+  }) => {
+    const activeBp = overrides?.overrideBlueprint !== undefined ? overrides.overrideBlueprint : appliedBlueprint;
+    const activeCat = (overrides?.overrideCategory !== undefined ? overrides.overrideCategory : category) || 'capital';
+    const activeTf = (overrides?.overrideTimeframe !== undefined ? overrides.overrideTimeframe : timeframe) || 'present';
+    const activeAnchorIds = guidingArticles.map((a: any) => typeof a === 'string' ? a : (a?.id || '')).filter(Boolean);
+    const activeCtaIds = [
+      ...guidingJobs,
+      ...guidingListings,
+      ...guidingCampaigns
+    ].map((c: any) => typeof c === 'string' ? c : (c?.id || '')).filter(Boolean);
+
+    // If user has NOT declined resume, and we don't already have an established draft ID
+    if (!userDeclinedResume && !currentDraftId) {
+      setCheckingDraft(true);
+      try {
+        const res = await findMatchingLivestreamDraft({
+          userId: profile?.uid,
+          userEmail: (profile as any)?.email,
+          organizationId: postingAs === 'organization' ? selectedOrgId : null,
+          anchorArticleIds: activeAnchorIds,
+          ctaIds: activeCtaIds,
+          category: activeCat,
+          timeframe: activeTf,
+          blueprintTitle: activeBp?.title || activeBp?.typeTitle,
+          excludeDraftId: currentDraftId,
+        });
+
+        if (res.success && res.draft && res.draft.id !== currentDraftId) {
+          setDetectedDraft(res.draft);
+          setCheckingDraft(false);
+          return;
+        }
+      } catch (err) {
+        console.error('Failed checking matching livestream draft:', err);
+      } finally {
+        setCheckingDraft(false);
+      }
+    }
+
+    // No conflict, or resume declined, or current draft already open:
+    await handleSave(false, {
+      isAutoSave: true,
+      ...overrides
+    });
+  };
+
+  const handleResumeDetectedDraft = (draft: any) => {
+    if (!draft) return;
+    setCurrentDraftId(draft.id);
+    if (draft.title) setTitle(draft.title);
+    if (draft.description) setDescription(draft.description);
+    if (draft.category) setCategory(draft.category);
+    if (draft.subcategory) setSubcategory(draft.subcategory);
+    if (draft.timeframe) setTimeframe(draft.timeframe);
+    if (draft.thumbnailUrl) setCoverImage(draft.thumbnailUrl);
+    if (draft.livestream?.streamUrl || draft.livestreamUrl) {
+      setStreamUrl(draft.livestream?.streamUrl || draft.livestreamUrl);
+    }
+    if (draft.targetDate || draft.livestream?.scheduledFor || draft.livestream?.eventDate) {
+      const raw = draft.targetDate || draft.livestream?.scheduledFor || draft.livestream?.eventDate;
+      const d = new Date(raw);
+      if (!isNaN(d.getTime())) {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const hours = String(d.getHours()).padStart(2, '0');
+        const mins = String(d.getMinutes()).padStart(2, '0');
+        setEventDate(`${year}-${month}-${day}T${hours}:${mins}:00`);
+      }
+    }
+
+    const meta = extractStudioMetaFromDraft(draft);
+
+    if (meta?.guestStudioUrl) setGuestStudioUrl(meta.guestStudioUrl);
+    if (meta?.streamUrl) setStreamUrl(meta.streamUrl);
+    if (meta?.communications) {
+      if (meta.communications.guestMessage?.text) setGuestMessageText(meta.communications.guestMessage.text);
+      if (meta.communications.guestMessage?.buttonText) setGuestButtonText(meta.communications.guestMessage.buttonText);
+      if (meta.communications.audienceMessage?.text) setAudienceMessageText(meta.communications.audienceMessage.text);
+      if (meta.communications.audienceMessage?.buttonText) setAudienceButtonText(meta.communications.audienceMessage.buttonText);
+    }
+
+    if (draft.collaborators) {
+      try {
+        const parsed = typeof draft.collaborators === 'string' ? JSON.parse(draft.collaborators) : draft.collaborators;
+        if (Array.isArray(parsed)) setCollaborators(parsed);
+      } catch (e) {}
+    } else if (meta?.collaborators && Array.isArray(meta.collaborators)) {
+      setCollaborators(meta.collaborators);
+    }
+
+    const bp = meta?.appliedBlueprint || draft.livestream?.blueprint || draft.blueprint;
+    if (bp) {
+      setAppliedBlueprint(bp);
+    }
+
+    // Hydrate ingestedBlueprints cascade from resumed draft
+    const draftBlueprints = meta?.ingestedBlueprints;
+    if (Array.isArray(draftBlueprints) && draftBlueprints.length > 0) {
+      setIngestedBlueprints(draftBlueprints);
+      if (bp) {
+        const target = bp.title?.trim().toLowerCase();
+        const bpIdx = target ? draftBlueprints.findIndex((b: any) => b.title?.trim().toLowerCase() === target) : -1;
+        if (bpIdx !== -1) {
+          setDeckActiveIndex(bpIdx);
+          lastAlignedBlueprintRef.current = target;
+        }
+      }
+    } else if (bp) {
+      setIngestedBlueprints([bp]);
+      setDeckActiveIndex(0);
+      lastAlignedBlueprintRef.current = bp.title?.trim().toLowerCase() || null;
+    } else if (typeof window !== 'undefined') {
+      try {
+        const catKey = (draft.category || category || 'general').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+        const hub = meta?.hubTitle || initialTaxonomy?.hubTitle || 'Production & Capital';
+        const savedPayload =
+          localStorage.getItem(`ls_ideas_ingest_${catKey}_latest_payload`) ||
+          localStorage.getItem('ls_ideas_ingest_latest_payload');
+        if (savedPayload) {
+          const parsed = parseLivestreamPayload(savedPayload, hub, catKey);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setIngestedBlueprints(parsed);
+            setDeckActiveIndex(0);
+          }
+        }
+      } catch (e) {}
+    }
+
+    const blocks = draft.livestream?.blocks || draft.livestreamBlocks || draft.blocks || [];
+    const hydratedSlides: any[] = [];
+    if (blocks && blocks.length > 0) {
+      const sorted = [...blocks].sort((a: any, b: any) => a.orderIndex - b.orderIndex);
+      sorted.forEach((b: any, idx: number) => {
+        let contentObj: any = {};
+        try {
+          contentObj = typeof b.content === 'string' ? JSON.parse(b.content) : (b.content || {});
+        } catch (e) {}
+
+        if (b.blockType === 'metadata' && !contentObj.title && !contentObj.defBlockId) {
+          return;
+        }
+
+        const isAct = b.blockType === 'rundown_act' || contentObj.role || contentObj.title?.toLowerCase().includes('act');
+        hydratedSlides.push({
+          id: b.id || `block_${Date.now()}_${idx}`,
+          sourceType: contentObj.sourceType || (isAct ? 'act' : (b.blockType === 'transition' ? 'transition' : (contentObj.jobTitle ? 'job' : 'def_block'))),
+          defBlockId: contentObj.defBlockId || b.defBlockId,
+          defBlockLabel: contentObj.defBlockLabel || b.defBlockLabel || `Block: ${contentObj.title || 'Slide'}`,
+          slideIndex: contentObj.slideIndex || b.slideIndex || (idx + 1),
+          slideCount: contentObj.slideCount || b.slideCount || 1,
+          act: contentObj.act || b.act || 1,
+          originalBlockType: contentObj.originalBlockType || b.blockType,
+          originalContent: contentObj,
+          speakerNotes: contentObj.speakerNotes || b.speakerNotes || '',
+          durationStr: contentObj.durationStr || b.durationStr || '2m',
+          parentArticleId: contentObj.parentArticleId || b.parentArticleId,
+          parentArticleTitle: contentObj.parentArticleTitle || b.parentArticleTitle,
+          sourceId: contentObj.sourceId || b.sourceId,
+        });
+      });
+
+      if (hydratedSlides.length > 0) {
+        setRundownBlocks(hydratedSlides);
+        setFrameworkLoaded(true);
+      }
+    }
+
+    // Direct Landing on Slides (Step 2) when resuming a draft with slides or blueprint
+    if (hydratedSlides.length > 0 || bp) {
+      setStep(2);
+      setTimeout(() => {
+        scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+        if (typeof window !== 'undefined') {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }, 100);
+    }
+
+    setDetectedDraft(null);
+    setUserDeclinedResume(false);
+    // Reset auto-save reference to avoid an immediate phantom auto-save right after resuming
+    lastSavedContentRef.current = '';
+    const updatedDate = draft.updatedAt ? new Date(draft.updatedAt) : new Date();
+    setLastAutosavedAt(!isNaN(updatedDate.getTime()) ? updatedDate : new Date());
+    onDraftSaved?.(draft.id);
+  };
+
+  const handleResumeDraft = handleResumeDetectedDraft;
+
+  const handleStartFreshFromBanner = async () => {
+    setUserDeclinedResume(true);
+    setDetectedDraft(null);
+    setCurrentDraftId(null);
+    await handleSave(false, {
+      isAutoSave: true,
+      forceNew: true
+    });
+  };
+
+  const handleAdvanceFromStep1 = async () => {
+    if (!canAdvanceStep1) return;
+    setStep(2);
+    setTimeout(() => {
+      scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 100);
+    await checkDraftCollisionAndAutoSave();
+  };
+
+  const handleSelectBlueprint = async (blueprint: any, autoLoadSlides: boolean = false) => {
     if (!blueprint) return;
     setAppliedBlueprint(blueprint);
     if (blueprint.title) setTitle(blueprint.title);
@@ -829,14 +1450,14 @@ export default function CreateLivestreamForm({
     const chosenCategory = blueprint.category || category || 'capital';
     if (blueprint.category) setCategory(blueprint.category);
 
-    // Auto-calculate exact scheduled livestream date & time based on Category Group in the Editorial Matrix!
     const slotDate = getNextSlotForCategory(chosenCategory, 10, 0);
     const year = slotDate.getFullYear();
     const month = String(slotDate.getMonth() + 1).padStart(2, '0');
     const day = String(slotDate.getDate()).padStart(2, '0');
     const hours = String(slotDate.getHours()).padStart(2, '0');
     const mins = String(slotDate.getMinutes()).padStart(2, '0');
-    setEventDate(`${year}-${month}-${day}T${hours}:${mins}:00`);
+    const newEventDate = `${year}-${month}-${day}T${hours}:${mins}:00`;
+    setEventDate(newEventDate);
 
     if (autoLoadSlides) {
       applyFramework(blueprint);
@@ -850,7 +1471,69 @@ export default function CreateLivestreamForm({
     setTimeout(() => {
       scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     }, 100);
+
+    await checkDraftCollisionAndAutoSave({
+      overrideBlueprint: blueprint,
+      overrideTitle: blueprint.title || title,
+      overrideDescription: blueprint.description || description,
+      overrideCategory: chosenCategory,
+      overrideTimeframe: blueprint.timeframe || timeframe,
+      overrideEventDate: newEventDate,
+      overrideBlocks: autoLoadSlides ? undefined : []
+    });
   };
+
+  // Continuous Debounced Auto-Save (Steps 2 & 3)
+  useEffect(() => {
+    if (step < 2) return;
+    if (detectedDraft) return;
+    if (!currentDraftId && !title.trim() && !appliedBlueprint) return;
+
+    const currentContent = serializeContentState();
+
+    if (!lastSavedContentRef.current) {
+      lastSavedContentRef.current = currentContent;
+      return;
+    }
+
+    if (currentContent === lastSavedContentRef.current) {
+      return;
+    }
+
+    setIsAutosaving(true);
+
+    const timer = setTimeout(async () => {
+      try {
+        await handleSave(false, { isAutoSave: true });
+      } catch (err) {
+        console.error('Debounced auto-save failed:', err);
+      } finally {
+        setIsAutosaving(false);
+      }
+    }, 2500);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [
+    step,
+    detectedDraft,
+    title,
+    description,
+    category,
+    subcategory,
+    timeframe,
+    eventDate,
+    streamUrl,
+    guestStudioUrl,
+    guestMessageText,
+    guestButtonText,
+    audienceMessageText,
+    audienceButtonText,
+    appliedBlueprint,
+    rundownBlocks,
+    serializeContentState
+  ]);
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', position: 'relative' }}>
@@ -956,6 +1639,98 @@ export default function CreateLivestreamForm({
             <Box sx={{ display: 'flex', alignItems: 'center', px: 1, py: 0.5, borderRadius: '6px', bgcolor: 'rgba(15, 23, 42, 0.04)', border: '1px solid rgba(15, 23, 42, 0.05)', color: '#0f172a' }}>
               <Typography sx={{ fontWeight: 600, fontSize: '0.85rem', textTransform: 'capitalize' }}>{category || 'Category'}</Typography>
             </Box>
+
+            {/* Top Stepper Navigation Buttons */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mx: { xs: 0, sm: 0.5 }, flexWrap: 'wrap' }}>
+              {[
+                { sNum: 1, label: 'Details' },
+                { sNum: 2, label: 'Framework & Slides' },
+                { sNum: 3, label: 'Broadcast Studio & Links' }
+              ].map(({ sNum, label }) => {
+                const isActive = step === sNum;
+                const isPassed = step > sNum;
+                const canClick = sNum === 1 || (sNum === 2 && (canAdvanceStep1 || rundownBlocks.length > 0 || appliedBlueprint)) || (sNum === 3 && rundownBlocks.length > 0);
+                return (
+                  <Box
+                    key={`top-step-${sNum}`}
+                    onClick={() => {
+                      if (canClick) {
+                        setStep(sNum);
+                        scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+                      }
+                    }}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0.75,
+                      px: 1.5,
+                      py: 0.5,
+                      borderRadius: '10px',
+                      cursor: canClick ? 'pointer' : 'not-allowed',
+                      opacity: canClick ? 1 : 0.45,
+                      bgcolor: isActive ? '#0f172a' : (isPassed ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255,255,255,0.7)'),
+                      color: isActive ? '#ffffff' : (isPassed ? '#065f46' : '#475569'),
+                      border: `1.2px solid ${isActive ? '#0f172a' : (isPassed ? 'rgba(16, 185, 129, 0.3)' : 'rgba(15, 23, 42, 0.08)')}`,
+                      boxShadow: isActive ? '0 2px 8px rgba(15, 23, 42, 0.18)' : 'none',
+                      transition: 'all 0.2s ease',
+                      '&:hover': canClick ? {
+                        bgcolor: isActive ? '#0f172a' : (isPassed ? 'rgba(16, 185, 129, 0.18)' : '#ffffff'),
+                        transform: 'translateY(-1px)',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.06)'
+                      } : {}
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 18,
+                        height: 18,
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '0.72rem',
+                        fontWeight: 900,
+                        bgcolor: isActive ? '#ffffff' : (isPassed ? '#10b981' : 'rgba(15, 23, 42, 0.08)'),
+                        color: isActive ? '#0f172a' : (isPassed ? '#ffffff' : '#64748b')
+                      }}
+                    >
+                      {isPassed ? '✓' : sNum}
+                    </Box>
+                    <Typography sx={{ fontWeight: isActive ? 800 : 600, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                      {label}
+                    </Typography>
+                  </Box>
+                );
+              })}
+            </Box>
+
+            {isAutosaving ? (
+              <Chip
+                size="small"
+                icon={<CircularProgress size={12} sx={{ color: '#d97706' }} />}
+                label="Autosaving..."
+                sx={{
+                  bgcolor: 'rgba(245, 158, 11, 0.12)',
+                  color: '#b45309',
+                  fontWeight: 800,
+                  fontSize: '0.74rem',
+                  border: '1px solid rgba(245, 158, 11, 0.28)',
+                }}
+              />
+            ) : lastAutosavedAt ? (
+              <Chip
+                size="small"
+                icon={<CheckCircleIcon sx={{ fontSize: '0.9rem !important', color: '#10b981' }} />}
+                label={`Saved ${lastAutosavedAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`}
+                sx={{
+                  bgcolor: 'rgba(16, 185, 129, 0.1)',
+                  color: '#065f46',
+                  fontWeight: 700,
+                  fontSize: '0.74rem',
+                  border: '1px solid rgba(16, 185, 129, 0.2)',
+                }}
+              />
+            ) : null}
           </Box>
         </Box>
 
@@ -1528,7 +2303,7 @@ export default function CreateLivestreamForm({
                       sx={{
                         fontSize: '0.72rem',
                         fontWeight: 900,
-                        color: '#64748b',
+                        color: '#dc2626',
                         textTransform: 'uppercase',
                         letterSpacing: '0.08em',
                         display: 'flex',
@@ -1536,38 +2311,39 @@ export default function CreateLivestreamForm({
                         gap: 0.6,
                       }}
                     >
+                      <Box component="span" sx={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', bgcolor: '#ef4444', boxShadow: '0 0 8px #ef4444' }} />
                       ⏱️ Goes Live In
                     </Typography>
 
                     {/* Live Digital Countdown Timer */}
                     {countdown && !countdown.isPast ? (
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                        <Box sx={{ textAlign: 'center', bgcolor: 'rgba(15, 23, 42, 0.05)', border: '1px solid rgba(15, 23, 42, 0.08)', borderRadius: '10px', px: 1, py: 0.6, minWidth: 40 }}>
-                          <Typography sx={{ fontWeight: 950, fontSize: '1.15rem', color: '#0f172a', fontFamily: 'monospace', lineHeight: 1 }}>
+                        <Box sx={{ textAlign: 'center', bgcolor: 'rgba(239, 68, 68, 0.08)', border: '1.5px solid rgba(239, 68, 68, 0.25)', borderRadius: '10px', px: 1, py: 0.6, minWidth: 40, boxShadow: '0 2px 8px rgba(239, 68, 68, 0.1)' }}>
+                          <Typography sx={{ fontWeight: 950, fontSize: '1.2rem', color: '#dc2626', fontFamily: 'monospace', lineHeight: 1 }}>
                             {String(countdown.days).padStart(2, '0')}
                           </Typography>
-                          <Typography sx={{ fontSize: '0.58rem', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', mt: 0.25 }}>days</Typography>
+                          <Typography sx={{ fontSize: '0.58rem', color: '#b91c1c', fontWeight: 800, textTransform: 'uppercase', mt: 0.25 }}>days</Typography>
                         </Box>
-                        <Typography sx={{ fontWeight: 900, color: '#94a3b8', fontSize: '1.1rem', mb: 1 }}>:</Typography>
-                        <Box sx={{ textAlign: 'center', bgcolor: 'rgba(15, 23, 42, 0.05)', border: '1px solid rgba(15, 23, 42, 0.08)', borderRadius: '10px', px: 1, py: 0.6, minWidth: 40 }}>
-                          <Typography sx={{ fontWeight: 950, fontSize: '1.15rem', color: '#0f172a', fontFamily: 'monospace', lineHeight: 1 }}>
+                        <Typography sx={{ fontWeight: 900, color: '#ef4444', fontSize: '1.1rem', mb: 1 }}>:</Typography>
+                        <Box sx={{ textAlign: 'center', bgcolor: 'rgba(239, 68, 68, 0.08)', border: '1.5px solid rgba(239, 68, 68, 0.25)', borderRadius: '10px', px: 1, py: 0.6, minWidth: 40, boxShadow: '0 2px 8px rgba(239, 68, 68, 0.1)' }}>
+                          <Typography sx={{ fontWeight: 950, fontSize: '1.2rem', color: '#dc2626', fontFamily: 'monospace', lineHeight: 1 }}>
                             {String(countdown.hours).padStart(2, '0')}
                           </Typography>
-                          <Typography sx={{ fontSize: '0.58rem', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', mt: 0.25 }}>hrs</Typography>
+                          <Typography sx={{ fontSize: '0.58rem', color: '#b91c1c', fontWeight: 800, textTransform: 'uppercase', mt: 0.25 }}>hrs</Typography>
                         </Box>
-                        <Typography sx={{ fontWeight: 900, color: '#94a3b8', fontSize: '1.1rem', mb: 1 }}>:</Typography>
-                        <Box sx={{ textAlign: 'center', bgcolor: 'rgba(15, 23, 42, 0.05)', border: '1px solid rgba(15, 23, 42, 0.08)', borderRadius: '10px', px: 1, py: 0.6, minWidth: 40 }}>
-                          <Typography sx={{ fontWeight: 950, fontSize: '1.15rem', color: '#0f172a', fontFamily: 'monospace', lineHeight: 1 }}>
+                        <Typography sx={{ fontWeight: 900, color: '#ef4444', fontSize: '1.1rem', mb: 1 }}>:</Typography>
+                        <Box sx={{ textAlign: 'center', bgcolor: 'rgba(239, 68, 68, 0.08)', border: '1.5px solid rgba(239, 68, 68, 0.25)', borderRadius: '10px', px: 1, py: 0.6, minWidth: 40, boxShadow: '0 2px 8px rgba(239, 68, 68, 0.1)' }}>
+                          <Typography sx={{ fontWeight: 950, fontSize: '1.2rem', color: '#dc2626', fontFamily: 'monospace', lineHeight: 1 }}>
                             {String(countdown.minutes).padStart(2, '0')}
                           </Typography>
-                          <Typography sx={{ fontSize: '0.58rem', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', mt: 0.25 }}>mins</Typography>
+                          <Typography sx={{ fontSize: '0.58rem', color: '#b91c1c', fontWeight: 800, textTransform: 'uppercase', mt: 0.25 }}>mins</Typography>
                         </Box>
-                        <Typography sx={{ fontWeight: 900, color: '#94a3b8', fontSize: '1.1rem', mb: 1 }}>:</Typography>
-                        <Box sx={{ textAlign: 'center', bgcolor: alpha(hubColor, 0.1), border: `1px solid ${alpha(hubColor, 0.25)}`, borderRadius: '10px', px: 1, py: 0.6, minWidth: 40 }}>
-                          <Typography sx={{ fontWeight: 950, fontSize: '1.15rem', color: hubColor, fontFamily: 'monospace', lineHeight: 1 }}>
+                        <Typography sx={{ fontWeight: 900, color: '#ef4444', fontSize: '1.1rem', mb: 1 }}>:</Typography>
+                        <Box sx={{ textAlign: 'center', bgcolor: 'rgba(239, 68, 68, 0.14)', border: '1.5px solid rgba(239, 68, 68, 0.38)', borderRadius: '10px', px: 1, py: 0.6, minWidth: 40, boxShadow: '0 2px 10px rgba(239, 68, 68, 0.18)' }}>
+                          <Typography sx={{ fontWeight: 950, fontSize: '1.2rem', color: '#ef4444', fontFamily: 'monospace', lineHeight: 1 }}>
                             {String(countdown.seconds).padStart(2, '0')}
                           </Typography>
-                          <Typography sx={{ fontSize: '0.58rem', color: hubColor, fontWeight: 800, textTransform: 'uppercase', mt: 0.25 }}>secs</Typography>
+                          <Typography sx={{ fontSize: '0.58rem', color: '#ef4444', fontWeight: 800, textTransform: 'uppercase', mt: 0.25 }}>secs</Typography>
                         </Box>
                       </Box>
                     ) : (
@@ -1917,79 +2693,190 @@ export default function CreateLivestreamForm({
                       gap: 2.5,
                       py: { xs: 0, md: 0.5 },
                       zIndex: 1,
+                      width: '100%',
                     }}
                   >
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-                      <Typography variant="h5" sx={{ color: '#0f172a', fontWeight: 900, letterSpacing: '-0.02em', fontSize: { xs: '1.35rem', sm: '1.55rem' } }}>
-                        Get livestream ideas here
-                      </Typography>
-                      <Typography sx={{ color: '#334155', fontSize: { xs: '0.92rem', sm: '0.96rem' }, lineHeight: 1.6, fontWeight: 500 }}>
-                        Spend 1 minute to get fresh, realistic livestream ideas people want to watch, or choose Ignore to write yourself.
-                      </Typography>
-                    </Box>
+                    {ingestedBlueprints.length > 0 ? (
+                      <>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, width: '100%' }}>
+                          <Typography variant="h5" sx={{ color: '#0f172a', fontWeight: 900, letterSpacing: '-0.02em', fontSize: { xs: '1.25rem', sm: '1.45rem' } }}>
+                            💡 AI Ideas Active ({ingestedBlueprints.length} Options Available)
+                          </Typography>
+                          <Typography sx={{ color: '#334155', fontSize: { xs: '0.92rem', sm: '0.96rem' }, lineHeight: 1.6, fontWeight: 500 }}>
+                            Review your generated broadcast blueprints in the 3D stage below, or launch the assistant to generate alternative angles.
+                          </Typography>
+                          {appliedBlueprint?.title && (
+                            <Box sx={{ mt: 0.5, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                              <Chip
+                                icon={<CheckCircleIcon sx={{ fontSize: '16px !important', color: '#059669 !important' }} />}
+                                label={`Selected: "${appliedBlueprint.title}"`}
+                                sx={{
+                                  bgcolor: 'rgba(16, 185, 129, 0.1)',
+                                  color: '#065f46',
+                                  fontWeight: 800,
+                                  fontSize: '0.82rem',
+                                  border: '1px solid rgba(16, 185, 129, 0.28)',
+                                  maxWidth: '100%',
+                                  '& .MuiChip-label': {
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap'
+                                  }
+                                }}
+                              />
+                            </Box>
+                          )}
+                        </Box>
 
-                    {/* Buttons underneath the text */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: { xs: 'center', md: 'flex-start' }, gap: 2, flexWrap: 'wrap' }}>
-                      <Button
-                        variant="contained"
-                        onClick={() => setIsIdeasDrawerOpen(true)}
-                        endIcon={<ArrowForwardIcon sx={{ fontSize: '14px !important' }} />}
-                        sx={{
-                          background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-                          color: '#ffffff',
-                          fontWeight: 900,
-                          px: 3.8,
-                          py: 1.3,
-                          borderRadius: '14px',
-                          textTransform: 'none',
-                          fontSize: '0.92rem',
-                          boxShadow: '0 6px 20px rgba(15, 23, 42, 0.25)',
-                          transition: 'all 0.2s ease',
-                          '&:hover': {
-                            background: 'linear-gradient(135deg, #020617 0%, #0f172a 100%)',
-                            transform: 'translateY(-2px)',
-                            boxShadow: '0 10px 28px rgba(15, 23, 42, 0.35)',
-                          }
-                        }}
-                      >
-                        Start (~1 min)
-                      </Button>
-                      <Button
-                        variant="text"
-                        onClick={() => {
-                          setIsIdeasCardFlipped(true);
-                          if (!eventDate) {
-                            const slotDate = getNextSlotForCategory(category || 'capital', 10, 0);
-                            const year = slotDate.getFullYear();
-                            const month = String(slotDate.getMonth() + 1).padStart(2, '0');
-                            const day = String(slotDate.getDate()).padStart(2, '0');
-                            const hours = String(slotDate.getHours()).padStart(2, '0');
-                            const mins = String(slotDate.getMinutes()).padStart(2, '0');
-                            setEventDate(`${year}-${month}-${day}T${hours}:${mins}:00`);
-                          }
-                        }}
-                        sx={{
-                          color: '#475569',
-                          bgcolor: '#ffffff',
-                          border: '1.5px solid #cbd5e1',
-                          fontWeight: 800,
-                          px: 3,
-                          py: 1.25,
-                          borderRadius: '14px',
-                          textTransform: 'none',
-                          fontSize: '0.9rem',
-                          transition: 'all 0.2s ease',
-                          '&:hover': {
-                            color: '#0f172a',
-                            bgcolor: '#f8fafc',
-                            borderColor: 'rgba(0, 0, 0, 0.25)',
-                            transform: 'translateY(-1px)',
-                          }
-                        }}
-                      >
-                        Ignore
-                      </Button>
-                    </Box>
+                        {/* Buttons for active intelligence state */}
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: { xs: 'center', md: 'flex-start' }, gap: 1.5, flexWrap: 'wrap' }}>
+                          <Button
+                            variant="contained"
+                            onClick={() => {
+                              carouselRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }}
+                            startIcon={<SparkleIcon sx={{ fontSize: '16px !important' }} />}
+                            sx={{
+                              background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+                              color: '#ffffff',
+                              fontWeight: 900,
+                              px: 3.5,
+                              py: 1.25,
+                              borderRadius: '14px',
+                              textTransform: 'none',
+                              fontSize: '0.92rem',
+                              boxShadow: '0 6px 20px rgba(15, 23, 42, 0.25)',
+                              transition: 'all 0.2s ease',
+                              '&:hover': {
+                                background: 'linear-gradient(135deg, #020617 0%, #0f172a 100%)',
+                                transform: 'translateY(-2px)',
+                                boxShadow: '0 10px 28px rgba(15, 23, 42, 0.35)',
+                              }
+                            }}
+                          >
+                            View Ingested Cards
+                          </Button>
+                          <Button
+                            variant="outlined"
+                            onClick={() => setIsIdeasDrawerOpen(true)}
+                            endIcon={<ArrowForwardIcon sx={{ fontSize: '14px !important' }} />}
+                            sx={{
+                              color: '#0f172a',
+                              bgcolor: '#ffffff',
+                              border: '1.5px solid #cbd5e1',
+                              fontWeight: 800,
+                              px: 3,
+                              py: 1.2,
+                              borderRadius: '14px',
+                              textTransform: 'none',
+                              fontSize: '0.9rem',
+                              transition: 'all 0.2s ease',
+                              '&:hover': {
+                                color: '#0f172a',
+                                bgcolor: '#f8fafc',
+                                borderColor: 'rgba(0, 0, 0, 0.25)',
+                                transform: 'translateY(-1px)',
+                              }
+                            }}
+                          >
+                            Open Ideas Assistant
+                          </Button>
+                          <Button
+                            variant="text"
+                            onClick={() => setIsIdeasCardFlipped(true)}
+                            sx={{
+                              color: '#64748b',
+                              fontWeight: 700,
+                              px: 2,
+                              py: 1.2,
+                              borderRadius: '14px',
+                              textTransform: 'none',
+                              fontSize: '0.85rem',
+                              '&:hover': {
+                                color: '#0f172a',
+                                bgcolor: 'rgba(15, 23, 42, 0.04)',
+                              }
+                            }}
+                          >
+                            Manual Form ↺
+                          </Button>
+                        </Box>
+                      </>
+                    ) : (
+                      <>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                          <Typography variant="h5" sx={{ color: '#0f172a', fontWeight: 900, letterSpacing: '-0.02em', fontSize: { xs: '1.35rem', sm: '1.55rem' } }}>
+                            Get livestream ideas here
+                          </Typography>
+                          <Typography sx={{ color: '#334155', fontSize: { xs: '0.92rem', sm: '0.96rem' }, lineHeight: 1.6, fontWeight: 500 }}>
+                            Spend 1 minute to get fresh, realistic livestream ideas people want to watch, or choose Ignore to write yourself.
+                          </Typography>
+                        </Box>
+
+                        {/* Buttons underneath the text */}
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: { xs: 'center', md: 'flex-start' }, gap: 2, flexWrap: 'wrap' }}>
+                          <Button
+                            variant="contained"
+                            onClick={() => setIsIdeasDrawerOpen(true)}
+                            endIcon={<ArrowForwardIcon sx={{ fontSize: '14px !important' }} />}
+                            sx={{
+                              background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+                              color: '#ffffff',
+                              fontWeight: 900,
+                              px: 3.8,
+                              py: 1.3,
+                              borderRadius: '14px',
+                              textTransform: 'none',
+                              fontSize: '0.92rem',
+                              boxShadow: '0 6px 20px rgba(15, 23, 42, 0.25)',
+                              transition: 'all 0.2s ease',
+                              '&:hover': {
+                                background: 'linear-gradient(135deg, #020617 0%, #0f172a 100%)',
+                                transform: 'translateY(-2px)',
+                                boxShadow: '0 10px 28px rgba(15, 23, 42, 0.35)',
+                              }
+                            }}
+                          >
+                            Start (~1 min)
+                          </Button>
+                          <Button
+                            variant="text"
+                            onClick={() => {
+                              setIsIdeasCardFlipped(true);
+                              if (!eventDate) {
+                                const slotDate = getNextSlotForCategory(category || 'capital', 10, 0);
+                                const year = slotDate.getFullYear();
+                                const month = String(slotDate.getMonth() + 1).padStart(2, '0');
+                                const day = String(slotDate.getDate()).padStart(2, '0');
+                                const hours = String(slotDate.getHours()).padStart(2, '0');
+                                const mins = String(slotDate.getMinutes()).padStart(2, '0');
+                                setEventDate(`${year}-${month}-${day}T${hours}:${mins}:00`);
+                              }
+                            }}
+                            sx={{
+                              color: '#475569',
+                              bgcolor: '#ffffff',
+                              border: '1.5px solid #cbd5e1',
+                              fontWeight: 800,
+                              px: 3,
+                              py: 1.25,
+                              borderRadius: '14px',
+                              textTransform: 'none',
+                              fontSize: '0.9rem',
+                              transition: 'all 0.2s ease',
+                              '&:hover': {
+                                color: '#0f172a',
+                                bgcolor: '#f8fafc',
+                                borderColor: 'rgba(0, 0, 0, 0.25)',
+                                transform: 'translateY(-1px)',
+                              }
+                            }}
+                          >
+                            Ignore
+                          </Button>
+                        </Box>
+                      </>
+                    )}
                   </Box>
                 </Paper>
 
@@ -2205,6 +3092,11 @@ export default function CreateLivestreamForm({
                       {ingestedBlueprints.map((item, index) => {
                         const diff = index - deckActiveIndex;
                         const isActive = diff === 0;
+                        const isApplied = Boolean(
+                          appliedBlueprint?.title &&
+                          item?.title &&
+                          appliedBlueprint.title.trim().toLowerCase() === item.title.trim().toLowerCase()
+                        );
 
                         let x = 0;
                         let y = 0;
@@ -2413,30 +3305,59 @@ export default function CreateLivestreamForm({
                                   {/* Middle Section: Option Pill, Big Centered Title, Clean Hook */}
                                   <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: { xs: 2, sm: 2.5 }, my: 'auto', width: '100%', maxWidth: 680, position: 'relative', zIndex: 2 }}>
                                     
-                                    {/* Option Pill */}
-                                    <Box
-                                      sx={{
-                                        bgcolor: item.eraColor || '#10b981',
-                                        color: '#ffffff',
-                                        px: { xs: 2.25, sm: 3 },
-                                        py: { xs: 0.6, sm: 0.8 },
-                                        borderRadius: '999px',
-                                        boxShadow: `0 6px 18px ${alpha(item.eraColor || '#10b981', 0.38)}`,
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                      }}
-                                    >
-                                      <Typography
+                                    {/* Option Pill & Active Blueprint Badge */}
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flexWrap: 'wrap', justifyContent: 'center' }}>
+                                      {isApplied && (
+                                        <Box
+                                          sx={{
+                                            bgcolor: '#f59e0b',
+                                            color: '#ffffff',
+                                            px: { xs: 2.25, sm: 2.75 },
+                                            py: { xs: 0.6, sm: 0.8 },
+                                            borderRadius: '999px',
+                                            boxShadow: '0 6px 18px rgba(245, 158, 11, 0.45)',
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: 0.5,
+                                          }}
+                                        >
+                                          <Typography
+                                            sx={{
+                                              textTransform: 'uppercase',
+                                              fontSize: { xs: '0.74rem', sm: '0.8rem' },
+                                              fontWeight: 900,
+                                              letterSpacing: '0.06em',
+                                              color: '#ffffff',
+                                            }}
+                                          >
+                                            ⭐ Active Blueprint (Applied)
+                                          </Typography>
+                                        </Box>
+                                      )}
+                                      <Box
                                         sx={{
-                                          textTransform: 'uppercase',
-                                          fontSize: { xs: '0.74rem', sm: '0.8rem' },
-                                          fontWeight: 900,
-                                          letterSpacing: '0.06em',
+                                          bgcolor: item.eraColor || '#10b981',
                                           color: '#ffffff',
+                                          px: { xs: 2.25, sm: 3 },
+                                          py: { xs: 0.6, sm: 0.8 },
+                                          borderRadius: '999px',
+                                          boxShadow: `0 6px 18px ${alpha(item.eraColor || '#10b981', 0.38)}`,
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
                                         }}
                                       >
-                                        OPTION {index + 1}: {item.typeTitle || 'BROADCAST BLUEPRINT'}
-                                      </Typography>
+                                        <Typography
+                                          sx={{
+                                            textTransform: 'uppercase',
+                                            fontSize: { xs: '0.74rem', sm: '0.8rem' },
+                                            fontWeight: 900,
+                                            letterSpacing: '0.06em',
+                                            color: '#ffffff',
+                                          }}
+                                        >
+                                          OPTION {index + 1}: {item.typeTitle || 'BROADCAST BLUEPRINT'}
+                                        </Typography>
+                                      </Box>
                                     </Box>
 
                                     {/* Big Bold Broadcast Show Title */}
@@ -2543,20 +3464,36 @@ export default function CreateLivestreamForm({
                                     zIndex: 2,
                                   }}
                                 >
-                                  {/* Broadcast Count Badge */}
-                                  <Chip
-                                    label={`Broadcast ${index + 1} of ${ingestedBlueprints.length}`}
-                                    sx={{
-                                      bgcolor: alpha(item.eraColor || '#10b981', 0.1),
-                                      color: item.eraColor || '#10b981',
-                                      fontWeight: 900,
-                                      fontSize: '0.85rem',
-                                      height: 32,
-                                      px: 1.5,
-                                      borderRadius: '999px',
-                                      border: `1.5px solid ${alpha(item.eraColor || '#10b981', 0.28)}`,
-                                    }}
-                                  />
+                                  {/* Broadcast Count & Active Badge */}
+                                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                                    {isApplied && (
+                                      <Chip
+                                        label="⭐ Active Blueprint (Applied)"
+                                        sx={{
+                                          bgcolor: '#fef3c7',
+                                          color: '#b45309',
+                                          fontWeight: 900,
+                                          fontSize: '0.8rem',
+                                          height: 28,
+                                          borderRadius: '999px',
+                                          border: '1px solid #fde68a'
+                                        }}
+                                      />
+                                    )}
+                                    <Chip
+                                      label={`Broadcast ${index + 1} of ${ingestedBlueprints.length}`}
+                                      sx={{
+                                        bgcolor: alpha(item.eraColor || '#10b981', 0.1),
+                                        color: item.eraColor || '#10b981',
+                                        fontWeight: 900,
+                                        fontSize: '0.85rem',
+                                        height: 32,
+                                        px: 1.5,
+                                        borderRadius: '999px',
+                                        border: `1.5px solid ${alpha(item.eraColor || '#10b981', 0.28)}`,
+                                      }}
+                                    />
+                                  </Box>
 
                                   {/* Tap to inspect prompt */}
                                   <Typography
@@ -2657,6 +3594,21 @@ export default function CreateLivestreamForm({
                                        const liveInText = `Goes live in ${diffDays > 0 ? `${diffDays}d ` : ''}${diffHours}h ${diffMins}m`;
                                        return (
                                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                           {isApplied && (
+                                             <Chip
+                                               label="⭐ Active Blueprint (Applied)"
+                                               size="small"
+                                               sx={{
+                                                 bgcolor: '#fef3c7',
+                                                 color: '#b45309',
+                                                 fontWeight: 900,
+                                                 fontSize: '0.72rem',
+                                                 height: 26,
+                                                 borderRadius: '999px',
+                                                 border: '1px solid #fde68a'
+                                               }}
+                                             />
+                                           )}
                                            <Chip
                                              label={`Option ${index + 1}`}
                                              size="small"
@@ -2795,35 +3747,78 @@ export default function CreateLivestreamForm({
                                    </Box>
                                  </Box>
 
-                                 {/* Bottom Right: Pick This Action Button */}
-                                 <Box sx={{ width: '100%', display: 'flex', justifyContent: 'flex-end', pt: 1.5, borderTop: '1px solid rgba(226, 232, 240, 0.8)', mt: 1 }}>
-                                   <Button
-                                     variant="contained"
-                                     onClick={(e) => {
-                                       e.stopPropagation();
-                                       handleSelectBlueprint(item);
-                                     }}
-                                     sx={{
-                                       background: `linear-gradient(135deg, ${item.eraColor || '#10b981'} 0%, ${alpha(item.eraColor || '#10b981', 0.9)} 100%)`,
-                                       color: '#ffffff',
-                                       fontWeight: 900,
-                                       fontSize: '0.94rem',
-                                       px: 4.5,
-                                       py: 1.1,
-                                       borderRadius: '999px',
-                                       textTransform: 'none',
-                                       boxShadow: `0 8px 24px ${alpha(item.eraColor || '#10b981', 0.4)}`,
-                                       transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                                       '&:hover': {
-                                         background: `linear-gradient(135deg, ${item.eraColor || '#10b981'} 0%, ${item.eraColor || '#10b981'} 100%)`,
-                                         transform: 'translateY(-2px) scale(1.02)',
-                                         boxShadow: `0 12px 30px ${alpha(item.eraColor || '#10b981', 0.55)}`,
-                                        },
-                                      }}
-                                    >
-                                      Use This Livestream Blueprint
-                                    </Button>
-                                  </Box>
+                                 {/* Bottom Action Area: Dynamic Applied / Switch / Re-apply actions */}
+                                 <Box sx={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: isApplied ? 'space-between' : 'flex-end', pt: 1.5, borderTop: '1px solid rgba(226, 232, 240, 0.8)', mt: 1, gap: 1.5, flexWrap: 'wrap' }}>
+                                   {isApplied ? (
+                                     <>
+                                       <Chip
+                                         icon={<CheckCircleIcon sx={{ fontSize: '16px !important', color: '#059669 !important' }} />}
+                                         label="✓ Currently Applied"
+                                         sx={{
+                                           bgcolor: 'rgba(16, 185, 129, 0.12)',
+                                           color: '#065f46',
+                                           fontWeight: 900,
+                                           fontSize: '0.84rem',
+                                           border: '1.5px solid rgba(16, 185, 129, 0.3)',
+                                           py: 0.5,
+                                           px: 0.5
+                                         }}
+                                       />
+                                       <Button
+                                         variant="outlined"
+                                         onClick={(e) => {
+                                           e.stopPropagation();
+                                           handleSelectBlueprint(item, true);
+                                         }}
+                                         sx={{
+                                           color: '#0f172a',
+                                           borderColor: '#cbd5e1',
+                                           fontWeight: 800,
+                                           fontSize: '0.88rem',
+                                           px: 3,
+                                           py: 1,
+                                           borderRadius: '999px',
+                                           textTransform: 'none',
+                                           transition: 'all 0.2s ease',
+                                           '&:hover': {
+                                             bgcolor: '#f8fafc',
+                                             borderColor: '#94a3b8',
+                                             transform: 'translateY(-1px)'
+                                           }
+                                         }}
+                                       >
+                                         Re-apply Framework
+                                       </Button>
+                                     </>
+                                   ) : (
+                                     <Button
+                                       variant="contained"
+                                       onClick={(e) => {
+                                         e.stopPropagation();
+                                         handleSelectBlueprint(item, false);
+                                       }}
+                                       sx={{
+                                         background: `linear-gradient(135deg, ${item.eraColor || '#10b981'} 0%, ${alpha(item.eraColor || '#10b981', 0.9)} 100%)`,
+                                         color: '#ffffff',
+                                         fontWeight: 900,
+                                         fontSize: '0.94rem',
+                                         px: 4.5,
+                                         py: 1.1,
+                                         borderRadius: '999px',
+                                         textTransform: 'none',
+                                         boxShadow: `0 8px 24px ${alpha(item.eraColor || '#10b981', 0.4)}`,
+                                         transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                                         '&:hover': {
+                                           background: `linear-gradient(135deg, ${item.eraColor || '#10b981'} 0%, ${item.eraColor || '#10b981'} 100%)`,
+                                           transform: 'translateY(-2px) scale(1.02)',
+                                           boxShadow: `0 12px 30px ${alpha(item.eraColor || '#10b981', 0.55)}`,
+                                         },
+                                       }}
+                                     >
+                                       Switch to this Blueprint
+                                     </Button>
+                                   )}
+                                 </Box>
                                </Box>
                              </Box>
                            </motion.div>
@@ -2840,6 +3835,117 @@ export default function CreateLivestreamForm({
          {step === 2 && (
           <Box sx={{ animation: 'fadeIn 0.3s', display: 'flex', flexDirection: 'column', gap: 0, width: '100%', pb: { xs: 16, md: 22 } }}>
             
+            {/* IN-PROGRESS DRAFT RESUMPTION BANNER */}
+            {detectedDraft && (
+              <Paper
+                elevation={0}
+                sx={{
+                  maxWidth: 880,
+                  mx: 'auto',
+                  width: '100%',
+                  p: { xs: 2.25, sm: 3 },
+                  mb: 3,
+                  borderRadius: '24px',
+                  bgcolor: alpha('#f59e0b', 0.08),
+                  border: '1.5px solid rgba(245, 158, 11, 0.4)',
+                  boxShadow: '0 12px 32px rgba(245, 158, 11, 0.12)',
+                  display: 'flex',
+                  flexDirection: { xs: 'column', md: 'row' },
+                  alignItems: { md: 'center' },
+                  justifyContent: 'space-between',
+                  gap: 2.5,
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Box
+                    sx={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: '16px',
+                      bgcolor: '#f59e0b',
+                      color: '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      boxShadow: '0 6px 16px rgba(245, 158, 11, 0.3)',
+                    }}
+                  >
+                    <LiveTvIcon sx={{ fontSize: 26 }} />
+                  </Box>
+                  <Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                      <Typography sx={{ fontWeight: 900, fontSize: '1rem', color: '#0f172a' }}>
+                        In-Progress Livestream Draft Detected
+                      </Typography>
+                      <Chip
+                        label="Matching Blueprint / CTAs Found"
+                        size="small"
+                        sx={{ bgcolor: 'rgba(245, 158, 11, 0.2)', color: '#b45309', fontWeight: 800, fontSize: '0.72rem' }}
+                      />
+                    </Box>
+                    {(() => {
+                      const dateVal = detectedDraft.updatedAt || detectedDraft.createdAt;
+                      const parsedDate = dateVal ? new Date(dateVal) : null;
+                      const isValid = parsedDate && !isNaN(parsedDate.getTime());
+                      const blocks = detectedDraft.livestream?.blocks || detectedDraft.livestreamBlocks || [];
+                      const slideCount = blocks.filter((b: any) => b.blockType !== 'metadata').length;
+                      return (
+                        <Typography sx={{ color: '#475569', fontSize: '0.86rem', mt: 0.35 }}>
+                          You previously started &quot;<strong>{detectedDraft.title || 'Untitled Draft'}</strong>&quot;{' '}
+                          {isValid
+                            ? `(last updated ${parsedDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })})`
+                            : ''}
+                          {' '}with {slideCount > 0 ? `${slideCount} rundown slide${slideCount !== 1 ? 's' : ''} saved` : 'framework details saved'}.
+                        </Typography>
+                      );
+                    })()}
+                  </Box>
+                </Box>
+
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexShrink: 0, width: { xs: '100%', md: 'auto' }, justifyContent: { xs: 'flex-end', md: 'flex-start' } }}>
+                  <Button
+                    variant="contained"
+                    onClick={() => handleResumeDetectedDraft(detectedDraft)}
+                    startIcon={<CheckIcon />}
+                    sx={{
+                      bgcolor: '#f59e0b',
+                      color: '#ffffff',
+                      fontWeight: 900,
+                      borderRadius: '14px',
+                      textTransform: 'none',
+                      px: 2.75,
+                      py: 1.1,
+                      fontSize: '0.9rem',
+                      whiteSpace: 'nowrap',
+                      boxShadow: '0 6px 18px rgba(245, 158, 11, 0.35)',
+                      '&:hover': { bgcolor: '#d97706' },
+                    }}
+                  >
+                    Resume Existing Draft
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    onClick={() => handleStartFreshFromBanner()}
+                    sx={{
+                      borderColor: 'rgba(15, 23, 42, 0.25)',
+                      color: '#0f172a',
+                      fontWeight: 800,
+                      borderRadius: '14px',
+                      textTransform: 'none',
+                      px: 2.25,
+                      py: 1.1,
+                      fontSize: '0.9rem',
+                      whiteSpace: 'nowrap',
+                      '&:hover': { borderColor: '#0f172a', bgcolor: 'rgba(15, 23, 42, 0.04)' },
+                    }}
+                  >
+                    Start a New One
+                  </Button>
+                </Box>
+              </Paper>
+            )}
+
             {/* FRAMEWORK EMPTY STATE: RECOMMENDED BLUEPRINT & SLIDE ARRAY */}
             {!frameworkLoaded && (
               <Box sx={{ mb: 6, mt: 2, maxWidth: 880, mx: 'auto', width: '100%' }}>
@@ -3170,182 +4276,1540 @@ export default function CreateLivestreamForm({
         )}
 
         {step === 3 && (
-          <Box sx={{ animation: 'fadeIn 0.3s', maxWidth: 800, mx: 'auto', width: '100%' }}>
+          <Box sx={{ animation: 'fadeIn 0.3s', maxWidth: 840, mx: 'auto', width: '100%' }}>
             <Typography variant="h4" sx={{ fontWeight: 900, mb: 1, color: '#0f172a', letterSpacing: '-0.02em' }}>
               Communications & Links
             </Typography>
-            <Typography sx={{ color: '#475569', mb: 4, fontWeight: 500, fontSize: '1.05rem' }}>
+            <Typography sx={{ color: '#475569', mb: 3.5, fontWeight: 500, fontSize: '1.05rem' }}>
               Configure your broadcasting links and set up automated messages for your guests and audience.
             </Typography>
 
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {/* Broadcast Cover Image Section */}
-              <Box id="broadcast-cover-card" ref={coverCardRef} sx={{ p: 4, borderRadius: '24px', bgcolor: '#fff', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 8px 32px rgba(0,0,0,0.02)' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3, flexWrap: 'wrap', gap: 1.5 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <Box sx={{ width: 32, height: 32, borderRadius: '8px', bgcolor: alpha(hubColor, 0.1), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Typography sx={{ fontSize: '1.2rem' }}>🖼️</Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>Broadcast Cover Image</Typography>
-                      <Typography sx={{ fontSize: '0.8rem', color: '#64748b' }}>A high-contrast 16:9 thumbnail for video feeds, social cards, and calendar listings</Typography>
-                    </Box>
-                  </Box>
-                </Box>
-
-                {/* Cover Preview & Controls */}
-                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 3, alignItems: { sm: 'center' } }}>
+            {/* ── BROADCAST CONFIRMATION TICKET (BOARDING PASS) ── */}
+            <Box
+              id="step3-broadcast-confirmation-card"
+              sx={{
+                width: '100%',
+                mb: 4,
+                perspective: '2000px',
+                position: 'relative',
+              }}
+            >
+              <motion.div
+                animate={{ rotateY: isStep3ScheduleFlipped ? 180 : 0 }}
+                transition={{ type: 'spring', stiffness: 200, damping: 24, mass: 0.8 }}
+                style={{
+                  width: '100%',
+                  position: 'relative',
+                  transformStyle: 'preserve-3d',
+                  WebkitTransformStyle: 'preserve-3d',
+                }}
+              >
+                {/* ── TICKET FRONT: BROADCAST CONFIRMATION PASS ── */}
+                <Paper
+                  elevation={0}
+                  sx={{
+                    borderRadius: '24px',
+                    bgcolor: '#ffffff',
+                    backgroundImage: 'linear-gradient(135deg, #ffffff 0%, #fafbfc 100%)',
+                    border: '1px solid rgba(15, 23, 42, 0.08)',
+                    boxShadow: '0 8px 30px -4px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02)',
+                    display: 'flex',
+                    flexDirection: { xs: 'column', md: 'row' },
+                    alignItems: 'stretch',
+                    position: isStep3ScheduleFlipped ? 'absolute' : 'relative',
+                    inset: isStep3ScheduleFlipped ? 0 : 'auto',
+                    backfaceVisibility: 'hidden',
+                    WebkitBackfaceVisibility: 'hidden',
+                    transform: 'rotateY(0deg) translateZ(1px)',
+                    pointerEvents: isStep3ScheduleFlipped ? 'none' : 'auto',
+                    overflow: 'hidden',
+                  }}
+                >
+                  {/* Left: Main Ticket Pass */}
                   <Box
                     sx={{
-                      width: { xs: '100%', sm: 260 },
-                      height: 146,
-                      borderRadius: '16px',
-                      overflow: 'hidden',
-                      bgcolor: 'rgba(15, 23, 42, 0.04)',
-                      border: '1.5px dashed rgba(15, 23, 42, 0.15)',
+                      flex: 1,
+                      p: { xs: 2.5, sm: 3 },
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      gap: 2,
+                    }}
+                  >
+                    {/* Ticket Header Row */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <TicketIcon sx={{ fontSize: 17, color: hubColor }} />
+                        <Typography
+                          sx={{
+                            fontSize: '0.7rem',
+                            fontWeight: 800,
+                            letterSpacing: '0.06em',
+                            color: '#64748b',
+                            textTransform: 'uppercase',
+                          }}
+                        >
+                          Broadcast Pass · #{`FN-${(category || 'LIVE').toUpperCase()}-2026`}
+                        </Typography>
+                      </Box>
+                      <Chip
+                        size="small"
+                        label={countdown?.isPast ? 'Broadcast Concluded' : 'Confirmed Schedule Slot'}
+                        icon={
+                          <Box
+                            sx={{
+                              width: 6,
+                              height: 6,
+                              borderRadius: '50%',
+                              bgcolor: countdown?.isPast ? '#94a3b8' : '#10b981',
+                              boxShadow: countdown?.isPast ? 'none' : '0 0 4px #10b981',
+                              ml: '6px !important',
+                            }}
+                          />
+                        }
+                        sx={{
+                          height: 22,
+                          fontSize: '0.67rem',
+                          fontWeight: 800,
+                          bgcolor: countdown?.isPast ? 'rgba(148, 163, 184, 0.08)' : 'rgba(16, 185, 129, 0.06)',
+                          color: countdown?.isPast ? '#64748b' : '#065f46',
+                          border: `1px solid ${countdown?.isPast ? 'rgba(148, 163, 184, 0.2)' : 'rgba(16, 185, 129, 0.2)'}`,
+                        }}
+                      />
+                    </Box>
+
+                    {/* Middle Row: Big Date Stub + Details */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 2, sm: 2.5 } }}>
+                      {/* Calendar Date Block */}
+                      <Box
+                        sx={{
+                          width: { xs: 72, sm: 80 },
+                          height: { xs: 80, sm: 88 },
+                          borderRadius: '16px',
+                          overflow: 'hidden',
+                          bgcolor: '#ffffff',
+                          border: '1px solid rgba(15, 23, 42, 0.08)',
+                          boxShadow: '0 2px 8px rgba(15, 23, 42, 0.03)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          flexShrink: 0,
+                          textAlign: 'center',
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            bgcolor: alpha(hubColor, 0.08),
+                            color: hubColor,
+                            fontWeight: 800,
+                            fontSize: '0.7rem',
+                            letterSpacing: '0.05em',
+                            py: 0.35,
+                          }}
+                        >
+                          {ticketMonth}
+                        </Box>
+                        <Box
+                          sx={{
+                            flex: 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: { xs: '1.75rem', sm: '2rem' },
+                            fontWeight: 900,
+                            color: '#0f172a',
+                            lineHeight: 1,
+                          }}
+                        >
+                          {ticketDayNumber}
+                        </Box>
+                        <Box
+                          sx={{
+                            fontSize: '0.64rem',
+                            fontWeight: 700,
+                            color: '#64748b',
+                            letterSpacing: '0.03em',
+                            pb: 0.35,
+                          }}
+                        >
+                          {ticketDayName}
+                        </Box>
+                      </Box>
+
+                      {/* Title & Metadata */}
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, flex: 1, minWidth: 0 }}>
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            fontWeight: 800,
+                            color: '#0f172a',
+                            fontSize: { xs: '1rem', sm: '1.14rem' },
+                            lineHeight: 1.25,
+                            letterSpacing: '-0.015em',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                          }}
+                        >
+                          {title || appliedBlueprint?.title || 'Your Scheduled Livestream Broadcast'}
+                        </Typography>
+
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
+                          <Chip
+                            size="small"
+                            label={appliedBlueprint?.format ? appliedBlueprint.format.replace('_', ' ').toUpperCase() : 'INDUSTRY TEARDOWN'}
+                            sx={{
+                              height: 20,
+                              fontSize: '0.65rem',
+                              fontWeight: 800,
+                              bgcolor: alpha(hubColor, 0.08),
+                              color: hubColor,
+                              border: `1px solid ${alpha(hubColor, 0.15)}`,
+                            }}
+                          />
+                          <Chip
+                            size="small"
+                            icon={<AccessTimeIcon sx={{ fontSize: '12px !important', color: '#475569 !important' }} />}
+                            label={ticketTimeString}
+                            sx={{
+                              height: 20,
+                              fontSize: '0.67rem',
+                              fontWeight: 700,
+                              bgcolor: 'rgba(15, 23, 42, 0.04)',
+                              color: '#334155',
+                              border: '1px solid rgba(15, 23, 42, 0.06)',
+                            }}
+                          />
+                          <Chip
+                            size="small"
+                            label={`Hub: ${hubTitle}`}
+                            sx={{
+                              height: 20,
+                              fontSize: '0.65rem',
+                              fontWeight: 600,
+                              bgcolor: 'transparent',
+                              color: '#64748b',
+                              border: '1px solid rgba(15, 23, 42, 0.08)',
+                            }}
+                          />
+                          <Chip
+                            size="small"
+                            label={`${rundownBlocks.length || 15} Slides`}
+                            sx={{
+                              height: 20,
+                              fontSize: '0.65rem',
+                              fontWeight: 800,
+                              bgcolor: 'rgba(16, 185, 129, 0.06)',
+                              color: '#065f46',
+                              border: '1px solid rgba(16, 185, 129, 0.18)',
+                            }}
+                          />
+                        </Box>
+                      </Box>
+                    </Box>
+
+                    {/* Bottom Ticket Strip */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pt: 1, borderTop: '1px solid rgba(15, 23, 42, 0.06)', flexWrap: 'wrap', gap: 1 }}>
+                      <Typography sx={{ fontSize: '0.71rem', color: '#94a3b8', fontWeight: 500 }}>
+                        Every {DAY_NAMES[CATEGORY_TO_DAY_MAP[category] || 1]} · Standard Format Studio Window · Verified
+                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: '2px', opacity: 0.35 }}>
+                          {[2, 3, 1, 4, 2, 1, 3, 2, 4, 1, 2].map((w, i) => (
+                            <Box key={i} sx={{ width: w, height: 10, bgcolor: '#0f172a' }} />
+                          ))}
+                        </Box>
+                        <Typography sx={{ fontSize: '0.66rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em' }}>
+                          STAGE ACCESS PASS
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+
+                  {/* Desktop Vertical Perforation Divider with Circular Notches */}
+                  <Box
+                    sx={{
+                      display: { xs: 'none', md: 'block' },
+                      width: 0,
+                      borderLeft: '1.5px dashed rgba(203, 213, 225, 0.8)',
+                      position: 'relative',
+                      alignSelf: 'stretch',
+                      my: 1.5,
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        top: -27,
+                        left: -13,
+                        width: 24,
+                        height: 24,
+                        borderRadius: '50%',
+                        bgcolor: '#f8fafc',
+                        border: '1px solid rgba(15, 23, 42, 0.08)',
+                        zIndex: 4,
+                      }}
+                    />
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        bottom: -27,
+                        left: -13,
+                        width: 24,
+                        height: 24,
+                        borderRadius: '50%',
+                        bgcolor: '#f8fafc',
+                        border: '1px solid rgba(15, 23, 42, 0.08)',
+                        zIndex: 4,
+                      }}
+                    />
+                  </Box>
+
+                  {/* Mobile Horizontal Perforation Divider with Circular Notches */}
+                  <Box
+                    sx={{
+                      display: { xs: 'block', md: 'none' },
+                      height: 0,
+                      borderTop: '1.5px dashed rgba(203, 213, 225, 0.8)',
+                      position: 'relative',
+                      width: '100%',
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        left: -13,
+                        top: -12,
+                        width: 24,
+                        height: 24,
+                        borderRadius: '50%',
+                        bgcolor: '#f8fafc',
+                        border: '1px solid rgba(15, 23, 42, 0.08)',
+                        zIndex: 4,
+                      }}
+                    />
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        right: -13,
+                        top: -12,
+                        width: 24,
+                        height: 24,
+                        borderRadius: '50%',
+                        bgcolor: '#f8fafc',
+                        border: '1px solid rgba(15, 23, 42, 0.08)',
+                        zIndex: 4,
+                      }}
+                    />
+                  </Box>
+
+                  {/* Right: Ticket Stub (Countdown & Edit Action) */}
+                  <Box
+                    sx={{
+                      width: { xs: '100%', md: 270, lg: 290 },
+                      bgcolor: 'rgba(248, 250, 252, 0.65)',
+                      p: { xs: 2.5, sm: 3 },
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      position: 'relative',
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                      backgroundImage: coverImage 
-                        ? (typeof coverImage === 'string' ? `url(${coverImage})` : `url(${URL.createObjectURL(coverImage)})`)
-                        : 'none'
+                      textAlign: 'center',
+                      gap: 1.75,
+                      flexShrink: 0,
                     }}
                   >
-                    {!coverImage && (
-                      <Box sx={{ textAlign: 'center', p: 2 }}>
-                        <Typography sx={{ fontSize: '2rem', mb: 0.5 }}>🎨</Typography>
-                        <Typography sx={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>No cover selected</Typography>
-                      </Box>
-                    )}
-                  </Box>
-
-                  <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                    <Typography sx={{ fontSize: '0.85rem', color: '#334155', fontWeight: 500, lineHeight: 1.5 }}>
-                      Upload an official broadcast banner, or generate one styled for <strong>{hubTitle}</strong>.
+                    {/* Countdown Title */}
+                    <Typography
+                      sx={{
+                        fontSize: '0.7rem',
+                        fontWeight: 800,
+                        color: '#dc2626',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.06em',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.6,
+                      }}
+                    >
+                      <Box component="span" sx={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', bgcolor: '#ef4444' }} />
+                      Goes Live In
                     </Typography>
 
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-                      <Button
-                        component="label"
-                        variant="outlined"
+                    {/* Live Digital Countdown Timer */}
+                    {countdown && !countdown.isPast ? (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
+                        <Box sx={{ textAlign: 'center', bgcolor: 'rgba(239, 68, 68, 0.04)', border: '1px solid rgba(239, 68, 68, 0.15)', borderRadius: '8px', px: 0.9, py: 0.5, minWidth: 38 }}>
+                          <Typography sx={{ fontWeight: 800, fontSize: '1.15rem', color: '#dc2626', fontFamily: 'monospace', lineHeight: 1 }}>
+                            {String(countdown.days).padStart(2, '0')}
+                          </Typography>
+                          <Typography sx={{ fontSize: '0.56rem', color: '#b91c1c', fontWeight: 700, textTransform: 'uppercase', mt: 0.2 }}>days</Typography>
+                        </Box>
+                        <Typography sx={{ fontWeight: 700, color: 'rgba(239, 68, 68, 0.5)', fontSize: '1rem', mb: 0.75 }}>:</Typography>
+                        <Box sx={{ textAlign: 'center', bgcolor: 'rgba(239, 68, 68, 0.04)', border: '1px solid rgba(239, 68, 68, 0.15)', borderRadius: '8px', px: 0.9, py: 0.5, minWidth: 38 }}>
+                          <Typography sx={{ fontWeight: 800, fontSize: '1.15rem', color: '#dc2626', fontFamily: 'monospace', lineHeight: 1 }}>
+                            {String(countdown.hours).padStart(2, '0')}
+                          </Typography>
+                          <Typography sx={{ fontSize: '0.56rem', color: '#b91c1c', fontWeight: 700, textTransform: 'uppercase', mt: 0.2 }}>hrs</Typography>
+                        </Box>
+                        <Typography sx={{ fontWeight: 700, color: 'rgba(239, 68, 68, 0.5)', fontSize: '1rem', mb: 0.75 }}>:</Typography>
+                        <Box sx={{ textAlign: 'center', bgcolor: 'rgba(239, 68, 68, 0.04)', border: '1px solid rgba(239, 68, 68, 0.15)', borderRadius: '8px', px: 0.9, py: 0.5, minWidth: 38 }}>
+                          <Typography sx={{ fontWeight: 800, fontSize: '1.15rem', color: '#dc2626', fontFamily: 'monospace', lineHeight: 1 }}>
+                            {String(countdown.minutes).padStart(2, '0')}
+                          </Typography>
+                          <Typography sx={{ fontSize: '0.56rem', color: '#b91c1c', fontWeight: 700, textTransform: 'uppercase', mt: 0.2 }}>mins</Typography>
+                        </Box>
+                        <Typography sx={{ fontWeight: 700, color: 'rgba(239, 68, 68, 0.5)', fontSize: '1rem', mb: 0.75 }}>:</Typography>
+                        <Box sx={{ textAlign: 'center', bgcolor: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.22)', borderRadius: '8px', px: 0.9, py: 0.5, minWidth: 38 }}>
+                          <Typography sx={{ fontWeight: 800, fontSize: '1.15rem', color: '#ef4444', fontFamily: 'monospace', lineHeight: 1 }}>
+                            {String(countdown.seconds).padStart(2, '0')}
+                          </Typography>
+                          <Typography sx={{ fontSize: '0.56rem', color: '#ef4444', fontWeight: 700, textTransform: 'uppercase', mt: 0.2 }}>secs</Typography>
+                        </Box>
+                      </Box>
+                    ) : (
+                      <Chip
+                        label="Broadcast Time Concluded"
                         size="small"
-                        startIcon={<ImageIcon sx={{ fontSize: 16 }} />}
+                        sx={{ bgcolor: 'rgba(245, 158, 11, 0.08)', color: '#b45309', fontWeight: 700, fontSize: '0.72rem', border: '1px solid rgba(245, 158, 11, 0.2)' }}
+                      />
+                    )}
+
+                    {/* Edit Ticket Button */}
+                    <Button
+                      variant="contained"
+                      onClick={() => setIsStep3ScheduleFlipped(true)}
+                      startIcon={<EditIcon sx={{ fontSize: '13px !important' }} />}
+                      sx={{
+                        background: '#0f172a',
+                        color: '#ffffff',
+                        fontWeight: 800,
+                        fontSize: '0.8rem',
+                        px: 2.8,
+                        py: 0.75,
+                        borderRadius: '999px',
+                        textTransform: 'none',
+                        letterSpacing: '0.01em',
+                        boxShadow: '0 2px 10px rgba(15, 23, 42, 0.12)',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          background: '#020617',
+                          transform: 'translateY(-1px)',
+                          boxShadow: '0 4px 14px rgba(15, 23, 42, 0.2)',
+                        },
+                      }}
+                    >
+                      Change Date & Time
+                    </Button>
+
+                    <Typography sx={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 500 }}>
+                      Flip to adjust broadcast timing
+                    </Typography>
+                  </Box>
+                </Paper>
+
+                {/* ── TICKET BACK: BROADCAST SCHEDULE & TIMING EDITOR ── */}
+                <Paper
+                  elevation={0}
+                  sx={{
+                    borderRadius: '24px',
+                    p: { xs: 2.5, sm: 3.5 },
+                    bgcolor: '#ffffff',
+                    border: '1px solid rgba(15, 23, 42, 0.08)',
+                    boxShadow: '0 8px 30px -4px rgba(15, 23, 42, 0.04)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 2.5,
+                    position: isStep3ScheduleFlipped ? 'relative' : 'absolute',
+                    inset: isStep3ScheduleFlipped ? 'auto' : 0,
+                    backfaceVisibility: 'hidden',
+                    WebkitBackfaceVisibility: 'hidden',
+                    transform: 'rotateY(180deg) translateZ(1px)',
+                    pointerEvents: isStep3ScheduleFlipped ? 'auto' : 'none',
+                  }}
+                >
+                  {/* Top Bar on Back of Card */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pb: 1.5, borderBottom: '1px solid rgba(15, 23, 42, 0.06)', flexWrap: 'wrap', gap: 1.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                      <Box
                         sx={{
+                          width: 36,
+                          height: 36,
                           borderRadius: '10px',
-                          textTransform: 'none',
-                          fontWeight: 700,
-                          fontSize: '0.82rem',
-                          borderColor: 'rgba(15, 23, 42, 0.2)',
-                          color: '#0f172a'
+                          bgcolor: alpha(hubColor, 0.08),
+                          border: `1px solid ${alpha(hubColor, 0.15)}`,
+                          color: hubColor,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: 800,
+                          fontSize: '1rem',
                         }}
                       >
-                        Upload Cover
-                        <input
-                          type="file"
-                          hidden
-                          accept="image/*"
-                          onChange={(e) => {
-                            if (e.target.files?.[0]) setCoverImage(e.target.files[0]);
+                        📅
+                      </Box>
+                      <Box>
+                        <Typography sx={{ fontWeight: 800, color: '#0f172a', fontSize: '1rem', letterSpacing: '-0.01em', lineHeight: 1.2 }}>
+                          Adjust Broadcast Timing
+                        </Typography>
+                        <Typography sx={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 500 }}>
+                          Format Slot: Every {DAY_NAMES[CATEGORY_TO_DAY_MAP[category] || 1]} · 10:00 AM WAT
+                        </Typography>
+                      </Box>
+                    </Box>
+
+                    <Button
+                      size="small"
+                      onClick={() => setIsStep3ScheduleFlipped(false)}
+                      startIcon={<CheckIcon sx={{ fontSize: 15 }} />}
+                      sx={{
+                        color: '#0f172a',
+                        bgcolor: 'rgba(15, 23, 42, 0.04)',
+                        border: '1px solid rgba(15, 23, 42, 0.08)',
+                        fontWeight: 700,
+                        fontSize: '0.78rem',
+                        borderRadius: '999px',
+                        px: 2.2,
+                        py: 0.5,
+                        textTransform: 'none',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          bgcolor: 'rgba(15, 23, 42, 0.08)',
+                          transform: 'translateX(1px)',
+                        },
+                      }}
+                    >
+                      Done & View Ticket
+                    </Button>
+                  </Box>
+
+                  {/* Event Date & Time Pickers */}
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+                    <PremiumDatePicker
+                      fullWidth
+                      label="Broadcast Date"
+                      value={eventDatePart}
+                      onChange={(e) => handleDateChange(e.target.value)}
+                      colorTheme={hubColor}
+                      minDate={new Date()}
+                    />
+                    <PremiumTimePicker
+                      fullWidth
+                      label="Broadcast Time"
+                      value={eventTimePart}
+                      onChange={(e) => handleTimeChange(e.target.value)}
+                      colorTheme={hubColor}
+                    />
+                  </Box>
+
+                  {/* Actions Footer on Back of Card */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pt: 1.5, borderTop: '1px solid rgba(15, 23, 42, 0.06)', flexWrap: 'wrap', gap: 1.5 }}>
+                    <Button
+                      size="small"
+                      variant="text"
+                      onClick={() => {
+                        const slotDate = getNextSlotForCategory(category, 10, 0);
+                        const year = slotDate.getFullYear();
+                        const month = String(slotDate.getMonth() + 1).padStart(2, '0');
+                        const day = String(slotDate.getDate()).padStart(2, '0');
+                        const hours = String(slotDate.getHours()).padStart(2, '0');
+                        const mins = String(slotDate.getMinutes()).padStart(2, '0');
+                        setEventDate(`${year}-${month}-${day}T${hours}:${mins}:00`);
+                      }}
+                      startIcon={<BoltIcon sx={{ fontSize: 14 }} />}
+                      sx={{
+                        color: hubColor,
+                        fontWeight: 700,
+                        fontSize: '0.76rem',
+                        textTransform: 'none',
+                        borderRadius: '8px',
+                        px: 1.25,
+                        '&:hover': { bgcolor: alpha(hubColor, 0.06) },
+                      }}
+                    >
+                      Reset to Standard {DAY_NAMES[CATEGORY_TO_DAY_MAP[category] || 1]} (10 AM)
+                    </Button>
+
+                    <Button
+                      variant="contained"
+                      onClick={() => setIsStep3ScheduleFlipped(false)}
+                      sx={{
+                        bgcolor: '#0f172a',
+                        color: '#ffffff',
+                        fontWeight: 800,
+                        fontSize: '0.82rem',
+                        px: 3,
+                        py: 0.75,
+                        borderRadius: '999px',
+                        textTransform: 'none',
+                        boxShadow: '0 2px 10px rgba(15, 23, 42, 0.14)',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          bgcolor: '#020617',
+                          transform: 'translateY(-1px)',
+                        },
+                      }}
+                    >
+                      Save & View Confirmation
+                    </Button>
+                  </Box>
+                </Paper>
+              </motion.div>
+            </Box>
+
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5 }}>
+              {/* Broadcast Stage Media & Cover Canvas */}
+              <Box
+                id="broadcast-cover-card"
+                ref={coverCardRef}
+                sx={{
+                  p: { xs: 2.5, sm: 3.5, md: 4 },
+                  borderRadius: '24px',
+                  bgcolor: 'rgba(255, 255, 255, 0.95)',
+                  backdropFilter: 'blur(20px)',
+                  WebkitBackdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(15, 23, 42, 0.08)',
+                  boxShadow: '0 8px 30px -4px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02)',
+                  transition: 'all 0.25s ease',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 3,
+                }}
+              >
+                {/* Hidden File Input for Direct Tapping */}
+                <input
+                  type="file"
+                  ref={coverFileInputRef}
+                  hidden
+                  accept="image/*"
+                  onClick={(e) => {
+                    (e.target as HTMLInputElement).value = '';
+                  }}
+                  onChange={(e) => {
+                    if (e.target.files?.[0]) setCoverImage(e.target.files[0]);
+                  }}
+                />
+
+                {/* 16:9 Cinema Stage Canvas */}
+                <Box
+                  onClick={() => setIsCoverPreviewOpen(true)}
+                  title="Click to view fullscreen preview"
+                  sx={{
+                    width: '100%',
+                    aspectRatio: { xs: '16/10', sm: '16/9' },
+                    minHeight: { xs: 220, sm: 300, md: 360 },
+                    maxHeight: 460,
+                    borderRadius: '22px',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    cursor: 'pointer',
+                    bgcolor: '#0f172a',
+                    backgroundImage: `url(${activeCoverUrl})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    boxShadow: '0 20px 50px -12px rgba(15, 23, 42, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.15) inset',
+                    transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 24px 60px -12px rgba(15, 23, 42, 0.45), 0 0 0 1.5px rgba(255, 255, 255, 0.3) inset',
+                    },
+                  }}
+                >
+                  {/* Subtle Cinematic Vignette Scrim */}
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      inset: 0,
+                      background: 'linear-gradient(to top, rgba(15, 23, 42, 0.88) 0%, rgba(15, 23, 42, 0.15) 50%, rgba(15, 23, 42, 0.55) 100%)',
+                      pointerEvents: 'none',
+                    }}
+                  />
+
+                  {/* Top Right Stage Controls: Reset and Fullscreen Icon Buttons */}
+                  <Box
+                    onClick={(e) => e.stopPropagation()}
+                    sx={{
+                      position: 'absolute',
+                      top: { xs: 12, sm: 16 },
+                      right: { xs: 12, sm: 16 },
+                      zIndex: 3,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                    }}
+                  >
+                    {coverImage ? (
+                      <Tooltip title="Reset to default cover">
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCoverImage(null);
+                            if (coverFileInputRef.current) {
+                              coverFileInputRef.current.value = '';
+                            }
+                          }}
+                          aria-label="Reset cover to default"
+                          sx={{
+                            bgcolor: 'rgba(15, 23, 42, 0.75)',
+                            backdropFilter: 'blur(12px)',
+                            color: '#ffffff',
+                            border: '1px solid rgba(255, 255, 255, 0.18)',
+                            boxShadow: '0 4px 14px rgba(0,0,0,0.3)',
+                            p: 0.9,
+                            '&:hover': {
+                              bgcolor: 'rgba(255, 255, 255, 0.22)',
+                              borderColor: 'rgba(255, 255, 255, 0.4)',
+                              color: '#ffffff',
+                              transform: 'scale(1.05)',
+                            },
+                            transition: 'all 0.2s ease',
+                          }}
+                        >
+                          <RestartAltIcon sx={{ fontSize: 20 }} />
+                        </IconButton>
+                      </Tooltip>
+                    ) : (
+                      <Tooltip title="Default cover active">
+                        <span style={{ display: 'inline-flex' }} onClick={(e) => e.stopPropagation()}>
+                          <IconButton
+                            size="small"
+                            disabled
+                            aria-label="Default cover active"
+                            sx={{
+                              bgcolor: 'rgba(15, 23, 42, 0.5)',
+                              backdropFilter: 'blur(12px)',
+                              color: 'rgba(255, 255, 255, 0.35) !important',
+                              border: '1px solid rgba(255, 255, 255, 0.1)',
+                              boxShadow: '0 4px 14px rgba(0,0,0,0.15)',
+                              p: 0.9,
+                              cursor: 'not-allowed',
+                            }}
+                          >
+                            <RestartAltIcon sx={{ fontSize: 20 }} />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                    )}
+
+                    <Tooltip title="View fullscreen">
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsCoverPreviewOpen(true);
+                        }}
+                        aria-label="View fullscreen preview"
+                        sx={{
+                          bgcolor: 'rgba(15, 23, 42, 0.75)',
+                          backdropFilter: 'blur(12px)',
+                          color: '#ffffff',
+                          border: '1px solid rgba(255, 255, 255, 0.18)',
+                          boxShadow: '0 4px 14px rgba(0,0,0,0.3)',
+                          p: 0.9,
+                          '&:hover': {
+                            bgcolor: 'rgba(255, 255, 255, 0.2)',
+                            borderColor: 'rgba(255, 255, 255, 0.35)',
+                            transform: 'scale(1.05)',
+                          },
+                          transition: 'all 0.2s ease',
+                        }}
+                      >
+                        <FullscreenIcon sx={{ fontSize: 20 }} />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+
+                  {/* Bottom Minimal Info Overlay: Corridor & Title */}
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      bottom: { xs: 14, sm: 20 },
+                      left: { xs: 14, sm: 22 },
+                      right: { xs: 14, sm: 22 },
+                      zIndex: 2,
+                      pointerEvents: 'none',
+                    }}
+                  >
+                    <Typography
+                      sx={{
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                        color: alpha('#ffffff', 0.8),
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.06em',
+                        mb: 0.5,
+                      }}
+                    >
+                      {CORRIDOR_PRESETS.find(p => p.key === category)?.name || hubTitle}
+                    </Typography>
+                    <Typography
+                      variant="h5"
+                      sx={{
+                        fontWeight: 900,
+                        color: '#ffffff',
+                        letterSpacing: '-0.02em',
+                        lineHeight: 1.25,
+                        fontSize: { xs: '1.15rem', sm: '1.45rem', md: '1.65rem' },
+                        textShadow: '0 2px 14px rgba(0, 0, 0, 0.85)',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {title.trim() || 'Untitled Broadcast Stage'}
+                    </Typography>
+                  </Box>
+                </Box>
+
+                {/* Centered Action Buttons Toolbar */}
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexWrap: 'wrap',
+                    gap: 2,
+                    pt: 0.5,
+                  }}
+                >
+                  {/* 1. Upload Image (Actual Button) */}
+                  <Button
+                    variant="outlined"
+                    size="medium"
+                    onClick={() => coverFileInputRef.current?.click()}
+                    startIcon={<PhotoCameraIcon sx={{ fontSize: '18px !important' }} />}
+                    sx={{
+                      borderRadius: '12px',
+                      textTransform: 'none',
+                      fontWeight: 750,
+                      fontSize: '0.84rem',
+                      borderColor: '#cbd5e1',
+                      color: '#334155',
+                      bgcolor: '#ffffff',
+                      px: 2.25,
+                      py: 0.85,
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                      '&:hover': {
+                        borderColor: '#94a3b8',
+                        bgcolor: '#f8fafc',
+                        transform: 'translateY(-1px)',
+                      },
+                    }}
+                  >
+                    Upload Image
+                  </Button>
+
+                  {/* 2. AI Generate Thumbnail (Actual Button with Sidepane Drawer Trigger) */}
+                  <Button
+                    variant="contained"
+                    size="medium"
+                    onClick={() => setIsThumbnailDrawerOpen(true)}
+                    startIcon={<SparkleIcon sx={{ fontSize: '18px !important', color: '#ffffff !important' }} />}
+                    sx={{
+                      borderRadius: '12px',
+                      textTransform: 'none',
+                      fontWeight: 800,
+                      fontSize: '0.84rem',
+                      background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%)',
+                      color: '#ffffff',
+                      px: 2.5,
+                      py: 0.85,
+                      boxShadow: '0 4px 14px rgba(139, 92, 246, 0.35)',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #c026d3 100%)',
+                        boxShadow: '0 6px 20px rgba(139, 92, 246, 0.5)',
+                        transform: 'translateY(-1.5px)',
+                      },
+                    }}
+                  >
+                    AI Generate Thumbnail
+                  </Button>
+                </Box>
+              </Box>
+
+              {/* Fullscreen Stage Cover Lightbox Dialog */}
+              <Dialog
+                open={isCoverPreviewOpen}
+                onClose={() => setIsCoverPreviewOpen(false)}
+                maxWidth="md"
+                fullWidth
+                slotProps={{
+                  paper: {
+                    sx: {
+                      borderRadius: '24px',
+                      bgcolor: '#0f172a',
+                      p: 0,
+                      overflow: 'hidden',
+                      border: '1.5px solid rgba(255, 255, 255, 0.15)',
+                      boxShadow: '0 24px 70px rgba(0, 0, 0, 0.8)',
+                    },
+                  },
+                }}
+              >
+                <DialogContent sx={{ p: 0, position: 'relative' }}>
+                  <Box
+                    sx={{
+                      width: '100%',
+                      aspectRatio: '16/9',
+                      backgroundImage: `url(${activeCoverUrl})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                      position: 'relative',
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: 'linear-gradient(to top, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.2) 50%, rgba(15, 23, 42, 0.7) 100%)',
+                      }}
+                    />
+                    <IconButton
+                      onClick={() => setIsCoverPreviewOpen(false)}
+                      sx={{
+                        position: 'absolute',
+                        top: 16,
+                        right: 16,
+                        color: '#fff',
+                        bgcolor: 'rgba(15, 23, 42, 0.75)',
+                        backdropFilter: 'blur(10px)',
+                        '&:hover': { bgcolor: 'rgba(15, 23, 42, 0.95)' },
+                      }}
+                    >
+                      <CloseIcon />
+                    </IconButton>
+
+                    <Box sx={{ position: 'absolute', bottom: 24, left: 24, right: 24 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                        <Chip
+                          label={appliedBlueprint?.typeTitle || 'Agribusiness Broadcast'}
+                          size="small"
+                          sx={{ bgcolor: hubColor, color: '#fff', fontWeight: 900 }}
+                        />
+                        <Chip
+                          label={`${ticketMonth} ${ticketDayNumber} · ${ticketTimeString}`}
+                          size="small"
+                          sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: '#fff', fontWeight: 800 }}
+                        />
+                      </Box>
+                      <Typography variant="h4" sx={{ color: '#fff', fontWeight: 900, mb: 1, textShadow: '0 2px 16px rgba(0,0,0,0.8)' }}>
+                        {title.trim() || 'Untitled Broadcast'}
+                      </Typography>
+                      <Typography sx={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.9rem', maxWidth: 650 }}>
+                        {description.trim() || 'Executive corridor intelligence session broadcasting across the FoodNerve network.'}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </DialogContent>
+              </Dialog>
+
+              {/* The Backstage (Guests) Card */}
+              <Box
+                id="broadcast-guest-card"
+                sx={{
+                  p: { xs: 2.5, sm: 3.5, md: 4 },
+                  borderRadius: '24px',
+                  bgcolor: 'rgba(255, 255, 255, 0.95)',
+                  backdropFilter: 'blur(20px)',
+                  WebkitBackdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(15, 23, 42, 0.08)',
+                  boxShadow: '0 8px 30px -4px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 3,
+                  transition: 'all 0.25s ease',
+                }}
+              >
+                {/* Header */}
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Box
+                      sx={{
+                        width: 38,
+                        height: 38,
+                        borderRadius: '10px',
+                        bgcolor: 'rgba(99, 102, 241, 0.08)',
+                        border: '1px solid rgba(99, 102, 241, 0.16)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Typography sx={{ fontSize: '1.2rem' }}>🎙️</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a', letterSpacing: '-0.01em', lineHeight: 1.25 }}>
+                        The Backstage (Guests)
+                      </Typography>
+                      <Typography sx={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 500 }}>
+                        Private greenroom & studio link for co-hosts, speakers, and moderators with automated onboarding copy
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  {/* Status Chip */}
+                  <Chip
+                    size="small"
+                    label={guestStudioUrl.trim() ? 'Backstage Ready' : 'Required to Publish'}
+                    icon={
+                      guestStudioUrl.trim() ? (
+                        <CheckCircleIcon sx={{ fontSize: '13px !important', color: '#10b981 !important' }} />
+                      ) : (
+                        <Box
+                          sx={{
+                            width: 6,
+                            height: 6,
+                            borderRadius: '50%',
+                            bgcolor: '#ef4444',
+                            ml: '6px !important',
                           }}
                         />
-                      </Button>
+                      )
+                    }
+                    sx={{
+                      fontWeight: 800,
+                      fontSize: '0.72rem',
+                      bgcolor: guestStudioUrl.trim() ? 'rgba(16, 185, 129, 0.06)' : 'rgba(239, 68, 68, 0.06)',
+                      color: guestStudioUrl.trim() ? '#065f46' : '#b91c1c',
+                      border: `1px solid ${guestStudioUrl.trim() ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`,
+                    }}
+                  />
+                </Box>
 
-                      <Button
-                        variant="contained"
-                        size="small"
-                        onClick={() => {
-                          // Contextual food-systems graphic for immediate live presentation
-                          setCoverImage('https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200&q=80');
-                        }}
-                        startIcon={<SparkleIcon sx={{ fontSize: 16 }} />}
-                        sx={{
-                          borderRadius: '10px',
-                          textTransform: 'none',
-                          fontWeight: 800,
-                          fontSize: '0.82rem',
-                          background: `linear-gradient(135deg, ${hubColor} 0%, ${alpha(hubColor, 0.88)} 100%)`,
-                          color: '#fff',
-                          boxShadow: `0 4px 14px ${alpha(hubColor, 0.35)}`
-                        }}
-                      >
-                        Generate AI Cover
-                      </Button>
-
-                      {coverImage && (
+                {/* Form Fields */}
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                  <Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.75 }}>
+                      <Typography sx={{ fontSize: '0.78rem', fontWeight: 800, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        Guest Studio Link <span style={{ color: '#ef4444' }}>*</span>
+                      </Typography>
+                      {guestStudioUrl.trim() && (
                         <Button
+                          component="a"
+                          href={guestStudioUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           size="small"
-                          color="error"
-                          onClick={() => setCoverImage(null)}
-                          sx={{ fontSize: '0.78rem', textTransform: 'none', fontWeight: 700 }}
+                          endIcon={<OpenInNewIcon sx={{ fontSize: '12px !important' }} />}
+                          sx={{
+                            textTransform: 'none',
+                            fontSize: '0.74rem',
+                            fontWeight: 700,
+                            color: '#6366f1',
+                            p: 0,
+                            '&:hover': { bgcolor: 'transparent', textDecoration: 'underline' },
+                          }}
                         >
-                          Remove
+                          Test Studio Room
                         </Button>
                       )}
                     </Box>
+                    <PremiumTextField
+                      fullWidth
+                      label="Guest Studio Link (Required to publish)"
+                      placeholder="e.g. https://meet.google.com/xyz or https://streamyard.com/abc"
+                      value={guestStudioUrl}
+                      onChange={(e) => updateGuestStudioUrl(e.target.value)}
+                      errorHelperText={
+                        !guestStudioUrl.trim() && actionItems.some((i) => i.id === 'guestStudioUrl')
+                          ? 'Required: internal participation link for you and guests.'
+                          : null
+                      }
+                      helperText={
+                        linksPrefilledFromMemory
+                          ? 'Pre-filled from your previous livestream — edit anytime'
+                          : 'Private backstage room invite for speakers and presenters.'
+                      }
+                      colorTheme="#6366f1"
+                    />
                   </Box>
-                </Box>
-              </Box>
-              
-              {/* Backstage (Guests) */}
-              <Box id="broadcast-guest-card" sx={{ p: 4, borderRadius: '24px', bgcolor: '#fff', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 8px 32px rgba(0,0,0,0.02)' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
-                  <Box sx={{ width: 32, height: 32, borderRadius: '8px', bgcolor: 'rgba(99, 102, 241, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Typography sx={{ fontSize: '1.2rem' }}>🎙️</Typography>
+
+                  <Box>
+                    <Typography sx={{ fontSize: '0.78rem', fontWeight: 800, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.04em', mb: 0.75 }}>
+                      Automated Message to Guests
+                    </Typography>
+                    <PremiumTextField
+                      fullWidth
+                      multiline
+                      rows={3}
+                      label="Message to Guests"
+                      placeholder="e.g. Join 15 minutes early to test microphones, camera angles, and review the DEF sequence."
+                      value={guestMessageText}
+                      onChange={(e) => setGuestMessageText(e.target.value)}
+                      helperText="Automatically included in guest onboarding notifications and calendar calendar notes."
+                      colorTheme="#6366f1"
+                    />
                   </Box>
-                  <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>The Backstage (Guests)</Typography>
-                </Box>
-                
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                  <TextField 
-                    fullWidth 
-                    label="Guest Studio Link (Required to publish)" 
-                    placeholder="e.g. Evmux, Streamyard, or Meet invite link" 
-                    value={guestStudioUrl} 
-                    onChange={e => updateGuestStudioUrl(e.target.value)} 
-                    error={!guestStudioUrl.trim() && actionItems.some(i => i.id === 'guestStudioUrl')}
-                    helperText={!guestStudioUrl.trim() ? "Required: internal participation link for you and guests." : (linksPrefilledFromMemory ? "Pre-filled from your last livestream — edit anytime" : "")}
-                  />
-                  <TextField 
-                    fullWidth multiline rows={3} label="Message to Guests" placeholder="e.g. Join 15 mins early to test your mic." 
-                    value={guestMessageText} onChange={e => setGuestMessageText(e.target.value)} 
-                  />
-                  <Box sx={{ display: 'flex', gap: 2, p: 2.5, bgcolor: 'rgba(15, 23, 42, 0.02)', borderRadius: '12px', border: '1px dashed rgba(15, 23, 42, 0.1)' }}>
-                    <TextField fullWidth size="small" label="Action Button Text" placeholder="e.g. Join Studio" value={guestButtonText} onChange={e => setGuestButtonText(e.target.value)} />
-                    <TextField fullWidth size="small" label="Action Button Link" placeholder="Auto-fills with studio link if empty" value={guestButtonLink} onChange={e => setGuestButtonLink(e.target.value)} />
+
+                  {/* ── Co-Host & Speaker Invitation Module ── */}
+                  <Divider sx={{ my: 0.5, borderColor: 'rgba(15, 23, 42, 0.06)' }} />
+
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
+                      <Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                            🎙️ Invited Co-Hosts & Speakers ({collaborators.length})
+                          </Typography>
+                          {collaborators.length > 0 && (
+                            <Chip
+                              size="small"
+                              label={`${collaborators.filter(c => c.status === 'accepted' || c.status === 'confirmed').length} Confirmed`}
+                              sx={{ height: 18, fontSize: '0.66rem', fontWeight: 800, bgcolor: 'rgba(16, 185, 129, 0.08)', color: '#059669', border: '1px solid rgba(16, 185, 129, 0.2)' }}
+                            />
+                          )}
+                        </Box>
+                        <Typography sx={{ fontSize: '0.75rem', color: '#64748b', mt: 0.25 }}>
+                          Add co-hosts, guest panelists, moderators, or presenters. They immediately receive an official invitation email with greenroom details.
+                        </Typography>
+                      </Box>
+
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={async () => {
+                          if (!currentDraftId) {
+                            await handleSave(false, { isAutoSave: true });
+                          }
+                          setIsCoHostModalOpen(true);
+                        }}
+                        startIcon={<PeopleIcon sx={{ fontSize: '14px !important' }} />}
+                        sx={{
+                          textTransform: 'none',
+                          fontWeight: 700,
+                          fontSize: '0.76rem',
+                          borderRadius: '10px',
+                          borderColor: 'rgba(15, 23, 42, 0.14)',
+                          color: '#0f172a',
+                          px: 1.75,
+                          py: 0.5,
+                          '&:hover': { bgcolor: 'rgba(15, 23, 42, 0.04)', borderColor: '#0f172a' },
+                        }}
+                      >
+                        Browse Society Directory
+                      </Button>
+                    </Box>
+
+                    {coHostNotification && (
+                      <Alert
+                        severity={coHostNotification.type}
+                        onClose={() => setCoHostNotification(null)}
+                        sx={{ borderRadius: '12px', fontSize: '0.82rem', py: 0.5 }}
+                      >
+                        {coHostNotification.message}
+                      </Alert>
+                    )}
+
+                    {/* Quick Inline Email Adder (Unified Glass Pill Container) */}
+                    <Box
+                      sx={{
+                        p: { xs: 1.5, sm: 0.85 },
+                        pl: { sm: 2.25 },
+                        borderRadius: { xs: '18px', sm: '999px' },
+                        bgcolor: 'rgba(255, 255, 255, 0.85)',
+                        backdropFilter: 'blur(16px)',
+                        WebkitBackdropFilter: 'blur(16px)',
+                        border: '1px solid rgba(15, 23, 42, 0.08)',
+                        boxShadow: '0 4px 20px -2px rgba(15, 23, 42, 0.03)',
+                        display: 'flex',
+                        flexDirection: { xs: 'column', sm: 'row' },
+                        gap: { xs: 1.25, sm: 1 },
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Box sx={{ flex: 1.6, width: { xs: '100%', sm: 'auto' } }}>
+                        <InputBase
+                          fullWidth
+                          placeholder="Enter co-host email (e.g. speaker@agribusiness.org)"
+                          value={inlineEmail}
+                          onChange={(e) => setInlineEmail(e.target.value)}
+                          sx={{
+                            fontSize: '0.84rem',
+                            fontWeight: 500,
+                            color: '#0f172a',
+                            px: { xs: 1, sm: 0 },
+                            '& input::placeholder': {
+                              color: '#94a3b8',
+                              opacity: 1,
+                            },
+                          }}
+                        />
+                      </Box>
+
+                      <Divider
+                        orientation="vertical"
+                        flexItem
+                        sx={{
+                          display: { xs: 'none', sm: 'block' },
+                          height: 22,
+                          my: 'auto',
+                          borderColor: 'rgba(15, 23, 42, 0.08)',
+                        }}
+                      />
+
+                      <Box sx={{ minWidth: { xs: '100%', sm: 175 }, flexShrink: 0 }}>
+                        <FormControl size="small" fullWidth>
+                          <Select
+                            value={inlineRole}
+                            onChange={(e) => setInlineRole(e.target.value as any)}
+                            variant="standard"
+                            disableUnderline
+                            sx={{
+                              fontSize: '0.82rem',
+                              fontWeight: 700,
+                              color: '#334155',
+                              px: { xs: 1, sm: 0.5 },
+                              '& .MuiSelect-select': {
+                                py: 0.4,
+                                pr: '24px !important',
+                              },
+                            }}
+                          >
+                            <MenuItem value="Co-Host">Role: Co-Host</MenuItem>
+                            <MenuItem value="Guest Panelist">Role: Guest Panelist</MenuItem>
+                            <MenuItem value="Moderator">Role: Moderator</MenuItem>
+                            <MenuItem value="Technical Presenter">Role: Tech Presenter</MenuItem>
+                          </Select>
+                        </FormControl>
+                      </Box>
+
+                      <Button
+                        variant="contained"
+                        onClick={handleAddInlineCoHost}
+                        disabled={invitingCoHost || !inlineEmail.trim()}
+                        startIcon={
+                          invitingCoHost ? (
+                            <CircularProgress size={14} sx={{ color: '#fff' }} />
+                          ) : (
+                            <PersonAddIcon sx={{ fontSize: '14px !important' }} />
+                          )
+                        }
+                        sx={{
+                          bgcolor: '#0f172a',
+                          color: '#ffffff',
+                          fontWeight: 700,
+                          fontSize: '0.8rem',
+                          borderRadius: '999px',
+                          textTransform: 'none',
+                          px: 2.4,
+                          py: 0.85,
+                          flexShrink: 0,
+                          width: { xs: '100%', sm: 'auto' },
+                          boxShadow: 'none',
+                          '&:hover': { bgcolor: '#020617', boxShadow: 'none' },
+                        }}
+                      >
+                        {invitingCoHost ? 'Inviting...' : 'Invite Co-Host'}
+                      </Button>
+                    </Box>
+
+                    {/* Live Invited Co-Host Roster */}
+                    {collaborators.length === 0 ? (
+                      <Box
+                        sx={{
+                          py: 2.5,
+                          px: 3,
+                          borderRadius: '16px',
+                          bgcolor: 'rgba(15, 23, 42, 0.02)',
+                          backdropFilter: 'blur(10px)',
+                          WebkitBackdropFilter: 'blur(10px)',
+                          border: '1px solid rgba(15, 23, 42, 0.05)',
+                          textAlign: 'center',
+                        }}
+                      >
+                        <Typography sx={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: 500 }}>
+                          No co-hosts or speakers invited yet. Use the field above to invite collaborators or browse the Society Directory.
+                        </Typography>
+                      </Box>
+                    ) : (
+                      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
+                        {collaborators.map((c, idx) => {
+                          const isConfirmed = c.status === 'accepted' || c.status === 'confirmed';
+                          const isDeclined = c.status === 'declined';
+                          return (
+                            <Box
+                              key={c.email || c.uid || idx}
+                              sx={{
+                                p: 1.75,
+                                borderRadius: '16px',
+                                bgcolor: 'rgba(255, 255, 255, 0.9)',
+                                backdropFilter: 'blur(12px)',
+                                WebkitBackdropFilter: 'blur(12px)',
+                                border: '1px solid rgba(15, 23, 42, 0.08)',
+                                boxShadow: '0 2px 10px rgba(0, 0, 0, 0.02)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: 1.5,
+                                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                                '&:hover': {
+                                  borderColor: 'rgba(15, 23, 42, 0.16)',
+                                  transform: 'translateY(-1px)',
+                                  boxShadow: '0 6px 18px rgba(0, 0, 0, 0.04)',
+                                },
+                              }}
+                            >
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, minWidth: 0, flex: 1 }}>
+                                <Avatar
+                                  src={c.avatarUrl}
+                                  sx={{
+                                    width: 36,
+                                    height: 36,
+                                    fontSize: '0.8rem',
+                                    fontWeight: 800,
+                                    bgcolor: isConfirmed ? '#10b981' : (isDeclined ? '#ef4444' : '#6366f1'),
+                                    color: '#fff',
+                                    flexShrink: 0,
+                                    border: `1.5px solid ${isConfirmed ? 'rgba(16, 185, 129, 0.3)' : (isDeclined ? 'rgba(239, 68, 68, 0.3)' : 'rgba(99, 102, 241, 0.3)')}`,
+                                  }}
+                                >
+                                  {c.name?.charAt(0)?.toUpperCase() || c.email?.charAt(0)?.toUpperCase() || 'C'}
+                                </Avatar>
+                                <Box sx={{ minWidth: 0, flex: 1 }}>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.25 }}>
+                                    <Typography
+                                      sx={{
+                                        fontWeight: 700,
+                                        fontSize: '0.84rem',
+                                        color: '#0f172a',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap',
+                                      }}
+                                    >
+                                      {c.name || c.email?.split('@')[0]}
+                                    </Typography>
+                                    <Box
+                                      sx={{
+                                        fontSize: '0.62rem',
+                                        fontWeight: 700,
+                                        bgcolor: 'rgba(15, 23, 42, 0.04)',
+                                        color: '#475569',
+                                        px: 0.75,
+                                        py: 0.2,
+                                        borderRadius: '999px',
+                                        border: '1px solid rgba(15, 23, 42, 0.06)',
+                                        flexShrink: 0,
+                                      }}
+                                    >
+                                      {c.role || 'Co-Host'}
+                                    </Box>
+                                  </Box>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'nowrap', overflow: 'hidden' }}>
+                                    <Typography
+                                      sx={{
+                                        fontSize: '0.72rem',
+                                        color: '#64748b',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap',
+                                      }}
+                                    >
+                                      {c.email}
+                                    </Typography>
+                                    <Box sx={{ flexShrink: 0 }}>
+                                      {isConfirmed ? (
+                                        <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, fontSize: '0.66rem', fontWeight: 700, color: '#059669', bgcolor: 'rgba(16, 185, 129, 0.08)', px: 0.75, py: 0.15, borderRadius: '999px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                                          <Box sx={{ width: 5, height: 5, borderRadius: '50%', bgcolor: '#10b981' }} />
+                                          Confirmed
+                                        </Box>
+                                      ) : isDeclined ? (
+                                        <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, fontSize: '0.66rem', fontWeight: 700, color: '#e11d48', bgcolor: 'rgba(239, 68, 68, 0.08)', px: 0.75, py: 0.15, borderRadius: '999px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                                          <Box sx={{ width: 5, height: 5, borderRadius: '50%', bgcolor: '#f43f5e' }} />
+                                          Declined
+                                        </Box>
+                                      ) : (
+                                        <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, fontSize: '0.66rem', fontWeight: 700, color: '#d97706', bgcolor: 'rgba(245, 158, 11, 0.08)', px: 0.75, py: 0.15, borderRadius: '999px', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
+                                          <Box sx={{ width: 5, height: 5, borderRadius: '50%', bgcolor: '#f59e0b' }} />
+                                          Invited
+                                        </Box>
+                                      )}
+                                    </Box>
+                                  </Box>
+                                </Box>
+                              </Box>
+
+                              {/* Actions */}
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, flexShrink: 0 }}>
+                                <Tooltip title="Resend Invitation Email">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleResendCoHostInvite(c)}
+                                    sx={{
+                                      color: '#64748b',
+                                      p: 0.75,
+                                      opacity: 0.75,
+                                      transition: 'all 0.15s ease',
+                                      '&:hover': { color: '#4f46e5', bgcolor: 'rgba(79, 70, 229, 0.06)', opacity: 1, transform: 'scale(1.05)' },
+                                    }}
+                                  >
+                                    <SendIcon sx={{ fontSize: 14 }} />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Remove Co-Host">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleRemoveCoHost(idx)}
+                                    sx={{
+                                      color: '#94a3b8',
+                                      p: 0.75,
+                                      opacity: 0.75,
+                                      transition: 'all 0.15s ease',
+                                      '&:hover': { color: '#ef4444', bgcolor: 'rgba(239, 68, 68, 0.06)', opacity: 1, transform: 'scale(1.05)' },
+                                    }}
+                                  >
+                                    <DeleteIcon sx={{ fontSize: 15 }} />
+                                  </IconButton>
+                                </Tooltip>
+                              </Box>
+                            </Box>
+                          );
+                        })}
+                      </Box>
+                    )}
                   </Box>
                 </Box>
               </Box>
 
-              {/* Stage (Audience) */}
-              <Box id="broadcast-stream-card" sx={{ p: 4, borderRadius: '24px', bgcolor: '#fff', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 8px 32px rgba(0,0,0,0.02)' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
-                  <Box sx={{ width: 32, height: 32, borderRadius: '8px', bgcolor: 'rgba(16, 185, 129, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Typography sx={{ fontSize: '1.2rem' }}>📺</Typography>
+              {/* The Stage (Audience) Card */}
+              <Box
+                id="broadcast-stream-card"
+                sx={{
+                  p: { xs: 2.5, sm: 3.5, md: 4 },
+                  borderRadius: '24px',
+                  bgcolor: 'rgba(255, 255, 255, 0.95)',
+                  backdropFilter: 'blur(20px)',
+                  WebkitBackdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(15, 23, 42, 0.08)',
+                  boxShadow: '0 8px 30px -4px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 3,
+                  transition: 'all 0.25s ease',
+                }}
+              >
+                {/* Header */}
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Box
+                      sx={{
+                        width: 38,
+                        height: 38,
+                        borderRadius: '10px',
+                        bgcolor: 'rgba(16, 185, 129, 0.08)',
+                        border: '1px solid rgba(16, 185, 129, 0.16)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Typography sx={{ fontSize: '1.2rem' }}>📺</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a', letterSpacing: '-0.01em', lineHeight: 1.25 }}>
+                        The Stage (Audience)
+                      </Typography>
+                      <Typography sx={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 500 }}>
+                        Public live-stream destination where registered viewers and community members watch the broadcast
+                      </Typography>
+                    </Box>
                   </Box>
-                  <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a' }}>The Stage (Audience)</Typography>
+
+                  {/* Status Chip */}
+                  <Chip
+                    size="small"
+                    label={streamUrl.trim() ? 'Public Stage Ready' : 'Required to Publish'}
+                    icon={
+                      streamUrl.trim() ? (
+                        <CheckCircleIcon sx={{ fontSize: '13px !important', color: '#10b981 !important' }} />
+                      ) : (
+                        <Box
+                          sx={{
+                            width: 6,
+                            height: 6,
+                            borderRadius: '50%',
+                            bgcolor: '#ef4444',
+                            ml: '6px !important',
+                          }}
+                        />
+                      )
+                    }
+                    sx={{
+                      fontWeight: 800,
+                      fontSize: '0.72rem',
+                      bgcolor: streamUrl.trim() ? 'rgba(16, 185, 129, 0.06)' : 'rgba(239, 68, 68, 0.06)',
+                      color: streamUrl.trim() ? '#065f46' : '#b91c1c',
+                      border: `1px solid ${streamUrl.trim() ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`,
+                    }}
+                  />
                 </Box>
-                
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                  <TextField 
-                    fullWidth 
-                    label="Public Stream Link (Required to publish)" 
-                    placeholder="e.g. YouTube Live or Twitch embed URL" 
-                    value={streamUrl} 
-                    onChange={e => updateStreamUrl(e.target.value)} 
-                    error={!streamUrl.trim() && actionItems.some(i => i.id === 'streamUrl')}
-                    helperText={!streamUrl.trim() ? "Required: link where audience watches the live broadcast." : (linksPrefilledFromMemory ? "Pre-filled from your last livestream — edit anytime" : "")}
-                  />
-                  <TextField 
-                    fullWidth multiline rows={3} label="RSVP Confirmation Message" placeholder="e.g. Thanks for registering! Read our prep article below." 
-                    value={audienceMessageText} onChange={e => setAudienceMessageText(e.target.value)} 
-                  />
-                  <Box sx={{ display: 'flex', gap: 2, p: 2.5, bgcolor: 'rgba(15, 23, 42, 0.02)', borderRadius: '12px', border: '1px dashed rgba(15, 23, 42, 0.1)' }}>
-                    <TextField fullWidth size="small" label="Action Button Text" placeholder="e.g. Read Prep Material" value={audienceButtonText} onChange={e => setAudienceButtonText(e.target.value)} />
-                    <TextField fullWidth size="small" label="Action Button Link" placeholder="e.g. https://foodnerve.com/article/123" value={audienceButtonLink} onChange={e => setAudienceButtonLink(e.target.value)} />
+
+                {/* Form Fields */}
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                  <Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.75 }}>
+                      <Typography sx={{ fontSize: '0.78rem', fontWeight: 800, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        Public Stream Link <span style={{ color: '#ef4444' }}>*</span>
+                      </Typography>
+                      {streamUrl.trim() && (
+                        <Button
+                          component="a"
+                          href={streamUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          size="small"
+                          endIcon={<OpenInNewIcon sx={{ fontSize: '12px !important' }} />}
+                          sx={{
+                            textTransform: 'none',
+                            fontSize: '0.74rem',
+                            fontWeight: 700,
+                            color: '#10b981',
+                            p: 0,
+                            '&:hover': { bgcolor: 'transparent', textDecoration: 'underline' },
+                          }}
+                        >
+                          Test Public Stream
+                        </Button>
+                      )}
+                    </Box>
+                    <PremiumTextField
+                      fullWidth
+                      label="Public Stream Link (Required to publish)"
+                      placeholder="e.g. https://youtube.com/live/... or https://twitch.tv/..."
+                      value={streamUrl}
+                      onChange={(e) => updateStreamUrl(e.target.value)}
+                      errorHelperText={
+                        !streamUrl.trim() && actionItems.some((i) => i.id === 'streamUrl')
+                          ? 'Required: link where audience watches the live broadcast.'
+                          : null
+                      }
+                      helperText={
+                        linksPrefilledFromMemory
+                          ? 'Pre-filled from your previous livestream — edit anytime'
+                          : 'Destination URL where community members watch the live stream.'
+                      }
+                      colorTheme="#10b981"
+                    />
+                  </Box>
+
+                  <Box>
+                    <Typography sx={{ fontSize: '0.78rem', fontWeight: 800, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.04em', mb: 0.75 }}>
+                      RSVP Confirmation & Calendar Message
+                    </Typography>
+                    <PremiumTextField
+                      fullWidth
+                      multiline
+                      rows={3}
+                      label="RSVP Confirmation Message"
+                      placeholder="e.g. Thank you for registering! Add this session to your calendar and review the attached field dossier before we go live."
+                      value={audienceMessageText}
+                      onChange={(e) => setAudienceMessageText(e.target.value)}
+                      helperText="Delivered to community members upon RSVP and embedded in the event calendar listing."
+                      colorTheme="#10b981"
+                    />
                   </Box>
                 </Box>
               </Box>
@@ -3389,6 +5853,33 @@ export default function CreateLivestreamForm({
 
         {/* Right Side: Actions */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {isAutosaving ? (
+            <Chip
+              size="small"
+              icon={<CircularProgress size={12} sx={{ color: '#d97706' }} />}
+              label="Autosaving..."
+              sx={{
+                bgcolor: 'rgba(245, 158, 11, 0.1)',
+                color: '#b45309',
+                fontWeight: 800,
+                fontSize: '0.78rem',
+                border: '1px solid rgba(245, 158, 11, 0.25)',
+              }}
+            />
+          ) : lastAutosavedAt && !saveStatusMsg ? (
+            <Chip
+              size="small"
+              icon={<CheckCircleIcon sx={{ fontSize: '1rem !important', color: '#10b981' }} />}
+              label={`Saved ${lastAutosavedAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`}
+              sx={{
+                bgcolor: 'rgba(16,185,129,0.1)',
+                color: '#065f46',
+                fontWeight: 700,
+                fontSize: '0.78rem',
+                border: '1px solid rgba(16,185,129,0.2)',
+              }}
+            />
+          ) : null}
           {saveStatusMsg && (
             <Chip
               size="small"
@@ -3415,7 +5906,7 @@ export default function CreateLivestreamForm({
           <Button 
             variant="outlined" 
             onClick={() => handleSave(false)} 
-            disabled={isSubmitting}
+            disabled={isSubmitting || isAutosaving}
             sx={{ 
               borderRadius: '14px', fontWeight: 700, px: 3,
               borderColor: 'rgba(15,23,42,0.2)', color: '#0f172a',
@@ -3456,7 +5947,11 @@ export default function CreateLivestreamForm({
                 variant="contained" 
                 onClick={() => {
                   if (step === 1 && !canAdvanceStep1) return;
-                  setStep(step + 1);
+                  if (step === 1) {
+                    handleAdvanceFromStep1();
+                  } else {
+                    setStep(step + 1);
+                  }
                 }}
                 disabled={step === 1 && !canAdvanceStep1}
                 endIcon={<ArrowForwardIcon sx={{ fontSize: 18 }} />}
@@ -3578,9 +6073,15 @@ export default function CreateLivestreamForm({
         }}
         onIngestBlueprints={(blueprints) => {
           setIngestedBlueprints(blueprints);
-          setDeckActiveIndex(0);
+          const target = appliedBlueprint?.title?.trim().toLowerCase();
+          const matchedIdx = target ? blueprints.findIndex((b: any) => b.title?.trim().toLowerCase() === target) : -1;
+          setDeckActiveIndex(matchedIdx >= 0 ? matchedIdx : 0);
+          if (matchedIdx >= 0 && target) {
+            lastAlignedBlueprintRef.current = target;
+          }
           setIsCardFlipped(false);
           setIsIdeasCardFlipped(false);
+          setIsIdeasDrawerOpen(false);
           setStep(1);
           setTimeout(() => {
             carouselRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -3593,6 +6094,7 @@ export default function CreateLivestreamForm({
         open={isDraftingDrawerOpen}
         onClose={() => setIsDraftingDrawerOpen(false)}
         onOpen={() => setIsDraftingDrawerOpen(true)}
+        draftId={currentDraftId}
         title={title}
         description={description}
         category={category}
@@ -3616,6 +6118,38 @@ export default function CreateLivestreamForm({
         }}
         onUpdateTitle={(newTitle) => setTitle(newTitle)}
         onUpdateDescription={(newDesc) => setDescription(newDesc)}
+      />
+
+      {/* ── BROADCAST 16:9 THUMBNAIL & COVER GENERATOR SIDE PANE ── */}
+      <LivestreamThumbnailGeneratorSidePane
+        open={isThumbnailDrawerOpen}
+        onClose={() => setIsThumbnailDrawerOpen(false)}
+        onOpen={() => setIsThumbnailDrawerOpen(true)}
+        title={title}
+        category={category}
+        subcategory={subcategory}
+        format={resolvedFormat}
+        timeframe={timeframe as any}
+        hubTitle={hubTitle}
+        hubColor={hubColor}
+        currentCoverUrl={activeCoverUrl}
+        onApplyThumbnail={(thumb) => {
+          setCoverImage(thumb);
+        }}
+      />
+      {/* ── BROADCAST CO-HOST & SPEAKER DIRECTORY MODAL ── */}
+      <CoAuthorModal
+        open={isCoHostModalOpen}
+        onClose={() => setIsCoHostModalOpen(false)}
+        draftId={currentDraftId}
+        articleTitle={title}
+        collaborators={collaborators}
+        onUpdateCollaborators={setCollaborators}
+        currentUserId={profile?.uid}
+        currentUserName={profile?.displayName || profile?.firstName || 'Broadcast Host'}
+        themeColor="#6366f1"
+        tenant={tenant}
+        contentCategory="livestream"
       />
     </Box>
   );

@@ -5,7 +5,8 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Box, Typography, TextField, Button, Chip, Avatar,
   IconButton, Tooltip, Tabs, Tab, CircularProgress,
-  Paper, alpha, InputAdornment, Divider, Alert
+  Paper, alpha, InputAdornment, Divider, Alert,
+  MenuItem, Select, FormControl, InputLabel
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -24,7 +25,7 @@ import {
   Link as LinkIcon,
   Send as SendIcon
 } from '@mui/icons-material';
-import { getPotentialCoAuthors, inviteCoAuthorAction } from '@/lib/actions/learn';
+import { getPotentialCoAuthors, inviteCoAuthorAction, inviteCoHostAction } from '@/lib/actions/learn';
 
 export interface CollaboratorItem {
   uid?: string;
@@ -34,9 +35,13 @@ export interface CollaboratorItem {
   role: string;
   rank?: number;
   isOrg?: boolean;
-  status?: 'invited' | 'confirmed';
+  status?: 'invited' | 'confirmed' | 'accepted' | 'declined';
   timestamp?: string;
+  invitedAt?: string;
+  acceptedAt?: string;
+  declinedAt?: string;
   upgradePrompt?: boolean;
+  note?: string;
 }
 
 interface CoAuthorModalProps {
@@ -51,6 +56,7 @@ interface CoAuthorModalProps {
   themeColor?: string;
   tenant?: string;
   onSaveDraft?: () => Promise<string | null>;
+  contentCategory?: 'article' | 'livestream';
 }
 
 export function CoAuthorModal({
@@ -65,7 +71,9 @@ export function CoAuthorModal({
   themeColor = '#f59e0b',
   tenant = 'food',
   onSaveDraft,
+  contentCategory = 'article',
 }: CoAuthorModalProps) {
+  const isLivestream = contentCategory === 'livestream';
   const [activeTab, setActiveTab] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [loadingDirectory, setLoadingDirectory] = useState(false);
@@ -78,8 +86,12 @@ export function CoAuthorModal({
   // Email form state
   const [emailInput, setEmailInput] = useState('');
   const [nameInput, setNameInput] = useState('');
-  const [roleInput, setRoleInput] = useState('Co-Author');
+  const [roleInput, setRoleInput] = useState(isLivestream ? 'Co-Host' : 'Co-Author');
   const [noteInput, setNoteInput] = useState('');
+
+  useEffect(() => {
+    setRoleInput(isLivestream ? 'Co-Host' : 'Co-Author');
+  }, [isLivestream, open]);
 
   // Fetch directory when modal opens
   useEffect(() => {
@@ -114,8 +126,13 @@ export function CoAuthorModal({
     if (typeof window === 'undefined') return '';
     const base = window.location.origin;
     const targetDraft = draftId || 'new';
+    if (isLivestream) {
+      return targetDraft && targetDraft !== 'new'
+        ? `${base}/modular-society/${tenant}/learn/livestream/${targetDraft}`
+        : `${base}/modular-society/${tenant}/learn`;
+    }
     return `${base}/modular-society/${tenant}/learn?draftId=${targetDraft}&invite=true`;
-  }, [tenant, draftId]);
+  }, [tenant, draftId, isLivestream]);
 
   const handleCopyLink = () => {
     if (collaborationUrl) {
@@ -138,12 +155,13 @@ export function CoAuthorModal({
     setSendingInvite(true);
     setNotification(null);
     try {
+      const defaultRole = isLivestream ? 'Co-Host' : (upgradePrompt ? 'Invited Collaborator' : 'Co-Author');
       const newCollab: CollaboratorItem = {
         uid: entity.uid || entity.id,
         name: entity.name,
         email: entity.email || `${entity.slug || entity.name.toLowerCase().replace(/\s+/g, '')}@foodnerve.org`,
         avatarUrl: entity.avatarUrl || entity.logoUrl,
-        role: upgradePrompt ? 'Invited Collaborator' : 'Co-Author',
+        role: defaultRole,
         rank: entity.rank || 1,
         isOrg: !!entity.isOrg,
         status: 'invited',
@@ -151,21 +169,31 @@ export function CoAuthorModal({
         upgradePrompt
       };
 
-      const res = await inviteCoAuthorAction({
-        draftId: draftId || undefined,
-        collaborator: newCollab,
-        inviterName: currentUserName,
-        articleTitle,
-        tenant,
-      });
+      const res = isLivestream
+        ? await inviteCoHostAction({
+            draftId: draftId || undefined,
+            collaborator: newCollab,
+            inviterName: currentUserName,
+            livestreamTitle: articleTitle,
+            tenant,
+          })
+        : await inviteCoAuthorAction({
+            draftId: draftId || undefined,
+            collaborator: newCollab,
+            inviterName: currentUserName,
+            articleTitle,
+            tenant,
+          });
 
       if (res.success) {
         onUpdateCollaborators([...collaborators, newCollab]);
         setNotification({
           type: 'success',
-          message: upgradePrompt
-            ? `Upgrade prompt and email dispatched to ${entity.name}. They will receive instructions to upgrade and co-author.`
-            : `Invitation and email dispatched to ${entity.name}. Added as co-author!`
+          message: isLivestream
+            ? `Invitation and email dispatched to ${entity.name}. Added as ${defaultRole}!`
+            : (upgradePrompt
+              ? `Upgrade prompt and email dispatched to ${entity.name}. They will receive instructions to upgrade and co-author.`
+              : `Invitation and email dispatched to ${entity.name}. Added as co-author!`)
         });
       } else {
         setNotification({ type: 'error', message: res.error || 'Failed to send invite' });
@@ -192,26 +220,37 @@ export function CoAuthorModal({
       const newCollab: CollaboratorItem = {
         name,
         email,
-        role: roleInput || 'Co-Author',
+        role: roleInput || (isLivestream ? 'Co-Host' : 'Co-Author'),
         status: 'invited',
         timestamp: new Date().toISOString(),
         isOrg: false
       };
 
-      const res = await inviteCoAuthorAction({
-        draftId: draftId || undefined,
-        collaborator: newCollab,
-        inviterName: currentUserName,
-        articleTitle,
-        tenant,
-        note: noteInput.trim() || undefined,
-      });
+      const res = isLivestream
+        ? await inviteCoHostAction({
+            draftId: draftId || undefined,
+            collaborator: newCollab,
+            inviterName: currentUserName,
+            livestreamTitle: articleTitle,
+            tenant,
+            note: noteInput.trim() || undefined,
+          })
+        : await inviteCoAuthorAction({
+            draftId: draftId || undefined,
+            collaborator: newCollab,
+            inviterName: currentUserName,
+            articleTitle,
+            tenant,
+            note: noteInput.trim() || undefined,
+          });
 
       if (res.success) {
         onUpdateCollaborators([...collaborators, newCollab]);
         setNotification({
           type: 'success',
-          message: `Co-author invitation sent to ${email} with collaboration link!`
+          message: isLivestream
+            ? `Broadcast invitation sent to ${email} with stage link!`
+            : `Co-author invitation sent to ${email} with collaboration link!`
         });
         setEmailInput('');
         setNameInput('');
@@ -276,10 +315,12 @@ export function CoAuthorModal({
           </Box>
           <Box>
             <Typography variant="h6" sx={{ fontWeight: 900, color: '#0f172a', lineHeight: 1.2 }}>
-              Co-Authors & Editorial Collaborators
+              {isLivestream ? 'Invite Broadcast Co-Hosts & Speakers' : 'Co-Authors & Editorial Collaborators'}
             </Typography>
             <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600 }}>
-              Invite verified Rank 4+ members, organizations, or external co-authors to co-create this article
+              {isLivestream
+                ? 'Invite co-hosts, guest panelists, moderators, or presenters to join backstage and on stage'
+                : 'Invite verified Rank 4+ members, organizations, or external co-authors to co-create this article'}
             </Typography>
           </Box>
         </Box>
@@ -303,7 +344,7 @@ export function CoAuthorModal({
         }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
             <Typography sx={{ fontSize: '0.8rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Current Co-Authors ({collaborators.length})
+              {isLivestream ? `Current Speakers & Co-Hosts (${collaborators.length})` : `Current Co-Authors (${collaborators.length})`}
             </Typography>
             {collaborators.length > 0 && (
               <Chip label="Changes Auto-Synced" size="small" sx={{ bgcolor: 'rgba(16, 185, 129, 0.1)', color: '#059669', fontWeight: 700, fontSize: '0.7rem' }} />
@@ -312,7 +353,9 @@ export function CoAuthorModal({
 
           {collaborators.length === 0 ? (
             <Typography sx={{ fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic', py: 1 }}>
-              No co-authors added yet. Search the directory below or share an invite link.
+              {isLivestream
+                ? 'No co-hosts added yet. Add via email or search the society directory below.'
+                : 'No co-authors added yet. Search the directory below or share an invite link.'}
             </Typography>
           ) : (
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
@@ -330,11 +373,32 @@ export function CoAuthorModal({
                     {c.name?.charAt(0) || 'C'}
                   </Avatar>
                   <Box>
-                    <Typography sx={{ fontSize: '0.82rem', fontWeight: 700, color: '#0f172a', lineHeight: 1.1 }}>
-                      {c.name}
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                      <Typography sx={{ fontSize: '0.82rem', fontWeight: 700, color: '#0f172a', lineHeight: 1.1 }}>
+                        {c.name}
+                      </Typography>
+                      {c.status === 'accepted' || c.status === 'confirmed' ? (
+                        <Chip
+                          size="small"
+                          label="✓ Confirmed"
+                          sx={{ height: 16, fontSize: '0.62rem', fontWeight: 800, bgcolor: 'rgba(16, 185, 129, 0.12)', color: '#059669' }}
+                        />
+                      ) : c.status === 'declined' ? (
+                        <Chip
+                          size="small"
+                          label="✕ Declined"
+                          sx={{ height: 16, fontSize: '0.62rem', fontWeight: 800, bgcolor: 'rgba(239, 68, 68, 0.1)', color: '#dc2626' }}
+                        />
+                      ) : (
+                        <Chip
+                          size="small"
+                          label="⏳ Invited"
+                          sx={{ height: 16, fontSize: '0.62rem', fontWeight: 800, bgcolor: 'rgba(245, 158, 11, 0.12)', color: '#d97706' }}
+                        />
+                      )}
+                    </Box>
                     <Typography sx={{ fontSize: '0.7rem', color: '#64748b' }}>
-                      {c.role || 'Co-Author'} {c.rank ? `• Rank ${c.rank}` : ''}
+                      {c.role || (isLivestream ? 'Co-Host' : 'Co-Author')} {c.rank ? `• Rank ${c.rank}` : ''}
                     </Typography>
                   </Box>
                   <IconButton size="small" onClick={() => handleRemoveCollaborator(idx)} sx={{ color: '#94a3b8', '&:hover': { color: '#ef4444' } }}>
@@ -360,9 +424,13 @@ export function CoAuthorModal({
                 Quick Share Collaboration Link
               </Typography>
               <Typography sx={{ fontSize: '0.75rem', color: '#64748b' }}>
-                {draftId && draftId !== 'new'
-                  ? 'Anyone with this link who signs in will be added as a co-author to this draft.'
-                  : 'Save your draft first to generate a shareable collaboration link.'}
+                {isLivestream
+                  ? (draftId && draftId !== 'new'
+                    ? 'Anyone with this link who signs in will be directed to review and accept their co-host role.'
+                    : 'Save your livestream draft first to generate a shareable stage link.')
+                  : (draftId && draftId !== 'new'
+                    ? 'Anyone with this link who signs in will be added as a co-author to this draft.'
+                    : 'Save your draft first to generate a shareable collaboration link.')}
               </Typography>
             </Box>
           </Box>
@@ -596,10 +664,12 @@ export function CoAuthorModal({
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <Box sx={{ p: 2, borderRadius: '14px', bgcolor: 'rgba(59, 130, 246, 0.05)', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
               <Typography sx={{ fontSize: '0.84rem', fontWeight: 700, color: '#1d4ed8', mb: 0.5 }}>
-                💡 Co-Authorship Rank Policy
+                {isLivestream ? '🎙️ Broadcast Speaker & Presenter Policy' : '💡 Co-Authorship Rank Policy'}
               </Typography>
               <Typography sx={{ fontSize: '0.78rem', color: '#475569', lineHeight: 1.45 }}>
-                Articles published in the FoodNerve ecosystem require Rank 4+ editorial authorization. You can invite lower rank members (Rank 1–3) to co-author, which will send them an invitation along with a prompt to upgrade or verify their rank to unlock full co-author publishing privileges.
+                {isLivestream
+                  ? 'Livestreams hosted on FoodNerve can feature guest speakers, panelists, and presenters across society ranks. You can invite members directly to join you on stage and backstage.'
+                  : 'Articles published in the FoodNerve ecosystem require Rank 4+ editorial authorization. You can invite lower rank members (Rank 1–3) to co-author, which will send them an invitation along with a prompt to upgrade or verify their rank to unlock full co-author publishing privileges.'}
               </Typography>
             </Box>
 
@@ -717,17 +787,35 @@ export function CoAuthorModal({
             </Box>
 
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
-              <TextField
-                size="small"
-                label="Editorial Role"
-                value={roleInput}
-                onChange={e => setRoleInput(e.target.value)}
-                helperText="e.g. Co-Author, Technical Reviewer, Contributing Analyst"
-              />
+              {isLivestream ? (
+                <FormControl size="small" fullWidth>
+                  <InputLabel id="coauthor-role-select-label">Broadcast Role</InputLabel>
+                  <Select
+                    labelId="coauthor-role-select-label"
+                    label="Broadcast Role"
+                    value={roleInput}
+                    onChange={e => setRoleInput(e.target.value)}
+                    sx={{ borderRadius: '12px' }}
+                  >
+                    <MenuItem value="Co-Host">Co-Host</MenuItem>
+                    <MenuItem value="Guest Panelist">Guest Panelist</MenuItem>
+                    <MenuItem value="Moderator">Moderator</MenuItem>
+                    <MenuItem value="Technical Presenter">Technical Presenter</MenuItem>
+                  </Select>
+                </FormControl>
+              ) : (
+                <TextField
+                  size="small"
+                  label="Editorial Role"
+                  value={roleInput}
+                  onChange={e => setRoleInput(e.target.value)}
+                  helperText="e.g. Co-Author, Technical Reviewer, Contributing Analyst"
+                />
+              )}
               <TextField
                 size="small"
                 label="Personal Note (Optional)"
-                placeholder="Join me in co-authoring this brief..."
+                placeholder={isLivestream ? "Join me as a speaker on stage..." : "Join me in co-authoring this brief..."}
                 value={noteInput}
                 onChange={e => setNoteInput(e.target.value)}
               />
