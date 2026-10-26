@@ -188,10 +188,12 @@ export function AdminArticlePromptSidePane({
   // Hydrate persisted markdown
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        setCustomIngestMarkdown(saved);
-      }
+      try {
+        const saved = localStorage.getItem(storageKey) || localStorage.getItem('admin_editorial_ingest_latest');
+        if (saved) {
+          setCustomIngestMarkdown(saved);
+        }
+      } catch {}
     }
   }, [storageKey]);
 
@@ -200,7 +202,10 @@ export function AdminArticlePromptSidePane({
     setCustomIngestMarkdown(val);
     setIngestError(null);
     if (typeof window !== 'undefined') {
-      localStorage.setItem(storageKey, val);
+      try {
+        localStorage.setItem(storageKey, val);
+        localStorage.setItem('admin_editorial_ingest_latest', val);
+      } catch {}
     }
   };
 

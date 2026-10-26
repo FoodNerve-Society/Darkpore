@@ -85,7 +85,7 @@ import {
   formatCommoditySelectionTitle, 
   findMatchingBasket 
 } from '@/lib/cms/commodities';
-import { getISOWeek, startOfISOWeek, addDays, format, getYear } from 'date-fns';
+import { getISOWeek, startOfISOWeek, addDays, format, getYear, formatDistanceToNow } from 'date-fns';
 import { CATEGORY_MAP } from '@/lib/config/editorialMatrix';
 import { getDailyEditorialIntel, regenerateCustomAnglesAction, ArticleInsightItem } from '@/lib/actions/editorialMatrix';
 import { FORMAT_CONFIG, ERA_CONFIG, ArticleFormat, ArticleEra } from '@/lib/config/articleBlueprints';
@@ -730,6 +730,72 @@ export default function CreatorStudioDashboard({
   const totalSelectedCtas = useMemo(() => {
     return lsAnchorJobIds.length + lsCtaListingIds.length + lsCtaCampaignIds.length;
   }, [lsAnchorJobIds, lsCtaListingIds, lsCtaCampaignIds]);
+
+  const matchedLivestreamDraft = useMemo(() => {
+    if (expandedStartType !== 'livestream' || !drafts || drafts.length === 0) return null;
+    if (!lsAnchorArticleIds || lsAnchorArticleIds.length === 0) return null;
+
+    const currentAnchorSorted = Array.from(new Set(lsAnchorArticleIds)).filter(Boolean).sort();
+    const currentCtasSorted = Array.from(new Set([...lsAnchorJobIds, ...lsCtaListingIds, ...lsCtaCampaignIds])).filter(Boolean).sort();
+
+    let bestMatch: any = null;
+    let latestTimestamp = -1;
+
+    for (const draft of drafts) {
+      if (draft.type !== 'livestream' || draft.status !== 'draft') continue;
+
+      let meta: any = null;
+      if (draft._studioMeta) meta = draft._studioMeta;
+      else if (draft.livestream?._studioMeta) meta = draft.livestream._studioMeta;
+      else {
+        const blocks = draft.livestream?.blocks || draft.livestreamBlocks || [];
+        for (const b of blocks) {
+          try {
+            const parsed = typeof b.content === 'string' ? JSON.parse(b.content) : b.content;
+            if (parsed?._studioMeta) {
+              meta = parsed._studioMeta;
+              break;
+            }
+          } catch (e) {}
+        }
+      }
+
+      if (!meta) continue;
+
+      const draftAnchor = Array.from(
+        new Set((meta.guidingArticles || []).map((a: any) => typeof a === 'string' ? a : (a?.id || '')))
+      ).filter(Boolean).sort();
+
+      const draftCtas = Array.from(
+        new Set([
+          ...(meta.guidingJobs || []),
+          ...(meta.guidingListings || []),
+          ...(meta.guidingCampaigns || [])
+        ].map((c: any) => typeof c === 'string' ? c : (c?.id || '')))
+      ).filter(Boolean).sort();
+
+      // Check articles match
+      const articlesMatch = currentAnchorSorted.length > 0 &&
+        currentAnchorSorted.length === draftAnchor.length &&
+        currentAnchorSorted.every((id, idx) => id === draftAnchor[idx]);
+
+      if (!articlesMatch) continue;
+
+      // Check CTAs match
+      const ctasMatch = currentCtasSorted.length === draftCtas.length &&
+        currentCtasSorted.every((id, idx) => id === draftCtas[idx]);
+
+      if (ctasMatch) {
+        const time = new Date(draft.updatedAt || draft.createdAt || 0).getTime();
+        if (time > latestTimestamp) {
+          latestTimestamp = time;
+          bestMatch = { ...draft, _studioMeta: meta };
+        }
+      }
+    }
+
+    return bestMatch;
+  }, [expandedStartType, drafts, lsAnchorArticleIds, lsAnchorJobIds, lsCtaListingIds, lsCtaCampaignIds]);
 
   // Step 2: Articles Categories from the Active Hub
   const lsArticleCategories = useMemo(() => {
@@ -2970,6 +3036,155 @@ export default function CreatorStudioDashboard({
                                 )
                               )}
                             </Box>
+
+                          {/* IN-PROGRESS LIVESTREAM DRAFT FOUND CARD */}
+                          {matchedLivestreamDraft && (
+                            <Paper
+                              elevation={0}
+                              sx={{
+                                maxWidth: 720,
+                                mx: 'auto',
+                                mt: 3,
+                                mb: 1,
+                                p: { xs: 2, sm: 2.5 },
+                                borderRadius: '20px',
+                                bgcolor: alpha('#f59e0b', 0.08),
+                                border: '1.5px solid rgba(245, 158, 11, 0.4)',
+                                boxShadow: '0 8px 24px rgba(245, 158, 11, 0.1)',
+                                display: 'flex',
+                                flexDirection: { xs: 'column', md: 'row' },
+                                alignItems: { md: 'center' },
+                                justifyContent: 'space-between',
+                                gap: 2,
+                              }}
+                            >
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75 }}>
+                                <Box
+                                  sx={{
+                                    width: 44,
+                                    height: 44,
+                                    borderRadius: '14px',
+                                    bgcolor: '#f59e0b',
+                                    color: '#ffffff',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  <LiveTvIcon sx={{ fontSize: 24 }} />
+                                </Box>
+                                <Box>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                    <Typography sx={{ fontWeight: 900, fontSize: '0.96rem', color: '#0f172a' }}>
+                                      In-Progress Livestream Draft Found
+                                    </Typography>
+                                    <Chip
+                                      label="Matching Articles & CTAs"
+                                      size="small"
+                                      sx={{ bgcolor: 'rgba(245, 158, 11, 0.2)', color: '#b45309', fontWeight: 800, fontSize: '0.7rem' }}
+                                    />
+                                  </Box>
+                                  {(() => {
+                                    const dateVal = matchedLivestreamDraft.updatedAt || matchedLivestreamDraft.createdAt;
+                                    const parsedDate = dateVal ? new Date(dateVal) : null;
+                                    const isValid = parsedDate && !isNaN(parsedDate.getTime());
+                                    const blocks = matchedLivestreamDraft.livestream?.blocks || matchedLivestreamDraft.livestreamBlocks || [];
+                                    const slideCount = blocks.filter((b: any) => b.blockType !== 'metadata').length;
+                                    return (
+                                      <Typography sx={{ color: '#475569', fontSize: '0.82rem', mt: 0.25 }}>
+                                        You previously started &quot;<strong>{matchedLivestreamDraft.title || 'Untitled Livestream'}</strong>&quot;{' '}
+                                        {isValid ? `(last updated ${formatDistanceToNow(parsedDate, { addSuffix: true })})` : ''}
+                                        {' '}• {slideCount > 0 ? `${slideCount} slide block${slideCount !== 1 ? 's' : ''} saved` : 'framework details saved'}.
+                                      </Typography>
+                                    );
+                                  })()}
+                                </Box>
+                              </Box>
+
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, flexShrink: 0, width: { xs: '100%', md: 'auto' }, justifyContent: { xs: 'flex-end', md: 'flex-start' } }}>
+                                <Button
+                                  variant="contained"
+                                  onClick={() => onEditDraft(matchedLivestreamDraft.id, 'livestream')}
+                                  startIcon={<CheckIcon />}
+                                  sx={{
+                                    bgcolor: '#f59e0b',
+                                    color: '#ffffff',
+                                    fontWeight: 800,
+                                    borderRadius: '12px',
+                                    textTransform: 'none',
+                                    px: 2.2,
+                                    py: 0.9,
+                                    fontSize: '0.86rem',
+                                    whiteSpace: 'nowrap',
+                                    '&:hover': { bgcolor: '#d97706' },
+                                  }}
+                                >
+                                  Resume Existing Draft
+                                </Button>
+                                <Button
+                                  variant="outlined"
+                                  onClick={() => {
+                                    onStartFresh(
+                                      'livestream',
+                                      {
+                                        lsEngine,
+                                        lsAnchorArticleId: lsAnchorArticleIds[0] || null,
+                                        lsAnchorArticleIds,
+                                        lsAnchorJobIds,
+                                        lsCtaListingIds,
+                                        lsCtaCampaignIds,
+                                        category: activeLsHub.underlyingCategories[0],
+                                        subcategory: '',
+                                        timeframe: 'present',
+                                        hubId: activeLsHub.id,
+                                        hubTitle: activeLsHub.title,
+                                        hubColor: activeLsHub.color,
+                                        hubCategories: activeLsHub.categories,
+                                        forceNewDraft: true,
+                                      },
+                                      {
+                                        title: selectedAnchorArticles.length > 0
+                                          ? `${selectedAnchorArticles.map(a => a.title).slice(0, 2).join(' & ')} — Livestream`
+                                          : `${activeLsHub.title} Broadcast`,
+                                        description: selectedAnchorArticles[0]?.description || `Livestream broadcast focusing on ${activeLsHub.categories.join(' · ')}.`,
+                                        category: activeLsHub.underlyingCategories[0],
+                                        coverImageUrl: selectedAnchorArticles[0]?.coverImageUrl || activeLsHub.imageUrl,
+                                        anchorArticles: selectedAnchorArticles,
+                                        anchorJobIds: lsAnchorJobIds,
+                                        ctaListingIds: lsCtaListingIds,
+                                        ctaCampaignIds: lsCtaCampaignIds,
+                                        selectedCtasCount: totalSelectedCtas,
+                                        livestream: {
+                                          status: 'scheduled',
+                                          eventDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+                                          hub: activeLsHub,
+                                          anchorArticles: selectedAnchorArticles,
+                                          ctaJobs: filteredCtaJobs.filter(j => lsAnchorJobIds.includes(j.id)),
+                                          ctaListings: filteredCtaListings.filter(l => lsCtaListingIds.includes(l.id)),
+                                          ctaCampaigns: filteredCtaCampaigns.filter(c => lsCtaCampaignIds.includes(c.id)),
+                                        }
+                                      }
+                                    );
+                                  }}
+                                  sx={{
+                                    borderColor: 'rgba(15, 23, 42, 0.25)',
+                                    color: '#0f172a',
+                                    fontWeight: 800,
+                                    borderRadius: '12px',
+                                    textTransform: 'none',
+                                    px: 1.8,
+                                    py: 0.9,
+                                    fontSize: '0.86rem',
+                                    whiteSpace: 'nowrap',
+                                    '&:hover': { borderColor: '#0f172a', bgcolor: 'rgba(15, 23, 42, 0.04)' },
+                                  }}
+                                >
+                                  Start a New One
+                                </Button>
+                              </Box>
+                            </Paper>
+                          )}
 
                           {/* Build Livestream Action Button */}
                           <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4.5, mb: 2 }}>

@@ -56,6 +56,7 @@ interface EditorialPromptSidePaneProps {
   open: boolean;
   onClose: () => void;
   onOpen?: () => void;
+  draftId?: string | null;
   format: ArticleFormat;
   era: ArticleEra;
   commodity: string;
@@ -93,6 +94,7 @@ export function EditorialPromptSidePane({
   open,
   onClose,
   onOpen,
+  draftId,
   format,
   era,
   commodity,
@@ -157,42 +159,74 @@ export function EditorialPromptSidePane({
     };
   }, [open, isDockVisible, setHasEditorDock]);
 
-  // Restore persistence on commodity / category switch
+  // Storage Persistence for checklist and scratchpad
+  const storagePrefix = useMemo(() => {
+    if (draftId) {
+      return `learn_editorial_sop_draft_${draftId}`;
+    }
+    const comSlug = (commodity || 'general').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+    const catSlug = (category || 'general').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+    return `learn_editorial_sop_${comSlug}_${catSlug}`;
+  }, [draftId, commodity, category]);
+
+  // Restore persistence on draftId / commodity / category switch
   useEffect(() => {
-    if (typeof window !== 'undefined' && commodity && category) {
-      const checklistKey = `learn_editorial_sop_tasks_${commodity}_${category}`;
-      const scratchpadKey = `learn_editorial_sop_scratchpad_${commodity}_${category}`;
+    if (typeof window !== 'undefined') {
+      const checklistKey = `${storagePrefix}_tasks`;
+      const legacyChecklistKey = (commodity && category) ? `learn_editorial_sop_tasks_${commodity}_${category}` : null;
+      const scratchpadKey = `${storagePrefix}_scratchpad`;
+      const legacyScratchpadKey = (commodity && category) ? `learn_editorial_sop_scratchpad_${commodity}_${category}` : null;
 
       try {
-        const savedChecklist = localStorage.getItem(checklistKey);
+        const savedChecklist = 
+          localStorage.getItem(checklistKey) || 
+          (legacyChecklistKey ? localStorage.getItem(legacyChecklistKey) : null);
         if (savedChecklist) setChecklist(JSON.parse(savedChecklist));
         else setChecklist({});
 
-        const savedScratchpad = localStorage.getItem(scratchpadKey);
+        const savedScratchpad = 
+          localStorage.getItem(scratchpadKey) || 
+          (legacyScratchpadKey ? localStorage.getItem(legacyScratchpadKey) : null) ||
+          localStorage.getItem('learn_editorial_sop_scratchpad_latest');
+
         if (savedScratchpad) {
-          const parsed = JSON.parse(savedScratchpad);
-          setRawIngestPayload(parsed.payload || '');
+          try {
+            const parsed = JSON.parse(savedScratchpad);
+            setRawIngestPayload(parsed.payload !== undefined ? parsed.payload : savedScratchpad);
+          } catch {
+            setRawIngestPayload(savedScratchpad);
+          }
         } else {
           setRawIngestPayload('');
         }
       } catch {}
     }
-  }, [commodity, category]);
+  }, [storagePrefix, commodity, category]);
 
   const savePayloadToStorage = useCallback((payload: string) => {
-    if (typeof window !== 'undefined' && commodity && category) {
-      const scratchpadKey = `learn_editorial_sop_scratchpad_${commodity}_${category}`;
+    if (typeof window !== 'undefined') {
       try {
-        localStorage.setItem(scratchpadKey, JSON.stringify({ payload }));
+        const data = JSON.stringify({ payload });
+        localStorage.setItem(`${storagePrefix}_scratchpad`, data);
+        if (commodity && category) {
+          localStorage.setItem(`learn_editorial_sop_scratchpad_${commodity}_${category}`, data);
+        }
+        localStorage.setItem('learn_editorial_sop_scratchpad_latest', data);
       } catch {}
     }
-  }, [commodity, category]);
+  }, [storagePrefix, commodity, category]);
 
   const toggleChecklistItem = (id: string) => {
     setChecklist((prev) => {
       const next = { ...prev, [id]: !prev[id] };
-      if (typeof window !== 'undefined' && commodity && category) {
-        localStorage.setItem(`learn_editorial_sop_tasks_${commodity}_${category}`, JSON.stringify(next));
+      if (typeof window !== 'undefined') {
+        try {
+          const json = JSON.stringify(next);
+          localStorage.setItem(`${storagePrefix}_tasks`, json);
+          if (commodity && category) {
+            localStorage.setItem(`learn_editorial_sop_tasks_${commodity}_${category}`, json);
+          }
+        } catch {}
       }
       return next;
     });
@@ -213,8 +247,14 @@ export function EditorialPromptSidePane({
     if (targetCheck) {
       setChecklist((prev) => {
         const next = { ...prev, [targetCheck]: true };
-        if (typeof window !== 'undefined' && commodity && category) {
-          localStorage.setItem(`learn_editorial_sop_tasks_${commodity}_${category}`, JSON.stringify(next));
+        if (typeof window !== 'undefined') {
+          try {
+            const json = JSON.stringify(next);
+            localStorage.setItem(`${storagePrefix}_tasks`, json);
+            if (commodity && category) {
+              localStorage.setItem(`learn_editorial_sop_tasks_${commodity}_${category}`, json);
+            }
+          } catch {}
         }
         return next;
       });

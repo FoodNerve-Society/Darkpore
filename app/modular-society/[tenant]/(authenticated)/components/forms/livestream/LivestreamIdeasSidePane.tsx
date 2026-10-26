@@ -730,6 +730,84 @@ export default function LivestreamIdeasSidePane({
   const [copiedPromptTab, setCopiedPromptTab] = useState<string | null>(null);
   const [ingestError, setIngestError] = useState<string | null>(null);
 
+  // Storage Persistence for checklist and fast ingest payload
+  const storagePrefix = useMemo(() => {
+    const hubSlug = (hubTitle || 'agribusiness').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+    const catSlug = (currentCategory || 'general').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+    const tfSlug = (currentTimeframe || 'present').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+    return `ls_ideas_ingest_${hubSlug}_${catSlug}_${tfSlug}`;
+  }, [hubTitle, currentCategory, currentTimeframe]);
+
+  // Fast Ingestion Relay State (LS-Doc 1c output)
+  const [customIngestMarkdown, setCustomIngestMarkdown] = useState('');
+
+  // Hydrate persisted state from device localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const savedChecklist = localStorage.getItem(`${storagePrefix}_checklist`);
+        if (savedChecklist) {
+          setChecklist(JSON.parse(savedChecklist));
+        } else {
+          setChecklist({});
+        }
+
+        const savedPayload = 
+          localStorage.getItem(`${storagePrefix}_payload`) || 
+          localStorage.getItem(`ls_ideas_ingest_${(currentCategory || 'general').toLowerCase().replace(/[^a-z0-9]+/g, '_')}_latest_payload`) ||
+          localStorage.getItem('ls_ideas_ingest_latest_payload');
+
+        if (savedPayload) {
+          setCustomIngestMarkdown(savedPayload);
+        }
+      } catch {}
+    }
+  }, [storagePrefix, currentCategory]);
+
+  const savePayloadToStorage = useCallback((val: string) => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(`${storagePrefix}_payload`, val);
+        if (currentCategory) {
+          const catSlug = currentCategory.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+          localStorage.setItem(`ls_ideas_ingest_${catSlug}_latest_payload`, val);
+        }
+        localStorage.setItem('ls_ideas_ingest_latest_payload', val);
+      } catch {}
+    }
+  }, [storagePrefix, currentCategory]);
+
+  const handleCustomIngestChange = (val: string) => {
+    setCustomIngestMarkdown(val);
+    savePayloadToStorage(val);
+    if (ingestError) setIngestError(null);
+  };
+
+  const toggleChecklistItem = (id: string) => {
+    setChecklist(prev => {
+      const next = { ...prev, [id]: !prev[id] };
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(`${storagePrefix}_checklist`, JSON.stringify(next));
+        } catch {}
+      }
+      return next;
+    });
+  };
+
+  const markChecklistItem = (id: string) => {
+    setChecklist(prev => {
+      if (prev[id]) return prev;
+      const next = { ...prev, [id]: true };
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(`${storagePrefix}_checklist`, JSON.stringify(next));
+        } catch {}
+      }
+      return next;
+    });
+  };
+
   // Dynamic Date Hooks (Zero Hardcoding)
   const currentDate = useMemo(() => new Date(), []);
   const currentMonthYear = useMemo(() => {
@@ -741,13 +819,6 @@ export default function LivestreamIdeasSidePane({
   const futureHorizonYear = useMemo(() => {
     return (currentDate.getFullYear() + 4).toString();
   }, [currentDate]);
-
-  // Fast Ingestion Relay State (LS-Doc 1c output)
-  const [customIngestMarkdown, setCustomIngestMarkdown] = useState('');
-
-  const toggleChecklistItem = (id: string) => {
-    setChecklist(prev => ({ ...prev, [id]: !prev[id] }));
-  };
 
   const handleCopyPromptText = (text: string, tabKey: string) => {
     navigator.clipboard.writeText(text);
@@ -1319,8 +1390,8 @@ CRITICAL CONSTRAINT: Do NOT include introductory chatter. Output the [LIVESTREAM
     try {
       const text = await navigator.clipboard.readText();
       if (text) {
-        setCustomIngestMarkdown(text);
-        if (!checklist['chk4_ingest']) toggleChecklistItem('chk4_ingest');
+        handleCustomIngestChange(text);
+        markChecklistItem('chk4_ingest');
       }
     } catch {
       // Fallback
@@ -1918,7 +1989,7 @@ CRITICAL CONSTRAINT: Do NOT include introductory chatter. Output the [LIVESTREAM
             maxHeight={200}
             isCopiedExternal={checklist['chk1_copy']}
             onCopy={() => {
-              setChecklist(prev => ({ ...prev, chk1_copy: true }));
+              markChecklistItem('chk1_copy');
             }}
           />
           <PromptChecklistItem
@@ -1957,7 +2028,7 @@ CRITICAL CONSTRAINT: Do NOT include introductory chatter. Output the [LIVESTREAM
             maxHeight={200}
             isCopiedExternal={checklist['chk2_copy']}
             onCopy={() => {
-              setChecklist(prev => ({ ...prev, chk2_copy: true }));
+              markChecklistItem('chk2_copy');
             }}
           />
           <PromptChecklistItem
@@ -2008,7 +2079,7 @@ CRITICAL CONSTRAINT: Do NOT include introductory chatter. Output the [LIVESTREAM
             maxHeight={200}
             isCopiedExternal={checklist['chk3_copy']}
             onCopy={() => {
-              setChecklist(prev => ({ ...prev, chk3_copy: true }));
+              markChecklistItem('chk3_copy');
             }}
           />
           <PromptChecklistItem
@@ -2059,10 +2130,7 @@ CRITICAL CONSTRAINT: Do NOT include introductory chatter. Output the [LIVESTREAM
 
           <PromptFastIngestBox
             value={customIngestMarkdown}
-            onChange={(val: string) => {
-              setCustomIngestMarkdown(val);
-              if (ingestError) setIngestError(null);
-            }}
+            onChange={handleCustomIngestChange}
             onIngest={handleIngestToStudio}
             title="Fast Ingest: Broadcast Blueprints Relay"
             subtitle="Paste the generated JSON output from LS-Doc 1c below to apply to the Studio."

@@ -46,6 +46,7 @@ export interface LivestreamSlideDraftingSidePaneProps {
   open: boolean;
   onClose: () => void;
   onOpen?: () => void;
+  draftId?: string | null;
   title: string;
   description?: string;
   category: string;
@@ -68,6 +69,7 @@ export default function LivestreamSlideDraftingSidePane({
   open,
   onClose,
   onOpen,
+  draftId,
   title,
   description = '',
   category,
@@ -132,41 +134,67 @@ export default function LivestreamSlideDraftingSidePane({
 
   // Storage Persistence for checklist and scratchpad
   const storagePrefix = useMemo(() => {
+    if (draftId) {
+      return `ls_slide_drafting_draft_${draftId}`;
+    }
     const slug = (title || 'untitled').toLowerCase().replace(/[^a-z0-9]+/g, '_');
-    return `ls_slide_drafting_${slug}_${category}`;
-  }, [title, category]);
+    return `ls_slide_drafting_${category || 'general'}_${slug}`;
+  }, [draftId, title, category]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
-        const savedChecklist = localStorage.getItem(`${storagePrefix}_checklist`);
+        const savedChecklist = 
+          localStorage.getItem(`${storagePrefix}_checklist`) ||
+          (draftId ? localStorage.getItem(`ls_slide_drafting_draft_${draftId}_checklist`) : null) ||
+          (category ? localStorage.getItem(`ls_slide_drafting_${category}_checklist`) : null);
         if (savedChecklist) setChecklist(JSON.parse(savedChecklist));
         else setChecklist({});
 
-        const savedPayload = localStorage.getItem(`${storagePrefix}_payload`);
+        const savedPayload = 
+          localStorage.getItem(`${storagePrefix}_payload`) ||
+          (draftId ? localStorage.getItem(`ls_slide_drafting_draft_${draftId}_payload`) : null) ||
+          (category ? localStorage.getItem(`ls_slide_drafting_${category}_latest_payload`) : null) ||
+          localStorage.getItem('ls_slide_drafting_latest_payload');
+
         if (savedPayload) {
-          const parsed = JSON.parse(savedPayload);
-          setRawIngestPayload(parsed.payload || '');
+          try {
+            const parsed = JSON.parse(savedPayload);
+            setRawIngestPayload(parsed.payload !== undefined ? parsed.payload : savedPayload);
+          } catch {
+            setRawIngestPayload(savedPayload);
+          }
         } else {
           setRawIngestPayload('');
         }
       } catch {}
     }
-  }, [storagePrefix]);
+  }, [storagePrefix, draftId, category]);
 
   const savePayloadToStorage = useCallback((payload: string) => {
     if (typeof window !== 'undefined') {
       try {
-        localStorage.setItem(`${storagePrefix}_payload`, JSON.stringify({ payload }));
+        const data = JSON.stringify({ payload });
+        localStorage.setItem(`${storagePrefix}_payload`, data);
+        if (category) {
+          localStorage.setItem(`ls_slide_drafting_${category}_latest_payload`, data);
+        }
+        localStorage.setItem('ls_slide_drafting_latest_payload', data);
       } catch {}
     }
-  }, [storagePrefix]);
+  }, [storagePrefix, category]);
 
   const toggleChecklistItem = (id: string) => {
     setChecklist((prev) => {
       const next = { ...prev, [id]: !prev[id] };
       if (typeof window !== 'undefined') {
-        localStorage.setItem(`${storagePrefix}_checklist`, JSON.stringify(next));
+        try {
+          const json = JSON.stringify(next);
+          localStorage.setItem(`${storagePrefix}_checklist`, json);
+          if (category) {
+            localStorage.setItem(`ls_slide_drafting_${category}_checklist`, json);
+          }
+        } catch {}
       }
       return next;
     });
@@ -185,7 +213,13 @@ export default function LivestreamSlideDraftingSidePane({
       setChecklist((prev) => {
         const next = { ...prev, [targetCheck]: true };
         if (typeof window !== 'undefined') {
-          localStorage.setItem(`${storagePrefix}_checklist`, JSON.stringify(next));
+          try {
+            const json = JSON.stringify(next);
+            localStorage.setItem(`${storagePrefix}_checklist`, json);
+            if (category) {
+              localStorage.setItem(`ls_slide_drafting_${category}_checklist`, json);
+            }
+          } catch {}
         }
         return next;
       });

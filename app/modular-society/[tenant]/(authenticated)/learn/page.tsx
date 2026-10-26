@@ -2307,6 +2307,54 @@ export default function LearnPage() {
           initialTaxonomy={draftTaxonomy}
           initialType={createContentType}
           initialDraftData={fastPayload || drafts.find((d: any) => d.id === selectedDraftId)}
+          onDraftSaved={async (savedDraftId: string) => {
+            if (!profile?.uid) return;
+            try {
+              const userEmail = (profile as any)?.email;
+              const updatedDrafts = await getUserDrafts(profile.uid, userEmail);
+              if (updatedDrafts) {
+                setDrafts(updatedDrafts);
+                setWorkspaceTabs(prevTabs => {
+                  const personalTab = prevTabs.find(t => t.id === 'personal');
+                  const personalDrafts = updatedDrafts.filter(d => !d.organizationId);
+                  return prevTabs.map(t => {
+                    if (t.id === 'personal' && personalTab) {
+                      const nonDraftItems = personalTab.items.filter((item: any) => item.status !== 'draft');
+                      const newDraftItems = personalDrafts.map(d => ({
+                        id: d.id,
+                        title: d.title,
+                        type: d.type,
+                        status: d.status,
+                        date: (d.updatedAt || d.createdAt).toString(),
+                        authorName: d.authorId === profile.uid ? profile.displayName : (d.authorName || 'Lead Author'),
+                        isCoAuthor: d.authorId !== profile.uid
+                      }));
+                      const combined = [...newDraftItems, ...nonDraftItems].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                      return { ...t, items: combined };
+                    }
+                    if (selectedOrgId && t.id === selectedOrgId) {
+                      const orgDrafts = updatedDrafts.filter(d => d.organizationId === selectedOrgId);
+                      const nonDraftItems = t.items.filter((item: any) => item.status !== 'draft');
+                      const newOrgDraftItems = orgDrafts.map(d => ({
+                        id: d.id,
+                        title: d.title,
+                        type: d.type,
+                        status: d.status,
+                        date: (d.updatedAt || d.createdAt).toString(),
+                        authorName: d.authorId === profile.uid ? profile.displayName : (d.authorName || 'Team Member'),
+                        isCoAuthor: false
+                      }));
+                      const combined = [...newOrgDraftItems, ...nonDraftItems].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                      return { ...t, items: combined };
+                    }
+                    return t;
+                  });
+                });
+              }
+            } catch (err) {
+              console.error('Failed to sync drafts in background:', err);
+            }
+          }}
         />
       ) : (
         <CreateLearnContentForm 

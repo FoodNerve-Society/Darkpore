@@ -4498,6 +4498,7 @@ export default function CreateLearnContentForm({
         open={isPromptSidePaneOpen}
         onClose={() => setIsPromptSidePaneOpen(false)}
         onOpen={() => setIsPromptSidePaneOpen(true)}
+        draftId={currentDraftId}
         format={selectedFormat}
         era={selectedEra}
         commodity={selectedCommodity}
