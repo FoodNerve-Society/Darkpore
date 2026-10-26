@@ -1,10 +1,11 @@
 import React from 'react';
-import { Box, Typography, Chip, Divider } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import Link from 'next/link';
 import { headers } from 'next/headers';
 import { getTenantConfig } from '@/lib/cms';
 import { prisma } from '@/lib/db/client';
 import { PublicArticleViewer } from '@/components/learn/PublicArticleViewer';
+import { PublicLivestreamViewer } from '@/components/learn/PublicLivestreamViewer';
 
 export default async function GlobalLearnContentPage({ params }: { params: Promise<{ type: string, slug: string }> }) {
   const { type, slug } = await params;
@@ -14,9 +15,21 @@ export default async function GlobalLearnContentPage({ params }: { params: Promi
   const tenant = getTenantConfig(tenantId);
   
   const material = await prisma.learnContent.findFirst({
-    where: { slug: slug, type: type, status: 'published' },
+    where: {
+      type,
+      status: { in: ['published', 'scheduled'] },
+      OR: [{ slug }, { id: slug }]
+    },
     include: {
+      organization: true,
       article: {
+        include: {
+          blocks: {
+            orderBy: { orderIndex: 'asc' }
+          }
+        }
+      },
+      livestream: {
         include: {
           blocks: {
             orderBy: { orderIndex: 'asc' }
@@ -27,22 +40,43 @@ export default async function GlobalLearnContentPage({ params }: { params: Promi
   });
 
   if (!material) {
-    return <div style={{ padding: '4rem', textAlign: 'center' }}>Intelligence not found.</div>;
+    return <div style={{ padding: '4rem', textAlign: 'center', color: '#fff' }}>Intelligence not found.</div>;
+  }
+
+  // Resolve author details if authorId exists
+  let authorObj: any = null;
+  if (material.authorId) {
+    try {
+      authorObj = await prisma.user.findFirst({
+        where: {
+          OR: [{ id: material.authorId }, { firebaseUid: material.authorId }]
+        }
+      });
+    } catch {
+      authorObj = null;
+    }
   }
 
   // Format the material for the public viewer component
   const formattedMaterial = {
     ...material,
+    author: authorObj || (material.authorName ? { name: material.authorName, avatarUrl: material.authorAvatarUrl } : null),
     articleBlocks: material.article?.blocks || []
   };
 
   const orgDomain = tenantId === 'energy' ? 'energynerve.org' : 'foodnerve.org';
-  const redirectUrl = `https://${orgDomain}/academy/${(material as any).challengeId || 'global'}/${slug}`;
+  const redirectUrl = type === 'livestream'
+    ? `https://${orgDomain}/learn/livestream/${material.id || slug}`
+    : `https://${orgDomain}/academy/${(material as any).challengeId || 'global'}/${slug}`;
   const loginUrl = `/join?redirect=${encodeURIComponent(redirectUrl)}`;
 
   // Find some related materials for the bottom
   const relatedRaw = await prisma.learnContent.findMany({
-    where: { type: type, slug: { not: slug } },
+    where: {
+      type,
+      status: { in: ['published', 'scheduled'] },
+      NOT: { OR: [{ id: material.id }, { slug: material.slug }] }
+    },
     take: 3,
     orderBy: { createdAt: 'desc' }
   });
@@ -55,9 +89,13 @@ export default async function GlobalLearnContentPage({ params }: { params: Promi
       color: 'white',
       pb: 12
     }}>
-      <Box sx={{ maxWidth: 860, mx: 'auto', pt: { xs: 14, md: 16 } }}>
+      <Box sx={{ maxWidth: type === 'livestream' ? 1040 : 860, mx: 'auto', px: { xs: 2, sm: 3, md: 4 }, pt: { xs: 14, md: 16 } }}>
         {/* ── Main Content Area ── */}
-        <PublicArticleViewer material={formattedMaterial} tenant={tenant} loginUrl={loginUrl} themeMode="dark" />
+        {type === 'livestream' ? (
+          <PublicLivestreamViewer material={formattedMaterial} tenant={tenant} loginUrl={loginUrl} themeMode="dark" />
+        ) : (
+          <PublicArticleViewer material={formattedMaterial} tenant={tenant} loginUrl={loginUrl} themeMode="dark" />
+        )}
 
         {/* ── Related Knowledge ── */}
         {relatedRaw.length > 0 && (

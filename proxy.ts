@@ -113,11 +113,7 @@ export default function middleware(request: NextRequest) {
     }
   } else {
     // Default covers .com (prod) AND .com.localhost (dev)
-    if (url.pathname.startsWith('/learn/livestream')) {
-      rewriteUrl.pathname = `/modular-society/foodnerve${url.pathname}`;
-    } else {
-      rewriteUrl.pathname = `/innovations${url.pathname}`;
-    }
+    rewriteUrl.pathname = `/innovations${url.pathname}`;
   }
 
   return NextResponse.rewrite(rewriteUrl.toString(), {
