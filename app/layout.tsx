@@ -5,18 +5,49 @@ import './globals.css';
 import { headers } from 'next/headers';
 import type { Metadata } from 'next';
 
+import { resolveDomainSeoContext } from '@/lib/seo/schema';
+
 export async function generateMetadata(): Promise<Metadata> {
   const headersList = await headers();
-  const host = headersList.get('host') || '';
-  
-  const isSociety = host.includes('society') || host.includes('.org');
-  
+  const host = headersList.get('host');
+  const ctx = resolveDomainSeoContext(host);
+
   return {
-    title: 'Society OS',
-    description: 'The Society OS for Food Systems',
+    metadataBase: new URL(ctx.baseUrl),
+    title: {
+      default: ctx.siteName,
+      template: `%s | ${ctx.siteName}`,
+    },
+    description: ctx.description,
     icons: {
-      icon: isSociety ? '/images/society-favicon.png' : '/images/foodnerve-favicon.png',
-    }
+      icon: ctx.faviconUrl,
+    },
+    robots: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+      'max-video-preview': -1,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+        'max-video-preview': -1,
+      },
+    },
+    alternates: {
+      types: {
+        'application/rss+xml': `${ctx.baseUrl}/feed.xml`,
+      },
+    },
+    openGraph: {
+      siteName: ctx.siteName,
+      title: ctx.siteName,
+      description: ctx.description,
+      url: ctx.baseUrl,
+      type: 'website',
+    },
   };
 }
 

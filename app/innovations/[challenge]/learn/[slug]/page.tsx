@@ -1,4 +1,5 @@
 import React from 'react';
+import type { Metadata } from 'next';
 import { Box, Container, Typography, Chip, Button, Paper, Divider } from '@mui/material';
 import Link from 'next/link';
 import { headers } from 'next/headers';
@@ -6,6 +7,7 @@ import { TENANTS, getTenantConfig } from '@/lib/cms';
 import { getKnowledgeMaterials, mockKnowledgeData } from '@/lib/db/knowledge';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { PublicArticleViewer } from '@/components/learn/PublicArticleViewer';
+import { buildContentMetadata, buildArticleJsonLd } from '@/lib/seo/schema';
 
 export function generateStaticParams() {
   const slugs: { challenge: string, slug: string }[] = [];
@@ -15,10 +17,46 @@ export function generateStaticParams() {
   return slugs;
 }
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ challenge: string; slug: string }>;
+}): Promise<Metadata> {
+  const { challenge, slug } = await params;
+  let host: string | null = null;
+  let rawTenantId = 'food';
+  try {
+    const headersList = await headers();
+    host = headersList.get('host');
+    rawTenantId = headersList.get('x-tenant-id') || 'food';
+  } catch {
+    host = null;
+  }
+  const tenantId = rawTenantId.includes('energy') ? 'energy' : 'food';
+  const tenant = getTenantConfig(tenantId);
+
+  const challengeData = tenant.com.homepage.challenges.find((w) => w.id === challenge);
+  const materials = await getKnowledgeMaterials({ tenantId, challengeId: challengeData?.id });
+  const material = materials.find((m) => m.slug === slug);
+
+  if (!material) {
+    return { title: 'Intelligence Not Found' };
+  }
+
+  return buildContentMetadata(material, host, `/${challenge}/learn/${material.slug || slug}`);
+}
+
 export default async function ContentPage({ params }: { params: Promise<{ challenge: string, slug: string }> }) {
   const { challenge, slug } = await params;
-  const headersList = await headers();
-  const rawTenantId = headersList.get('x-tenant-id') || 'food';
+  let host: string | null = null;
+  let rawTenantId = 'food';
+  try {
+    const headersList = await headers();
+    host = headersList.get('host');
+    rawTenantId = headersList.get('x-tenant-id') || 'food';
+  } catch {
+    host = null;
+  }
   const tenantId = rawTenantId.includes('energy') ? 'energy' : 'food';
   const tenant = getTenantConfig(tenantId);
   
@@ -29,6 +67,8 @@ export default async function ContentPage({ params }: { params: Promise<{ challe
   if (!material) {
     return <div style={{ padding: '4rem', textAlign: 'center' }}>Intelligence not found.</div>;
   }
+
+  const jsonLd = buildArticleJsonLd(material, host, `/${challenge}/learn/${material.slug || slug}`);
 
   // Define the target redirect URL on the .org domain
   // Using hardcoded tenant domain to build the cross-domain link
@@ -42,13 +82,18 @@ export default async function ContentPage({ params }: { params: Promise<{ challe
     .slice(0, 6);
 
   return (
-    <Box sx={{ 
-      minHeight: '100vh', 
-      bgcolor: '#0f172a',
-      backgroundImage: 'radial-gradient(circle at top right, #1e293b 0%, #0f172a 100%)',
-      color: 'white',
-      pb: 12
-    }}>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <Box sx={{ 
+        minHeight: '100vh', 
+        bgcolor: '#0f172a',
+        backgroundImage: 'radial-gradient(circle at top right, #1e293b 0%, #0f172a 100%)',
+        color: 'white',
+        pb: 12
+      }}>
       <Box sx={{ maxWidth: 860, mx: 'auto', pt: { xs: 14, md: 16 } }}>
         
         {/* ── Main Content Area ── */}
@@ -157,5 +202,6 @@ export default async function ContentPage({ params }: { params: Promise<{ challe
         )}
       </Box>
     </Box>
+    </>
   );
 }

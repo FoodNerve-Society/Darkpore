@@ -1,42 +1,92 @@
-// @ts-nocheck
-"use client";
+import React from 'react';
+import type { Metadata } from 'next';
+import { headers } from 'next/headers';
+import { prisma } from '@/lib/db/client';
+import { buildContentMetadata, buildArticleJsonLd } from '@/lib/seo/schema';
+import ArticleReaderClientPage from './ArticleReaderClientPage';
 
-import React from "react";
-import { useParams, useRouter } from "next/navigation";
-import { ArticleReader } from "@/components/learn/ArticleReader";
-import { Box, Paper } from "@mui/material";
+interface PageProps {
+  params: Promise<{ tenant: string; slug: string }>;
+}
 
-export default function ArticleReaderPageWrapper() {
-  const params = useParams();
-  const router = useRouter();
-  const slug = params?.slug as string;
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params;
+  let host: string | null = null;
+  try {
+    const headersList = await headers();
+    host = headersList.get('host');
+  } catch {
+    host = null;
+  }
+
+  const material = await prisma.learnContent.findFirst({
+    where: {
+      type: 'article',
+      status: { in: ['published', 'scheduled'] },
+      OR: [{ slug }, { id: slug }],
+    },
+    include: {
+      organization: true,
+      article: {
+        include: {
+          blocks: {
+            orderBy: { orderIndex: 'asc' },
+          },
+        },
+      },
+    },
+  });
+
+  if (!material) {
+    return {
+      title: 'Article Not Found',
+    };
+  }
+
+  const canonicalPath = `/learn/article/${material.slug || slug}`;
+  return buildContentMetadata(material, host, canonicalPath);
+}
+
+export default async function SocietyArticleReaderPage({ params }: PageProps) {
+  const { slug } = await params;
+  let host: string | null = null;
+  try {
+    const headersList = await headers();
+    host = headersList.get('host');
+  } catch {
+    host = null;
+  }
+
+  const material = await prisma.learnContent.findFirst({
+    where: {
+      type: 'article',
+      status: { in: ['published', 'scheduled'] },
+      OR: [{ slug }, { id: slug }],
+    },
+    include: {
+      organization: true,
+      article: {
+        include: {
+          blocks: {
+            orderBy: { orderIndex: 'asc' },
+          },
+        },
+      },
+    },
+  });
+
+  const canonicalPath = `/learn/article/${material?.slug || slug}`;
+  const jsonLd = material ? buildArticleJsonLd(material, host, canonicalPath) : null;
 
   return (
-    <Box 
-      id="article-reader-scroll-container"
-      sx={{ 
-        flex: 1,
-        minHeight: 0,
-        height: '100%',
-        overflowY: 'auto',
-        overflowX: 'hidden',
-        p: { xs: 0.5, sm: 1, md: 2 },
-        boxSizing: 'border-box',
-        WebkitOverflowScrolling: 'touch',
-      }}
-    >
-      <Paper 
-        elevation={0}
-        sx={{ 
-          p: { xs: 0, md: 3 }, 
-          borderRadius: { xs: 2, md: 4 }, 
-          minHeight: "100%", 
-          bgcolor: 'background.paper',
-          boxShadow: { xs: 'none', md: '0 10px 40px rgba(0,0,0,0.04)' }
-        }}
-      >
-        <ArticleReader slug={slug} onBack={() => router.push('/learn')} />
-      </Paper>
-    </Box>
+    <>
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
+      <ArticleReaderClientPage slug={slug} />
+    </>
   );
 }

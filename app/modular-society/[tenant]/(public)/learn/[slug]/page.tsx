@@ -1,14 +1,40 @@
 import React from 'react';
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { headers } from 'next/headers';
 import { Box, Container, Typography, Avatar, Divider } from '@mui/material';
 import { getLearnContentBySlug } from '@/lib/actions/learn';
 import { ArticleBlockRenderer } from '@/components/learn/ArticleBlockRenderer';
 import { getCorridorResurfaceInfo } from '@/lib/cms/commodities';
+import { buildContentMetadata, buildArticleJsonLd } from '@/lib/seo/schema';
+
+export async function generateMetadata({ 
+  params 
+}: { 
+  params: Promise<{ tenant: string; slug: string }>;
+}): Promise<Metadata> {
+  const resolvedParams = await params;
+  const slug = resolvedParams?.slug;
+  if (!slug) return { title: 'Intelligence Not Found' };
+
+  let host: string | null = null;
+  try {
+    const headersList = await headers();
+    host = headersList.get('host');
+  } catch {
+    host = null;
+  }
+  const content = await getLearnContentBySlug(slug);
+
+  if (!content) return { title: 'Intelligence Not Found' };
+
+  return buildContentMetadata(content, host, `/learn/article/${content.slug || slug}`);
+}
 
 export default async function LearnContentPage({ 
   params 
 }: { 
-  params: Promise<{ tenant: string, slug: string }> | { tenant: string, slug: string } 
+  params: Promise<{ tenant: string; slug: string }>;
 }) {
   const resolvedParams = await params;
   const slug = resolvedParams?.slug;
@@ -22,6 +48,15 @@ export default async function LearnContentPage({
   if (!content) {
     notFound();
   }
+
+  let host: string | null = null;
+  try {
+    const headersList = await headers();
+    host = headersList.get('host');
+  } catch {
+    host = null;
+  }
+  const jsonLd = buildArticleJsonLd(content, host, `/learn/article/${content.slug || slug}`);
 
   // Determine which layout to show based on the type
   // For now, focusing on 'article'
@@ -41,8 +76,13 @@ export default async function LearnContentPage({
   });
 
   return (
-    <Box sx={{ bgcolor: '#fff', minHeight: '100vh', pt: 12, pb: 16 }}>
-      <Container maxWidth="md">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <Box sx={{ bgcolor: '#fff', minHeight: '100vh', pt: 12, pb: 16 }}>
+        <Container maxWidth="md">
         {/* Article Header */}
         <Box sx={{ mb: 6 }}>
           {/* Living Corridor Memo / Resurfaced Banner */}
@@ -166,5 +206,6 @@ export default async function LearnContentPage({
 
       </Container>
     </Box>
+    </>
   );
 }

@@ -47,7 +47,6 @@ export const quicksand = Quicksand({
 
 export const ysabeauInfant = Ysabeau_Infant({
     weight: ['400', '500', '700'],
-    style: ['normal', 'italic'],
     subsets: ['latin'],
     display: 'swap',
     variable: '--font-ysabeau-infant',
@@ -70,7 +69,6 @@ export const plusJakartaSans = Plus_Jakarta_Sans({
 
 export const sourceSerif4 = Source_Serif_4({
     weight: ['400', '500', '600', '700'],
-    style: ['normal', 'italic'],
     subsets: ['latin'],
     display: 'swap',
     variable: '--font-source-serif',
@@ -78,7 +76,6 @@ export const sourceSerif4 = Source_Serif_4({
 
 export const literata = Literata({
     weight: ['400', '500', '600', '700'],
-    style: ['normal', 'italic'],
     subsets: ['latin'],
     display: 'swap',
     variable: '--font-literata',
@@ -101,7 +98,6 @@ export const spaceGrotesk = Space_Grotesk({
 
 export const newsreader = Newsreader({
     weight: ['500', '600', '700', '800'],
-    style: ['normal', 'italic'],
     subsets: ['latin'],
     display: 'swap',
     variable: '--font-newsreader',
@@ -110,7 +106,6 @@ export const newsreader = Newsreader({
 // ── Stylised Heading / Display Fonts ──
 export const dmSerifDisplay = DM_Serif_Display({
     weight: ['400'],
-    style: ['normal', 'italic'],
     subsets: ['latin'],
     display: 'swap',
     variable: '--font-dm-serif',

@@ -3,7 +3,7 @@ import { Box, Typography } from '@mui/material';
 import PublicUserProfile from '@/components/profile/PublicUserProfile';
 import PublicOrgProfile from '@/components/profile/PublicOrgProfile';
 
-export default async function HandleRoute({ params }: { params: Promise<{ tenant: string, handle: string }> | { tenant: string, handle: string } }) {
+export default async function HandleRoute({ params }: { params: Promise<{ tenant: string; handle: string }> }) {
   const resolvedParams = await params;
   const tenant = resolvedParams?.tenant || '';
   const handle = resolvedParams?.handle || '';

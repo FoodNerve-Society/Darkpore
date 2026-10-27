@@ -1,11 +1,56 @@
 import React from 'react';
+import type { Metadata } from 'next';
 import { Box, Typography } from '@mui/material';
 import Link from 'next/link';
 import { headers } from 'next/headers';
 import { getTenantConfig } from '@/lib/cms';
 import { prisma } from '@/lib/db/client';
+import { buildContentMetadata, buildArticleJsonLd, buildLivestreamJsonLd } from '@/lib/seo/schema';
 import { PublicArticleViewer } from '@/components/learn/PublicArticleViewer';
 import { PublicLivestreamViewer } from '@/components/learn/PublicLivestreamViewer';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ type: string; slug: string }>;
+}): Promise<Metadata> {
+  const { type, slug } = await params;
+  const headersList = await headers();
+  const host = headersList.get('host');
+
+  const material = await prisma.learnContent.findFirst({
+    where: {
+      type,
+      status: { in: ['published', 'scheduled'] },
+      OR: [{ slug }, { id: slug }],
+    },
+    include: {
+      article: {
+        include: {
+          blocks: {
+            orderBy: { orderIndex: 'asc' },
+          },
+        },
+      },
+      livestream: {
+        include: {
+          blocks: {
+            orderBy: { orderIndex: 'asc' },
+          },
+        },
+      },
+    },
+  });
+
+  if (!material) {
+    return {
+      title: 'Intelligence Not Found',
+    };
+  }
+
+  const canonicalPath = `/learn/${type}/${material.slug || slug}`;
+  return buildContentMetadata(material, host, canonicalPath);
+}
 
 export default async function GlobalLearnContentPage({ params }: { params: Promise<{ type: string, slug: string }> }) {
   const { type, slug } = await params;
@@ -81,14 +126,26 @@ export default async function GlobalLearnContentPage({ params }: { params: Promi
     orderBy: { createdAt: 'desc' }
   });
 
+  const host = headersList.get('host');
+  const canonicalPath = `/learn/${type}/${material.slug || slug}`;
+  const jsonLd =
+    type === 'livestream'
+      ? buildLivestreamJsonLd(material, host, canonicalPath)
+      : buildArticleJsonLd(material, host, canonicalPath);
+
   return (
-    <Box sx={{ 
-      minHeight: '100vh', 
-      bgcolor: '#0f172a',
-      backgroundImage: 'radial-gradient(circle at top right, #1e293b 0%, #0f172a 100%)',
-      color: 'white',
-      pb: 12
-    }}>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <Box sx={{ 
+        minHeight: '100vh', 
+        bgcolor: '#0f172a',
+        backgroundImage: 'radial-gradient(circle at top right, #1e293b 0%, #0f172a 100%)',
+        color: 'white',
+        pb: 12
+      }}>
       <Box sx={{ maxWidth: type === 'livestream' ? 1040 : 860, mx: 'auto', px: { xs: 2, sm: 3, md: 4 }, pt: { xs: 14, md: 16 } }}>
         {/* ── Main Content Area ── */}
         {type === 'livestream' ? (
@@ -134,5 +191,6 @@ export default async function GlobalLearnContentPage({ params }: { params: Promi
         )}
       </Box>
     </Box>
+    </>
   );
 }

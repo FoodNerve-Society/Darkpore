@@ -290,7 +290,7 @@ export default function ClientLearnHub({ initialMaterials, categories, tenantNam
               return (
                 <Link
                   key={`${material.slug}-${idx}`}
-                  href={`/${material.challengeId}/learn/${material.slug}`}
+                  href={`/learn/${material.type || 'article'}/${material.slug}`}
                   style={{ textDecoration: 'none', flexShrink: 0 }}
                 >
                   <Box

@@ -145,7 +145,7 @@
 }
 
 /* Headers */
-:global(h1), :global(h2), :global(h3), :global(h4), :global(h5), :global(h6) {
+.body :global(h1), .body :global(h2), .body :global(h3), .body :global(h4), .body :global(h5), .body :global(h6) {
   font-family: var(--font-dosis), sans-serif;
   font-weight: 600;
 }

@@ -65,6 +65,27 @@ export default function middleware(request: NextRequest) {
     });
   }
 
+  // Bypass SEO, Syndication Feeds, and AI Discovery routes at the domain root
+  const seoRootPaths = [
+    '/sitemap.xml',
+    '/news-sitemap.xml',
+    '/robots.txt',
+    '/feed.xml',
+    '/rss.xml',
+    '/llms.txt',
+    '/llms-full.txt',
+  ];
+  if (
+    seoRootPaths.includes(url.pathname) ||
+    /^\/[a-f0-9]{16,64}\.txt$/i.test(url.pathname) // IndexNow verification key file
+  ) {
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
+  }
+
   // Prevent infinite rewrite loops & allow standalone stage window
   if (
     url.pathname.startsWith('/stage') ||

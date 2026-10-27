@@ -10,7 +10,7 @@ import WorkHistoryIcon from '@mui/icons-material/WorkHistory';
 import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import TwitterIcon from '@mui/icons-material/Twitter';
 
-export default async function TeamMemberProfilePage({ params }: { params: { slug: string } }) {
+export default async function TeamMemberProfilePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const headersList = await headers();
   const rawTenantId = headersList.get('x-tenant-id') || 'food';
