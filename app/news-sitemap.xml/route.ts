@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
         where: {
           type: { in: ['article', 'livestream'] },
           status: { in: ['published', 'scheduled'] },
+          createdAt: { gte: new Date(Date.now() - 48 * 60 * 60 * 1000) },
         },
         select: {
           id: true,

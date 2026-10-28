@@ -1,6 +1,9 @@
 'use server';
 
 import { prisma } from '@/lib/db/client';
+import { syncCalendarEvent, removeCalendarEvent } from '@/lib/calendar-sync';
+import { notifySearchEnginesOfContent } from '@/lib/seo/indexnow';
+const CAREER_CATEGORIES = ['jobs', 'job', 'volunteer', 'internship', 'internships'];
 
 export interface PendingContentItem {
   id: string;
@@ -107,7 +110,7 @@ export async function getPendingOrgContent(organizationId: string): Promise<Pend
     const pendingItems: PendingContentItem[] = [];
 
     tradeListings.forEach((item) => {
-      const isJob = item.category === 'jobs' || item.category === 'volunteer';
+      const isJob = CAREER_CATEGORIES.includes(item.category);
       pendingItems.push({
         id: item.id,
         type: isJob ? 'job' : 'trade',
@@ -230,7 +233,7 @@ export async function getOrgSubmissionsForUser(
     const submissions: PendingContentItem[] = [];
 
     tradeListings.forEach((item) => {
-      const isJob = item.category === 'jobs' || item.category === 'volunteer';
+      const isJob = CAREER_CATEGORIES.includes(item.category);
       submissions.push({
         id: item.id,
         type: isJob ? 'job' : 'trade',
@@ -304,14 +307,128 @@ export async function approveOrgContent(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     if (contentType === 'trade' || contentType === 'job') {
-      await prisma.tradeListing.update({
+      const listing = await prisma.tradeListing.update({
         where: { id: contentId },
         data: { status: 'active' },
+        include: {
+          organization: { select: { name: true } },
+        },
       });
+
+      const isJobOrVolunteer = contentType === 'job' || CAREER_CATEGORIES.includes(listing.category);
+      const sourceType = isJobOrVolunteer ? 'job' : 'listing';
+      const eventDate = listing.expiresAt || listing.endDate || listing.startDate;
+
+      if (eventDate) {
+        let dateType: 'DEADLINE' | 'START_TIME' | 'DATE_RANGE' = 'DEADLINE';
+        if (listing.startDate && listing.endDate) {
+          dateType = 'DATE_RANGE';
+        } else if (listing.startDate) {
+          dateType = 'START_TIME';
+        }
+
+        await syncCalendarEvent({
+          sourceType,
+          sourceId: listing.id,
+          dateType,
+          title: listing.title,
+          date: eventDate,
+          endDate: listing.endDate ?? undefined,
+          imageUrl: listing.imageUrl ?? undefined,
+          category: listing.category,
+          organizationName: listing.organization?.name,
+          tenantId: 'foodnerve',
+          visibility: listing.organizationId ? 'organization' : 'personal',
+          organizationId: listing.organizationId || undefined,
+          userId: listing.postedById,
+        });
+      }
+
+      if (isJobOrVolunteer) {
+        notifySearchEnginesOfContent({
+          domainHost: 'foodnerve.com',
+          paths: [`/careers/${listing.id}`],
+        }).catch((err) => {
+          console.error('[IndexNow] Background career approval push error:', err);
+        });
+      }
     } else if (contentType === 'learn') {
-      await prisma.learnContent.update({
+      const content = await prisma.learnContent.update({
         where: { id: contentId },
         data: { status: 'published' },
+        include: {
+          organization: { select: { name: true } },
+          livestream: {
+            include: { blocks: { orderBy: { orderIndex: 'asc' } } },
+          },
+        },
+      });
+
+      let dateType: 'START_TIME' | 'PUBLISH_DATE' | 'DATE_RANGE' = 'PUBLISH_DATE';
+      if (content.type === 'livestream' || content.type === 'class') {
+        dateType = 'START_TIME';
+      }
+
+      const startDate = content.targetDate || content.createdAt;
+      let calculatedEndDate: Date | undefined = undefined;
+
+      if (content.type === 'livestream' && startDate) {
+        let totalDurationMinutes = 0;
+        const blocks = content.livestream?.blocks;
+        if (blocks && Array.isArray(blocks)) {
+          for (const block of blocks) {
+            let dStr = (block as any).durationStr;
+            if (!dStr && block.content) {
+              try {
+                const parsed = typeof block.content === 'string' ? JSON.parse(block.content) : block.content;
+                dStr = parsed?.durationStr;
+              } catch (e) {}
+            }
+            if (dStr && typeof dStr === 'string') {
+              const match = dStr.match(/(\d+)\s*m/i);
+              if (match) {
+                totalDurationMinutes += parseInt(match[1], 10);
+              }
+            } else {
+              totalDurationMinutes += 2;
+            }
+          }
+        }
+        if (totalDurationMinutes < 15) {
+          totalDurationMinutes = 35;
+        }
+        calculatedEndDate = new Date(new Date(startDate).getTime() + totalDurationMinutes * 60 * 1000);
+      }
+
+      await syncCalendarEvent({
+        sourceType: content.type,
+        sourceId: content.id,
+        slug: content.slug,
+        dateType,
+        title: content.title,
+        date: startDate,
+        endDate: calculatedEndDate,
+        imageUrl: content.thumbnailUrl ?? undefined,
+        category: content.category ?? content.type,
+        organizationName: content.organization?.name,
+        status: 'upcoming',
+        tenantId: 'foodnerve',
+        visibility: content.organization?.name ? 'organization' : 'society',
+        organizationId: content.organizationId || undefined,
+        userId: content.authorId,
+      });
+
+      const contentPaths = [
+        content.type === 'livestream'
+          ? `/learn/livestream/${content.id}`
+          : `/learn/article/${content.slug}`,
+      ];
+
+      notifySearchEnginesOfContent({
+        domainHost: 'foodnerve.org',
+        paths: contentPaths,
+      }).catch((err) => {
+        console.error('[IndexNow] Background learn approval push error:', err);
       });
     } else if (contentType === 'meet') {
       await prisma.meetEvent.update({
@@ -343,15 +460,20 @@ export async function rejectOrgContent(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     if (contentType === 'trade' || contentType === 'job') {
-      await prisma.tradeListing.update({
+      const listing = await prisma.tradeListing.update({
         where: { id: contentId },
         data: { status: 'rejected' },
+        select: { category: true },
       });
+      const isJob = contentType === 'job' || CAREER_CATEGORIES.includes(listing.category);
+      await removeCalendarEvent(isJob ? 'job' : 'listing', contentId).catch(() => {});
     } else if (contentType === 'learn') {
-      await prisma.learnContent.update({
+      const content = await prisma.learnContent.update({
         where: { id: contentId },
         data: { status: 'rejected' },
+        select: { type: true },
       });
+      await removeCalendarEvent(content.type, contentId).catch(() => {});
     } else if (contentType === 'meet') {
       await prisma.meetEvent.update({
         where: { id: contentId },

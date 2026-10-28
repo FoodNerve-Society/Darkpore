@@ -2,6 +2,9 @@
 
 import { prisma } from '@/lib/db/client';
 import { syncCalendarEvent, removeCalendarEvent } from '@/lib/calendar-sync';
+import { notifySearchEnginesOfContent } from '@/lib/seo/indexnow';
+
+const CAREER_CATEGORIES = ['jobs', 'job', 'volunteer', 'internship', 'internships'];
 
 export interface CreateTradeListingPayload {
   id?: string;
@@ -50,7 +53,7 @@ export async function createTradeListing(data: CreateTradeListingPayload) {
 
     // Extract additional metadata fields
     const metadata = data.metadata || {};
-    const isJobOrVolunteer = data.category === 'jobs' || data.category === 'volunteer';
+    let isJobOrVolunteer = CAREER_CATEGORIES.includes(data.category);
 
     let finalOrganizationId = data.organizationId;
     let isPlatformOwner = false;
@@ -191,8 +194,8 @@ export async function createTradeListing(data: CreateTradeListingPayload) {
     }
 
     // --- Sync to Calendar ---
-    const isJob = listing.category === 'jobs' || listing.category === 'volunteer';
-    const sourceType = isJob ? 'job' : 'listing';
+    isJobOrVolunteer = CAREER_CATEGORIES.includes(listing.category);
+    const sourceType = isJobOrVolunteer ? 'job' : 'listing';
     const eventDate = listing.expiresAt || listing.endDate || listing.startDate;
 
     if (listing.status !== 'draft' && eventDate) {
@@ -229,6 +232,18 @@ export async function createTradeListing(data: CreateTradeListingPayload) {
       });
     } else {
       await removeCalendarEvent(sourceType, listing.id);
+    }
+
+    // Non-blocking instant search push (Bing, Seznam, Yandex, WebSub)
+    if (listing.status !== 'draft' && listing.status !== 'rejected' && listing.status !== 'pending_org_review') {
+      if (isJobOrVolunteer) {
+        notifySearchEnginesOfContent({
+          domainHost: 'foodnerve.com',
+          paths: [`/careers/${listing.id}`],
+        }).catch((err) => {
+          console.error('[IndexNow] Background career push error:', err);
+        });
+      }
     }
 
     return { success: true, listing };
@@ -288,12 +303,14 @@ export async function getUserPublishedListings(userId: string) {
 export async function deleteTradeListing(listingId: string, userId: string) {
   try {
     const listing = await prisma.tradeListing.findUnique({
-      where: { id: listingId }
+      where: { id: listingId },
+      select: { category: true, postedById: true },
     });
     if (!listing) return { success: false, error: 'Not found' };
     if (listing.postedById !== userId) return { success: false, error: 'Unauthorized' };
 
-    await removeCalendarEvent('job', listingId);
+    const isJob = CAREER_CATEGORIES.includes(listing.category);
+    await removeCalendarEvent(isJob ? 'job' : 'listing', listingId);
 
     await prisma.tradeListing.delete({
       where: { id: listingId }
@@ -382,7 +399,7 @@ export async function getTradeListings(options?: { categories?: string[] }) {
 
 export async function getCareersListings() {
   try {
-    const listingsResult = await getTradeListings({ categories: ['jobs', 'job', 'volunteer', 'internship', 'internships'] });
+    const listingsResult = await getTradeListings({ categories: CAREER_CATEGORIES });
     if (!listingsResult.success || !listingsResult.listings) {
       throw new Error(listingsResult.error || "Failed to fetch listings");
     }
@@ -543,6 +560,9 @@ export async function cullBackTradeListing(listingId: string, userId: string, ta
       data: { status: targetStatus }
     });
 
+    const isJob = CAREER_CATEGORIES.includes(listing.category);
+    await removeCalendarEvent(isJob ? 'job' : 'listing', listingId).catch(() => {});
+
     return { success: true, listing: updated };
   } catch (error: any) {
     console.error('Failed to cull back listing:', error);
@@ -561,7 +581,7 @@ export async function getEcosystemEmbedOptions(options?: {
   try {
     const where: any = {
       status: 'active',
-      category: { in: ['jobs', 'volunteer'] },
+      category: { in: CAREER_CATEGORIES },
     };
 
     if (options?.searchQuery && options.searchQuery.trim()) {

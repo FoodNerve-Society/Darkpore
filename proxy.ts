@@ -75,10 +75,7 @@ export default function middleware(request: NextRequest) {
     '/llms.txt',
     '/llms-full.txt',
   ];
-  if (
-    seoRootPaths.includes(url.pathname) ||
-    /^\/[a-f0-9]{16,64}\.txt$/i.test(url.pathname) // IndexNow verification key file
-  ) {
+  if (seoRootPaths.includes(url.pathname)) {
     return NextResponse.next({
       request: {
         headers: requestHeaders,

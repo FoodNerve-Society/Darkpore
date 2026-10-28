@@ -15,6 +15,9 @@ import sitemap from '../app/sitemap';
 import { GET as getFeedXml } from '../app/feed.xml/route';
 import { GET as getNewsSitemapXml } from '../app/news-sitemap.xml/route';
 import { GET as getLlmsFullTxt } from '../app/llms-full.txt/route';
+import nextConfig from '../next.config';
+import { GET as getIndexNowKeyRoute } from '../app/api/seo/indexnow-key/route';
+import { DEFAULT_INDEXNOW_KEY } from '../lib/seo/indexnow';
 
 async function runVerification() {
   console.log('=== STARTING DEEP 5-NUANCE SEO & FEED VERIFICATION ===\n');
@@ -342,7 +345,21 @@ async function runVerification() {
   if (!textFeed.includes('<content:encoded><![CDATA[')) {
     throw new Error('/feed.xml missing <content:encoded><![CDATA[...]]> body!');
   }
-  console.log('Nuance 3 Verified (/feed.xml Media RSS with <content:encoded>, <dc:creator>, & 1280x720 thumbnails): OK');
+  if (!textFeed.includes('<atom:link href="https://pubsubhubbub.appspot.com/" rel="hub" />')) {
+    throw new Error('/feed.xml missing Google Hub atom:link rel="hub" tag!');
+  }
+  if (!textFeed.includes('<atom:link href="https://pubsubhubbub.superfeedr.com/" rel="hub" />')) {
+    throw new Error('/feed.xml missing Superfeedr Hub atom:link rel="hub" tag!');
+  }
+  const feedLinkHeader = resFeed.headers.get('Link') || '';
+  if (
+    !feedLinkHeader.includes('https://pubsubhubbub.appspot.com/') ||
+    !feedLinkHeader.includes('https://pubsubhubbub.superfeedr.com/') ||
+    !feedLinkHeader.includes('rel="self"')
+  ) {
+    throw new Error('/feed.xml missing or invalid RFC 5988 Link header for WebSub hubs!');
+  }
+  console.log('Nuance 3 Verified (/feed.xml Media RSS with WebSub hubs, <content:encoded>, <dc:creator>, & 1280x720 thumbnails): OK');
 
   // =========================================================================
   // NUANCE 4: Verify app/sitemap.ts and app/news-sitemap.xml
@@ -427,6 +444,16 @@ async function runVerification() {
     throw new Error('/news-sitemap.xml failed to return valid Google News sitemap for foodnerve.com!');
   }
 
+  // Verify 48-hour threshold compliance on any returned articles
+  const dateMatches = Array.from(textNews.matchAll(/<news:publication_date>([^<]+)<\/news:publication_date>/g));
+  const twoDaysAndHourAgo = Date.now() - (48 * 60 + 60) * 60 * 1000;
+  for (const m of dateMatches) {
+    const pubTime = new Date(m[1]).getTime();
+    if (pubTime < twoDaysAndHourAgo) {
+      throw new Error(`/news-sitemap.xml contained article older than 48 hours: ${m[1]}`);
+    }
+  }
+
   // Test darkpore.com news sitemap (should be clean without 404 items)
   const reqNewsDark = new NextRequest('https://darkpore.com/news-sitemap.xml', {
     headers: { host: 'darkpore.com' },
@@ -464,8 +491,49 @@ async function runVerification() {
   console.log('Secondary Route JSON-LD Graph Nodes:', jsonLdSecondary['@graph'].map((n: any) => n['@type']));
   console.log('Nuance 5 Verified (Secondary Public Article Routes Metadata & JSON-LD): OK');
 
+  // =========================================================================
+  // NUANCE 6: Next.js Rewrites & Isolated IndexNow Key Route Handler
+  // =========================================================================
+  console.log('\n--- NUANCE 6: Testing Next.js Edge Rewrites & Isolated IndexNow Key Route ---');
+  if (typeof nextConfig.rewrites !== 'function') {
+    throw new Error('nextConfig.rewrites is not defined as an async function!');
+  }
+  const rewritesResult = await nextConfig.rewrites();
+  const rewritesList = Array.isArray(rewritesResult) ? rewritesResult : (rewritesResult as any)?.beforeFiles || [];
+  const indexNowRewrite = rewritesList.find(
+    (r: any) => r.source === '/:key([a-f0-9]{16,64})\\.txt'
+  );
+  if (!indexNowRewrite) {
+    throw new Error('Edge rewrite for /:key([a-f0-9]{16,64})\\.txt is missing from next.config.ts!');
+  }
+  if (indexNowRewrite.destination !== '/api/seo/indexnow-key?key=:key') {
+    throw new Error(`Rewrite destination mismatch: expected /api/seo/indexnow-key?key=:key, got ${indexNowRewrite.destination}`);
+  }
+
+  // Verify route handler response
+  const reqKeyValid = new NextRequest(`https://foodnerve.org/api/seo/indexnow-key?key=${DEFAULT_INDEXNOW_KEY}`);
+  const resKeyValid = await getIndexNowKeyRoute(reqKeyValid);
+  if (resKeyValid.status !== 200) {
+    throw new Error(`Expected HTTP 200 for valid key, got ${resKeyValid.status}`);
+  }
+  const textKey = await resKeyValid.text();
+  if (textKey !== DEFAULT_INDEXNOW_KEY) {
+    throw new Error(`Expected body to match key, got ${textKey}`);
+  }
+  const cacheHeader = resKeyValid.headers.get('cache-control') || '';
+  if (!cacheHeader.includes('max-age=86400')) {
+    throw new Error(`Missing expected Cache-Control max-age=86400 on indexnow-key route: ${cacheHeader}`);
+  }
+
+  const reqKeyInvalid = new NextRequest(`https://foodnerve.org/api/seo/indexnow-key?key=invalid0000000000000000000000000`);
+  const resKeyInvalid = await getIndexNowKeyRoute(reqKeyInvalid);
+  if (resKeyInvalid.status !== 404) {
+    throw new Error(`Expected HTTP 404 for invalid key, got ${resKeyInvalid.status}`);
+  }
+  console.log('Nuance 6 Verified (Next.js Rewrites & Isolated IndexNow Key Route Handler): OK');
+
   console.log('\n=============================================================');
-  console.log('🎉 ALL 5 TUESDAY SEO & FEED NUANCES VERIFIED SUCCESSFULLY! 🎉');
+  console.log('🎉 ALL 6 WEDNESDAY SEO REFINEMENT AUDITS VERIFIED! 🎉');
   console.log('=============================================================\n');
 }
 

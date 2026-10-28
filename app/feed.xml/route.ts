@@ -115,6 +115,8 @@ export async function GET(request: NextRequest) {
     <description>${escapeXml(ctx.description)}</description>
     <language>en</language>
     <lastBuildDate>${nowRfc822}</lastBuildDate>
+    <atom:link href="https://pubsubhubbub.appspot.com/" rel="hub" />
+    <atom:link href="https://pubsubhubbub.superfeedr.com/" rel="hub" />
     <atom:link href="${ctx.baseUrl}/feed.xml" rel="self" type="application/rss+xml" />
 ${itemsXml}
   </channel>
@@ -125,6 +127,7 @@ ${itemsXml}
     headers: {
       'Content-Type': 'application/xml; charset=utf-8',
       'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+      'Link': `<https://pubsubhubbub.appspot.com/>; rel="hub", <https://pubsubhubbub.superfeedr.com/>; rel="hub", <${ctx.baseUrl}/feed.xml>; rel="self"`,
     },
   });
 }

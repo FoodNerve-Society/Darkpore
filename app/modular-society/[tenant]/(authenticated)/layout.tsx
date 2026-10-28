@@ -47,7 +47,10 @@ const AuthenticatedLayout: FC<{ children: ReactNode }> = ({ children }) => {
     }
 
     // State B: Auth is confirmed, and there is NO user.
-    if (!user) {
+    const isPublicReaderRoute =
+      pathname?.includes('/learn/article/') || pathname?.includes('/learn/livestream/');
+
+    if (!user && !isPublicReaderRoute) {
       const timer = setTimeout(() => {
         setShowUnauthModal(true);
       }, 500); 

@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/db/client';
 import { syncCalendarEvent, removeCalendarEvent } from '@/lib/calendar-sync';
+import { notifySearchEnginesOfContent } from '@/lib/seo/indexnow';
 import { Resend } from 'resend';
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
@@ -338,6 +339,20 @@ export async function createLearnContent(data: CreateLearnContentPayload, isDraf
       organizationId: result.organizationId || undefined,
       userId: result.authorId,
     });
+
+    // Non-blocking instant search push (Bing, Seznam, Yandex, WebSub)
+    const contentPaths = [
+      result.type === 'livestream'
+        ? `/learn/livestream/${result.id}`
+        : `/learn/article/${result.slug}`,
+    ];
+
+    notifySearchEnginesOfContent({
+      domainHost: 'foodnerve.org', // Default society domain for learn content
+      paths: contentPaths,
+    }).catch((err) => {
+      console.error('[IndexNow] Background push error:', err);
+    });
   } else {
     await removeCalendarEvent(result.type, result.id);
   }
@@ -497,8 +512,15 @@ export async function getOrgLearnContent(organizationId: string) {
 }
 
 export async function deleteLearnContent(id: string) {
+  const content = await prisma.learnContent.findUnique({
+    where: { id },
+    select: { type: true, slug: true },
+  });
+  if (content) {
+    await removeCalendarEvent(content.type, id);
+  }
   return await prisma.learnContent.delete({
-    where: { id }
+    where: { id },
   });
 }
 
